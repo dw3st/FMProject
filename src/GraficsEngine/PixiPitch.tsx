@@ -717,7 +717,7 @@ export function PixiPitch({
   useEffect(() => {
     stadiumRef.current = stadium;
     redrawCrowdRef.current?.();
-  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), stadium?.decor?.banner, stadium?.decor?.flag, stadium?.decor?.mosaic, stadium?.homeColors?.join(","), stadium?.homeCrest, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stadium?.fill, stadium?.homeTeam, stadium?.neutral, stadium?.seed, stadium?.works?.join(","), stadium?.decor?.banner, stadium?.decor?.flag, stadium?.decor?.mosaic, stadium?.decor?.pattern, stadium?.decor?.bannerPattern, stadium?.decor?.palette, stadium?.decor?.titleStars, stadium?.decor?.owned?.join(","), stadium?.homeColors?.join(","), stadium?.homeCrest, mirror]); // eslint-disable-line react-hooks/exhaustive-deps
   // Pitch surface: redrawn only when the pitch of the day (or the mirror) changes.
   useEffect(() => {
     pitchRef.current = pitch;
@@ -897,6 +897,11 @@ export function PixiPitch({
       };
       /** Phone light candidates of the filled seats (stadium atmosphere), set by every bake. */
       let phones: PhoneLight[] = [];
+      /** The home end stand for the bought goal flash (9.1), set at every bake. */
+      let goalFlashRect: { x: number; y: number; w: number; h: number } | null = null;
+      const goalFlashG = new Graphics();
+      goalFlashG.eventMode = "none";
+      goalFlashG.blendMode = "add";
       const bakeCrowd = () => {
         const st = stadiumRef.current;
         if (!m.stand || !st) return;
@@ -1028,9 +1033,11 @@ export function PixiPitch({
         crowdLayer.addChild(flagGfx); // hand flags and banners over the fans
         crowdLayer.addChild(crestLayer);
         rebuildCrests();
+        crowdLayer.addChild(goalFlashG);
         // The manager's decorations (achievements): over the home end, unless it is under works.
         crowdDecor?.destroy();
         crowdDecor = null;
+        goalFlashRect = null;
         const homeSide = homeLeft ? "left" : "right";
         const decor = st.decor;
         const stand = m.stand;
@@ -1045,8 +1052,11 @@ export function PixiPitch({
             crowdDecor = new Graphics();
             drawDecor(crowdDecor, rects, [hexNumber(c1), hexNumber(c2)]);
             crowdLayer.addChild(crowdDecor);
+            crowdLayer.addChild(goalFlashG); // the goal flash stays over the mosaic
           };
           drawHomeDecor(null);
+          // Legendary goalFlash (9.1): the home end mosaic lights up on a home goal.
+          if (decor.mosaic && decor.owned?.includes("goalFlash")) goalFlashRect = standSideRects(stand).find((r) => r.side === homeSide) ?? null;
           // The crest mosaic reads the club crest's pixels (8.9.10): drawn again when it arrives.
           if (decor.mosaic && decor.pattern === "crest" && st.homeCrest) {
             void loadCrestCanvas(st.homeCrest, 64).then((canvas) => {
@@ -3708,20 +3718,26 @@ export function PixiPitch({
           }
         }
       };
-      const startBurst = () => {
+      const startBurst = (kickoff = false) => {
         const st = stadiumRef.current;
-        if (!m.stand || !st?.bigMatch || !framesShown()) return;
+        if (!m.stand || !st || !framesShown()) return;
+        // Bought with the manager's money (9.1): flares at every home game, fireworks at the kickoff of every home game.
+        const owned = st.neutral ? [] : st.decor?.owned ?? [];
+        const boughtFireworks = kickoff && owned.includes("fireworks");
+        const flares = !!st.bigMatch || owned.includes("flares");
+        if (!flares && !boughtFireworks) return;
         const homeLeft = (st.homeTeam === "A") !== mirrorRef.current;
         const areas = burstAreas(standSideRects(m.stand), homeLeft ? "left" : "right", worksSides(st.works, mirrorRef.current));
         if (!areas) return;
         bursts = [...bursts, {
           at: effectNow, seed: `${st.seed}:${bursts.length}`, end: areas.end,
           sky: areas.sky,
-          color: st.homeTeam === "A" ? fillA : fillB, night: lightsOn(),
+          color: st.homeTeam === "A" ? fillA : fillB, night: (!!st.bigMatch && lightsOn()) || boughtFireworks,
+          ...(flares ? {} : { noFlares: true }),
         }];
       };
-      const unsubBurstStart = gameBus.on("matchStart", () => startBurst());
-      const unsubBurstTest = gameBus.on("testCommand", (cmd) => { if (cmd.type === "celebrate") startBurst(); });
+      const unsubBurstStart = gameBus.on("matchStart", () => startBurst(true));
+      const unsubBurstTest = gameBus.on("testCommand", (cmd) => { if (cmd.type === "celebrate") startBurst(true); });
       const unsubBurstGoal = gameBus.on("goalScored", (e) => {
         const st = stadiumRef.current;
         if (!st || !framesShown()) return;
@@ -4775,6 +4791,13 @@ export function PixiPitch({
         effectCtx.netShake = extrasRef.current;
         if (crowdPulseAt !== null && effectNow - crowdPulseAt >= STADIUM.GOAL_PULSE_S) crowdPulseAt = null;
         const homeAlpha = crowdPulseAt === null ? 1 : goalPulseAlpha(effectNow - crowdPulseAt);
+        goalFlashG.clear();
+        if (goalFlashRect && crowdPulseAt !== null && !calm()) {
+          // Three bright pulses over the home end while the home crowd celebrates.
+          const t = (effectNow - crowdPulseAt) / STADIUM.GOAL_PULSE_S;
+          const a = 0.35 * Math.max(0, Math.sin(t * Math.PI * 6)) * (1 - t);
+          if (a > 0.01) goalFlashG.rect(goalFlashRect.x, goalFlashRect.y, goalFlashRect.w, goalFlashRect.h).fill({ color: 0xfff4c8, alpha: a });
+        }
         if (crowdJump && effectNow - crowdJump.at >= CROWD_MOTION.GOAL_S) crowdJump = null;
         // Each fan bounces softly, the wave raises the arms as it goes round, the scoring side jumps (with extras).
         const centre = { x: m.marginX + m.width / 2, y: m.marginY + m.height / 2 };

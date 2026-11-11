@@ -7,7 +7,8 @@
 import { standSideRects, type SideRect } from "@/GraficsEngine/crowd";
 import type { StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { SHIELD_ART, STAR_ART } from "@/Domain/achievements/decorStyle";
-import type { StadiumDecor } from "@/types/achievementTypes";
+import { MOSAIC_ART, patternCell, titlesArt } from "@/Domain/achievements/decorShop";
+import type { MosaicPattern, StadiumDecor } from "@/types/achievementTypes";
 
 /** "main"/"second" = the two decoration colours, "lift" = a lighter main, `rgb` = a crest pixel. */
 export interface DecorRect { x: number; y: number; w: number; h: number; tone: "main" | "second" | "lift"; alpha: number; rgb?: number }
@@ -24,7 +25,7 @@ const CREST_CELLS = 14;
 type Cell = "main" | "second" | "lift" | number;
 
 /** The art grid of one motif: a bitmap, or the crest read from its pixels (transparent = main colour). */
-function motif(pattern: "crest" | "star", crest: CrestPixels | null): Cell[][] {
+function motif(pattern: MosaicPattern, crest: CrestPixels | null, titleStars = 0): Cell[][] {
   if (pattern === "crest" && crest) {
     const out: Cell[][] = [];
     for (let r = 0; r < CREST_CELLS; r++) {
@@ -39,18 +40,20 @@ function motif(pattern: "crest" | "star", crest: CrestPixels | null): Cell[][] {
     }
     return out;
   }
-  const art = pattern === "star" ? STAR_ART : SHIELD_ART;
+  const art = pattern === "titles" ? titlesArt(SHIELD_ART, titleStars) : MOSAIC_ART[pattern] ?? (pattern === "star" ? STAR_ART : SHIELD_ART);
   return art.map((line) => [...line].map((ch) => (ch === "#" ? "second" : ch === "o" ? "lift" : "main")));
 }
 
 /** The mosaic cells of the end stand `r`. */
-export function mosaicCells(r: SideRect, decor: Pick<StadiumDecor, "pattern">, crest: CrestPixels | null = null): DecorRect[] {
+export function mosaicCells(r: SideRect, decor: Pick<StadiumDecor, "pattern" | "titleStars">, crest: CrestPixels | null = null): DecorRect[] {
   const cell = r.w / MOSAIC_COLS;
   const rows = Math.max(1, Math.round(r.h / cell));
   const ch = r.h / rows;
   const pattern = decor.pattern ?? "stripes";
   const grid: Cell[][] = Array.from({ length: rows }, () => Array<Cell>(MOSAIC_COLS).fill("main"));
-  if (pattern === "stripes" || pattern === "check") {
+  if (pattern === "diagonal" || pattern === "waves" || pattern === "diamonds") {
+    for (let y = 0; y < rows; y++) for (let x = 0; x < MOSAIC_COLS; x++) grid[y]![x] = patternCell(pattern, x, y, rows) ?? "main";
+  } else if (pattern === "stripes" || pattern === "check") {
     const band = Math.max(1, Math.round(rows / 8));
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < MOSAIC_COLS; x++) {
@@ -60,7 +63,7 @@ export function mosaicCells(r: SideRect, decor: Pick<StadiumDecor, "pattern">, c
     }
   } else {
     // The motif repeats along the stand, two cells apart, centred both ways.
-    const art = motif(pattern, crest);
+    const art = motif(pattern, crest, decor.titleStars ?? 0);
     const ah = art.length, aw = art[0]!.length;
     const ox = Math.floor((MOSAIC_COLS - aw) / 2);
     const copies = rows >= ah ? Math.floor((rows + 2) / (ah + 2)) : 0;
@@ -89,13 +92,53 @@ export function decorRects(stand: StandGeometry, homeSide: "left" | "right", dec
   const r: SideRect | undefined = standSideRects(stand).find((s) => s.side === homeSide);
   if (!r || r.w <= 0 || r.h <= 0) return [];
   const out: DecorRect[] = decor.mosaic ? mosaicCells(r, decor, crest) : [];
+  const owned = decor.owned ?? [];
+  // Legendary (9.1): the mosaic on both end stands.
+  if (decor.mosaic && owned.includes("doubleEnd")) {
+    const other = standSideRects(stand).find((s) => s.side === (homeSide === "left" ? "right" : "left"));
+    if (other && other.w > 0 && other.h > 0) out.push(...mosaicCells(other, decor, crest));
+  }
+  // Big flags on the long stands, near the home end (9.1).
+  if (owned.includes("sideFlags")) {
+    for (const side of ["top", "bottom"] as const) {
+      const sr = standSideRects(stand).find((s) => s.side === side);
+      if (!sr || sr.h <= 0) continue;
+      const fw = Math.max(4, sr.w * 0.06), fx = homeSide === "left" ? sr.x + sr.w * 0.12 : sr.x + sr.w * 0.82;
+      for (let k = 0; k < 2; k++) {
+        const x = fx + k * fw * 1.6;
+        out.push({ x, y: sr.y + sr.h * 0.12, w: fw, h: sr.h * 0.76, tone: "main", alpha: 1 });
+        out.push({ x: x + fw / 3, y: sr.y + sr.h * 0.12, w: fw / 3, h: sr.h * 0.76, tone: "second", alpha: 1 });
+      }
+    }
+  }
   // The giant flag is no longer drawn in the match (4.41.18, the user: it looked bad); the hand flags stay.
   if (decor.banner) {
     // Along the pitch edge: the right edge of the left end, the left edge of the right end.
     const w = Math.max(2, r.w * 0.18);
     const x = homeSide === "left" ? r.x + r.w - w : r.x;
-    out.push({ x, y: r.y + r.h * 0.05, w, h: r.h * 0.9, tone: "second", alpha: 1 });
-    out.push({ x: x + w * 0.25, y: r.y + r.h * 0.05, w: w * 0.5, h: r.h * 0.9, tone: "main", alpha: 1 });
+    out.push(...bannerRects(x, r.y + r.h * 0.05, w, r.h * 0.9, decor.bannerPattern ?? "plain"));
+  }
+  return out;
+}
+
+/** The banner strip in its pattern (9.1); "plain" is the two stripes of before. */
+export function bannerRects(x: number, y: number, w: number, h: number, pattern: NonNullable<StadiumDecor["bannerPattern"]>): DecorRect[] {
+  const out: DecorRect[] = [{ x, y, w, h, tone: "second", alpha: 1 }];
+  if (pattern === "plain") {
+    out.push({ x: x + w * 0.25, y, w: w * 0.5, h, tone: "main", alpha: 1 });
+  } else if (pattern === "pinstripe") {
+    for (let k = 0; k < 4; k++) out.push({ x: x + (w * (k * 2 + 1)) / 8, y, w: w / 8, h, tone: "main", alpha: 1 });
+  } else {
+    const cells = Math.max(2, Math.round(h / w));
+    const ch = h / cells;
+    for (let k = 0; k < cells; k++) {
+      if (pattern === "check") {
+        out.push({ x: x + (k % 2 ? w / 2 : 0), y: y + k * ch, w: w / 2, h: ch, tone: "main", alpha: 1 });
+      } else {
+        // Chevron: a main bar at alternating heights, read as zigzag along the strip.
+        out.push({ x, y: y + k * ch + (k % 2 ? ch * 0.5 : 0), w, h: ch * 0.4, tone: "main", alpha: 1 });
+      }
+    }
   }
   return out;
 }

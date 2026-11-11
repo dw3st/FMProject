@@ -7,6 +7,7 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { DecorShop } from "@/GameInterface/Achievements/DecorShop";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0";
 const ICON: Record<AssetKind, IconName> = {
@@ -72,9 +73,9 @@ export function AssetsTab() {
         {/* Fame from the belongings (8.9.39): reputation points with other managers and clubs. */}
         <div className="card-arcade rounded-md p-4">
           <p className={LABEL}>{t("achievements.assets.fame")}</p>
-          <p className="font-display font-bold text-2xl m-0 mt-1">{t(`fame.band.${fameBand(assets)}`)}</p>
+          <p className="font-display font-bold text-2xl m-0 mt-1">{t(`fame.band.${fameBand(assets, save?.managerDecor)}`)}</p>
           <p className="text-sm text-muted-foreground tabular-nums m-0 mt-1">
-            {t("achievements.assets.fameDetail", { value: formatFee(assetsValue(assets)), points: fameReputation(assets).toFixed(1) })}
+            {t("achievements.assets.fameDetail", { value: formatFee(assetsValue(assets, save?.managerDecor)), points: fameReputation(assets, save?.managerDecor).toFixed(1) })}
           </p>
         </div>
       </div>
@@ -142,6 +143,14 @@ export function AssetsTab() {
           );
         })}
       </div>
+
+      <DecorShop
+        saveId={session?.saveId}
+        owned={save?.managerDecor ?? []}
+        wallet={wallet}
+        clubColor={session?.clubColors?.[0] ?? "#2d6cdf"}
+        onBought={() => refresh({ background: true })}
+      />
     </div>
   );
 }

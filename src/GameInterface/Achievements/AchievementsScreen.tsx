@@ -433,7 +433,7 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
               </Chip>
             ))}
           </div>
-          <DecorStylePicker decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} onChange={(patch) => setDecor((d) => ({ ...d, ...patch }))} />
+          <DecorStylePicker decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} owned={data.ownedDecor ?? []} onChange={(patch) => setDecor((d) => ({ ...d, ...patch }))} />
           <StadiumDecorPreview decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} crestUrl={session?.clubId ? squadLogoUrl(session.clubId) : undefined} />
           <div>
             <Button onClick={() => void save("stadium", decor)}>{t("achievements.profile.saveStadium")}</Button>

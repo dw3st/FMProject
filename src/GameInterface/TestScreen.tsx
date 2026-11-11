@@ -555,6 +555,8 @@ export function TestScreen() {
   const [standWorks, setStandWorks] = useState(false);
   /** Big game (4.39): flares with smoke, fireworks at night; "Celebrate" fires them now. */
   const [bigMatch, setBigMatch] = useState(false);
+  /** The bought decorations (9.1): lion mosaic and banner, with every legendary effect. */
+  const [shopDecor, setShopDecor] = useState(false);
   /** The stadium seen from above (stadium mock of 2026-11-05): "Full" = the old full-canvas band. */
   const [stadiumShape, setStadiumShape] = useState<"full" | StadiumShape>("full");
   /** An enlarged stand (tester report): east 10 000 seats bigger than west, so the other three are drawn thinner. */
@@ -564,6 +566,7 @@ export function TestScreen() {
   const pitchStadium = useMemo<PitchStadium | null>(
     () => (stadiumOn
       ? { fill: CROWD_FILLS[crowdFill], homeTeam: "A", neutral: neutralVenue, seed: "test", ...(standWorks ? { works: ["north" as const] } : {}), ...(bigMatch ? { bigMatch: true } : {}),
+          ...(shopDecor ? { decor: { banner: true, flag: false, mosaic: true, pattern: "lion" as const, bannerPattern: "chevron" as const, owned: ["lion", "bannerChevron", "doubleEnd", "sideFlags", "flares", "fireworks", "goalFlash"] } } : {}),
           // Oval = Old Trafford, with its painted surroundings when the art has them.
           ...(stadiumShape !== "full" ? { shape: stadiumShape, stadiumId: stadiumShape === "oval" ? TEST_REAL.id : "std_test" } : {}),
           ...(lightTest !== "default" ? { light: LIGHT_TESTS[lightTest] } : {}),
@@ -571,7 +574,7 @@ export function TestScreen() {
           // LED boards with a long goal message (the overflow report), Spanish ads (home club's language).
           led: { goal: "GOOOL · {name} · {minute}' · GOOOL", lang: "es" as const }, homeColors: ["#c8102e", "#ffffff"] as [string, string] }
       : null),
-    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch, stadiumShape, bigStand, lightTest],
+    [stadiumOn, crowdFill, neutralVenue, standWorks, bigMatch, shopDecor, stadiumShape, bigStand, lightTest],
   );
   useEffect(() => {
     const id = setInterval(() => setPitchPerf(pitchPerfRef.current ? { ...pitchPerfRef.current } : null), 1000);
@@ -1701,7 +1704,8 @@ export function TestScreen() {
             <Chip selected={bigStand} onClick={() => setBigStand(v => !v)} title="East stand 10 000 seats bigger than west (needs a shape)">Big stand</Chip>
             <OptionChips options={LIGHT_TEST_OPTIONS} value={lightTest} onChange={setLightTest} />
             <Chip selected={bigMatch} onClick={() => setBigMatch(v => !v)} title="Big game: flares and smoke, fireworks at night (kickoff and home goals)">Big game</Chip>
-            {bigMatch && <Chip selected={false} onClick={() => gameBus.emit('testCommand', { type: 'celebrate' })} title="Fire the flares and fireworks now">Celebrate</Chip>}
+            <Chip selected={shopDecor} onClick={() => setShopDecor(v => !v)} title="Bought decorations (9.1): lion mosaic at both ends, chevron banner, side flags, flares, kickoff fireworks, goal flash">Decor shop</Chip>
+            {(bigMatch || shopDecor) && <Chip selected={false} onClick={() => gameBus.emit('testCommand', { type: 'celebrate' })} title="Fire the flares and fireworks now">Celebrate</Chip>}
           </>
         )}
         <button onClick={() => setDebug(d => { setDebugMode(!d); return !d; })}

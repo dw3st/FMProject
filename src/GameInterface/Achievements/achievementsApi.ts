@@ -16,6 +16,8 @@ export interface AchievementsData {
   available: { frames: Frame[]; badges: Badge[]; titles: TrackId[]; decor: Record<DecorItem, boolean> };
   thresholds: { frames: Record<Exclude<Frame, "none">, number>; decor: Record<DecorItem, number>; maxBadges: number };
   decor: StadiumDecor;
+  /** Decorations bought with his money (9.1). */
+  ownedDecor?: string[];
   shop: {
     costs: { created: number; legend: number };
     bought: { created?: string; legend?: string };

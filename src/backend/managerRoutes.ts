@@ -33,7 +33,7 @@ async function decorateManagers(saveId: string, seatId: string, meta: SeatMeta, 
   const profile = items.some(mine) ? shownProfile(await saveService.getAchievements(saveId, seatId)) : null;
   // Human managers show the assets they bought.
   const assetsBySeat = new Map(await Promise.all(items.filter((m) => m.seatId).map(async (m) =>
-    [m.seatId!, (await saveService.getSeat(saveId, m.seatId!))?.managerAssets] as const)));
+    [m.seatId!, await saveService.getSeat(saveId, m.seatId!)] as const)));
   // Every human manager's bio (8.9.38): written on his profile, shown on his page to the world's members.
   const bioBySeat = new Map(await Promise.all(items.filter((m) => m.seatId && !mine(m) && liveSeats.has(m.seatId)).map(async (m) =>
     [m.seatId!, shownProfile(await saveService.getAchievements(saveId, m.seatId!)).bio ?? null] as const)));
@@ -42,7 +42,8 @@ async function decorateManagers(saveId: string, seatId: string, meta: SeatMeta, 
   return items.map((m) => ({
     ...m,
     ...(m.seatId && liveSeats.has(m.seatId) && !mine(m) ? { human: nicknames.get(m.seatId) ?? m.name } : {}),
-    ...(m.seatId && assetsBySeat.get(m.seatId) ? { assets: assetsBySeat.get(m.seatId) } : {}),
+    ...(m.seatId && assetsBySeat.get(m.seatId)?.managerAssets ? { assets: assetsBySeat.get(m.seatId)!.managerAssets } : {}),
+    ...(m.seatId && assetsBySeat.get(m.seatId)?.managerDecor?.length ? { decor: assetsBySeat.get(m.seatId)!.managerDecor } : {}),
     ...(m.seatId && bioBySeat.get(m.seatId) ? { bio: bioBySeat.get(m.seatId) } : {}),
     isPlayer: mine(m),
     clubName: m.squadId ? clubNameOf(m.squadId) : null,

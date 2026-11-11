@@ -40,6 +40,7 @@ type ManagerPage = Omit<ManagerRecord, "clubs"> & {
   profile?: { bio?: string };
   /** A human manager's belongings: their fame shows on the page (8.9.39). */
   assets?: ManagerAssets;
+  decor?: string[];
   job: { level: 1 | 2 | 3 | 4 | 5 | "vacant" | null; target: number | null; position: number | null } | null;
 };
 
@@ -141,8 +142,8 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
             {[data.nationality, data.isPlayer ? t("managerPage.you") : data.human ? null : t("managerPage.ai")].filter(Boolean).join(" · ")}
             {data.human && <span className="ml-2"><HumanBadge nickname={data.human} /></span>}
           </span>
-          {fameBand(data.assets) > 0 && (
-            <span className="text-sm text-muted-foreground">{t("fame.label")}: <span className="font-semibold text-chart-4">{t(`fame.band.${fameBand(data.assets)}`)}</span></span>
+          {fameBand(data.assets, data.decor) > 0 && (
+            <span className="text-sm text-muted-foreground">{t("fame.label")}: <span className="font-semibold text-chart-4">{t(`fame.band.${fameBand(data.assets, data.decor)}`)}</span></span>
           )}
           {legendaryCount(data.assets) > 0 && (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-star-gold">

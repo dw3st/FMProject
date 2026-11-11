@@ -1,5 +1,6 @@
 import type { DecorItem } from "@/types/achievementTypes";
 import { parseDecorStyle } from "@/Domain/achievements/decorStyle";
+import { bannerAllowed, mosaicAllowed, ownsKind } from "@/Domain/achievements/decorShop";
 import { ACHIEVEMENTS as A } from "@/Domain/achievements/achievementsConfig";
 import { SECRETS, TRACKS } from "@/Domain/achievements/catalog";
 import { earnedPoints } from "@/Domain/achievements/progress";
@@ -47,10 +48,13 @@ export function shownProfile(state: AchievementsState): ManagerProfile {
 }
 
 /** Decorations drawn at home: chosen and unlocked. */
-export function shownDecor(state: AchievementsState): StadiumDecor {
-  const ok = availableDecor(state);
+export function shownDecor(state: AchievementsState, owned: readonly string[] = []): StadiumDecor {
+  const base = availableDecor(state);
+  const ok = { ...base, banner: base.banner || ownsKind(owned, "banner"), mosaic: base.mosaic || ownsKind(owned, "mosaic") };
   const d = state.decor;
-  return { ...d, banner: d.banner && ok.banner, flag: d.flag && ok.flag, mosaic: d.mosaic && ok.mosaic };
+  const pattern = d.pattern && mosaicAllowed(d.pattern, owned) ? d.pattern : undefined;
+  const bannerPattern = d.bannerPattern && bannerAllowed(d.bannerPattern, owned) ? d.bannerPattern : undefined;
+  return { ...d, pattern, bannerPattern, banner: d.banner && ok.banner, flag: d.flag && ok.flag, mosaic: d.mosaic && ok.mosaic };
 }
 
 /** Validates a profile PUT body against what is unlocked. Throws a message on error. */
@@ -85,10 +89,12 @@ export function parseProfile(raw: unknown, state: AchievementsState): ManagerPro
   return { frame: frame as Frame, badges, title: title as TrackId | null, ...(bio ? { bio } : {}) };
 }
 
-export function parseDecor(raw: unknown, state: AchievementsState): StadiumDecor {
+/** `owned`: the decorations bought with his money (9.1): bought designs, and a bought mosaic or banner opens it. */
+export function parseDecor(raw: unknown, state: AchievementsState, owned: readonly string[] = []): StadiumDecor {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("invalidDecor");
   const r = raw as Record<string, unknown>;
-  const ok = availableDecor(state);
+  const base = availableDecor(state);
+  const ok = { ...base, banner: base.banner || ownsKind(owned, "banner"), mosaic: base.mosaic || ownsKind(owned, "mosaic") };
   const out: StadiumDecor = { banner: false, flag: false, mosaic: false };
   for (const k of ["banner", "flag", "mosaic"] as const) {
     const v = r[k] ?? false;
@@ -96,7 +102,10 @@ export function parseDecor(raw: unknown, state: AchievementsState): StadiumDecor
     if (v && !ok[k]) throw new Error("locked");
     out[k] = v;
   }
-  return { ...out, ...parseDecorStyle(r) };
+  const style = parseDecorStyle(r);
+  if (style.pattern && !mosaicAllowed(style.pattern, owned)) throw new Error("locked");
+  if (style.bannerPattern && !bannerAllowed(style.bannerPattern, owned)) throw new Error("locked");
+  return { ...out, ...style };
 }
 
 // ── Screen views ──────────────────────────────────────────────────────────────

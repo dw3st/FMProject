@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Chip } from "@/GameInterface/ui/Chip";
-import { DECOR_PALETTES, MOSAIC_PATTERNS, decorColors } from "@/Domain/achievements/decorStyle";
+import { BANNER_PATTERNS, DECOR_PALETTES, MOSAIC_PATTERNS, decorColors } from "@/Domain/achievements/decorStyle";
+import { bannerAllowed, mosaicAllowed } from "@/Domain/achievements/decorShop";
 import type { StadiumDecor } from "@/types/achievementTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
@@ -15,9 +16,11 @@ function Swatch({ colors }: { colors: [string, string] }) {
 }
 
 /** Colours of the decorations and the mosaic's pixel-art design (tester report, 8.9.10). */
-export function DecorStylePicker({ decor, clubColor, onChange }: {
+export function DecorStylePicker({ decor, clubColor, owned = [], onChange }: {
   decor: StadiumDecor;
   clubColor: string;
+  /** Decorations bought in the shop (9.1): their designs join the free ones. */
+  owned?: readonly string[];
   onChange: (patch: Partial<StadiumDecor>) => void;
 }) {
   const { t } = useTranslation();
@@ -63,9 +66,22 @@ export function DecorStylePicker({ decor, clubColor, onChange }: {
         <div className="flex flex-col gap-1.5">
           <span className={LABEL}>{t("achievements.decorStyle.pattern")}</span>
           <div className="flex flex-wrap gap-1.5">
-            {MOSAIC_PATTERNS.map((p) => (
+            {MOSAIC_PATTERNS.filter((p) => mosaicAllowed(p, owned)).map((p) => (
               <Chip key={p} selected={(decor.pattern ?? "stripes") === p} onClick={() => onChange({ pattern: p })}>
                 {t(`achievements.decorStyle.patterns.${p}`)}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground m-0">{t("achievements.decorStyle.moreInShop")}</p>
+        </div>
+      )}
+      {decor.banner && BANNER_PATTERNS.some((p) => p !== "plain" && bannerAllowed(p, owned)) && (
+        <div className="flex flex-col gap-1.5">
+          <span className={LABEL}>{t("achievements.decorStyle.bannerPattern")}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {BANNER_PATTERNS.filter((p) => bannerAllowed(p, owned)).map((p) => (
+              <Chip key={p} selected={(decor.bannerPattern ?? "plain") === p} onClick={() => onChange({ bannerPattern: p })}>
+                {t(`achievements.decorStyle.bannerPatterns.${p}`)}
               </Chip>
             ))}
           </div>

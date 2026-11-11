@@ -50,7 +50,14 @@ export interface ManagerProfile {
 /** The three decorations that are unlocked by points. */
 export type DecorItem = "banner" | "flag" | "mosaic";
 export type DecorPalette = "club" | "inverted" | "black_gold" | "blue_white" | "green_yellow" | "custom";
-export type MosaicPattern = "stripes" | "check" | "crest" | "star";
+/** Free designs, then the ones bought with the manager's money (9.1, `decorShop.ts`). */
+export type MosaicPattern =
+  | "stripes" | "check" | "crest" | "star"
+  | "heart" | "ball" | "bolt" | "diagonal" | "waves" | "diamonds"
+  | "crown" | "trophy" | "lion" | "eagle" | "flame" | "castle"
+  | "titles";
+/** Pattern of the banner along the pitch edge (9.1): plain is free, the others are bought. */
+export type BannerPattern = "plain" | "check" | "pinstripe" | "chevron";
 /** Absent palette/pattern = the club's colours in stripes (8.9.10); `colors` only with the "custom" palette. */
 export interface StadiumDecor {
   banner: boolean;
@@ -59,6 +66,13 @@ export interface StadiumDecor {
   palette?: DecorPalette;
   colors?: [string, string];
   pattern?: MosaicPattern;
+  bannerPattern?: BannerPattern;
+  /**
+   * Set by the match setup only: the decoration items the manager owns (`DecorItemId`, 9.1), so the pitch draws the
+   * legendary effects, and his league titles at the club (the stars of the "titles" mosaic).
+   */
+  owned?: string[];
+  titleStars?: number;
 }
 
 /** Counters the day step accumulates (career-wide unless noted). */

@@ -30,6 +30,8 @@ const fakeService = (squads: Squad[]) => ({
   getSquadById: async (_s: string, id: string) => squads.find((s) => s.id === id) ?? null,
   getLeagueStandings: async () => null,
   getAchievements: async () => emptyAchievements(),
+  getSeat: async () => null,
+  getManagers: async () => [],
 }) as unknown as SaveService;
 
 const meta = {

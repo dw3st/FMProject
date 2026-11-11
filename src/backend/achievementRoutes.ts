@@ -1,3 +1,4 @@
+import { ownsKind } from "@/Domain/achievements/decorShop";
 import { realLegendPool } from "@/Domain/legends/realLegends";
 import { saveService } from "@/backend/SaveService";
 import { achievementSnapshot } from "@/backend/achievementsWorld";
@@ -96,8 +97,10 @@ async function view(saveId: string, seatId: string, state: AchievementsState) {
       frames: availableFrames(state),
       badges: availableBadges(state),
       titles: availableTitles(state),
-      decor: availableDecor(state),
+      decor: (() => { const b = availableDecor(state); const o = seat?.managerDecor ?? []; return { ...b, banner: b.banner || ownsKind(o, "banner"), mosaic: b.mosaic || ownsKind(o, "mosaic") }; })(),
     },
+    /** Decorations bought with his money (9.1). */
+    ownedDecor: seat?.managerDecor ?? [],
     thresholds: { frames: ACHIEVEMENTS.FRAME_POINTS, decor: ACHIEVEMENTS.DECOR_POINTS, maxBadges: ACHIEVEMENTS.MAX_BADGES },
     decor: state.decor,
     shop: {
@@ -217,7 +220,8 @@ export const achievementRoutes = {
     return withSaveLock(saveId, async () => {
       const state = await saveService.getAchievements(saveId, auth.seatId);
       let decor;
-      try { decor = parseDecor(body, state); } catch (e) { return bad((e as Error).message); }
+      const owned = (await saveService.getSeat(saveId, auth.seatId))?.managerDecor ?? [];
+      try { decor = parseDecor(body, state, owned); } catch (e) { return bad((e as Error).message); }
       const next = { ...state, decor };
       await saveService.writeAchievements(saveId, next, auth.seatId);
       return Response.json(await view(saveId, auth.seatId, next));

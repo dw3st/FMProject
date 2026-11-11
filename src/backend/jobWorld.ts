@@ -203,6 +203,7 @@ export interface OfferRequest {
   seeking?: boolean;
   /** His belongings: their fame adds to the reputation (8.9.39). */
   assets?: ManagerAssets;
+  decor?: readonly string[];
 }
 
 /**
@@ -211,7 +212,7 @@ export interface OfferRequest {
  */
 export async function generateJobOffers(service: SaveService, saveId: string, req: OfferRequest): Promise<JobOffer[]> {
   const year = parseInt(req.date.slice(0, 4), 10);
-  const rep = managerReputation(req.managers, req.board, year, req.seatId, req.assets);
+  const rep = managerReputation(req.managers, req.board, year, req.seatId, req.assets, req.decor);
   // The seat is in the seed: two managers of the same world never draw the same offers on the same day.
   const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.seatId}:${req.date}:${req.window}`));
   const count = req.seeking
@@ -569,7 +570,7 @@ export async function reputationOf(service: SaveService, saveId: string, meta: S
   const board = meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60);
   const year = parseInt((meta.currentDate ?? "2026").slice(0, 4), 10);
   try {
-    return managerReputation(managers, board, year, meta.seatId, meta.managerAssets);
+    return managerReputation(managers, board, year, meta.seatId, meta.managerAssets, meta.managerDecor);
   } catch (e) {
     logError("jobs", `save ${saveId}: reputation failed`, e);
     return 0;

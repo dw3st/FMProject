@@ -5062,8 +5062,29 @@
         "stripes": "Stripes",
         "check": "Check",
         "crest": "Crest",
-        "star": "Star"
-      }
+        "star": "Star",
+        "heart": "Heart",
+        "ball": "Ball",
+        "bolt": "Bolt",
+        "diagonal": "Diagonals",
+        "waves": "Waves",
+        "diamonds": "Diamonds",
+        "crown": "Crown",
+        "trophy": "Trophy",
+        "lion": "Lion",
+        "eagle": "Eagle",
+        "flame": "Flame",
+        "castle": "Castle",
+        "titles": "Titles"
+      },
+      "bannerPattern": "Banner design",
+      "bannerPatterns": {
+        "plain": "Plain",
+        "check": "Check",
+        "pinstripe": "Pinstripe",
+        "chevron": "Chevrons"
+      },
+      "moreInShop": "More designs in the shop: Your manager, Belongings tab."
     },
     "tabs": {
       "list": "Achievements",
@@ -5635,13 +5656,69 @@
       "errors": {
         "noMoney": "You don't have the money for that yet.",
         "maxLevel": "Already at the top level.",
-        "generic": "The purchase failed. Try again."
+        "generic": "The purchase failed. Try again.",
+        "owned": "You already own that decoration."
       },
       "fame": "Fame",
       "fameDetail": "{{value}} in belongings · +{{points}} reputation",
       "legendary": "Legendary"
     },
-    "hub": "Your manager"
+    "hub": "Your manager",
+    "decorShop": {
+      "title": "Stadium decorations",
+      "note": "Bought with your own money. They stay with you from club to club and count for your fame. Pick the design on the Profile tab; the effects work on their own in home games.",
+      "rarity": {
+        "common": "Common",
+        "rare": "Rare",
+        "legendary": "Legendary"
+      },
+      "kind": {
+        "mosaic": "Mosaic",
+        "banner": "Banner",
+        "effect": "Effect"
+      },
+      "owned": "Bought",
+      "mosaicName": "{{name}} mosaic",
+      "items": {
+        "titles": {
+          "name": "Titles mosaic",
+          "desc": "The crest with one star for each league title you won at the club."
+        },
+        "bannerCheck": {
+          "name": "Check banner",
+          "desc": "The fans' banner in a check."
+        },
+        "bannerPinstripe": {
+          "name": "Pinstripe banner",
+          "desc": "The fans' banner with thin stripes."
+        },
+        "bannerChevron": {
+          "name": "Chevron banner",
+          "desc": "The fans' banner with chevrons."
+        },
+        "sideFlags": {
+          "name": "Flags on the sides",
+          "desc": "Two big flags on each side stand, near your fans."
+        },
+        "flares": {
+          "name": "Flares",
+          "desc": "Flares with smoke in your end at every home game, at kickoff and on goals."
+        },
+        "doubleEnd": {
+          "name": "Mosaic at both ends",
+          "desc": "The mosaic on the other end stand too."
+        },
+        "fireworks": {
+          "name": "Kickoff fireworks",
+          "desc": "Fireworks over the stadium as the teams walk out, at every home game."
+        },
+        "goalFlash": {
+          "name": "Lighting mosaic",
+          "desc": "The mosaic lights up at every home goal."
+        }
+      },
+      "mosaicDesc": "A new design for your fans' mosaic."
+    }
   },
   "nations": {
     "wales": "Wales",

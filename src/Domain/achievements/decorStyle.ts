@@ -2,10 +2,14 @@
  * Colours and mosaic designs of the stadium decorations (tester report, 8.9.10): ready palettes or two chosen colours,
  * and a pixel-art mosaic (stripes, check, the club crest, a star) where each seat is a dot. Pure.
  */
-import type { DecorPalette, MosaicPattern, StadiumDecor } from "@/types/achievementTypes";
+import type { BannerPattern, DecorPalette, MosaicPattern, StadiumDecor } from "@/types/achievementTypes";
 
 export const DECOR_PALETTES: readonly DecorPalette[] = ["club", "inverted", "black_gold", "blue_white", "green_yellow", "custom"];
-export const MOSAIC_PATTERNS: readonly MosaicPattern[] = ["stripes", "check", "crest", "star"];
+export const MOSAIC_PATTERNS: readonly MosaicPattern[] = [
+  "stripes", "check", "crest", "star", "heart", "ball", "bolt", "diagonal", "waves", "diamonds",
+  "crown", "trophy", "lion", "eagle", "flame", "castle", "titles",
+];
+export const BANNER_PATTERNS: readonly BannerPattern[] = ["plain", "check", "pinstripe", "chevron"];
 export const DECOR_LIGHT = "#f4f4f2";
 
 const FIXED: Partial<Record<DecorPalette, [string, string]>> = {
@@ -25,8 +29,12 @@ export function decorColors(decor: Pick<StadiumDecor, "palette" | "colors">, clu
 }
 
 /** Checks the style fields of a `PUT .../achievements/stadium` body (absent = the defaults). */
-export function parseDecorStyle(r: Record<string, unknown>): Pick<StadiumDecor, "palette" | "colors" | "pattern"> {
-  const out: Pick<StadiumDecor, "palette" | "colors" | "pattern"> = {};
+export function parseDecorStyle(r: Record<string, unknown>): Pick<StadiumDecor, "palette" | "colors" | "pattern" | "bannerPattern"> {
+  const out: Pick<StadiumDecor, "palette" | "colors" | "pattern" | "bannerPattern"> = {};
+  if (r.bannerPattern !== undefined) {
+    if (!BANNER_PATTERNS.includes(r.bannerPattern as BannerPattern)) throw new Error("invalidDecor");
+    out.bannerPattern = r.bannerPattern as BannerPattern;
+  }
   if (r.palette !== undefined) {
     if (!DECOR_PALETTES.includes(r.palette as DecorPalette)) throw new Error("invalidDecor");
     out.palette = r.palette as DecorPalette;

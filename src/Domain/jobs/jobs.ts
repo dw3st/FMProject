@@ -72,14 +72,14 @@ export function reputation(r: ReputationInput): number {
  * A seat's manager's reputation from the ranking file, the board and the date's year.
  * `assets`: his belongings, whose fame adds up to `FAME.MAX_REPUTATION` points (8.9.39).
  */
-export function managerReputation(managers: ManagerRecord[], board: number, year: number, seatId: string, assets?: ManagerAssets): number {
+export function managerReputation(managers: ManagerRecord[], board: number, year: number, seatId: string, assets?: ManagerAssets, decor?: readonly string[]): number {
   const me = managers.find((m) => m.seatId === seatId);
   return Math.min(100, Math.round(10 * Math.max(0, reputation({
     rankPercentile: me ? rankPercentile(managers, me.id) : 0.5,
     board,
     titlePoints: me ? recentTitlePoints(me.titles, year) : 0,
     seasons: me?.seasons ?? 0,
-  }) - unpaidDebtPenalty(me) + fameReputation(assets))) / 10);
+  }) - unpaidDebtPenalty(me) + fameReputation(assets, decor))) / 10);
 }
 
 // ── Club prestige ─────────────────────────────────────────────────────────────

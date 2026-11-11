@@ -153,6 +153,8 @@ export interface CelebrationBurst {
   sky: { x: number; y: number; w: number; h: number }[];
   color: number;
   night: boolean;
+  /** Fireworks only (the bought fireworks of a game without flares, 9.1). */
+  noFlares?: boolean;
 }
 
 export interface SmokePuff { x: number; y: number; r: number; alpha: number; color: number; /** Which smoke puff of the art pack (0..3). */ n: number }
@@ -196,7 +198,7 @@ const mix = (a: number, b: number, t: number): number => {
 export function flareSmoke(b: CelebrationBurst, now: number): { glows: FlareGlow[]; puffs: SmokePuff[] } {
   const F = ATMOSPHERE.FLARES;
   const age = now - b.at;
-  if (age < 0 || age > F.BURN_S + 1.6 + F.PUFF_LIFE_S) return { glows: [], puffs: [] };
+  if (b.noFlares || age < 0 || age > F.BURN_S + 1.6 + F.PUFF_LIFE_S) return { glows: [], puffs: [] };
   const rng = mulberry32(seedFrom(`flares:${b.seed}:${b.at.toFixed(3)}`));
   const unit = Math.max(5, Math.min(b.end.w, b.end.h) * 0.4);
   // The wind for this burst: smoke leans to one side and rises.

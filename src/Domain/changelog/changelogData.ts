@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.1",
+    date: "2026-11-11",
+    time: "11:47",
+    items: [
+      {
+        pt: "Loja de enfeites do estádio na aba Bens: 12 desenhos novos de mosaico (coração, leão, águia, castelo e outros), faixas em xadrez, risca de giz e setas, bandeiras nas laterais e sinalizadores em todo jogo em casa. Pagos com o dinheiro do técnico, ficam com ele de clube em clube e contam para a fama.",
+        en: "Stadium decorations shop in the Belongings tab: 12 new mosaic designs (heart, lion, eagle, castle and more), check, pinstripe and chevron banners, flags on the side stands and flares at every home game. Paid with the manager's money, they stay with him from club to club and count for his fame.",
+      },
+      {
+        pt: "Peças lendárias: o mosaico dos títulos (uma estrela por título de liga seu no clube), o mosaico nas duas pontas, fogos na entrada dos times e o mosaico que acende a cada gol em casa.",
+        en: "Legendary pieces: the titles mosaic (one star for each of your league titles at the club), the mosaic at both ends, fireworks as the teams walk out and the mosaic that lights up at every home goal.",
+      },
+    ],
+  },
+  {
     version: "9.0.1",
     date: "2026-11-11",
     time: "11:29",
@@ -5632,7 +5647,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Mosaicos, faixas e fogos do estádio comprados com o dinheiro do técnico, com peças lendárias", en: "Stadium mosaics, banners and fireworks bought with the manager's money, legendary pieces included" },
   { pt: "Barras de status do jogador com a torcida, no clube e no mundo", en: "Player status bars with the fans, at the club and in the world" },
   { pt: "Cursos e idiomas para o técnico, e propostas pelo país e pelo idioma", en: "Courses and languages for the manager, and job offers by country and language" },
   { pt: "Troca de jogadores com compensação em dinheiro", en: "Player swaps with a cash adjustment" },

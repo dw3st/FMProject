@@ -896,7 +896,7 @@ export async function advanceOneDay(
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       ...(options.marketFrozen ? {} : {
         humans: Object.fromEntries(daySeats.map((ds) => [ds.seatId, {
-          reputation: managerReputation(managersToday, ds.meta.unemployed ? ds.meta.unemployed.board : (ds.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets),
+          reputation: managerReputation(managersToday, ds.meta.unemployed ? ds.meta.unemployed.board : (ds.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets, ds.meta.managerDecor),
           nationality: managerNation(ds.meta.manager?.nationalityIso),
         }])),
       }),
@@ -2995,6 +2995,7 @@ export async function advanceOneDay(
           const firstMatch = firstMatchAfterMoves(rolledLeagueFixtures.get(seatState.leagueSlug) ?? [], rescheduleMoves, clubId);
           newOffers.push(...await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
+            decor: ds.meta.managerDecor,
             seatId: ds.seatId, window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
             managers: await managerTracker.list(), board: ds.rollover.boardAtSeasonEnd ?? ds.board.board,
             humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
@@ -3009,6 +3010,7 @@ export async function advanceOneDay(
           if (currentDate >= seeking.nextOfferDate) {
             newOffers.push(...await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
+            decor: ds.meta.managerDecor,
               seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.seeking.VALID_DAYS),
               managers: await managerTracker.list(), board: ds.board.board,
               humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs, seeking: true,
@@ -3026,6 +3028,7 @@ export async function advanceOneDay(
               ds.job.midSeason = monthKey;
               newOffers.push(...await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
+            decor: ds.meta.managerDecor,
                 seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
                 managers: await managerTracker.list(), board: ds.board.board,
                 humanSquadId: clubId, activeLeagues: updatedActiveLeagues, index, excludeClubs: humanClubs,
@@ -3038,6 +3041,7 @@ export async function advanceOneDay(
         const unemployed = ds.job.unemployed;
         const offers = await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
+            decor: ds.meta.managerDecor,
           seatId: ds.seatId, window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
           managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
           unemployed: { lastClubId: unemployed.lastClubId, since: unemployed.since, lastOfferDate: unemployed.lastOfferDate },
@@ -3063,7 +3067,7 @@ export async function advanceOneDay(
         if (st) {
           const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === clubId)?.mp ?? 0;
           const squad = await saveService.getSquadById(saveId, clubId);
-          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets);
+          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets, ds.meta.managerDecor);
           const day = contractDay({
             date: currentDate, contract, ...(ds.job.renewal ? { renewal: ds.job.renewal } : {}),
             notices: ds.job.notices ?? [], board: ds.board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,

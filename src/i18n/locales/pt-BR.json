@@ -5062,8 +5062,29 @@
         "stripes": "Faixas",
         "check": "Xadrez",
         "crest": "Escudo",
-        "star": "Estrela"
-      }
+        "star": "Estrela",
+        "heart": "Coração",
+        "ball": "Bola",
+        "bolt": "Raio",
+        "diagonal": "Diagonais",
+        "waves": "Ondas",
+        "diamonds": "Losangos",
+        "crown": "Coroa",
+        "trophy": "Taça",
+        "lion": "Leão",
+        "eagle": "Águia",
+        "flame": "Chama",
+        "castle": "Castelo",
+        "titles": "Títulos"
+      },
+      "bannerPattern": "Desenho da faixa",
+      "bannerPatterns": {
+        "plain": "Lisa",
+        "check": "Xadrez",
+        "pinstripe": "Risca de giz",
+        "chevron": "Setas"
+      },
+      "moreInShop": "Mais desenhos na loja: Seu técnico, aba Bens."
     },
     "tabs": {
       "list": "Conquistas",
@@ -5635,13 +5656,69 @@
       "errors": {
         "noMoney": "Você ainda não tem dinheiro para isso.",
         "maxLevel": "Já está no nível máximo.",
-        "generic": "Não foi possível comprar. Tente de novo."
+        "generic": "Não foi possível comprar. Tente de novo.",
+        "owned": "Você já tem esse enfeite."
       },
       "fame": "Fama",
       "fameDetail": "{{value}} em bens · +{{points}} de reputação",
       "legendary": "Lendário"
     },
-    "hub": "Seu técnico"
+    "hub": "Seu técnico",
+    "decorShop": {
+      "title": "Enfeites do estádio",
+      "note": "Comprados com o seu dinheiro. Ficam com você de clube em clube e contam para a sua fama. Escolha o desenho na aba Perfil; os efeitos valem sozinhos nos jogos em casa.",
+      "rarity": {
+        "common": "Comum",
+        "rare": "Raro",
+        "legendary": "Lendário"
+      },
+      "kind": {
+        "mosaic": "Mosaico",
+        "banner": "Faixa",
+        "effect": "Efeito"
+      },
+      "owned": "Comprado",
+      "mosaicName": "Mosaico {{name}}",
+      "items": {
+        "titles": {
+          "name": "Mosaico dos títulos",
+          "desc": "O escudo com uma estrela para cada título de liga seu no clube."
+        },
+        "bannerCheck": {
+          "name": "Faixa xadrez",
+          "desc": "A faixa da torcida em xadrez."
+        },
+        "bannerPinstripe": {
+          "name": "Faixa risca de giz",
+          "desc": "A faixa da torcida com riscas finas."
+        },
+        "bannerChevron": {
+          "name": "Faixa de setas",
+          "desc": "A faixa da torcida com setas."
+        },
+        "sideFlags": {
+          "name": "Bandeiras nas laterais",
+          "desc": "Duas bandeiras grandes em cada arquibancada lateral, perto da sua torcida."
+        },
+        "flares": {
+          "name": "Sinalizadores",
+          "desc": "Sinalizadores com fumaça na sua torcida em todo jogo em casa, na entrada e nos gols."
+        },
+        "doubleEnd": {
+          "name": "Mosaico nas duas pontas",
+          "desc": "O mosaico também na arquibancada do outro gol."
+        },
+        "fireworks": {
+          "name": "Fogos na entrada",
+          "desc": "Fogos sobre o estádio na entrada dos times, em todo jogo em casa."
+        },
+        "goalFlash": {
+          "name": "Mosaico que acende",
+          "desc": "O mosaico acende a cada gol do seu time em casa."
+        }
+      },
+      "mosaicDesc": "Um desenho novo para o mosaico da sua torcida."
+    }
   },
   "nations": {
     "wales": "País de Gales",

@@ -1,3 +1,4 @@
+import { decorValue } from "@/Domain/achievements/decorShop";
 import { TRACKS } from "@/Domain/achievements/catalog";
 
 /**
@@ -72,9 +73,9 @@ export const FAME = {
   BANDS: [0.5, 2, 3.5, 4.5],
 } as const;
 
-/** What his belongings are worth: every level owned at its price. */
-export function assetsValue(assets: ManagerAssets | undefined): number {
-  let total = 0;
+/** What his belongings are worth: every level owned at its price, plus the stadium decorations he bought (9.1). */
+export function assetsValue(assets: ManagerAssets | undefined, decor?: readonly string[]): number {
+  let total = decorValue(decor);
   for (const kind of ASSET_KINDS) {
     const level = assets?.[kind] ?? 0;
     for (let i = 0; i < level; i++) total += ASSET_PRICES[kind][i] ?? 0;
@@ -83,20 +84,20 @@ export function assetsValue(assets: ManagerAssets | undefined): number {
 }
 
 /** Reputation points from the belongings, 0..`MAX_REPUTATION`. */
-export function fameReputation(assets: ManagerAssets | undefined): number {
-  const value = assetsValue(assets);
+export function fameReputation(assets: ManagerAssets | undefined, decor?: readonly string[]): number {
+  const value = assetsValue(assets, decor);
   return value <= 0 ? 0 : FAME.MAX_REPUTATION * (1 - Math.exp(-value / FAME.SCALE));
 }
 
 /** 0..1 share of the full fame. */
-export function fameShare(assets: ManagerAssets | undefined): number {
-  return fameReputation(assets) / FAME.MAX_REPUTATION;
+export function fameShare(assets: ManagerAssets | undefined, decor?: readonly string[]): number {
+  return fameReputation(assets, decor) / FAME.MAX_REPUTATION;
 }
 
 export type FameBand = 0 | 1 | 2 | 3 | 4;
 
-export function fameBand(assets: ManagerAssets | undefined): FameBand {
-  const r = fameReputation(assets);
+export function fameBand(assets: ManagerAssets | undefined, decor?: readonly string[]): FameBand {
+  const r = fameReputation(assets, decor);
   return FAME.BANDS.filter((b) => r >= b).length as FameBand;
 }
 

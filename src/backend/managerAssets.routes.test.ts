@@ -3,6 +3,7 @@ import { devAutoLogin } from "@/backend/auth/AuthService";
 import { apiRoutes } from "@/backend/routes";
 import { saveService } from "@/backend/SaveService";
 import { ownSolo } from "@/backend/testing/seatFixtures";
+import { DECOR_ITEMS } from "@/Domain/achievements/decorShop";
 import { ASSET_PRICES } from "@/Domain/managers/assets";
 
 /** The manager's assets: his own money, level by level, and the club's balance never moves. */
@@ -49,5 +50,25 @@ describe("manager assets route", () => {
     expect((await post(session.token, { kind: "car" })).data.error).toBe("maxLevel");
     expect((await post(session.token, { kind: "watch" })).data.error).toBe("noMoney");
     expect((await saveService.getSquadById(saveId, "33"))!.finances!.budget).toBe(budget);
+
+    // Stadium decorations (9.1): bought once, from the same wallet.
+    const postDecor = async (body: unknown) => {
+      const handler = apiRoutes["/api/saves/:saveId/manager-decor" as keyof typeof apiRoutes] as unknown as (r: Request) => Promise<Response>;
+      const res = await handler(Object.assign(
+        new Request(`http://localhost/api/saves/${saveId}/manager-decor`, {
+          method: "POST", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" }, body: JSON.stringify(body),
+        }),
+        { params: { saveId } },
+      ));
+      return { status: res.status, data: await res.json() as Record<string, any> };
+    };
+    expect((await postDecor({ item: "dragon" })).status).toBe(400);
+    expect((await postDecor({ item: "heart" })).data.error).toBe("noMoney");
+    await saveService.updateSeat(saveId, seatId, { managerEarnings: total + DECOR_ITEMS.heart.price });
+    expect((await postDecor({ item: "heart" })).status).toBe(200);
+    expect((await postDecor({ item: "heart" })).data.error).toBe("owned");
+    const after = (await saveService.getSeat(saveId, seatId))!;
+    expect(after.managerDecor).toEqual(["heart"]);
+    expect(after.managerSpent).toBe(total + DECOR_ITEMS.heart.price);
   }, 60_000);
 });

@@ -55,8 +55,18 @@ export function homeLight(home: Squad, neutral: boolean): StadiumLight {
 
 /** The decorations to draw at home (only those chosen and unlocked; absent when none). */
 async function homeDecor(service: SaveService, saveId: string, seatId: string): Promise<{ decor?: StadiumDecor }> {
-  const d = shownDecor(await service.getAchievements(saveId, seatId));
-  return d.banner || d.flag || d.mosaic ? { decor: d } : {};
+  const seat = await service.getSeat(saveId, seatId);
+  const owned = seat?.managerDecor ?? [];
+  const d = shownDecor(await service.getAchievements(saveId, seatId), owned);
+  const effects = owned.some((id) => ["flares", "fireworks", "sideFlags", "goalFlash", "doubleEnd"].includes(id));
+  if (!d.banner && !d.flag && !d.mosaic && !effects) return {};
+  // The "titles" mosaic: one star per league title the manager won at this club (9.1).
+  let titleStars = 0;
+  if (d.pattern === "titles" && seat?.clubId) {
+    const me = (await service.getManagers(saveId)).find((m) => m.seatId === seatId);
+    titleStars = (me?.titles ?? []).filter((t) => t.kind === "league" && t.squadId === seat.clubId).length;
+  }
+  return { decor: { ...d, owned, ...(titleStars ? { titleStars } : {}) } };
 }
 
 export interface MatchManagers {
