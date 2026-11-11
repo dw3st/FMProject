@@ -139,7 +139,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                 rowKey={(o) => o.id}
                 isHighlighted={(o) => o.id === openOfferId}
                 columns={[
-                  { key: "p", header: t("negotiation.overview.player"), cell: (o) => <PlayerNameLink player={{ id: o.playerId, name: o.playerName }} /> },
+                  { key: "p", header: t("negotiation.overview.player"), sortValue: (o) => o.playerName, cell: (o) => <PlayerNameLink player={{ id: o.playerId, name: o.playerName }} /> },
                   { key: "k", header: t("seatOffers.kind"), cell: (o) => t(o.kind === "transfer" ? "seatOffers.transfer" : "seatOffers.loan") },
                   { key: "c", header: t("negotiation.overview.club"), cell: (o) => `${otherClub(o)}${o.otherManager ? ` · ${o.otherManager}` : ""}` },
                   { key: "t", header: t("negotiation.overview.offer"), cell: terms, className: "tabular-nums" },
@@ -149,7 +149,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                       ? <span className="text-primary font-semibold">{t("seatOffers.yourTurn")}</span>
                       : t("seatOffers.theirTurn", { manager: o.otherManager || otherClub(o) })),
                   },
-                  { key: "e", header: t("seatOffers.validUntil"), cell: (o) => fmtDate(o.expires), className: "tabular-nums" },
+                  { key: "e", header: t("seatOffers.validUntil"), sortValue: (o) => o.expires, cell: (o) => fmtDate(o.expires), className: "tabular-nums" },
                   {
                     key: "a", header: "",
                     cell: (o) => (
@@ -180,10 +180,10 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={rivals}
               rowKey={(r) => `${r.playerId}:${r.clubId}`}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (r) => <PlayerNameLink player={{ id: r.playerId, name: r.playerName }} /> },
-                { key: "c", header: t("negotiation.rival.club"), cell: (r) => r.clubName },
-                { key: "f", header: t("negotiation.overview.offer"), cell: (r) => formatFee(r.fee), className: "tabular-nums" },
-                { key: "d", header: t("negotiation.rival.deadline"), cell: (r) => fmtDate(r.deadline), className: "tabular-nums" },
+                { key: "p", header: t("negotiation.overview.player"), sortValue: (r) => r.playerName, cell: (r) => <PlayerNameLink player={{ id: r.playerId, name: r.playerName }} /> },
+                { key: "c", header: t("negotiation.rival.club"), sortValue: (r) => r.clubName, cell: (r) => r.clubName },
+                { key: "f", header: t("negotiation.overview.offer"), sortValue: (r) => r.fee, cell: (r) => formatFee(r.fee), className: "tabular-nums" },
+                { key: "d", header: t("negotiation.rival.deadline"), sortValue: (r) => r.deadline, cell: (r) => fmtDate(r.deadline), className: "tabular-nums" },
               ]}
             />
           ), rivals.length === 0);
@@ -211,11 +211,11 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                     );
                   },
                 },
-                { key: "c", header: t("negotiation.overview.from"), cell: (p) => p.fromClubName },
-                { key: "w", header: t("negotiation.preContract.wage"), cell: (p) => formatFee(p.wage), className: "tabular-nums" },
-                { key: "y", header: t("negotiation.preContract.years"), cell: (p) => p.years, className: "tabular-nums" },
-                { key: "b", header: t("contracts.bonus.label"), cell: (p) => (p.bonus ? formatFee(p.bonus) : "—"), className: "tabular-nums" },
-                { key: "d", header: t("negotiation.preContract.signedColumn"), cell: (p) => fmtDate(p.date), className: "tabular-nums" },
+                { key: "c", header: t("negotiation.overview.from"), sortValue: (p) => p.fromClubName, cell: (p) => p.fromClubName },
+                { key: "w", header: t("negotiation.preContract.wage"), sortValue: (p) => p.wage, cell: (p) => formatFee(p.wage), className: "tabular-nums" },
+                { key: "y", header: t("negotiation.preContract.years"), sortValue: (p) => p.years, cell: (p) => p.years, className: "tabular-nums" },
+                { key: "b", header: t("contracts.bonus.label"), sortValue: (p) => p.bonus, cell: (p) => (p.bonus ? formatFee(p.bonus) : "—"), className: "tabular-nums" },
+                { key: "d", header: t("negotiation.preContract.signedColumn"), sortValue: (p) => p.date, cell: (p) => fmtDate(p.date), className: "tabular-nums" },
               ]}
             />
           ), pcs.length === 0, pcs.length > 0 ? t("negotiation.preContract.arriveNote") : null);
@@ -226,13 +226,13 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={out}
               rowKey={(l) => l.playerId}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
-                { key: "c", header: t("negotiation.overview.club"), cell: (l) => l.toClubName },
+                { key: "p", header: t("negotiation.overview.player"), sortValue: (l) => l.playerName, cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
+                { key: "c", header: t("negotiation.overview.club"), sortValue: (l) => l.toClubName, cell: (l) => l.toClubName },
                 { key: "s", header: t("negotiation.overview.theyPay"), cell: (l) => share(l), className: "tabular-nums" },
-                { key: "u", header: t("negotiation.returns"), cell: (l) => fmtDate(l.until), className: "tabular-nums" },
-                { key: "g", header: t("negotiation.report.games"), cell: (l) => l.report?.apps ?? "—", className: "tabular-nums" },
+                { key: "u", header: t("negotiation.returns"), sortValue: (l) => l.until, cell: (l) => fmtDate(l.until), className: "tabular-nums" },
+                { key: "g", header: t("negotiation.report.games"), sortValue: (l) => l.report?.apps, cell: (l) => l.report?.apps ?? "—", className: "tabular-nums" },
                 { key: "ga", header: t("negotiation.report.goalsAssists"), cell: (l) => (l.report ? `${l.report.goals} / ${l.report.assists}` : "—"), className: "tabular-nums" },
-                { key: "r", header: t("negotiation.report.rating"), cell: (l) => l.report?.avgRating?.toFixed(2) ?? "—", className: "tabular-nums" },
+                { key: "r", header: t("negotiation.report.rating"), sortValue: (l) => l.report?.avgRating, cell: (l) => l.report?.avgRating?.toFixed(2) ?? "—", className: "tabular-nums" },
                 { key: "cd", header: t("negotiation.report.cards"), cell: (l) => (l.report ? `${l.report.yellowCards} / ${l.report.redCards}` : "—"), className: "tabular-nums" },
                 { key: "i", header: t("negotiation.report.injuries"), cell: (l) => (l.report ? `${l.report.injuries} (${l.report.daysInjured})` : "—"), className: "tabular-nums" },
                 {
@@ -261,10 +261,10 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={inn}
               rowKey={(l) => l.playerId}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
-                { key: "c", header: t("negotiation.overview.from"), cell: (l) => l.fromClubName },
+                { key: "p", header: t("negotiation.overview.player"), sortValue: (l) => l.playerName, cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
+                { key: "c", header: t("negotiation.overview.from"), sortValue: (l) => l.fromClubName, cell: (l) => l.fromClubName },
                 { key: "s", header: t("negotiation.overview.youPay"), cell: (l) => share(l), className: "tabular-nums" },
-                { key: "u", header: t("negotiation.returns"), cell: (l) => fmtDate(l.until), className: "tabular-nums" },
+                { key: "u", header: t("negotiation.returns"), sortValue: (l) => l.until, cell: (l) => fmtDate(l.until), className: "tabular-nums" },
               ]}
             />
           ), inn.length === 0);
@@ -275,10 +275,10 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               rows={data.sellOnHeld}
               rowKey={(h) => h.playerId}
               columns={[
-                { key: "p", header: t("negotiation.overview.player"), cell: (h) => <PlayerNameLink player={{ id: h.playerId, name: h.playerName }} /> },
-                { key: "c", header: t("negotiation.overview.soldTo"), cell: (h) => h.toClubName },
-                { key: "pct", header: t("negotiation.sellOn"), cell: (h) => `${h.pct}%`, className: "tabular-nums" },
-                { key: "d", header: t("negotiation.overview.date"), cell: (h) => fmtDate(h.date), className: "tabular-nums" },
+                { key: "p", header: t("negotiation.overview.player"), sortValue: (h) => h.playerName, cell: (h) => <PlayerNameLink player={{ id: h.playerId, name: h.playerName }} /> },
+                { key: "c", header: t("negotiation.overview.soldTo"), sortValue: (h) => h.toClubName, cell: (h) => h.toClubName },
+                { key: "pct", header: t("negotiation.sellOn"), sortValue: (h) => h.pct, cell: (h) => `${h.pct}%`, className: "tabular-nums" },
+                { key: "d", header: t("negotiation.overview.date"), sortValue: (h) => h.date, cell: (h) => fmtDate(h.date), className: "tabular-nums" },
               ]}
             />
           ), data.sellOnHeld.length === 0);
@@ -288,13 +288,13 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
             rows={data.bids}
             rowKey={(b) => b.id}
             columns={[
-              { key: "p", header: t("negotiation.overview.player"), cell: (b) => <PlayerNameLink player={{ id: b.playerId, name: b.playerName }} /> },
-              { key: "c", header: t("negotiation.overview.club"), cell: (b) => b.clubName },
+              { key: "p", header: t("negotiation.overview.player"), sortValue: (b) => b.playerName, cell: (b) => <PlayerNameLink player={{ id: b.playerId, name: b.playerName }} /> },
+              { key: "c", header: t("negotiation.overview.club"), sortValue: (b) => b.clubName, cell: (b) => b.clubName },
               {
                 key: "o", header: t("negotiation.overview.offer"), className: "tabular-nums",
                 cell: (b) => (b.kind === "loan" ? t("negotiation.overview.loanOffer", { share: Math.round((b.wageShare ?? 1) * 100) }) : formatFee(b.fee)),
               },
-              { key: "e", header: t("negotiation.bid.validUntil"), cell: (b) => fmtDate(b.expires), className: "tabular-nums" },
+              { key: "e", header: t("negotiation.bid.validUntil"), sortValue: (b) => b.expires, cell: (b) => fmtDate(b.expires), className: "tabular-nums" },
             ]}
           />
         ), data.bids.length === 0);

@@ -1,3 +1,4 @@
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -37,24 +38,28 @@ export function StandingsTable({ view, mySeatId }: { view: StandingsView; mySeat
     return () => { cancelled = true; };
   }, []);
 
+  const { sorted, head } = useTableSort(view.entries, {
+    rank: (e) => -rankOf(view.entries, e.seatId), manager: (e) => e.nickname ?? e.managerName, club: (e) => e.clubName,
+    current: (e) => e.partial?.total ?? null, closed: (e) => e.closedTotal, total: (e) => e.total,
+  });
   if (view.entries.length === 0) return <p className="text-sm text-muted-foreground m-0">{t("world.standings.empty")}</p>;
 
   return (
     <StatsTable
       head={
         <>
-          <StatsHead align="center">#</StatsHead>
+          <StatsHead align="center" sort={head("rank")}>#</StatsHead>
           <StatsHead><span className="sr-only">{t("world.members.manager")}</span></StatsHead>
-          <StatsHead>{t("world.members.manager")}</StatsHead>
+          <StatsHead sort={head("manager")}>{t("world.members.manager")}</StatsHead>
           <StatsHead><span className="sr-only">{t("world.members.club")}</span></StatsHead>
-          <StatsHead>{t("world.members.club")}</StatsHead>
-          <StatsHead align="center">{t("world.standings.current")}</StatsHead>
-          <StatsHead align="center">{t("world.standings.closed")}</StatsHead>
-          <StatsHead align="center">{t("world.standings.total")}</StatsHead>
+          <StatsHead sort={head("club")}>{t("world.members.club")}</StatsHead>
+          <StatsHead align="center" sort={head("current")}>{t("world.standings.current")}</StatsHead>
+          <StatsHead align="center" sort={head("closed")}>{t("world.standings.closed")}</StatsHead>
+          <StatsHead align="center" sort={head("total")}>{t("world.standings.total")}</StatsHead>
         </>
       }
     >
-      {view.entries.map((e) => {
+      {sorted.map((e) => {
         const me = e.seatId === mySeatId;
         const expanded = open === e.seatId;
         return (

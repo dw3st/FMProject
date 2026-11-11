@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.35",
+    date: "2026-11-11",
+    time: "09:32",
+    items: [
+      {
+        pt: "Clique no cabeçalho de uma coluna para ordenar a tabela; clique de novo para inverter. Vale nas estatísticas, aposentados, árbitros, cargos, seleções, histórico do clube, carreira do jogador, base, inscritos, negociações, finanças da liga e nas tabelas da liga de amigos.",
+        en: "Click a column header to sort the table; click again to flip it. Works in stats, retired players, referees, job posts, national teams, club history, player career, academy, registration, negotiations, league finances and the friends' league tables.",
+      },
+    ],
+  },
+  {
     version: "8.9.34",
     date: "2026-11-11",
     time: "09:06",

@@ -1,3 +1,6 @@
+import { useTableSort, type HeadSort } from "@/GameInterface/ui/tableSort";
+import { SortButton } from "@/GameInterface/ui/SortButton";
+import { positionIndex } from "@/Domain/positions/positionSort";
 import { PlayerNameLink } from "@/GameInterface/Inbox/PlayerNameText";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -54,6 +57,9 @@ function Counter({ label, value, warn }: { label: string; value: string; warn?: 
  * Registration tab of the squad (`.claude/rules/game/registration.md` → Telas): one competition at a time, deadline,
  * rule, counters and every player with Add/Remove while the deadline is open; "Automatic" rebuilds the list.
  */
+const NO_ROWS: RegistrationRowView[] = [];
+const ariaSort = (s: HeadSort) => (s.active ? (s.dir === "asc" ? "ascending" : "descending") : "none");
+
 export function RegistrationView() {
   const { t, i18n } = useTranslation();
   const { session, currentDate } = useGameSave();
@@ -87,6 +93,11 @@ export function RegistrationView() {
 
   const comp = useMemo(() => comps?.find((c) => c.slug === active) ?? null, [comps, active]);
   const nameOf = (slug: string) => competitionName(slug, leagues, i18n.language);
+  const { sorted: sortedRows, head } = useTableSort(comp?.rows ?? NO_ROWS, {
+    pos: (r) => positionIndex(r.role), player: (r) => r.name, age: (r) => r.age,
+    nation: (r) => (r.nationality ? nationalityDisplayName(r.nationality, i18n.language, t) : null),
+    status: (r) => (r.registered ? 0 : 1), rating: (r) => r.overall,
+  });
 
   const replace = (view: RegistrationCompView) => setComps((cs) => (cs ?? []).map((c) => (c.slug === view.slug ? view : c)));
 
@@ -197,17 +208,17 @@ export function RegistrationView() {
           <table className="w-full text-left border-collapse">
             <thead className={TABLE_STYLE.head}>
               <tr>
-                <th className={TABLE_CELL.head}>{t("registration.cols.pos")}</th>
-                <th className={TABLE_CELL.head}>{t("registration.cols.player")}</th>
-                <th className={`${TABLE_CELL.head} text-center`}>{t("registration.cols.age")}</th>
-                <th className={TABLE_CELL.head}>{t("registration.cols.nation")}</th>
-                <th className={TABLE_CELL.head}>{t("registration.cols.status")}</th>
-                <th className={`${TABLE_CELL.head} text-center`}>{t("registration.cols.rating")}</th>
+                <th className={TABLE_CELL.head} aria-sort={ariaSort(head("pos")!)}><SortButton sort={head("pos")!}>{t("registration.cols.pos")}</SortButton></th>
+                <th className={TABLE_CELL.head} aria-sort={ariaSort(head("player")!)}><SortButton sort={head("player")!}>{t("registration.cols.player")}</SortButton></th>
+                <th className={`${TABLE_CELL.head} text-center`} aria-sort={ariaSort(head("age")!)}><SortButton sort={head("age")!} align="center">{t("registration.cols.age")}</SortButton></th>
+                <th className={TABLE_CELL.head} aria-sort={ariaSort(head("nation")!)}><SortButton sort={head("nation")!}>{t("registration.cols.nation")}</SortButton></th>
+                <th className={TABLE_CELL.head} aria-sort={ariaSort(head("status")!)}><SortButton sort={head("status")!}>{t("registration.cols.status")}</SortButton></th>
+                <th className={`${TABLE_CELL.head} text-center`} aria-sort={ariaSort(head("rating")!)}><SortButton sort={head("rating")!} align="center">{t("registration.cols.rating")}</SortButton></th>
                 <th className={`${TABLE_CELL.head} text-right`}>{t("registration.cols.action")}</th>
               </tr>
             </thead>
             <tbody className={TABLE_STYLE.body}>
-              {comp.rows.map((r) => {
+              {sortedRows.map((r) => {
                 const flag = nationalityFlagCode(r.nationality);
                 const nation = r.nationality ? nationalityDisplayName(r.nationality, i18n.language, t) : "—";
                 const canToggle = open && !busy && !r.free && (r.registered || r.canAdd);

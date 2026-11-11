@@ -12,6 +12,11 @@ const DETAILED_ORDER = [
 ] as const;
 const DETAILED_INDEX = new Map<string, number>(DETAILED_ORDER.map((r, i) => [r, i]));
 
+/** Squad-list index of a detailed position (GK first, forwards last), for sorting a table by position. */
+export function positionIndex(role: string): number {
+  return DETAILED_INDEX.get(role) ?? 99;
+}
+
 export interface PositionSortable {
   /** Stored position (`positions[0]`): a main role ("Defender") or a detailed code ("CB"). */
   pos: string;

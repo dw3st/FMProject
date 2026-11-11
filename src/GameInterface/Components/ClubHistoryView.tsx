@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
 import type { LeagueData } from "@/types/playerTypes";
 import type {
@@ -43,6 +44,13 @@ export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: strin
       .catch(() => setLeagues([]));
   }, []);
 
+  const seasonRows = useMemo(() => [...(data?.seasons ?? [])].reverse(), [data]);
+  const { sorted: seasonsNewestFirst, head } = useTableSort(seasonRows, {
+    season: (s) => s.season, league: (s) => competitionName(s.league, leagues, i18n.language),
+    position: (s) => (s.position === null || s.position === undefined ? null : -s.position), played: (s) => s.played,
+    won: (s) => s.won, drawn: (s) => s.drawn, lost: (s) => s.lost, goals: (s) => s.gf - s.ga, points: (s) => s.points,
+    topScorer: (s) => s.topScorer?.goals ?? null, titles: (s) => s.titles.length || null,
+  });
   if (failed) return <p className="text-sm text-muted-foreground m-0">{t("clubHistory.loadFailed")}</p>;
   if (!data) return <p className="text-sm text-muted-foreground m-0">{t("clubHistory.loading")}</p>;
 
@@ -51,7 +59,6 @@ export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: strin
     const [kind, slug = ""] = title.split(":");
     return kind === "promotion" ? t("clubHistory.promotion", { league: name(slug) }) : name(slug);
   };
-  const seasonsNewestFirst = [...data.seasons].reverse();
   const records = RECORD_ORDER
     .filter((k) => data.records[k])
     .map((k) => ({ kind: k, value: data.records[k] }) as ClubRecordBroken);
@@ -118,17 +125,17 @@ export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: strin
           <StatsTable
             head={
               <>
-                <StatsHead>{t("clubHistory.col.season")}</StatsHead>
-                <StatsHead>{t("clubHistory.col.league")}</StatsHead>
-                <StatsHead align="center">{t("clubHistory.col.position")}</StatsHead>
-                <StatsHead align="center">{t("clubHistory.col.played")}</StatsHead>
-                <StatsHead align="center">{t("clubHistory.col.won")}</StatsHead>
-                <StatsHead align="center">{t("clubHistory.col.drawn")}</StatsHead>
-                <StatsHead align="center">{t("clubHistory.col.lost")}</StatsHead>
-                <StatsHead align="center">{t("clubHistory.col.goals")}</StatsHead>
-                <StatsHead align="center">{t("clubHistory.col.points")}</StatsHead>
-                <StatsHead>{t("clubHistory.col.topScorer")}</StatsHead>
-                <StatsHead>{t("clubHistory.col.titles")}</StatsHead>
+                <StatsHead sort={head("season")}>{t("clubHistory.col.season")}</StatsHead>
+                <StatsHead sort={head("league")}>{t("clubHistory.col.league")}</StatsHead>
+                <StatsHead align="center" sort={head("position")}>{t("clubHistory.col.position")}</StatsHead>
+                <StatsHead align="center" sort={head("played")}>{t("clubHistory.col.played")}</StatsHead>
+                <StatsHead align="center" sort={head("won")}>{t("clubHistory.col.won")}</StatsHead>
+                <StatsHead align="center" sort={head("drawn")}>{t("clubHistory.col.drawn")}</StatsHead>
+                <StatsHead align="center" sort={head("lost")}>{t("clubHistory.col.lost")}</StatsHead>
+                <StatsHead align="center" sort={head("goals")}>{t("clubHistory.col.goals")}</StatsHead>
+                <StatsHead align="center" sort={head("points")}>{t("clubHistory.col.points")}</StatsHead>
+                <StatsHead sort={head("topScorer")}>{t("clubHistory.col.topScorer")}</StatsHead>
+                <StatsHead sort={head("titles")}>{t("clubHistory.col.titles")}</StatsHead>
               </>
             }
           >
@@ -200,6 +207,10 @@ function TopTable({ title, rows, by, squadId, leagueSlug }: {
   title: string; rows: ClubTopPlayer[]; by: "goals" | "apps"; squadId: string; leagueSlug: string;
 }) {
   const { t } = useTranslation();
+  const ranked = useMemo(() => rows.map((p, i) => ({ ...p, rank: i + 1 })), [rows]);
+  const { sorted, head } = useTableSort(ranked, {
+    rank: (p) => -p.rank, player: (p) => p.name, goals: (p) => p.goals, apps: (p) => p.apps, assists: (p) => p.assists,
+  });
   return (
     <Panel title={title}>
       {rows.length === 0 ? (
@@ -208,17 +219,17 @@ function TopTable({ title, rows, by, squadId, leagueSlug }: {
         <StatsTable
           head={
             <>
-              <StatsHead align="center">#</StatsHead>
-              <StatsHead>{t("clubHistory.col.player")}</StatsHead>
-              <StatsHead align="center">{t("clubHistory.col.goals")}</StatsHead>
-              <StatsHead align="center">{t("clubHistory.col.apps")}</StatsHead>
-              <StatsHead align="center">{t("clubHistory.col.assists")}</StatsHead>
+              <StatsHead align="center" sort={head("rank")}>#</StatsHead>
+              <StatsHead sort={head("player")}>{t("clubHistory.col.player")}</StatsHead>
+              <StatsHead align="center" sort={head("goals")}>{t("clubHistory.col.goals")}</StatsHead>
+              <StatsHead align="center" sort={head("apps")}>{t("clubHistory.col.apps")}</StatsHead>
+              <StatsHead align="center" sort={head("assists")}>{t("clubHistory.col.assists")}</StatsHead>
             </>
           }
         >
-          {rows.map((p, i) => (
+          {sorted.map((p) => (
             <StatsRow key={p.playerId} highlight={p.current}>
-              <RankCell rank={i + 1} />
+              <RankCell rank={p.rank} />
               <NameCell
                 highlight={p.current}
                 href={p.current ? `/player/${encodeURIComponent(leagueSlug)}/${encodeURIComponent(squadId)}/${encodeURIComponent(p.playerId)}` : undefined}

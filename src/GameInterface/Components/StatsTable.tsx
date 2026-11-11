@@ -2,6 +2,10 @@ import { followLinkOnly } from "@/GameInterface/router/navigation";
 import type { KeyboardEvent, ReactNode } from "react";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
+import { SortButton } from "@/GameInterface/ui/SortButton";
+import type { HeadSort } from "@/GameInterface/ui/tableSort";
+
+export { SortButton };
 
 /**
  * Shared table pieces for every Stats tab (Rankings, My team, Retired, Managers). They use the
@@ -26,9 +30,22 @@ export function StatsTable({ head, children, className = "" }: { head: ReactNode
   );
 }
 
-export function StatsHead({ children, align = "left", className = "", title }: { children?: ReactNode; align?: Align; className?: string; title?: string }) {
-  return <th title={title} className={`${TABLE_CELL.head} font-bold ${alignClass(align)} ${className}`}>{children}</th>;
+/** A header cell; with `sort` (from `useTableSort`'s `head(key)`) it is a button that sorts the table by that column. */
+export function StatsHead({ children, align = "left", className = "", title, sort }: {
+  children?: ReactNode; align?: Align; className?: string; title?: string; sort?: HeadSort;
+}) {
+  if (!sort) return <th title={title} className={`${TABLE_CELL.head} font-bold ${alignClass(align)} ${className}`}>{children}</th>;
+  return (
+    <th
+      title={title}
+      aria-sort={sort.active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
+      className={`${TABLE_CELL.head} font-bold ${alignClass(align)} ${className}`}
+    >
+      <SortButton sort={sort} align={align}>{children}</SortButton>
+    </th>
+  );
 }
+
 
 export function StatsRow({
   children, highlight, onActivate, expanded,

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ChampionsTab } from "@/GameInterface/Champions/ChampionsTab";
@@ -61,23 +62,27 @@ function RankingTable({
   stars: Stars;
 }) {
   const { t } = useTranslation();
+  const ranked = useMemo(() => rows.map((r, i) => ({ ...r, rank: i + 1 })), [rows]);
+  const { sorted, head } = useTableSort(ranked, {
+    rank: (r) => -r.rank, name: (r) => r.name, club: (r) => r.clubName, value: (r) => r.value,
+  });
   return (
     <section className="min-w-0">
       <h2 className="font-display font-black uppercase text-xl leading-none m-0 mb-3">{title}</h2>
       <StatsTable
         head={<>
-          <StatsHead align="center">#</StatsHead>
+          <StatsHead align="center" sort={head("rank")}>#</StatsHead>
           <StatsHead />
-          <StatsHead>{t("statsScreen.player")}</StatsHead>
-          <StatsHead>{t("statsScreen.club")}</StatsHead>
-          <StatsHead align="center">{valueLabel}</StatsHead>
+          <StatsHead sort={head("name")}>{t("statsScreen.player")}</StatsHead>
+          <StatsHead sort={head("club")}>{t("statsScreen.club")}</StatsHead>
+          <StatsHead align="center" sort={head("value")}>{valueLabel}</StatsHead>
         </>}
       >
-        {rows.map((r, i) => {
+        {sorted.map((r) => {
           const kind = stars.get(r.playerId);
           return (
             <StatsRow key={r.playerId} highlight={r.squadId === myClubId}>
-              <RankCell rank={i + 1} />
+              <RankCell rank={r.rank} />
               <CrestCell squadId={r.squadId} />
               <NameCell href={playerHref(leagueSlug, r.squadId, r.playerId)}>
                 <span className="truncate">{r.name}</span>
@@ -93,42 +98,23 @@ function RankingTable({
   );
 }
 
-type TeamSort = "name" | "games" | "goals" | "assists" | "rating";
-
 function TeamTable({ stars }: { stars: Stars }) {
   const { t } = useTranslation();
   const { squad, session } = useGameSave();
-  const [sort, setSort] = useState<TeamSort>("games");
-  const [dir, setDir] = useState<1 | -1>(-1);
-
-  const rows = useMemo(() => {
-    const list = (squad?.players ?? []).map((p) => ({
-      id: p.id,
-      name: p.name,
-      games: p.seasonLog?.appearances ?? 0,
-      goals: p.seasonLog?.goals ?? 0,
-      assists: p.seasonLog?.assists ?? 0,
-      rating: p.seasonLog?.avgRating ?? 0,
-    }));
-    return list.sort((a, b) => {
-      const v = sort === "name" ? a.name.localeCompare(b.name) : a[sort] - b[sort];
-      return (v || a.name.localeCompare(b.name)) * dir;
-    });
-  }, [squad, sort, dir]);
-
-  const header = (key: TeamSort, label: string, align: "left" | "center" = "center") => (
-    <StatsHead align={align}>
-      <button
-        type="button"
-        onClick={() => {
-          if (sort === key) setDir((d) => (d === 1 ? -1 : 1));
-          else { setSort(key); setDir(key === "name" ? 1 : -1); }
-        }}
-        className="bg-transparent border-0 p-0 [font:inherit] tracking-[inherit] uppercase text-inherit cursor-pointer hover:text-foreground"
-      >
-        {label}{sort === key ? (dir === 1 ? " ↑" : " ↓") : ""}
-      </button>
-    </StatsHead>
+  const list = useMemo(() => (squad?.players ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    games: p.seasonLog?.appearances ?? 0,
+    goals: p.seasonLog?.goals ?? 0,
+    assists: p.seasonLog?.assists ?? 0,
+    rating: p.seasonLog?.appearances ? p.seasonLog.avgRating ?? 0 : null,
+  })), [squad]);
+  const { sorted: rows, head, sort: sortState } = useTableSort(list, {
+    name: (r) => r.name, games: (r) => r.games, goals: (r) => r.goals, assists: (r) => r.assists, rating: (r) => r.rating,
+  }, { key: "games", dir: "desc" });
+  const sort = sortState?.key;
+  const header = (key: string, label: string, align: "left" | "center" = "center") => (
+    <StatsHead align={align} sort={head(key)}>{label}</StatsHead>
   );
 
   const clubId = squad?.id ?? session?.clubId ?? "";
@@ -156,7 +142,7 @@ function TeamTable({ stars }: { stars: Stars }) {
             <NumberCell strong={sort === "games"}>{r.games}</NumberCell>
             <NumberCell strong={sort === "goals"}>{r.goals}</NumberCell>
             <NumberCell strong={sort === "assists"}>{r.assists}</NumberCell>
-            <NumberCell strong={sort === "rating"}>{r.games > 0 ? r.rating.toFixed(2) : "-"}</NumberCell>
+            <NumberCell strong={sort === "rating"}>{r.rating !== null ? r.rating.toFixed(2) : "-"}</NumberCell>
           </StatsRow>
         );
       })}
@@ -177,6 +163,7 @@ type RetiredRow = RetiredPlayer & {
 type RetiredFilter = "mine" | "legends" | "favorites" | "all";
 
 const RETIRED_PAGE = 50;
+const NO_RETIRED: RetiredRow[] = [];
 
 function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[] }) {
   const { t, i18n } = useTranslation();
@@ -204,6 +191,10 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
   const [moreFailed, setMoreFailed] = useState(false);
   const [error, setError] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  const careerOf = (r: RetiredRow) => (r.history ?? []).reduce((acc, h) => ({ apps: acc.apps + h.apps, goals: acc.goals + h.goals }), { apps: 0, goals: 0 });
+  const { sorted: sortedRetired, head: retiredHead } = useTableSort(rows ?? NO_RETIRED, {
+    name: (r) => r.name, age: (r) => r.age, club: (r) => r.clubName, apps: (r) => careerOf(r).apps, goals: (r) => careerOf(r).goals,
+  });
   // Bumped on every filter change, so a "load more" answer for the old filter is dropped.
   const generation = useRef(0);
 
@@ -360,16 +351,16 @@ function RetiredList({ saveId, leagues }: { saveId: string; leagues: LeagueData[
       <StatsTable
         head={<>
           <StatsHead />
-          <StatsHead>{t("statsScreen.player")}</StatsHead>
-          <StatsHead align="center">{t("statsScreen.retired.age")}</StatsHead>
-          <StatsHead>{t("statsScreen.retired.lastClub")}</StatsHead>
-          <StatsHead align="center">{t("career.apps")}</StatsHead>
-          <StatsHead align="center">{t("career.goals")}</StatsHead>
+          <StatsHead sort={retiredHead("name")}>{t("statsScreen.player")}</StatsHead>
+          <StatsHead align="center" sort={retiredHead("age")}>{t("statsScreen.retired.age")}</StatsHead>
+          <StatsHead sort={retiredHead("club")}>{t("statsScreen.retired.lastClub")}</StatsHead>
+          <StatsHead align="center" sort={retiredHead("apps")}>{t("career.apps")}</StatsHead>
+          <StatsHead align="center" sort={retiredHead("goals")}>{t("career.goals")}</StatsHead>
           {legends && <StatsHead>{t("statsScreen.retired.legend.status")}</StatsHead>}
           <StatsHead />
         </>}
       >
-        {rows.map((r) => {
+        {sortedRetired.map((r) => {
           const hist = r.history ?? [];
           const apps = hist.reduce((a, h) => a + h.apps, 0);
           const goals = hist.reduce((a, h) => a + h.goals, 0);

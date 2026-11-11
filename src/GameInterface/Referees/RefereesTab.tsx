@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { NameCell, NumberCell, RankCell, StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
@@ -42,6 +43,13 @@ export function RefereesTab({ saveId, leagues, countryByName, refreshKey }: {
     return () => { cancelled = true; };
   }, [saveId, competition, season, refreshKey]);
 
+  const ranked = useMemo(() => (data?.items ?? []).map((r, i) => ({ ...r, rank: i + 1 })), [data]);
+  const BAND = { lenient: 0, balanced: 1, strict: 2 } as Record<string, number>;
+  const { sorted, head } = useTableSort(ranked, {
+    rank: (r) => -r.rank, name: (r) => r.name, rigor: (r) => BAND[r.band] ?? null, matches: (r) => r.matches,
+    fouls: (r) => r.foulsPerMatch, yellows: (r) => r.yellowsPerMatch, reds: (r) => r.reds, penalties: (r) => r.penalties,
+    errors: (r) => r.errorsPerMatch, reviews: (r) => r.reviews,
+  });
   const seasons = [{ value: CURRENT, label: t("referees.currentSeason") }, ...(data?.seasons ?? []).map((s) => ({ value: s, label: s }))];
 
   return (
@@ -78,26 +86,26 @@ export function RefereesTab({ saveId, leagues, countryByName, refreshKey }: {
         <StatsTable
           head={
             <>
-              <StatsHead align="center">#</StatsHead>
+              <StatsHead align="center" sort={head("rank")}>#</StatsHead>
               <StatsHead className="w-12"><span className="sr-only">{t("referees.face")}</span></StatsHead>
-              <StatsHead>{t("referees.referee")}</StatsHead>
-              <StatsHead>{t("referees.rigor")}</StatsHead>
-              <StatsHead align="center" title={t("referees.matchesLong")}>{t("referees.matches")}</StatsHead>
-              <StatsHead align="center" title={t("referees.foulsLong")}>{t("referees.fouls")}</StatsHead>
-              <StatsHead align="center" title={t("referees.yellowsLong")}>{t("referees.yellows")}</StatsHead>
-              <StatsHead align="center" title={t("referees.redsLong")}>{t("referees.reds")}</StatsHead>
-              <StatsHead align="center" title={t("referees.penaltiesLong")}>{t("referees.penalties")}</StatsHead>
-              <StatsHead align="center" title={t("referees.errorsLong")}>{t("referees.errors")}</StatsHead>
-              <StatsHead align="center" title={t("referees.reviewsLong")}>{t("referees.reviews")}</StatsHead>
+              <StatsHead sort={head("name")}>{t("referees.referee")}</StatsHead>
+              <StatsHead sort={head("rigor")}>{t("referees.rigor")}</StatsHead>
+              <StatsHead align="center" title={t("referees.matchesLong")} sort={head("matches")}>{t("referees.matches")}</StatsHead>
+              <StatsHead align="center" title={t("referees.foulsLong")} sort={head("fouls")}>{t("referees.fouls")}</StatsHead>
+              <StatsHead align="center" title={t("referees.yellowsLong")} sort={head("yellows")}>{t("referees.yellows")}</StatsHead>
+              <StatsHead align="center" title={t("referees.redsLong")} sort={head("reds")}>{t("referees.reds")}</StatsHead>
+              <StatsHead align="center" title={t("referees.penaltiesLong")} sort={head("penalties")}>{t("referees.penalties")}</StatsHead>
+              <StatsHead align="center" title={t("referees.errorsLong")} sort={head("errors")}>{t("referees.errors")}</StatsHead>
+              <StatsHead align="center" title={t("referees.reviewsLong")} sort={head("reviews")}>{t("referees.reviews")}</StatsHead>
             </>
           }
         >
-          {data.items.map((r, i) => {
+          {sorted.map((r) => {
             const flag = nationalityFlagCode(r.country);
             const mine = r.id === data.nextRefereeId;
             return (
               <StatsRow key={r.id} highlight={mine}>
-                <RankCell rank={i + 1} />
+                <RankCell rank={r.rank} />
                 <StatsCell className="w-12"><RefereeFace referee={r} size={32} /></StatsCell>
                 <NameCell highlight={mine}>
                   <span className="truncate">{r.name}</span>

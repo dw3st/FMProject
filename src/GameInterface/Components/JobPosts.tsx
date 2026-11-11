@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { CrestCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
@@ -26,6 +27,8 @@ const LEVEL_CLASS: Record<string, string> = {
  * Stats → Managers → Posts (8.9.29, tester report): every club of a league with its manager and how safe his job
  * is, and the button to apply for it. The answer comes in a few days through the inbox.
  */
+const NO_ROWS: JobPostRow[] = [];
+
 export function JobPosts({ saveId, leagues, countryByName, defaultLeague, refreshKey }: {
   saveId: string;
   leagues: LeagueData[];
@@ -80,6 +83,11 @@ export function JobPosts({ saveId, leagues, countryByName, defaultLeague, refres
     setReload((n) => n + 1);
   };
 
+  const { sorted, head } = useTableSort(view?.rows ?? NO_ROWS, {
+    position: (r) => (r.position === null ? null : -r.position), club: (r) => r.clubName, manager: (r) => r.managerName,
+    // Vacant first, then the most threatened; a human manager last.
+    security: (r) => (r.level === "vacant" ? 6 : r.level),
+  });
   const levelText = (r: JobPostRow) =>
     r.level === null ? t("jobPosts.humanManager") : t(`jobPosts.level.${r.level}`);
 
@@ -112,16 +120,16 @@ export function JobPosts({ saveId, leagues, countryByName, defaultLeague, refres
         <StatsTable
           head={
             <>
-              <StatsHead align="center">#</StatsHead>
+              <StatsHead align="center" sort={head("position")}>#</StatsHead>
               <StatsHead />
-              <StatsHead>{t("jobPosts.club")}</StatsHead>
-              <StatsHead>{t("jobPosts.manager")}</StatsHead>
-              <StatsHead>{t("jobPosts.security")}</StatsHead>
+              <StatsHead sort={head("club")}>{t("jobPosts.club")}</StatsHead>
+              <StatsHead sort={head("manager")}>{t("jobPosts.manager")}</StatsHead>
+              <StatsHead sort={head("security")}>{t("jobPosts.security")}</StatsHead>
               <StatsHead align="right">{""}</StatsHead>
             </>
           }
         >
-          {view.rows.map((r) => (
+          {sorted.map((r) => (
             <StatsRow key={r.squadId} highlight={r.blocked === "own"}>
               <td className={`${TABLE_CELL.body} text-center font-bold text-muted-foreground tabular-nums`}>{r.position ?? "-"}</td>
               <CrestCell squadId={r.squadId} />

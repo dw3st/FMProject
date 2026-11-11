@@ -233,3 +233,7 @@ Report do usuário. Mensagem não lida (tela Caixa de entrada e cartão do Paine
 ## Aba Sua liga e abas espalhadas (8.9.14)
 
 Report de tester. Num mundo com amigos (`save.mode === "multi"`) a barra de cima ganha a aba Sua liga (`/world`) no fim, depois de Estatísticas (8.9.16); o ícone que ficava no bloco do dia saiu. As abas ocupam a largura toda entre o logo e o bloco do dia (`justify-between`, o espaço mínimo entre elas continua o de antes), sem os vãos nas pontas.
+
+## Ordenar tabelas (8.9.35)
+
+Report de tester. `useTableSort` (`src/GameInterface/ui/tableSort.ts`, com teste): coluna = chave + valor; o primeiro clique ordena números do maior e texto de A a Z, o segundo inverte; vazios sempre no fim; ordem estável. `StatsHead sort={head(key)}`, `DataTableColumn.sortValue` e `SortButton` (`ui/SortButton.tsx`) desenham o cabeçalho clicável com a seta. Tabela nova de lista usa isso; tabelas de classificação por regra (grupos, tabela da liga) ficam na ordem delas.

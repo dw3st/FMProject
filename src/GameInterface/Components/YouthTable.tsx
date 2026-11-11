@@ -1,3 +1,4 @@
+import { positionIndex } from "@/Domain/positions/positionSort";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -125,6 +126,7 @@ export function YouthTable() {
     {
       key: "name",
       header: t("youth.player"),
+      sortValue: (r) => r.player.name,
       cell: (r) => (
         <span className="inline-flex items-center gap-1.5 font-semibold">
           <span className={r.player.reborn ? LEGEND_NAME_CLASS : undefined}>{r.player.name}</span>
@@ -137,21 +139,24 @@ export function YouthTable() {
     {
       key: "pos",
       header: t("youth.position"),
+      sortValue: (r) => positionIndex(preferredRole(r.player)),
       cell: (r) => (
         <span className={`font-display font-bold ${positionLabelColor(preferredRole(r.player), r.player.positions[0] ?? "CM")}`}>
           {positionLabel(t, preferredRole(r.player), r.player.positions[0] ?? "CM")}
         </span>
       ),
     },
-    { key: "age", header: t("youth.age"), cell: (r) => <span className="tabular-nums">{r.player.age}</span> },
+    { key: "age", header: t("youth.age"), sortValue: (r) => r.player.age, cell: (r) => <span className="tabular-nums">{r.player.age}</span> },
     {
       key: "level",
       header: t("youth.level"),
+      sortValue: (r) => r.overall,
       cell: (r) => <span className="font-display font-bold tabular-nums">{r.overall.toFixed(1)}</span>,
     },
     {
       key: "potential",
       header: t("youth.potential"),
+      sortValue: (r) => r.potential.high,
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
           {r.potential.low.toFixed(1)} – {r.potential.high.toFixed(1)}
@@ -161,6 +166,7 @@ export function YouthTable() {
     {
       key: "trend",
       header: t("youth.training.trend"),
+      sortValue: (r) => r.trend,
       cell: (r) => r.trend === null
         ? <span className="text-muted-foreground">—</span>
         : <span className={`tabular-nums font-semibold ${r.trend > 0 ? "text-chart-2" : r.trend < 0 ? "text-destructive" : "text-muted-foreground"}`}>
@@ -196,11 +202,13 @@ export function YouthTable() {
     {
       key: "youthApps",
       header: t("youthComps.cols.apps"),
+      sortValue: (r) => r.player.seasonLog?.youthCup?.appearances ?? 0,
       cell: (r) => <span className="tabular-nums text-muted-foreground">{r.player.seasonLog?.youthCup?.appearances ?? 0}</span>,
     },
     {
       key: "youthGoals",
       header: t("youthComps.cols.goals"),
+      sortValue: (r) => r.player.seasonLog?.youthCup?.goals ?? 0,
       cell: (r) => <span className="tabular-nums text-muted-foreground">{r.player.seasonLog?.youthCup?.goals ?? 0}</span>,
     },
     {

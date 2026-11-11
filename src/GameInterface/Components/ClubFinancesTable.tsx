@@ -1,3 +1,5 @@
+import { useTableSort } from "@/GameInterface/ui/tableSort";
+import { SortButton } from "@/GameInterface/ui/SortButton";
 import { useTranslation } from "react-i18next";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import type { ClubFinanceRow } from "@/Domain/aiFinance/financeRows";
@@ -40,21 +42,34 @@ export function ClubFinancesTable({
   onClickSquad: (row: ClubFinanceRow) => void;
 }) {
   const { t } = useTranslation();
+  const TIER_RANK = { LOW: 0, MEDIUM: 1, HIGH: 2, ELITE: 3 } as const;
+  const HIRING_RANK = { frozen: 0, tight: 1, open: 2 } as Record<string, number>;
+  const { sorted, head } = useTableSort(rows, {
+    club: (r) => r.name, tier: (r) => (r.tier ? TIER_RANK[r.tier] : null), popularity: (r) => r.popularity,
+    weekly: (r) => r.weeklyBudget, wages: (r) => r.wageBill, hiring: (r) => (r.hiring ? HIRING_RANK[r.hiring] ?? null : null),
+    transfer: (r) => r.transferBudget,
+  });
+  const cell = (key: string, label: string, align?: "center" | "right") => (
+    <div className={align === "center" ? "text-center" : align === "right" ? "text-right" : undefined}
+      role="columnheader" aria-sort={head(key)!.active ? (head(key)!.dir === "asc" ? "ascending" : "descending") : "none"}>
+      <SortButton sort={head(key)!} align={align}>{label}</SortButton>
+    </div>
+  );
   return (
     <div className={`${TABLE_STYLE.shell} overflow-x-auto`}>
       <div className="min-w-[900px]">
         <div className={`${GRID} px-4 py-3 ${TABLE_STYLE.head}`}>
-          <div>{t("leagues.club")}</div>
-          <div className="text-center">{t("leagues.finances.tier")}</div>
-          <div className="text-center">{t("leagues.finances.popularity")}</div>
-          <div className="text-right">{t("leagues.finances.weeklyBudget")}</div>
-          <div>{t("leagues.finances.wages")}</div>
-          <div className="text-center">{t("leagues.finances.hiring")}</div>
-          <div className="text-right">{t("leagues.finances.transferBudget")}</div>
+          {cell("club", t("leagues.club"))}
+          {cell("tier", t("leagues.finances.tier"), "center")}
+          {cell("popularity", t("leagues.finances.popularity"), "center")}
+          {cell("weekly", t("leagues.finances.weeklyBudget"), "right")}
+          {cell("wages", t("leagues.finances.wages"))}
+          {cell("hiring", t("leagues.finances.hiring"), "center")}
+          {cell("transfer", t("leagues.finances.transferBudget"), "right")}
         </div>
 
         <div className={TABLE_STYLE.body}>
-          {rows.map((row) => {
+          {sorted.map((row) => {
             const wagePct = row.maxWageBudget ? Math.min(100, (row.wageBill / row.maxWageBudget) * 100) : 0;
             return (
               <div

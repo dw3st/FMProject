@@ -1,3 +1,4 @@
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -126,7 +127,10 @@ function RankingView({ rows, homeTeam, onOpen }: { rows: NationalRankRow[]; home
   const { t } = useTranslation();
   const nationName = useNationName();
   const [confed, setConfed] = useState<ConfedFilter>("all");
-  const shown = confed === "all" ? rows : rows.filter((r) => r.confed === confed);
+  const { sorted: shown, head } = useTableSort(confed === "all" ? rows : rows.filter((r) => r.confed === confed), {
+    rank: (r) => -r.rank, nation: (r) => nationName(r.nation), confed: (r) => r.confed, coach: (r) => r.managerName,
+    games: (r) => r.games, points: (r) => r.elo,
+  });
   return (
     <div className="flex flex-col gap-4">
       <OptionChips
@@ -138,13 +142,13 @@ function RankingView({ rows, homeTeam, onOpen }: { rows: NationalRankRow[]; home
       <StatsTable
         className="max-w-4xl"
         head={<>
-          <StatsHead align="center">#</StatsHead>
+          <StatsHead align="center" sort={head("rank")}>#</StatsHead>
           <StatsHead />
-          <StatsHead>{t("national.nation")}</StatsHead>
-          <StatsHead>{t("national.confed")}</StatsHead>
-          <StatsHead>{t("national.coach")}</StatsHead>
-          <StatsHead align="center">{t("national.games")}</StatsHead>
-          <StatsHead align="center">{t("national.points")}</StatsHead>
+          <StatsHead sort={head("nation")}>{t("national.nation")}</StatsHead>
+          <StatsHead sort={head("confed")}>{t("national.confed")}</StatsHead>
+          <StatsHead sort={head("coach")}>{t("national.coach")}</StatsHead>
+          <StatsHead align="center" sort={head("games")}>{t("national.games")}</StatsHead>
+          <StatsHead align="center" sort={head("points")}>{t("national.points")}</StatsHead>
         </>}
       >
         {shown.map((r) => {
@@ -200,6 +204,10 @@ function CompetitionsView({ saveId, overview, slug, onSlug, onOpen, refreshKey }
     return () => { cancelled = true; };
   }, [saveId, active, refreshKey]);
 
+  const scorers = useMemo(() => (detail?.scorers ?? []).map((x, i) => ({ ...x, rank: i + 1 })), [detail]);
+  const { sorted: sortedScorers, head: scorerHead } = useTableSort(scorers, {
+    rank: (x) => -x.rank, player: (x) => x.name, nation: (x) => nationName(x.nation), games: (x) => x.apps, goals: (x) => x.goals,
+  });
   if (!active) return <p className="text-sm text-muted-foreground">{t("national.noCompetitions")}</p>;
   const name = (id: string) => nationName(detail?.names[id] ?? id);
   const qualified = new Set(detail?.qualified ?? []);
@@ -284,16 +292,16 @@ function CompetitionsView({ saveId, overview, slug, onSlug, onOpen, refreshKey }
               <StatsTable
                 className="max-w-2xl"
                 head={<>
-                  <StatsHead align="center">#</StatsHead>
-                  <StatsHead>{t("national.player")}</StatsHead>
-                  <StatsHead>{t("national.nation")}</StatsHead>
-                  <StatsHead align="center">{t("national.games")}</StatsHead>
-                  <StatsHead align="center">{t("national.goals")}</StatsHead>
+                  <StatsHead align="center" sort={scorerHead("rank")}>#</StatsHead>
+                  <StatsHead sort={scorerHead("player")}>{t("national.player")}</StatsHead>
+                  <StatsHead sort={scorerHead("nation")}>{t("national.nation")}</StatsHead>
+                  <StatsHead align="center" sort={scorerHead("games")}>{t("national.games")}</StatsHead>
+                  <StatsHead align="center" sort={scorerHead("goals")}>{t("national.goals")}</StatsHead>
                 </>}
               >
-                {detail.scorers.map((s, i) => (
+                {sortedScorers.map((s) => (
                   <StatsRow key={s.id}>
-                    <RankCell rank={i + 1} />
+                    <RankCell rank={s.rank} />
                     <NameCell href={s.generated || !s.squadId ? undefined : playerHref(s.id, s.squadId)}>
                       <span className="truncate">{s.name}</span>
                     </NameCell>
@@ -392,6 +400,11 @@ function TeamView({ saveId, overview, teamId, onTeam, refreshKey }: {
     [overview, i18n.language],
   );
   const name = (id: string) => nationName(d?.names[id] ?? id);
+  const callUp = useMemo(() => (d?.callUp?.players ?? []).map((p, i) => ({ ...p, order: i })), [d]);
+  const { sorted: sortedCallUp, head: callHead } = useTableSort(callUp, {
+    pos: (p) => p.order, player: (p) => p.name, club: (p) => p.clubName, age: (p) => p.age, rating: (p) => p.overall,
+    caps: (p) => p.caps, goals: (p) => p.goals, assists: (p) => p.assists,
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -423,17 +436,17 @@ function TeamView({ saveId, overview, teamId, onTeam, refreshKey }: {
               <StatsTable
                 className="max-w-4xl"
                 head={<>
-                  <StatsHead>{t("national.pos")}</StatsHead>
-                  <StatsHead>{t("national.player")}</StatsHead>
-                  <StatsHead>{t("national.club")}</StatsHead>
-                  <StatsHead align="center">{t("national.age")}</StatsHead>
-                  <StatsHead align="center">{t("national.rating")}</StatsHead>
-                  <StatsHead align="center">{t("national.caps")}</StatsHead>
-                  <StatsHead align="center">{t("national.goals")}</StatsHead>
-                  <StatsHead align="center">{t("national.assists")}</StatsHead>
+                  <StatsHead sort={callHead("pos")}>{t("national.pos")}</StatsHead>
+                  <StatsHead sort={callHead("player")}>{t("national.player")}</StatsHead>
+                  <StatsHead sort={callHead("club")}>{t("national.club")}</StatsHead>
+                  <StatsHead align="center" sort={callHead("age")}>{t("national.age")}</StatsHead>
+                  <StatsHead align="center" sort={callHead("rating")}>{t("national.rating")}</StatsHead>
+                  <StatsHead align="center" sort={callHead("caps")}>{t("national.caps")}</StatsHead>
+                  <StatsHead align="center" sort={callHead("goals")}>{t("national.goals")}</StatsHead>
+                  <StatsHead align="center" sort={callHead("assists")}>{t("national.assists")}</StatsHead>
                 </>}
               >
-                {d.callUp.players.map((p) => (
+                {sortedCallUp.map((p) => (
                   <StatsRow key={p.id}>
                     <StatsCell className={`font-display font-bold ${p.role ? getDetailedPositionColor(p.role) : "text-muted-foreground"}`}>
                       {p.role ? t(`roles.detailedAbbr.${p.role}`, { defaultValue: p.role }) : "-"}

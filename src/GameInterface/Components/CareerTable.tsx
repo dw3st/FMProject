@@ -1,3 +1,4 @@
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
 import { competitionName } from "@/Domain/world/labels";
 import { formatFee } from "@/Domain/money";
@@ -16,6 +17,12 @@ export function CareerTable({
 }) {
   const { t, i18n } = useTranslation();
   const all = current ? [...rows, current] : rows;
+  // The past seasons sort by the clicked column; the current season and the total stay at the end.
+  const { sorted, head } = useTableSort(rows, {
+    season: (r) => r.season, club: (r) => r.clubName, apps: (r) => r.apps, goals: (r) => r.goals, assists: (r) => r.assists,
+    rating: (r) => r.avgRating, yellowCards: (r) => r.yellowCards, redCards: (r) => r.redCards, injuries: (r) => r.injuries,
+    daysInjured: (r) => r.daysInjured, titles: (r) => r.titles.length || null,
+  });
   if (all.length === 0) return <p className="text-sm text-muted-foreground m-0">{t("career.empty")}</p>;
   const total = all.reduce(
     (a, r) => ({
@@ -68,22 +75,22 @@ export function CareerTable({
     <StatsTable
       head={
         <>
-          <StatsHead>{t("career.season")}</StatsHead>
-          <StatsHead>{t("career.club")}</StatsHead>
+          <StatsHead sort={head("season")}>{t("career.season")}</StatsHead>
+          <StatsHead sort={head("club")}>{t("career.club")}</StatsHead>
           <StatsHead>{t("career.arrival.title")}</StatsHead>
-          <StatsHead align="center">{t("career.apps")}</StatsHead>
-          <StatsHead align="center">{t("career.goals")}</StatsHead>
-          <StatsHead align="center">{t("career.assists")}</StatsHead>
-          <StatsHead align="center">{t("career.rating")}</StatsHead>
-          <StatsHead align="center" title={t("career.yellowCardsFull")}>{t("career.yellowCards")}</StatsHead>
-          <StatsHead align="center" title={t("career.redCardsFull")}>{t("career.redCards")}</StatsHead>
-          <StatsHead align="center" title={t("career.injuriesFull")}>{t("career.injuries")}</StatsHead>
-          <StatsHead align="center" title={t("career.daysInjuredFull")}>{t("career.daysInjured")}</StatsHead>
-          <StatsHead>{t("career.titles")}</StatsHead>
+          <StatsHead align="center" sort={head("apps")}>{t("career.apps")}</StatsHead>
+          <StatsHead align="center" sort={head("goals")}>{t("career.goals")}</StatsHead>
+          <StatsHead align="center" sort={head("assists")}>{t("career.assists")}</StatsHead>
+          <StatsHead align="center" sort={head("rating")}>{t("career.rating")}</StatsHead>
+          <StatsHead align="center" title={t("career.yellowCardsFull")} sort={head("yellowCards")}>{t("career.yellowCards")}</StatsHead>
+          <StatsHead align="center" title={t("career.redCardsFull")} sort={head("redCards")}>{t("career.redCards")}</StatsHead>
+          <StatsHead align="center" title={t("career.injuriesFull")} sort={head("injuries")}>{t("career.injuries")}</StatsHead>
+          <StatsHead align="center" title={t("career.daysInjuredFull")} sort={head("daysInjured")}>{t("career.daysInjured")}</StatsHead>
+          <StatsHead sort={head("titles")}>{t("career.titles")}</StatsHead>
         </>
       }
     >
-      {rows.map((r, i) => line(r, `${r.season}-${r.squadId}-${i}`, false))}
+      {sorted.map((r, i) => line(r, `${r.season}-${r.squadId}-${i}`, false))}
       {current && line(current, "current", true)}
       <StatsRow>
         <StatsCell className="font-semibold">{t("career.total")}</StatsCell>
