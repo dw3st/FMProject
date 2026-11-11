@@ -6782,5 +6782,25 @@
     "highlights": "Squad highlights",
     "fullSquad": "See the whole squad ({{count}})",
     "tabOverview": "Overview"
+  },
+  "managerPage": {
+    "notFound": "Manager not found.",
+    "you": "You",
+    "ai": "AI manager",
+    "rankOf": "{{rank}} of {{total}}",
+    "stat": {
+      "points": "Points",
+      "rank": "Ranking",
+      "titles": "Titles",
+      "awards": "Awards",
+      "seasons": "Seasons"
+    },
+    "currentJob": "Current job",
+    "positionVsTarget": "{{position}}, target: {{target}}",
+    "applyAtClub": "Apply on the club's page",
+    "honours": "Titles and awards",
+    "noHonours": "No titles or awards yet.",
+    "noCareer": "No club passages yet.",
+    "open": "See page"
   }
 }

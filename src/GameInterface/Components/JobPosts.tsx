@@ -7,6 +7,7 @@ import { TABLE_CELL } from "@/GameInterface/ui/leagueTableStyle";
 import { statsCompetitionOptions } from "@/GameInterface/statsCompetitionOptions";
 import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { managerHref } from "@/GameInterface/ManagerScreen";
 import type { LeagueData } from "@/types/playerTypes";
 import type { CountryEntry } from "@/types/worldTypes";
 import type { JobPostRow, JobPostsView } from "@/backend/jobPostsWorld";
@@ -131,7 +132,7 @@ export function JobPosts({ saveId, leagues, countryByName, defaultLeague, refres
                   </a>
                 </div>
               </td>
-              <td className={`${TABLE_CELL.body} text-muted-foreground`}>{r.managerName ?? "-"}</td>
+              <td className={`${TABLE_CELL.body} text-muted-foreground`}>{r.managerId && r.managerName ? <a href={managerHref(r.managerId)} className="text-foreground no-underline hover:text-primary">{r.managerName}</a> : (r.managerName ?? "-")}</td>
               <td className={TABLE_CELL.body}>
                 <span className={`inline-flex px-2 py-0.5 rounded text-sm ${r.level === null ? "text-muted-foreground" : LEVEL_CLASS[String(r.level)]}`}>
                   {levelText(r)}

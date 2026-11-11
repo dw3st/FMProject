@@ -32,7 +32,7 @@ import { navigate, useRoute } from "@/GameInterface/router/navigation";
  * Screens that work without a club (`.claude/rules/game/jobs.md`); every other one shows "Sem clube". `/squad/` is any
  * club's squad opened from Leagues, Stats or Scout (tester report, 8.9.30: it showed "Sem clube" instead).
  */
-export const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/world", "/squad/"];
+export const NO_CLUB_PATHS = ["/inbox", "/leagues", "/stats", "/scout", "/player", "/world", "/squad/", "/manager/"];
 
 /**
  * `chrome` (spa-shell phase 2): `full` draws the bars; `bare` drops the top bar (preview, result; the footer stays so the radio keeps playing);

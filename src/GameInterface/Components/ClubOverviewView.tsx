@@ -10,6 +10,7 @@ import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import { PlayerNameLink } from "@/GameInterface/Inbox/PlayerNameText";
+import { managerHref } from "@/GameInterface/ManagerScreen";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
@@ -119,7 +120,7 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
             <div className="flex items-center gap-4 min-w-0">
               <ManagerFaceImage manager={{ id: data.manager.id, name: data.manager.name, nationality: data.manager.nationality }} clubColors={squad.colors} size={64} />
               <div className="flex flex-col min-w-0">
-                <span className="font-display font-bold text-xl truncate">{data.manager.name}</span>
+                <a href={managerHref(data.manager.id)} className="font-display font-bold text-xl text-primary no-underline hover:underline truncate">{data.manager.name}</a>
                 <span className="text-sm text-muted-foreground">
                   {data.manager.interim ? t("clubOverview.interim") : data.manager.since ? t("clubOverview.since", { date: formatDay(data.manager.since, i18n.language) }) : ""}
                 </span>

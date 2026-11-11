@@ -6782,5 +6782,25 @@
     "highlights": "Destaques do elenco",
     "fullSquad": "Ver o elenco inteiro ({{count}})",
     "tabOverview": "Visão geral"
+  },
+  "managerPage": {
+    "notFound": "Técnico não encontrado.",
+    "you": "Você",
+    "ai": "Técnico da IA",
+    "rankOf": "{{rank}}º de {{total}}",
+    "stat": {
+      "points": "Pontos",
+      "rank": "Ranking",
+      "titles": "Títulos",
+      "awards": "Prêmios",
+      "seasons": "Temporadas"
+    },
+    "currentJob": "Cargo atual",
+    "positionVsTarget": "{{position}}º, meta: {{target}}º",
+    "applyAtClub": "Candidatar-se na página do clube",
+    "honours": "Títulos e prêmios",
+    "noHonours": "Nenhum título nem prêmio ainda.",
+    "noCareer": "Sem passagens por clubes ainda.",
+    "open": "Ver página"
   }
 }

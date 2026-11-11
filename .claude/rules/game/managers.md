@@ -199,3 +199,7 @@ Report de tester. Ao abrir um técnico, cada clube da carreira mostra os título
 ## Ficha do técnico (8.9.5)
 
 Report de tester, opção B do mock. Ao abrir um técnico: rosto, clube e pontos com os prêmios à direita; quatro números (pontos, títulos, prêmios, clubes); a carreira numa tabela (`TABLE_STYLE`: clube, período, saída, títulos ganhos lá); os títulos sem passagem em "Outros títulos"; bens (com os ganhos do técnico do jogador) e cartões em caixas lado a lado; dívidas não pagas no fim.
+
+## Página do técnico (8.9.32)
+
+Report de tester, opção A do mock. `/manager/:id` (`ManagerScreen.tsx`, `managerHref`) sobre `GET /api/saves/:id/managers/:managerId` (o item do ranking, montado por `decorateManagers`, com a posição no mundo, `total`, a liga do clube e, num clube da IA, a situação do cargo de Cargos; 404 para desconhecido ou aposentado). Faixa de números (pontos, ranking, títulos, prêmios, temporadas), cargo atual, títulos e prêmios, e a carreira com cada clube como link (`clubs[].leagueSlug`). O nome leva à página na Visão geral do clube e em Cargos; o detalhe do ranking tem Ver página. Funciona sem clube.

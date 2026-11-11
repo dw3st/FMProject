@@ -35,6 +35,7 @@ const server = serve({
     "/squad/:league/:club": appPage,
 
     "/player/:league/:club/:id": appPage,
+    "/manager/:id": appPage,
 
     "/tactics": appPage,
     "/formation": appPage,

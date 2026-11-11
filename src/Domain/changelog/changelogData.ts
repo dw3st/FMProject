@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.32",
+    date: "2026-11-11",
+    time: "08:43",
+    items: [
+      {
+        pt: "Página do técnico: números, posição no ranking, cargo atual com a situação do cargo, títulos e prêmios e a carreira com cada clube como link. Abre pelo nome do técnico na página do clube, em Cargos e pelo Ver página do ranking.",
+        en: "Manager page: numbers, ranking position, current job with its security, titles and awards and the career with each club as a link. Opens from the manager's name on the club page, in Posts and from See page in the ranking.",
+      },
+    ],
+  },
+  {
     version: "8.9.31",
     date: "2026-11-11",
     time: "08:18",

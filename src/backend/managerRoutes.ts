@@ -7,11 +7,57 @@ import { getLeagueData } from "@/backend/advanceDay";
 import { rankManagers, rankingPage } from "@/Domain/managers/managers";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import { clubCountryResolver } from "@/backend/matchCrowd";
+import { jobPosts } from "@/backend/jobPostsWorld";
+import type { SeatMeta } from "@/backend/SaveService";
+import type { SquadIndex } from "@/backend/squadIndex";
+import type { ManagerRecord } from "@/types/managerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
 const PAGE_DEFAULT = 50;
 const PAGE_MAX = 100;
+
+type RankedManager = ManagerRecord & { rank: number };
+interface DecorateCtx {
+  liveSeats: ReadonlySet<string>;
+  index: SquadIndex;
+  clubNameOf: (id: string) => string | null;
+  countryOfClub: (id: string) => string | null;
+}
+
+/** The ranking item of each manager (club names, face, the asking seat's profile, other humans' nicknames and assets). */
+async function decorateManagers(saveId: string, seatId: string, meta: SeatMeta, items: RankedManager[], ctx: DecorateCtx) {
+  const { liveSeats, index, clubNameOf, countryOfClub } = ctx;
+  const mine = (m: { seatId?: string }) => m.seatId === seatId;
+  // The asking seat's manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
+  const profile = items.some(mine) ? shownProfile(await saveService.getAchievements(saveId, seatId)) : null;
+  // Human managers show the assets they bought.
+  const assetsBySeat = new Map(await Promise.all(items.filter((m) => m.seatId).map(async (m) =>
+    [m.seatId!, (await saveService.getSeat(saveId, m.seatId!))?.managerAssets] as const)));
+  // Another human's manager is marked in the ranking (the friends' league): his nickname.
+  const nicknames = new Map(listSaveMembers(saveId).map((x) => [x.seatId, getSocialUser(x.userId)?.nickname ?? null] as const));
+  return items.map((m) => ({
+    ...m,
+    ...(m.seatId && liveSeats.has(m.seatId) && !mine(m) ? { human: nicknames.get(m.seatId) ?? m.name } : {}),
+    ...(m.seatId && assetsBySeat.get(m.seatId) ? { assets: assetsBySeat.get(m.seatId) } : {}),
+    isPlayer: mine(m),
+    clubName: m.squadId ? clubNameOf(m.squadId) : null,
+    ...(m.squadId.startsWith("nat_") ? { national: true } : {}),
+    free: !m.squadId,
+    interim: !!m.interim,
+    // Season awards (Etapa 32): best manager of a league, world manager of the year.
+    awards: m.awards ?? [],
+    // Every manager's passages (Etapa 25), with the clubs' names and leagues (links on the manager page, 8.9.31).
+    clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: clubNameOf(c.squadId), leagueSlug: index.byId(c.squadId)?.leagueSlug ?? null })),
+    ...(mine(m) ? { earnings: meta.managerEarnings ?? 0, ...(profile ? { profile } : {}) } : {}),
+    // Face (Etapa 31b): shirt in the current club's colours; the human manager's saved avatar and
+    // nationality, an AI manager's appearance from the country of his first club (stable).
+    clubColors: m.squadId ? index.byId(m.squadId)?.colors ?? null : null,
+    ...(mine(m)
+      ? { face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) }
+      : { nationality: countryOfClub(m.clubs?.[0]?.squadId ?? m.squadId) }),
+  }));
+}
 
 /** Manager ranking (`.claude/rules/game/managers.md`). */
 export const managerRoutes = {
@@ -65,38 +111,42 @@ export const managerRoutes = {
       const self = ranked.find((m) => m.seatId === auth.seatId);
       if (self) page.items.push({ ...self, rank: page.playerRank });
     }
-    const mine = (m: { seatId?: string }) => m.seatId === auth.seatId;
-    // The asking seat's manager's profile items (`.claude/rules/game/achievements.md`): frame, title, badges.
-    const profile = page.items.some(mine) ? shownProfile(await saveService.getAchievements(saveId, auth.seatId)) : null;
-    // Human managers show the assets they bought.
-    const assetsBySeat = new Map(await Promise.all(page.items.filter((m) => m.seatId).map(async (m) =>
-      [m.seatId!, (await saveService.getSeat(saveId, m.seatId!))?.managerAssets] as const)));
-    // Another human's manager is marked in the ranking (the friends' league): his nickname.
-    const nicknames = new Map(listSaveMembers(saveId).map((x) => [x.seatId, getSocialUser(x.userId)?.nickname ?? null] as const));
     return Response.json({
       ...page,
       humans: liveSeats.size,
-      items: page.items.map((m) => ({
-        ...m,
-        ...(m.seatId && liveSeats.has(m.seatId) && !mine(m) ? { human: nicknames.get(m.seatId) ?? m.name } : {}),
-        ...(m.seatId && assetsBySeat.get(m.seatId) ? { assets: assetsBySeat.get(m.seatId) } : {}),
-        isPlayer: mine(m),
-        clubName: m.squadId ? clubNameOf(m.squadId) : null,
-        ...(m.squadId.startsWith("nat_") ? { national: true } : {}),
-        free: !m.squadId,
-        interim: !!m.interim,
-        // Season awards (Etapa 32): best manager of a league, world manager of the year.
-        awards: m.awards ?? [],
-        // Every manager's passages (Etapa 25), with the clubs' names.
-        clubs: (m.clubs ?? []).map((c) => ({ ...c, clubName: clubNameOf(c.squadId) })),
-        ...(mine(m) ? { earnings: meta.managerEarnings ?? 0, ...(profile ? { profile } : {}) } : {}),
-        // Face (Etapa 31b): shirt in the current club's colours; the human manager's saved avatar and
-        // nationality, an AI manager's appearance from the country of his first club (stable).
-        clubColors: m.squadId ? index.byId(m.squadId)?.colors ?? null : null,
-        ...(mine(m)
-          ? { face: meta.manager?.face ?? null, nationality: managerFaceCountry(meta.manager?.nationalityIso) }
-          : { nationality: countryOfClub(m.clubs?.[0]?.squadId ?? m.squadId) }),
-      })),
+      items: await decorateManagers(saveId, auth.seatId, meta, page.items, { liveSeats, index, clubNameOf, countryOfClub }),
+    });
+  },
+  /**
+   * `GET` - one manager's page (8.9.31): the ranking item with his world rank, the league of his club and, at an AI club,
+   * the job security of the Posts tab. 404 for an unknown or retired manager.
+   */
+  "/api/saves/:saveId/managers/:managerId": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const id = req.params.managerId ?? "";
+    if (!/^[A-Za-z0-9_:.-]{1,120}$/.test(id)) return Response.json({ error: "not found" }, { status: 404 });
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const ranked = rankManagers((await saveService.getManagers(saveId)).filter((m) => !m.retired));
+    const at = ranked.findIndex((m) => m.id === id);
+    if (at < 0) return Response.json({ error: "not found" }, { status: 404 });
+    const liveSeats = new Set((await saveService.getMeta(saveId))?.seats ?? []);
+    const index = await saveService.getSquadIndex(saveId);
+    const clubCountry = await clubCountryResolver(saveService, saveId);
+    const national = await saveService.getNationalState(saveId);
+    const nationOf = (sid: string | undefined) => (sid && sid.startsWith("nat_") ? national?.teams[sid]?.nation ?? null : null);
+    const countryOfClub = (sid: string) => nationOf(sid) ?? clubCountry(sid);
+    const clubNameOf = (sid: string) => nationOf(sid) ?? index.byId(sid)?.name ?? null;
+    const m = ranked[at]!;
+    const [item] = await decorateManagers(saveId, auth.seatId, meta, [{ ...m, rank: at + 1 }], { liveSeats, index, clubNameOf, countryOfClub });
+    const leagueSlug = m.squadId ? index.byId(m.squadId)?.leagueSlug ?? null : null;
+    const row = leagueSlug ? (await jobPosts(saveService, saveId, meta, leagueSlug))?.rows.find((r) => r.squadId === m.squadId) ?? null : null;
+    return Response.json({
+      ...item, total: ranked.length, leagueSlug,
+      job: row ? { level: row.level, target: row.target, position: row.position } : null,
     });
   },
 };

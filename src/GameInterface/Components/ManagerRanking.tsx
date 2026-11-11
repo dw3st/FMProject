@@ -19,6 +19,7 @@ import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 import { HumanBadge } from "@/GameInterface/World/HumanBadge";
+import { managerHref } from "@/GameInterface/ManagerScreen";
 import { groupAwards } from "@/Domain/awards/awardGroups";
 
 type Row = Omit<ManagerRecord, "clubs"> & {
@@ -191,6 +192,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey, openMe }: {
                       <ManagerFaceImage manager={m} clubColors={m.clubColors} size={64} {...(m.profile ? { ringClassName: FRAME_RING[m.profile.frame], frame: m.profile.frame } : {})} />
                       <div className="min-w-0">
                         <p className="font-display font-black uppercase text-xl leading-none m-0 truncate">{m.name}</p>
+                        <a href={managerHref(m.id)} className="text-sm font-semibold text-primary no-underline hover:underline">{t("managerPage.open")}</a>
                         {m.isPlayer && m.profile && (
                           <a href="/achievements" className="flex items-center gap-1.5 text-sm font-semibold text-primary no-underline hover:underline mt-1">
                             {m.profile.badges.map((b) => (
