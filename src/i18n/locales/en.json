@@ -5059,7 +5059,10 @@
       "manager": "Manager attributes",
       "shop": "Shop",
       "assets": "Assets",
-      "bets": "Bets"
+      "bets": "Bets",
+      "players": "Players",
+      "legends": "Club legends",
+      "belongings": "Belongings"
     },
     "loading": "Loading achievements…",
     "loadFailed": "Could not load the achievements.",
@@ -5367,7 +5370,11 @@
       "stadiumNote": "Drawn in your home end in home games.",
       "saveStadium": "Save stadium",
       "stadiumPreview": "Preview of the decorations in the home end",
-      "frameOpen": "Unlocked"
+      "frameOpen": "Unlocked",
+      "bio": "Bio",
+      "bioPlaceholder": "A few lines about you as a manager: style, idols, goals.",
+      "recent": "Latest achievements",
+      "noRecent": "No achievement unlocked yet."
     },
     "frames": {
       "none": "No frame",

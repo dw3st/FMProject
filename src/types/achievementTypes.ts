@@ -43,6 +43,8 @@ export interface ManagerProfile {
   badges: Badge[];
   /** A track whose gold gives the displayed title. */
   title: TrackId | null;
+  /** A few lines the manager writes about himself (tester report, 8.9.38): plain text, up to 280 characters. */
+  bio?: string;
 }
 
 /** The three decorations that are unlocked by points. */

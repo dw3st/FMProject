@@ -20,6 +20,8 @@ export const ACHIEVEMENTS = {
   /** Stadium decorations by points earned. */
   DECOR_POINTS: { banner: 100, flag: 400, mosaic: 900 },
   MAX_BADGES: 3,
+  /** Longest manager bio (8.9.38). */
+  BIO_MAX: 280,
   SHOP: { created: 300, legend: 500 },
   /** Each shop item once per season; every purchase of it raises its price by this much. */
   SHOP_STEP: 100,

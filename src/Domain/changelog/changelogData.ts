@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.38",
+    date: "2026-11-11",
+    time: "10:20",
+    items: [
+      {
+        pt: "A loja do técnico virou abas no topo da tela: Jogadores, Lendas do clube e Bens, sem precisar rolar a página.",
+        en: "The manager's shop is now tabs at the top of the screen: Players, Club legends and Belongings, no more scrolling.",
+      },
+      {
+        pt: "No Perfil, o técnico escreve uma biografia, que aparece na página dele, e vê as últimas conquistas abaixo da foto.",
+        en: "In Profile, the manager writes a bio, shown on his page, and sees his latest achievements under the photo.",
+      },
+    ],
+  },
+  {
     version: "8.9.37",
     date: "2026-11-11",
     time: "10:08",

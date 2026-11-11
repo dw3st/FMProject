@@ -31,6 +31,9 @@ type ManagerPage = Omit<ManagerRecord, "clubs"> & {
   nationality: string | null;
   face?: ManagerFace | null;
   national?: boolean;
+  /** A human manager's bio (8.9.38): another seat's in `bio`, the asking seat's inside `profile`. */
+  bio?: string;
+  profile?: { bio?: string };
   job: { level: 1 | 2 | 3 | 4 | 5 | "vacant" | null; target: number | null; position: number | null } | null;
 };
 
@@ -124,6 +127,9 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
           ) : <span className="text-sm text-muted-foreground">{t("statsScreen.managers.noClub")}</span>}
         </div>
       </div>
+      {(data.bio ?? data.profile?.bio) && (
+        <p className="text-sm text-foreground m-0 max-w-3xl whitespace-pre-line">{data.bio ?? data.profile?.bio}</p>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {([

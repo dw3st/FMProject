@@ -5059,7 +5059,10 @@
       "manager": "Atributos do técnico",
       "shop": "Loja",
       "assets": "Patrimônio",
-      "bets": "Apostas"
+      "bets": "Apostas",
+      "players": "Jogadores",
+      "legends": "Lendas do clube",
+      "belongings": "Bens"
     },
     "loading": "Carregando conquistas…",
     "loadFailed": "Não foi possível carregar as conquistas.",
@@ -5367,7 +5370,11 @@
       "stadiumNote": "Aparecem na torcida da casa nos seus jogos em casa.",
       "saveStadium": "Salvar estádio",
       "stadiumPreview": "Prévia dos enfeites na torcida da casa",
-      "frameOpen": "Liberada"
+      "frameOpen": "Liberada",
+      "bio": "Biografia",
+      "bioPlaceholder": "Algumas linhas sobre você como técnico: estilo, ídolos, objetivos.",
+      "recent": "Últimas conquistas",
+      "noRecent": "Nenhuma conquista desbloqueada ainda."
     },
     "frames": {
       "none": "Sem moldura",

@@ -198,6 +198,17 @@ describe("items", () => {
     expect(pointsBalance({ ...s, spent: 100 })).toBe(25);
   });
 
+  test("the manager bio: trimmed, control characters out, capped, absent keeps the saved one", () => {
+    const s = emptyAchievements();
+    expect(parseProfile({ bio: "  Técnico \u0007ofensivo\n\n\n\nfã do 4-3-3  " }, s).bio).toBe("Técnico ofensivo\n\nfã do 4-3-3");
+    expect(() => parseProfile({ bio: "x".repeat(281) }, s)).toThrow("invalidProfile");
+    expect(() => parseProfile({ bio: 5 }, s)).toThrow("invalidProfile");
+    const saved = { ...s, profile: { ...s.profile, bio: "Antes" } };
+    expect(parseProfile({}, saved).bio).toBe("Antes");
+    expect(parseProfile({ bio: null }, saved).bio).toBeUndefined();
+    expect(shownProfile(saved).bio).toBe("Antes");
+  });
+
   test("normalize fills missing fields", () => {
     const s = normalizeAchievements({ unlocked: { "wins:bronze": "d" } } as never);
     expect(s.attributes.youth).toBe(10);

@@ -42,6 +42,7 @@ export function shownProfile(state: AchievementsState): ManagerProfile {
     frame: frames.has(p.frame) ? p.frame : "none",
     badges: p.badges.filter((b) => badges.has(b)).slice(0, A.MAX_BADGES),
     title: p.title && titles.has(p.title) ? p.title : null,
+    ...(p.bio ? { bio: p.bio } : {}),
   };
 }
 
@@ -73,7 +74,15 @@ export function parseProfile(raw: unknown, state: AchievementsState): ManagerPro
     if (typeof title !== "string" || !(TRACK_IDS as readonly string[]).includes(title)) throw new Error("invalidProfile");
     if (!availableTitles(state).includes(title as TrackId)) throw new Error("locked");
   }
-  return { frame: frame as Frame, badges, title: title as TrackId | null };
+  // The bio: absent keeps the saved one; plain text, control characters out, blank lines collapsed, up to 280 chars.
+  let bio = state.profile.bio;
+  if ("bio" in r) {
+    if (r.bio !== null && typeof r.bio !== "string") throw new Error("invalidProfile");
+    const text = (r.bio ?? "").replace(/[\u0000-\u0009\u000B-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g, "").replace(/\n{3,}/g, "\n\n").trim();
+    if (text.length > A.BIO_MAX) throw new Error("invalidProfile");
+    bio = text || undefined;
+  }
+  return { frame: frame as Frame, badges, title: title as TrackId | null, ...(bio ? { bio } : {}) };
 }
 
 export function parseDecor(raw: unknown, state: AchievementsState): StadiumDecor {

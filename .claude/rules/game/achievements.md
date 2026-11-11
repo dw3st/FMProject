@@ -200,3 +200,7 @@ Report de tester, opção B do mock. A lenda da loja sai de uma roleta (`src/Dom
 ## Tela do técnico (8.9.36)
 
 Pedido do usuário, opção A (loja B do mock). `/achievements` virou "SEU TÉCNICO", aberta pelo rosto do técnico na barra de cima (`TopNavigation`, antes do botão de report): abas Perfil (perfil + atributos), Conquistas, Loja e Apostas; `?tab=manager` abre Perfil e `?tab=assets` a Loja. Topo: conquistas, pontos e carteira (`/bets?summary=1`). A Loja junta roleta e jogador criado (pontos), a lenda paga pelo clube (`RetiredList legendsOnly`, a mesma de Estatísticas → Aposentados) e os bens do técnico (`AssetsTab`). Bens novos (`ASSET_KINDS`): barco, avião, roupa, arte e adega, 4 níveis cada (até €60M, €50M, €1M, €40M), imagens em `manager-assets/<tipo>-<nível>.webp` (`data_process/assets/manager_assets/build_manager_assets_more.py`).
+
+## Abas da loja e biografia (8.9.38)
+
+Reports de tester. A Loja virou três abas no topo de "SEU TÉCNICO": Jogadores (roleta, jogador criado, histórico), Lendas do clube (`RetiredList legendsOnly`) e Bens (`AssetsTab`); `?tab=shop` abre Jogadores, `?tab=assets` Bens. `ManagerProfile.bio` (até `BIO_MAX` 280, texto puro, caracteres de controle fora; ausente no PUT mantém, `null` ou vazio apaga) é escrita na aba Perfil, com as 6 últimas medalhas abaixo da foto (`RecentAchievements`), e aparece na página do técnico (`/manager/:id`; a rota de técnicos devolve `bio` dos outros assentos e `profile.bio` do próprio).

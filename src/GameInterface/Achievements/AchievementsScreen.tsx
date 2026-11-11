@@ -1,3 +1,4 @@
+import { ACHIEVEMENTS } from "@/Domain/achievements/achievementsConfig";
 import { RetiredList } from "@/GameInterface/StatsScreen";
 import type { LeagueData } from "@/types/playerTypes";
 import { DecorStylePicker } from "@/GameInterface/Achievements/DecorStylePicker";
@@ -39,10 +40,11 @@ import {
 } from "@/types/achievementTypes";
 
 // The manager's screen (user request, option A, 8.9.36): profile, achievements, shop (points and money), bets.
-type Tab = "profile" | "list" | "shop" | "bets";
-const TABS: Tab[] = ["profile", "list", "shop", "bets"];
+// The shop split into its own tabs (tester report, 8.9.38: one long page needed scrolling): players, legends, belongings.
+type Tab = "profile" | "list" | "players" | "legends" | "belongings" | "bets";
+const TABS: Tab[] = ["profile", "list", "players", "legends", "belongings", "bets"];
 /** Links from before the regrouping. */
-const OLD_TABS: Record<string, Tab> = { manager: "profile", assets: "shop" };
+const OLD_TABS: Record<string, Tab> = { manager: "profile", assets: "belongings", shop: "players" };
 const TIERS = ["bronze", "silver", "gold"] as const;
 
 function initialTab(): Tab {
@@ -129,7 +131,9 @@ export function AchievementsScreen() {
         </div>
       )}
       {tab === "bets" && <BetsTab />}
-      {tab === "shop" && <ShopTab data={data} saveId={saveId} onChange={(d) => { setData(d); void refresh(); }} />}
+      {(tab === "players" || tab === "legends" || tab === "belongings") && (
+        <ShopTab section={tab} data={data} saveId={saveId} onChange={(d) => { setData(d); void refresh(); }} />
+      )}
     </ScreenContainer>
   );
 }
@@ -228,12 +232,45 @@ function TrackCard({ track, lang }: { track: TrackView; lang: string }) {
 
 // ── Profile ──────────────────────────────────────────────────────────────────
 
+const BIO_MAX = ACHIEVEMENTS.BIO_MAX;
+
+/** The latest medals under the photo (tester report, 8.9.38). */
+function RecentAchievements({ data }: { data: AchievementsData }) {
+  const { t, i18n } = useTranslation();
+  const art = newVisualOn();
+  const recent = data.tracks
+    .flatMap((tr) => (["gold", "silver", "bronze"] as const).flatMap((tier) => (tr.unlocked[tier] ? [{ id: tr.id, tier, on: tr.unlocked[tier]! }] : [])))
+    .sort((a, b) => b.on.localeCompare(a.on))
+    .slice(0, 6);
+  return (
+    <div className="flex flex-col gap-2 w-full mt-2">
+      <Label>{t("achievements.profile.recent")}</Label>
+      {recent.length === 0 ? (
+        <p className="text-sm text-muted-foreground m-0">{t("achievements.profile.noRecent")}</p>
+      ) : (
+        <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+          {recent.map((r) => (
+            <li key={`${r.id}:${r.tier}`} className="flex items-center gap-2 text-sm">
+              {art
+                ? <img src={gameArtUrl(`medals/medal-${r.tier}.svg`)} alt="" aria-hidden="true" className="w-8 h-8 shrink-0" />
+                : <Icon name="trophy" size={16} className="shrink-0 text-chart-4" />}
+              <span className="font-semibold text-foreground truncate">{t(`achievements.tracks.${r.id}.name`)}</span>
+              <span className="ml-auto text-muted-foreground tabular-nums shrink-0">{formatDate(r.on, i18n.language)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId: string; onChange: (d: AchievementsData) => void }) {
   const { t } = useTranslation();
   const { session } = useGameSave();
   const [frame, setFrame] = useState<Frame>(data.profile.frame);
   const [badges, setBadges] = useState<Badge[]>(data.profile.badges);
   const [title, setTitle] = useState<TrackId | null>(data.profile.title);
+  const [bio, setBio] = useState<string>(data.profile.bio ?? "");
   const [decor, setDecor] = useState<StadiumDecor>(data.decor);
   const [msg, setMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
 
@@ -267,6 +304,20 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
             </span>
           ))}
         </div>
+        {/* The manager's bio (tester report, 8.9.38): saved with the profile, shown on his page. */}
+        <label className="flex flex-col gap-1 w-full mt-2">
+          <Label>{t("achievements.profile.bio")}</Label>
+          <textarea
+            value={bio}
+            maxLength={BIO_MAX}
+            rows={4}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder={t("achievements.profile.bioPlaceholder")}
+            className="w-full resize-y rounded border border-border bg-transparent px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+          />
+          <span className="text-sm text-muted-foreground tabular-nums self-end">{bio.length}/{BIO_MAX}</span>
+        </label>
+        <RecentAchievements data={data} />
       </div>
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
@@ -348,7 +399,7 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
             )}
         </div>
         <div>
-          <Button onClick={() => void save("profile", { frame, badges, title })}>{t("achievements.profile.save")}</Button>
+          <Button onClick={() => void save("profile", { frame, badges, title, bio })}>{t("achievements.profile.save")}</Button>
         </div>
         <div className="flex flex-col gap-2">
           <SectionTitle>{t("achievements.profile.stadium")}</SectionTitle>
@@ -413,7 +464,9 @@ function ManagerTab({ data }: { data: AchievementsData }) {
 
 // ── Shop ─────────────────────────────────────────────────────────────────────
 
-function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: string; onChange: (d: AchievementsData) => void }) {
+function ShopTab({ section, data, saveId, onChange }: {
+  section: "players" | "legends" | "belongings"; data: AchievementsData; saveId: string; onChange: (d: AchievementsData) => void;
+}) {
   const { t, i18n } = useTranslation();
   const [name, setName] = useState("");
   const [position, setPosition] = useState<string>("ST");
@@ -443,6 +496,17 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
   const canCreated = !thisSeason.created && data.points.balance >= costs.created && data.hasClub;
   const canLegend = !thisSeason.legend && data.hasClub;
   const card = "rounded-md border border-border bg-card p-4 flex flex-col gap-3";
+
+  // The shop split into top tabs (tester report, 8.9.38): no more scrolling past everything.
+  if (section === "legends") {
+    return (
+      <section className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground m-0">{t("achievements.shop.clubLegend.desc")}</p>
+        <RetiredList saveId={saveId} leagues={leagues} legendsOnly />
+      </section>
+    );
+  }
+  if (section === "belongings") return <AssetsTab />;
 
   return (
     <div className="flex flex-col gap-4">
@@ -510,15 +574,6 @@ function ShopTab({ data, saveId, onChange }: { data: AchievementsData; saveId: s
             )}
         </section>
       </div>
-      <section className="flex flex-col gap-3">
-        <SectionTitle>{t("achievements.shop.clubLegend.title")}</SectionTitle>
-        <p className="text-sm text-muted-foreground m-0">{t("achievements.shop.clubLegend.desc")}</p>
-        <RetiredList saveId={saveId} leagues={leagues} legendsOnly />
-      </section>
-      <section className="flex flex-col gap-3">
-        <SectionTitle>{t("achievements.shop.belongings")}</SectionTitle>
-        <AssetsTab />
-      </section>
       <ShopHistory history={data.shop.history} />
     </div>
   );
