@@ -85,7 +85,7 @@ export const ALLOWLIST: { file: string; rule: string; match: string; reason: str
   {
     file: "src/GameInterface/Components/PositionPitch.tsx",
     rule: "inline-font",
-    match: 'fontSize="3.4"',
+    match: 'fontSize="3.9"',
     reason: "SVG mini pitch: position labels in viewBox units, scale with the drawing",
   },
   {

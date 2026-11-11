@@ -86,16 +86,18 @@ export function AchievementsScreen() {
   const unlocked = data.tracks.reduce((n, tr) => n + Object.keys(tr.unlocked).length, 0) + data.secrets.filter((s) => s.unlocked).length;
   const total = data.tracks.length * 3 + data.secrets.length;
   const kpi = "font-display font-bold text-3xl tabular-nums leading-none text-foreground";
+  const KPI_CARD = "rounded-md border border-border bg-card px-4 py-3 flex flex-col gap-1.5 min-w-0";
 
   return (
     <ScreenContainer>
       {title}
-      <div className="flex flex-wrap gap-8">
-        <div className="flex flex-col gap-1">
+      {/* Four equal cards (tester report, 9.0.1: the caption under the points opened a gap in the middle of the row). */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className={KPI_CARD}>
           <Label>{t("achievements.kpi.unlocked")}</Label>
           <span className={kpi}>{unlocked}<span className="text-muted-foreground text-xl">/{total}</span></span>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className={KPI_CARD}>
           <Label>{t("achievements.kpi.earned")}</Label>
           <span className={kpi}>{data.points.earned}</span>
           {data.points.campaign > 0 && (
@@ -104,16 +106,14 @@ export function AchievementsScreen() {
             </span>
           )}
         </div>
-        <div className="flex flex-col gap-1">
+        <div className={KPI_CARD}>
           <Label>{t("achievements.kpi.balance")}</Label>
           <span className={`${kpi} text-primary`}>{data.points.balance}</span>
         </div>
-        {wallet !== null && (
-          <div className="flex flex-col gap-1">
-            <Label>{t("achievements.kpi.wallet")}</Label>
-            <span className={`${kpi} text-star-green tabular-nums`}>{formatEuros(wallet)}</span>
-          </div>
-        )}
+        <div className={KPI_CARD}>
+          <Label>{t("achievements.kpi.wallet")}</Label>
+          <span className={`${kpi} text-star-green tabular-nums`}>{wallet !== null ? formatEuros(wallet) : "—"}</span>
+        </div>
       </div>
       <SegmentedTabs
         tabs={TABS.map((k) => ({ key: k, label: t(`achievements.tabs.${k}`) }))}

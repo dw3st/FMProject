@@ -198,6 +198,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "stadium/stand-block-construction.png": "image/png",
   "player/player-real-atlas.json": "application/json",
   "player/player-real-atlas.png": "image/png",
+  "pitch/position-pitch.webp": "image/webp",
   "pitch/grass-a.png": "image/png",
   "pitch/grass-b.png": "image/png",
   "pitch/grass-c.png": "image/png",

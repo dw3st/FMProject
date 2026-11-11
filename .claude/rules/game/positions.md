@@ -91,3 +91,7 @@ casou segue a regra dos atributos e do pé acima.
 `bun test src/Domain/positions src/Domain/advanceDay/quickSim.test.ts src/Domain/lineupHelpers.test.ts`.
 
 Ficha do jogador (8.8.6, report do usuário): `PlayerTipBody` mostra o OVR (0–100) e a nota média da temporada (`seasonLog.avgRating`, com os jogos) juntos, com o fôlego abaixo; na partida, a nota do jogo vem a seguir.
+
+## Campinho de posições (9.0.1)
+
+Report de tester, opção A do mock. `PositionPitch`: gramado pintado (`pitch/position-pitch.webp`, FLUX, `data_process/assets/position_pitch_mock.py`) com o visual novo, senão as marcações desenhadas; bolinhas grandes com borda branca e a sigla escura; natural `star-green`, adequada `star-green/45`, precisa treinar `chart-4`.

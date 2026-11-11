@@ -1,17 +1,19 @@
 import { useTranslation } from "react-i18next";
 import ROLES from "@/Data/roles.json";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { DETAILED_ROLES, type Aptitude, type DetailedRole } from "@/Domain/positions/positionAptitude";
 
+// Option A of the mock (tester report, 9.0.1): big coloured discs, dark abbreviation, white ring.
 const FILL: Record<Aptitude, string> = {
-  natural: "fill-chart-2",
-  apt: "fill-chart-2",
+  natural: "fill-star-green",
+  apt: "fill-star-green/45",
   training: "fill-chart-4",
-  unsuitable: "fill-white/10",
+  unsuitable: "fill-white/25",
 };
 
 const LEGEND: { apt: Exclude<Aptitude, "unsuitable">; dot: string; key: string }[] = [
-  { apt: "natural", dot: "bg-chart-2", key: "roles.legendNatural" },
-  { apt: "apt", dot: "bg-chart-2", key: "roles.legendApt" },
+  { apt: "natural", dot: "bg-star-green", key: "roles.legendNatural" },
+  { apt: "apt", dot: "bg-star-green/45", key: "roles.legendApt" },
   { apt: "training", dot: "bg-chart-4", key: "roles.legendTraining" },
 ];
 
@@ -21,17 +23,24 @@ type RolePos = Record<string, { position: { x: number; y: number } }>;
 export function PositionPitch({ aptitudes }: { aptitudes: Record<DetailedRole, Aptitude> }) {
   const { t } = useTranslation();
   const pos = ROLES as unknown as RolePos;
+  const art = newVisualOn();
   return (
     <div>
       <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] mb-3 m-0 font-display">
         {t("roles.aptitudeTitle")}
       </p>
-      <svg viewBox="0 0 100 110" className="w-full max-w-[220px] mx-auto rounded-lg bg-chart-2/50 border border-chart-2/50" role="img" aria-label={t("roles.aptitudeTitle")}>
-        <rect x="4" y="4" width="92" height="102" className="fill-none stroke-border" strokeWidth="0.5" />
-        <line x1="4" y1="55" x2="96" y2="55" className="stroke-border" strokeWidth="0.5" />
-        <circle cx="50" cy="55" r="10" className="fill-none stroke-border" strokeWidth="0.5" />
-        <rect x="26" y="4" width="48" height="16" className="fill-none stroke-border" strokeWidth="0.5" />
-        <rect x="26" y="90" width="48" height="16" className="fill-none stroke-border" strokeWidth="0.5" />
+      <svg viewBox="0 0 100 110" className="w-full max-w-[320px] mx-auto rounded-lg bg-[#2e7836] border border-border" role="img" aria-label={t("roles.aptitudeTitle")}>
+        {art ? (
+          <image href={gameArtUrl("pitch/position-pitch.webp")} x="0" y="0" width="100" height="110" preserveAspectRatio="none" />
+        ) : (
+          <g className="stroke-white/80 fill-none" strokeWidth="0.6">
+            <rect x="4" y="4" width="92" height="102" />
+            <line x1="4" y1="55" x2="96" y2="55" />
+            <circle cx="50" cy="55" r="11.7" />
+            <rect x="23" y="4" width="54" height="20" />
+            <rect x="23" y="86" width="54" height="20" />
+          </g>
+        )}
         {DETAILED_ROLES.map((r) => {
           const p = pos[r]?.position;
           if (!p) return null;
@@ -39,11 +48,16 @@ export function PositionPitch({ aptitudes }: { aptitudes: Record<DetailedRole, A
           return (
             <g key={r}>
               <title>{`${t(`roles.detailed.${r}` as never)}: ${t(`roles.aptitude.${a}` as never)}`}</title>
-              <circle cx={p.x} cy={p.y + 5} r={a === "unsuitable" ? 2 : 4.2} className={FILL[a]} />
-              {a !== "unsuitable" && (
-                <text x={p.x} y={p.y + 5.1} textAnchor="middle" dominantBaseline="middle" className="fill-chart-2 font-sans font-bold" fontSize="3.4">
-                  {t(`roles.detailedAbbr.${r}` as never)}
-                </text>
+              {a === "unsuitable" ? (
+                <circle cx={p.x} cy={p.y + 5} r={1.6} className={FILL[a]} />
+              ) : (
+                <>
+                  <circle cx={p.x} cy={p.y + 5.6} r={6.2} className="fill-black/35" />
+                  <circle cx={p.x} cy={p.y + 5} r={5.8} className={`${FILL[a]} stroke-white`} strokeWidth="0.7" />
+                  <text x={p.x} y={p.y + 5.2} textAnchor="middle" dominantBaseline="middle" className="fill-[#0f1914] font-display font-bold" fontSize="3.9">
+                    {t(`roles.detailedAbbr.${r}` as never)}
+                  </text>
+                </>
               )}
             </g>
           );

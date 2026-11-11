@@ -27,6 +27,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.0.1",
+    date: "2026-11-11",
+    time: "11:29",
+    items: [],
+    fixes: [
+      {
+        pt: "As imagens dos bens antigos do técnico foram repintadas no mesmo nível das novas.",
+        en: "The pictures of the manager's older belongings were repainted to match the new ones.",
+      },
+      {
+        pt: "Ficha do jogador: o campinho de posições tem gramado pintado e posições grandes e legíveis; natural e adequada têm cores diferentes.",
+        en: "Player page: the position pitch has painted grass and big readable positions; natural and suited have different colours.",
+      },
+      {
+        pt: "Seu técnico: os números do topo ficam em quatro cartões alinhados, sem o vão no meio.",
+        en: "Your manager: the numbers at the top sit in four aligned cards, without the gap in the middle.",
+      },
+    ],
+  },
+  {
     version: "9.0",
     date: "2026-11-11",
     time: "11:12",
@@ -5612,7 +5632,8 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Campinho de posições da ficha com gramado pintado e posições grandes", en: "The player page's position pitch with painted grass and big positions" },
+  { pt: "Mosaicos, faixas e fogos do estádio comprados com o dinheiro do técnico, com peças lendárias", en: "Stadium mosaics, banners and fireworks bought with the manager's money, legendary pieces included" },
+  { pt: "Barras de status do jogador com a torcida, no clube e no mundo", en: "Player status bars with the fans, at the club and in the world" },
   { pt: "Cursos e idiomas para o técnico, e propostas pelo país e pelo idioma", en: "Courses and languages for the manager, and job offers by country and language" },
   { pt: "Troca de jogadores com compensação em dinheiro", en: "Player swaps with a cash adjustment" },
   { pt: "Amistoso com um amigo de outra liga", en: "Friendlies against a friend from another league" },
