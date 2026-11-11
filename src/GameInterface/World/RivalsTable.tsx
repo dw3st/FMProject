@@ -1,3 +1,5 @@
+import { followLinkOnly } from "@/GameInterface/router/navigation";
+import { managerHref } from "@/GameInterface/ManagerScreen";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { rivalNation, rivalNextOpponent } from "@/GameInterface/World/rivalNext";
 import { useTranslation } from "react-i18next";
@@ -53,7 +55,7 @@ export function RivalsTable({ rows, onSelect, selected }: { rows: RivalRow[]; on
           </StatsCell>
           <NameCell highlight={r.me}>
             <span className="flex flex-col min-w-0">
-              <span className="truncate">{r.nickname ?? r.managerName}</span>
+              <a href={managerHref(seatManagerId(r.seatId))} onClick={followLinkOnly} className="no-underline hover:underline text-inherit truncate">{r.nickname ?? r.managerName}</a>
               {r.nickname && <span className="text-sm font-normal text-muted-foreground truncate">{r.managerName}</span>}
             </span>
           </NameCell>

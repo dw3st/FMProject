@@ -1,3 +1,4 @@
+import { managerHref } from "@/GameInterface/ManagerScreen";
 import { FriendCompetitions } from "@/GameInterface/World/FriendCompetitions";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -293,7 +294,7 @@ export function WorldScreen() {
                               size={32}
                             />
                             <div className="min-w-0">
-                              <div className={me ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}>{m.managerName}</div>
+                              <div className={me ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}><a href={managerHref(seatManagerId(m.seatId))} className="no-underline hover:underline text-inherit">{m.managerName}</a></div>
                               {m.nickname && <div className="text-sm text-muted-foreground truncate">{m.nickname}</div>}
                             </div>
                           </div>

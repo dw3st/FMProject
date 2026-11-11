@@ -1,3 +1,5 @@
+import { followLinkOnly } from "@/GameInterface/router/navigation";
+import { managerHref } from "@/GameInterface/ManagerScreen";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -75,7 +77,7 @@ export function StandingsTable({ view, mySeatId }: { view: StandingsView; mySeat
               </StatsCell>
               <NameCell highlight={me}>
                 <span className="flex flex-col min-w-0">
-                  <span className="truncate">{e.managerName}</span>
+                  <a href={managerHref(seatManagerId(e.seatId))} onClick={followLinkOnly} className="no-underline hover:underline text-inherit truncate">{e.managerName}</a>
                   {e.nickname && <span className="text-sm font-normal text-muted-foreground truncate">{e.nickname}</span>}
                 </span>
               </NameCell>

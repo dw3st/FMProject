@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.42",
+    date: "2026-11-11",
+    time: "10:49",
+    items: [],
+    fixes: [
+      {
+        pt: "Na Sua liga, o nome de cada técnico em Membros, Classificação e Rivais abre a página dele.",
+        en: "In Your league, each manager's name in Members, Standings and Rivals opens his page.",
+      },
+    ],
+  },
+  {
     version: "8.9.41",
     date: "2026-11-11",
     time: "10:43",
