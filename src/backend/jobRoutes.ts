@@ -5,6 +5,7 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { acceptJobOffer, reputationOf, resignFromClub } from "@/backend/jobWorld";
 import { worldLobbyGuard } from "@/backend/worlds/worldLobbyGuard";
+import { applyForJob, jobPosts } from "@/backend/jobPostsWorld";
 import { addDays } from "@/Domain/dates";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { compensationFee } from "@/Domain/managers/managerContract";
@@ -54,6 +55,50 @@ export const jobRoutes = {
         : undefined;
       await saveService.updateSeat(saveId, auth.seatId, { jobSeeking: seeking });
       return Response.json({ ok: true, seeking: seeking ?? null });
+    });
+  },
+
+  /** `GET ?league=` - job security of every club of a league and the open application (8.9.29). Default: the seat's league. */
+  "/api/saves/:saveId/job-posts": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const league = new URL(req.url).searchParams.get("league") || meta.leagueSlug;
+    if (!/^[a-z0-9_]{1,80}$/.test(league)) return Response.json({ error: "invalidLeague" }, { status: 400 });
+    const view = await jobPosts(saveService, saveId, meta, league);
+    if (!view) return Response.json({ error: "invalidLeague" }, { status: 400 });
+    return Response.json(view);
+  },
+
+  /**
+   * `POST { squadId }` - apply for the club's job; `DELETE` - withdraw the open application. The answer comes in a
+   * few days through the inbox. 409 `alreadyApplied`, `own`, `human`, `refused`, `noApplication`, `lobby`; 404 `notFound`.
+   */
+  "/api/saves/:saveId/job-applications": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST" && req.method !== "DELETE") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const lobby = await worldLobbyGuard(saveId);
+    if (lobby) return lobby;
+    const body = req.method === "POST" ? (await req.json().catch(() => null)) as { squadId?: unknown } | null : null;
+    if (req.method === "POST" && (!body || typeof body.squadId !== "string" || body.squadId.length > 80)) {
+      return Response.json({ error: "squadId required" }, { status: 400 });
+    }
+    return withSaveLock(saveId, async () => {
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
+      if (req.method === "DELETE") {
+        if (!meta.jobApplication) return Response.json({ error: "noApplication" }, { status: 409 });
+        await saveService.updateSeat(saveId, auth.seatId, { jobApplication: undefined });
+        return Response.json({ ok: true });
+      }
+      const r = await applyForJob(saveService, saveId, auth.seatId, meta, body!.squadId as string);
+      if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
+      return Response.json({ ok: true, answerOn: r.application.answerOn });
     });
   },
 

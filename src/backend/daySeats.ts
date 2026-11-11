@@ -100,6 +100,8 @@ export interface DaySeat {
     midSeason?: string;
     renewal?: ManagerRenewalOffer;
     notices?: string[];
+    /** An application answered no today (8.9.29): the message, deferred past the `clearInbox`. */
+    applicationRefused?: { squadId: string; clubName: string; leagueSlug: string; leagueName: string };
   };
   director: { decided?: Record<string, DirectorDecision>; outcomes: DirectorOutcome[]; news: PlayerNews[] };
   staffNews: StaffContractNews[];

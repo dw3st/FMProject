@@ -371,4 +371,71 @@ describe("season-end offer validity", () => {
     } finally {
       await saveService.deleteSave(meta.id);
     }
-  }, 300_000);});
+  }, 300_000);
+
+  test("job posts and applications (8.9.29)", async () => {
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    const call = (key: string, saveId: string, path: string, method: string, token: string, body?: unknown) => {
+      const handler = apiRoutes[key as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      return handler(Object.assign(
+        new Request(`http://localhost${path}`, {
+          method, headers: { cookie: `fs_session=${token}`, "content-type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }),
+        { params: { saveId } },
+      ));
+    };
+    try {
+      const { user, session } = devAutoLogin("jobs-posts@test.local");
+      await ownSolo(meta.id, user.id);
+      const path = `/api/saves/${meta.id}`;
+      let res = await call("/api/saves/:saveId/job-posts", meta.id, `${path}/job-posts`, "GET", session.token);
+      expect(res.status).toBe(200);
+      const view = (await res.json()) as { rows: { squadId: string; level: unknown; blocked: string | null }[]; application: unknown };
+      expect(view.rows.length).toBe(20);
+      expect(view.rows.find((r) => r.squadId === "33")?.blocked).toBe("own");
+      expect(view.application).toBeNull();
+      const other = view.rows.find((r) => r.blocked === null)!;
+      expect([1, 2, 3, 4, 5, "vacant"]).toContain(other.level as number);
+      res = await call("/api/saves/:saveId/job-posts", meta.id, `${path}/job-posts?league=..`, "GET", session.token);
+      expect(res.status).toBe(400);
+      // Apply: one at a time, the own club refused.
+      res = await call("/api/saves/:saveId/job-applications", meta.id, `${path}/job-applications`, "POST", session.token, { squadId: "33" });
+      expect(res.status).toBe(409);
+      res = await call("/api/saves/:saveId/job-applications", meta.id, `${path}/job-applications`, "POST", session.token, { squadId: other.squadId });
+      expect(res.status).toBe(200);
+      res = await call("/api/saves/:saveId/job-applications", meta.id, `${path}/job-applications`, "POST", session.token, { squadId: other.squadId });
+      expect(res.status).toBe(409);
+      // Force a refusal and deliver it: the club is blocked, a message arrives.
+      const seat = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+      const app = seat.jobApplication!;
+      await saveService.updateSeat(meta.id, meta.seatId, { jobApplication: { ...app, accepted: false, offer: undefined, answerOn: meta.currentDate! } });
+      expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+      let after = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+      expect(after.jobApplication).toBeUndefined();
+      expect(after.jobRefused?.[other.squadId]).toBe(meta.currentDate);
+      const inbox = await saveService.getInbox(meta.id, meta.seatId);
+      expect(inbox.some((m) => m.category === "job" && m.kind === "application_refused")).toBe(true);
+      // An accepted one becomes an offer.
+      const third = view.rows.find((r) => r.blocked === null && r.squadId !== other.squadId)!;
+      res = await call("/api/saves/:saveId/job-applications", meta.id, `${path}/job-applications`, "POST", session.token, { squadId: third.squadId });
+      expect(res.status).toBe(200);
+      after = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+      const app2 = after.jobApplication!;
+      res = await call("/api/saves/:saveId/job-applications", meta.id, `${path}/job-applications`, "DELETE", session.token);
+      expect(res.status).toBe(200);
+      expect((await saveService.getSeatMeta(meta.id, meta.seatId))!.jobApplication).toBeUndefined();
+      if (app2.offer) {
+        await saveService.updateSeat(meta.id, meta.seatId, { jobApplication: { ...app2, answerOn: after.currentDate! } });
+        expect((await advanceOneDay(saveService, meta.id)).ok).toBe(true);
+        const s3 = (await saveService.getSeatMeta(meta.id, meta.seatId))!;
+        expect(s3.jobOffers?.some((o) => o.squadId === third.squadId && o.window === "application")).toBe(true);
+      }
+    } finally {
+      await saveService.deleteSave(meta.id);
+    }
+  }, 300_000);
+});

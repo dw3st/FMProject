@@ -61,6 +61,31 @@ export const JOBS = {
     VALID_DAYS: 10,
   },
 
+  /** Job security of every manager and the human's applications (8.9.29). */
+  application: {
+    /** Risk = (position − target) / size + (FORM_REF − form ppg) × FORM_WEIGHT, × min(1, progress / FULL_PROGRESS). */
+    FORM_REF: 1.4,
+    FORM_WEIGHT: 0.08,
+    FULL_PROGRESS: 0.3,
+    /** Just hired: the risk counts half. */
+    NEW_DAYS: 60,
+    /** Level thresholds of the risk: very secure ≤ −0.2, secure ≤ −0.05, stable < 0.1, threatened < 0.25, else very threatened. */
+    LEVELS: [-0.2, -0.05, 0.1, 0.25],
+    /** Base chance of the board saying yes, by level 1..5 (an interim / vacancy: VACANT). */
+    BASE: [0.02, 0.05, 0.12, 0.35, 0.6],
+    VACANT: 0.75,
+    /** The club's prestige above reputation / 100 + FIT_SLACK costs FIT_SLOPE per unit; never below FIT_FLOOR. */
+    FIT_SLACK: 0.05,
+    FIT_SLOPE: 4,
+    FIT_FLOOR: 0.05,
+    /** Answer after MIN..MAX days; a refusal blocks the same club for RETRY_DAYS. */
+    ANSWER_MIN_DAYS: 3,
+    ANSWER_MAX_DAYS: 6,
+    RETRY_DAYS: 90,
+    /** The offer that comes out of an accepted application is valid this many days. */
+    VALID_DAYS: 14,
+  },
+
   /** "Available on the market" while employed (8.9.23). */
   seeking: {
     MIN: 1,

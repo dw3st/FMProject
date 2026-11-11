@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.29",
+    date: "2026-11-10",
+    time: "21:46",
+    items: [
+      {
+        pt: "Estatísticas, Técnicos, Cargos: a situação do cargo de cada técnico de uma liga, de muito seguro a muito ameaçado, pela posição contra a meta da diretoria, a forma e o tempo no cargo.",
+        en: "Stats, Managers, Posts: how safe each manager's job is in a league, from very secure to under heavy threat, by the table position against the board's target, the form and the time in charge.",
+      },
+      {
+        pt: "Candidatar-se: peça o cargo de um clube, um por vez. A resposta chega em alguns dias pela caixa de entrada; com mais chance onde o técnico está ameaçado e quando a sua reputação combina com o tamanho do clube. Se aceitarem, vira uma proposta normal.",
+        en: "Apply: ask a club for its job, one at a time. The answer comes in a few days through the inbox; better odds where the manager is under threat and when your reputation fits the club's size. A yes becomes a normal offer.",
+      },
+    ],
+  },
+  {
     version: "8.9.28",
     date: "2026-11-10",
     time: "21:29",

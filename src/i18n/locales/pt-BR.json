@@ -1913,10 +1913,12 @@
     "job": {
       "subject": {
         "offer": "Proposta: {{club}}",
-        "hired": "Novo clube: {{club}}"
+        "hired": "Novo clube: {{club}}",
+        "application_refused": "{{club}} recusou sua candidatura"
       },
       "offer": "O {{club}} ({{league}}) quer você como técnico.",
-      "hired": "Você é o novo técnico do {{club}} ({{league}}). A diretoria definiu a meta da temporada."
+      "hired": "Você é o novo técnico do {{club}} ({{league}}). A diretoria definiu a meta da temporada.",
+      "application_refused": "O {{club}} ({{league}}) agradeceu, mas não quer trocar de técnico agora. Você pode se candidatar de novo daqui a 90 dias."
     },
     "transfer": {
       "subject": {
@@ -6708,5 +6710,40 @@
     "error": "A rádio não respondeu. Tente de novo.",
     "volume": "Volume da rádio",
     "next": "Próxima rádio: {{name}}"
+  },
+  "jobPosts": {
+    "views": "Visão dos técnicos",
+    "ranking": "Ranking",
+    "posts": "Cargos",
+    "hint": "A situação de cada técnico pela posição contra a meta da diretoria, a forma e o tempo no cargo. Candidate-se a um clube por vez; a resposta chega pela caixa de entrada.",
+    "league": "Liga",
+    "club": "Clube",
+    "manager": "Técnico",
+    "security": "Situação do cargo",
+    "level": {
+      "1": "Muito seguro",
+      "2": "Seguro",
+      "3": "Estável",
+      "4": "Ameaçado",
+      "5": "Muito ameaçado",
+      "vacant": "Interino"
+    },
+    "humanManager": "Técnico humano",
+    "apply": "Candidatar-se",
+    "withdraw": "Retirar candidatura",
+    "pending": "Candidatura ao {{club}}: resposta até {{date}}.",
+    "sent": "Candidatura enviada. A resposta chega pela caixa de entrada em alguns dias.",
+    "withdrawn": "Candidatura retirada.",
+    "refusedRecently": "Recusou há pouco",
+    "errors": {
+      "alreadyApplied": "Você já tem uma candidatura em aberto.",
+      "own": "Este já é o seu clube.",
+      "human": "Este clube tem um técnico humano.",
+      "refused": "Este clube recusou você há pouco tempo.",
+      "noApplication": "Não há candidatura em aberto.",
+      "lobby": "A liga ainda não começou.",
+      "notFound": "Clube não encontrado.",
+      "generic": "Não foi possível enviar. Tente de novo."
+    }
   }
 }

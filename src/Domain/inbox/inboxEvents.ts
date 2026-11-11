@@ -588,18 +588,20 @@ export function buildPressInviteMessage(date: string, p: {
 /** Job news (`.claude/rules/game/jobs.md`): an offer, or the takeover of a new club. The screen translates it. */
 export function buildJobMessage(args:
   | { date: string; kind: "offer"; offer: JobOffer }
-  | { date: string; kind: "hired"; squadId: string; clubName: string; leagueSlug: string; leagueName: string },
+  | { date: string; kind: "hired" | "application_refused"; squadId: string; clubName: string; leagueSlug: string; leagueName: string },
 ): JobInboxMessage {
   const club = args.kind === "offer"
     ? { squadId: args.offer.squadId, clubName: args.offer.clubName, leagueSlug: args.offer.leagueSlug, leagueName: args.offer.leagueName }
     : { squadId: args.squadId, clubName: args.clubName, leagueSlug: args.leagueSlug, leagueName: args.leagueName };
   return {
-    id:        args.kind === "offer" ? `job-offer-${args.offer.id}` : `job-hired-${args.date}-${randomUUID()}`,
+    id:        args.kind === "offer" ? `job-offer-${args.offer.id}` : `job-${args.kind}-${args.date}-${randomUUID()}`,
     date:      args.date,
     createdAt: args.date,
     read:      false,
     category:  "job",
-    subject:   args.kind === "offer" ? `Job offer from ${club.clubName}` : `You are the new manager of ${club.clubName}`,
+    subject:   args.kind === "offer" ? `Job offer from ${club.clubName}`
+      : args.kind === "application_refused" ? `${club.clubName} turned down your application`
+      : `You are the new manager of ${club.clubName}`,
     preview:   club.leagueName,
     kind:      args.kind,
     ...club,

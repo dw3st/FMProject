@@ -79,6 +79,10 @@ export interface SeatState {
   jobsMidSeason?: string;
   /** "Available on the market" (8.9.23): offers every two weeks while employed; the board loses a little each month. */
   jobSeeking?: { since: string; nextOfferDate: string };
+  /** An application to a club (8.9.29): decided when sent, answered on `answerOn` (`offer` only when the board said yes). */
+  jobApplication?: import("@/types/jobTypes").JobApplication;
+  /** Clubs that refused an application, with the day (no new application for RETRY_DAYS). */
+  jobRefused?: Record<string, string>;
   careerStart?: string;
   managerContract?: ManagerContract;
   managerEarnings?: number;
@@ -108,7 +112,7 @@ export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
-  "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "betNet", "betExact", "betLongshot", "managerRenewal",
+  "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "betNet", "betExact", "betLongshot", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
 ] as const satisfies readonly (keyof SeatState)[];

@@ -256,7 +256,7 @@ export interface BoardInboxMessage extends InboxMessageBase {
  */
 export interface JobInboxMessage extends InboxMessageBase {
   category: "job";
-  kind: "offer" | "hired";
+  kind: "offer" | "hired" | "application_refused";
   squadId: string;
   clubName: string;
   leagueSlug: string;

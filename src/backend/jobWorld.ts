@@ -111,7 +111,7 @@ export async function loadJobWorld(
 // ── Offers ────────────────────────────────────────────────────────────────────
 
 /** One offer from `squadId`, with the objective the board would set and the expected position. */
-async function buildOffer(args: {
+export async function buildOffer(args: {
   service: SaveService;
   saveId: string;
   world: JobWorld;

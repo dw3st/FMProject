@@ -3076,6 +3076,23 @@ export async function advanceOneDay(
           }
         }
       }
+      // ── An application's answer (8.9.29): drawn when sent; the club must still be free of a human manager.
+      const application = ds.meta.jobApplication;
+      if (application && currentDate >= application.answerOn) {
+        ds.patch.jobApplication = undefined;
+        if (application.accepted && application.offer && !humanClubs.has(application.squadId) && application.squadId !== clubId) {
+          newOffers.push({
+            ...application.offer, id: `job_${currentDate}_${application.squadId}`, window: "application",
+            date: currentDate, expires: addDays(currentDate, JOBS.application.VALID_DAYS),
+          });
+        } else {
+          ds.patch.jobRefused = { ...(ds.meta.jobRefused ?? {}), [application.squadId]: currentDate };
+          ds.job.applicationRefused = {
+            squadId: application.squadId, clubName: application.clubName,
+            leagueSlug: application.leagueSlug, leagueName: application.leagueName,
+          };
+        }
+      }
       ds.job.contract = contract;
       ds.job.kept = ds.job.offers;
       ds.job.newOffers = newOffers;
@@ -3364,6 +3381,9 @@ export async function advanceOneDay(
       }
       for (const offer of ds.job.newOffers) {
         await emitInboxMessage(saveId, buildJobMessage({ date: currentDate, kind: "offer", offer }), saveService, ds.seatId);
+      }
+      if (ds.job.applicationRefused) {
+        await emitInboxMessage(saveId, buildJobMessage({ date: currentDate, kind: "application_refused", ...ds.job.applicationRefused }), saveService, ds.seatId);
       }
     }
     for (const ds of daySeats) {

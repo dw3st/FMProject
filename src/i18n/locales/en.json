@@ -1913,10 +1913,12 @@
     "job": {
       "subject": {
         "offer": "Job offer: {{club}}",
-        "hired": "New job: {{club}}"
+        "hired": "New job: {{club}}",
+        "application_refused": "{{club}} turned down your application"
       },
       "offer": "{{club}} ({{league}}) wants you as their manager.",
-      "hired": "You are the new manager of {{club}} ({{league}}). The board has set this season's objective."
+      "hired": "You are the new manager of {{club}} ({{league}}). The board has set this season's objective.",
+      "application_refused": "{{club}} ({{league}}) thanked you but does not want to change manager now. You can apply again in 90 days."
     },
     "transfer": {
       "subject": {
@@ -6708,5 +6710,40 @@
     "error": "The radio did not answer. Try again.",
     "volume": "Radio volume",
     "next": "Next station: {{name}}"
+  },
+  "jobPosts": {
+    "views": "Managers view",
+    "ranking": "Ranking",
+    "posts": "Posts",
+    "hint": "How safe each manager's job is, from the table position against the board's target, the form and the time in charge. Apply to one club at a time; the answer comes through the inbox.",
+    "league": "League",
+    "club": "Club",
+    "manager": "Manager",
+    "security": "Job security",
+    "level": {
+      "1": "Very secure",
+      "2": "Secure",
+      "3": "Stable",
+      "4": "Under threat",
+      "5": "Under heavy threat",
+      "vacant": "Interim"
+    },
+    "humanManager": "Human manager",
+    "apply": "Apply",
+    "withdraw": "Withdraw application",
+    "pending": "Application to {{club}}: answer by {{date}}.",
+    "sent": "Application sent. The answer comes through the inbox in a few days.",
+    "withdrawn": "Application withdrawn.",
+    "refusedRecently": "Turned you down recently",
+    "errors": {
+      "alreadyApplied": "You already have an open application.",
+      "own": "This is already your club.",
+      "human": "This club has a human manager.",
+      "refused": "This club turned you down recently.",
+      "noApplication": "There is no open application.",
+      "lobby": "The league has not started yet.",
+      "notFound": "Club not found.",
+      "generic": "Could not send it. Try again."
+    }
   }
 }

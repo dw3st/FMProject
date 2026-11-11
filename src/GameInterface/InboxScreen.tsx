@@ -1307,8 +1307,8 @@ function JobBody({
   const { t, i18n } = useTranslation();
   const { session, save, currentDate, refresh } = useGameSave();
   const league = competitionName(message.leagueSlug, leagues, i18n.language) || message.leagueName;
-  if (message.kind === "hired") {
-    return <p className="text-sm text-foreground m-0">{t("inbox.job.hired", { club: message.clubName, league })}</p>;
+  if (message.kind === "hired" || message.kind === "application_refused") {
+    return <p className="text-sm text-foreground m-0">{t(`inbox.job.${message.kind}`, { club: message.clubName, league })}</p>;
   }
   const offer = message.offer;
   if (!offer || !session) {

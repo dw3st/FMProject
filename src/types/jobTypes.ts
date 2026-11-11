@@ -6,7 +6,22 @@ import type { CareerEnded, SeasonObjective } from "@/types/boardTypes";
  */
 
 /** When the offer arrived: the player's country rollover, the mid-season window, or unemployed. */
-export type JobWindow = "season_end" | "mid_season" | "unemployed";
+export type JobWindow = "season_end" | "mid_season" | "unemployed" | "application";
+
+/** The human's application to a club (8.9.29). */
+export interface JobApplication {
+  squadId: string;
+  clubName: string;
+  leagueSlug: string;
+  leagueName: string;
+  /** Day it was sent and day the answer arrives. */
+  on: string;
+  answerOn: string;
+  /** The board's answer, drawn when it was sent (never sent to the screen). */
+  accepted: boolean;
+  /** The offer delivered on `answerOn` when accepted (date and validity set then). */
+  offer?: JobOffer;
+}
 
 export interface JobOffer {
   id: string;

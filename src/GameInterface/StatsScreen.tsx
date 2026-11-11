@@ -18,6 +18,7 @@ import { RetiredProfile } from "@/GameInterface/Components/RetiredProfile";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { ManagerRanking } from "@/GameInterface/Components/ManagerRanking";
+import { JobPosts } from "@/GameInterface/Components/JobPosts";
 import type { CountryEntry } from "@/types/worldTypes";
 import countriesRaw from "@/Data/countries.json";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
@@ -539,7 +540,7 @@ export function StatsScreen() {
         ) : tab === "retired" ? (
           session?.saveId ? <RetiredList saveId={session.saveId} leagues={leagues} /> : null
         ) : tab === "managers" ? (
-          session?.saveId ? <ManagerRanking saveId={session.saveId} leagues={leagues} refreshKey={currentDate} openMe={new URLSearchParams(window.location.search).get("open") === "me"} /> : null
+          session?.saveId ? <ManagersTab saveId={session.saveId} leagues={leagues} refreshKey={currentDate ?? undefined} defaultLeague={session.leagueSlug ?? leagues[0]?.slug ?? ""} /> : null
         ) : tab === "champions" ? (
           session?.saveId ? <ChampionsTab saveId={session.saveId} leagues={leagues} countryByName={COUNTRY_BY_NAME} myClubId={session.clubId ?? ""} refreshKey={currentDate ?? undefined} /> : null
         ) : tab === "referees" ? (
@@ -586,5 +587,30 @@ export function StatsScreen() {
           </p>
         )}
     </ScreenContainer>
+  );
+}
+
+/** Stats → Managers: the ranking, or the job security of every club with the applications (8.9.29). */
+function ManagersTab({ saveId, leagues, refreshKey, defaultLeague }: {
+  saveId: string; leagues: LeagueData[]; refreshKey?: string; defaultLeague: string;
+}) {
+  const { t } = useTranslation();
+  const params = new URLSearchParams(window.location.search);
+  const [view, setView] = useState<"ranking" | "posts">(params.get("view") === "posts" ? "posts" : "ranking");
+  return (
+    <div className="flex flex-col gap-4">
+      <SegmentedTabs
+        compact
+        aria-label={t("jobPosts.views")}
+        tabs={[{ key: "ranking", label: t("jobPosts.ranking") }, { key: "posts", label: t("jobPosts.posts") }]}
+        active={view}
+        onChange={setView}
+      />
+      {view === "ranking" ? (
+        <ManagerRanking saveId={saveId} leagues={leagues} refreshKey={refreshKey} openMe={params.get("open") === "me"} />
+      ) : (
+        <JobPosts saveId={saveId} leagues={leagues} countryByName={COUNTRY_BY_NAME} defaultLeague={defaultLeague} refreshKey={refreshKey} />
+      )}
+    </div>
   );
 }
