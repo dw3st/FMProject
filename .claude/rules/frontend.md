@@ -102,3 +102,7 @@ Divisórias na barra de baixo (8.8.27, report do usuário): uma linha de 20px en
 ## Rodapé da partida (8.9.3)
 
 Report do usuário, opção B do mock. Na partida (`StatusBar matchMode`, chrome `match`) a barra não mostra orçamento, mensagens nem elenco, e o encaixe dos amigos fica com o espaço, sem rolagem. `LiveRivalsStrip` (no rodapé) mede quantos amigos cabem; os outros ficam invisíveis no lugar e abrem pelo botão "+N", numa lista acima da barra. Quem assiste vira um olho com o número, com os nomes no `title`.
+
+## Links dentro de uma janela (10.0.1)
+
+Report do usuário. O clique num link dentro de um `Modal` (Headless UI) não chegava ao ouvinte do quadro e a página inteira recarregava (rodapé e rádio). O `Modal` agora trata o clique no painel: caminho do quadro troca a tela no lugar (`navigate`) e fecha a janela.

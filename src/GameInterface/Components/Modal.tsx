@@ -1,5 +1,7 @@
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
+import { interceptedTarget } from "@/GameInterface/router/appRoutes";
+import { isFrameActive, navigate } from "@/GameInterface/router/navigation";
 
 const sizeClass = {
   sm: "max-w-md",
@@ -35,6 +37,20 @@ export function Modal({ open, onClose, children, size = "lg", panelClassName }: 
     ? `card-arcade rounded-md w-full ${sizeClass[size]} ${panelClassName}`
     : `${defaultPanel} ${sizeClass[size]}`;
 
+  // A link inside the dialog (the inbox's blue action buttons) never reaches the frame's document listener: the
+  // dialog takes the click first and the browser loaded the whole page again, footer and radio included (10.0.1,
+  // tester report). Frame paths change in place here and close the dialog.
+  const onPanelClick = (e: MouseEvent<HTMLDivElement>) => {
+    if (!isFrameActive() || e.defaultPrevented) return;
+    const a = (e.target as Element | null)?.closest?.("a");
+    if (!a) return;
+    const to = interceptedTarget(e, { href: a.href, target: a.target, hasDownload: a.hasAttribute("download") }, window.location.origin);
+    if (!to) return;
+    e.preventDefault();
+    onClose();
+    navigate(to);
+  };
+
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
       {/* Backdrop */}
@@ -42,7 +58,7 @@ export function Modal({ open, onClose, children, size = "lg", panelClassName }: 
 
       {/* Centering wrapper */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <DialogPanel className={mergedPanel}>{children}</DialogPanel>
+        <DialogPanel className={mergedPanel} onClick={onPanelClick}>{children}</DialogPanel>
       </div>
     </Dialog>
   );
