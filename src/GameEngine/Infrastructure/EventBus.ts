@@ -155,6 +155,8 @@ export interface GameEvents {
   /** A goal ruled out by the VAR: score, stats and ratings of the goal are undone. */
   /** The human manager's complaint earned a card (live match only): the pitch of whoever watches draws it. */
   managerCard: { team: TeamId; card: "yellow" | "red"; minute: number };
+  /** A complaint without a card in a match between two managers (9.6.5): `bias` = the referee took it badly. */
+  managerComplaint: { team: TeamId; result: "calm" | "bias" };
   goalDisallowed: { team: TeamId; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; score: { A: number; B: number }; minute: number };
 
   // ── Debug events ──────────────────────────────────────────────────────────

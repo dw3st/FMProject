@@ -987,3 +987,7 @@ Desenho aprovado pelo usuário. Regra pura em `src/Domain/friendlies/seatFriendl
 ## Jogo ao vivo entre técnicos de seleção (9.6)
 
 Dois assentos que treinam as duas seleções de um jogo jogam como dois clubes de assento: `fixtureSeats` (`groupAdvance.ts`) acha o assento de cada lado (clube por `seatOfClub`, seleção por `NationalState.human`) e vale para `seatVsSeat`, `simulateSeatGame` e a sala (`joinContext`; o lado leva o id e o nome da seleção). A prévia da seleção (`matchSetupFor`, caminho nacional) responde 409 `seatOpponent` sem `h2h` e `h2h: true` com ele; o botão Jogar ao vivo aparece também no jogo de seleção. A gravação do mandante entra no dia pelo caminho nacional de sempre (`playedMatches` do assento). Teste: `src/backend/h2h/nationalH2H.test.ts`.
+
+## Técnico expulso na faixa dos amigos (9.7)
+
+`useLiveRivals` acende a linha do amigo em vermelho ("técnico expulso", `LiveFlash` `managerRed`) quando chega um lance novo de vermelho do técnico (`LiveMoment.manager`), como o gol acende em azul. Reclamação no jogo entre técnicos: `.claude/rules/game/var.md` → "Reclamação no jogo entre técnicos". Na 9.7 o fim do jogo de seleção entre técnicos passou a montar as convocações (`callUpSquad`) no lugar dos elencos de clube.

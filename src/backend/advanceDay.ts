@@ -763,6 +763,8 @@ export async function advanceOneDay(
             squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: backed(r.updatedHome) });
             squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: backed(r.updatedAway) });
             recSeat.managerCards = sanitizeManagerCards(recording.managerCards);
+            // A live match between two managers (9.6.5): the away manager's cards, kept by the server.
+            if (awaySeat && awaySeat !== recSeat) awaySeat.managerCards = sanitizeManagerCards(recording.awayManagerCards);
             teamsPlayingToday.add(fixture.home);
             teamsPlayingToday.add(fixture.away);
             for (const inj of r.injuriesApplied) {

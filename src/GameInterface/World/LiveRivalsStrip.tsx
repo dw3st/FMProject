@@ -1,3 +1,4 @@
+import type { LiveFlash } from "@/GameInterface/World/useLiveRivals";
 import { rivalNextOpponent } from "@/GameInterface/World/rivalNext";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,7 +23,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
   footer?: boolean;
   saveId: string;
   live: LiveScoreView[];
-  highlight: Record<string, true>;
+  highlight: Record<string, LiveFlash>;
   /** Who is watching this broadcast now (multiplayer part 8). */
   viewers?: string[];
   /** Clubs of the match being played here: a friend in it is not listed as "next match". */
@@ -67,14 +68,14 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
   // Kept while loading: the strip showing up later would push the pitch down.
   if (loaded && live.length === 0 && idle.length === 0 && viewers.length === 0) return null;
   const liveBody = (l: LiveScoreView) => {
-    const lit = !!highlight[l.seatId];
+    const lit = highlight[l.seatId];
     const sides = homeAwayOf(l);
     return (<>
               <button
                 type="button"
                 onClick={(e) => { setOpenLeft(e.currentTarget.getBoundingClientRect().left); setOpen(open === l.seatId ? null : l.seatId); }}
                 aria-expanded={open === l.seatId}
-                className={`flex items-center gap-1.5 min-h-8 px-2 rounded border-0 cursor-pointer text-sm tabular-nums transition-colors ${lit ? "bg-primary/15 text-primary" : "bg-transparent text-foreground hover:bg-secondary/40"}`}
+                className={`flex items-center gap-1.5 min-h-8 px-2 rounded border-0 cursor-pointer text-sm tabular-nums transition-colors ${lit === "managerRed" ? "bg-destructive/15 text-destructive" : lit ? "bg-primary/15 text-primary" : "bg-transparent text-foreground hover:bg-secondary/40"}`}
               >
                 <span className="font-semibold">{l.nickname}</span>
                 <span aria-hidden="true">·</span>
@@ -83,7 +84,7 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
                 <ClubLogo title={sides.awayName} logoUrl={squadLogoUrl(sides.awayId)} className="w-5 h-5 shrink-0" imgClassName="w-full h-full object-contain" />
                 {sides.aggregate && <span className="text-muted-foreground">({t("rivals.aggregateShort", { home: sides.aggregate.home, away: sides.aggregate.away })})</span>}
                 <span className="text-muted-foreground">· {l.status === "live" ? t("rivals.liveMinute", { minute: l.minute }) : t(`rivals.${l.status}Status`)}</span>
-                {lit && <span className="font-display font-bold uppercase tracking-[0.08em]">· {l.lastGoal?.scorer ? t("rivals.scorer", { name: l.lastGoal.scorer }) : t("rivals.goalShort")}</span>}
+                {lit && <span className="font-display font-bold uppercase tracking-[0.08em]">· {lit === "managerRed" ? t("rivals.managerSentOff") : l.lastGoal?.scorer ? t("rivals.scorer", { name: l.lastGoal.scorer }) : t("rivals.goalShort")}</span>}
               </button>
               {open === l.seatId && (
                 <div

@@ -31,6 +31,10 @@ import {
 } from "@/Domain/h2h/h2hRules";
 import { eligibleLivePlayers, type LiveMatchInput, type LiveSideInput } from "@/Domain/match/liveMatchSetup";
 import { buildPlayedMatchRecording } from "@/Domain/advanceDay/buildPlayedMatchRecording";
+import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
+import { resolveComplaint } from "@/GameEngine/Domain/Var";
+import { VAR_CONFIG } from "@/GameEngine/Configs/VarConfig";
+import { callUpSquad, nationalPseudoSquad } from "@/backend/nationalWorld";
 import { buildH2HMessage } from "@/Domain/inbox/worldAdvanceMessage";
 import { squadFamiliarityLevels } from "@/Domain/familiarity/familiarity";
 import { staffEffectsOf } from "@/Domain/staff/staff";
@@ -122,7 +126,22 @@ interface Rec {
   penalty2d: Record<H2HSide, boolean>;
   /** The penalty waiting for both choices (2D): the assistant fills a side that is automatic or too slow. */
   penalty: PenaltyRound | null;
+  /** Each manager's complaints (9.6.5, `var.md` §4): the last call against his side, the cards, sent off. */
+  complaints: Record<H2HSide, SideComplaints>;
+  /** The match referee's strictness (none = no referee: no complaint). */
+  strictness: number | null;
 }
+
+interface SideComplaints {
+  made: number;
+  /** When the last call against the side came (ms), and the call already complained about. */
+  lastCall: number;
+  complainedCall: number;
+  cards: ManagerCardRecord[];
+  sentOff: boolean;
+}
+
+const noComplaints = (): SideComplaints => ({ made: 0, lastCall: 0, complainedCall: -1, cards: [], sentOff: false });
 
 interface PenaltyRound {
   pending: PendingPenalty;
@@ -255,7 +274,7 @@ function relayPause(rec: Rec): void {
 /** The two seats of the match: their spectators get it too. */
 const seatsOf = (rec: Rec) => [rec.room.sides.A.seatId, rec.room.sides.B.seatId];
 
-function liveFrame(rec: Rec, phase: LivePhase, minute: number, score: { A: number; B: number }, extra?: { scorer?: string; playerIn?: string; team?: H2HSide }) {
+function liveFrame(rec: Rec, phase: LivePhase, minute: number, score: { A: number; B: number }, extra?: { scorer?: string; playerIn?: string; team?: H2HSide; manager?: true }) {
   if (!rec.live) return;
   for (const side of SIDES) {
     const mine = side === "A" ? score.A : score.B;
@@ -265,13 +284,25 @@ function liveFrame(rec: Rec, phase: LivePhase, minute: number, score: { A: numbe
       score: { for: mine, against: theirs },
       ...(extra?.scorer ? { scorer: extra.scorer } : {}),
       ...(extra?.playerIn ? { playerIn: extra.playerIn } : {}),
+      ...(extra?.manager ? { manager: true as const } : {}),
       ...((phase === "red" || phase === "yellow" || phase === "sub") && extra?.team ? { side: extra.team === side ? ("for" as const) : ("against" as const) } : {}),
     }, notify, undefined, new Set([rec.room.sides.A.seatId, rec.room.sides.B.seatId]));
   }
 }
 
+/** The side a call goes against (a foul, a card, a penalty, an offside, a VAR check), as the solo match opens its button. */
+function callAgainst(name: string, p: Record<string, unknown>): H2HSide | null {
+  const flip = (t: unknown): H2HSide | null => (t === "A" ? "B" : t === "B" ? "A" : null);
+  if (name === "foul" || name === "card" || name === "offsideCalled") return p.team === "A" || p.team === "B" ? p.team : null;
+  if (name === "penaltyAwarded") return flip(p.team);
+  if (name === "varReview") return p.against === "A" || p.against === "B" ? p.against : null;
+  return null;
+}
+
 function onEvent(rec: Rec, name: string, payload: unknown): void {
   toSockets(rec, { type: "h2h_event", saveId: rec.room.saveId, fixtureId: rec.room.fixtureId, name, payload });
+  const against = callAgainst(name, (payload ?? {}) as Record<string, unknown>);
+  if (against) rec.complaints[against].lastCall = clock();
   if (WATCH_EVENTS.has(name)) relayFromServer(rec.room.saveId, seatsOf(rec), { kind: "event", name, payload });
   const p = payload as Record<string, unknown>;
   const score = (p.score as { A: number; B: number } | undefined) ?? rec.lastState?.score ?? { A: 0, B: 0 };
@@ -403,6 +434,8 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
         names: new Map(),
         penalty2d: { A: false, B: false },
         penalty: null,
+        complaints: { A: noComplaints(), B: noComplaints() },
+        strictness: null,
       };
       rooms.set(key, rec);
     }
@@ -424,7 +457,7 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
       } satisfies ServerEvent));
     }
     if (rec.room.pause) sendRaw(ws, JSON.stringify(pausedEvent(rec)));
-    if (!wasConnected && !rec.banned[side]) rec.engine?.post({ type: "auto", side, on: false });
+    if (!wasConnected && !rec.banned[side] && !rec.complaints[side].sentOff) rec.engine?.post({ type: "auto", side, on: false });
   }
   broadcastRoom(rec);
   const other: H2HSide = side === "A" ? "B" : "A";
@@ -518,7 +551,36 @@ function command(ws: SocialSocket, cmd: H2HCommand): void {
   const rec = recOf(ws);
   const side = rec && sideOfSocket(rec, ws);
   if (!rec || !side || rec.room.phase !== "live" || rec.banned[side]) return;
+  if (cmd.kind === "complain") { complain(rec, side); return; }
   rec.engine?.post({ type: "cmd", side, cmd });
+}
+
+/**
+ * A complaint (9.6.5): only right after a call against his side, once per call, never sent off or without a
+ * referee. The server rolls it (`resolveComplaint`): a calm word, the referee leaning on the other side, or a card
+ * both managers see; a red puts his assistant in charge (his orders from the stands still go through).
+ */
+function complain(rec: Rec, side: H2HSide): void {
+  const c = rec.complaints[side];
+  const now = clock();
+  if (c.sentOff || rec.strictness === null || c.complainedCall === c.lastCall || now - c.lastCall > VAR_CONFIG.COMPLAINT_WINDOW * 1000) return;
+  c.complainedCall = c.lastCall;
+  const made = c.made++;
+  const out = resolveComplaint({ made, strictness: rec.strictness, onYellow: c.cards.some((x) => x.card === "yellow") }, Math.random);
+  const other: H2HSide = side === "A" ? "B" : "A";
+  if (out.card === "none") {
+    if (out.bias) rec.engine?.post({ type: "bias", team: other, amount: VAR_CONFIG.COMPLAINT_BIAS });
+    onEvent(rec, "managerComplaint", { team: side, result: out.bias ? "bias" : "calm" });
+    return;
+  }
+  const minute = (rec.live?.minuteNow ?? 0) + 1;
+  c.cards.push({ card: out.card, minute, complaint: made + 1 });
+  onEvent(rec, "managerCard", { team: side, card: out.card, minute });
+  liveFrame(rec, out.card, minute, rec.lastState?.score ?? { A: 0, B: 0 }, { team: side, manager: true });
+  if (out.card === "red") {
+    c.sentOff = true;
+    rec.engine?.post({ type: "auto", side, on: true });
+  }
 }
 
 function armPauseTimer(rec: Rec): void {
@@ -683,6 +745,7 @@ async function startMatch(rec: Rec): Promise<void> {
     return;
   }
   rec.banned = { A: input.A.managerBanned === true, B: input.B.managerBanned === true };
+  rec.strictness = home.referee ? home.referee.strictness : null;
   rec.room = { ...rec.room, phase: "live" };
   rec.starting = false;
   rec.engine = spawner(
@@ -845,14 +908,21 @@ async function finishMatch(rec: Rec, state: GameState, stats: H2HStatsPayload): 
         return false;
       }
       const fixture = rec.fixture;
-      const [homeSquad, awaySquad] = await Promise.all([
-        service.getSquadById(saveId, fixture.home), service.getSquadById(saveId, fixture.away),
-      ]);
+      // A national game (9.6): the called-up squads, as the match was built.
+      const national = await service.getNationalState(saveId);
+      const squadOf = async (id: string) => {
+        if (!id.startsWith("nat_") || !national) return service.getSquadById(saveId, id);
+        const cu = await callUpSquad(saveId, national, id, (x) => service.getSquadById(saveId, x));
+        return cu ? nationalPseudoSquad(national, id, cu.players) : null;
+      };
+      const [homeSquad, awaySquad] = await Promise.all([squadOf(fixture.home), squadOf(fixture.away)]);
       if (!homeSquad || !awaySquad) throw new Error("squads missing");
       // Synchronous from here: the stores hold this match until the recording is built.
       importStatsState(stats.snapshot);
       importRatings(stats.ratings);
-      const recording = validatePlayedMatch(buildPlayedMatchRecording(state, fixture, fixture.home, homeSquad, awaySquad));
+      const built = buildPlayedMatchRecording(state, fixture, fixture.home, homeSquad, awaySquad, rec.complaints.A.cards);
+      const awayCards = rec.complaints.B.cards;
+      const recording = validatePlayedMatch(awayCards.length > 0 ? { ...built, awayManagerCards: awayCards } : built);
       if (!recording || !knockoutRecordingDecided(fixture, recording)) throw new Error("invalid recording");
       await service.writeLiveRecording(saveId, homeSeatId, { date, fixtureId, recording });
       for (const [seatId, seat] of [[homeSeatId, homeSeat], [awaySeatId, awaySeat]] as const) {

@@ -189,6 +189,9 @@ export function parseH2HCommand(raw: unknown): H2HCommand | null {
     case "move":
       if (!hasOnly(raw, ["kind", "id", "slot"]) || !isId(raw.id) || !Number.isInteger(raw.slot) || (raw.slot as number) < 0 || (raw.slot as number) > 10) return null;
       return { kind: "move", id: raw.id, slot: raw.slot as number };
+    case "complain":
+      if (!hasOnly(raw, ["kind"])) return null;
+      return { kind: "complain" };
     case "mentality":
       if (!hasOnly(raw, ["kind", "mentality"]) || !MENTALITY_OPTIONS.includes(raw.mentality as Mentality)) return null;
       return { kind: "mentality", mentality: raw.mentality as Mentality };

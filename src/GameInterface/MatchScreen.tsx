@@ -1151,18 +1151,18 @@ export function MatchScreen() {
   // Complaint (`var.md` §4): a call against the user's side (a foul, a card, a penalty, an offside, a VAR check)
   // opens the button for COMPLAINT_WINDOW real seconds; never with the manager off the touchline or no referee.
   useEffect(() => {
-    const open = () => {
-      // Not in a live match between two managers (no complaint there).
-      if (h2hModeRef.current || !gameStateRef.current?.referee) return;
+    // My side: A in a solo match; between two managers (9.6.5) the side the room gave me.
+    const open = (team: TeamId) => {
+      if (team !== mySideRef.current || !gameStateRef.current?.referee) return;
       complaintSeqRef.current++;
       setComplaint({ seq: complaintSeqRef.current, until: Date.now() + VAR_CONFIG.COMPLAINT_WINDOW * 1000 });
     };
     const offs = [
-      gameBus.on("foul", (e) => { if (e.team === "A") open(); }),
-      gameBus.on("card", (e) => { if (e.team === "A") open(); }),
-      gameBus.on("penaltyAwarded", (e) => { if (e.team === "B") open(); }),
-      gameBus.on("offsideCalled", (e) => { if (e.team === "A") open(); }),
-      gameBus.on("varReview", (e) => { if (e.against === "A") open(); }),
+      gameBus.on("foul", (e) => open(e.team)),
+      gameBus.on("card", (e) => open(e.team)),
+      gameBus.on("penaltyAwarded", (e) => open(e.team === "A" ? "B" : "A")),
+      gameBus.on("offsideCalled", (e) => open(e.team)),
+      gameBus.on("varReview", (e) => open(e.against)),
     ];
     return () => offs.forEach((off) => off());
   }, []);
@@ -1178,11 +1178,72 @@ export function MatchScreen() {
     setGameState((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);
 
+  /**
+   * A manager's card on screen: the card over his head, the line in the summary, the TV lower third (or a notice);
+   * mine sent off puts the assistant in charge. Solo: always my side; between two managers both (9.6.5).
+   */
+  function presentManagerCard(team: TeamId, card: "yellow" | "red", minute: number) {
+    const gs = gameStateRef.current;
+    const mine = team === mySideRef.current;
+    setCoachCard((prev) => ({ team, card, seq: (prev?.seq ?? 0) + 1 }));
+    setEventFeed((f) => [...f, { minute: minute - 1, team, kind: card === "red" ? "managerRed" : "managerYellow", player: "" }]);
+    const who = mine ? touchline?.managers?.mine : touchline?.managers?.opponent;
+    const photo = coaches[team]?.faceUrl;
+    if (newVisualOn() && who && gs) {
+      const sc = gs.score ?? { A: 0, B: 0 };
+      const shown = toDisplayPair(sc, isAwayView(matchFixture, crestIds?.a));
+      showBanner({
+        kind: card,
+        title: who.name ?? t("complaint.manager"),
+        line: teamNamesRef.current[team],
+        ...crestOfRef.current(team),
+        goal: {
+          ...(photo ? { photo } : {}),
+          tag: t("match.banner.tvCardTag", { card: t(`match.banner.${card}`), minute }),
+          score: `${shown.A}–${shown.B}`,
+          color: team === "A" ? matchKitColors.teamA : matchKitColors.teamB,
+          card,
+        },
+      });
+    } else if (mine) {
+      showNotice(t(card === "red" ? "complaint.red" : "complaint.yellow"), card === "red" ? "danger" : "warn");
+    } else {
+      showNotice(t(card === "red" ? "complaint.opponentRed" : "complaint.opponentYellow"), card === "red" ? "danger" : "warn");
+    }
+    if (mine && card === "red") {
+      // Sent to the stands: the assistant makes the changes (AI rule), injuries included.
+      setManagerOut("sentOff");
+      panelPauseRef.current = NO_PANEL_PAUSE;
+      showSubPanelRef.current = false;
+      setShowSubPanel(false);
+      if (!h2hModeRef.current) {
+        patchVarState({ autoSubs: { A: true } });
+        gameBus.emit("testCommand", { type: "setManualInjurySubs", team: "A", on: false });
+      }
+    }
+  }
+
+  // Between two managers (9.6.5) the server's answer to a complaint: a card (either manager's) or, for mine, a word.
+  const presentCardRef = useRef(presentManagerCard);
+  presentCardRef.current = presentManagerCard;
+  useEffect(() => {
+    if (!h2hMode) return;
+    const offs = [
+      gameBus.on("managerCard", (e) => presentCardRef.current(e.team, e.card, e.minute)),
+      gameBus.on("managerComplaint", (e) => {
+        if (e.team === mySideRef.current) showNotice(t(e.result === "bias" ? "complaint.bias" : "complaint.calm"), "info");
+      }),
+    ];
+    return () => offs.forEach((off) => off());
+  }, [h2hMode, showNotice, t]);
+
   function handleComplain() {
     const gs = gameStateRef.current;
     if (!gs || !complaint || managerOut || complainedSeqRef.current === complaint.seq || Date.now() > complaint.until) return;
     complainedSeqRef.current = complaint.seq;
     setComplaint(null);
+    // Between two managers the server rolls it; the answer comes back as an event for both (9.6.5).
+    if (h2hModeRef.current) { sendH2H({ kind: "complain" }); return; }
     const made = complaintsMadeRef.current++;
     const onYellow = managerCardsRef.current.some((c) => c.card === "yellow");
     const out = resolveComplaint({ made, strictness: gs.referee?.strictness, onYellow }, Math.random);
@@ -1194,7 +1255,6 @@ export function MatchScreen() {
       return;
     }
     managerCardsRef.current = [...managerCardsRef.current, { card: out.card, minute, complaint: made + 1 }];
-    setCoachCard((prev) => ({ team: "A", card: out.card as "yellow" | "red", seq: (prev?.seq ?? 0) + 1 }));
     // Friends see it too: on the pitch of the broadcast and in the last moments.
     gameBus.emit("managerCard", { team: "A", card: out.card, minute });
     if (liveFixtureRef.current) {
@@ -1203,38 +1263,7 @@ export function MatchScreen() {
         score: { for: gs.score.A, against: gs.score.B }, side: "for", manager: true,
       });
     }
-    setEventFeed((f) => [...f, { minute: minute - 1, team: "A", kind: out.card === "red" ? "managerRed" : "managerYellow", player: "" }]);
-    // With the new art the manager's card is the same TV lower third as a player's (his face, the card, the minute).
-    const me = touchline?.managers?.mine;
-    const photo = coaches[mySide]?.faceUrl;
-    if (newVisualOn() && me) {
-      const sc = gs.score ?? { A: 0, B: 0 };
-      const shown = toDisplayPair(sc, isAwayView(matchFixture, crestIds?.a));
-      showBanner({
-        kind: out.card === "red" ? "red" : "yellow",
-        title: me.name ?? t("complaint.manager"),
-        line: teamNamesRef.current[mySide],
-        ...crestOfRef.current(mySide),
-        goal: {
-          ...(photo ? { photo } : {}),
-          tag: t("match.banner.tvCardTag", { card: t(`match.banner.${out.card === "red" ? "red" : "yellow"}`), minute }),
-          score: `${shown.A}–${shown.B}`,
-          color: mySide === "A" ? matchKitColors.teamA : matchKitColors.teamB,
-          card: out.card as "yellow" | "red",
-        },
-      });
-    } else {
-      showNotice(t(out.card === "red" ? "complaint.red" : "complaint.yellow"), out.card === "red" ? "danger" : "warn");
-    }
-    if (out.card === "red") {
-      // Sent to the stands: the assistant makes the changes (AI rule), injuries included.
-      setManagerOut("sentOff");
-      panelPauseRef.current = NO_PANEL_PAUSE;
-      showSubPanelRef.current = false;
-      setShowSubPanel(false);
-      patchVarState({ autoSubs: { A: true } });
-      gameBus.emit("testCommand", { type: "setManualInjurySubs", team: "A", on: false });
-    }
+    presentManagerCard("A", out.card, minute);
   }
 
   // Layout effect: the first value is set before the overlay paints (never the previous break's 100%).
@@ -2029,7 +2058,7 @@ export function MatchScreen() {
               {t("match.subs", { remaining: mySubsRemaining })}
             </button>
             )}
-            {!managerOut && !h2hMode && (
+            {!managerOut && (
               // Its place is always kept (tester report, 8.8.9: popping in, it pushed "Substitutions" aside and a click
               // meant for it complained, red card included). After Substitutions (tester report, 8.8.14): the empty place is at the end, not a gap between the buttons.
               <button

@@ -200,6 +200,26 @@ describe("h2h rooms (live match between two managers)", () => {
     expect(cmds).toEqual([{ type: "cmd", side: "B", cmd: { kind: "mentality", mentality: "attacking" } }]);
   });
 
+  test("complaints (9.6.5): only after a call against the side, once per call; a red reaches both and the assistant", async () => {
+    const cardEvents = (sock: { sent: ServerEvent[] }) =>
+      sock.sent.filter((e) => e.type === "h2h_event" && e.name === "managerCard") as Extract<ServerEvent, { type: "h2h_event" }>[];
+    await handleH2HEvent(sockA, { type: "h2h_cmd", cmd: { kind: "complain" } });
+    expect(cardEvents(sockB)).toHaveLength(0);
+    const realRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      engine!.deliver({ type: "event", name: "foul", payload: { team: "A", minute: 10 } });
+      const before = engine!.posted.length;
+      await handleH2HEvent(sockA, { type: "h2h_cmd", cmd: { kind: "complain" } });
+      await handleH2HEvent(sockA, { type: "h2h_cmd", cmd: { kind: "complain" } });
+      expect(cardEvents(sockB).map((e) => e.payload)).toEqual([expect.objectContaining({ team: "A", card: "red" })]);
+      expect(cardEvents(sockA)).toHaveLength(1);
+      expect(engine!.posted.slice(before)).toContainEqual({ type: "auto", side: "A", on: true });
+    } finally {
+      Math.random = realRandom;
+    }
+  });
+
   test("2D penalties: each side answers its own role, the assistant fills an automatic side", async () => {
     const takerId = engine!.match!.state.players.find((p) => p.team === "A" && p.role !== "GK")!.id;
     const keeperId = engine!.match!.state.players.find((p) => p.team === "B" && p.role === "GK")!.id;
@@ -269,6 +289,8 @@ describe("h2h rooms (live match between two managers)", () => {
     expect(eventsOf(b.user.id, "h2h_done")).toHaveLength(1);
     const file = (await saveService.getLiveRecording(saveId, seatA))!;
     expect(file.fixtureId).toBe(match.id);
+    // The home manager's red of the complaint test travels with the recording.
+    expect(file.recording.managerCards?.map((c) => c.card)).toEqual(["red"]);
     expect(await saveService.getLiveRecording(saveId, seatB)).toBeNull();
     expect((await saveService.getSeat(saveId, seatA))!.matchDecision).toMatchObject({ mode: "live" });
     expect((await saveService.getSeat(saveId, seatB))!.matchDecision).toMatchObject({ mode: "live" });

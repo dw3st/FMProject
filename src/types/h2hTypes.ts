@@ -44,7 +44,9 @@ export type H2HCommand =
   | { kind: "tactics"; style: TacticalStyle; axesOverride?: Partial<TacticalAxes> }
   | { kind: "formation"; formation: string }
   | { kind: "instruction"; slot: number; instruction: SlotInstruction | null }
-  | { kind: "marks"; marks: { markerSlot: number; targetId: number }[] };
+  | { kind: "marks"; marks: { markerSlot: number; targetId: number }[] }
+  /** The manager complains about the last call against his side (9.6.5): the server decides the card. */
+  | { kind: "complain" };
 
 /** Main process → match worker. */
 export type WorkerIn =
@@ -53,6 +55,8 @@ export type WorkerIn =
   | { type: "pause" }
   | { type: "resume" }
   | { type: "auto"; side: H2HSide; on: boolean }
+  /** A complaint that got the referee on the other side's back (`refereeBias`). */
+  | { type: "bias"; team: H2HSide; amount: number }
   | { type: "speed"; factor: number }
   | { type: "penalty"; outcome: PenaltyOutcome };
 

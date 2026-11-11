@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.7",
+    date: "2026-11-11",
+    time: "21:50",
+    items: [
+      { pt: "Jogo ao vivo entre dois técnicos: agora dá para reclamar com o árbitro, e o cartão de um aparece para o outro (expulso, o auxiliar assume).", en: "Live match between two managers: you can now complain to the referee, and one manager's card shows to the other (sent off, the assistant takes over)." },
+      { pt: "Faixa de amigos na partida: acende em vermelho quando um amigo é expulso no jogo dele.", en: "Friends' strip in the match: it lights up red when a friend is sent off in his game." },
+    ],
+    fixes: [
+      { pt: "Jogo de seleção ao vivo entre dois técnicos: o resultado agora é gravado no fim da partida.", en: "Live national game between two managers: the result is now stored at full time." },
+    ],
+  },
+  {
     version: "9.6.4",
     date: "2026-11-11",
     time: "21:10",

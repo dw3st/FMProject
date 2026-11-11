@@ -4938,7 +4938,9 @@
     "orderMentalityNo": "O auxiliar mantém o plano dele (você pediu {{mentality}})",
     "orderSub": "O auxiliar faz sua troca: {{in}} no lugar de {{out}}",
     "orderSubNo": "O auxiliar mantém {{out}} em campo (você pediu {{in}})",
-    "ordersHint": "Da arquibancada você ainda passa ordens ao auxiliar: mentalidade e trocas. Ele segue a maioria."
+    "ordersHint": "Da arquibancada você ainda passa ordens ao auxiliar: mentalidade e trocas. Ele segue a maioria.",
+    "opponentRed": "O técnico adversário foi expulso.",
+    "opponentYellow": "O técnico adversário levou amarelo."
   },
   "var": {
     "badge": "Com VAR",
@@ -6841,7 +6843,8 @@
       "notFound": "Esse jogo ou resultado não está mais disponível.",
       "self": "Não dá para reagir ao próprio jogo.",
       "invalidTaunt": "Essa frase não serve para esse momento."
-    }
+    },
+    "managerSentOff": "técnico expulso"
   },
   "h2h": {
     "pausesLeft": "Pausar · {{count}}",

@@ -13,9 +13,13 @@ const LOGOUT_CLOSE_CODE = 4001;
  * Live scores of the friends during the user's own live match (rivals, multiplayer part 6): its own socket (the match
  * page has no social provider), the friends' `friend_live`, and `send` for this match's `live_score` frames.
  */
+export type LiveFlash = "goal" | "managerRed";
+
 export function useLiveRivals(target: { saveId: string; seatId: string } | null) {
   const [live, setLive] = useState<Record<string, LiveScoreView>>({});
-  const [highlight, setHighlight] = useState<Record<string, true>>({});
+  /** A friend's line lit for a moment: his goal, or his manager sent off (9.6.5). */
+  const [highlight, setHighlight] = useState<Record<string, LiveFlash>>({});
+  const liveRef = useRef<Record<string, LiveScoreView>>({});
   /** Someone watches this match (`watch_on`): the match screen relays it while true. */
   const [watched, setWatched] = useState(false);
   /** Nicknames of who watches this match now (`watch_viewers`). */
@@ -59,14 +63,16 @@ export function useLiveRivals(target: { saveId: string; seatId: string } | null)
           return;
         }
         if (!ev || ev.type !== "friend_live" || ev.saveId !== saveId || ev.seatId === seatId) return;
-        setLive((prev) => {
-          const next = { ...prev };
-          if (ev.live) next[ev.seatId] = ev.live;
-          else delete next[ev.seatId];
-          return next;
-        });
-        if (ev.goal) {
-          setHighlight((h) => ({ ...h, [ev.seatId]: true }));
+        const reds = (l?: LiveScoreView) => (l?.moments ?? []).filter((m) => m.kind === "red" && m.manager).length;
+        const sentOff = !!ev.live && reds(ev.live) > reds(liveRef.current[ev.seatId]);
+        const nextLive = { ...liveRef.current };
+        if (ev.live) nextLive[ev.seatId] = ev.live;
+        else delete nextLive[ev.seatId];
+        liveRef.current = nextLive;
+        setLive(nextLive);
+        const flash: LiveFlash | null = sentOff ? "managerRed" : ev.goal ? "goal" : null;
+        if (flash) {
+          setHighlight((h) => ({ ...h, [ev.seatId]: flash }));
           const t = setTimeout(() => {
             timers.delete(t);
             setHighlight((h) => { const n = { ...h }; delete n[ev.seatId]; return n; });

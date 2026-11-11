@@ -60,5 +60,6 @@ self.onmessage = (e: MessageEvent<WorkerIn>) => {
     case "resume": post(match.setPaused(false)); break;
     case "penalty": post(match.penalty(msg.outcome)); break;
     case "auto": post(match.setAuto(msg.side, msg.on)); break;
+    case "bias": post(match.setBias(msg.team, msg.amount)); break;
   }
 };

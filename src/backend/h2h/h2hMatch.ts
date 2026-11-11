@@ -52,6 +52,8 @@ export interface H2HMatch {
   command(side: H2HSide, cmd: H2HCommand): WorkerOut[];
   setPaused(paused: boolean): WorkerOut[];
   setAuto(side: H2HSide, on: boolean): WorkerOut[];
+  /** The referee leans on `team` for the rest of the match (a complaint, 9.6.5). */
+  setBias(team: H2HSide, amount: number): WorkerOut[];
   /** Answers the pending 2D penalty (the server resolved both managers' choices). */
   penalty(outcome: PenaltyOutcome): WorkerOut[];
   /** Real-time multiplier (tests only; 1 in play). */
@@ -246,6 +248,10 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
       return flush();
     },
 
+    setBias(team: H2HSide, amount: number): WorkerOut[] {
+      if (!done && !state.refereeBias) state = { ...state, refereeBias: { team, amount } };
+      return [];
+    },
     setAuto(side: H2HSide, on: boolean): WorkerOut[] {
       if (done) return [];
       const autoSubs = { ...state.autoSubs };

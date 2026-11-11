@@ -4938,7 +4938,9 @@
     "orderMentalityNo": "The assistant keeps his plan (you asked for {{mentality}})",
     "orderSub": "The assistant makes your change: {{in}} for {{out}}",
     "orderSubNo": "The assistant keeps {{out}} on (you asked for {{in}})",
-    "ordersHint": "From the stands you can still pass orders to the assistant: mentality and changes. He follows most of them."
+    "ordersHint": "From the stands you can still pass orders to the assistant: mentality and changes. He follows most of them.",
+    "opponentRed": "The other manager was sent off.",
+    "opponentYellow": "The other manager was booked."
   },
   "var": {
     "badge": "VAR",
@@ -6841,7 +6843,8 @@
       "notFound": "That game or result is no longer available.",
       "self": "You can't react to your own game.",
       "invalidTaunt": "That phrase doesn't fit this moment."
-    }
+    },
+    "managerSentOff": "manager sent off"
   },
   "h2h": {
     "pausesLeft": "Pause · {{count}}",

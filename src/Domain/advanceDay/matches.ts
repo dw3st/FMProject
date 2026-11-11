@@ -170,6 +170,8 @@ export interface PlayedMatchRecording {
   var?: import("@/types/dayLogTypes").MatchVarStats;
   /** Cards shown to the human club's manager in the live match (`var.md` §4). Never from the engine. */
   managerCards?: ManagerCardRecord[];
+  /** A live match between two managers (9.6.5): the away manager's cards (`managerCards` is the home one's). */
+  awayManagerCards?: ManagerCardRecord[];
   /** The user's manager complained at least once without a card (squad morale +1, `var.md` §4). */
   complaintMorale?: true;
 }
