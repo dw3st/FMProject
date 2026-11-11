@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { groupAwards } from "@/Domain/awards/awardGroups";
 import { titlesByPassage } from "@/Domain/managers/careerTitles";
-import { competitionName } from "@/Domain/world/labels";
+import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
+import { autoBioParts } from "@/Domain/managers/autoBio";
+import { autoBioText } from "@/GameInterface/managerBio";
 import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
@@ -107,6 +109,13 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
   const currentSince = current && !current.to && current.squadId === data.squadId ? current.from : null;
   const currentHref = clubHref(data.leagueSlug, data.squadId);
   const seasons = data.seasons;
+  const autoBio = autoBioText(autoBioParts(data), {
+    t,
+    country: data.nationality ? nationalityDisplayName(data.nationality, i18n.language, t) : null,
+    competition: (slug) => competitionName(slug, leagues, i18n.language),
+    titleName: (kind, competition) => titleLabel(kind, competition),
+    clubName: (id) => data.clubs.find((c) => c.squadId === id)?.clubName ?? null,
+  });
 
   return (
     <ScreenContainer>
@@ -133,9 +142,8 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
           ) : <span className="text-sm text-muted-foreground">{t("statsScreen.managers.noClub")}</span>}
         </div>
       </div>
-      {(data.bio ?? data.profile?.bio) && (
-        <p className="text-sm text-foreground m-0 max-w-3xl whitespace-pre-line">{data.bio ?? data.profile?.bio}</p>
-      )}
+      {/* His own bio, else one written from his record (8.9.40). */}
+      <p className="text-sm text-foreground m-0 max-w-3xl whitespace-pre-line">{data.bio ?? data.profile?.bio ?? autoBio}</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {([

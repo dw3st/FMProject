@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.40",
+    date: "2026-11-11",
+    time: "10:37",
+    items: [
+      {
+        pt: "Todo técnico sem biografia ganha uma escrita a partir da carreira: clube, temporadas, títulos e o maior destaque. Ela muda com a carreira e some quando o técnico escreve a própria.",
+        en: "Every manager without a bio gets one written from his career: club, seasons, titles and his biggest highlight. It changes with the career and gives way when the manager writes his own.",
+      },
+    ],
+  },
+  {
     version: "8.9.39",
     date: "2026-11-11",
     time: "10:31",

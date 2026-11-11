@@ -6862,7 +6862,27 @@
     "honours": "Titles and awards",
     "noHonours": "No titles or awards yet.",
     "noCareer": "No club passages yet.",
-    "open": "See page"
+    "open": "See page",
+    "bio": {
+      "country": "Nationality: {{country}}.",
+      "club": "In charge of {{club}}.",
+      "clubSince": "In charge of {{club}} since {{year}}.",
+      "interim": "Interim at {{club}}.",
+      "interimSince": "Interim at {{club}} since {{year}}.",
+      "free": "Without a club.",
+      "freeSince": "Without a club since {{year}}.",
+      "firstJob": "In his first job as a manager.",
+      "seasons_one": "1 season as a manager",
+      "seasons_other": "{{count}} seasons as a manager",
+      "clubs_one": "and 1 club in his career.",
+      "clubs_other": "and {{count}} clubs in his career.",
+      "titles_one": "1 title: {{best}}.",
+      "titles_other": "{{count}} titles, among them {{best}}.",
+      "noTitles": "No titles yet.",
+      "world": "Named world manager of the year in {{year}}.",
+      "bestManager": "Manager of the {{season}} season in {{league}}.",
+      "promotion": "Won promotion with {{club}} in {{season}}."
+    }
   },
   "fame": {
     "label": "Fame",

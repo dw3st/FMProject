@@ -203,3 +203,7 @@ Report de tester, opção B do mock. Ao abrir um técnico: rosto, clube e pontos
 ## Página do técnico (8.9.32)
 
 Report de tester, opção A do mock. `/manager/:id` (`ManagerScreen.tsx`, `managerHref`) sobre `GET /api/saves/:id/managers/:managerId` (o item do ranking, montado por `decorateManagers`, com a posição no mundo, `total`, a liga do clube e, num clube da IA, a situação do cargo de Cargos; 404 para desconhecido ou aposentado). Faixa de números (pontos, ranking, títulos, prêmios, temporadas), cargo atual, títulos e prêmios, e a carreira com cada clube como link (`clubs[].leagueSlug`). O nome leva à página na Visão geral do clube e em Cargos; o detalhe do ranking tem Ver página. Funciona sem clube.
+
+## Biografia automática (8.9.40)
+
+Pedido do usuário. Técnico sem biografia escrita (`ManagerProfile.bio`, `achievements.md`) tem uma montada do registro na página dele: `autoBioParts` (`src/Domain/managers/autoBio.ts`, com teste: cargo e ano, primeira passagem ou temporadas e clubes, títulos sem acessos com o maior pela ordem continental, seleção, liga, copa, e um destaque: melhor técnico do mundo, da liga ou o último acesso) e `autoBioText` (`GameInterface/managerBio.ts`, `managerPage.bio.*`). Nada é gravado.

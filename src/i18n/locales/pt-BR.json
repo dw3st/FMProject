@@ -6862,7 +6862,27 @@
     "honours": "Títulos e prêmios",
     "noHonours": "Nenhum título nem prêmio ainda.",
     "noCareer": "Sem passagens por clubes ainda.",
-    "open": "Ver página"
+    "open": "Ver página",
+    "bio": {
+      "country": "Nacionalidade: {{country}}.",
+      "club": "Comanda {{club}}.",
+      "clubSince": "Comanda {{club}} desde {{year}}.",
+      "interim": "Interino em {{club}}.",
+      "interimSince": "Interino em {{club}} desde {{year}}.",
+      "free": "Sem clube.",
+      "freeSince": "Sem clube desde {{year}}.",
+      "firstJob": "Está no primeiro trabalho como técnico.",
+      "seasons_one": "1 temporada como técnico",
+      "seasons_other": "{{count}} temporadas como técnico",
+      "clubs_one": "e 1 clube na carreira.",
+      "clubs_other": "e {{count}} clubes na carreira.",
+      "titles_one": "1 título: {{best}}.",
+      "titles_other": "{{count}} títulos, entre eles {{best}}.",
+      "noTitles": "Ainda sem títulos.",
+      "world": "Eleito o melhor técnico do mundo em {{year}}.",
+      "bestManager": "Melhor técnico da temporada {{season}} em {{league}}.",
+      "promotion": "Conquistou o acesso com {{club}} em {{season}}."
+    }
   },
   "fame": {
     "label": "Fama",
