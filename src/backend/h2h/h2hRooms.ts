@@ -18,7 +18,7 @@ import { memberBySeat, memberOf } from "@/backend/auth/saveOwnership";
 import { getSocialUser } from "@/backend/social/socialStore";
 import { notifyUser, type SocialSocket } from "@/backend/social/realtime";
 import { matchSetupFor } from "@/backend/matchSetup";
-import { scheduleKick, seatMatchOn } from "@/backend/groupAdvance";
+import { fixtureSeats, scheduleKick, seatMatchOn } from "@/backend/groupAdvance";
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
 import { pushServerLiveScore, setServerOwnedLive } from "@/backend/rivals/liveScores";
 import { logError } from "@/Logger";
@@ -329,18 +329,20 @@ async function joinContext(userId: string, saveId: string, fixtureId: string): P
   const world = await service.getMeta(saveId);
   if (!world || !isGroupWorld(world) || world.world?.phase !== "running" || !world.currentDate) return null;
   const meta = await service.getSeatMeta(saveId, member.seatId);
-  if (!meta?.clubId || meta.unemployed) return null;
+  if (!meta) return null;
   const date = world.currentDate;
   const fixture = await seatMatchOn(service, saveId, member.seatId, date);
-  if (!fixture || fixture.id !== fixtureId || (fixture.home !== meta.clubId && fixture.away !== meta.clubId)) return null;
-  const oppClub = fixture.home === meta.clubId ? fixture.away : fixture.home;
-  const oppSeat = await service.seatOfClub(saveId, oppClub);
+  if (!fixture || fixture.id !== fixtureId) return null;
+  // A club game or, since 9.6, a national game: the seats on each side.
+  const seats = await fixtureSeats(service, saveId, fixture);
+  const side: H2HSide | null = seats.home === member.seatId ? "A" : seats.away === member.seatId ? "B" : null;
+  if (!side) return null;
+  const oppSeat = side === "A" ? seats.away : seats.home;
   if (!oppSeat || oppSeat === member.seatId) return null;
   const oppUser = memberBySeat(saveId, oppSeat)?.userId;
   if (!oppUser) return null;
   const opp = await service.getSeat(saveId, oppSeat);
   if (meta.matchDecision?.date === date || opp?.matchDecision?.date === date) return null;
-  const side: H2HSide = fixture.home === meta.clubId ? "A" : "B";
   const other: H2HSide = side === "A" ? "B" : "A";
   return {
     meta, side, fixture,
@@ -349,13 +351,15 @@ async function joinContext(userId: string, saveId: string, fixtureId: string): P
   };
 }
 
-async function sideIdentity(saveId: string, seatId: string, userId: string) {
+async function sideIdentity(saveId: string, seatId: string, userId: string, teamId?: string) {
   const seat = await service.getSeat(saveId, seatId);
+  // A national game: the national team in place of the club.
+  const nation = teamId ? (await service.getNationalState(saveId))?.teams?.[teamId]?.nation : undefined;
   return {
     seatId,
     nickname: getSocialUser(userId)?.nickname ?? null,
-    clubId: seat?.clubId ?? "",
-    clubName: seat?.clubName ?? "",
+    clubId: nation ? teamId! : seat?.clubId ?? "",
+    clubName: nation ?? seat?.clubName ?? "",
   };
 }
 
@@ -374,8 +378,10 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
     // A concurrent join may have created it while we read.
     rec = rooms.get(key);
     if (!rec) {
+      const national = ctx.fixture.home.startsWith("nat_");
+      const [natHome, natAway] = national ? [ctx.fixture.home, ctx.fixture.away] : [undefined, undefined];
       const [a, b] = await Promise.all([
-        sideIdentity(saveId, ctx.seats.A, ctx.users.A), sideIdentity(saveId, ctx.seats.B, ctx.users.B),
+        sideIdentity(saveId, ctx.seats.A, ctx.users.A, natHome), sideIdentity(saveId, ctx.seats.B, ctx.users.B, natAway),
       ]);
       rec = rooms.get(key) ?? {
         key,
@@ -878,8 +884,8 @@ async function finishMatch(rec: Rec, state: GameState, stats: H2HStatsPayload): 
 export async function simulateSeatGame(svc: SaveService, saveId: string, date: string, fixture: Fixture): Promise<void> {
   const rec = rooms.get(roomKey(saveId, fixture.id));
   if (rec && rec.room.phase !== "done") closeWith(rec, "simulated");
-  for (const club of [fixture.home, fixture.away]) {
-    const seatId = await svc.seatOfClub(saveId, club);
+  const seats = await fixtureSeats(svc, saveId, fixture);
+  for (const seatId of [seats.home, seats.away]) {
     if (!seatId) continue;
     const seat = await svc.getSeat(saveId, seatId);
     if (seat?.matchDecision?.date === date) continue;

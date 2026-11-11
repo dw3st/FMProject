@@ -161,8 +161,20 @@ async function applyAssistant(deps: GroupAdvanceDeps, saveId: string, currentDat
 
 /** Both clubs of the game have a seat (a game between two managers). */
 export async function seatVsSeat(service: SaveService, saveId: string, fixture: Fixture): Promise<boolean> {
-  const humans = await service.humanClubIds(saveId);
-  return humans.has(fixture.home) && humans.has(fixture.away);
+  const seats = await fixtureSeats(service, saveId, fixture);
+  return !!seats.home && !!seats.away;
+}
+
+/**
+ * The seats on each side of a game: a club's seat, or the seat coaching a national team (Etapa 41b; 9.6 lets two
+ * national coaches meet live). Absent side = the AI.
+ */
+export async function fixtureSeats(service: SaveService, saveId: string, fixture: Fixture): Promise<{ home?: string; away?: string }> {
+  const national = await service.getNationalState(saveId);
+  const coachOf = (teamId: string) => Object.entries(national?.human ?? {}).find(([, h]) => h.teamId === teamId)?.[0];
+  const seatOf = async (id: string) => (national?.teams?.[id] ? coachOf(id) : (await service.seatOfClub(saveId, id)) ?? undefined);
+  const [home, away] = [await seatOf(fixture.home), await seatOf(fixture.away)];
+  return { ...(home ? { home } : {}), ...(away ? { away } : {}) };
 }
 
 /**

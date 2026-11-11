@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.6",
+    date: "2026-11-11",
+    time: "19:30",
+    items: [
+      {
+        pt: "Jogo ao vivo entre amigos também com as seleções: quando você e um amigo treinam as duas seleções de um jogo, a prévia oferece Jogar ao vivo ou Simular, como nos jogos de clube.",
+        en: "Live matches between friends for national teams too: when you and a friend coach both national teams of a game, the preview offers Play live or Simulate, as in club games.",
+      },
+    ],
+  },
+  {
     version: "9.5",
     date: "2026-11-11",
     time: "17:40",
@@ -5735,5 +5746,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
+  { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

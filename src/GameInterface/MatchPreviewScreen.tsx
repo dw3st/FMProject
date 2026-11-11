@@ -1004,8 +1004,8 @@ export function MatchPreviewScreen() {
   const homeGround = !fixture || fixture.neutral ? null : isHome ? matchSetup?.mySquad ?? null : opponentSquad;
   const conditions = fixture ? matchConditions(fixture, homeGround?.country ?? null) : null;
   const national = !!matchSetup?.national;
-  // Against another manager in a group world the club's game can be played live in the match room (part 7).
-  const liveVsSeat = !!session.groupAdvance && !national;
+  // Against another manager in a group world the game, club or national (9.6), can be played live in the match room.
+  const liveVsSeat = !!session.groupAdvance;
   const seatInvite = liveVsSeat ? inviteFor(readH2HInvite(), session.saveId, matchSetup?.matchDay?.fixtureId ?? fixture?.id) : null;
   const myName = national && matchSetup ? nationalityDisplayName(matchSetup.mySquad.name, i18n.language, t) : session.clubName;
   const venue = fixture?.neutral

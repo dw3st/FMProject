@@ -1,3 +1,4 @@
+import { fixtureSeats } from "@/backend/groupAdvance";
 import { fileURLToPath } from "node:url";
 import { aiFormMorale } from "@/Domain/morale/morale";
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
@@ -80,6 +81,12 @@ export async function matchSetupFor(
       // no registration, no referee.
       const nat = await nationalMatchSetup(saveService, save.id, save.seatId, currentDate);
       if (nat) {
+        // Two national coaches meet (9.6): the same rule as a club game against another seat.
+        const natSeats = await fixtureSeats(saveService, save.id, nat.fixture);
+        const natVsSeat = !!natSeats.home && !!natSeats.away;
+        if (natVsSeat && opts.live && !opts.h2h) {
+          return { ok: false, status: 409, body: { error: "seatOpponent", matchDay: { date: nat.fixture.date, fixtureId: nat.fixture.id } } };
+        }
         const myTactics: TacticsSave = { formation: nat.tactics.formation, tactical_style: nat.tactics.tactical_style, lineup: nat.myLineup };
         return { ok: true, body: {
           save: { ...save, clubName: nat.mySquad.name, clubColors: nat.mySquad.colors },
@@ -104,6 +111,8 @@ export async function matchSetupFor(
           managerBanned: false,
           national: { teamId: nat.teamId, competition: nat.fixture.competition },
           matchDay: { date: nat.fixture.date, fixtureId: nat.fixture.id },
+          seatOpponent: natVsSeat,
+          h2h: natVsSeat && opts.live && !!opts.h2h,
         } };
       }
       return { ok: false, status: 400, body: { error: "no unplayed match for your club on the current date" } };
