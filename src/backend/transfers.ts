@@ -22,7 +22,9 @@ import { getSellPriority } from "@/Domain/transfer/sellList";
 import {
   activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToOffer, talkGate, talkKey, type OfferResponse,
 } from "@/Domain/negotiation/negotiation";
-import { humanRosterSize, isOtherSeatClub, marketAfterSellOnPaid, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { completeHumanSale, humanRosterSize, isOtherSeatClub, marketAfterSellOnPaid, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { swapRefusal, swapValue } from "@/Domain/negotiation/swap";
+import { aiTransferBudgetOf } from "@/Domain/aiFinance/aiClubFinance";
 import { buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
 import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { initMarketState } from "@/Domain/transfer/marketRotation";
@@ -114,7 +116,11 @@ export const transferRoutes = {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
 
-      const { playerId, fromSquadId, fee, wage: offeredWage, years: offeredYears, sellOnPct: rawSellOn, payClause } = body as Record<string, unknown>;
+      const { playerId, fromSquadId, fee, wage: offeredWage, years: offeredYears, sellOnPct: rawSellOn, payClause, swapPlayerId } = body as Record<string, unknown>;
+      // A player of the human club in the deal (9.4): the cash may then be zero or negative (the AI club pays).
+      const swapId = typeof swapPlayerId === "string" && swapPlayerId.length > 0 ? swapPlayerId : null;
+      if (swapPlayerId !== undefined && swapPlayerId !== null && !swapId) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+      if (swapId && payClause === true) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       const sellOnPct = parseSellOnPct(rawSellOn);
       if (sellOnPct === null) return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       if (typeof playerId !== "string" || playerId.length === 0) {
@@ -123,7 +129,7 @@ export const transferRoutes = {
       if (typeof fromSquadId !== "string" || fromSquadId.length === 0) {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
-      if (typeof fee !== "number" || !Number.isFinite(fee) || fee <= 0) {
+      if (typeof fee !== "number" || !Number.isFinite(fee) || (!swapId && fee <= 0) || Math.abs(fee) > 2_000_000_000) {
         return Response.json({ error: "missing or invalid fields" }, { status: 400 });
       }
 
@@ -163,7 +169,7 @@ export const transferRoutes = {
 
         // ── Budget check ──────────────────────────────
         const budget = buyerSquad.finances?.budget ?? 0;
-        if (budget < fee) {
+        if (budget < Math.max(fee, 0)) {
           return Response.json({ error: "Insufficient funds" }, { status: 400 });
         }
 
@@ -191,6 +197,18 @@ export const transferRoutes = {
           ? (getSellPriority(playerId, sellerProfile.sellList ?? []) ?? undefined)
           : undefined;
 
+        // ── Swap (9.4): the AI counts the offered player at his value (less 20% without a need in his line) ──
+        const swapPlayer = swapId ? buyerSquad.players.find((p) => p.id === swapId) : undefined;
+        const swapWorth = swapId && swapPlayer ? swapValue(swapPlayer, sellerProfile?.needs) : 0;
+        if (swapId) {
+          const refusal = swapRefusal({ swap: swapPlayer, target: player, seller: sellerSquad, cash: fee, value: swapWorth, sellerBudget: aiTransferBudgetOf(sellerSquad) });
+          if (refusal) return Response.json({ error: refusal }, { status: 400 });
+          // The AI club takes a player too: its own window must be open.
+          if (!windows.ofLeague(sellerResolved.leagueSlug).open) return Response.json({ error: "sellerWindowClosed" }, { status: 409 });
+        }
+        // The offer the seller weighs: cash plus the swap.
+        const offerFee = fee + swapWorth;
+
         // ── Contract offer to the player ──────────────────────────────────────
         // Every signing creates a contract. `wage` defaults to the player's demand and `years`
         // to 3 (shortened to fit the age limit) when the client sends neither.
@@ -217,7 +235,7 @@ export const transferRoutes = {
         const talks = market?.talks ?? {};
         const key = talkKey("transfer", playerId);
         const counter = activeCounter(talks[key], date0);
-        const meetsCounter = !!counter && fee >= counter.fee && (counter.sellOnPct ?? 0) === sellOnPct;
+        const meetsCounter = !!counter && offerFee >= counter.fee && (counter.sellOnPct ?? 0) === sellOnPct;
         const gate = clause !== null ? "open" : talkGate(talks[key], date0, meetsCounter);
         if (gate === "closed") return Response.json({ error: "talksClosed", until: talks[key]?.closedUntil }, { status: 409 });
         if (gate === "noRounds") return Response.json({ error: "noRounds" }, { status: 409 });
@@ -235,10 +253,10 @@ export const transferRoutes = {
         }
         const rivals = clause !== null ? [] : liveRivals(marketWithRivals?.rivalBids, playerId, date0);
         const floor = rivalFloor(rivals);
-        let answer: OfferResponse = clause !== null || (meetsCounter && fee >= floor)
+        let answer: OfferResponse = clause !== null || (meetsCounter && offerFee >= floor)
           ? { kind: "accept", reason: "financial" }
-          : respondToOffer({ player, seller: sellerSquad, buyer: buyerSquad, fee, sellOnPct, negotiation, ...(sellPriority !== undefined ? { sellPriority } : {}) });
-        if (floor > 0 && answer.kind === "accept" && fee < floor) answer = { kind: "counter", counterFee: floor };
+          : respondToOffer({ player, seller: sellerSquad, buyer: buyerSquad, fee: offerFee, sellOnPct, negotiation, ...(sellPriority !== undefined ? { sellPriority } : {}) });
+        if (floor > 0 && answer.kind === "accept" && offerFee < floor) answer = { kind: "counter", counterFee: floor };
         if (floor > 0 && answer.kind === "counter" && answer.counterFee < floor) answer = { kind: "counter", counterFee: floor };
         // The seller accepts: with a live rival it also accepts, the player chooses (preferenceScore).
         let preference: { winner: string; clubName: string; reason: string } | null = null;
@@ -272,10 +290,10 @@ export const transferRoutes = {
           ? [...rivals].sort((a, b) => b.fee - a.fee).map((r) => ({ clubId: r.clubId, clubName: r.clubName, fee: r.fee, deadline: r.deadline, sellerAccepts: r.sellerAccepts }))
           : undefined;
         const talk = recordRound(
-          talks[key], { playerId, kind: "transfer", date: date0 }, { fee, sellOnPct },
-          answer.kind === "accept" ? { by: "club", fee, sellOnPct, outcome: "accepted" }
+          talks[key], { playerId, kind: "transfer", date: date0 }, { fee: offerFee, sellOnPct },
+          answer.kind === "accept" ? { by: "club", fee: offerFee, sellOnPct, outcome: "accepted" }
           : answer.kind === "counter" ? { by: "club", fee: answer.counterFee, sellOnPct, outcome: "counter" }
-          : answer.kind === "prefers_rival" ? { by: "club", fee, outcome: "prefers_rival" }
+          : answer.kind === "prefers_rival" ? { by: "club", fee: offerFee, outcome: "prefers_rival" }
           : { by: "club", outcome: answer.reason === "insulted" ? "insulted" : "rejected" },
         );
         const marketBase: MarketState = marketWithRivals ?? { ...initMarketState(await saveService.getAllSquads(saveId)), ...emptySeatMarket() };
@@ -286,7 +304,7 @@ export const transferRoutes = {
           ...(answer.kind === "accept" ? { rivalBids: (marketBase.rivalBids ?? []).filter((r) => r.playerId !== playerId) } : {}),
         }, auth.seatId);
         if (answer.kind === "counter" || answer.kind === "prefers_rival") {
-          return Response.json({ response: answer, talk, ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
+          return Response.json({ response: answer, talk, ...(swapId ? { swapValue: swapWorth } : {}), ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
         }
         const accepted = answer.kind === "accept";
         const reason = answer.kind === "accept" || answer.kind === "reject" ? answer.reason : "clubRejected";
@@ -305,7 +323,7 @@ export const transferRoutes = {
           fromSquadName: sellerSquad.name,
           toSquadId: buyerSquad.id,
           toSquadName: buyerSquad.name,
-          fee,
+          fee: offerFee,
           status: accepted ? "accepted" : "rejected",
           reason,
         };
@@ -326,10 +344,11 @@ export const transferRoutes = {
               return l ? { league: l.leagueSlug, season: seasonLabel(l.year, l.start, l.end) } : null;
             })(),
             sellOnPct > 0 ? { clubId: sellerSquad.id, clubName: sellerSquad.name, pct: sellOnPct } : null,
-            { kind: clause !== null ? "clause" : "transfer", fee, on: date },
+            { kind: clause !== null ? "clause" : "transfer", fee: offerFee, on: date },
           );
           // A clause the player already carried is paid out of this fee (the seller keeps the rest).
-          const owed = sellOnFor(player, sellerSquad.id, fee);
+          const cash = Math.max(fee, 0);
+          const owed = sellOnFor(player, sellerSquad.id, cash);
 
           // Exchange money via FinancialService — it also persists both squads (roster + money).
           // Saving `selling` / `buying` again here would overwrite the fee exchange.
@@ -339,7 +358,7 @@ export const transferRoutes = {
             meta,
             { squad: buying, ...buyerResolved, seatId: auth.seatId },
             { squad: selling, ...sellerResolved, ...(isSellerPlayerClub ? { seatId: auth.seatId } : {}) },
-            fee,
+            cash,
             saveService,
             { playerName: player.name, playerId, ...(owed ? { sellOn: { amount: owed.amount, clubName: owed.clubName } } : {}) },
           );
@@ -358,7 +377,7 @@ export const transferRoutes = {
               return l ? seasonLabel(l.year, l.start, l.end) : date.slice(0, 4);
             };
             const changes = await recordTransferHistory(saveService, saveId, {
-              buyer: buying, seller: selling, playerId, fee, date,
+              buyer: buying, seller: selling, playerId, fee: offerFee, date,
               buyerSeason: seasonOf(buyerResolved.leagueSlug), sellerSeason: seasonOf(sellerResolved.leagueSlug),
             });
             // The buyer is the human club here.
@@ -386,7 +405,7 @@ export const transferRoutes = {
           }
 
           // Board (`.claude/rules/game/board-fans.md`): spending past the balance costs confidence.
-          const budgetAfter = (buyerSquad.finances?.budget ?? 0) - fee;
+          const budgetAfter = (buyerSquad.finances?.budget ?? 0) - cash;
           if (updatedMeta.board && budgetAfter < 0) {
             const board = applyPurchase(updatedMeta.board, { balanceAfter: budgetAfter });
             await saveService.updateSeat(saveId, auth.seatId, { board });
@@ -405,20 +424,36 @@ export const transferRoutes = {
               profiles: { ...latest.profiles, [fromSquadId]: updatedProfile },
             }, auth.seatId);
           }
+
+          // The swapped player goes the other way (an AI club owing cash pays it as the fee).
+          if (swapPlayer) {
+            const humanNow = await saveService.getSquadById(saveId, buyerSquad.id);
+            const aiNow = await saveService.getSquadById(saveId, sellerSquad.id);
+            const swapNow = humanNow?.players.find((p) => p.id === swapPlayer.id);
+            const marketNow = await saveService.getMarket(saveId, auth.seatId);
+            if (humanNow && aiNow && swapNow && marketNow) {
+              const sale = await completeHumanSale(saveService, saveId, auth.seatId, updatedMeta, marketNow, {
+                player: swapNow, seller: humanNow, buyer: aiNow, fee: Math.max(-fee, 0), sellOnPct: 0,
+              });
+              await saveService.saveMarket(saveId, sale.market, auth.seatId);
+              updatedMeta = sale.meta;
+              await saveService.appendDayTransfers(saveId, date, [{ playerId: swapPlayer.id, from: buyerSquad.id, to: sellerSquad.id, fee: Math.max(-fee, 0), kind: "transfer", date }]);
+            }
+          }
         }
 
         await saveService.appendTransfer(saveId, record);
         const ref: TransferRef = { kind: "transfer_ref", transferId };
         await saveService.appendDayEvent(saveId, date, ref);
         if (accepted) {
-          await saveService.appendDayTransfers(saveId, date, [{ playerId, from: fromSquadId, to: buyerSquad.id, fee, kind: "transfer", date }]);
+          await saveService.appendDayTransfers(saveId, date, [{ playerId, from: fromSquadId, to: buyerSquad.id, fee: offerFee, kind: "transfer", date }]);
         }
 
         // No clamp (see .claude/rules/game/finances.md) — this is only the response's echo of the
         // new budget, the real value already comes from executeTransferFee's persisted squad.
         const oldBudget = buyerSquad.finances?.budget ?? 0;
-        const newBudget = accepted ? oldBudget - fee : oldBudget;
-        return Response.json({ record: withDirection(record, buyerSquad.id), newBudget, response: answer, talk, ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
+        const newBudget = accepted ? oldBudget - Math.max(fee, 0) + (swapId ? Math.max(-fee, 0) : 0) : oldBudget;
+        return Response.json({ record: withDirection(record, buyerSquad.id), newBudget, response: answer, talk, ...(swapId ? { swapValue: swapWorth } : {}), ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}) });
       });
     }
 

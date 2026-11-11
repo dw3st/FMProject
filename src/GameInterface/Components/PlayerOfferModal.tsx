@@ -26,6 +26,7 @@ import { addDays } from "@/Domain/dates";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
 import { starterLineLevel, transferOfferRange } from "@/Domain/negotiation/offerRange";
+import { SwapField, offerCash, type CashDirection } from "@/GameInterface/Negotiation/SwapField";
 import { getMainRole, type MainRole } from "@/Domain/roles";
 import { positionLabel } from "@/GameInterface/positionHelpers";
 import { SeatOfferCard, type SeatOfferClosed } from "@/GameInterface/Negotiation/SeatOfferCard";
@@ -97,6 +98,11 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const demandInfo = useContractDemandInfo(saveId, player?.id ?? null, player?.squadId);
   const demand = demandInfo?.demand ?? null;
   const [confirmClause, setConfirmClause] = useState(false);
+  // Player in the deal (9.4): one of the human's players plus or minus money.
+  const [swapId, setSwapId] = useState<string | null>(null);
+  const [cashDir, setCashDir] = useState<CashDirection>("pay");
+  const [swapWorth, setSwapWorth] = useState<number | null>(null);
+  useEffect(() => { setSwapId(null); setSwapWorth(null); setCashDir("pay"); }, [player?.id]);
   const [wage, setWage] = useState(0);
   const [years, setYears] = useState(3);
   const [contractError, setContractError] = useState<string | null>(null);
@@ -197,6 +203,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const fmtDate = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(i18n.language, { day: "numeric", month: "long", year: "numeric" });
 
   function errorText(code: string | undefined): string {
+    if (code && ["swapInvalid", "swapOnLoan", "swapWage", "swapBudget", "invalidCash", "sellerWindowClosed"].includes(code)) return t(`negotiation.errors.${code}`);
     if (code === "talksClosed") return t("negotiation.errors.talksClosed");
     if (code === "noRounds") return t("negotiation.errors.noRounds");
     if (code === "onLoan") return t("negotiation.errors.onLoan");
@@ -282,14 +289,16 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
       const res = await fetch(`/api/saves/${session.saveId}/transfers`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, fee, wage, years, sellOnPct: pct, ...(payClause ? { payClause: true } : {}) }),
+        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, fee, wage, years, sellOnPct: pct, ...(payClause ? { payClause: true } : {}), ...(swapId && !payClause ? { swapPlayerId: swapId } : {}) }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         error?: string; opensOn?: string; record?: TransferRecord; talk?: NegotiationTalk;
         response?: { kind: "accept" | "counter" | "reject" | "prefers_rival" | "lost"; counterFee?: number; reason?: string; clubName?: string; fee?: number };
         rival?: RivalDto[];
         preference?: { winner: string; clubName: string; reason: string };
+        swapValue?: number;
       };
+      setSwapWorth(body.swapValue ?? null);
       if (!res.ok) {
         if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) {
           setContractError(refusalText(body.error));
@@ -305,7 +314,15 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
       if (body.rival) setRivals(body.rival);
       setPreference(body.preference ?? null);
       if (body.response?.kind === "counter") {
-        setMessage(t("negotiation.counterReceived", { fee: formatFee(body.response.counterFee ?? 0) }));
+        const total = body.response.counterFee ?? 0;
+        if (body.swapValue !== undefined) {
+          const cash = total - body.swapValue;
+          setMessage(cash > 0
+            ? t("negotiation.swap.counterPay", { fee: formatFee(cash) })
+            : cash < 0 ? t("negotiation.swap.counterReceive", { fee: formatFee(-cash) }) : t("negotiation.swap.counterNone"));
+        } else {
+          setMessage(t("negotiation.counterReceived", { fee: formatFee(total) }));
+        }
         return;
       }
       if (body.response?.kind === "prefers_rival") {
@@ -551,9 +568,15 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                   {player.knowledge !== undefined && player.knowledge < 60 && (
                     <Notice kind="warning">{t("negotiation.offer.lowKnowledge", { k: player.knowledge })}</Notice>
                   )}
-                  <div>
-                    <label className={LABEL}>{t("transfers.fee")}</label>
-                    {!slider.canOffer ? (
+                  {!isSeat && squad && (
+                    <SwapField
+                      players={squad.players} swapId={swapId} onSwap={(id) => { setSwapId(id); setSwapWorth(null); }}
+                      dir={cashDir} onDir={setCashDir} swapWorth={swapWorth}
+                    />
+                  )}
+                  {!(swapId && cashDir === "none") && <div>
+                    <label className={LABEL}>{swapId ? t(`negotiation.swap.amount.${cashDir}`) : t("transfers.fee")}</label>
+                    {!slider.canOffer && !(swapId && cashDir === "receive") ? (
                       <p className="text-sm text-destructive m-0 tabular-nums">{t("negotiation.offer.noBudget", { balance: formatFee(budget) })}</p>
                     ) : (
                       <div className="flex items-center gap-3">
@@ -584,12 +607,12 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                         </span>
                       </div>
                     )}
-                    {slider.canOffer && (
+                    {slider.canOffer && !(swapId && cashDir !== "pay") && (
                       <p className="text-sm text-muted-foreground mt-1 m-0 tabular-nums">
                         {t("negotiation.offer.feeHint", { club: player.club, left: formatFee(budget - offerFee) })}
                       </p>
                     )}
-                  </div>
+                  </div>}
 
                   <div>
                     <label className={LABEL}>{t("negotiation.sellOn")}</label>
@@ -694,18 +717,20 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                     disabled={submitting || seatListPending}
                     className="tabular-nums"
                     onClick={() => (tab === "transfer"
-                      ? void submitOffer(counter.fee, counter.sellOnPct ?? 0)
+                      ? void submitOffer(swapId && swapWorth !== null ? counter.fee - swapWorth : counter.fee, counter.sellOnPct ?? 0)
                       : void submitLoan(Math.round((counter.wageShare ?? 1) * 100), counter.fee))}
                   >
                     {tab === "transfer"
-                      ? t("negotiation.acceptCounter", { fee: formatFee(counter.fee) })
+                      ? (swapId && swapWorth !== null
+                        ? t("negotiation.swap.acceptCounter", { fee: formatFee(counter.fee - swapWorth) })
+                        : t("negotiation.acceptCounter", { fee: formatFee(counter.fee) }))
                       : t("negotiation.acceptLoanCounter", { share: Math.round((counter.wageShare ?? 1) * 100), fee: formatFee(counter.fee) })}
                   </Button>
                 )}
                 {tab !== "precontract" && <Button
                   variant={counter && !isSeat ? "secondary" : "primary"}
-                  disabled={submitting || seatListPending || blocked || windowClosed || (tab === "transfer" && !slider.canOffer)}
-                  onClick={() => (tab === "transfer" ? void submitOffer(offerFee, Number(sellOn)) : void submitLoan(wageShare, loanFee))}
+                  disabled={submitting || seatListPending || blocked || windowClosed || (tab === "transfer" && !slider.canOffer && !(swapId && cashDir !== "pay"))}
+                  onClick={() => (tab === "transfer" ? void submitOffer(offerCash(offerFee, swapId, cashDir), Number(sellOn)) : void submitLoan(wageShare, loanFee))}
                 >
                   {submitting ? t("transfers.sending") : tab === "transfer" ? t("transfers.sendOffer") : t("negotiation.requestLoan")}
                 </Button>}

@@ -3830,7 +3830,13 @@
       "squadFull": "Seu elenco está cheio.",
       "noClub": "Você está sem clube.",
       "generic": "Algo deu errado. Tente de novo.",
-      "squadDepth": "Você não pode liberá-lo: o elenco ficaria sem reposição na posição dele."
+      "squadDepth": "Você não pode liberá-lo: o elenco ficaria sem reposição na posição dele.",
+      "swapInvalid": "Esse jogador não pode entrar na troca.",
+      "swapOnLoan": "Jogador emprestado não entra na troca.",
+      "swapWage": "O clube não cabe o salário do seu jogador.",
+      "swapBudget": "O clube não tem verba para pagar essa diferença.",
+      "invalidCash": "O valor total da proposta precisa ser positivo.",
+      "sellerWindowClosed": "A janela do outro clube está fechada."
     },
     "history": {
       "title": "Rodadas de hoje",
@@ -3951,6 +3957,25 @@
       "terms_other": "{{wage}} por semana · {{count}} temporadas",
       "squadFull_one": "Não cabe mais um: o elenco tem {{roster}} e {{count}} pré-contrato já assinado ocupa vaga, o limite é {{max}}. Dispense, venda ou empreste alguém antes.",
       "squadFull_other": "Não cabe mais um: o elenco tem {{roster}} e {{count}} pré-contratos já assinados ocupam vaga, o limite é {{max}}. Dispense, venda ou empreste alguém antes."
+    },
+    "swap": {
+      "label": "Jogador na troca",
+      "none": "Nenhum",
+      "dir": {
+        "pay": "Eu pago",
+        "receive": "Eu recebo",
+        "none": "Só a troca"
+      },
+      "amount": {
+        "pay": "Você paga além do jogador",
+        "receive": "O clube paga a você"
+      },
+      "hint": "Ele vale {{value}}. O clube conta {{pct}}% a menos se não precisa da posição dele.",
+      "counted": "O clube contou o jogador por {{value}}.",
+      "counterPay": "O clube aceita com o jogador mais {{fee}}.",
+      "counterReceive": "O clube aceita com o jogador e paga {{fee}} a você.",
+      "counterNone": "O clube aceita só a troca.",
+      "acceptCounter": "Aceitar: jogador + {{fee}}"
     }
   },
   "morale": {

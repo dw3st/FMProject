@@ -3830,7 +3830,13 @@
       "squadFull": "Your squad is full.",
       "noClub": "You have no club.",
       "generic": "Something went wrong. Try again.",
-      "squadDepth": "You cannot let him go: your squad would be left without cover in his position."
+      "squadDepth": "You cannot let him go: your squad would be left without cover in his position.",
+      "swapInvalid": "This player can't be part of the deal.",
+      "swapOnLoan": "A player on loan can't be part of the deal.",
+      "swapWage": "The club can't fit your player's wage.",
+      "swapBudget": "The club has no budget to pay that difference.",
+      "invalidCash": "The total of the offer must be positive.",
+      "sellerWindowClosed": "The other club's window is closed."
     },
     "history": {
       "title": "Today's rounds",
@@ -3951,6 +3957,25 @@
       "terms_other": "{{wage}} a week · {{count}} seasons",
       "squadFull_one": "No room for one more: the squad has {{roster}} and {{count}} signed pre-contract keeps places, the limit is {{max}}. Release, sell or loan someone first.",
       "squadFull_other": "No room for one more: the squad has {{roster}} and {{count}} signed pre-contracts keep places, the limit is {{max}}. Release, sell or loan someone first."
+    },
+    "swap": {
+      "label": "Player in the deal",
+      "none": "None",
+      "dir": {
+        "pay": "I pay",
+        "receive": "I receive",
+        "none": "Swap only"
+      },
+      "amount": {
+        "pay": "You pay on top of the player",
+        "receive": "The club pays you"
+      },
+      "hint": "He is worth {{value}}. The club counts {{pct}}% less if it doesn't need his position.",
+      "counted": "The club counted the player at {{value}}.",
+      "counterPay": "The club accepts the player plus {{fee}}.",
+      "counterReceive": "The club accepts the player and pays you {{fee}}.",
+      "counterNone": "The club accepts the swap only.",
+      "acceptCounter": "Accept: player + {{fee}}"
     }
   },
   "morale": {

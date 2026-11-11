@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.4",
+    date: "2026-11-11",
+    time: "16:20",
+    items: [
+      {
+        pt: "Troca de jogadores: na proposta a um clube da IA, ofereça um jogador seu mais ou menos dinheiro (ou só a troca). O clube conta seu jogador pelo valor de mercado, 20% menos se não precisa da posição dele.",
+        en: "Player swaps: in an offer to an AI club, put one of your players in the deal plus or minus money (or a straight swap). The club counts your player at his market value, 20% less if it doesn't need his position.",
+      },
+    ],
+  },
+  {
     version: "9.3",
     date: "2026-11-11",
     time: "15:32",
@@ -5701,7 +5712,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Troca de jogadores com compensação em dinheiro", en: "Player swaps with a cash adjustment" },
   { pt: "Amistoso com um amigo de outra liga", en: "Friendlies against a friend from another league" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];
