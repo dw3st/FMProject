@@ -32,6 +32,7 @@ import { Chip } from "@/GameInterface/ui/Chip";
 import { moraleBand, moraleOf } from "@/Domain/morale/morale";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { LEGEND_NAME_CLASS, LegendLaurel } from "@/GameInterface/Components/LegendLaurel";
+import { CreatedStar, isCreatedPlayer } from "@/GameInterface/Components/CreatedStar";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
@@ -260,6 +261,7 @@ export function SquadRosterTable({
                   <Flag code={player.flagCode} />
                 </span>
               )}
+              {isCreatedPlayer(player.id) && <CreatedStar className="mr-1.5 align-middle" />}
               <a
                 href={playerDetailHref(player)}
                 title={player.personality ? t(`personality.summary.${summaryOf(player.personality.traits)}`) : undefined}

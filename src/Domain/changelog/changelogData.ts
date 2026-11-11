@@ -27,6 +27,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.28",
+    date: "2026-11-10",
+    time: "21:29",
+    items: [
+      {
+        pt: "Campeões: o quadro mostra só o escudo de cada campeão, com as últimas 20 temporadas sem rolar. O nome e o técnico aparecem ao passar o mouse; títulos de técnicos humanos ficam numa célula azul com o ponto.",
+        en: "Champions: the board shows only each champion's crest, with the last 20 seasons without scrolling. The name and the manager show on hover; human managers' titles sit on a blue cell with the dot.",
+      },
+      {
+        pt: "Jogadores criados na loja de conquistas têm uma estrela antes do nome no Elenco, na Base e na ficha.",
+        en: "Players made in the achievements shop have a star before their name in the Squad, the Academy and the profile.",
+      },
+    ],
+  },
+  {
     version: "8.9.27",
     date: "2026-11-10",
     time: "21:21",

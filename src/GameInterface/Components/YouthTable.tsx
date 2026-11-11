@@ -8,6 +8,7 @@ import { DataTable, type DataTableColumn } from "@/GameInterface/ui/DataTable";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
 import { LEGEND_NAME_CLASS, LegendLaurel } from "@/GameInterface/Components/LegendLaurel";
+import { CreatedStar, isCreatedPlayer } from "@/GameInterface/Components/CreatedStar";
 import type { RosterPlayer } from "@/types/playerTypes";
 import type { YouthFocus, YouthTrainingPlan } from "@/types/youthTrainingTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
@@ -126,6 +127,7 @@ export function YouthTable() {
       header: t("youth.player"),
       cell: (r) => (
         <span className="inline-flex items-center gap-1.5 font-semibold">
+          {isCreatedPlayer(r.player.id) && <CreatedStar />}
           <span className={r.player.reborn ? LEGEND_NAME_CLASS : undefined}>{r.player.name}</span>
           {r.player.reborn && <LegendLaurel />}
           {r.player.reborn && <RebornBadge />}

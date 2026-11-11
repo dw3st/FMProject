@@ -5447,7 +5447,8 @@
           "free": "Sem clube",
           "retired": "Aposentado: não joga mais"
         }
-      }
+      },
+      "createdMark": "Criado na loja de conquistas"
     },
     "errors": {
       "generic": "Algo deu errado.",

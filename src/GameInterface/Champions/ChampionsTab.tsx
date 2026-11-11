@@ -141,6 +141,9 @@ export function ChampionsTab({ saveId, leagues, countryByName, myClubId, refresh
     );
   }
 
+  // The last 20 seasons fit without scrolling sideways (tester report).
+  const columns = board.columns.slice(-20);
+
   return (
     <div className="flex flex-col gap-4">
       <SelectCombobox
@@ -160,7 +163,7 @@ export function ChampionsTab({ saveId, leagues, countryByName, myClubId, refresh
             head={
               <>
                 <StatsHead>{t("champions.competition")}</StatsHead>
-                {board.columns.map((y) => <StatsHead key={y}>{seasonColumnLabel(y)}</StatsHead>)}
+                {columns.map((y) => <StatsHead key={y} align="center" className="!px-1">{seasonColumnLabel(y)}</StatsHead>)}
               </>
             }
           >
@@ -169,7 +172,7 @@ export function ChampionsTab({ saveId, leagues, countryByName, myClubId, refresh
               return [
                 newGroup ? (
                   <tr key={`group-${row.group}`} className="bg-secondary/20">
-                    <td colSpan={board.columns.length + 1} className={`px-4 py-2 ${SECTION}`}>{row.group}</td>
+                    <td colSpan={columns.length + 1} className={`px-4 py-2 ${SECTION}`}>{row.group}</td>
                   </tr>
                 ) : null,
                 <StatsRow key={row.key}>
@@ -182,26 +185,27 @@ export function ChampionsTab({ saveId, leagues, countryByName, myClubId, refresh
                       {rowName(row.key)}
                     </button>
                   </td>
-                  {board.columns.map((y) => {
+                  {columns.map((y) => {
                     const x = row.cells.get(y);
+                    // Crest only (tester report, option B): the name in the tooltip; a human manager's title on a
+                    // blue cell with the dot.
+                    const cell = x
+                      ? `relative inline-flex items-center justify-center w-11 h-11 rounded-md ${x.human ? "bg-primary/20" : ""}`
+                      : "";
+                    const tip = x ? `${clubName(x)} · ${managerLabel(x)}` : "";
                     return (
-                      <td key={y} className={TABLE_CELL.body}>
-                        {x && (
-                          <div className="flex items-center gap-2 whitespace-nowrap" title={managerLabel(x)}>
-                            {clubHref(x) ? (
-                              <a href={clubHref(x)!} className="flex items-center gap-2 min-h-8 no-underline group/club">
-                                <ChampionCrest title={x} />
-                                <span className={`${nameClass(x)} group-hover/club:text-primary`}>{clubName(x)}</span>
-                              </a>
-                            ) : (
-                              <>
-                                <ChampionCrest title={x} />
-                                <span className={nameClass(x)}>{clubName(x)}</span>
-                              </>
-                            )}
-                            {x.human && <HumanDot label={managerLabel(x)} />}
-                          </div>
-                        )}
+                      <td key={y} className="px-1 py-1.5 text-center">
+                        {x && (clubHref(x) ? (
+                          <a href={clubHref(x)!} className={`${cell} no-underline hover:ring-1 hover:ring-primary`} title={tip} aria-label={tip}>
+                            <ChampionCrest title={x} />
+                            {x.human && <span className="absolute top-1 right-1"><HumanDot label={managerLabel(x)} /></span>}
+                          </a>
+                        ) : (
+                          <span className={cell} title={tip} aria-label={tip}>
+                            <ChampionCrest title={x} />
+                            {x.human && <span className="absolute top-1 right-1"><HumanDot label={managerLabel(x)} /></span>}
+                          </span>
+                        ))}
                       </td>
                     );
                   })}

@@ -186,3 +186,7 @@ Report do usuário (a lista só trazia jogadores medianos). `legendOffer` sortei
 Pedido do usuário. A loja oferece só lendas reais, do Wikidata (CC0): `bun scripts/fetchWikidataLegends.ts` grava `src/example_data/realLegends.json` (1165 na rodada de 2026-11-10): vencedores da Bola de Ouro, campeões de Copa do Mundo (participou da edição e era da seleção campeã) e jogadores com artigo em 40+ idiomas da Wikipedia que jogaram pela seleção principal (tira atores e políticos que jogaram na juventude); nascidos de 1920 a 1990, com posição; quem ainda joga no mundo (nome ou inicial + sobrenome e ano de nascimento ±1) fica de fora. Só campos derivados: id, nome, ano, nacionalidade, posição, honrarias, fama (idiomas).
 
 `src/Domain/legends/realLegends.ts`: `realLegendPool(retired)` monta os `RetiredPlayer` (`real`, atributos de `statsFor` pela fama e honrarias, `retiredOn` 1990-01-01); o registro de `retired.json` vence (a compra grava o escolhido lá, com `legendBy`). `isLegend` vale para todo real; raridade super para Bola de Ouro, campeão de Copa com fama 60+ ou fama 90+, senão rara. O sorteio da temporada (`legendOffer`) é o mesmo. A linha da loja mostra ano de nascimento, Bolas de Ouro e Copas. Trazer com dinheiro (Estatísticas, Aposentados) continua com as lendas do mundo.
+
+## Estrela do jogador criado (8.9.28)
+
+Report de tester, opção B do mock, só a estrela. `CreatedStar` (`Components/CreatedStar.tsx`, `isCreatedPlayer`: id `created_…`) antes do nome no Elenco, na Base e na ficha, em `chart-2`.

@@ -61,3 +61,7 @@ mudam. Artilharia e notas da base ficam em `meta.youth.leaders` e na aba Base de
 
 `/stats?tab=referees`: jogos, faltas/J, amarelos/J, vermelhos e pênaltis por árbitro, por competição e temporada
 (`GET /api/saves/:id/referees`). Ver `.claude/rules/game/referees.md`.
+
+## Campeões só com escudo (8.9.28)
+
+Report de tester, opção B do mock. O quadro mostra as últimas 20 temporadas, cada célula só com o escudo (nome do clube e técnico no `title`); título de técnico humano numa célula `bg-primary/20` com o ponto. A lista de uma competição não mudou.

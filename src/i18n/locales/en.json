@@ -5447,7 +5447,8 @@
           "free": "Free agent",
           "retired": "Retired: he no longer plays"
         }
-      }
+      },
+      "createdMark": "Made in the achievements shop"
     },
     "errors": {
       "generic": "Something went wrong.",

@@ -10,6 +10,7 @@ import { StatHoverPopover } from "@/GameInterface/Components/StatHoverPopover";
 import { PositionPitch } from "@/GameInterface/Components/PositionPitch";
 import { StarBadge } from "@/GameInterface/Components/StarBadge";
 import { RebornBadge } from "@/GameInterface/Components/RebornBadge";
+import { CreatedStar, isCreatedPlayer } from "@/GameInterface/Components/CreatedStar";
 import { LEGEND_NAME_CLASS, LegendLaurel } from "@/GameInterface/Components/LegendLaurel";
 import { SuspendedBadge } from "@/GameInterface/Components/SuspendedBadge";
 import { LoanBadge } from "@/GameInterface/Components/LoanBadge";
@@ -175,6 +176,7 @@ export function PlayerCard({
 
           <div className="flex-1 min-w-0 text-center sm:text-left">
             <h2 className="font-display font-black uppercase text-xl leading-none m-0 inline-flex items-center gap-2">
+              {isCreatedPlayer(player.id) && <CreatedStar />}
               <span className={player.reborn ? LEGEND_NAME_CLASS : undefined}>{player.name}</span>
               {player.reborn && <LegendLaurel size={28} />}
               {starKind && <StarBadge kind={starKind} className="mt-0.5" />}
