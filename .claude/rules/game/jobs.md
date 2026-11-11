@@ -242,3 +242,7 @@ Report de tester, design aprovado pelo usuário. Estatísticas → Técnicos →
 ## Elenco de outros clubes sem clube (8.9.30)
 
 Report de tester. Desempregado, `/squad/<liga>/<clube>` (o elenco de qualquer clube, aberto pelas Ligas, Estatísticas ou Olheiro) fica fora da troca pela tela "Sem clube" (`NO_CLUB_PATHS`, `Layout.tsx`); a aba Elenco da barra continua levando ao Painel.
+
+## Fama pelos bens (8.9.39)
+
+Decisão do usuário (opção B). `src/Domain/managers/assets.ts` (`FAME`): o valor de todos os níveis comprados (`assetsValue`) dá até 5 pontos de reputação (`fameReputation` = 5 × (1 − e^(−valor / €20M)); €20M ≈ 3,2, €60M ≈ 4,8), somados em `managerReputation(..., assets)` (propostas, candidaturas, salário do técnico). Numa contratação (não na renovação) o pedido de salário × `fameDemandMult` (`personality.ts`): até −4% com fama cheia e ambição 20, nada para ambição até 10,5 (`DemandContext.fame`, `managerDemandCtx` em `src/backend/managerDemand.ts`; linha "Sua fama: −N%"). Faixas (`fameBand`: nenhuma, baixa, média, alta, estrela) na aba Bens e na página do técnico humano.

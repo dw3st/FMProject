@@ -1,3 +1,4 @@
+import { managerDemandCtx } from "@/backend/managerDemand";
 import { arriving } from "@/Domain/settling/settling";
 import { releaseClause } from "@/Domain/negotiation/releaseClause";
 import { saveService } from "@/backend/SaveService";
@@ -137,7 +138,7 @@ export const contractRoutes = {
       // Renewed recently: not again before the cooldown ends.
       const availableOn = renewalAvailableOn(player.contract, date);
       if (availableOn) return Response.json({ error: "recentlyRenewed", availableOn }, { status: 409 });
-      const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
+      const { negotiation } = await managerDemandCtx(saveId, auth.seatId);
       // A furious player only renews with an open renewal promise (`.claude/rules/game/morale.md`).
       if (!out && refusesRenewal(squad, player)) {
         return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date, { renewal: true, negotiation }) }, { status: 400 });
@@ -211,10 +212,10 @@ export const contractRoutes = {
     // Personality parts of the demand (`personality.md`): where he comes from = his club, or the
     // last club of a free agent.
     const fromSquad = renewal ? null : from ? await saveService.getSquadById(saveId, from) : await lastClubOf(saveId, player);
-    const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
+    const { negotiation, fame } = await managerDemandCtx(saveId, auth.seatId);
     // A fee-free arrival (pre-contract: `?pre=1`; free agent: no `from`) asks more wage, a signing bonus and has rivals (4.47.9).
     const freeKind = renewal ? null : !from ? "free" as const : new URL(req.url).searchParams.get("pre") === "1" ? "pre" as const : null;
-    const b = demandBreakdown(player, mine, date, { fromSquad, renewal, negotiation, freeArrival: !!freeKind });
+    const b = demandBreakdown(player, mine, date, { fromSquad, renewal, negotiation, fame, freeArrival: !!freeKind });
     const freeCtx = freeKind ? await freeSigningContext(saveService, saveId, { player, kind: freeKind, from: fromSquad ?? null, date }) : null;
     // The explanation lines: exact for our own players; for anyone else, what the chief scout sees
     // (`obscurePersonality`) — nothing when he is unsure. `demand` (and the refusal on submit) stay real.
@@ -244,6 +245,7 @@ export const contractRoutes = {
       ...parts,
       ...(aiSeller && !player.loan ? { clause: releaseClause(player) } : {}),
       ...(b.negotiation !== 1 ? { negotiation: b.negotiation } : {}),
+      ...(b.fame !== 1 ? { fame: b.fame } : {}),
       ...(freeCtx ? { bonusAsk: freeCtx.ask, rivals: freeCtx.rivals.map((r) => r.rival.clubName) } : {}),
       ...(own && own.morale !== undefined
         ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
@@ -285,9 +287,9 @@ export const contractRoutes = {
       if ((await humanRosterSize(saveService, saveId, auth.seatId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
-      const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
+      const { negotiation, fame } = await managerDemandCtx(saveId, auth.seatId);
       const lastClub = await lastClubOf(saveId, agent.player);
-      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: lastClub, negotiation, freeArrival: true });
+      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: lastClub, negotiation, fame, freeArrival: true });
       // Signing bonus and the AI clubs after him (4.47.9).
       const free = await freeSigningContext(saveService, saveId, { player: agent.player, kind: "free", from: lastClub, date });
       if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand, bonusAsk: free.ask }, { status: 400 });

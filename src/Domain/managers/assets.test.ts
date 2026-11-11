@@ -1,3 +1,5 @@
+import { FAME, assetsValue, fameBand, fameReputation } from "@/Domain/managers/assets";
+import { fameDemandMult } from "@/Domain/personality/personality";
 import { describe, expect, test } from "bun:test";
 import { ASSET_PRICES, assetRefusal, isAssetKind, managerWallet, nextAssetPrice, nextEarningGoal } from "@/Domain/managers/assets";
 
@@ -28,5 +30,27 @@ describe("manager's money", () => {
     expect(nextEarningGoal(1_000_000, 100_000)).toEqual({ goal: 10_000_000, missing: 9_000_000, seasons: 2 });
     expect(nextEarningGoal(50_000_000, 100_000)).toBeNull();
     expect(nextEarningGoal(0, 0)).toBeNull();
+  });
+});
+
+describe("fame from the belongings (8.9.39)", () => {
+  test("value of the levels owned, reputation with a shrinking gain, bands", () => {
+    expect(assetsValue(undefined)).toBe(0);
+    expect(fameReputation(undefined)).toBe(0);
+    expect(fameBand(undefined)).toBe(0);
+    expect(assetsValue({ home: 2, car: 1 })).toBe(300_000 + 1_500_000 + 50_000);
+    const all = { home: 4, car: 4, watch: 4, boat: 4, plane: 4, suit: 4, art: 4 };
+    expect(fameReputation(all)).toBeLessThanOrEqual(FAME.MAX_REPUTATION);
+    expect(fameReputation(all)).toBeGreaterThan(4.9);
+    expect(fameBand(all)).toBe(4);
+    expect(fameReputation({ boat: 3 })).toBeGreaterThan(fameReputation({ boat: 2 }));
+  });
+
+  test("ambitious players ask less from a famous manager; the settled ones do not care", () => {
+    const ambitious = { id: "a", personality: { ambition: 20, loyalty: 10, professionalism: 10, temperament: 10 } };
+    const settled = { id: "b", personality: { ambition: 5, loyalty: 10, professionalism: 10, temperament: 10 } };
+    expect(fameDemandMult(ambitious as never, 1, FAME.DEMAND_DISCOUNT)).toBeCloseTo(1 - FAME.DEMAND_DISCOUNT, 5);
+    expect(fameDemandMult(ambitious as never, 0, FAME.DEMAND_DISCOUNT)).toBe(1);
+    expect(fameDemandMult(settled as never, 1, FAME.DEMAND_DISCOUNT)).toBe(1);
   });
 });

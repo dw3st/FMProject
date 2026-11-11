@@ -1,3 +1,4 @@
+import { FAME } from "@/Domain/managers/assets";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import { attributeReduce } from "@/Domain/achievements/managerAttributes";
 import { moraleDemandMult } from "@/Domain/morale/morale";
@@ -9,7 +10,7 @@ import type { PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
 import { unitFrom } from "@/Domain/rng";
 import {
-  ambitionDemandMult, compatriotMult, loyaltyRenewalMult, refusesSmallerClub, seasonsAtClub, smallerClubMult, tierStepsDown,
+  ambitionDemandMult, fameDemandMult, compatriotMult, loyaltyRenewalMult, refusesSmallerClub, seasonsAtClub, smallerClubMult, tierStepsDown,
 } from "@/Domain/personality/personality";
 import { appealDemandMult, facilitiesAppeal, refusesPoorFacilities } from "@/Domain/facilities/facilities";
 
@@ -31,6 +32,8 @@ export interface DemandContext {
   negotiation?: number;
   /** He arrives without a fee (pre-contract, free agent): the wage demand × `FREE_SIGNING.WAGE_PREMIUM`. */
   freeArrival?: boolean;
+  /** The human manager's fame, 0..1, from his belongings (`fameShare`, 8.9.39): ambitious players ask less to join. */
+  fame?: number;
 }
 
 /** The parts of a wage demand (each a multiplier, 1 = no effect) and whether he refuses the club. */
@@ -51,6 +54,8 @@ export interface DemandBreakdown {
   negotiation: number;
   /** A free arrival (pre-contract, free agent): `FREE_SIGNING.WAGE_PREMIUM`, else 1. */
   freeArrival: number;
+  /** Signing only: the manager's fame (`fameDemandMult`); 1 for a renewal or the AI. */
+  fame: number;
   /** Ambition ≥ 17 and the club two or more tiers smaller. */
   refuses: boolean;
   /** Signing only: ambition ≥ 17 and the training ground below 25%. */
@@ -112,6 +117,7 @@ function personalityParts(player: RosterPlayer, squad: Squad, ctx: DemandContext
     // Poor facilities cost only a signing, never a renewal (the AI has none: 1).
     facilities: own ? 1 : appealDemandMult(facilitiesAppeal(squad, player)),
     refusesFacilities: !own && refusesPoorFacilities(player, squad),
+    fame: own || !ctx.fame ? 1 : fameDemandMult(player, ctx.fame, FAME.DEMAND_DISCOUNT),
   };
 }
 
@@ -127,7 +133,7 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
   const negotiation = attributeReduce(ctx.negotiation);
   const freeArrival = ctx.freeArrival ? NEGOTIATION.FREE_SIGNING.WAGE_PREMIUM : 1;
   return {
-    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * negotiation * freeArrival),
+    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * parts.fame * negotiation * freeArrival),
     base: Math.round(base),
     ...parts,
     negotiation,

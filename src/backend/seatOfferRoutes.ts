@@ -1,3 +1,4 @@
+import { managerDemandCtx } from "@/backend/managerDemand";
 /**
  * Offers between two human seats (multiplayer part 4, `.claude/rules/game/multiplayer.md`): list, make, counter,
  * accept, refuse and withdraw. The pure rules live in `src/Domain/seatOffers/`, the world side in
@@ -116,8 +117,8 @@ async function createOffer(saveId: string, seatId: string, body: Record<string, 
     if (!isFee(fee) || pct === null || typeof wage !== "number" || !Number.isFinite(wage) || typeof years !== "number") {
       return json({ error: "invalidTerms" }, 400);
     }
-    const negotiation = (await saveService.getAchievements(saveId, seatId)).attributes.negotiation;
-    const contract = evaluateContractOffer({ wage, years }, check.player, check.buyer, date, { fromSquad: check.seller, negotiation });
+    const { negotiation, fame } = await managerDemandCtx(saveId, seatId);
+    const contract = evaluateContractOffer({ wage, years }, check.player, check.buyer, date, { fromSquad: check.seller, negotiation, fame });
     if (!contract.accepted) return json({ error: contract.reason, demand: contract.demand }, 400);
     terms = { fee: roundFeeUp(fee), sellOnPct: pct, wage, years };
   } else {
@@ -202,10 +203,10 @@ async function answerOffer(saveId: string, seatId: string, offerId: string, body
     return json({ error: check.error }, check.status);
   }
   if (offer.kind === "transfer") {
-    const negotiation = (await saveService.getAchievements(saveId, offer.buyer.seatId)).attributes.negotiation;
+    const { negotiation, fame } = await managerDemandCtx(saveId, offer.buyer.seatId);
     const contract = evaluateContractOffer(
       { wage: offer.terms.wage ?? 0, years: offer.terms.years ?? 0 }, check.player, check.buyer, date,
-      { fromSquad: check.seller, negotiation },
+      { fromSquad: check.seller, negotiation, fame },
     );
     if (!contract.accepted) {
       await dropOffer(saveId, offers, offer, "closed", date);

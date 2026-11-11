@@ -280,6 +280,15 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
     else setMsg({ kind: "error", text: t(`achievements.errors.${r.error}`, { defaultValue: t("achievements.errors.generic") }) });
   }
 
+  // The bio saves on its own, with the profile as stored (the other choices are saved with their own button).
+  const [bioMsg, setBioMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
+  async function saveBio() {
+    const p = data.profile;
+    const r = await achievementsCall<AchievementsData>(`/api/saves/${saveId}/achievements/profile`, "PUT", { frame: p.frame, badges: p.badges, title: p.title, bio });
+    if (r.ok) { onChange(r.data); setBioMsg({ kind: "info", text: t("achievements.profile.bioSaved") }); }
+    else setBioMsg({ kind: "error", text: t(`achievements.errors.${r.error}`, { defaultValue: t("achievements.errors.generic") }) });
+  }
+
   const allFrames: Frame[] = ["none", "bronze", "silver", "gold", "legend"];
   const toggleBadge = (b: Badge) => setBadges((cur) => cur.includes(b) ? cur.filter((x) => x !== b) : cur.length >= data.thresholds.maxBadges ? cur : [...cur, b]);
   const manager = session?.manager;
@@ -317,6 +326,11 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
           />
           <span className="text-sm text-muted-foreground tabular-nums self-end">{bio.length}/{BIO_MAX}</span>
         </label>
+        {/* Saved right here (tester report: the only save button sat far away in the other column). */}
+        <div className="flex items-center gap-3 self-start">
+          <Button onClick={() => void saveBio()} disabled={bio === (data.profile.bio ?? "")}>{t("achievements.profile.saveBio")}</Button>
+          {bioMsg && <span className={`text-sm ${bioMsg.kind === "error" ? "text-destructive" : "text-muted-foreground"}`}>{bioMsg.text}</span>}
+        </div>
         <RecentAchievements data={data} />
       </div>
       <div className="flex flex-col gap-5">

@@ -25,6 +25,8 @@ export interface ContractDemandInfo {
   refusesPoorFacilities?: boolean;
   /** The manager's Negotiation attribute (`achievements.md`), a multiplier; absent = neutral. */
   negotiation?: number;
+  /** The manager's fame from his belongings (8.9.39), a multiplier; absent = none. */
+  fame?: number;
   /** Renewal: his wage today, to compare with the asking wage. */
   currentWage?: number;
   /** Renewal: renewed recently, again only from this date. */
@@ -53,6 +55,8 @@ function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | un
   if (fac !== 0) lines.push({ key: "fac", text: t("personality.demand.facilities", { pct: sign(fac) }) });
   const neg = pct(info.negotiation);
   if (neg !== 0) lines.push({ key: "neg", text: t("achievements.contractLine", { value: sign(neg) }) });
+  const fame = pct(info.fame);
+  if (fame !== 0) lines.push({ key: "fame", text: t("personality.demand.fame", { pct: sign(fame) }) });
   if (lines.length === 0 && !info.refusesSmallerClub && !info.refusesPoorFacilities) return null;
   return (
     <ul className="m-0 p-0 list-none space-y-1">

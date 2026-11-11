@@ -43,6 +43,48 @@ export function assetRefusal(assets: ManagerAssets | undefined, kind: AssetKind,
   return price > wallet ? "noMoney" : null;
 }
 
+/**
+ * Fame from the belongings (user decision, option B, 8.9.39): what he owns is seen by the football world. The value of
+ * every level owned gives up to `MAX_REPUTATION` reputation points with a shrinking gain (`SCALE`: €20M ≈ 3,2 points,
+ * €60M ≈ 4,8), and the most ambitious players ask a little less to join a famous manager.
+ */
+export const FAME = {
+  MAX_REPUTATION: 5,
+  SCALE: 20_000_000,
+  /** At full fame a player with ambition 20 asks this much less (signings only); scaled by his ambition above 10,5. */
+  DEMAND_DISCOUNT: 0.04,
+  /** Fame bands shown on the pages, by the reputation points: 0 none, then low, medium, high, star. */
+  BANDS: [0.5, 2, 3.5, 4.5],
+} as const;
+
+/** What his belongings are worth: every level owned at its price. */
+export function assetsValue(assets: ManagerAssets | undefined): number {
+  let total = 0;
+  for (const kind of ASSET_KINDS) {
+    const level = assets?.[kind] ?? 0;
+    for (let i = 0; i < level; i++) total += ASSET_PRICES[kind][i] ?? 0;
+  }
+  return total;
+}
+
+/** Reputation points from the belongings, 0..`MAX_REPUTATION`. */
+export function fameReputation(assets: ManagerAssets | undefined): number {
+  const value = assetsValue(assets);
+  return value <= 0 ? 0 : FAME.MAX_REPUTATION * (1 - Math.exp(-value / FAME.SCALE));
+}
+
+/** 0..1 share of the full fame. */
+export function fameShare(assets: ManagerAssets | undefined): number {
+  return fameReputation(assets) / FAME.MAX_REPUTATION;
+}
+
+export type FameBand = 0 | 1 | 2 | 3 | 4;
+
+export function fameBand(assets: ManagerAssets | undefined): FameBand {
+  const r = fameReputation(assets);
+  return FAME.BANDS.filter((b) => r >= b).length as FameBand;
+}
+
 /** The career earnings goals: the thresholds of the achievement track. */
 export const EARNING_GOALS = TRACKS.career_earnings.thresholds;
 

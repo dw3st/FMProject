@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatFee } from "@/Domain/money";
-import { ASSET_KINDS, ASSET_PRICES, EARNING_GOALS, managerWallet, nextAssetPrice, type AssetKind } from "@/Domain/managers/assets";
+import { ASSET_KINDS, ASSET_PRICES, EARNING_GOALS, assetsValue, fameBand, fameReputation, managerWallet, nextAssetPrice, type AssetKind } from "@/Domain/managers/assets";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
@@ -54,7 +54,7 @@ export function AssetsTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card-arcade rounded-md p-4">
           <p className={LABEL}>{t("achievements.assets.wallet")}</p>
           <p className="font-display font-bold tabular-nums text-2xl text-primary m-0 mt-1">{formatFee(wallet)}</p>
@@ -64,6 +64,14 @@ export function AssetsTab() {
           <p className="font-display font-bold tabular-nums text-2xl m-0 mt-1">{formatFee(earned)}</p>
           <p className="text-sm text-muted-foreground tabular-nums m-0 mt-1">
             {t("achievements.assets.goals", { goals: EARNING_GOALS.map((g) => formatFee(g)).join(" · ") })}
+          </p>
+        </div>
+        {/* Fame from the belongings (8.9.39): reputation points with other managers and clubs. */}
+        <div className="card-arcade rounded-md p-4">
+          <p className={LABEL}>{t("achievements.assets.fame")}</p>
+          <p className="font-display font-bold text-2xl m-0 mt-1">{t(`fame.band.${fameBand(assets)}`)}</p>
+          <p className="text-sm text-muted-foreground tabular-nums m-0 mt-1">
+            {t("achievements.assets.fameDetail", { value: formatFee(assetsValue(assets)), points: fameReputation(assets).toFixed(1) })}
           </p>
         </div>
       </div>

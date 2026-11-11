@@ -258,6 +258,14 @@ export function ambitionDemandMult(p: PersonalityHolder): number {
 }
 
 /**
+ * Wage demand × this when a famous manager signs him (8.9.39): `fame` 0..1 from the manager's belongings, the discount
+ * `maxDiscount` at full fame and ambition 20, nothing for a player of middling or low ambition.
+ */
+export function fameDemandMult(p: PersonalityHolder, fame: number, maxDiscount: number): number {
+  return 1 - maxDiscount * Math.max(0, Math.min(1, fame)) * Math.max(0, t(p, "ambition"));
+}
+
+/**
  * Seasons at `squadId`: closed seasons there in his history, plus the season in progress when he is
  * the club's (`member`) and it has started for him (anything in his `seasonLog`). At the rollover
  * the log was just reset and the closed season is already a history row: it never counts twice.

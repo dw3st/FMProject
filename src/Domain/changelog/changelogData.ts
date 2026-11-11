@@ -27,6 +27,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.39",
+    date: "2026-11-11",
+    time: "10:31",
+    items: [
+      {
+        pt: "Os bens do técnico dão fama: somam até 5 pontos de reputação, o que traz mais propostas de emprego, e jogadores ambiciosos pedem um pouco menos para assinar com ele. A fama aparece na aba Bens e na página do técnico.",
+        en: "The manager's belongings bring fame: up to 5 reputation points, which bring more job offers, and ambitious players ask a little less to sign. Fame shows in the Belongings tab and on the manager's page.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "A biografia tem um botão de salvar logo abaixo do texto.",
+        en: "The bio has its own save button right below the text.",
+      },
+    ],
+  },
+  {
     version: "8.9.38",
     date: "2026-11-11",
     time: "10:20",

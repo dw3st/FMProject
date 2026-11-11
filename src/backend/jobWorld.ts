@@ -1,3 +1,4 @@
+import type { ManagerAssets } from "@/Domain/managers/assets";
 import { presetsForNewClub } from "@/Domain/tactics/lineupPresets";
 import { initClubMorale, stripClubMorale } from "@/Domain/morale/morale";
 import { getPyramids } from "@/backend/advanceDay";
@@ -200,6 +201,8 @@ export interface OfferRequest {
   excludeClubs?: ReadonlySet<string>;
   /** "Available on the market" (8.9.23): 1..3 offers, smaller clubs allowed. */
   seeking?: boolean;
+  /** His belongings: their fame adds to the reputation (8.9.39). */
+  assets?: ManagerAssets;
 }
 
 /**
@@ -208,7 +211,7 @@ export interface OfferRequest {
  */
 export async function generateJobOffers(service: SaveService, saveId: string, req: OfferRequest): Promise<JobOffer[]> {
   const year = parseInt(req.date.slice(0, 4), 10);
-  const rep = managerReputation(req.managers, req.board, year, req.seatId);
+  const rep = managerReputation(req.managers, req.board, year, req.seatId, req.assets);
   // The seat is in the seed: two managers of the same world never draw the same offers on the same day.
   const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.seatId}:${req.date}:${req.window}`));
   const count = req.seeking
@@ -566,7 +569,7 @@ export async function reputationOf(service: SaveService, saveId: string, meta: S
   const board = meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60);
   const year = parseInt((meta.currentDate ?? "2026").slice(0, 4), 10);
   try {
-    return managerReputation(managers, board, year, meta.seatId);
+    return managerReputation(managers, board, year, meta.seatId, meta.managerAssets);
   } catch (e) {
     logError("jobs", `save ${saveId}: reputation failed`, e);
     return 0;

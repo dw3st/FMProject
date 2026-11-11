@@ -15,6 +15,7 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
+import { fameBand, type ManagerAssets } from "@/Domain/managers/assets";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData } from "@/types/playerTypes";
 
@@ -34,6 +35,8 @@ type ManagerPage = Omit<ManagerRecord, "clubs"> & {
   /** A human manager's bio (8.9.38): another seat's in `bio`, the asking seat's inside `profile`. */
   bio?: string;
   profile?: { bio?: string };
+  /** A human manager's belongings: their fame shows on the page (8.9.39). */
+  assets?: ManagerAssets;
   job: { level: 1 | 2 | 3 | 4 | 5 | "vacant" | null; target: number | null; position: number | null } | null;
 };
 
@@ -116,6 +119,9 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
             {[data.nationality, data.isPlayer ? t("managerPage.you") : data.human ? null : t("managerPage.ai")].filter(Boolean).join(" · ")}
             {data.human && <span className="ml-2"><HumanBadge nickname={data.human} /></span>}
           </span>
+          {fameBand(data.assets) > 0 && (
+            <span className="text-sm text-muted-foreground">{t("fame.label")}: <span className="font-semibold text-chart-4">{t(`fame.band.${fameBand(data.assets)}`)}</span></span>
+          )}
           {data.squadId ? (
             <span className="flex items-center gap-2 min-w-0">
               <ClubLogo logoUrl={squadLogoUrl(data.squadId)} className="w-6 h-6 shrink-0" imgClassName="w-full h-full object-contain" />

@@ -49,10 +49,12 @@ export function answerPreContract(args: {
   nextSeasonEnd: string;
   /** The human manager's Negotiation attribute (`achievements.md`). */
   negotiation?: number;
+  /** The manager's fame from his belongings, 0..1 (8.9.39). */
+  fame?: number;
 }): PreContractAnswer {
   const { player, human, current, date } = args;
   // Personality (`personality.md`): coming from `current` (smaller-club premium / refusal).
-  const ctx = { fromSquad: current, negotiation: args.negotiation, freeArrival: true };
+  const ctx = { fromSquad: current, negotiation: args.negotiation, fame: args.fame, freeArrival: true };
   const demand = contractDemand(player, human, date, ctx);
   if (!preContractEligible(player, date)) return { accepted: false, reason: "notEligible", demand };
   const terms = evaluateContractOffer(args.offer, player, human, date, ctx);

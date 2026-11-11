@@ -1,3 +1,4 @@
+import { managerDemandCtx } from "@/backend/managerDemand";
 import { answerRenewalProposal, managerWeeklyWage as renewalWage, renewalLimits, MANAGER_CONTRACT } from "@/Domain/managers/managerContract";
 import { applyRenewalOverreach } from "@/Domain/boardFans/boardFans";
 import { saveService } from "@/backend/SaveService";
@@ -118,7 +119,7 @@ export const marketRoutes = {
         offer: { wage, years, bonus: offered }, bonusAsk: free.ask, rivals: free.rivals, player, human, current, date,
         humanPrestige: prestige.get(human.id) ?? 0.5, currentPrestige: prestige.get(current.id) ?? 0.5,
         nextSeasonEnd: addYearsIso(seasonEndOf(meta.activeLeagues, current.leagueSlug, date), 1),
-        negotiation: (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation,
+        ...(await managerDemandCtx(saveId, auth.seatId)),
       });
       if (!answer.accepted) {
         if (answer.reason === "prefersRival") {

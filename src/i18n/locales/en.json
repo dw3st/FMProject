@@ -4519,7 +4519,8 @@
       "loyal": "Loyal to the club: {{pct}}",
       "compatriot": "Plays in his country: {{pct}}",
       "smallerClub": "Wants a bigger club: {{pct}}",
-      "facilities": "Poor facilities: {{pct}}"
+      "facilities": "Poor facilities: {{pct}}",
+      "fame": "Your fame: {{pct}}"
     }
   },
   "scouting": {
@@ -5374,7 +5375,9 @@
       "bio": "Bio",
       "bioPlaceholder": "A few lines about you as a manager: style, idols, goals.",
       "recent": "Latest achievements",
-      "noRecent": "No achievement unlocked yet."
+      "noRecent": "No achievement unlocked yet.",
+      "saveBio": "Save bio",
+      "bioSaved": "Bio saved."
     },
     "frames": {
       "none": "No frame",
@@ -5567,7 +5570,9 @@
         "noMoney": "You don't have the money for that yet.",
         "maxLevel": "Already at the top level.",
         "generic": "The purchase failed. Try again."
-      }
+      },
+      "fame": "Fame",
+      "fameDetail": "{{value}} in belongings · +{{points}} reputation"
     },
     "hub": "Your manager"
   },
@@ -6858,5 +6863,15 @@
     "noHonours": "No titles or awards yet.",
     "noCareer": "No club passages yet.",
     "open": "See page"
+  },
+  "fame": {
+    "label": "Fame",
+    "band": {
+      "0": "None",
+      "1": "Low",
+      "2": "Medium",
+      "3": "High",
+      "4": "Star"
+    }
   }
 }

@@ -4519,7 +4519,8 @@
       "loyal": "Leal ao clube: {{pct}}",
       "compatriot": "Joga no país dele: {{pct}}",
       "smallerClub": "Quer um clube maior: {{pct}}",
-      "facilities": "Instalações ruins: {{pct}}"
+      "facilities": "Instalações ruins: {{pct}}",
+      "fame": "Sua fama: {{pct}}"
     }
   },
   "scouting": {
@@ -5374,7 +5375,9 @@
       "bio": "Biografia",
       "bioPlaceholder": "Algumas linhas sobre você como técnico: estilo, ídolos, objetivos.",
       "recent": "Últimas conquistas",
-      "noRecent": "Nenhuma conquista desbloqueada ainda."
+      "noRecent": "Nenhuma conquista desbloqueada ainda.",
+      "saveBio": "Salvar biografia",
+      "bioSaved": "Biografia salva."
     },
     "frames": {
       "none": "Sem moldura",
@@ -5567,7 +5570,9 @@
         "noMoney": "Você ainda não tem dinheiro para isso.",
         "maxLevel": "Já está no nível máximo.",
         "generic": "Não foi possível comprar. Tente de novo."
-      }
+      },
+      "fame": "Fama",
+      "fameDetail": "{{value}} em bens · +{{points}} de reputação"
     },
     "hub": "Seu técnico"
   },
@@ -6858,5 +6863,15 @@
     "noHonours": "Nenhum título nem prêmio ainda.",
     "noCareer": "Sem passagens por clubes ainda.",
     "open": "Ver página"
+  },
+  "fame": {
+    "label": "Fama",
+    "band": {
+      "0": "Nenhuma",
+      "1": "Baixa",
+      "2": "Média",
+      "3": "Alta",
+      "4": "Estrela"
+    }
   }
 }

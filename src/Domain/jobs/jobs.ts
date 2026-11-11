@@ -1,3 +1,4 @@
+import { fameReputation, type ManagerAssets } from "@/Domain/managers/assets";
 import { recordUnpaidDebt, unpaidDebtPenalty } from "@/Domain/finance/bankLoan";
 import type { UnpaidDebt } from "@/types/managerTypes";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
@@ -67,15 +68,18 @@ export function reputation(r: ReputationInput): number {
   return Math.round(v * 10) / 10;
 }
 
-/** A seat's manager's reputation from the ranking file, the board and the date's year. */
-export function managerReputation(managers: ManagerRecord[], board: number, year: number, seatId: string): number {
+/**
+ * A seat's manager's reputation from the ranking file, the board and the date's year.
+ * `assets`: his belongings, whose fame adds up to `FAME.MAX_REPUTATION` points (8.9.39).
+ */
+export function managerReputation(managers: ManagerRecord[], board: number, year: number, seatId: string, assets?: ManagerAssets): number {
   const me = managers.find((m) => m.seatId === seatId);
-  return Math.max(0, reputation({
+  return Math.min(100, Math.round(10 * Math.max(0, reputation({
     rankPercentile: me ? rankPercentile(managers, me.id) : 0.5,
     board,
     titlePoints: me ? recentTitlePoints(me.titles, year) : 0,
     seasons: me?.seasons ?? 0,
-  }) - unpaidDebtPenalty(me));
+  }) - unpaidDebtPenalty(me) + fameReputation(assets))) / 10);
 }
 
 // ── Club prestige ─────────────────────────────────────────────────────────────

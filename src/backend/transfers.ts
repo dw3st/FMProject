@@ -1,3 +1,4 @@
+import { managerDemandCtx } from "@/backend/managerDemand";
 import { replaceAfterSale } from "@/Domain/contracts/freeAgents";
 import { starLimitResponse } from "@/backend/starLimitWorld";
 import { afterListedForSale } from "@/Domain/morale/morale";
@@ -194,8 +195,8 @@ export const transferRoutes = {
         // Every signing creates a contract. `wage` defaults to the player's demand and `years`
         // to 3 (shortened to fit the age limit) when the client sends neither.
         // Personality (`personality.md`): the seller's club is where he comes from (smaller-club premium / refusal).
-        const negotiation = (await saveService.getAchievements(saveId, auth.seatId)).attributes.negotiation;
-        const demandCtx = { fromSquad: sellerSquad, negotiation };
+        const { negotiation, fame } = await managerDemandCtx(saveId, auth.seatId);
+        const demandCtx = { fromSquad: sellerSquad, negotiation, fame };
         const demand = contractDemand(player, buyerSquad, meta.currentDate ?? "", demandCtx);
         const contractYears = typeof offeredYears === "number"
           ? offeredYears
