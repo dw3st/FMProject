@@ -4746,6 +4746,9 @@
     },
     "reports": {
       "moved": "mudou de clube",
+      "prospectSign": "Contratar para a base",
+      "prospectGone": "oferta encerrada",
+      "prospectNoStar": "Jovem sem clube: não entra na lista de observados. Contrate para a base na aba Joias.",
       "onMission": "Olheiros em missão",
       "missionChip": "{{scout}} · {{target}} · {{done}}/{{total}} sem."
     }

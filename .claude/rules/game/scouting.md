@@ -379,3 +379,7 @@ Report do usuário. `playerAvailability` (`src/Domain/scout/availability.ts`, co
 ## Tabelas no padrão da busca (10.1.1)
 
 Reports do usuário. Relatórios, Joias e Observados (`ReportTables.tsx`) usam as mesmas colunas e células da busca: posição colorida, estrela, bandeira, nome com joia e etiquetas de disponibilidade na mesma linha, idade, escudo e nome do clube (link), nota, nível em `AvgBadge` (faixa quando incerto), potencial, conhecimento, salário e valor. A lista de observados devolve `natural` e `nationality`.
+
+## Filtros em três linhas e jovem sem clube (10.4.1)
+
+Reports do usuário. Os filtros da busca ficam em três linhas alinhadas: nome, posição, liga e nacionalidade; as quatro faixas (idade, OVR, potencial, valor); a nota do olheiro. Na tabela de Relatórios, um jovem sem clube (prospecto) não tem estrela: ele ainda não está no mundo e não entra na lista de observados. A linha dele mostra "Contratar para a base" (link para a aba Joias) enquanto a oferta vale, ou "oferta encerrada".

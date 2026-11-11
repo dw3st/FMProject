@@ -4746,6 +4746,9 @@
     },
     "reports": {
       "moved": "changed clubs",
+      "prospectSign": "Sign for the academy",
+      "prospectGone": "offer closed",
+      "prospectNoStar": "A youngster without a club: he cannot go on the watch list. Sign him for the academy in the Gems tab.",
       "onMission": "Scouts on mission",
       "missionChip": "{{scout}} · {{target}} · {{done}}/{{total}} wk"
     }

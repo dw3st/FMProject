@@ -77,11 +77,15 @@ function ClubCell({ squadId, league, name }: { squadId: string; league?: string 
   );
 }
 
-function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
+const NO_PROSPECTS = new Set<string>();
+
+function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects, sort }: {
   reports: ScoutReport[];
   saveId: string;
   shortlisted: Set<string>;
   onShortlist: () => void;
+  /** Clubless youngsters still on offer: their rows say where to sign them (they cannot be watched). */
+  openProspects: Set<string>;
   /** Sortable headers (the reports tab); absent = fixed headers. */
   sort?: { key: ReportSortKey; dir: SortDir; onSort: (col: ReportSortKey) => void };
 }) {
@@ -115,7 +119,10 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
               <td className={`${td} font-black ${positionLabelColor(r.position, r.position)}`}>{positionLabel(t, r.position, r.position)}</td>
               <td className={td}>
                 <span className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-                  {!r.prospectId && (
+                  {r.prospectId ? (
+                    // A clubless youngster is not in the world yet: no watch list, he is signed in the Gems tab.
+                    <span className="inline-block w-8 shrink-0" aria-hidden />
+                  ) : (
                     <ShortlistStar saveId={saveId} playerId={r.playerId} squadId={r.squadId} on={shortlisted.has(r.playerId)} onChange={onShortlist} />
                   )}
                   <NationFlag nationality={r.nationality} />
@@ -127,6 +134,14 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
                   {r.gem && <GemBadge />}
                   {r.gone && <span className="text-sm text-muted-foreground">{t("scouting.reports.moved")}</span>}
                   {!r.prospectId && r.availability && <AvailabilityChips inline value={r.availability} />}
+                  {r.prospectId && (openProspects.has(r.prospectId) ? (
+                    <a href="/scout?tab=gems" title={t("scouting.reports.prospectNoStar")}
+                      className="rounded border border-star-green/50 px-1.5 py-0.5 text-sm font-semibold leading-none text-star-green no-underline hover:bg-star-green/10">
+                      {t("scouting.reports.prospectSign")}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">{t("scouting.reports.prospectGone")}</span>
+                  ))}
                 </span>
               </td>
               <td className={`${td} text-muted-foreground font-medium`}>{r.age}</td>
@@ -154,6 +169,10 @@ export function ReportsTab({ saveId, data, leagues, onChanged }: { saveId: strin
   const { t, i18n } = useTranslation();
   const [mission, setMission] = useState("all");
   const shortlisted = useMemo(() => new Set(data.shortlist.map((e) => e.playerId)), [data.shortlist]);
+  const openProspects = useMemo(
+    () => new Set(data.prospects.filter((p) => p.expires >= data.date).map((p) => p.player.id)),
+    [data.prospects, data.date],
+  );
   const missionOptions = useMemo(() => {
     const ids = [...new Set([...data.reports.map((r) => r.missionId), ...data.missions.map((m) => m.id)].filter((x): x is string => !!x))];
     const label = (id: string) => {
@@ -224,7 +243,7 @@ export function ReportsTab({ saveId, data, leagues, onChanged }: { saveId: strin
       </div>
       {rows.length === 0
         ? <p className="text-sm text-muted-foreground m-0">{t("scouting.noReports")}</p>
-        : <ReportsTable reports={rows} saveId={saveId} shortlisted={shortlisted} onShortlist={onChanged}
+        : <ReportsTable reports={rows} saveId={saveId} shortlisted={shortlisted} onShortlist={onChanged} openProspects={openProspects}
             sort={{ key: sortKey, dir: sortDir, onSort }} />}
     </div>
   );
@@ -369,7 +388,7 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
         <SectionTitle>{t("scouting.gems.title")}</SectionTitle>
         {gems.length === 0
           ? <p className="text-sm text-muted-foreground m-0">{t("scouting.gems.empty")}</p>
-          : <ReportsTable reports={gems} saveId={saveId} shortlisted={shortlisted} onShortlist={() => onChanged()} />}
+          : <ReportsTable reports={gems} saveId={saveId} shortlisted={shortlisted} onShortlist={() => onChanged()} openProspects={NO_PROSPECTS} />}
       </section>
     </div>
   );

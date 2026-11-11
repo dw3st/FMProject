@@ -100,9 +100,10 @@ export function ScoutFilters({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+      {/* Three tidy rows (tester report, 10.4.1): who and where, the four ranges, the scout's grade. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Name Search */}
-        <div className="col-span-2">
+        <div>
           <label className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display">
             {t("scout.filters.playerName")}
           </label>
@@ -126,29 +127,6 @@ export function ScoutFilters({
           options={positionOptions}
         />
 
-        {/* Age Range */}
-        <RangeBox label={t("scout.filters.ageRange")}
-          min={<StepperField value={filters.minAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, minAge: Math.round(v) })} />}
-          max={<StepperField value={filters.maxAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, maxAge: Math.round(v) })} />} />
-
-        {/* OVR range: shown 0–100 like the table, kept 0–10 in the filter (tester report, 8.8.3) */}
-        <RangeBox label={t("scout.filters.ovr")} title={t("scout.filters.ovrHint")}
-          min={<StepperField value={Math.round(filters.minAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, minAvg: Math.round(v) / 10 })} />}
-          max={<StepperField value={Math.round(filters.maxAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
-              onChange={(v) => setFilters({ ...filters, maxAvg: Math.round(v) / 10 })} />} />
-
-        {/* Value (transfer price), millions of euros: two columns so "1000" fits (#154) */}
-        <RangeBox label={t("scout.filters.valueRange")}
-          min={<StepperField value={filters.minPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={oneDecimal}
-              downLabel={t("common.decrease")} upLabel={t("common.increase")} ariaLabel={t("common.min")}
-              onChange={(v) => setFilters({ ...filters, minPriceM: v })} />}
-          max={<StepperField value={filters.maxPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={priceMax}
-              downLabel={t("common.decrease")} upLabel={t("common.increase")} ariaLabel={t("common.max")}
-              onChange={(v) => setFilters({ ...filters, maxPriceM: v })} />} />
-
         {/* League — searchable: ~84 options labelled "League · Country" */}
         <SelectCombobox
           label={t("scout.filters.league")}
@@ -163,6 +141,22 @@ export function ScoutFilters({
           onChange={(v) => setFilters({ ...filters, nationality: v })}
           options={nationalityOptions}
         />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Age Range */}
+        <RangeBox label={t("scout.filters.ageRange")}
+          min={<StepperField value={filters.minAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, minAge: Math.round(v) })} />}
+          max={<StepperField value={filters.maxAge} min={16} max={45} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, maxAge: Math.round(v) })} />} />
+
+        {/* OVR range: shown 0–100 like the table, kept 0–10 in the filter (tester report, 8.8.3) */}
+        <RangeBox label={t("scout.filters.ovr")} title={t("scout.filters.ovrHint")}
+          min={<StepperField value={Math.round(filters.minAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, minAvg: Math.round(v) / 10 })} />}
+          max={<StepperField value={Math.round(filters.maxAvg * 10)} min={0} max={100} step={intStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
+              onChange={(v) => setFilters({ ...filters, maxAvg: Math.round(v) / 10 })} />} />
 
         {/* Potential (0–100): the middle of the shown range, his overall past 23 */}
         <RangeBox label={t("scout.filters.potential")}
@@ -171,8 +165,19 @@ export function ScoutFilters({
           max={<StepperField value={filters.maxPotential ?? 100} min={0} max={100} step={potStep} downLabel={t("common.decrease")} upLabel={t("common.increase")}
               onChange={(v) => setFilters({ ...filters, maxPotential: Math.round(v) })} />} />
 
+        {/* Value (transfer price), millions of euros: two columns so "1000" fits (#154) */}
+        <RangeBox label={t("scout.filters.valueRange")}
+          min={<StepperField value={filters.minPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={oneDecimal}
+              downLabel={t("common.decrease")} upLabel={t("common.increase")} ariaLabel={t("common.min")}
+              onChange={(v) => setFilters({ ...filters, minPriceM: v })} />}
+          max={<StepperField value={filters.maxPriceM} min={0} max={PRICE_FILTER_NO_LIMIT_M} step={stepPriceM} parse={parsePriceM} format={priceMax}
+              downLabel={t("common.decrease")} upLabel={t("common.increase")} ariaLabel={t("common.max")}
+              onChange={(v) => setFilters({ ...filters, maxPriceM: v })} />} />
+      </div>
+
+      <div className="mt-4">
         {/* Grade of the scout's latest report: any of the ticked ones */}
-        <div className="col-span-2">
+        <div>
           <label
             className="block text-[13px] text-muted-foreground mb-2 font-bold uppercase tracking-[0.08em] font-display"
             title={t("scout.filters.gradeHint")}
@@ -263,7 +268,7 @@ function Toggle({ on, icon, tone, title, onClick, children }: { on: boolean; ico
 function RangeBox({ label, title, min, max }: { label: string; title?: string; min: ReactNode; max: ReactNode }) {
   const { t } = useTranslation();
   return (
-    <fieldset className="col-span-2 m-0 min-w-0 rounded-md border border-border px-3 pb-3 pt-1">
+    <fieldset className="m-0 min-w-0 rounded-md border border-border px-3 pb-3 pt-1">
       <legend className="px-1 text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display" title={title}>{label}</legend>
       <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-2">
         <span className="text-sm text-muted-foreground">{t("common.min")}</span>

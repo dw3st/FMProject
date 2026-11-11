@@ -27,6 +27,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.4.1",
+    date: "2026-11-11",
+    time: "20:57",
+    items: [],
+    fixes: [
+      { pt: "Olheiro: os filtros da busca ficam em três linhas alinhadas (nome, posição, liga e nacionalidade; idade, OVR, potencial e valor; nota do olheiro).", en: "Scout: the search filters sit in three aligned rows (name, position, league and nationality; age, OVR, potential and value; scout grade)." },
+      { pt: "Olheiro: na lista de relatórios, um jovem sem clube não tinha estrela e nada dizia por quê. Agora a linha dele mostra \"Contratar para a base\", que leva à aba Joias.", en: "Scout: in the reports list, a youngster without a club had no star and nothing said why. His row now shows \"Sign for the academy\", which leads to the Gems tab." },
+    ],
+  },
+  {
     version: "10.4",
     date: "2026-11-11",
     time: "20:41",
