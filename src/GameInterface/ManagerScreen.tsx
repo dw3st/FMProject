@@ -18,7 +18,7 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
-import { fameBand, type ManagerAssets } from "@/Domain/managers/assets";
+import { fameBand, legendaryCount, type ManagerAssets } from "@/Domain/managers/assets";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData } from "@/types/playerTypes";
 
@@ -143,6 +143,11 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
           </span>
           {fameBand(data.assets) > 0 && (
             <span className="text-sm text-muted-foreground">{t("fame.label")}: <span className="font-semibold text-chart-4">{t(`fame.band.${fameBand(data.assets)}`)}</span></span>
+          )}
+          {legendaryCount(data.assets) > 0 && (
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-star-gold">
+              <Icon name="crown" size={16} />{t("fame.legendary", { count: legendaryCount(data.assets) })}
+            </span>
           )}
           {data.squadId ? (
             <span className="flex items-center gap-2 min-w-0">

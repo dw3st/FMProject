@@ -340,3 +340,17 @@ describe("filterScoutPlayers — fits the budget (#123)", () => {
     expect(ids(filterScoutPlayers(list, F(), new Set()))).toEqual(["a", "b", "c"]);
   });
 });
+
+describe("filterScoutPlayers — kind of player (9.0)", () => {
+  test("top 25, form, prodigy, created and legends add up: any ticked one passes", () => {
+    const list = [
+      P({ id: "gold", star: "gold" }), P({ id: "blue", star: "blue" }), P({ id: "green", star: "green" }),
+      P({ id: "created_c1_20340101" }), P({ id: "legend", reborn: true }), P({ id: "plain" }),
+    ];
+    const none = new Set<string>();
+    expect(ids(filterScoutPlayers(list, F({ onlyTop25: true }), none))).toEqual(["gold"]);
+    expect(ids(filterScoutPlayers(list, F({ onlyInForm: true, onlyProdigy: true }), none))).toEqual(["blue", "green"]);
+    expect(ids(filterScoutPlayers(list, F({ onlyCreated: true, onlyLegends: true }), none))).toEqual(["created_c1_20340101", "legend"]);
+    expect(ids(filterScoutPlayers(list, F(), none))).toHaveLength(6);
+  });
+});

@@ -4,20 +4,35 @@ import { TRACKS } from "@/Domain/achievements/catalog";
  * The manager's own money (`.claude/rules/game/jobs.md` → "Dinheiro do técnico"): wages and severance earned over the
  * career buy personal assets, and earning goals are an achievement track. Prestige only: nothing here touches the club.
  */
-export const ASSET_KINDS = ["home", "car", "watch", "boat", "plane", "suit", "art"] as const;
+export const ASSET_KINDS = ["home", "car", "watch", "boat", "plane", "suit", "art", "helicopter", "horses", "classics", "restaurant", "island", "franchise"] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 
 /** Price of each level, EUR; a level is bought after the one below it. */
 export const ASSET_PRICES: Record<AssetKind, readonly number[]> = {
-  home: [300_000, 1_500_000, 6_000_000, 25_000_000],
-  car: [50_000, 250_000, 1_000_000, 4_000_000],
-  watch: [10_000, 100_000, 500_000, 2_000_000],
+  home: [300_000, 1_500_000, 6_000_000, 25_000_000, 120_000_000],
+  car: [50_000, 250_000, 1_000_000, 4_000_000, 20_000_000],
+  watch: [10_000, 100_000, 500_000, 2_000_000, 30_000_000],
   // More places to spend it (user request, 8.9.36): up to ~€60M at the top.
-  boat: [400_000, 3_000_000, 15_000_000, 60_000_000],
-  plane: [600_000, 4_000_000, 18_000_000, 50_000_000],
-  suit: [3_000, 20_000, 120_000, 1_000_000],
-  art: [50_000, 800_000, 6_000_000, 40_000_000],
+  boat: [400_000, 3_000_000, 15_000_000, 60_000_000, 300_000_000],
+  plane: [600_000, 4_000_000, 18_000_000, 50_000_000, 400_000_000],
+  suit: [3_000, 20_000, 120_000, 1_000_000, 10_000_000],
+  art: [50_000, 800_000, 6_000_000, 40_000_000, 150_000_000],
+  // 9.0 (tester report): six more belongings, each with a legendary level that costs a fortune.
+  helicopter: [1_500_000, 6_000_000, 15_000_000, 30_000_000, 60_000_000],
+  horses: [200_000, 2_000_000, 10_000_000, 40_000_000, 100_000_000],
+  classics: [500_000, 3_000_000, 12_000_000, 50_000_000, 120_000_000],
+  restaurant: [300_000, 2_000_000, 8_000_000, 25_000_000, 60_000_000],
+  island: [5_000_000, 20_000_000, 60_000_000, 150_000_000, 500_000_000],
+  franchise: [20_000_000, 80_000_000, 250_000_000, 700_000_000, 2_000_000_000],
 };
+
+/** The fifth level of every belonging is legendary (9.0): a gold seal on the manager's page. */
+export const LEGENDARY_LEVEL = 5;
+
+/** How many belongings he owns at the legendary level. */
+export function legendaryCount(assets: ManagerAssets | undefined): number {
+  return ASSET_KINDS.filter((k) => (assets?.[k] ?? 0) >= LEGENDARY_LEVEL).length;
+}
 
 export type ManagerAssets = Partial<Record<AssetKind, number>>;
 

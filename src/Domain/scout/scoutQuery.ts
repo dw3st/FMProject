@@ -116,6 +116,7 @@ export function filterScoutPlayers(
   const name = filters.name ? filters.name.toLowerCase() : "";
   const anyAvailability = !!(filters.onlyFree || filters.onlyForSale || filters.onlyPreContract || filters.onlyLoanable);
   const grades = filters.grades && filters.grades.length > 0 ? new Set(filters.grades) : null;
+  const anyKind = !!(filters.onlyTop25 || filters.onlyInForm || filters.onlyProdigy || filters.onlyCreated || filters.onlyLegends);
   const minPot = filters.minPotential ?? 0;
   const maxPot = filters.maxPotential ?? 100;
   return players.filter((player) => {
@@ -128,6 +129,15 @@ export function filterScoutPlayers(
         || (filters.onlyLoanable && player.loanable === true);
       if (!ok) return false;
     } else if (player.free) return false;
+    // Kind of player (9.0): any ticked one passes.
+    if (anyKind) {
+      const ok = (filters.onlyTop25 && player.star === "gold")
+        || (filters.onlyInForm && player.star === "blue")
+        || (filters.onlyProdigy && player.star === "green")
+        || (filters.onlyCreated && player.id.startsWith("created_"))
+        || (filters.onlyLegends && player.reborn === true);
+      if (!ok) return false;
+    }
     if (filters.onlyShortlist && !shortlistIds.has(player.id)) return false;
     if (filters.onlyAwarded && !player.awarded) return false;
     // Set on the server for every player outside the user's squad (`scoutRowExtras`).

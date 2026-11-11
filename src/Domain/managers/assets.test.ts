@@ -15,13 +15,14 @@ describe("manager's money", () => {
   test("levels go one by one, up to the top", () => {
     expect(nextAssetPrice(undefined, "home")).toBe(ASSET_PRICES.home[0]!);
     expect(nextAssetPrice({ home: 2 }, "home")).toBe(ASSET_PRICES.home[2]!);
-    expect(nextAssetPrice({ car: 4 }, "car")).toBeNull();
+    expect(nextAssetPrice({ car: 4 }, "car")).toBe(ASSET_PRICES.car[4]!);
+    expect(nextAssetPrice({ car: 5 }, "car")).toBeNull();
   });
 
   test("refusals", () => {
     expect(assetRefusal({}, "watch", 10_000)).toBeNull();
     expect(assetRefusal({}, "watch", 9_999)).toBe("noMoney");
-    expect(assetRefusal({ watch: 4 }, "watch", 99_000_000)).toBe("maxLevel");
+    expect(assetRefusal({ watch: 5 }, "watch", 99_000_000)).toBe("maxLevel");
     expect(isAssetKind("yacht")).toBe(false);
   });
 
@@ -39,7 +40,7 @@ describe("fame from the belongings (8.9.39)", () => {
     expect(fameReputation(undefined)).toBe(0);
     expect(fameBand(undefined)).toBe(0);
     expect(assetsValue({ home: 2, car: 1 })).toBe(300_000 + 1_500_000 + 50_000);
-    const all = { home: 4, car: 4, watch: 4, boat: 4, plane: 4, suit: 4, art: 4 };
+    const all = { home: 5, car: 5, watch: 5, boat: 5, plane: 5, suit: 5, art: 5 };
     expect(fameReputation(all)).toBeLessThanOrEqual(FAME.MAX_REPUTATION);
     expect(fameReputation(all)).toBeGreaterThan(4.9);
     expect(fameBand(all)).toBe(4);

@@ -27,6 +27,31 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.0",
+    date: "2026-11-11",
+    time: "11:12",
+    items: [
+      {
+        pt: "Seis bens novos para o técnico: helicóptero, haras de cavalos de corrida, carros clássicos, restaurante, ilha particular e franquia esportiva.",
+        en: "Six new belongings for the manager: helicopter, racehorses, classic cars, restaurant, private island and a sports franchise.",
+      },
+      {
+        pt: "Todo bem ganhou um nível lendário, que custa uma fortuna: do palácio histórico de €120M à liga inteira de €2 bilhões. Quem tem um ganha um selo dourado na página do técnico.",
+        en: "Every belonging has a legendary level that costs a fortune: from a €120M historic palace to a whole €2 billion league. Owning one puts a gold seal on the manager's page.",
+      },
+      {
+        pt: "Olheiro: os filtros prontos ficam abaixo dos atributos, em grupos com ícones coloridos, e há filtros novos: top 25 do mundo, grande fase, prodígio, criados por técnicos e lendas.",
+        en: "Scouting: the ready-made filters sit below the attributes, in groups with coloured icons, with new ones: world top 25, great form, prodigy, created by managers and legends.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "No resultado da partida, o nome de cada artilheiro abre a ficha dele.",
+        en: "On the match result, each scorer's name opens his page.",
+      },
+    ],
+  },
+  {
     version: "8.9.42",
     date: "2026-11-11",
     time: "10:49",
@@ -5587,5 +5612,9 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Campinho de posições da ficha com gramado pintado e posições grandes", en: "The player page's position pitch with painted grass and big positions" },
+  { pt: "Cursos e idiomas para o técnico, e propostas pelo país e pelo idioma", en: "Courses and languages for the manager, and job offers by country and language" },
+  { pt: "Troca de jogadores com compensação em dinheiro", en: "Player swaps with a cash adjustment" },
+  { pt: "Amistoso com um amigo de outra liga", en: "Friendlies against a friend from another league" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

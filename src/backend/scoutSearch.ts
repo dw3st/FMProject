@@ -1,3 +1,4 @@
+import { computeStars } from "@/Domain/world/stars";
 import { loanAvailability } from "@/Domain/negotiation/loans";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { saveService } from "@/backend/SaveService";
@@ -70,6 +71,8 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
   const preContractIds = buyer ? await preContractIdsOf(saveId, squads) : new Set<string>();
   const loanableIds = buyer ? await loanableIdsOf(saveId, squads, market, viewer?.ownClubId ?? "") : new Set<string>();
   const scouting = await saveService.getScouting(saveId, seatId);
+  // The world's stars (public): the kind-of-player filters (9.0).
+  const stars = computeStars(squads);
   // Grade of the latest report on each player (tester report: filter by grade).
   const gradeOf = new Map<string, ScoutGrade>();
   for (const r of [...scouting.reports].sort((a, b) => a.date.localeCompare(b.date))) gradeOf.set(r.playerId, r.grade);
@@ -83,6 +86,8 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
       if (preContractIds.has(r.id)) row = { ...row, preContract: true };
       if (loanableIds.has(r.id)) row = { ...row, loanable: true };
     }
+    const star = stars?.[r.id];
+    if (star) row = { ...row, star };
     const grade = gradeOf.get(r.id);
     return grade ? { ...row, grade } : row;
   });
@@ -276,6 +281,11 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       onlyAffordable: f.onlyAffordable === true,
       onlyPreContract: f.onlyPreContract === true,
       onlyLoanable: f.onlyLoanable === true,
+      onlyTop25: f.onlyTop25 === true,
+      onlyInForm: f.onlyInForm === true,
+      onlyProdigy: f.onlyProdigy === true,
+      onlyCreated: f.onlyCreated === true,
+      onlyLegends: f.onlyLegends === true,
       minKnowledge: asFiniteNumber(f.minKnowledge, 0),
       grades: Array.isArray(f.grades) ? [...new Set(f.grades.filter((g): g is ScoutGrade => GRADES.includes(g as ScoutGrade)))] : [],
       minPotential: Math.min(100, Math.max(0, asFiniteNumber(f.minPotential, 0))),

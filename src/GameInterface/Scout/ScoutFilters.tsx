@@ -11,7 +11,7 @@ import {
   stepPriceM,
   type ScoutFilterState,
 } from "@/Domain/scout/scoutFilterState";
-import { Icon } from "@/GameInterface/Icons";
+import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { Button } from "@/GameInterface/ui/Button";
 import { SavedScoutFilters } from "@/GameInterface/Scout/SavedScoutFilters";
@@ -200,58 +200,30 @@ export function ScoutFilters({
         </div>
       </div>
 
-      {/* For Sale Only toggle */}
-      <div className="mt-4 pt-4 border-t border-border/40 flex flex-wrap gap-2">
-        <Chip selected={!!filters.onlyForSale} title={t("scout.filters.availabilityHint")} onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}>
-          <Icon name="tag" className="w-4 h-4" />
-          {t("scout.filters.forSaleOnly")}
-        </Chip>
-        <Chip selected={!!filters.onlyFree} title={t("scout.filters.availabilityHint")} onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}>
-          <Icon name="tag" className="w-4 h-4" />
-          {t("scout.filters.freeAgentsOnly")}
-        </Chip>
-        <Chip selected={!!filters.onlyShortlist} onClick={() => setFilters({ ...filters, onlyShortlist: !filters.onlyShortlist })}>
-          <Icon name="star" className="w-4 h-4" />
-          {t("scouting.filters.onlyShortlist")}
-        </Chip>
-        <Chip
-          selected={(filters.minKnowledge ?? 0) >= 60}
-          onClick={() => setFilters({ ...filters, minKnowledge: (filters.minKnowledge ?? 0) >= 60 ? 0 : 60 })}
-        >
-          <Icon name="binoculars" className="w-4 h-4" />
-          {t("scouting.filters.known")}
-        </Chip>
-        <Chip selected={!!filters.onlyAwarded} onClick={() => setFilters({ ...filters, onlyAwarded: !filters.onlyAwarded })}>
-          <Icon name="award" className="w-4 h-4" />
-          {t("scout.filters.awardedOnly")}
-        </Chip>
-        <Chip
-          selected={!!filters.onlyAffordable}
-          onClick={() => setFilters({ ...filters, onlyAffordable: !filters.onlyAffordable })}
-          title={t("scout.filters.affordableHint")}
-        >
-          <Icon name="wallet" className="w-4 h-4" />
-          {t("scout.filters.affordableOnly")}
-        </Chip>
-        <Chip
-          selected={!!filters.onlyPreContract}
-          onClick={() => setFilters({ ...filters, onlyPreContract: !filters.onlyPreContract })}
-          title={t("scout.filters.preContractHint")}
-        >
-          <Icon name="calendar" className="w-4 h-4" />
-          {t("scout.filters.preContractOnly")}
-        </Chip>
-        <Chip
-          selected={!!filters.onlyLoanable}
-          onClick={() => setFilters({ ...filters, onlyLoanable: !filters.onlyLoanable })}
-          title={t("scout.filters.loanableHint")}
-        >
-          <Icon name="handshake" className="w-4 h-4" />
-          {t("scout.filters.loanableOnly")}
-        </Chip>
-      </div>
-
       <ScoutAttributeFiltersDisclosure filters={filters} setFilters={setFilters} />
+
+      {/* Ready-made filters below the attributes, in groups with coloured icons (tester report, 9.0). */}
+      <div className="mt-4 pt-4 border-t border-border/40 flex flex-col gap-4">
+        <ChipGroup label={t("scout.filters.groups.availability")} hint={t("scout.filters.availabilityHint")}>
+          <Toggle on={!!filters.onlyForSale} icon="tag" tone="text-chart-1" onClick={() => setFilters({ ...filters, onlyForSale: !filters.onlyForSale })}>{t("scout.filters.forSaleOnly")}</Toggle>
+          <Toggle on={!!filters.onlyFree} icon="user-plus" tone="text-chart-2" onClick={() => setFilters({ ...filters, onlyFree: !filters.onlyFree })}>{t("scout.filters.freeAgentsOnly")}</Toggle>
+          <Toggle on={!!filters.onlyPreContract} icon="calendar" tone="text-chart-3" title={t("scout.filters.preContractHint")} onClick={() => setFilters({ ...filters, onlyPreContract: !filters.onlyPreContract })}>{t("scout.filters.preContractOnly")}</Toggle>
+          <Toggle on={!!filters.onlyLoanable} icon="handshake" tone="text-chart-4" title={t("scout.filters.loanableHint")} onClick={() => setFilters({ ...filters, onlyLoanable: !filters.onlyLoanable })}>{t("scout.filters.loanableOnly")}</Toggle>
+          <Toggle on={!!filters.onlyAffordable} icon="wallet" tone="text-chart-5" title={t("scout.filters.affordableHint")} onClick={() => setFilters({ ...filters, onlyAffordable: !filters.onlyAffordable })}>{t("scout.filters.affordableOnly")}</Toggle>
+        </ChipGroup>
+        <ChipGroup label={t("scout.filters.groups.kind")} hint={t("scout.filters.kindHint")}>
+          <Toggle on={!!filters.onlyTop25} icon="star-filled" tone="text-star-gold" onClick={() => setFilters({ ...filters, onlyTop25: !filters.onlyTop25 })}>{t("scout.filters.top25")}</Toggle>
+          <Toggle on={!!filters.onlyInForm} icon="star-filled" tone="text-star-blue" onClick={() => setFilters({ ...filters, onlyInForm: !filters.onlyInForm })}>{t("scout.filters.inForm")}</Toggle>
+          <Toggle on={!!filters.onlyProdigy} icon="star-filled" tone="text-star-green" onClick={() => setFilters({ ...filters, onlyProdigy: !filters.onlyProdigy })}>{t("scout.filters.prodigy")}</Toggle>
+          <Toggle on={!!filters.onlyCreated} icon="star" tone="text-chart-2" onClick={() => setFilters({ ...filters, onlyCreated: !filters.onlyCreated })}>{t("scout.filters.created")}</Toggle>
+          <Toggle on={!!filters.onlyLegends} icon="crown" tone="text-star-gold" onClick={() => setFilters({ ...filters, onlyLegends: !filters.onlyLegends })}>{t("scout.filters.legends")}</Toggle>
+          <Toggle on={!!filters.onlyAwarded} icon="award" tone="text-chart-4" onClick={() => setFilters({ ...filters, onlyAwarded: !filters.onlyAwarded })}>{t("scout.filters.awardedOnly")}</Toggle>
+        </ChipGroup>
+        <ChipGroup label={t("scout.filters.groups.scouting")}>
+          <Toggle on={!!filters.onlyShortlist} icon="star" tone="text-primary" onClick={() => setFilters({ ...filters, onlyShortlist: !filters.onlyShortlist })}>{t("scouting.filters.onlyShortlist")}</Toggle>
+          <Toggle on={(filters.minKnowledge ?? 0) >= 60} icon="binoculars" tone="text-primary" onClick={() => setFilters({ ...filters, minKnowledge: (filters.minKnowledge ?? 0) >= 60 ? 0 : 60 })}>{t("scouting.filters.known")}</Toggle>
+        </ChipGroup>
+      </div>
 
       <div className="mt-5 pt-4 border-t border-border/40 flex flex-wrap items-end justify-between gap-4">
         <SavedScoutFilters saved={saved} onSave={onSave} onLoad={onLoadSaved} onRemove={onRemoveSaved} />
@@ -264,6 +236,26 @@ export function ScoutFilters({
         </div>
       </div>
     </form>
+  );
+}
+
+/** A labelled row of ready-made filters (9.0). */
+function ChipGroup({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-[13px] text-muted-foreground font-bold uppercase tracking-[0.08em] font-display" title={hint}>{label}</span>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+/** One ready-made filter: the standard chip with a coloured icon. */
+function Toggle({ on, icon, tone, title, onClick, children }: { on: boolean; icon: IconName; tone: string; title?: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <Chip selected={on} title={title} onClick={onClick}>
+      <Icon name={icon} size={16} className={tone} />
+      {children}
+    </Chip>
   );
 }
 

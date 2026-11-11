@@ -246,3 +246,7 @@ Report de tester. Desempregado, `/squad/<liga>/<clube>` (o elenco de qualquer cl
 ## Fama pelos bens (8.9.39)
 
 Decisão do usuário (opção B). `src/Domain/managers/assets.ts` (`FAME`): o valor de todos os níveis comprados (`assetsValue`) dá até 5 pontos de reputação (`fameReputation` = 5 × (1 − e^(−valor / €20M)); €20M ≈ 3,2, €60M ≈ 4,8), somados em `managerReputation(..., assets)` (propostas, candidaturas, salário do técnico). Numa contratação (não na renovação) o pedido de salário × `fameDemandMult` (`personality.ts`): até −4% com fama cheia e ambição 20, nada para ambição até 10,5 (`DemandContext.fame`, `managerDemandCtx` em `src/backend/managerDemand.ts`; linha "Sua fama: −N%"). Faixas (`fameBand`: nenhuma, baixa, média, alta, estrela) na aba Bens e na página do técnico humano.
+
+## Bens novos e nível lendário (9.0)
+
+Report de tester. `ASSET_KINDS` ganhou helicóptero, haras, carros clássicos, restaurante, ilha e franquia esportiva, e todo bem tem 5 níveis: o 5º (`LEGENDARY_LEVEL`) é lendário (de €10M na roupa a €2 bi na franquia). `legendaryCount` dá o selo dourado na página do técnico; a fama continua com teto de 5 pontos. Imagens em `manager-assets/<tipo>-<nível>.webp` (`data_process/assets/manager_assets/build_manager_assets_legend.py`).

@@ -42,6 +42,15 @@ export interface ScoutFilterState {
   onlyPreContract?: boolean;
   /** Only AI clubs' players their club would loan out (`loanAvailability`, on the server; tester report, 4.47.12). */
   onlyLoanable?: boolean;
+  /**
+   * Kind of player (tester report, 9.0), any ticked one passes: top 25 of the world (gold star), great form (blue),
+   * prodigy (green), made in the achievements shop, a legend back in the game.
+   */
+  onlyTop25?: boolean;
+  onlyInForm?: boolean;
+  onlyProdigy?: boolean;
+  onlyCreated?: boolean;
+  onlyLegends?: boolean;
   /** Grades of the scout's latest report to keep (empty / absent = any, players without a report included). */
   grades?: ScoutGrade[];
   /** Potential range on the 0–100 screen scale (the middle of the shown range; his overall past 23). */
@@ -113,6 +122,11 @@ export function createDefaultScoutFilters(): ScoutFilterState {
     onlyAffordable: false,
     onlyPreContract: false,
     onlyLoanable: false,
+    onlyTop25: false,
+    onlyInForm: false,
+    onlyProdigy: false,
+    onlyCreated: false,
+    onlyLegends: false,
     grades: [],
     minPotential: 0,
     maxPotential: 100,

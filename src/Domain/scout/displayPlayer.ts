@@ -23,6 +23,8 @@ export interface DisplayPlayer {
   personality?: PersonalityView;
   /** Reborn academy star (own badge). */
   reborn?: boolean;
+  /** The world's star of him (gold top 25, blue great form, green prodigy): public, set by the scout search. */
+  star?: "gold" | "blue" | "green";
   /** Has a season award on a history row (`.claude/rules/game/awards.md`): public, any knowledge. */
   awarded?: boolean;
   /** On loan here (`.claude/rules/game/negotiation.md`): parent club name and return date. */

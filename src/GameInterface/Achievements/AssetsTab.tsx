@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatFee } from "@/Domain/money";
-import { ASSET_KINDS, ASSET_PRICES, EARNING_GOALS, assetsValue, fameBand, fameReputation, managerWallet, nextAssetPrice, type AssetKind } from "@/Domain/managers/assets";
+import { ASSET_KINDS, ASSET_PRICES, EARNING_GOALS, LEGENDARY_LEVEL, assetsValue, fameBand, fameReputation, managerWallet, nextAssetPrice, type AssetKind } from "@/Domain/managers/assets";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
@@ -9,7 +9,10 @@ import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0";
-const ICON: Record<AssetKind, IconName> = { home: "home", car: "car", watch: "watch", boat: "boat", plane: "plane", suit: "suit", art: "art" };
+const ICON: Record<AssetKind, IconName> = {
+  home: "home", car: "car", watch: "watch", boat: "boat", plane: "plane", suit: "suit", art: "art",
+  helicopter: "helicopter", horses: "horses", classics: "classics", restaurant: "restaurant", island: "island", franchise: "trophy",
+};
 
 /** The manager's own money: what he earned over the career and the assets it buys. */
 export function AssetsTab() {
@@ -115,6 +118,7 @@ export function AssetsTab() {
                       )}
                       {i < level && <Icon name="check" size={16} className="text-primary" />}
                       {t(`achievements.assets.level.${kind}.${i + 1}`)}
+                      {i + 1 === LEGENDARY_LEVEL && <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-star-gold">{t("achievements.assets.legendary")}</span>}
                     </span>
                     <span>{formatFee(p)}</span>
                   </li>

@@ -3089,7 +3089,18 @@
         "Defender": "Defensor",
         "Midfielder": "Meio-campista",
         "Forward": "Atacante"
-      }
+      },
+      "groups": {
+        "availability": "Disponibilidade",
+        "kind": "Tipo de jogador",
+        "scouting": "Olheiro"
+      },
+      "kindHint": "Marque um ou mais: aparece quem se encaixa em algum deles.",
+      "top25": "Top 25 do mundo",
+      "inForm": "Grande fase",
+      "prodigy": "Prodígio",
+      "created": "Criados por técnicos",
+      "legends": "Lendas"
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -5520,50 +5531,105 @@
         "boat": "Barco",
         "plane": "Avião",
         "suit": "Roupa",
-        "art": "Arte e adega"
+        "art": "Arte e adega",
+        "helicopter": "Helicóptero",
+        "horses": "Haras",
+        "classics": "Carros clássicos",
+        "restaurant": "Restaurante",
+        "island": "Ilha particular",
+        "franchise": "Franquia esportiva"
       },
       "level": {
         "home": {
           "1": "Apartamento",
           "2": "Casa com jardim",
           "3": "Mansão",
-          "4": "Cobertura de frente para o mar"
+          "4": "Cobertura de frente para o mar",
+          "5": "Palácio histórico"
         },
         "car": {
           "1": "Compacto",
           "2": "Sedã executivo",
           "3": "Esportivo",
-          "4": "Superesportivo"
+          "4": "Superesportivo",
+          "5": "Hipercarro único"
         },
         "watch": {
           "1": "Relógio de aço",
           "2": "Cronógrafo",
           "3": "Relógio de ouro",
-          "4": "Relógio de coleção"
+          "4": "Relógio de coleção",
+          "5": "Relógio de leilão"
         },
         "boat": {
           "1": "Lancha",
           "2": "Veleiro",
           "3": "Iate",
-          "4": "Superiate"
+          "4": "Superiate",
+          "5": "Megaiate"
         },
         "plane": {
           "1": "Monomotor",
           "2": "Turbo-hélice",
           "3": "Jatinho executivo",
-          "4": "Jato de longo alcance"
+          "4": "Jato de longo alcance",
+          "5": "Jumbo particular"
         },
         "suit": {
           "1": "Terno de loja",
           "2": "Terno sob medida",
           "3": "Alfaiataria italiana",
-          "4": "Closet de grife"
+          "4": "Closet de grife",
+          "5": "Alfaiataria real"
         },
         "art": {
           "1": "Gravura emoldurada",
           "2": "Pintura moderna e adega",
           "3": "Galeria particular",
-          "4": "Obra de museu e cave"
+          "4": "Obra de museu e cave",
+          "5": "Obra-prima de museu"
+        },
+        "helicopter": {
+          "1": "Helicóptero leve",
+          "2": "Helicóptero executivo",
+          "3": "Helicóptero de luxo",
+          "4": "Bimotor VIP",
+          "5": "Frota de helicópteros"
+        },
+        "horses": {
+          "1": "Cavalo de corrida",
+          "2": "Pequeno haras",
+          "3": "Haras de campeões",
+          "4": "Cavalaria de elite",
+          "5": "Império do turfe"
+        },
+        "classics": {
+          "1": "Clássico restaurado",
+          "2": "Garagem de clássicos",
+          "3": "Coleção de raridades",
+          "4": "Museu de carros",
+          "5": "Coleção lendária"
+        },
+        "restaurant": {
+          "1": "Bistrô de bairro",
+          "2": "Restaurante badalado",
+          "3": "Restaurante estrelado",
+          "4": "Rede de restaurantes",
+          "5": "Império da gastronomia"
+        },
+        "island": {
+          "1": "Ilhota com cabana",
+          "2": "Ilha com casa de praia",
+          "3": "Ilha com resort",
+          "4": "Arquipélago particular",
+          "5": "Ilha com cidade própria"
+        },
+        "franchise": {
+          "1": "Time da segunda divisão",
+          "2": "Time de basquete",
+          "3": "Franquia de primeira linha",
+          "4": "Dinastia campeã",
+          "5": "Liga inteira"
         }
       },
       "errors": {
@@ -5572,7 +5638,8 @@
         "generic": "Não foi possível comprar. Tente de novo."
       },
       "fame": "Fama",
-      "fameDetail": "{{value}} em bens · +{{points}} de reputação"
+      "fameDetail": "{{value}} em bens · +{{points}} de reputação",
+      "legendary": "Lendário"
     },
     "hub": "Seu técnico"
   },
@@ -6944,6 +7011,8 @@
       "2": "Média",
       "3": "Alta",
       "4": "Estrela"
-    }
+    },
+    "legendary_one": "1 bem lendário",
+    "legendary_other": "{{count}} bens lendários"
   }
 }

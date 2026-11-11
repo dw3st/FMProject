@@ -367,3 +367,7 @@ Report de tester ("o que é avg skill? parece que não funciona"). O antigo "Mé
 ## Joia de qualquer país (8.9.27)
 
 Report de tester. `isGem` deixou de exigir que o jogador seja de fora do país do clube: joia é quem tem até 20 anos e potencial visto ≥ titulares da linha + 0,3.
+
+## Filtros por tipo de jogador (9.0)
+
+Report de tester. Os filtros prontos ficam abaixo dos atributos, em três grupos (Disponibilidade, Tipo de jogador, Olheiro) com ícones coloridos. Tipo de jogador soma (OU): top 25 do mundo, grande fase e prodígio pela estrela do mundo (`DisplayPlayer.star`, `computeStars` no índice da busca; estrela é pública), criados por técnicos (id `created_`) e lendas (`reborn`).

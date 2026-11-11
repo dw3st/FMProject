@@ -1,4 +1,4 @@
-import { Car as CarIcon, Watch as WatchIcon, Sailboat as SailboatIcon, Plane as PlaneIcon, Shirt as ShirtIcon, Palette as PaletteIcon } from "lucide-react";
+import { Car as CarIcon, Watch as WatchIcon, Sailboat as SailboatIcon, Plane as PlaneIcon, Shirt as ShirtIcon, Palette as PaletteIcon, Helicopter as HelicopterIcon, Fence as FenceIcon, CarFront as CarFrontIcon, UtensilsCrossed as UtensilsCrossedIcon, TreePalm as TreePalmIcon } from "lucide-react";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import {
   Lock,
@@ -161,6 +161,11 @@ export type IconName =
   | "plane"
   | "suit"
   | "art"
+  | "helicopter"
+  | "horses"
+  | "classics"
+  | "restaurant"
+  | "island"
   | "play"
   | "pause"
   | "debug"
@@ -311,6 +316,11 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "car": CarIcon,
   "watch": WatchIcon,
   "boat": SailboatIcon,
+  "helicopter": HelicopterIcon,
+  "horses": FenceIcon,
+  "classics": CarFrontIcon,
+  "restaurant": UtensilsCrossedIcon,
+  "island": TreePalmIcon,
   "plane": PlaneIcon,
   "suit": ShirtIcon,
   "art": PaletteIcon,

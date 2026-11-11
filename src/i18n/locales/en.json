@@ -3089,7 +3089,18 @@
         "Defender": "Defender",
         "Midfielder": "Midfielder",
         "Forward": "Forward"
-      }
+      },
+      "groups": {
+        "availability": "Availability",
+        "kind": "Kind of player",
+        "scouting": "Scouting"
+      },
+      "kindHint": "Tick one or more: players matching any of them are shown.",
+      "top25": "World top 25",
+      "inForm": "Great form",
+      "prodigy": "Prodigy",
+      "created": "Created by managers",
+      "legends": "Legends"
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
@@ -5520,50 +5531,105 @@
         "boat": "Boat",
         "plane": "Plane",
         "suit": "Clothes",
-        "art": "Art and wine"
+        "art": "Art and wine",
+        "helicopter": "Helicopter",
+        "horses": "Racehorses",
+        "classics": "Classic cars",
+        "restaurant": "Restaurant",
+        "island": "Private island",
+        "franchise": "Sports franchise"
       },
       "level": {
         "home": {
           "1": "Apartment",
           "2": "House with a garden",
           "3": "Mansion",
-          "4": "Seafront penthouse"
+          "4": "Seafront penthouse",
+          "5": "Historic palace"
         },
         "car": {
           "1": "Compact",
           "2": "Executive saloon",
           "3": "Sports car",
-          "4": "Supercar"
+          "4": "Supercar",
+          "5": "One-off hypercar"
         },
         "watch": {
           "1": "Steel watch",
           "2": "Chronograph",
           "3": "Gold watch",
-          "4": "Collector watch"
+          "4": "Collector watch",
+          "5": "Auction masterpiece watch"
         },
         "boat": {
           "1": "Speedboat",
           "2": "Sailing yacht",
           "3": "Motor yacht",
-          "4": "Superyacht"
+          "4": "Superyacht",
+          "5": "Megayacht"
         },
         "plane": {
           "1": "Light aircraft",
           "2": "Turboprop",
           "3": "Business jet",
-          "4": "Long-range jet"
+          "4": "Long-range jet",
+          "5": "Private jumbo jet"
         },
         "suit": {
           "1": "Off-the-rack suit",
           "2": "Made-to-measure suit",
           "3": "Italian tailoring",
-          "4": "Designer wardrobe"
+          "4": "Designer wardrobe",
+          "5": "Royal tailoring"
         },
         "art": {
           "1": "Framed print",
           "2": "Modern painting and wine rack",
           "3": "Private gallery",
-          "4": "Museum piece and cellar"
+          "4": "Museum piece and cellar",
+          "5": "Museum masterpiece"
+        },
+        "helicopter": {
+          "1": "Light helicopter",
+          "2": "Executive helicopter",
+          "3": "Luxury helicopter",
+          "4": "VIP twin-engine",
+          "5": "Helicopter fleet"
+        },
+        "horses": {
+          "1": "Racehorse",
+          "2": "Small stud farm",
+          "3": "Champions' stud",
+          "4": "Elite stable",
+          "5": "Racing empire"
+        },
+        "classics": {
+          "1": "Restored classic",
+          "2": "Classics garage",
+          "3": "Rare collection",
+          "4": "Car museum",
+          "5": "Legendary collection"
+        },
+        "restaurant": {
+          "1": "Neighbourhood bistro",
+          "2": "Trendy restaurant",
+          "3": "Starred restaurant",
+          "4": "Restaurant chain",
+          "5": "Dining empire"
+        },
+        "island": {
+          "1": "Islet with a hut",
+          "2": "Island with a beach house",
+          "3": "Island resort",
+          "4": "Private archipelago",
+          "5": "Island with its own town"
+        },
+        "franchise": {
+          "1": "Second-tier team",
+          "2": "Basketball team",
+          "3": "Top-flight franchise",
+          "4": "Champion dynasty",
+          "5": "A whole league"
         }
       },
       "errors": {
@@ -5572,7 +5638,8 @@
         "generic": "The purchase failed. Try again."
       },
       "fame": "Fame",
-      "fameDetail": "{{value}} in belongings · +{{points}} reputation"
+      "fameDetail": "{{value}} in belongings · +{{points}} reputation",
+      "legendary": "Legendary"
     },
     "hub": "Your manager"
   },
@@ -6944,6 +7011,8 @@
       "2": "Medium",
       "3": "High",
       "4": "Star"
-    }
+    },
+    "legendary_one": "1 legendary belonging",
+    "legendary_other": "{{count}} legendary belongings"
   }
 }

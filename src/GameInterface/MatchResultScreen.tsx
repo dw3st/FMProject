@@ -1,3 +1,4 @@
+import { PlayerNameLink } from "@/GameInterface/Inbox/PlayerNameText";
 import { useState, useEffect, type ReactNode } from "react";
 import { TesterReportButton } from "@/GameInterface/Components/ReportButton";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
@@ -616,7 +617,7 @@ export function MatchResultScreen() {
                   className="text-base font-semibold text-foreground flex items-center gap-1"
                 >
                   <Icon name="ball" className="w-4 h-4 shrink-0" />
-                  {s.playerName}
+                  <PlayerNameLink player={{ id: s.playerId, name: s.playerName }} />
                   {s.goals > 1 ? ` (${s.goals} ${t("matchResult.goals")})` : ` (${t("matchResult.goal")})`}
                   <span className="text-muted-foreground/60">{s.team === "home" ? homeName : awayName}</span>
                 </span>
