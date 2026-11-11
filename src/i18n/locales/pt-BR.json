@@ -6490,6 +6490,22 @@
         "body_one": "{{manager}} fechou a temporada {{season}} no {{club}} com {{points}} ponto e está em {{rank}}º de {{of}} na classificação da liga.",
         "body_other": "{{manager}} fechou a temporada {{season}} no {{club}} com {{points}} pontos e está em {{rank}}º de {{of}} na classificação da liga.",
         "open": "Ver a classificação"
+      },
+      "friendly_invite": {
+        "subject": "{{manager}} chama para um amistoso",
+        "body": "{{manager}} ({{club}}) convida você para um amistoso em {{date}}, na casa dele. O jogo é simulado e não conta em nada oficial."
+      },
+      "friendly_accepted": {
+        "subject": "Amistoso marcado com {{club}}",
+        "body": "{{manager}} aceitou. O amistoso é em {{date}}."
+      },
+      "friendly_declined": {
+        "subject": "{{manager}} recusou o amistoso",
+        "body": "{{manager}} ({{club}}) não aceitou o amistoso de {{date}}."
+      },
+      "friendly_cancelled": {
+        "subject": "Amistoso com {{club}} cancelado",
+        "body": "{{manager}} cancelou o amistoso de {{date}}."
       }
     },
     "advance": {
@@ -7163,6 +7179,27 @@
       "noMoney": "Dinheiro insuficiente na carteira.",
       "invalidCourse": "Curso inválido.",
       "generic": "Não foi possível começar o curso."
+    }
+  },
+  "seatFriendly": {
+    "invite": "Marcar amistoso",
+    "set": "Amistoso em {{date}}",
+    "waiting": "Convite enviado para {{date}}",
+    "invited": "Convite para amistoso em {{date}}",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "cancel": "Cancelar",
+    "accepted": "Amistoso marcado.",
+    "declined": "Convite recusado.",
+    "errors": {
+      "noDate": "Nenhum dia livre para os dois nas próximas semanas.",
+      "tooMany": "Já há amistosos demais marcados.",
+      "alreadyInvited": "Já existe um amistoso com esse técnico.",
+      "noClub": "Os dois precisam ter clube.",
+      "closed": "Esse amistoso já foi respondido.",
+      "notYours": "Só quem foi convidado responde.",
+      "lobby": "A liga ainda não começou.",
+      "generic": "Não foi possível marcar o amistoso."
     }
   }
 }

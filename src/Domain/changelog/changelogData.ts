@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.5",
+    date: "2026-11-11",
+    time: "17:40",
+    items: [
+      {
+        pt: "Amistoso com amigo: no cartão Rivais, \"Marcar amistoso\" escolhe o primeiro dia livre para os dois clubes. O amigo aceita pela caixa de entrada, e o jogo sai simulado no dia, sem contar em nada oficial, como os amistosos do diretor.",
+        en: "Friendly with a friend: on the Rivals card, \"Set up a friendly\" picks the first day free for both clubs. Your friend accepts in the inbox, and the game is simulated on the day, counting for nothing official, like the director's friendlies.",
+      },
+    ],
+  },
+  {
     version: "9.4.1",
     date: "2026-11-11",
     time: "16:45",
@@ -5724,6 +5735,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Amistoso com um amigo de outra liga", en: "Friendlies against a friend from another league" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
 ];

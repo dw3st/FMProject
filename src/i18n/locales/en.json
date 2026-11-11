@@ -6490,6 +6490,22 @@
         "body_one": "{{manager}} closed the {{season}} season at {{club}} with {{points}} point and is {{rank}} of {{of}} in the league standings.",
         "body_other": "{{manager}} closed the {{season}} season at {{club}} with {{points}} points and is {{rank}} of {{of}} in the league standings.",
         "open": "See the standings"
+      },
+      "friendly_invite": {
+        "subject": "{{manager}} invites you to a friendly",
+        "body": "{{manager}} ({{club}}) invites you to a friendly on {{date}}, at his ground. The game is simulated and counts for nothing official."
+      },
+      "friendly_accepted": {
+        "subject": "Friendly set with {{club}}",
+        "body": "{{manager}} accepted. The friendly is on {{date}}."
+      },
+      "friendly_declined": {
+        "subject": "{{manager}} declined the friendly",
+        "body": "{{manager}} ({{club}}) declined the friendly on {{date}}."
+      },
+      "friendly_cancelled": {
+        "subject": "Friendly with {{club}} cancelled",
+        "body": "{{manager}} cancelled the friendly on {{date}}."
       }
     },
     "advance": {
@@ -7163,6 +7179,27 @@
       "noMoney": "Not enough money in the wallet.",
       "invalidCourse": "Invalid course.",
       "generic": "The course could not start."
+    }
+  },
+  "seatFriendly": {
+    "invite": "Set up a friendly",
+    "set": "Friendly on {{date}}",
+    "waiting": "Invitation sent for {{date}}",
+    "invited": "Friendly invitation for {{date}}",
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancel": "Cancel",
+    "accepted": "Friendly set.",
+    "declined": "Invitation declined.",
+    "errors": {
+      "noDate": "No free day for both in the coming weeks.",
+      "tooMany": "Too many friendlies already set.",
+      "alreadyInvited": "There is already a friendly with this manager.",
+      "noClub": "Both need a club.",
+      "closed": "This friendly was already answered.",
+      "notYours": "Only the invited manager answers.",
+      "lobby": "The league has not started yet.",
+      "generic": "The friendly could not be set up."
     }
   }
 }

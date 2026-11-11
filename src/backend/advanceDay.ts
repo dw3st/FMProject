@@ -145,7 +145,8 @@ import { logDebug, logError, logSeason, LOG_NS_SEASON } from "@/Logger";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollover";
-import { playFriendlyDay } from "@/backend/friendlyWorld";
+import { playFriendlyDay, playSeatFriendlies } from "@/backend/friendlyWorld";
+import { pruneFriendlies, type SeatFriendly } from "@/Domain/friendlies/seatFriendly";
 import { isFriendlyDay } from "@/Domain/friendlies/friendlies";
 import { buildFriendlyMessage, buildMentalityMessage } from "@/Domain/inbox/inboxEvents";
 import { advanceMentoring } from "@/Domain/personality/mentoring";
@@ -924,6 +925,24 @@ export async function advanceOneDay(
       if (e) squadWrites.set(id, { league: e.leagueSlug, club: e.stem, squad });
     }
     for (const inj of nationalDay.injuries) injuryInboxEvents.push({ kind: "injured", ...inj });
+    // ── Friendlies between two managers (9.5): accepted ones due today, before the director's ──
+    let seatFriendliesNext: SeatFriendly[] | undefined;
+    const seatFriendlyDay = options.marketFrozen || !(world.seatFriendlies ?? []).length
+      ? { results: [], played: new Map<string, { home: number; away: number } | null>() }
+      : await playSeatFriendlies({
+        saveId, date: currentDate, friendlies: world.seatFriendlies ?? [], teamsPlayingToday,
+        tacticsOf: (seatId) => daySeats.find((ds) => ds.seatId === seatId)?.tactics,
+        squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+      });
+    if (world.seatFriendlies?.length) {
+      const pruned = pruneFriendlies(world.seatFriendlies.map((f) => {
+        if (!seatFriendlyDay.played.has(f.id)) return f;
+        const score = seatFriendlyDay.played.get(f.id);
+        return score ? { ...f, status: "played" as const, score } : { ...f, status: "cancelled" as const };
+      }), currentDate);
+      if (JSON.stringify(pruned) !== JSON.stringify(world.seatFriendlies)) seatFriendliesNext = pruned;
+    }
+    const seatFriendlyClubs = new Set(seatFriendlyDay.results.map((r) => r.squad.id));
     // ── The director's friendlies (`.claude/rules/game/responsibilities.md` → "Amistosos") ──
     // Quick games on free Saturdays before the season: only the human squad changes, nothing official counts.
     const friendlies = options.marketFrozen || !isFriendlyDay(currentDate) ? [] : await playFriendlyDay({
@@ -932,11 +951,11 @@ export async function advanceOneDay(
         ? [{ seatId: ds.seatId, clubId: ds.clubId, leagueSlug: ds.meta.leagueSlug, responsibilities: ds.meta.responsibilities, tactics: ds.tactics }]
         : [])),
       humanClubs: new Set(daySeats.flatMap((ds) => (ds.clubId ? [ds.clubId] : []))),
-      teamsPlayingToday,
+      teamsPlayingToday: new Set([...teamsPlayingToday, ...seatFriendlyClubs]),
       countryOfLeague: async (slug) => countryByLeague(await getLeagueData()).get(slug),
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
     });
-    for (const f of friendlies) {
+    for (const f of [...seatFriendlyDay.results, ...friendlies]) {
       const e = index.byId(f.squad.id);
       if (e) squadWrites.set(f.squad.id, { league: e.leagueSlug, club: e.stem, squad: f.squad });
       for (const inj of f.injuries) {
@@ -948,7 +967,7 @@ export async function advanceOneDay(
         goalsFor: f.goalsFor, goalsAgainst: f.goalsAgainst, players: f.players,
       });
     }
-    const clubDayOff = new Set([...youthDay.participants, ...nationalDay.participants, ...friendlies.flatMap((f) => f.participants)]);
+    const clubDayOff = new Set([...youthDay.participants, ...nationalDay.participants, ...friendlies.flatMap((f) => f.participants), ...seatFriendlyDay.results.flatMap((f) => f.participants)]);
 
     // ── Aggregate development messages for each seat's club ───────────────────
     // One message per player per day, merging stat changes across multiple matches.
@@ -3486,6 +3505,7 @@ export async function advanceOneDay(
     // World keys of the day; each seat's keys go into its `DaySeat.patch`.
     const metaPatch: Partial<SaveMeta> = {};
     if (freeAgentsRetiredYear !== undefined) metaPatch.freeAgentsRetiredYear = freeAgentsRetiredYear;
+    if (seatFriendliesNext) metaPatch.seatFriendlies = seatFriendliesNext;
 
     // Old day logs lose the detail no screen reads any more (training lines, AI match player stats): the save no
     // longer grows ~130 MB a season (tester-report save analysis).

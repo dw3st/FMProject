@@ -18,6 +18,7 @@ import { NewsStoryRow } from "@/GameInterface/News/NewsList";
 import { RivalForm } from "@/GameInterface/World/RivalForm";
 import { LiveMoments } from "@/GameInterface/World/LiveMoments";
 import { WatchButton } from "@/GameInterface/Watch/WatchButton";
+import { SeatFriendlyLine, useSeatFriendlies } from "@/GameInterface/World/SeatFriendlyControls";
 import type { RivalRow } from "@/types/rivalsTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 import type { BoardUltimatum, SeasonObjective } from "@/types/boardTypes";
@@ -1065,6 +1066,7 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
   const { t, i18n } = useTranslation();
   // Friends playing now first: their game is followed live (score, minute, the latest moments).
   const friends = rows.filter((r) => !r.me).sort((a, b) => Number(!!b.live) - Number(!!a.live));
+  const friendlies = useSeatFriendlies();
   return (
     <HomeCard title={t("rivals.card.title")} href="/world?tab=rivals" linkLabel={t("rivals.card.link")}>
       {friends.length === 0 ? (
@@ -1102,6 +1104,11 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
                 </p>
               ) : null}
               <div className="pl-11"><RivalCompetitions row={r} /></div>
+              {r.clubId && (
+                <div className="pl-11">
+                  <SeatFriendlyLine seatId={r.seatId} list={friendlies.list} saveId={friendlies.saveId} reload={friendlies.reload} />
+                </div>
+              )}
             </li>
           ))}
         </ul>

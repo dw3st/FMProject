@@ -97,6 +97,8 @@ export interface SaveMeta {
   managerWeights?: Record<string, CountryWeight>;
   /** AI clubs without a manager (interim in charge) and the day they hire. */
   managerVacancies?: Record<string, { since: string; hireOn: string }>;
+  /** Friendlies between two managers of the world (9.5, `src/Domain/friendlies/seatFriendly.ts`). */
+  seatFriendlies?: import("@/Domain/friendlies/seatFriendly").SeatFriendly[];
   /** The world of friends (`mode: "multi"`, multiplayer part 2): phase, invite code, deadline. Absent in a solo save. */
   world?: WorldState;
 }

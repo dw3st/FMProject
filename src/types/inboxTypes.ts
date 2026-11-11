@@ -519,7 +519,8 @@ export type InboxMessage =
   | WorldLiveRefusedInboxMessage
   | WorldSeasonClosedInboxMessage
   | WorldInactiveInboxMessage
-  | WorldH2HInboxMessage;
+  | WorldH2HInboxMessage
+  | WorldFriendlyInboxMessage;
 
 /** Group advance (part 3): the deadline passed and the assistant moved the seat on. */
 export interface WorldAdvanceInboxMessage extends InboxMessageBase {
@@ -564,6 +565,20 @@ export interface WorldInboxMessage extends InboxMessageBase {
  * `h2h_lost` = the server restarted during the live match (nothing was recorded, the game is to decide again).
  * `managerName` / `clubName` are the other manager and his club.
  */
+/**
+ * Friendly between two managers (9.5): `friendly_invite` (Accept / Decline while pending), `friendly_accepted`,
+ * `friendly_declined`, `friendly_cancelled`. `managerName` / `clubName` are the other manager and his club.
+ */
+export interface WorldFriendlyInboxMessage extends InboxMessageBase {
+  category:    "world";
+  kind:        "friendly_invite" | "friendly_accepted" | "friendly_declined" | "friendly_cancelled";
+  managerName: string;
+  clubName:    string;
+  friendlyId:  string;
+  /** The friendly's day. */
+  match:       string;
+}
+
 export interface WorldH2HInboxMessage extends InboxMessageBase {
   category:    "world";
   kind:        "h2h_invite" | "h2h_lost";

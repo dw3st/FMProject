@@ -75,6 +75,7 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "world:inactive_warning": "actions",
   // Live match between two managers (part 7): the other is waiting in the room / the match was lost on a restart.
   "world:h2h_invite": "actions",
+  "world:friendly_invite": "actions",
   "world:h2h_lost": "actions",
   "scouting:report": "scouting_reports",
   "scouting:mission_done": "scouting_reports",

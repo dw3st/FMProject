@@ -1,4 +1,4 @@
-import type { LiveRefusedReason, WorldH2HInboxMessage, WorldAdvanceInboxMessage, WorldInactiveInboxMessage, WorldLiveRefusedInboxMessage } from "@/types/inboxTypes";
+import type { LiveRefusedReason, WorldH2HInboxMessage, WorldFriendlyInboxMessage, WorldAdvanceInboxMessage, WorldInactiveInboxMessage, WorldLiveRefusedInboxMessage } from "@/types/inboxTypes";
 
 /** Inbox `world` / `auto_advanced` (the screen translates `world.advance.inbox.*`; the subject is the fallback). */
 export function buildAutoAdvancedMessage(a: { date: string; until: string; simulated: string | null }): WorldAdvanceInboxMessage {
@@ -75,5 +75,25 @@ export function buildH2HMessage(a: {
     clubName: a.clubName,
     match: a.date,
     fixtureId: a.fixtureId,
+  };
+}
+
+/** Inbox `world` / `friendly_*` (9.5): the screen translates `world.inbox.friendly_*`, the subject is the fallback. */
+export function buildFriendlyInviteMessage(a: {
+  kind: WorldFriendlyInboxMessage["kind"]; date: string; friendlyId: string; match: string; managerName: string; clubName: string;
+}): WorldFriendlyInboxMessage {
+  return {
+    id: `world-${a.kind}-${a.friendlyId}`,
+    date: a.date,
+    createdAt: a.date,
+    read: false,
+    category: "world",
+    kind: a.kind,
+    subject: a.kind === "friendly_invite" ? `${a.managerName} invites you to a friendly` : `Friendly with ${a.clubName}`,
+    preview: a.clubName,
+    managerName: a.managerName,
+    clubName: a.clubName,
+    friendlyId: a.friendlyId,
+    match: a.match,
   };
 }

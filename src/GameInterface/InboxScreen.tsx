@@ -1,3 +1,4 @@
+import { SeatFriendlyAnswer } from "@/GameInterface/World/SeatFriendlyControls";
 import { BetsInboxBody } from "@/GameInterface/Achievements/BetsInboxBody";
 import { newVisualOn, paintedNews } from "@/Domain/art/paintedFaces";
 import { inboxAction } from "@/GameInterface/Inbox/inboxAction";
@@ -767,7 +768,7 @@ function leaguePrizeTexts(
     return { subject: t("world.inbox.season_closed.subject", vars), preview: t("world.inbox.season_closed.preview", vars) };
   }
   if (message.category === "world") {
-    const vars = { manager: message.managerName, club: message.clubName };
+    const vars = { manager: message.managerName, club: message.clubName, date: "match" in message ? formatInboxDate(message.match) : "" };
     return { subject: t(`world.inbox.${message.kind}.subject`, vars), preview: message.clubName };
   }
   if (message.category === "bets") {
@@ -978,10 +979,11 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     )}
     {message.category === "world" && message.kind !== "auto_advanced" && message.kind !== "live_refused" && message.kind !== "season_closed" && message.kind !== "inactive_warning" && (
       <p className="text-sm text-foreground m-0">
-        {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName })}
+        {t(`world.inbox.${message.kind}.body`, { manager: message.managerName, club: message.clubName, date: "match" in message ? formatInboxDate(message.match) : "" })}
       </p>
     )}
     {message.category === "world" && message.kind === "h2h_invite" && <H2HInviteJoin match={message.match} />}
+    {message.category === "world" && message.kind === "friendly_invite" && <SeatFriendlyAnswer friendlyId={message.friendlyId} date={message.match} />}
     {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
     {message.category === "national" && <NationalInboxBody message={message} />}
     {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}
