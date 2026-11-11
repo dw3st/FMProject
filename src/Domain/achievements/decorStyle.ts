@@ -21,11 +21,25 @@ const FIXED: Partial<Record<DecorPalette, [string, string]>> = {
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /** The two colours of the decorations: [main, second]. The club's are its first colour and a light tone (as before). */
+/** The dark second colour for a light club. */
+export const DECOR_DARK = "#14213d";
+
+/** A colour light enough that the light second colour would vanish against it. */
+export function isLight(hex: string): boolean {
+  if (!HEX.test(hex)) return false;
+  const n = parseInt(hex.slice(1), 16);
+  const lum = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+  return lum > 185;
+}
+
 export function decorColors(decor: Pick<StadiumDecor, "palette" | "colors">, clubColor: string): [string, string] {
   const p = decor.palette ?? "club";
-  if (p === "inverted") return [DECOR_LIGHT, clubColor];
+  // A white or very light club colour against the light second colour drew an invisible mosaic (report, 9.1.2):
+  // a dark second colour then.
+  const second = isLight(clubColor) ? DECOR_DARK : DECOR_LIGHT;
+  if (p === "inverted") return [second, clubColor];
   if (p === "custom" && decor.colors && HEX.test(decor.colors[0]) && HEX.test(decor.colors[1])) return decor.colors;
-  return FIXED[p] ?? [clubColor, DECOR_LIGHT];
+  return FIXED[p] ?? [clubColor, second];
 }
 
 /** Checks the style fields of a `PUT .../achievements/stadium` body (absent = the defaults). */

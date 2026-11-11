@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { DECOR_ITEMS, MOSAIC_ART, bannerAllowed, decorRefusal, decorValue, mosaicAllowed, ownsKind, patternCell, titlesArt } from "@/Domain/achievements/decorShop";
 import { parseDecor } from "@/Domain/achievements/items";
+import { DECOR_DARK, DECOR_LIGHT, decorColors } from "@/Domain/achievements/decorStyle";
 import { emptyAchievements } from "@/Domain/achievements/progress";
 import { decorRects, mosaicCells } from "@/GraficsEngine/stadiumDecor";
 import { standSideRects } from "@/GraficsEngine/crowd";
@@ -22,6 +23,11 @@ describe("stadium decor shop (9.1)", () => {
     expect(bannerAllowed("check", ["bannerCheck"])).toBe(true);
     expect(ownsKind(["flares"], "mosaic")).toBe(false);
     expect(ownsKind(["crown"], "mosaic")).toBe(true);
+  });
+
+  test("a white club gets a dark second colour (the mosaic stays visible)", () => {
+    expect(decorColors({}, "#ffffff")).toEqual(["#ffffff", DECOR_DARK]);
+    expect(decorColors({}, "#c8102e")).toEqual(["#c8102e", DECOR_LIGHT]);
   });
 
   test("every pixel-art row has the same width", () => {

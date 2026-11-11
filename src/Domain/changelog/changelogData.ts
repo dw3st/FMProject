@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.1.2",
+    date: "2026-11-11",
+    time: "12:06",
+    items: [],
+    fixes: [
+      {
+        pt: "Loja do estádio: as miniaturas dos mosaicos aparecem coloridas. Clubes de cor clara ganham uma segunda cor escura no mosaico e na faixa, que antes sumiam no branco.",
+        en: "Stadium shop: the mosaic thumbnails show in colour. Light-coloured clubs get a dark second colour on the mosaic and banner, which used to vanish into white.",
+      },
+    ],
+  },
+  {
     version: "9.1.1",
     date: "2026-11-11",
     time: "12:01",
