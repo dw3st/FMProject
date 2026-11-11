@@ -548,3 +548,7 @@ Mock aprovado (opção A, refinada). `starBadge.ts` (`STAR_BADGE`, `drawStarBadg
 ## Defensor recua olhando a bola (8.9.21)
 
 Report do usuário. `backpedals` (`playerSprite.ts`): além do goleiro, um jogador de linha do time sem a bola a até `PLAYER_SPRITE.BACKPEDAL_YDS` (22) jardas dela recua de frente para ela (`stepMotion` `backpedal`); mais longe ele vira e corre. Só desenho.
+
+## Bonecos maiores com anel no chão (10.2)
+
+Pedido do usuário, opção D de quatro renderizações reais do campo. Com os bonecos, o corpo é desenhado × `MATCH_LOOK.FIGURE_SCALE` (1,35) dentro do marcador (a etiqueta e o cartão não escalam; barra de fôlego, seta, nome, anel do portador e bola nos pés seguem `drawnR`). No lugar do brilho da 8.2.18 (virava uma mancha com jogadores juntos): sombra de contato escura e um anel fino na cor do uniforme no chão (`TEAM_RING`). Uniforme mais escuro que `DARK_LUMA` usa a segunda cor do clube, senão cinza claro (`groundRingColor`, `playerSprite.ts`, com teste). Árbitro, bandeirinhas, técnicos, médicos e o jogador na maca crescem junto; fotógrafos não. Os discos não mudam.

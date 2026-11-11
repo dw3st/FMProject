@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { actionChain, backpedals, actionDuration, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, stepMotion, THROW_IN_HOLD } from "@/GraficsEngine/playerSprite";
+import { actionChain, backpedals, actionDuration, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, stepMotion, THROW_IN_HOLD, colorLuma, groundRingColor } from "@/GraficsEngine/playerSprite";
 
 const run = (speed: number, seconds: number, dt = 1 / 60) => {
   let m = newMotion(0, 0);
@@ -90,5 +90,15 @@ describe("defender backpedal", () => {
     expect(backpedals(false, true, 10)).toBe(true);
     expect(backpedals(false, true, PLAYER_SPRITE.BACKPEDAL_YDS + 1)).toBe(false);
     expect(backpedals(false, false, 5)).toBe(false);
+  });
+});
+
+describe("ground ring colour (10.2)", () => {
+  test("a visible kit keeps its colour; a dark kit takes the second colour, else the fallback", () => {
+    expect(groundRingColor(0xc8102e, 0x000000, 0.2, 0xd9dde3)).toBe(0xc8102e);
+    expect(groundRingColor(0x111111, 0xc8102e, 0.2, 0xd9dde3)).toBe(0xc8102e);
+    expect(groundRingColor(0x111111, 0x1e1e22, 0.2, 0xd9dde3)).toBe(0xd9dde3);
+    expect(colorLuma(0xffffff)).toBeCloseTo(1, 5);
+    expect(colorLuma(0x000000)).toBe(0);
   });
 });

@@ -194,6 +194,20 @@ export function spriteLook(rosterId: string): { skin: number; hair: number } {
   return { skin: S.SKIN[Math.floor(r() * S.SKIN.length)]!, hair: S.HAIR[Math.floor(r() * S.HAIR.length)]! };
 }
 
+/** Relative luminance 0..1 of a 0xRRGGBB colour. */
+export function colorLuma(c: number): number {
+  return (0.2126 * ((c >> 16) & 255) + 0.7152 * ((c >> 8) & 255) + 0.0722 * (c & 255)) / 255;
+}
+
+/**
+ * Colour of the ground ring under a figure: the kit, or, for a kit too dark to show on the grass, the club's second
+ * colour (a light grey when that one is dark too).
+ */
+export function groundRingColor(kit: number, second: number, darkLuma: number, fallback: number): number {
+  if (colorLuma(kit) >= darkLuma) return kit;
+  return colorLuma(second) >= darkLuma ? second : fallback;
+}
+
 /** Sprite scale so the body is as wide as the marker (`markerR` px radius). */
 export function spriteScale(markerR: number): number {
   return (2 * markerR) / PLAYER_SPRITE.BODY_PX;

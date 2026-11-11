@@ -38,8 +38,17 @@ export const MATCH_LOOK = {
   STAMINA_BAR: { GAP: 3, H: 3, W: 1.8, R: 1.5 },
   CHEVRON: { DIST: 6, SIZE: 4, MIN_PX: 0.35, SMOOTH: 0.15, ALPHA: 0.85 },
   HOLDER: { R: 1.55, PULSE: 0.18, HZ: 1, COLOR: 0xffec96, ALPHA: 0.55 },
-  /** Soft shadow in the kit under a sprite player, in place of the ring (4.42.18, mock option K): radius in marker radii, gradient stops. */
-  TEAM_GLOW: { R: 1.35, DY: 1, STOPS: [[0, 0.8], [0.22, 0.8], [1, 0]] as [number, number][] },
+  /** Sprite figures are drawn this much bigger than the marker (10.2, option D of the user's choice). */
+  FIGURE_SCALE: 1.35,
+  /**
+   * Under a sprite player (10.2, option D): a dark contact shadow and a thin ring in the kit colour on the ground, in
+   * place of the soft glow of 8.2.18, which smeared into one blob when players bunched. Sizes in marker radii. A kit
+   * darker than `DARK_LUMA` would vanish on the grass: its ring takes the club's second colour, else `FALLBACK`.
+   */
+  TEAM_RING: {
+    RX: 1.12, RY: 0.9, DY: 0.25, WIDTH: 0.16, ALPHA: 0.95,
+    SHADOW_RX: 1, SHADOW_RY: 0.8, SHADOW_ALPHA: 0.32, DARK_LUMA: 0.2, FALLBACK: 0xd9dde3,
+  },
 } as const;
 
 /** Ground shadow under each marker (offsets/size in marker radii). */

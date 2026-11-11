@@ -27,6 +27,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.2",
+    date: "2026-11-11",
+    time: "19:20",
+    items: [
+      { pt: "Partida ao vivo: os bonecos dos jogadores ficaram maiores e mais nítidos, com um anel fino na cor do uniforme no chão no lugar do brilho. Time de uniforme escuro ganha o anel na segunda cor do clube, para não sumir no gramado.", en: "Live match: the player figures are bigger and sharper, with a thin ring in the kit colour on the ground in place of the glow. A side in a dark kit gets the ring in the club's second colour, so it does not vanish on the grass." },
+    ],
+  },
+  {
     version: "10.1.1",
     date: "2026-11-11",
     time: "19:00",

@@ -27,7 +27,7 @@ import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
 import { arrivedMates, celebrationPositions, planCelebration, walkBackPositions, type CelebrationPlan } from "@/GraficsEngine/goalCelebration";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
-import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, backpedals, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion } from "@/GraficsEngine/playerSprite";
+import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, backpedals, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion, groundRingColor } from "@/GraficsEngine/playerSprite";
 import { STADIUM_ART, loadStadiumArt, type StadiumArt } from "@/GraficsEngine/stadiumArt";
 import { FX_ART, loadFxArt, type FxArt } from "@/GraficsEngine/fxArt";
 import { matchHasFog } from "@/Domain/matchday/matchFog";
@@ -1272,7 +1272,6 @@ export function PixiPitch({
       const G = LIGHTING.GRADIENTS;
       const vignetteTexture = gradientTexture(G.VIGNETTE, '0,0,0');
       const glowTexture = gradientTexture(G.GLOW, '255,255,255');
-      const teamGlowTexture = gradientTexture(MATCH_LOOK.TEAM_GLOW.STOPS, '255,255,255');
       const vignetteSprite = new Sprite(vignetteTexture);
       vignetteSprite.eventMode = 'none';
       vignetteSprite.visible = false;
@@ -1874,7 +1873,7 @@ export function PixiPitch({
         const tints: Record<string, number> = { socks: kit, shirt: kit, trim, skin: look.skin, hair: look.hair };
         const body = new Container();
         body.label = 'body';
-        body.scale.set(spriteScale(markerR));
+        body.scale.set(spriteScale(markerR) * MATCH_LOOK.FIGURE_SCALE);
         for (const layer of SPRITE_LAYERS) {
           const sp = new Sprite(spriteSheets.player.textures[`player-idle-${layer}.png`] ?? Texture.EMPTY);
           sp.anchor.set(PLAYER_SPRITE.ANCHOR.x, PLAYER_SPRITE.ANCHOR.y);
@@ -1887,12 +1886,15 @@ export function PixiPitch({
         marker.addChildAt(body, ring ? marker.getChildIndex(ring) + 1 : marker.children.length);
         addRim(marker, player.team);
         // No ring around a figure (4.42.18, mock option K): a soft shadow in the kit under it.
-        const glow = new Sprite(teamGlowTexture);
+        // No ring around the figure: a contact shadow and a thin kit ring on the ground (10.2, option D).
+        const R = MATCH_LOOK.TEAM_RING;
+        const glow = new Graphics();
+        glow.ellipse(0, markerR * R.DY, markerR * R.SHADOW_RX, markerR * R.SHADOW_RY).fill({ color: 0x000000, alpha: R.SHADOW_ALPHA });
+        glow.ellipse(0, markerR * R.DY, markerR * R.RX, markerR * R.RY).stroke({
+          color: groundRingColor(kit, keeper ? teamKit : trim, R.DARK_LUMA, R.FALLBACK),
+          width: Math.max(1.5, markerR * R.WIDTH), alpha: R.ALPHA,
+        });
         glow.label = 'teamGlow';
-        glow.anchor.set(0.5);
-        glow.y = MATCH_LOOK.TEAM_GLOW.DY;
-        glow.width = glow.height = markerR * MATCH_LOOK.TEAM_GLOW.R * 2;
-        glow.tint = kit;
         marker.addChildAt(glow, marker.getChildIndex(body));
         const fig = markersRef.current !== "discs";
         body.visible = fig;
@@ -1922,7 +1924,8 @@ export function PixiPitch({
       function makeFigureBody(kind: OfficialKind, tints: Record<string, number>): Container {
         const body = new Container();
         body.label = 'body';
-        body.scale.set(spriteScale(markerR * OFFICIAL_SPRITE.SCALE[kind]));
+        // The people who share the pitch with the players grow with them (10.2); photographers keep their size.
+        body.scale.set(spriteScale(markerR * OFFICIAL_SPRITE.SCALE[kind]) * (kind === "photographer" ? 1 : MATCH_LOOK.FIGURE_SCALE));
         for (const layer of SPRITE_LAYERS) {
           const sp = new Sprite(Texture.EMPTY);
           sp.anchor.set(PLAYER_SPRITE.ANCHOR.x, PLAYER_SPRITE.ANCHOR.y);
@@ -2431,7 +2434,7 @@ export function PixiPitch({
             const body = new Container();
             body.zIndex = 6.05;
             body.eventMode = 'none';
-            body.scale.set(spriteScale(markerR));
+            body.scale.set(spriteScale(markerR) * MATCH_LOOK.FIGURE_SCALE);
             for (const layer of SPRITE_LAYERS) {
               const sp = new Sprite(spriteSheets!.player.textures[`player-injured-${layer}.png`] ?? Texture.EMPTY);
               sp.anchor.set(PLAYER_SPRITE.ANCHOR.x, PLAYER_SPRITE.ANCHOR.y);
@@ -4134,9 +4137,10 @@ export function PixiPitch({
           g.x = px + (off ? xSign() * off.dx * m.scale : 0) + (jo ? xSign() * jo.x * m.scale : 0);
           g.y = py + (off ? xSign() * off.dy * m.scale : 0) + (jo ? xSign() * jo.y * m.scale : 0) - liftPx;
           // The discs are drawn bigger than the figures; what sits around the marker follows `drawnR`.
-          const discK = figureShown(g) ? 1 : MATCH_LOOK.DISC_SCALE;
-          const drawnR = markerR * discK;
-          g.scale.set((off ? off.scale : 1) * discK);
+          // A figure is drawn bigger inside its marker (only the body, 10.2); a disc scales the whole marker.
+          const isFig = figureShown(g);
+          const drawnR = markerR * (isFig ? MATCH_LOOK.FIGURE_SCALE : MATCH_LOOK.DISC_SCALE);
+          g.scale.set((off ? off.scale : 1) * (isFig ? 1 : MATCH_LOOK.DISC_SCALE));
           // The mirror is a 180° turn (#142): the offset flips on both axes, an angle stays as is.
           g.rotation = off ? off.rotation : 0;
           const markerShadow = g.children[0];
@@ -4744,7 +4748,7 @@ export function PixiPitch({
             const v = markerVel.get(holder.id);
             const sp = v ? Math.hypot(v.vx, v.vy) : 0;
             const dx = sp > 0.15 ? v!.vx / sp : holder.attackDir * xSign(), dy = sp > 0.15 ? v!.vy / sp : 0;
-            const reach = markerR * (figureShown(hg) ? 1 : MATCH_LOOK.DISC_SCALE) + ballR * 0.9;
+            const reach = markerR * (figureShown(hg) ? MATCH_LOOK.FIGURE_SCALE : MATCH_LOOK.DISC_SCALE) + ballR * 0.9;
             bx = hg.x + dx * reach; by = hg.y + dy * reach;
           }
         }
@@ -5180,7 +5184,6 @@ export function PixiPitch({
         shadeTexture = null;
         vignetteTexture.destroy(true);
         glowTexture.destroy(true);
-        teamGlowTexture.destroy(true);
         for (const txt of effectTexts.values()) txt.destroy();
         effectTexts.clear();
       };
