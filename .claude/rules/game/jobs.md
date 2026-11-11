@@ -238,3 +238,7 @@ Multa de rescisão (8.9.25, pedido do usuário): `compensationFee` do contrato (
 ## Cargos e candidatura (8.9.29)
 
 Report de tester, design aprovado pelo usuário. Estatísticas → Técnicos → Cargos (`JobPosts`, `GET /api/saves/:id/job-posts?league=`, `jobPosts` em `src/backend/jobPostsWorld.ts`): cada clube da liga com o técnico e a situação do cargo (`securityLevel`, `src/Domain/jobs/application.ts`, constantes `JOBS.application`): risco = (posição − meta)/tamanho + (1,4 − pontos por jogo da forma) × 0,08, × min(1, progresso/0,3), metade nos primeiros 60 dias; níveis muito seguro ≤ −0,2, seguro ≤ −0,05, estável < 0,1, ameaçado < 0,25, muito ameaçado; interino = "vago". `POST /job-applications { squadId }` (409 `alreadyApplied`, `own`, `human`, `refused`, `lobby`) sorteia a resposta na hora (`applicationChance`: base 2 / 5 / 12 / 35 / 60%, interino 75%, × encaixe = 1 − 4 × max(0, prestígio − reputação/100 − 0,05), mínimo 0,05) e guarda em `SeatState.jobApplication` com a oferta pronta; o avanço do dia entrega em 3 a 6 dias: sim vira proposta (`window: "application"`, 14 dias), não vira mensagem `job` / `application_refused` e bloqueia o clube por 90 dias (`jobRefused`). `DELETE` retira. Um clube que ganhou técnico humano no meio recusa.
+
+## Elenco de outros clubes sem clube (8.9.30)
+
+Report de tester. Desempregado, `/squad/<liga>/<clube>` (o elenco de qualquer clube, aberto pelas Ligas, Estatísticas ou Olheiro) fica fora da troca pela tela "Sem clube" (`NO_CLUB_PATHS`, `Layout.tsx`); a aba Elenco da barra continua levando ao Painel.

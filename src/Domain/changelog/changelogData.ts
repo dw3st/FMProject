@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.30",
+    date: "2026-11-11",
+    time: "07:32",
+    items: [],
+    fixes: [
+      {
+        pt: "Sem clube, abrir o elenco de um time pelas Ligas, Estatísticas ou Olheiro mostrava a tela Sem clube; agora mostra o elenco.",
+        en: "Without a club, opening a team's squad from Leagues, Stats or Scout showed the No club screen; it now shows the squad.",
+      },
+    ],
+  },
+  {
     version: "8.9.29",
     date: "2026-11-10",
     time: "21:46",
