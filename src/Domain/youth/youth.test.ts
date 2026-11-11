@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { developYouthSeason, generateIntake, intakeSize, lineAverage, potentialBand, processYouthRollover } from "@/Domain/youth/youth";
+import { developYouthSeason, generateIntake, intakeSize, lineAverage, potentialBand, processYouthRollover, setAcademyNameBook } from "@/Domain/youth/youth";
 import { roleOf } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -58,6 +58,23 @@ describe("youth intake", () => {
       const fresh = intake.map((p) => p.name);
       expect(fresh.some((n) => club.has(n))).toBe(false);
       expect(new Set(fresh).size).toBe(fresh.length);
+    }
+  });
+
+  test("with the country's name book, never a first-team surname (8.9.27 report)", () => {
+    const book = { England: { first: ["Adam", "Ben", "Carl", "Dan"], last: ["Silva", "Moore", "Hart", "Webb", "Cole", "Ward", "Hall", "King"] } };
+    setAcademyNameBook(book);
+    try {
+      for (let year = 2027; year < 2047; year++) {
+        const intake = generateIntake({ ...base, year });
+        for (const p of intake) {
+          const surname = p.name.split(" ").at(-1)!;
+          expect(surname).not.toBe("Silva");
+          expect(book.England.last).toContain(surname);
+        }
+      }
+    } finally {
+      setAcademyNameBook(null);
     }
   });
 

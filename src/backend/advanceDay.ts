@@ -36,7 +36,8 @@ import { executeTransferFee, recordMoney } from "@/backend/FinancialService";
 import type { FreeAgent, LeagueData, LeagueTeam, LeagueZone, Squad, StandingRow } from "@/types/playerTypes";
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
-import { processYouthRollover } from "@/Domain/youth/youth";
+import { processYouthRollover, setAcademyNameBook } from "@/Domain/youth/youth";
+import { getStaffNameBook } from "@/backend/staffNameBook";
 import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
 import { overallAvg } from "@/Domain/playerRating";
 import type { Pyramids } from "@/types/pyramidTypes";
@@ -499,6 +500,8 @@ export async function advanceOneDay(
     let index = await saveService.getSquadIndex(saveId);
 
     // The seats of the world (`.claude/rules/game/multiplayer.md`): every step of the day loops over them.
+    // Academy names come from the country's name book (8.9.27), loaded once a process.
+    setAcademyNameBook(await getStaffNameBook().catch(() => null));
     const daySeats = await loadDaySeats(saveService, saveId, world, index);
     // No seat (the public world) is "no human club": every loop below is empty and the AI plays the whole world.
     // The world as no seat sees it (AI-only flows that need a meta: the date of an AI fee, a clause paid to AI).

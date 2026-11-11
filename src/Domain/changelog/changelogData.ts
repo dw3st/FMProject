@@ -27,6 +27,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.27",
+    date: "2026-11-10",
+    time: "21:21",
+    items: [],
+    fixes: [
+      {
+        pt: "Técnico da temporada: o título vale mais. Um campeão que era favorito agora costuma levar o prêmio.",
+        en: "Manager of the season: the title counts for more. A champion who was the favourite now usually wins it.",
+      },
+      {
+        pt: "Os jovens da base ganham nomes do país do clube, nunca com o sobrenome de um jogador do time principal.",
+        en: "Academy players get names from the club's country, never with the surname of a first-team player.",
+      },
+      {
+        pt: "Joia vale para jovens de qualquer país, inclusive o seu: antes só contava quem era de fora.",
+        en: "A gem can be a youngster from any country, your own included: before only foreign ones counted.",
+      },
+    ],
+  },
+  {
     version: "8.9.26",
     date: "2026-11-10",
     time: "21:06",

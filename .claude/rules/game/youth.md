@@ -152,3 +152,7 @@ tabela da Base mostra a variação de 4 semanas. Rotas: `GET /youth` traz `train
 ## Dispensa em lote (8.4.4)
 
 Report de tester. Na aba Base, um campo com o potencial mínimo (o topo da faixa, padrão 7,0), a lista de quem fica abaixo e o botão com confirmação; `POST /youth/release-many { ids }` (até 50) leva todos aos livres.
+
+## Nomes pelo país (8.9.27)
+
+Report de tester (jovens com o sobrenome de profissionais). `makeAcademyPlayer` sorteia inicial e sobrenome do livro de nomes do país do clube (`setAcademyNameBook`, o mesmo da comissão, preenchido pelo avanço do dia) e redesenha um sobrenome que já está no elenco principal. Sem o livro (testes, scripts), o nome sai do próprio elenco, como antes.

@@ -117,6 +117,17 @@ function pickRoles(squad: Squad, count: number, key: string): MainRole[] {
 /** Draws for a name not already in the club before keeping a repeated one. */
 const ACADEMY_NAME_TRIES = 12;
 
+/**
+ * First names and surnames per country (the staff's name book, `staffNameBook.ts`), set by the server once a process
+ * (8.9.27, tester report: academy players took the surnames of the first team and were confused with them). Without it
+ * (tests, scripts) a name is drawn from the club's own players, as before.
+ */
+let academyNameBook: Readonly<Record<string, { first: readonly string[]; last: readonly string[] }>> | null = null;
+export function setAcademyNameBook(book: Readonly<Record<string, { first: readonly string[]; last: readonly string[] }>> | null): void {
+  academyNameBook = book;
+}
+const surnameOf = (name: string) => name.trim().split(/\s+/).at(-1)?.toLowerCase() ?? "";
+
 export function makeAcademyPlayer(args: {
   id: string;
   seed: string;
@@ -131,14 +142,23 @@ export function makeAcademyPlayer(args: {
   taken?: Set<string>;
 }): RosterPlayer {
   const { id, seed, i, squad, specific, level, ageRange, nationality, promise, taken } = args;
+  const book = nationality ? academyNameBook?.[nationality] : undefined;
+  const firstTeam = new Set(squad.players.map((p) => surnameOf(p.name)));
   const nameAt = (salt: string): string => {
+    if (book && book.first.length > 0 && book.last.length > 0) {
+      const first = book.first[Math.floor(unit(`${seed}:first:${i}${salt}`) * book.first.length)]!;
+      const last = book.last[Math.floor(unit(`${seed}:last:${i}${salt}`) * book.last.length)]!;
+      return `${first[0]}. ${last}`;
+    }
     const donor = squad.players[Math.floor(unit(`${seed}:donor:${i}${salt}`) * squad.players.length)];
     const parts = donor?.name.trim().split(" ") ?? ["Silva"];
     const initial = squad.players[Math.floor(unit(`${seed}:ini:${i}${salt}`) * squad.players.length)]?.name.trim()[0] ?? "J";
     return `${initial}. ${parts[parts.length - 1]}`;
   };
+  // A clash: the name already in the club, or (with the book) a first-team player's surname.
+  const clash = (n: string) => !!taken?.has(n) || (!!book && firstTeam.has(surnameOf(n)));
   let name = nameAt("");
-  for (let k = 1; taken?.has(name) && k <= ACADEMY_NAME_TRIES; k++) name = nameAt(`:n${k}`);
+  for (let k = 1; clash(name) && k <= ACADEMY_NAME_TRIES; k++) name = nameAt(`:n${k}`);
   taken?.add(name);
   return {
     id,

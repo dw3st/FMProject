@@ -8,7 +8,7 @@ export const AWARDS = {
   XI_SLOTS: ["GK", "LB", "CB", "CB", "RB", "CM", "CM", "CAM", "LW", "ST", "RW"] as const,
   XI_LINES: { GK: 1, Defender: 4, Midfielder: 3, Forward: 3 } as const,
   /** Best manager: (target − position) / size + bonuses. */
-  MANAGER_CHAMPION_BONUS: 0.3,
+  MANAGER_CHAMPION_BONUS: 0.6,
   MANAGER_PROMOTED_BONUS: 0.15,
   /** seasonScore = rating + goals × G + assists × A + titles. */
   SEASON_SCORE: { GOAL: 0.03, ASSIST: 0.02, TITLE: { league: 0.15, cup: 0.1, continental: 0.3 } },

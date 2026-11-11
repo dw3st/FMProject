@@ -170,3 +170,7 @@ Dentro do aceite (±5%, ≥ 90% `open`, elenco igual). O MEDIUM já fica abaixo 
 `AwardsYear.national`: os prêmios de Copa do Mundo, Eurocopa e Copa América do ano, com uma lista curta que a
 cerimônia de janeiro soma (`computeWorldAwards({ tournaments })`, `peso × (score − 5)`). Ver
 `.claude/rules/game/national-teams.md`.
+
+## Bônus de campeão (8.9.27)
+
+Pedido do usuário (o campeão favorito perdia o prêmio para quem superou a meta no meio da tabela). `MANAGER_CHAMPION_BONUS` 0,3 → 0,6.

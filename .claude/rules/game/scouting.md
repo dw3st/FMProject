@@ -363,3 +363,7 @@ Reports de tester. Idade, nota, valor e potencial usam `StepperField` (`ui/Stepp
 ## Filtro de OVR (8.8.3)
 
 Report de tester ("o que é avg skill? parece que não funciona"). O antigo "Média de habilidade" era o filtro de nível na escala 0–10; virou "OVR" de 0 a 100, como a coluna da tabela (`minAvg`/`maxAvg` continuam 0–10 por dentro). Num jogador com faixa vale o meio dela (58-86 = 72).
+
+## Joia de qualquer país (8.9.27)
+
+Report de tester. `isGem` deixou de exigir que o jogador seja de fora do país do clube: joia é quem tem até 20 anos e potencial visto ≥ titulares da linha + 0,3.

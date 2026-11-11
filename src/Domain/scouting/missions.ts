@@ -112,10 +112,12 @@ export function gradeOf(note: number): ScoutGrade {
   return note >= t.A ? "A" : note >= t.B ? "B" : note >= t.C ? "C" : note >= t.D ? "D" : "E";
 }
 
-/** Gem: ≤ 20, from abroad (any country on a youth mission), seen potential ≥ own line starters + 0.3. */
+/**
+ * Gem: ≤ 20 with seen potential ≥ own line starters + 0.3, from any country (8.9.27, tester report: a home-country
+ * youngster with more potential was no gem while a foreign one with less was; the old rule asked "from abroad").
+ */
 export function isGem(args: { age: number; country: string; ownCountry: string; potentialHigh: number; lineAverage: number; youthMission?: boolean }): boolean {
   if (args.age > S.GEM_MAX_AGE) return false;
-  if (!args.youthMission && args.country === args.ownCountry) return false;
   return args.potentialHigh >= args.lineAverage + S.GEM_MARGIN;
 }
 

@@ -49,11 +49,11 @@ describe("grades and gems", () => {
     expect(relativeNote(6, 7, 20, 6)).toBeCloseTo(0.5);
     expect(relativeNote(6, 7, 30, 6)).toBeCloseTo(0);
   });
-  test("gem: young, abroad (or youth mission), potential above the line", () => {
+  test("gem: young, potential above the line, from any country (8.9.27)", () => {
     const base = { age: 18, country: "Spain", ownCountry: "England", potentialHigh: 6.5, lineAverage: 6 };
     expect(isGem(base)).toBe(true);
     expect(isGem({ ...base, age: 21 })).toBe(false);
-    expect(isGem({ ...base, country: "England" })).toBe(false);
+    expect(isGem({ ...base, country: "England" })).toBe(true);
     expect(isGem({ ...base, country: "England", youthMission: true })).toBe(true);
     expect(isGem({ ...base, potentialHigh: 6.2 })).toBe(false);
   });

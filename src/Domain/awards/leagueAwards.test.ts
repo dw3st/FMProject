@@ -113,7 +113,7 @@ describe("computeLeagueAwards", () => {
   });
   test("manager: beats the target most; champion bonus; late hire excluded", () => {
     expect(managerAwardScore({ position: 3, target: 10, size: 20, champion: false, promoted: false })).toBeCloseTo(0.35);
-    expect(managerAwardScore({ position: 1, target: 1, size: 20, champion: true, promoted: false })).toBeCloseTo(0.3);
+    expect(managerAwardScore({ position: 1, target: 1, size: 20, champion: true, promoted: false })).toBeCloseTo(0.6);
     const row = (squadId: string, pts: number): StandingRow => ({
       squadId, name: squadId.toUpperCase(), colors: ["#000", "#fff"], mp: 38, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts, form: [],
     });
@@ -124,11 +124,11 @@ describe("computeLeagueAwards", () => {
     const a = computeLeagueAwards({
       ...base, squads: [], table,
       managers: [m("ma", "a"), m("mb", "b"), m("mc", "c", "2027-03-01"), m("md", "d")],
-      targets: new Map([["a", 1], ["b", 4], ["c", 4], ["d", 4]]),
+      targets: new Map([["a", 1], ["b", 7], ["c", 4], ["d", 4]]),
     });
-    // a: 0 + 0.3 = 0.3; b: (4 − 2)/4 = 0.5; c: hired after mid-season; d: 0
-    expect(a.bestManager).toMatchObject({ managerId: "mb", squadId: "b", clubName: "B", position: 2, target: 4 });
-    expect(a.bestManager!.score).toBeCloseTo(0.5);
+    // a: 0 + 0.6 = 0.6; b: (7 − 2)/4 = 1.25; c: hired after mid-season; d: 0
+    expect(a.bestManager).toMatchObject({ managerId: "mb", squadId: "b", clubName: "B", position: 2, target: 7 });
+    expect(a.bestManager!.score).toBeCloseTo(1.25);
     expect(a.shortlist.managers.map((x) => x.managerId)).toEqual(["mb", "ma", "md"]);
   });
   test("promotion bonus", () => {
@@ -138,7 +138,7 @@ describe("computeLeagueAwards", () => {
       managers: [{ id: "ma", name: "ma", squadId: "a", points: 0, seasons: 0, titles: [] }],
       tierChanges: { a: { from: 2, to: 1 } },
     });
-    expect(a.bestManager!.score).toBeCloseTo(0.3 + 0.15);
+    expect(a.bestManager!.score).toBeCloseTo(0.6 + 0.15);
   });
   test("season score", () => {
     expect(seasonScore({ avgRating: 7, goals: 10, assists: 5, titles: ["league:pl", "continental:ucl"] })).toBeCloseTo(7 + 0.3 + 0.1 + 0.15 + 0.3);
