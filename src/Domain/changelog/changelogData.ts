@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.41",
+    date: "2026-11-11",
+    time: "10:43",
+    items: [
+      {
+        pt: "De vez em quando a biografia de um técnico ganha uma frase provocativa sobre a carreira dele: demissões, jejum de títulos, cartões, o avião particular. São 50, e cada técnico tem sempre a mesma.",
+        en: "Now and then a manager's bio gets a cheeky line about his career: sackings, title droughts, cards, the private jet. There are 50, and each manager always gets the same one.",
+      },
+    ],
+  },
+  {
     version: "8.9.40",
     date: "2026-11-11",
     time: "10:37",

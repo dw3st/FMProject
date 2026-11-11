@@ -4,6 +4,7 @@ import { groupAwards } from "@/Domain/awards/awardGroups";
 import { titlesByPassage } from "@/Domain/managers/careerTitles";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { autoBioParts } from "@/Domain/managers/autoBio";
+import { pickJoke } from "@/Domain/managers/bioJokes";
 import { autoBioText } from "@/GameInterface/managerBio";
 import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -116,6 +117,18 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
     titleName: (kind, competition) => titleLabel(kind, competition),
     clubName: (id) => data.clubs.find((c) => c.squadId === id)?.clubName ?? null,
   });
+  // Now and then a funny line (8.9.41): a fixed draw by the manager's id.
+  const joke = pickJoke({
+    record: data,
+    clubName: data.clubName,
+    today: session?.currentDate ?? null,
+    rank: data.rank,
+    total: data.total,
+    jobLevel: typeof data.job?.level === "number" ? data.job.level : null,
+    assets: data.assets,
+    national: data.national,
+  });
+  const autoBioFull = joke ? `${autoBio} ${t(`managerPage.bio.joke.${joke.id}`, joke.params ?? {})}` : autoBio;
 
   return (
     <ScreenContainer>
@@ -143,7 +156,7 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
         </div>
       </div>
       {/* His own bio, else one written from his record (8.9.40). */}
-      <p className="text-sm text-foreground m-0 max-w-3xl whitespace-pre-line">{data.bio ?? data.profile?.bio ?? autoBio}</p>
+      <p className="text-sm text-foreground m-0 max-w-3xl whitespace-pre-line">{data.bio ?? data.profile?.bio ?? autoBioFull}</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {([

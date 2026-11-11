@@ -207,3 +207,7 @@ Report de tester, opção A do mock. `/manager/:id` (`ManagerScreen.tsx`, `manag
 ## Biografia automática (8.9.40)
 
 Pedido do usuário. Técnico sem biografia escrita (`ManagerProfile.bio`, `achievements.md`) tem uma montada do registro na página dele: `autoBioParts` (`src/Domain/managers/autoBio.ts`, com teste: cargo e ano, primeira passagem ou temporadas e clubes, títulos sem acessos com o maior pela ordem continental, seleção, liga, copa, e um destaque: melhor técnico do mundo, da liga ou o último acesso) e `autoBioText` (`GameInterface/managerBio.ts`, `managerPage.bio.*`). Nada é gravado.
+
+## Frases provocativas da biografia (8.9.41)
+
+Pedido do usuário, 50 frases aprovadas. `src/Domain/managers/bioJokes.ts` (com teste): `matchingJokes` lista as situações que a carreira encaixa (demissões, jejum de títulos, cartões, fama dos bens, ranking, cargo ameaçado, tempo sem clube…), `pickJoke` dá uma a cerca de 1 em 5 técnicos (`BIO_JOKES.ONE_IN`, sorteio fixo pelo id: a frase não muda). Texto em `managerPage.bio.joke.<id>`, depois da biografia automática; quem escreveu a própria não recebe.
