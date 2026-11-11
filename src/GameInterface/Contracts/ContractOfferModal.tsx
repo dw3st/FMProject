@@ -60,7 +60,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
   const [submitting, setSubmitting] = useState(false);
 
   // A free agent near the age cap only takes a short deal: open on what he accepts (tester report, 4.41.25).
-  const maxYears = mode === "sign" && player ? maxOfferYears(player.age) : 5;
+  const maxYears = player ? maxOfferYears(player.age) : 5;
   useEffect(() => { setError(null); setDone(false); setOutcome(null); setYears(Math.min(2, maxYears)); }, [player?.id, maxYears]);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
   // A free agent asks a signing bonus, paid on signing, with other clubs after him (4.47.9).

@@ -130,6 +130,12 @@ describe("currentWage", () => {
 });
 
 describe("contractEndFor / renewalWithinLimits", () => {
+  test("a renewal's years count from now, never shorter than the current contract", async () => {
+    const { renewalUntil } = await import("@/Domain/contracts/contracts");
+    const young = { age: 19, contract: { until: "2028-05-31", wage: 1 } } as never;
+    expect(renewalUntil(young, "2027-01-10", "2027-05-31", 5)).toBe("2031-05-31");
+    expect(renewalUntil(young, "2027-01-10", "2027-05-31", 1)).toBe("2028-05-31");
+  });
   test("in-season signing counts the current season as year one", async () => {
     const { contractEndFor } = await import("@/Domain/contracts/contracts");
     expect(contractEndFor("2027-03-01", "2027-05-31", 2)).toBe("2028-05-31");

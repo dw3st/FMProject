@@ -37,15 +37,13 @@ describe("POST /api/saves/:saveId/players/:playerId/renew", () => {
     expect(low.status).toBe(400);
     expect(await low.json()).toMatchObject({ error: "lowWage", demand });
 
-    const tooLong = await call(demand, 5);
-    expect(tooLong.status).toBe(400);
-    expect(await tooLong.json()).toMatchObject({ error: "tooManyYears" });
-
-    const ok = await call(demand, 1);
+    // Five seasons from now for a young player (tester report, 8.9.37: the years used to be added to what was left).
+    const ok = await call(demand, 5);
     expect(ok.status).toBe(200);
     const after = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!.players.find((p) => p.id === player.id)!;
     expect(after.contract!.wage).toBe(demand);
     expect(after.contract!.until > player.contract!.until).toBe(true);
+    expect(Number(after.contract!.until.slice(0, 4)) - Number(meta.currentDate!.slice(0, 4))).toBeGreaterThanOrEqual(4);
     expect(after.contract!.renewedOn).toBe(meta.currentDate);
 
     // Renewed today: a second renewal waits for the cooldown (report).

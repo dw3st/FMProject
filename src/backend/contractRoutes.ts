@@ -3,7 +3,7 @@ import { releaseClause } from "@/Domain/negotiation/releaseClause";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { renewalWithinLimits, renewalAvailableOn, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { renewalUntil, renewalAvailableOn, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Personality } from "@/types/personalityTypes";
 import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
@@ -151,10 +151,7 @@ export const contractRoutes = {
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);
-      if (!renewalWithinLimits(player, date, seasonEnd, years)) {
-        return Response.json({ error: "tooManyYears", demand: check.demand }, { status: 400 });
-      }
-      const contract = { until: addYearsIso(player.contract?.until ?? seasonEnd, years), wage, renewedOn: date };
+      const contract = { until: renewalUntil(player, date, seasonEnd, years), wage, renewedOn: date };
       if (out) {
         await saveService.saveSquadById(saveId, { ...holder, players: holder.players.map((p) => (p.id === playerId ? { ...p, contract } : p)) });
         await saveService.saveMarket(saveId, { ...market!, loans: (market!.loans ?? []).map((l) => (l === out ? { ...l, wage } : l)) }, auth.seatId);

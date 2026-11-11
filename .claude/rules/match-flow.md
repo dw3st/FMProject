@@ -542,3 +542,7 @@ frame (`frontend.md` → Pages). The frame opens the match in an iframe (`MatchF
 without the bars; the match page's `navigate` goes to the frame (result, dashboard), and removing the iframe (back
 button) fires `pagehide`, which writes the resume snapshot. With "Partida dentro do jogo" off (`fm.match.inFrame`) the
 frame sends the browser to `/match-live`, as before.
+
+## Formações do técnico na partida (8.9.37)
+
+Report de tester. A aba Formação do painel ao vivo lista "Minhas formações": a formação livre salva (`user:free`) e a de cada escalação salva (`user:A|B|C`, `userFormationsOf`, `src/GameInterface/userFormations.ts`). Só a formação muda (a reorganização de sempre); só na partida sozinho (o servidor do jogo entre técnicos só conhece as prontas). As bolas paradas dessas formações são geradas das vagas.

@@ -232,6 +232,17 @@ export function contractEndFor(date: string, seasonEnd: string, years: number): 
 }
 
 /**
+ * End of the manager's renewal (tester report, 8.9.37): `years` is the new contract's length counted from now, like a
+ * signing (up to MAX_YEARS, the age cap checked by `evaluateContractOffer`), never shorter than the current contract.
+ * Before, the years were added to what was left, so a young player with two seasons to go could never sign five.
+ */
+export function renewalUntil(player: RosterPlayer, date: string, seasonEnd: string, years: number): string {
+  const end = contractEndFor(date, seasonEnd, years);
+  const current = player.contract?.until;
+  return current && current > end ? current : end;
+}
+
+/**
  * Renewal limits: remaining seasons on the current contract plus `years` may not exceed
  * MAX_YEARS, nor run the player past the age cap.
  */

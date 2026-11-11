@@ -1,3 +1,4 @@
+import { managerHref } from "@/GameInterface/ManagerScreen";
 /**
  * Dumb cards of the dashboard home (#56). Data comes in already shaped
  * (`dashboardData.ts`); each card links to the screen it summarises.
@@ -150,7 +151,7 @@ function ConfidenceBar({ label, value, trend }: { label: string; value: number; 
 }
 
 /** The manager's own screens, one click from the card (tester report, 8.9.1). */
-const MANAGER_TABS = ["list", "shop", "assets", "bets"] as const;
+const MANAGER_TABS = ["profile", "list", "shop", "bets"] as const;
 
 /**
  * The club header of the dashboard (#57): crest, club, league, manager (with the world ranking),
@@ -208,6 +209,8 @@ export function ClubCard({
   squadHref: string;
 }) {
   const { t } = useTranslation();
+  // The manager's own page (tester report: the name led to the world ranking); the ranking stays on the ranking stat.
+  const managerPage = managerFace?.id ? managerHref(managerFace.id) : MANAGER_PROFILE_HREF;
   const summary = achievements && t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points });
   const reputationShown = reputation === null ? null : Math.round(reputation);
   const standingsLabel = t(publicWorld ? "dashboard.clubSidebar.publicWorld" : "dashboard.clubSidebar.friendsLeague");
@@ -231,7 +234,7 @@ export function ClubCard({
         <div className="flex items-center gap-4 min-w-0 md:self-stretch md:border-l md:border-border md:pl-6">
           {managerName && (
             // Face and name open the manager's profile in the ranking (user request, 4.47.11).
-            <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} aria-label={t("dashboard.clubSidebar.managerProfile")} className="shrink-0 rounded-full hover:opacity-85">
+            <a href={managerPage} title={t("dashboard.clubSidebar.managerProfile")} aria-label={t("dashboard.clubSidebar.managerProfile")} className="shrink-0 rounded-full hover:opacity-85">
               <ManagerFaceImage
                 manager={{ id: managerFace?.id ?? "", name: managerName, face: managerFace?.face, nationality: managerFace?.nationality }}
                 clubColors={club.colors}
@@ -242,7 +245,7 @@ export function ClubCard({
           )}
           <div className="flex flex-col gap-1 min-w-0">
             {managerName
-              ? <a href={MANAGER_PROFILE_HREF} title={t("dashboard.clubSidebar.managerProfile")} className="font-semibold text-foreground truncate no-underline hover:text-primary hover:underline">{managerName}</a>
+              ? <a href={managerPage} title={t("dashboard.clubSidebar.managerProfile")} className="font-semibold text-foreground truncate no-underline hover:text-primary hover:underline">{managerName}</a>
               : <span className="font-semibold text-foreground truncate">—</span>}
             {achievements && (achievements.profile.title || achievements.profile.badges.length > 0) && (
               <a href="/achievements" className="flex items-center gap-1.5 min-w-0 text-sm font-semibold text-primary no-underline hover:underline">
@@ -263,10 +266,10 @@ export function ClubCard({
               {MANAGER_TABS.map((tab) => (
                 <a
                   key={tab}
-                  href={tab === "list" ? "/achievements" : `/achievements?tab=${tab}`}
+                  href={`/achievements?tab=${tab}`}
                   className="inline-flex items-center h-9 px-3 rounded-md border border-border bg-card font-display font-bold uppercase tracking-[0.08em] text-sm text-foreground no-underline transition-colors hover:border-primary hover:text-primary"
                 >
-                  {t(tab === "list" ? "achievements.link" : `achievements.tabs.${tab}`)}
+                  {t(tab === "list" ? "achievements.tabs.list" : `achievements.tabs.${tab}`)}
                 </a>
               ))}
             </nav>

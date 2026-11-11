@@ -161,3 +161,5 @@ Report de tester. A janela de renovação (`ContractOfferModal`, `onListForSale`
 ## Renovar pelo Elenco (8.8.9)
 
 Report de tester. O botão Renovar da tabela do Elenco abre a `ContractOfferModal` ali mesmo (e a promessa de renovação de uma conversa também), sem ir à ficha.
+
+Renovação do técnico (8.9.37, report de tester): `years` é o tamanho do contrato novo a partir de agora (`renewalUntil`: `contractEndFor` com os anos, nunca antes do fim atual), até 5 e limitado pela idade; antes os anos eram somados ao que faltava e um jovem com 2 temporadas restantes não assinava 5. O diretor continua somando pela regra da IA (`renewalWithinLimits`).

@@ -9,6 +9,8 @@ import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
+import { userFormationsOf } from "@/GameInterface/userFormations";
+import type { UserFormation } from "@/GameInterface/SubstitutionPanel";
 import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
 import { PauseBar } from "@/GameInterface/H2H/PauseBar";
@@ -323,6 +325,8 @@ export function MatchScreen() {
   /** Live style and axes of team A (Etapa 35): this match only, never saved. `saved` = the club's tactics. */
   const [liveTactics, setLiveTactics] = useState<LiveTactics>({ style: DEFAULT_TACTICAL_STYLE });
   const savedTacticsRef = useRef<LiveTactics>({ style: DEFAULT_TACTICAL_STYLE });
+  // The manager's own formations, offered in the live Formation tab (solo only: the H2H server only knows the ready ones).
+  const [userFormations, setUserFormations] = useState<UserFormation[]>([]);
   /** Possession heat map, filled on every emitted state (drawing only). */
   const heatmapRef = useRef<HeatmapAcc | null>(createPossessionHeatmap());
   const [showSubPanel, setShowSubPanel] = useState(false);
@@ -577,6 +581,7 @@ export function MatchScreen() {
           myTacticalStyleRef.current = style;
           myAxesOverrideRef.current = data.myTactics?.axesOverride;
           savedTacticsRef.current = { style, axesOverride: data.myTactics?.axesOverride };
+          setUserFormations(userFormationsOf(data.myTactics, t));
           setLiveTactics({ style, axesOverride: data.myTactics?.axesOverride });
           initRatings([]);
           initStats([]);
@@ -1579,7 +1584,7 @@ export function MatchScreen() {
     if (h2hMode) { sendH2H({ kind: "formation", formation: formationId }); return; }
     setGameState((prev) => {
       if (!prev) return prev;
-      const newFormation = formationForSimId(formationId);
+      const newFormation = userFormations.find((u) => u.id === formationId)?.formation ?? formationForSimId(formationId);
       return changeFormation(prev, "A", newFormation);
     });
   }
@@ -2313,6 +2318,7 @@ export function MatchScreen() {
             onMoveToSlot: handleMoveToSlot,
             onFillVacancy: handleFillVacancy,
             onChangeFormation: handleChangeFormation,
+            ...(h2hMode ? {} : { userFormations }),
             onInstruction: handleInstruction,
             onManMarks: handleManMarks,
             liveTactics: {

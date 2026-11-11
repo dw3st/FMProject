@@ -1,3 +1,4 @@
+import type { Formation } from "@/GameEngine/types";
 import { shirtName } from "@/Domain/shirtName";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { useState } from "react";
@@ -36,6 +37,8 @@ export interface SubstitutionPanelProps {
   onFillVacancy?: (injuredId: number, inId: number) => void;
   /** Live formation change; absent hides the Formation tab (`/test` has its own selector). */
   onChangeFormation?: (formationId: string) => void;
+  /** The manager's own formations (saved free formation, saved lineups) offered next to the ready ones (tester report, 8.9.37). */
+  userFormations?: UserFormation[];
   /** Live slot instruction change (player instructions) — this match only. */
   onInstruction?: (slot: number, instruction: SlotInstruction | null) => void;
   /** Live man-marking (engine ids of opponents on the pitch). */
@@ -51,6 +54,9 @@ export interface SubstitutionPanelProps {
 
 const FORMATION_LIST = [...FORMATION_IDS];
 
+/** A formation the manager made: his saved free formation or one of his saved lineups. */
+export interface UserFormation { id: string; label: string; formation: Formation }
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SubstitutionPanel({
@@ -63,6 +69,7 @@ export function SubstitutionPanel({
   onMoveToSlot,
   onFillVacancy,
   onChangeFormation,
+  userFormations = [],
   onInstruction,
   onManMarks,
   liveTactics,
@@ -91,6 +98,8 @@ export function SubstitutionPanel({
   const currentFormationId =
     playerTeam === "A" ? gameState.formationA.id : gameState.formationB.id;
   const shownFormation = previewFormation ?? currentFormationId;
+  const userFormation = (id: string) => userFormations.find((u) => u.id === id);
+  const formationLabel = (id: string) => userFormation(id)?.label ?? id;
 
   const queuedInIds = new Set(pendingQueue.map((s) => s.inId));
   const availableBench = bench.filter((p) => !queuedInIds.has(p.id));
@@ -259,6 +268,18 @@ export function SubstitutionPanel({
               </p>
               <div className="flex flex-col md:flex-row gap-5 items-start justify-center">
                 <div className="flex flex-col gap-3 w-full md:w-72 shrink-0">
+                  {userFormations.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("substitutionPanel.myFormations")}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {userFormations.map((u) => (
+                          <Chip key={u.id} selected={u.id === shownFormation} onClick={() => setPreviewFormation(u.id)} className="py-2.5">
+                            {u.label}
+                          </Chip>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-3 gap-2">
                     {FORMATION_LIST.map((fid) => (
                       <Chip key={fid} selected={fid === shownFormation} onClick={() => setPreviewFormation(fid)} className="py-2.5 tabular-nums">
@@ -272,14 +293,14 @@ export function SubstitutionPanel({
                   >
                     {shownFormation === currentFormationId
                       ? t("substitutionPanel.currentFormation")
-                      : t("substitutionPanel.useFormation", { formation: shownFormation })}
+                      : t("substitutionPanel.useFormation", { formation: formationLabel(shownFormation) })}
                   </Button>
                 </div>
                 <FormationPreview
                   players={gameState.players.filter((p) => p.team === playerTeam).sort((x, y) => x.slotIndex - y.slotIndex)}
                   formation={shownFormation === currentFormationId
                     ? (playerTeam === "A" ? gameState.formationA : gameState.formationB)
-                    : formationForSimId(shownFormation)}
+                    : userFormation(shownFormation)?.formation ?? formationForSimId(shownFormation)}
                   current={playerTeam === "A" ? gameState.formationA : gameState.formationB}
                   blocked={(gameState.injuryVacancies?.[playerTeam] ?? []).map((v) => v.slotIndex)}
                   {...(faceUrls ? { faceUrls } : {})}

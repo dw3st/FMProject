@@ -10,12 +10,14 @@ import type { AchievementsData, LegendCard, LegendTier } from "@/GameInterface/A
 
 /** Fixed colours per tier (never the club's): the card border and the tier label. */
 const TIER_CLASS: Record<LegendTier, string> = {
-  normal: "border-border text-muted-foreground",
-  rare: "border-star-green text-star-green",
-  epic: "border-star-blue text-star-blue",
-  legend: "border-chart-5 text-chart-5",
+  normal: "border-foreground text-foreground",
+  rare: "border-star-blue text-star-blue",
+  epic: "border-star-green text-star-green",
+  legend: "border-star-gold text-star-gold",
   super: "border-star-gold text-star-gold",
 };
+/** The icon tier shines (tester report: "extra gold brilhante"). */
+const SHINE: Partial<Record<LegendTier, string>> = { super: "shadow-[0_0_14px_var(--color-star-gold)]" };
 const TIERS: LegendTier[] = ["normal", "rare", "epic", "legend", "super"];
 const CARD_W = 128;
 const GAP = 8;
@@ -151,7 +153,7 @@ function ReelCard({ card, won }: { card: LegendCard; won: boolean }) {
   const code = card.nationality ? nationalityFlagCode(card.nationality) : null;
   return (
     <div
-      className={`flex shrink-0 flex-col gap-1 rounded-md border-2 bg-card px-2 py-2 ${TIER_CLASS[card.tier].split(" ")[0]} ${won ? "ring-2 ring-primary" : ""}`}
+      className={`flex shrink-0 flex-col gap-1 rounded-md border-2 bg-card px-2 py-2 ${TIER_CLASS[card.tier].split(" ")[0]} ${SHINE[card.tier] ?? ""} ${won ? "ring-2 ring-primary" : ""}`}
       style={{ width: CARD_W }}
     >
       <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${TIER_CLASS[card.tier].split(" ")[1]}`}>

@@ -27,6 +27,31 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "8.9.37",
+    date: "2026-11-11",
+    time: "10:08",
+    items: [
+      {
+        pt: "Na partida, a aba de formação mostra também as suas: a formação livre salva e as formações das escalações A, B e C.",
+        en: "In the match, the formation tab also lists your own: the saved free formation and the formations of lineups A, B and C.",
+      },
+    ],
+    fixes: [
+      {
+        pt: "Renovar um jogador agora conta os anos a partir de hoje: um jovem com dois anos de contrato pode renovar por cinco.",
+        en: "Renewing a player now counts the years from today: a young player with two years left can renew for five.",
+      },
+      {
+        pt: "O nome e o rosto do técnico no Painel abrem a página dele, e os botões levam às abas novas da tela do técnico.",
+        en: "The manager's name and face on the Dashboard open his page, and the buttons lead to the manager screen's new tabs.",
+      },
+      {
+        pt: "Cores da roleta de lendas: comum branca, rara azul, épica verde, lendária dourada e ícone dourada com brilho.",
+        en: "Legend roulette colours: common white, rare blue, epic green, legendary gold and icon shining gold.",
+      },
+    ],
+  },
+  {
     version: "8.9.36",
     date: "2026-11-11",
     time: "09:56",

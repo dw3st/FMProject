@@ -2800,7 +2800,11 @@
     "pickStarter": "Escolha o titular que sai.",
     "booked": "Amarelo",
     "injured": "Lesionado",
-    "naturalRole": "Posição de origem: {{role}}"
+    "naturalRole": "Posição de origem: {{role}}",
+    "myFormations": "Minhas formações",
+    "freeFormation": "Formação livre",
+    "freeShort": "livre",
+    "presetFormation": "Escalação {{key}} · {{formation}}"
   },
   "scoreBar": {},
   "matchOverlay": {

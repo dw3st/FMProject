@@ -2800,7 +2800,11 @@
     "pickStarter": "Pick the starter who comes off.",
     "booked": "Booked",
     "injured": "Injured",
-    "naturalRole": "Natural position: {{role}}"
+    "naturalRole": "Natural position: {{role}}",
+    "myFormations": "My formations",
+    "freeFormation": "Free formation",
+    "freeShort": "free",
+    "presetFormation": "Lineup {{key}} · {{formation}}"
   },
   "scoreBar": {},
   "matchOverlay": {
