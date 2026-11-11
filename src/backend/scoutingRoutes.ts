@@ -19,6 +19,8 @@ import { wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { daysBetween } from "@/Domain/dates";
+import { playerAvailability, type PlayerAvailability } from "@/Domain/scout/availability";
+import { startersOf } from "@/backend/scoutSearch";
 import { chiefHandlesScouting } from "@/Domain/responsibilities/director";
 import type { SeatMeta } from "@/backend/SaveService";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -198,6 +200,23 @@ async function scoutingView(saveId: string, seatId: string, state: ScoutingState
     ...(market?.playerSellList ?? []).map((c) => c.playerId),
   ]);
   const date = meta?.currentDate ?? "";
+  // What can be tried with each listed player today (tester report, 9.8).
+  const humans = await saveService.humanClubIds(saveId);
+  const squads = new Map<string, Promise<Squad | null>>();
+  const squadOf = (id: string) => {
+    let q = squads.get(id);
+    if (!q) { q = saveService.getSquadById(saveId, id).catch(() => null); squads.set(id, q); }
+    return q;
+  };
+  const availabilityOf = async (playerId: string, squadId: string | undefined): Promise<PlayerAvailability> => {
+    const squad = squadId ? await squadOf(squadId) : null;
+    const player = squad?.players.find((x) => x.id === playerId);
+    if (!squad || !player) return {};
+    return playerAvailability(player, squad, {
+      date, listed: forSale.has(playerId), humanClub: humans.has(squad.id) || squad.id === own?.id,
+      starterIds: humans.has(squad.id) ? new Set() : startersOf(saveId, date, squad),
+    });
+  };
   const chief = scoutMultipliersOf(own ? effectiveRating(own, "scout") : STAFF.VACANT_RATING);
   const shortlist = await Promise.all(state.shortlist.map(async (e: ShortlistEntry) => {
     const found = await findPlayer(saveId, e.playerId, e.squadId);
@@ -220,6 +239,7 @@ async function scoutingView(saveId: string, seatId: string, state: ScoutingState
       contractEnding: !!found.player.contract && daysBetween(date, found.player.contract.until) <= S.CONTRACT_ENDING_DAYS,
       injured: !!found.player.injury && found.player.injury.returnDate > date,
       free: !found.squad,
+      availability: found.squad ? await availabilityOf(e.playerId, found.squad.id) : { free: true as const },
     };
   }));
   return {
@@ -234,7 +254,7 @@ async function scoutingView(saveId: string, seatId: string, state: ScoutingState
     weeks: { region: S.REGION_WEEKS, continent: S.CONTINENT_WEEKS, youth: S.YOUTH_WEEKS, player: S.PLAYER_MAX_WEEKS },
     scouts: scouts.map((s) => ({ ...s, busy: state.missions.some((m) => m.scoutId === s.id) })),
     missions,
-    reports: await reportsView(saveId, own, state.reports),
+    reports: await reportsView(saveId, own, state.reports, availabilityOf),
     shortlist,
     // Only what the card shows: the exact attributes stay on the server (the report carries the
     // seen ranges); the player is exact once he is in the academy.
@@ -246,7 +266,10 @@ async function scoutingView(saveId: string, seatId: string, state: ScoutingState
  * The reports as the screens list them (tester report): a player who is now at the user's club (bought, signed) is
  * dropped, and one who left the observed club keeps his report without the link (`gone`), which pointed at the old club.
  */
-async function reportsView(saveId: string, own: Squad | null, reports: ScoutReport[]): Promise<ScoutReport[]> {
+async function reportsView(
+  saveId: string, own: Squad | null, reports: ScoutReport[],
+  availabilityOf: (playerId: string, squadId: string | undefined) => Promise<PlayerAvailability>,
+): Promise<ScoutReport[]> {
   const mine = new Set([...(own?.players ?? []), ...(own?.youth ?? [])].map((p) => p.id));
   const kept = reports.filter((r) => !mine.has(r.playerId));
   const clubs = new Map<string, Promise<Set<string> | null>>();
@@ -261,7 +284,7 @@ async function reportsView(saveId: string, own: Squad | null, reports: ScoutRepo
   return Promise.all(kept.map(async (r) => {
     if (r.prospectId || !r.squadId) return r;
     const roster = await rosterOf(r.squadId);
-    return roster?.has(r.playerId) ? r : { ...r, gone: true as const };
+    return roster?.has(r.playerId) ? { ...r, availability: await availabilityOf(r.playerId, r.squadId) } : { ...r, gone: true as const };
   }));
 }
 

@@ -37,6 +37,7 @@ import { PlayerKnowledgePanel } from "@/GameInterface/Scouting/PlayerKnowledgePa
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import type { IdentityFact } from "@/GameInterface/Components/FactCard";
 import { navigate } from "@/GameInterface/router/navigation";
+import { LoanedInCard } from "@/GameInterface/Negotiation/LoanedInCard";
 
 export function PlayerScreen({
   playerId,
@@ -192,6 +193,20 @@ export function PlayerScreen({
                   ? windowClosedText(t, i18n.language, windowsData?.player.opensOn)
                   : offerState === "precontract" ? t("negotiation.preContract.tab") : t("playerScreen.makeOffer")}
               </button>
+            ) : isOwnPlayer && player.loan ? (
+              // On loan here (9.8): his own club can still sell him, or he can sign a pre-contract.
+              <button
+                type="button"
+                disabled={offerState === "closed"}
+                onClick={() => setOfferTarget({ ...displayPlayer, squadId: player.loan!.fromClubId, club: player.loan!.fromClubName })}
+                title={offerState === "closed" ? windowClosedText(t, i18n.language, windowsData?.player.opensOn) : undefined}
+                className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Icon name="user-plus" className="w-4 h-4" />
+                {offerState === "closed"
+                  ? windowClosedText(t, i18n.language, windowsData?.player.opensOn)
+                  : offerState === "precontract" ? t("negotiation.preContract.tab") : t("loanedIn.offer", { club: player.loan.fromClubName })}
+              </button>
             ) : isOwnPlayer && !player.loan ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {session && <ListToggles saveId={session.saveId} playerId={player.id} playerName={player.name} value={playerMarketValue(player)} priceRequest={priceRequest} />}
@@ -235,6 +250,7 @@ export function PlayerScreen({
           </div>
         </a>
 
+        {isOwnPlayer && player.loan && <LoanedInCard player={player} canPreContract={canPreContract} />}
         {!isOwnPlayer && <ForeignCheckLine playerId={player.id} fromSquadId={squadId} />}
         {!isOwnPlayer && <StarLimitLine playerId={player.id} />}
 

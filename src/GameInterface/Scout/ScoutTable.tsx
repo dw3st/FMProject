@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AvailabilityChips } from "@/GameInterface/Scout/AvailabilityChips";
 import { useTranslation } from "react-i18next";
 import { HOVER_CARD_WIDTH, ScoutHoverCard } from "@/GameInterface/Scout/ScoutHoverCard";
 import { Icon } from "@/GameInterface/Icons";
@@ -190,9 +191,6 @@ export function ScoutTable({
                     onChange={(on) => onShortlistChange?.(player.id, on)}
                   />
                 )}
-                {sellListedIds.has(player.id) && (
-                  <span title={t("scout.table.forSale")} className="shrink-0"><Icon name="tag" className="w-3 h-3 text-primary" /></span>
-                )}
                 {nationalityFlagCode(player.ownNationality) && (
                   <span title={player.ownNationality} className="shrink-0 inline-flex">
                     <Flag code={nationalityFlagCode(player.ownNationality)!} />
@@ -219,6 +217,17 @@ export function ScoutTable({
                   <span className="text-foreground truncate">{player.name}</span>
                 )}
                 {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
+                {player.squadId !== mySquadId && (
+                  <AvailabilityChips
+                    inline
+                    value={{
+                      ...(player.free ? { free: true as const } : {}),
+                      ...(sellListedIds.has(player.id) ? { sale: true as const } : {}),
+                      ...(player.loanable ? { loan: true as const } : {}),
+                      ...(player.preContract ? { preContract: true as const } : {}),
+                    }}
+                  />
+                )}
               </div>
               <div className="px-3 py-2.5 text-muted-foreground font-medium">{player.age}</div>
               <div className="px-3 py-2.5 min-w-0 font-medium flex items-center gap-2">

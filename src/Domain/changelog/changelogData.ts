@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.9",
+    date: "2026-11-11",
+    time: "18:07",
+    items: [
+      { pt: "Jogador emprestado ao seu clube: a ficha mostra o contrato com o clube dele, quanto você paga e o que dá para tentar. Dá para comprá-lo do clube dono (o empréstimo acaba e ele fica) ou assinar um pré-contrato.", en: "Player on loan at your club: his page shows the contract with his own club, what you pay and what you can try. You can buy him from his club (the loan ends and he stays) or sign a pre-contract." },
+      { pt: "Olheiros: a busca, os relatórios, as joias e os observados mostram o que dá para fazer com cada jogador (à venda, empréstimo, pré-contrato, livre).", en: "Scouting: search, reports, gems and the shortlist show what you can do with each player (for sale, loan, pre-contract, free)." },
+    ],
+  },
+  {
     version: "9.8",
     date: "2026-11-11",
     time: "17:50",
@@ -5806,7 +5815,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Jogador emprestado: ver o contrato dele e o que dá para tentar (pré-contrato, compra)", en: "Loaned player: see his contract and what you can try (pre-contract, purchase)" },
+  { pt: "Conversas com jogadores: mais respostas, inclusive mais duras", en: "Player talks: more answers, tougher ones included" },
   { pt: "Celular: jogo em tela cheia, instalável como app", en: "Phone: full-screen game, installable as an app" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

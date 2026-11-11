@@ -28,7 +28,7 @@ export interface DisplayPlayer {
   /** Has a season award on a history row (`.claude/rules/game/awards.md`): public, any knowledge. */
   awarded?: boolean;
   /** On loan here (`.claude/rules/game/negotiation.md`): parent club name and return date. */
-  loan?: { fromClubName: string; until: string };
+  loan?: { fromClubId: string; fromClubName: string; until: string };
   /** New signing settling in (`.claude/rules/game/settling.md`). */
   settling?: { games: number; need: number };
   squadId?: string;
@@ -216,7 +216,7 @@ export function toDisplayPlayer(
     ...(player.history?.some((r) => r.awards?.length) ? { awarded: true } : {}),
     personality: personalityViewOf(player),
     ...(player.settling ? { settling: player.settling } : {}),
-    ...(player.loan ? { loan: { fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
+    ...(player.loan ? { loan: { fromClubId: player.loan.fromClubId, fromClubName: player.loan.fromClubName, until: player.loan.until } } : {}),
     ...scoutFields(player, avg, options?.wageFactor ?? 1),
   };
 }

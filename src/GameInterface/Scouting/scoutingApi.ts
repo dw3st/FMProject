@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { PlayerAvailability } from "@/types/scoutingTypes";
 import type { ScoutAssignment, ScoutProspect, ScoutReport, ShortlistEntry } from "@/types/scoutingTypes";
 import type { RosterPlayer } from "@/types/playerTypes";
 
@@ -42,6 +43,7 @@ interface ShortlistView extends ShortlistEntry {
   overall?: [number, number];
   value?: [number, number];
   forSale?: boolean;
+  availability?: PlayerAvailability;
   contractUntil?: string | null;
   contractEnding?: boolean;
   injured?: boolean;

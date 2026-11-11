@@ -3191,6 +3191,16 @@
       "knowledge": "Conhecimento {{value}}",
       "hidden": "Seus olheiros ainda não conhecem este jogador: os atributos aparecem a partir de 20 de conhecimento. Mande um olheiro observá-lo pela ficha dele ou numa missão na região.",
       "grade": "Relatório nota {{grade}}"
+    },
+    "availability": {
+      "sale": "À venda",
+      "loan": "Empréstimo",
+      "preContract": "Pré-contrato",
+      "free": "Livre",
+      "saleHint": "Está na lista de venda do clube",
+      "loanHint": "O clube o emprestaria hoje",
+      "preContractHint": "Contrato acaba em menos de 6 meses: dá para assinar um pré-contrato",
+      "freeHint": "Sem clube: contrata sem taxa"
     }
   },
   "fastForward": {
@@ -7217,5 +7227,14 @@
       "lobby": "A liga ainda não começou.",
       "generic": "Não foi possível marcar o amistoso."
     }
+  },
+  "loanedIn": {
+    "title": "Emprestado",
+    "offer": "Oferta ao {{club}}",
+    "loan": "Emprestado pelo {{club}} até {{date}}.",
+    "contract": "Contrato com o {{club}} até {{date}}, {{wage}}/sem",
+    "share": "seu clube paga {{pct}}% ({{wage}}/sem)",
+    "options": "Dá para tentar comprá-lo do {{club}} agora: a compra encerra o empréstimo e ele fica no elenco.",
+    "optionsPre": "Dá para tentar comprá-lo do {{club}} ou assinar um pré-contrato: o contrato dele acaba em menos de 6 meses."
   }
 }

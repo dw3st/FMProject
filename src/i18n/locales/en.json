@@ -3191,6 +3191,16 @@
       "knowledge": "Knowledge {{value}}",
       "hidden": "Your scouts do not know this player yet: the attributes show from 20 knowledge. Send a scout to watch him from his profile or on a mission to his region.",
       "grade": "Report grade {{grade}}"
+    },
+    "availability": {
+      "sale": "For sale",
+      "loan": "Loan",
+      "preContract": "Pre-contract",
+      "free": "Free",
+      "saleHint": "On his club's sale list",
+      "loanHint": "His club would loan him out today",
+      "preContractHint": "Contract ends in under 6 months: a pre-contract is possible",
+      "freeHint": "No club: signs without a fee"
     }
   },
   "fastForward": {
@@ -7217,5 +7227,14 @@
       "lobby": "The league has not started yet.",
       "generic": "The friendly could not be set up."
     }
+  },
+  "loanedIn": {
+    "title": "On loan",
+    "offer": "Offer to {{club}}",
+    "loan": "On loan from {{club}} until {{date}}.",
+    "contract": "Contract with {{club}} until {{date}}, {{wage}}/wk",
+    "share": "your club pays {{pct}}% ({{wage}}/wk)",
+    "options": "You can try to buy him from {{club}} now: the purchase ends the loan and he stays in the squad.",
+    "optionsPre": "You can try to buy him from {{club}} or sign a pre-contract: his contract ends in under 6 months."
   }
 }

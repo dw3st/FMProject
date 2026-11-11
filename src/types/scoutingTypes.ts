@@ -87,6 +87,8 @@ export interface ScoutReport {
   date: string;
   /** Screens only (`GET /scouting`): the player left the observed club, so the report no longer links to him. */
   gone?: true;
+  /** What can be tried with him today (response only, 9.8). */
+  availability?: PlayerAvailability;
   missionId?: string;
   /** Who wrote it: "chief" or the field scout's member id (absent on reports from before 4.38). */
   scoutId?: string;
@@ -157,4 +159,12 @@ export interface ScoutView {
   noise: number;
   /** Last observation day (absent: never observed, only the implicit knowledge). */
   seen?: string;
+}
+
+/** What the manager can try with a player today (tester report, 9.8; `Domain/scout/availability.ts`). */
+export interface PlayerAvailability {
+  sale?: true;
+  loan?: true;
+  preContract?: true;
+  free?: true;
 }

@@ -214,6 +214,41 @@ describe("negotiation routes", () => {
     expect(home.loan).toBeUndefined();
   }, 60_000);
 
+  test("a loaned-in player can be bought from his own club: the loan ends, he stays (9.8)", async () => {
+    const { club, player } = await aiTarget([], { benchOnly: true });
+    const market: MarketState = (await saveService.getMarket(saveId, meta.seatId)) ?? emptyMarket();
+    await saveService.saveMarket(saveId, {
+      ...market,
+      profiles: { ...market.profiles, [club.id]: { squadId: club.id, needs: [], sellList: [{ playerId: player.id, priority: 1 }], lastUpdateDay: meta.currentDate! } },
+    }, meta.seatId);
+    const loanRes = await route("/api/saves/:saveId/loans")(
+      req(`/api/saves/${saveId}/loans`, "POST", { saveId }, { playerId: player.id, fromSquadId: club.id, wageShare: 100, fee: 5_000_000 }),
+    );
+    expect(((await loanRes.json()) as { response: { kind: string } }).response.kind).toBe("accept");
+    expect((await human()).players.find((p) => p.id === player.id)?.loan?.fromClubId).toBe(club.id);
+
+    // Earlier tests may have talked about him today: a fresh talk.
+    const mk = (await saveService.getMarket(saveId, meta.seatId))!;
+    await saveService.saveMarket(saveId, { ...mk, talks: {} }, meta.seatId);
+    // The demand of a loaned-in player, asked to his own club.
+    const demand = await route("/api/saves/:saveId/players/:playerId/demand")(
+      req(`/api/saves/${saveId}/players/${player.id}/demand?from=${club.id}`, "GET", { saveId, playerId: player.id }),
+    );
+    expect(demand.status).toBe(200);
+    const { demand: wage } = (await demand.json()) as { demand: number };
+
+    const buy = await route("/api/saves/:saveId/transfers")(
+      req(`/api/saves/${saveId}/transfers`, "POST", { saveId }, { playerId: player.id, fromSquadId: club.id, fee: valueOf(player) * 3, wage: wage * 2, years: 2 }),
+    );
+    const body = (await buy.json()) as { response: { kind: string } };
+    expect(body.response.kind).toBe("accept");
+    const mine = (await human()).players.filter((p) => p.id === player.id);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]!.loan).toBeUndefined();
+    expect((await saveService.getSquadById(saveId, club.id))!.players.some((p) => p.id === player.id)).toBe(false);
+    expect((await saveService.getMarket(saveId, meta.seatId))!.loans?.some((l) => l.playerId === player.id)).toBe(false);
+  }, 60_000);
+
   test("loan out: a loan bid accepted moves the player away with the agreed share", async () => {
     const sq = await human();
     const p = sq.players.find((q) => !q.loan && q.positions[0] !== "GK")!;

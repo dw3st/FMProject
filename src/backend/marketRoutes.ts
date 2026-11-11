@@ -1,4 +1,5 @@
 import { managerDemandCtx } from "@/backend/managerDemand";
+import { loanedInFrom } from "@/Domain/negotiation/loans";
 import { answerRenewalProposal, managerWeeklyWage as renewalWage, renewalLimits, MANAGER_CONTRACT } from "@/Domain/managers/managerContract";
 import { applyRenewalOverreach } from "@/Domain/boardFans/boardFans";
 import { saveService } from "@/backend/SaveService";
@@ -92,7 +93,9 @@ export const marketRoutes = {
       if (current.id === human.id) return json({ error: "notEligible" }, 400);
       // Another seat's player is never let go by the AI rule (`.claude/rules/game/multiplayer.md`).
       if (await isOtherSeatClub(saveService, saveId, current.id, human.id)) return json({ error: "notFound" }, 404);
-      const player = current.players.find((p) => p.id === playerId);
+      // On loan at the human club from `current` (9.8): a pre-contract with his own club.
+      const loanedIn = loanedInFrom(human, playerId, current.id);
+      const player = current.players.find((p) => p.id === playerId) ?? (loanedIn ? { ...loanedIn, loan: undefined } : undefined);
       if (!player) return json({ error: "player not found" }, 404);
       const blockedUntil = rebuyBlockedUntil(player, human.id, date);
       if (blockedUntil) return json({ error: "recentlySold", until: blockedUntil }, 409);
@@ -103,8 +106,8 @@ export const marketRoutes = {
       const mine = signed.filter((p) => p.toClubId === human.id).length;
       const roster = await humanRosterSize(saveService, saveId, auth.seatId, human);
       // The pre-contracts already signed keep their places (tester report, 4.47.23: the answer says so).
-      if (roster + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull", roster, preContracts: mine, max: HUMAN_MAX_SQUAD }, 409);
-      const starLimit = await starLimitResponse(saveId, human, playerId);
+      if (!loanedIn && roster + mine >= HUMAN_MAX_SQUAD) return json({ error: "squadFull", roster, preContracts: mine, max: HUMAN_MAX_SQUAD }, 409);
+      const starLimit = loanedIn ? null : await starLimitResponse(saveId, human, playerId);
       if (starLimit) return starLimit;
       const prestige = await prestigeOf(saveService, saveId, date, [human.id, current.id]);
       // Signing bonus and the AI clubs after him (4.47.9).

@@ -171,7 +171,9 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
 
   // Window closed: a target near the end of his contract opens on the pre-contract tab.
   const closedNow = buyWindow !== null && !buyWindow.open;
-  const eligibleNow = !!player?.contractEnd && !!currentDate && !player?.loan
+  // On loan at the manager's club, offered to his own club (9.8): the pre-contract is open to him.
+  const loanElsewhere = !!player?.loan && player.loan.fromClubId !== player.squadId;
+  const eligibleNow = !!player?.contractEnd && !!currentDate && !loanElsewhere
     && player.contractEnd >= currentDate && player.contractEnd <= addDays(currentDate, PRE_CONTRACT_DAYS);
   const seatClub = player?.squadId ? seatOffers.data?.seatClubs.find((c) => c.clubId === player.squadId) ?? null : null;
   useEffect(() => {
@@ -191,7 +193,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     ? (seatOffers.data?.offers ?? []).find((o) => o.playerId === player.id && o.side === "buyer" && o.kind === (tab === "loan" ? "loan" : "transfer")) ?? null
     : null;
   const preContractEligible = !isSeat && !!player.contractEnd && !!currentDate
-    && player.contractEnd >= currentDate && player.contractEnd <= addDays(currentDate, PRE_CONTRACT_DAYS) && !player.loan;
+    && player.contractEnd >= currentDate && player.contractEnd <= addDays(currentDate, PRE_CONTRACT_DAYS) && !loanElsewhere;
   const closedUntil = today?.closedUntil ?? null;
   const roundsLeft = today ? Math.max(0, ROUNDS_PER_DAY - today.rounds) : ROUNDS_PER_DAY;
   const counter = today?.counter;

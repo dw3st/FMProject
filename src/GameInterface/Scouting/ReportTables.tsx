@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AvailabilityChips } from "@/GameInterface/Scout/AvailabilityChips";
 import { useTranslation } from "react-i18next";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
@@ -96,7 +97,8 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, sort }: {
                   {r.gem && <GemBadge />}
                   {r.gone && <span className="text-sm text-muted-foreground">{t("scouting.reports.moved")}</span>}
                 </span>
-                <span className="block text-sm text-muted-foreground">{positionLabel(t, r.position, r.position)}{r.forSale ? ` · ${t("scouting.forSale")}` : ""}</span>
+                <span className="block text-sm text-muted-foreground">{positionLabel(t, r.position, r.position)}</span>
+                <AvailabilityChips value={r.prospectId ? undefined : r.availability} />
               </td>
               <td className={`${td} text-muted-foreground`}>{r.age}</td>
               <td className={`${td} text-muted-foreground`}>{r.prospectId ? t("scouting.noClubProspect", { country: r.country }) : r.club}</td>
@@ -222,7 +224,6 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
             {data.shortlist.map((e) => {
               const status = [
                 e.free ? t("scouting.status.free") : null,
-                e.forSale ? t("scouting.forSale") : null,
                 e.contractEnding ? t("scouting.status.contractEnding", { year: (e.contractUntil ?? "").slice(0, 4) }) : null,
                 e.injured ? t("scouting.status.injured") : null,
               ].filter(Boolean).join(" · ");
@@ -238,6 +239,7 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
                       )}
                     </span>
                     {e.position && <span className="block text-sm text-muted-foreground">{positionLabel(t, e.position, e.position)} · {e.age}</span>}
+                    <AvailabilityChips value={e.availability} />
                   </td>
                   <td className={`${td} text-muted-foreground`}>{e.missing ? "—" : e.club || t("scouting.status.free")}</td>
                   <td className={`${td} font-display font-bold text-primary`}>{e.overall ? range(e.overall) : "—"}</td>

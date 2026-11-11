@@ -153,7 +153,7 @@ async function preContractIdsOf(saveId: string, squads: Squad[]): Promise<Set<st
  */
 const starterCache = { key: "", byClub: new Map<string, { roster: string; ids: Set<string> }>() };
 
-function startersOf(saveId: string, date: string, squad: Squad): Set<string> {
+export function startersOf(saveId: string, date: string, squad: Squad): Set<string> {
   const key = `${saveId}:${date}`;
   if (starterCache.key !== key) { starterCache.key = key; starterCache.byClub = new Map(); }
   const roster = squad.players.map((p) => p.id).join(",");

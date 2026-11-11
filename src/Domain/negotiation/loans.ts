@@ -174,6 +174,14 @@ export function squadsAfterLoanEnd(
   };
 }
 
+/**
+ * A player on loan at `squad` from `parentId` (9.8, tester report): the buyer can buy him from the parent club or sign
+ * him on a pre-contract, as if he were still there.
+ */
+export function loanedInFrom(squad: Squad, playerId: string, parentId: string): RosterPlayer | undefined {
+  return squad.players.find((p) => p.id === playerId && p.loan?.fromClubId === parentId);
+}
+
 /** Loans due back on `date` (`graceDays` ahead for the rollover). */
 export function dueLoans(loans: ActiveLoan[] | undefined, date: string, graceDays = 0): ActiveLoan[] {
   const limit = addDays(date, graceDays);

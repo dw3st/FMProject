@@ -22,7 +22,8 @@ import { getSellPriority } from "@/Domain/transfer/sellList";
 import {
   activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToOffer, talkGate, talkKey, type OfferResponse,
 } from "@/Domain/negotiation/negotiation";
-import { completeHumanSale, humanRosterSize, isOtherSeatClub, marketAfterSellOnPaid, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { loanedInFrom, squadsAfterLoanEnd } from "@/Domain/negotiation/loans";
+import { completeHumanSale, historyFromOf, humanRosterSize, isOtherSeatClub, marketAfterSellOnPaid, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { swapRefusal, swapValue } from "@/Domain/negotiation/swap";
 import { aiTransferBudgetOf } from "@/Domain/aiFinance/aiClubFinance";
 import { buildTransferNegotiationMessage } from "@/Domain/inbox/inboxEvents";
@@ -162,9 +163,11 @@ export const transferRoutes = {
         if (!buyerSquad) return Response.json({ error: "buying squad not found" }, { status: 404 });
         if (await isOtherSeatClub(saveService, saveId, sellerSquad.id, buyerSquad.id)) return Response.json({ error: "notFound" }, { status: 404 });
 
-        if ((await humanRosterSize(saveService, saveId, auth.seatId, buyerSquad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+        // On loan here from the selling club (9.8): bought from the parent club, already in the squad.
+        const loanedIn = loanedInFrom(buyerSquad, playerId, sellerSquad.id);
+        if (!loanedIn && (await humanRosterSize(saveService, saveId, auth.seatId, buyerSquad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
         // At most STAR_LIMIT.MAX of the world's top players (`.claude/rules/game/transfers.md`).
-        const starLimit = await starLimitResponse(saveId, buyerSquad, playerId);
+        const starLimit = loanedIn ? null : await starLimitResponse(saveId, buyerSquad, playerId);
         if (starLimit) return starLimit;
 
         // ── Budget check ──────────────────────────────
@@ -173,7 +176,7 @@ export const transferRoutes = {
           return Response.json({ error: "Insufficient funds" }, { status: 400 });
         }
 
-        const player = sellerSquad.players.find((p) => p.id === playerId);
+        const player = sellerSquad.players.find((p) => p.id === playerId) ?? (loanedIn ? { ...loanedIn, loan: undefined } : undefined);
         if (!player) {
           // Sold to a rival on the deadline (`.claude/rules/game/negotiation.md` → "Disputa").
           const lost = (await saveService.getMarket(saveId, auth.seatId))?.lostTargets?.find((l) => l.playerId === playerId);
@@ -331,11 +334,21 @@ export const transferRoutes = {
         let updatedMeta = meta;
 
         if (accepted) {
+          // A loaned-in player goes back to his club first (no news, he stays in the line-up), then is sold (9.8).
+          let fromSide = sellerSquad;
+          let toSide = buyerSquad;
+          if (loanedIn) {
+            const back = squadsAfterLoanEnd(loanedIn, buyerSquad, sellerSquad, historyFromOf(meta.activeLeagues, buyerSquad.leagueSlug));
+            fromSide = back.parent;
+            toSide = back.borrower;
+            const m = await saveService.getMarket(saveId, auth.seatId);
+            if (m) await saveService.saveMarket(saveId, { ...m, loans: (m.loans ?? []).filter((l) => l.playerId !== playerId) }, auth.seatId);
+          }
           // Move player between squads (no money here — FinancialService handles that)
-          const { selling, buying } = squadsAfterAcceptedTransfer(
-            player,
-            sellerSquad,
-            buyerSquad,
+          const { selling, buying: bought } = squadsAfterAcceptedTransfer(
+            fromSide.players.find((p) => p.id === playerId) ?? player,
+            fromSide,
+            toSide,
             buyerSquad.id,
             playerId,
             newContract,
@@ -346,6 +359,12 @@ export const transferRoutes = {
             sellOnPct > 0 ? { clubId: sellerSquad.id, clubName: sellerSquad.name, pct: sellOnPct } : null,
             { kind: clause !== null ? "clause" : "transfer", fee: offerFee, on: date },
           );
+          // He never left (9.8): keeps his settling, morale and squad role from the loan.
+          const buying = loanedIn
+            ? { ...bought, players: bought.players.map((p) => (p.id === playerId
+              ? { ...p, settling: loanedIn.settling, morale: loanedIn.morale, moraleLog: loanedIn.moraleLog, squadStatus: loanedIn.squadStatus }
+              : p)) }
+            : bought;
           // A clause the player already carried is paid out of this fee (the seller keeps the rest).
           const cash = Math.max(fee, 0);
           const owed = sellOnFor(player, sellerSquad.id, cash);

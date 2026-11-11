@@ -371,3 +371,7 @@ Report de tester. `isGem` deixou de exigir que o jogador seja de fora do país d
 ## Filtros por tipo de jogador (9.0)
 
 Report de tester. Os filtros prontos ficam abaixo dos atributos, em três grupos (Disponibilidade, Tipo de jogador, Olheiro) com ícones coloridos. Tipo de jogador soma (OU): top 25 do mundo, grande fase e prodígio pela estrela do mundo (`DisplayPlayer.star`, `computeStars` no índice da busca; estrela é pública), criados por técnicos (id `created_`) e lendas (`reborn`).
+
+## O que dá para fazer com cada jogador (9.9)
+
+Report do usuário. `playerAvailability` (`src/Domain/scout/availability.ts`, com teste): à venda (lista do clube), empréstimo (`loanAvailability`), pré-contrato (`preContractEligible`), livre; só clubes da IA (de outro técnico, só a lista). `GET /scouting` devolve `availability` nos relatórios e nos observados; a busca usa as marcas que já tinha (`loanable`, `preContract`, lista de venda). Tela: `AvailabilityChips` (`Scout/AvailabilityChips.tsx`) abaixo do nome nos Relatórios, Joias e Observados, e ao lado do nome na busca (no lugar do ícone de etiqueta).

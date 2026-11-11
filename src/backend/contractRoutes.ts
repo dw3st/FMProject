@@ -4,6 +4,7 @@ import { releaseClause } from "@/Domain/negotiation/releaseClause";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
+import { loanedInFrom } from "@/Domain/negotiation/loans";
 import { renewalUntil, renewalAvailableOn, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Personality } from "@/types/personalityTypes";
@@ -199,6 +200,11 @@ export const contractRoutes = {
       const src = await saveService.resolveSquadId(saveId, from);
       const squad = src ? await saveService.getSquad(saveId, src.leagueSlug, src.clubSlug) : null;
       player = squad?.players.find((p) => p.id === playerId);
+      // On loan at the asking club from `from` (9.8): his demand to stay for good.
+      if (!player && mine) {
+        const lent = loanedInFrom(mine, playerId, from);
+        if (lent) player = { ...lent, loan: undefined };
+      }
     } else {
       player = (await saveService.getFreeAgents(saveId)).find((f) => f.player.id === playerId)?.player;
     }
