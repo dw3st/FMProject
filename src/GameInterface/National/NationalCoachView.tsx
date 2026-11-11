@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { useEffect, useMemo, useState } from "react";
 import { DialogTitle } from "@headlessui/react";
 import { useTranslation } from "react-i18next";
@@ -217,7 +218,7 @@ function CallUpBlock({ saveId, data, onSaved }: { saveId: string; data: CoachDat
             </StatsCell>
             <StatsCell className={`font-display font-bold ${getDetailedPositionColor(c.role)}`}>{t(`roles.detailedAbbr.${c.role}`, { defaultValue: c.role })}</StatsCell>
             <NameCell href={playerHref(c.id, c.squadId)} highlight={set.has(c.id)}><span className="truncate">{c.name}</span></NameCell>
-            <ClubCell>{c.clubName ?? "-"}</ClubCell>
+            <ClubCell>{c.clubName ? <ClubLink id={c.squadId}>{c.clubName}</ClubLink> : "-"}</ClubCell>
             <NumberCell strong>{Math.round(c.overall * 10)}</NumberCell>
             <NumberCell>{c.age}</NumberCell>
             <NumberCell>{c.fitness}</NumberCell>

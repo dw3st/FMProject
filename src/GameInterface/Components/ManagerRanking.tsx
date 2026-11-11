@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { ASSET_KINDS, type ManagerAssets } from "@/Domain/managers/assets";
 import { titlesByPassage } from "@/Domain/managers/careerTitles";
 import { Icon } from "@/GameInterface/Icons";
@@ -177,7 +178,7 @@ export function ManagerRanking({ saveId, leagues, refreshKey, openMe }: {
                 {m.profile?.title && <span className="text-sm font-semibold text-primary truncate ml-1.5">{t(`achievements.titles.${m.profile.title}`)}</span>}
               </NameCell>
               <ClubCell>
-                {m.clubName ?? t("statsScreen.managers.noClub")}
+                {m.clubName ? <ClubLink id={m.squadId}>{m.clubName}</ClubLink> : t("statsScreen.managers.noClub")}
                 {m.interim && <span className="text-muted-foreground"> · {t("statsScreen.managers.interim")}</span>}
               </ClubCell>
               <NumberCell strong>{m.points}</NumberCell>

@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -455,7 +456,7 @@ function TeamView({ saveId, overview, teamId, onTeam, refreshKey }: {
                       <span className="truncate">{p.name}</span>
                       {p.generated && <span className="text-sm font-normal text-muted-foreground" title={t("national.localHint")}>{t("national.local")}</span>}
                     </NameCell>
-                    <ClubCell>{p.clubName ?? "-"}</ClubCell>
+                    <ClubCell>{p.clubName ? <ClubLink id={p.squadId} league={p.league}>{p.clubName}</ClubLink> : "-"}</ClubCell>
                     <NumberCell>{p.age ?? "-"}</NumberCell>
                     <NumberCell>{p.overall !== null ? Math.round(p.overall * 10) : "-"}</NumberCell>
                     <NumberCell>{p.caps ?? "-"}</NumberCell>

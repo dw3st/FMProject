@@ -1,5 +1,5 @@
 import { seatManagerId } from "@/Domain/seats/seats";
-import { ClubLink } from "@/GameInterface/Components/EntityLinks";
+import { ClubLink, clubHref } from "@/GameInterface/Components/EntityLinks";
 import { managerHref } from "@/GameInterface/ManagerScreen";
 /**
  * Dumb cards of the dashboard home (#56). Data comes in already shaped
@@ -501,7 +501,7 @@ function TeamBlock({ side, mine }: { side: MatchSide; mine: boolean }) {
         className="w-16 h-16 rounded-full"
         imgClassName="w-full h-full object-contain"
       />
-      <span className={`font-semibold leading-tight ${mine ? "text-primary" : "text-foreground"}`}>{side.name}</span>
+      <span className={`font-semibold leading-tight ${mine ? "text-primary" : "text-foreground"}`}><ClubLink id={side.id}>{side.name}</ClubLink></span>
     </div>
   );
 }
@@ -553,7 +553,7 @@ export function LeagueMiniTable({
                 <a
                   key={row.squadId}
                   ref={mine ? myRef : undefined}
-                  href="/leagues"
+                  href={clubHref(row.squadId)}
                   className={`${grid} py-2.5 items-center no-underline ${TABLE_STYLE.row} ${mine ? TABLE_STYLE.rowHighlight : ""}`}
                 >
                   <div className={TABLE_STYLE.rank}>{rank}</div>

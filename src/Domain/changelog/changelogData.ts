@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.6.4",
+    date: "2026-11-11",
+    time: "21:10",
+    items: [],
+    fixes: [
+      { pt: "Clubes clicáveis em mais lugares: Painel (próximo jogo e tabela da liga), Estatísticas, Prêmios, ranking de técnicos e Seleções.", en: "Clickable clubs in more places: Dashboard (next match and league table), Statistics, Awards, managers' ranking and National teams." },
+    ],
+  },
+  {
     version: "9.6.3",
     date: "2026-11-11",
     time: "20:50",

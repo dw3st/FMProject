@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
@@ -88,7 +89,7 @@ function RankingTable({
                 <span className="truncate">{r.name}</span>
                 {kind && <StarBadge kind={kind} />}
               </NameCell>
-              <ClubCell>{r.clubName}</ClubCell>
+              <ClubCell><ClubLink id={r.squadId}>{r.clubName}</ClubLink></ClubCell>
               <NumberCell strong>{decimals ? r.value.toFixed(2) : r.value}</NumberCell>
             </StatsRow>
           );
@@ -388,7 +389,7 @@ export function RetiredList({ saveId, leagues, legendsOnly = false }: { saveId: 
                 <span className="truncate">{r.name}</span>
               </NameCell>
               <NumberCell>{r.age}</NumberCell>
-              <ClubCell>{r.clubName ?? "-"}</ClubCell>
+              <ClubCell>{r.clubName ? <ClubLink id={r.squadId ?? ""}>{r.clubName}</ClubLink> : "-"}</ClubCell>
               <NumberCell>{apps}</NumberCell>
               <NumberCell>{goals}</NumberCell>
               {legends && <StatsCell>{legendCell(r)}</StatsCell>}

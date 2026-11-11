@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
@@ -59,7 +60,7 @@ function WorldTable({ kind, rows, isPlayer }: { kind: "world_player" | "world_ma
             <RankCell rank={i + 1} />
             <CrestCell squadId={e.squadId} />
             <NameCell href={isPlayer ? playerHref(e.id, e.squadId, e.league) : undefined}>{e.name}</NameCell>
-            <ClubCell>{e.clubName}</ClubCell>
+            <ClubCell><ClubLink id={e.squadId} league={e.league}>{e.clubName}</ClubLink></ClubCell>
             <NumberCell strong={i === 0}>{e.score.toFixed(2)}</NumberCell>
           </StatsRow>
         ))}
@@ -121,7 +122,7 @@ function LeagueBlock({ a, leagueName, myClubId }: { a: LeagueSeasonAwards; leagu
                   </StatsCell>
                   <CrestCell squadId={p.squadId} />
                   <NameCell href={playerHref(p.playerId, p.squadId, a.league)} highlight={mine(p.squadId)}>{p.name}</NameCell>
-                  <ClubCell>{p.clubName}</ClubCell>
+                  <ClubCell><ClubLink id={p.squadId} league={a.league}>{p.clubName}</ClubLink></ClubCell>
                   <NumberCell strong>{p.value.toFixed(2)}</NumberCell>
                 </StatsRow>
               ))}
