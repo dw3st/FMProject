@@ -21,6 +21,7 @@ import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { LegendRoulette } from "@/GameInterface/Achievements/LegendRoulette";
 import { AssetsTab } from "@/GameInterface/Achievements/AssetsTab";
+import { DecorShopSection } from "@/GameInterface/Achievements/DecorShop";
 import { BetsTab } from "@/GameInterface/Achievements/BetsTab";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
@@ -41,8 +42,9 @@ import {
 
 // The manager's screen (user request, option A, 8.9.36): profile, achievements, shop (points and money), bets.
 // The shop split into its own tabs (tester report, 8.9.38: one long page needed scrolling): players, legends, belongings.
-type Tab = "profile" | "list" | "players" | "legends" | "belongings" | "bets";
-const TABS: Tab[] = ["profile", "list", "players", "legends", "belongings", "bets"];
+// The stadium decorations got their own tab (9.1.1, user request).
+type Tab = "profile" | "list" | "players" | "legends" | "belongings" | "stadium" | "bets";
+const TABS: Tab[] = ["profile", "list", "players", "legends", "belongings", "stadium", "bets"];
 /** Links from before the regrouping. */
 const OLD_TABS: Record<string, Tab> = { manager: "profile", assets: "belongings", shop: "players" };
 const TIERS = ["bronze", "silver", "gold"] as const;
@@ -131,6 +133,7 @@ export function AchievementsScreen() {
         </div>
       )}
       {tab === "bets" && <BetsTab />}
+      {tab === "stadium" && <StadiumTab data={data} saveId={saveId} onChange={setData} />}
       {(tab === "players" || tab === "legends" || tab === "belongings") && (
         <ShopTab section={tab} data={data} saveId={saveId} onChange={(d) => { setData(d); void refresh(); }} />
       )}
@@ -271,10 +274,9 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
   const [badges, setBadges] = useState<Badge[]>(data.profile.badges);
   const [title, setTitle] = useState<TrackId | null>(data.profile.title);
   const [bio, setBio] = useState<string>(data.profile.bio ?? "");
-  const [decor, setDecor] = useState<StadiumDecor>(data.decor);
   const [msg, setMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
 
-  async function save(path: "profile" | "stadium", body: unknown) {
+  async function save(path: "profile", body: unknown) {
     const r = await achievementsCall<AchievementsData>(`/api/saves/${saveId}/achievements/${path}`, "PUT", body);
     if (r.ok) { onChange(r.data); setMsg({ kind: "info", text: t("achievements.profile.saved") }); }
     else setMsg({ kind: "error", text: t(`achievements.errors.${r.error}`, { defaultValue: t("achievements.errors.generic") }) });
@@ -415,32 +417,58 @@ function ProfileTab({ data, saveId, onChange }: { data: AchievementsData; saveId
         <div>
           <Button onClick={() => void save("profile", { frame, badges, title, bio })}>{t("achievements.profile.save")}</Button>
         </div>
-        <div className="flex flex-col gap-2">
-          <SectionTitle>{t("achievements.profile.stadium")}</SectionTitle>
-          <p className="text-sm text-muted-foreground m-0">{t("achievements.profile.stadiumNote")}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {(["banner", "mosaic"] as const).map((k) => (
-              <Chip
-                key={k}
-                selected={decor[k]}
-                disabled={!data.available.decor[k]}
-                title={t(`achievements.decor.${k}.desc`)}
-                onClick={() => setDecor((d) => ({ ...d, [k]: !d[k] }))}
-              >
-                {!data.available.decor[k] && <Icon name="lock" size={16} />}
-                {t(`achievements.decor.${k}.name`)}
-                {!data.available.decor[k] && ` · ${t("achievements.profile.lockedAt", { n: data.thresholds.decor[k] })}`}
-              </Chip>
-            ))}
-          </div>
-          <DecorStylePicker decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} owned={data.ownedDecor ?? []} onChange={(patch) => setDecor((d) => ({ ...d, ...patch }))} />
-          <StadiumDecorPreview decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} crestUrl={session?.clubId ? squadLogoUrl(session.clubId) : undefined} />
-          <div>
-            <Button onClick={() => void save("stadium", decor)}>{t("achievements.profile.saveStadium")}</Button>
-          </div>
-        </div>
         {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
       </div>
+    </div>
+  );
+}
+
+// ── Stadium decorations (9.1.1: own tab) ─────────────────────────────────────
+
+function StadiumTab({ data, saveId, onChange }: { data: AchievementsData; saveId: string; onChange: (d: AchievementsData) => void }) {
+  const { t } = useTranslation();
+  const { session, save: game, refresh } = useGameSave();
+  const [decor, setDecor] = useState<StadiumDecor>(data.decor);
+  const [msg, setMsg] = useState<{ kind: "info" | "error"; text: string } | null>(null);
+  async function save(path: "stadium", body: unknown) {
+    const r = await achievementsCall<AchievementsData>(`/api/saves/${saveId}/achievements/${path}`, "PUT", body);
+    if (r.ok) { onChange(r.data); setMsg({ kind: "info", text: t("achievements.profile.saved") }); }
+    else setMsg({ kind: "error", text: t(`achievements.errors.${r.error}`, { defaultValue: t("achievements.errors.generic") }) });
+  }
+  // After a purchase the chosen designs reload (a bought mosaic opens its design).
+  async function bought() {
+    await refresh({ background: true });
+    const r = await achievementsCall<AchievementsData>(`/api/saves/${saveId}/achievements`, "GET");
+    if (r.ok) onChange(r.data);
+  }
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2">
+        <SectionTitle>{t("achievements.profile.stadium")}</SectionTitle>
+        <p className="text-sm text-muted-foreground m-0">{t("achievements.profile.stadiumNote")}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {(["banner", "mosaic"] as const).map((k) => (
+            <Chip
+              key={k}
+              selected={decor[k]}
+              disabled={!data.available.decor[k]}
+              title={t(`achievements.decor.${k}.desc`)}
+              onClick={() => setDecor((d) => ({ ...d, [k]: !d[k] }))}
+            >
+              {!data.available.decor[k] && <Icon name="lock" size={16} />}
+              {t(`achievements.decor.${k}.name`)}
+              {!data.available.decor[k] && ` · ${t("achievements.profile.lockedAt", { n: data.thresholds.decor[k] })}`}
+            </Chip>
+          ))}
+        </div>
+        <DecorStylePicker decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} owned={data.ownedDecor ?? []} onChange={(patch) => setDecor((d) => ({ ...d, ...patch }))} />
+        <StadiumDecorPreview decor={decor} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} crestUrl={session?.clubId ? squadLogoUrl(session.clubId) : undefined} />
+        <div>
+          <Button onClick={() => void save("stadium", decor)}>{t("achievements.profile.saveStadium")}</Button>
+        </div>
+      </div>
+      {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
+      <DecorShopSection owned={game?.managerDecor ?? []} onBought={bought} />
     </div>
   );
 }

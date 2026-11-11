@@ -5084,7 +5084,7 @@
         "pinstripe": "Pinstripe",
         "chevron": "Chevrons"
       },
-      "moreInShop": "More designs in the shop: Your manager, Belongings tab."
+      "moreInShop": "More designs in the shop below."
     },
     "tabs": {
       "list": "Achievements",
@@ -5095,7 +5095,8 @@
       "bets": "Bets",
       "players": "Players",
       "legends": "Club legends",
-      "belongings": "Belongings"
+      "belongings": "Belongings",
+      "stadium": "Stadium"
     },
     "loading": "Loading achievements…",
     "loadFailed": "Could not load the achievements.",
@@ -5666,7 +5667,7 @@
     "hub": "Your manager",
     "decorShop": {
       "title": "Stadium decorations",
-      "note": "Bought with your own money. They stay with you from club to club and count for your fame. Pick the design on the Profile tab; the effects work on their own in home games.",
+      "note": "Bought with your own money. They stay with you from club to club and count for your fame. Pick the design above; the effects work on their own in home games.",
       "rarity": {
         "common": "Common",
         "rare": "Rare",

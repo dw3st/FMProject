@@ -5084,7 +5084,7 @@
         "pinstripe": "Risca de giz",
         "chevron": "Setas"
       },
-      "moreInShop": "Mais desenhos na loja: Seu técnico, aba Bens."
+      "moreInShop": "Mais desenhos na loja abaixo."
     },
     "tabs": {
       "list": "Conquistas",
@@ -5095,7 +5095,8 @@
       "bets": "Apostas",
       "players": "Jogadores",
       "legends": "Lendas do clube",
-      "belongings": "Bens"
+      "belongings": "Bens",
+      "stadium": "Estádio"
     },
     "loading": "Carregando conquistas…",
     "loadFailed": "Não foi possível carregar as conquistas.",
@@ -5666,7 +5667,7 @@
     "hub": "Seu técnico",
     "decorShop": {
       "title": "Enfeites do estádio",
-      "note": "Comprados com o seu dinheiro. Ficam com você de clube em clube e contam para a sua fama. Escolha o desenho na aba Perfil; os efeitos valem sozinhos nos jogos em casa.",
+      "note": "Comprados com o seu dinheiro. Ficam com você de clube em clube e contam para a sua fama. O desenho se escolhe acima; os efeitos valem sozinhos nos jogos em casa.",
       "rarity": {
         "common": "Comum",
         "rare": "Raro",

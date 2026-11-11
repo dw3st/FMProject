@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatFee } from "@/Domain/money";
 import { DECOR_ITEMS, DECOR_ITEM_IDS, type DecorItemId } from "@/Domain/achievements/decorShop";
@@ -8,6 +8,8 @@ import type { BannerPattern, MosaicPattern } from "@/types/achievementTypes";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
+import { managerWallet } from "@/Domain/managers/assets";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] m-0";
 const RARITY_CLASS = { common: "text-muted-foreground", rare: "text-chart-2", legendary: "text-star-gold" } as const;
@@ -123,4 +125,19 @@ export function DecorShop({ saveId, owned, wallet, clubColor, onBought }: {
       </div>
     </div>
   );
+}
+
+/** The shop with the manager's wallet (bets included, the same the purchase route checks). */
+export function DecorShopSection({ owned, onBought }: { owned: readonly string[]; onBought: () => Promise<void> | void }) {
+  const { session, save } = useGameSave();
+  const [betWallet, setBetWallet] = useState<number | null>(null);
+  useEffect(() => {
+    if (!session?.saveId) return;
+    fetch(`/api/saves/${session.saveId}/bets?summary=1`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v: { wallet: number } | null) => setBetWallet(v?.wallet ?? null))
+      .catch(() => setBetWallet(null));
+  }, [session?.saveId, save?.managerSpent]);
+  const wallet = betWallet ?? managerWallet(save?.managerEarnings ?? 0, save?.managerSpent);
+  return <DecorShop saveId={session?.saveId} owned={owned} wallet={wallet} clubColor={session?.clubColors?.[0] ?? "#2d6cdf"} onBought={onBought} />;
 }

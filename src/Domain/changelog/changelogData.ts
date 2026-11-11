@@ -27,6 +27,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.1.1",
+    date: "2026-11-11",
+    time: "12:01",
+    items: [],
+    fixes: [
+      {
+        pt: "Os enfeites do estádio ganharam uma aba própria, Estádio, com a escolha do mosaico e da faixa e a loja juntas; saíram de Bens e do Perfil.",
+        en: "The stadium decorations got their own tab, Stadium, with the mosaic and banner choice and the shop together; they left Belongings and Profile.",
+      },
+    ],
+  },
+  {
     version: "9.1",
     date: "2026-11-11",
     time: "11:47",

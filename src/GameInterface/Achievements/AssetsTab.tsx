@@ -7,7 +7,6 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
-import { DecorShop } from "@/GameInterface/Achievements/DecorShop";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0";
 const ICON: Record<AssetKind, IconName> = {
@@ -143,14 +142,6 @@ export function AssetsTab() {
           );
         })}
       </div>
-
-      <DecorShop
-        saveId={session?.saveId}
-        owned={save?.managerDecor ?? []}
-        wallet={wallet}
-        clubColor={session?.clubColors?.[0] ?? "#2d6cdf"}
-        onBought={() => refresh({ background: true })}
-      />
     </div>
   );
 }
