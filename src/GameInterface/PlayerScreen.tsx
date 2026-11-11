@@ -18,6 +18,7 @@ import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal
 import { TerminateButton } from "@/GameInterface/Contracts/TerminateButton";
 import { Icon } from "@/GameInterface/Icons";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
+import { StandingPanel } from "@/GameInterface/Components/StandingPanel";
 import { YouthSeasonLine } from "@/GameInterface/Components/YouthSeasonLine";
 import { NationalCareerLine } from "@/GameInterface/National/NationalCareerLine";
 import { PlayerAwards } from "@/GameInterface/Awards/PlayerAwards";
@@ -251,6 +252,7 @@ export function PlayerScreen({
           <PlayerKnowledgePanel saveId={session.saveId} playerId={player.id} squadId={squadId} />
         )}
 
+        <StandingPanel player={player} />
         <PersonalityPanel player={player} />
         {isOwnPlayer && !player.loan && session && <MentoringPanel key={player.id} saveId={session.saveId} player={player} />}
 

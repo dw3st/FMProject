@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.2",
+    date: "2026-11-11",
+    time: "14:49",
+    items: [
+      {
+        pt: "Prestígio do jogador: três barras de 0 a 10 na ficha, com a torcida (notas, gols e tempo no clube), no clube (papel no elenco, ídolos e lendas) e no mundo (ranking e prêmios). Mudam toda segunda e mexem até 15% no valor de mercado.",
+        en: "Player standing: three 0–10 bars on the player page, with the fans (ratings, goals and time at the club), at the club (squad role, idols and legends) and in the world (ranking and awards). They change every Monday and move market value by up to 15%.",
+      },
+    ],
+  },
+  {
     version: "9.1.2",
     date: "2026-11-11",
     time: "12:06",
@@ -5671,7 +5682,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Barras de status do jogador com a torcida, no clube e no mundo", en: "Player status bars with the fans, at the club and in the world" },
   { pt: "Cursos e idiomas para o técnico, e propostas pelo país e pelo idioma", en: "Courses and languages for the manager, and job offers by country and language" },
   { pt: "Troca de jogadores com compensação em dinheiro", en: "Player swaps with a cash adjustment" },
   { pt: "Amistoso com um amigo de outra liga", en: "Friendlies against a friend from another league" },

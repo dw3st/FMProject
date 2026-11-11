@@ -7092,5 +7092,20 @@
     },
     "legendary_one": "1 legendary belonging",
     "legendary_other": "{{count}} legendary belongings"
+  },
+  "standing": {
+    "title": "Standing",
+    "value": "{{pct}} to market value",
+    "valueNeutral": "No effect on market value",
+    "bar": {
+      "fans": "Fans",
+      "club": "Club",
+      "world": "World"
+    },
+    "hint": {
+      "fans": "Ratings, goals and assists, and time at the club. Updated every Monday.",
+      "club": "Role in the squad; club idols and legends sit at the top. Updated every Monday.",
+      "world": "World ranking and recent awards. Updated every Monday."
+    }
   }
 }

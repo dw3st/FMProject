@@ -28,6 +28,13 @@ interface PlayerProfile {
   archetype: string;
 }
 
+/** Standing bars of a player, each 0..10 (`.claude/rules/game/standing.md`). */
+export interface PlayerStanding {
+  fans:  number;
+  club:  number;
+  world: number;
+}
+
 export interface PlayerSeasonLog {
   appearances: number;
   goals:       number;
@@ -193,6 +200,11 @@ export interface RosterPlayer {
    * of his league. Never read by the engine.
    */
   awardBoost?: { season: string; league: string; mult: number };
+  /**
+   * Standing bars 0..10 (with the fans, at the club, in the world), written every Monday
+   * (`.claude/rules/game/standing.md`). They move the market value; absent = neutral.
+   */
+  standing?: PlayerStanding;
   /** Best level of his career, updated at each rollover of his club (`withPeakLevel`). */
   peakLevel?: number;
   /**

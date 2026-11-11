@@ -110,6 +110,7 @@ import { computeSeatedMatchLineups, type HumanMatchSide } from "@/Domain/advance
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { earlyRenewalDue, earlyRenewals } from "@/Domain/contracts/earlyRenewal";
 import { dailyMarketTick, humanBidsTick, initMarketState, squadsAfterTick } from "@/Domain/transfer/marketRotation";
+import { withStandings, worldRanks } from "@/Domain/standing/standing";
 import { splitMarket } from "@/Domain/market/seatMarket";
 import { pruneTalks } from "@/Domain/negotiation/negotiation";
 import type { MarketState } from "@/types/transferMarketTypes";
@@ -1598,7 +1599,12 @@ export async function advanceOneDay(
       const preContracted = new Set<string>();
       for (const ds of daySeats) for (const p of (await saveService.getMarket(saveId, ds.seatId))?.preContracts ?? []) preContracted.add(p.playerId);
       const allSquadsMarket: Squad[] = [];
-      for (const squad of await saveService.getAllSquads(saveId)) {
+      const squadsToday = await saveService.getAllSquads(saveId);
+      // Monday: the standing bars of every player (`.claude/rules/game/standing.md`), before the market reads values.
+      const standingRanks = new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1 ? worldRanks(squadsToday) : null;
+      for (const read of squadsToday) {
+        const squad = standingRanks ? withStandings(read, standingRanks) : read;
+        if (squad !== read) await saveService.saveSquadById(saveId, squad);
         if (humanClubs.has(squad.id) || !earlyRenewalDue(squad.id, currentDate)) { allSquadsMarket.push(squad); continue; }
         const early = earlyRenewals(squad, currentDate, preContracted);
         if (early.renewed.length > 0) await saveService.saveSquadById(saveId, early.squad);

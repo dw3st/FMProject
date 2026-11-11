@@ -7092,5 +7092,20 @@
     },
     "legendary_one": "1 bem lendário",
     "legendary_other": "{{count}} bens lendários"
+  },
+  "standing": {
+    "title": "Prestígio",
+    "value": "{{pct}} no valor de mercado",
+    "valueNeutral": "Não mexe no valor de mercado",
+    "bar": {
+      "fans": "Torcida",
+      "club": "Clube",
+      "world": "Mundo"
+    },
+    "hint": {
+      "fans": "Notas, gols e assistências e tempo no clube. Atualizado toda segunda.",
+      "club": "Papel no elenco; ídolos e lendas do clube ficam no alto. Atualizado toda segunda.",
+      "world": "Posição no ranking mundial e prêmios recentes. Atualizado toda segunda."
+    }
   }
 }
