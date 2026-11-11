@@ -3,6 +3,7 @@
  * webp when its id is in the art index the server announced (`GET /api/art/faces`), otherwise at the SVG face as
  * before. Pure module state, set once per page by `loadPaintedFaces`; nothing breaks without it.
  */
+import { personCombo } from "@/Domain/art/personCombo";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { seedFrom } from "@/Domain/rng";
 
@@ -145,6 +146,15 @@ export function coachCombo(face: ManagerFace): string | null {
   return `${face.skin}-${face.hairColor}-${face.hairLength}-${face.beard}-${face.glasses ? "g" : "n"}`;
 }
 
+/** The painted combination of an avatar with traits left to chance: those drawn from its seed, the chosen ones kept. */
+export function completedCoachCombo(face: ManagerFace, nationality?: string | null): string {
+  const [skin, hair, length, beard, glasses] = personCombo(`avatar:${face.seed}`, nationality, 40).split("-");
+  return [
+    face.skin ?? skin, face.hairColor ?? hair, face.hairLength ?? length, face.beard ?? beard,
+    face.glasses === undefined ? glasses : face.glasses ? "g" : "n",
+  ].join("-");
+}
+
 /** Painted coach face standing for a person the game only draws (AI manager, staff, generated referee), or null. */
 export function paintedPersonFace(combo: string): string | null {
   return painted.coaches.has(combo) ? artUrl(`faces/coaches/${combo}.webp`) : null;
@@ -168,8 +178,9 @@ export function paintedPlayerStandIn(playerId: string, skin: number): string | n
 }
 
 /** Painted webp of the human manager's avatar, or null. */
-export function paintedCoachFace(face: ManagerFace): string | null {
-  const combo = coachCombo(face);
+export function paintedCoachFace(face: ManagerFace, nationality?: string | null): string | null {
+  // A trait left "Sorteado" is drawn from the avatar's seed (9.6.3): every avatar has a painted face.
+  const combo = coachCombo(face) ?? completedCoachCombo(face, nationality);
   return combo && painted.coaches.has(combo) ? artUrl(`faces/coaches/${combo}.webp`) : null;
 }
 

@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
@@ -22,7 +23,7 @@ function FriendCard({ row }: { row: RivalRow }) {
         <ClubLogo logoUrl={squadLogoUrl(row.clubId)} primaryColor={row.clubColors[0]} secondaryColor={row.clubColors[1]} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-foreground truncate">{row.nickname ?? row.managerName}</div>
-          <div className="text-sm text-muted-foreground truncate">{row.clubName}</div>
+          <div className="text-sm text-muted-foreground truncate"><ClubLink id={row.clubId} league={row.leagueSlug}>{row.clubName}</ClubLink></div>
         </div>
         {betSlug && <Button className="h-9 shrink-0" onClick={() => openFriendBets(betSlug)}>{t("rivals.comps.bet")}</Button>}
       </div>
@@ -35,7 +36,7 @@ function FriendCard({ row }: { row: RivalRow }) {
               return (
                 <li key={r.squadId} className={`flex items-center gap-3 px-2 py-1 rounded ${his ? "bg-primary/10" : ""}`}>
                   <span className="w-6 text-sm font-bold text-muted-foreground text-center tabular-nums">{r.position}</span>
-                  <span className={`flex-1 min-w-0 truncate font-semibold ${his ? "text-primary" : "text-foreground"}`}>{r.name}</span>
+                  <span className={`flex-1 min-w-0 truncate font-semibold ${his ? "text-primary" : "text-foreground"}`}><ClubLink id={r.squadId} league={row.leagueSlug}>{r.name}</ClubLink></span>
                   <span className="font-black font-display text-primary tabular-nums">{r.points}</span>
                 </li>
               );

@@ -1,3 +1,4 @@
+import { ClubLink, ScoreLineLinks } from "@/GameInterface/Components/EntityLinks";
 import { followLinkOnly } from "@/GameInterface/router/navigation";
 import { managerHref } from "@/GameInterface/ManagerScreen";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
@@ -12,7 +13,6 @@ import { RivalForm } from "@/GameInterface/World/RivalForm";
 import { liveText } from "@/GameInterface/World/liveText";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
-import { scoreLineOf } from "@/Domain/rivals/results";
 import type { RivalRow } from "@/types/rivalsTypes";
 
 /** One row per friend (rivals, multiplayer part 6); a click opens the friend's results. */
@@ -60,11 +60,11 @@ export function RivalsTable({ rows, onSelect, selected }: { rows: RivalRow[]; on
             </span>
           </NameCell>
           <CrestCell squadId={r.clubId || null} />
-          <ClubCell>{[r.clubId ? r.clubName : t("world.members.unemployed"), rivalNation(r.nationalTeam, i18n.language, t)].filter(Boolean).join(" · ")}</ClubCell>
+          <ClubCell>{r.clubId ? <ClubLink id={r.clubId} league={r.leagueSlug}>{r.clubName}</ClubLink> : t("world.members.unemployed")}{r.nationalTeam ? ` · ${rivalNation(r.nationalTeam, i18n.language, t)}` : ""}</ClubCell>
           <NumberCell>{r.leaguePosition ? t("rivals.positionValue", { position: r.leaguePosition }) : "—"}</NumberCell>
           <StatsCell><RivalForm form={r.form} /></StatsCell>
           <StatsCell>
-            <span className="text-sm tabular-nums">{r.last ? scoreLineOf(r.last) : "—"}</span>
+            <span className="text-sm tabular-nums">{r.last ? <ScoreLineLinks r={r.last} /> : "—"}</span>
           </StatsCell>
           <StatsCell>
             <span className="text-sm tabular-nums">

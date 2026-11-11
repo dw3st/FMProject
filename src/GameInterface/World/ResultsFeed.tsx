@@ -1,3 +1,4 @@
+import { ScoreLineLinks } from "@/GameInterface/Components/EntityLinks";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
@@ -10,7 +11,7 @@ import { TauntActions } from "@/GameInterface/World/TauntActions";
 import { FriendBetItem } from "@/GameInterface/World/FriendBetItem";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { WorldApiError } from "@/GameInterface/World/worldApi";
-import { penaltiesInLineOrder, scoreLineOf } from "@/Domain/rivals/results";
+import { penaltiesInLineOrder } from "@/Domain/rivals/results";
 import type { FeedBet, RivalRow, SeatResult } from "@/types/rivalsTypes";
 
 /** The league's results by day, filtered by friend, each with the banter actions (multiplayer part 6). */
@@ -83,7 +84,7 @@ export function ResultsFeed({ saveId, mySeatId, rows, seat, onSeat, version }: {
                 <span className="flex flex-col min-w-0 flex-1">
                   <span className="font-semibold text-foreground truncate">{r.nickname}</span>
                   <span className="text-sm tabular-nums text-foreground">
-                    {scoreLineOf(r)}
+                    <ScoreLineLinks r={r} />
                     {penaltiesInLineOrder(r) && <span className="text-muted-foreground"> · {t("rivals.pens", penaltiesInLineOrder(r)!)}</span>}
                   </span>
                 </span>

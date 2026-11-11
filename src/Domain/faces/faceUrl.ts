@@ -99,7 +99,7 @@ export function managerAvatarUrl(
   nationality?: string | null,
   clubColors?: readonly string[],
 ): string {
-  const painted = paintedCoachFace(face);
+  const painted = paintedCoachFace(face, nationality);
   if (painted) return painted;
   const params = managerFaceQuery(face);
   params.set("v", String(PERSON_FACE_VERSION));

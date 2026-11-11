@@ -27,6 +27,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.6.3",
+    date: "2026-11-11",
+    time: "20:50",
+    items: [],
+    fixes: [
+      { pt: "Liga de amigos e cartão Rivais: os nomes dos clubes (e os placares) abrem a página do clube, e o nome do amigo abre o perfil dele.", en: "Friends' league and Rivals card: club names (and scores) open the club page, and a friend's name opens his profile." },
+      { pt: "Rosto do técnico: um avatar com traços sorteados também ganha o rosto pintado.", en: "Manager face: an avatar with traits left to chance also gets the painted face." },
+    ],
+  },
+  {
     version: "9.6.2",
     date: "2026-11-11",
     time: "20:20",

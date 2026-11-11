@@ -1,3 +1,5 @@
+import { seatManagerId } from "@/Domain/seats/seats";
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { managerHref } from "@/GameInterface/ManagerScreen";
 /**
  * Dumb cards of the dashboard home (#56). Data comes in already shaped
@@ -1078,8 +1080,8 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
               <div className="flex items-center gap-3 min-h-8">
                 <ClubLogo logoUrl={squadLogoUrl(r.clubId)} primaryColor={r.clubColors[0]} secondaryColor={r.clubColors[1]} className="w-8 h-8 shrink-0" imgClassName="w-full h-full object-contain" />
                 <span className="min-w-0 flex-1 truncate">
-                  <span className="font-semibold text-foreground">{r.nickname ?? r.managerName}</span>
-                  <span className="text-sm text-muted-foreground"> · {[r.clubName, rivalNation(r.nationalTeam, i18n.language, t)].filter(Boolean).join(" · ")}</span>
+                  <a href={managerHref(seatManagerId(r.seatId))} className="font-semibold text-foreground no-underline hover:underline">{r.nickname ?? r.managerName}</a>
+                  <span className="text-sm text-muted-foreground"> · {r.clubId && <ClubLink id={r.clubId} league={r.leagueSlug}>{r.clubName}</ClubLink>}{r.nationalTeam ? `${r.clubId ? " · " : ""}${rivalNation(r.nationalTeam, i18n.language, t)}` : ""}</span>
                 </span>
                 <span className="text-sm text-muted-foreground tabular-nums">
                   {r.leaguePosition ? t("rivals.positionValue", { position: r.leaguePosition }) : "—"}

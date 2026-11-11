@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { managerHref } from "@/GameInterface/ManagerScreen";
 import { FriendCompetitions } from "@/GameInterface/World/FriendCompetitions";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -306,7 +307,7 @@ export function WorldScreen() {
                             <div className="flex items-center gap-3 min-w-0">
                               <ClubLogo logoUrl={squadLogoUrl(m.clubId)} primaryColor={m.clubColors[0]} secondaryColor={m.clubColors[1]} className={TABLE_STYLE.crest} />
                               <div className="min-w-0">
-                                <div className="font-semibold text-foreground truncate">{m.clubName}</div>
+                                <div className="font-semibold text-foreground truncate"><ClubLink id={m.clubId} league={m.leagueSlug}>{m.clubName}</ClubLink></div>
                                 <div className="text-sm text-muted-foreground truncate">{m.leagueName}</div>
                               </div>
                             </div>

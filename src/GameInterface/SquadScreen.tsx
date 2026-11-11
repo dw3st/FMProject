@@ -69,6 +69,11 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         return r.json();
       })
       .then((data: Squad) => {
+        // A link that knows only the club id (`clubHref`, 9.6.3) lands on the club's real league.
+        if (data.leagueSlug && data.leagueSlug !== league) {
+          navigate(`/squad/${encodeURIComponent(data.leagueSlug)}/${encodeURIComponent(club)}${window.location.search}`, { replace: true });
+          return;
+        }
         setSquad(data);
         setLoading(false);
       })

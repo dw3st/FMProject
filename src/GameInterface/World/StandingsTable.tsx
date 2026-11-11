@@ -1,3 +1,4 @@
+import { ClubLink } from "@/GameInterface/Components/EntityLinks";
 import { followLinkOnly } from "@/GameInterface/router/navigation";
 import { managerHref } from "@/GameInterface/ManagerScreen";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
@@ -82,7 +83,7 @@ export function StandingsTable({ view, mySeatId }: { view: StandingsView; mySeat
                 </span>
               </NameCell>
               <CrestCell squadId={e.clubId || null} />
-              <ClubCell>{e.clubId ? e.clubName : t("world.members.unemployed")}</ClubCell>
+              <ClubCell>{e.clubId ? <ClubLink id={e.clubId}>{e.clubName}</ClubLink> : t("world.members.unemployed")}</ClubCell>
               <NumberCell>
                 {e.partial ? (
                   <span className="inline-flex items-center gap-1.5">
