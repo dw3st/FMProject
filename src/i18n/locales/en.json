@@ -7180,7 +7180,8 @@
       "invalidCourse": "Invalid course.",
       "generic": "The course could not start."
     },
-    "oneAtATime": "One course at a time: {{course}} ends on {{date}}."
+    "oneAtATime": "One course at a time: {{course}} ends on {{date}}.",
+    "progress": "{{pct}}% done"
   },
   "seatFriendly": {
     "invite": "Set up a friendly",

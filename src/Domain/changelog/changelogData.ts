@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.6.2",
+    date: "2026-11-11",
+    time: "20:20",
+    items: [],
+    fixes: [
+      { pt: "Cursos: o curso em andamento mostra quanto já foi feito, em porcentagem e numa barra.", en: "Courses: the course in progress shows how much is done, as a percentage and a bar." },
+    ],
+  },
+  {
     version: "9.6.1",
     date: "2026-11-11",
     time: "20:05",

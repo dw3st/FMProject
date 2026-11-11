@@ -7180,7 +7180,8 @@
       "invalidCourse": "Curso inválido.",
       "generic": "Não foi possível começar o curso."
     },
-    "oneAtATime": "Um curso por vez: {{course}} termina em {{date}}."
+    "oneAtATime": "Um curso por vez: {{course}} termina em {{date}}.",
+    "progress": "{{pct}}% concluído"
   },
   "seatFriendly": {
     "invite": "Marcar amistoso",

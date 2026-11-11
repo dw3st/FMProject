@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { daysBetween } from "@/Domain/dates";
 import { formatFee } from "@/Domain/money";
 import { managerWallet } from "@/Domain/managers/assets";
 import {
@@ -54,6 +55,10 @@ export function CoursesTab() {
     [leagues, i18n.language, [...spoken].join("|")],
   );
   const course = settled.course;
+  // How far the course in progress is (tester report, 9.6.2).
+  const progress = course && date
+    ? Math.max(0, Math.min(100, Math.round((daysBetween(course.started, date) / Math.max(1, daysBetween(course.started, course.until))) * 100)))
+    : 0;
 
   async function buy(kind: CourseKind, language?: string) {
     setBusy(true);
@@ -96,6 +101,14 @@ export function CoursesTab() {
           <p className="text-sm font-semibold text-foreground m-0 mt-2">
             {course ? t("courses.until", { course: courseLabel(course.kind, course.language), date: formatGameDate(course.until, i18n.language) }) : t("courses.none")}
           </p>
+          {course && (
+            <div className="flex items-center gap-3 mt-2" title={t("courses.progress", { pct: progress })}>
+              <div className="h-1.5 flex-1 min-w-16 rounded bg-border overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+              </div>
+              <span className="text-sm font-semibold tabular-nums text-primary">{progress}%</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -109,6 +122,7 @@ export function CoursesTab() {
         {course && (
           <p className="text-sm text-chart-4 tabular-nums m-0">
             {t("courses.oneAtATime", { course: courseLabel(course.kind, course.language), date: formatGameDate(course.until, i18n.language) })}
+            {" · "}{t("courses.progress", { pct: progress })}
           </p>
         )}
         {/* Equal columns, so the rows line up (tester report, 9.6.1); a course in progress still lets him pick. */}
