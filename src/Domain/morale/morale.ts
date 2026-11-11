@@ -12,6 +12,8 @@ import { MORALE } from "@/Domain/morale/moraleConfig";
 import { AWARDS } from "@/Domain/awards/awardsConfig";
 import type { AwardKind } from "@/types/awardTypes";
 import { clamp } from "@/Domain/math";
+import { mulberry32, seedFrom } from "@/Domain/rng";
+import { personalityOf, traitT } from "@/Domain/personality/personality";
 import { addDays, daysBetween } from "@/Domain/dates";
 import { overallAvg } from "@/Domain/playerRating";
 import { getMainRole, type MainRole } from "@/Domain/roles";
@@ -295,6 +297,8 @@ export interface MoraleDayOutput {
   listRequested: string[];
   /** Players whose request was withdrawn (taken off the list if they were only there by request). */
   unlistRequested: string[];
+  /** Challenges met today (10.0): the bonus to pay from the club's balance. */
+  bonuses: { playerId: string; playerName: string; amount: number }[];
 }
 
 function pushTrend(log: PlayerMoraleLog, v: number): PlayerMoraleLog {
@@ -361,6 +365,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     news.push({ date, kind: "promise_broken", playerId: pr.playerId, playerName: pr.playerName, promiseKind: pr.kind });
     requestTransfer(pr.playerId);
   };
+  const bonuses: MoraleDayOutput["bonuses"] = [];
   const keepPromise = (pr: PlayerPromise) => {
     delta(pr.playerId, MORALE.PROMISE_KEPT);
     news.push({ date, kind: "promise_kept", playerId: pr.playerId, playerName: pr.playerName, promiseKind: pr.kind });
@@ -392,9 +397,24 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
       };
       set({ ...withEventDelta(p, d), moraleLog: nextLog });
     }
-    // Minutes promises: count the match, resolve as soon as decided.
+    // Minutes promises: count the match, resolve as soon as decided. Challenges (10.0): only the matches he plays.
     const next: PlayerPromise[] = [];
     for (const pr of state.promises) {
+      if (pr.kind === "challenge" && players.has(pr.playerId)) {
+        if ((m.minutes[pr.playerId] ?? 0) === 0) { next.push(pr); continue; }
+        const matches = (pr.matches ?? 0) + 1;
+        const ratingSum = (pr.ratingSum ?? 0) + (m.ratings[pr.playerId] ?? 0);
+        if (matches < MORALE.CHALLENGE_MATCHES) { next.push({ ...pr, matches, ratingSum }); continue; }
+        if (ratingSum / matches >= MORALE.CHALLENGE_RATING) {
+          delta(pr.playerId, MORALE.CHALLENGE_KEPT);
+          news.push({ date, kind: "promise_kept", playerId: pr.playerId, playerName: pr.playerName, promiseKind: "challenge" });
+          if ((pr.bonus ?? 0) > 0) bonuses.push({ playerId: pr.playerId, playerName: pr.playerName, amount: pr.bonus! });
+        } else {
+          delta(pr.playerId, MORALE.CHALLENGE_FAILED);
+          news.push({ date, kind: "promise_broken", playerId: pr.playerId, playerName: pr.playerName, promiseKind: "challenge" });
+        }
+        continue;
+      }
       if (pr.kind !== "minutes" || !players.has(pr.playerId)) { next.push(pr); continue; }
       if (unavailable.has(pr.playerId) && (m.minutes[pr.playerId] ?? 0) === 0) { next.push(pr); continue; }
       const matches = (pr.matches ?? 0) + 1;
@@ -424,6 +444,12 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     // A sale promise is kept by his leaving; any promise of a player gone simply ends.
     if (!players.has(pr.playerId)) continue;
     if ((pr.kind === "sale" || pr.kind === "renewal") && pr.until && pr.until < date) { breakPromise(pr); continue; }
+    // A challenge not finished in time: no bonus, a small disappointment, no transfer request.
+    if (pr.kind === "challenge" && pr.until && pr.until < date) {
+      delta(pr.playerId, MORALE.CHALLENGE_FAILED);
+      news.push({ date, kind: "promise_broken", playerId: pr.playerId, playerName: pr.playerName, promiseKind: "challenge" });
+      continue;
+    }
     promises.push(pr);
   }
   state = { ...state, talks, promises };
@@ -508,6 +534,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     news,
     listRequested,
     unlistRequested,
+    bonuses,
   };
 }
 
@@ -532,11 +559,11 @@ export function talkReasonOf(p: RosterPlayer, status: SquadStatus, date: string,
 /** Answers a talk with this reason accepts (no reason = a free talk). */
 export function answersFor(reason: TalkReason | null): TalkAnswer[] {
   switch (reason) {
-    case "minutes": return ["promise_minutes", "promise_sale", "praise", "refuse"];
-    case "contract": return ["promise_renewal", "praise", "refuse"];
-    case "wants_move": return ["promise_sale", "praise", "refuse"];
-    case "chance": return ["promise_minutes", "praise", "refuse"];
-    default: return ["praise", "demand"];
+    case "minutes": return ["promise_minutes", "promise_sale", "praise", "confront", "challenge", "refuse"];
+    case "contract": return ["promise_renewal", "praise", "confront", "refuse"];
+    case "wants_move": return ["promise_sale", "praise", "confront", "refuse"];
+    case "chance": return ["promise_minutes", "praise", "challenge", "refuse"];
+    default: return ["praise", "demand", "confront", "challenge"];
   }
 }
 
@@ -549,8 +576,10 @@ export interface TalkResult {
   /** praise/demand inside the once-a-month window: no effect. */
   noEffect?: true;
   promise?: PlayerPromise;
-  /** promise_sale: put him on the sell list as requested. */
+  /** promise_sale / a bad confront: put him on the sell list as requested. */
   listRequested?: true;
+  /** A bad confront with a furious hothead (10.0): he breaks his contract and leaves as a free agent. */
+  broke?: true;
 }
 
 /**
@@ -580,6 +609,7 @@ export function answerTalk(args: {
   let noEffect = false;
   let promise: PlayerPromise | undefined;
   let listRequested = false;
+  let broke = false;
   const log = logOf(player);
   let nextLog: PlayerMoraleLog = { ...log };
 
@@ -616,6 +646,32 @@ export function answerTalk(args: {
       nextLog = { ...nextLog, talkedOn: date };
       break;
     }
+    case "confront": {
+      const recent = log.talkedOn !== undefined && daysBetween(log.talkedOn, date) < MORALE.PRAISE_EVERY_DAYS;
+      if (recent) { noEffect = true; break; }
+      const traits = personalityOf(player);
+      const good = clamp(0.5 + MORALE.CONFRONT_TRAIT_WEIGHT * (traitT(traits.professionalism) - traitT(traits.temperament)), 0.1, 0.9);
+      const rng = mulberry32(seedFrom(`confront:${playerId}:${date}`));
+      nextLog = { ...nextLog, talkedOn: date };
+      if (rng() < good) { change = MORALE.CONFRONT_GOOD; break; }
+      change = MORALE.CONFRONT_BAD;
+      listRequested = true;
+      nextLog = { ...nextLog, transferRequest: nextLog.transferRequest ?? date };
+      if (traits.temperament >= MORALE.BREAK_TEMPERAMENT && moraleBand(moraleOf(player)) === "furious" && rng() < MORALE.BREAK_CHANCE) broke = true;
+      break;
+    }
+    case "challenge": {
+      const recent = log.talkedOn !== undefined && daysBetween(log.talkedOn, date) < MORALE.PRAISE_EVERY_DAYS;
+      if (recent) { noEffect = true; break; }
+      promise = {
+        id: args.newId(), playerId, playerName: player.name, kind: "challenge", madeOn: date,
+        until: addDays(date, MORALE.CHALLENGE_DAYS), matches: 0, ratingSum: 0,
+        bonus: Math.round((player.contract?.wage ?? 0) * MORALE.CHALLENGE_BONUS_WEEKS),
+      };
+      change = MORALE.CHALLENGE_NOW;
+      nextLog = { ...nextLog, talkedOn: date };
+      break;
+    }
     case "refuse":
       change = talk?.reason === "contract" ? MORALE.RENEWAL_REFUSED : MORALE.REFUSE;
       break;
@@ -636,6 +692,7 @@ export function answerTalk(args: {
     ...(noEffect ? { noEffect: true as const } : {}),
     ...(promise ? { promise } : {}),
     ...(listRequested ? { listRequested: true as const } : {}),
+    ...(broke ? { broke: true as const } : {}),
   };
 }
 

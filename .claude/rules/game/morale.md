@@ -255,3 +255,10 @@ Report do usuário, opção A do mock. Na tabela do próprio elenco (`SquadRoste
 ## Já conversou (8.7.11)
 
 Pedido do usuário. Sem pedido aberto e com `moraleLog.talkedOn` a menos de `PRAISE_EVERY_DAYS` (30) dias, o botão de conversa do Elenco vira um ícone apagado com um visto, sem clique, com a data da conversa e a da próxima no `title`.
+
+## Conversas mais duras (10.0)
+
+Report do usuário, regra aprovada por ele. Duas respostas novas, uma vez a cada 30 dias por jogador (a mesma janela de elogiar e cobrar, `talkedOn`), oferecidas sem pedido e na maioria dos pedidos (`answersFor`); constantes em `MORALE.CONFRONT_*`, `BREAK_*`, `CHALLENGE_*`.
+
+- **Dar uma dura (`confront`):** chance de reagir bem = 0,5 + 0,35 × (t profissionalismo − t temperamento), entre 0,1 e 0,9, sorteada por jogador e dia. Bem: +10. Mal: −12 e pedido de transferência (vai à lista de venda como pedido). Um cabeça quente (temperamento 15 ou mais) já revoltado, quando reage mal, rompe o contrato com 10% de chance: sai livre pela mesma rotina da rescisão amigável, sem multa (`releaseToFreePool`, `src/backend/playerRelease.ts`), com a mensagem de contrato.
+- **Desafio com prêmio (`challenge`):** +4 agora e uma promessa `challenge` com o bônus de 4 semanas de salário (`PlayerPromise.bonus`). Contam só os jogos em que ele entra; depois de 5, nota média 7 ou mais paga o bônus (linha `wages` com `ref.stage = "bonus"`, `playerBonus`) e dá +6, abaixo dá −3 sem pedido de transferência. Sem os 5 jogos em 60 dias, −3.

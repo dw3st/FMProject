@@ -27,6 +27,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.0",
+    date: "2026-11-11",
+    time: "18:22",
+    items: [
+      { pt: "Conversas com jogadores: duas respostas novas. \"Dar uma dura\" pode subir muito a moral de um profissional ou fazer um cabeça quente explodir, e um já revoltado pode até romper o contrato e sair livre. \"Desafio com prêmio\" promete um bônus se ele jogar bem nos próximos 5 jogos.", en: "Player talks: two new answers. \"Give him a rocket\" can lift a professional's morale a lot or make a hothead blow up, and one already furious may even break his contract and leave for free. \"Challenge with a bonus\" promises a bonus if he plays well in the next 5 matches." },
+    ],
+  },
+  {
     version: "9.9",
     date: "2026-11-11",
     time: "18:07",
@@ -5815,7 +5823,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Conversas com jogadores: mais respostas, inclusive mais duras", en: "Player talks: more answers, tougher ones included" },
   { pt: "Celular: jogo em tela cheia, instalável como app", en: "Phone: full-screen game, installable as an app" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

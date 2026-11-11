@@ -12,7 +12,9 @@ export function PromiseLine({ promise, showName = true }: { promise: PlayerPromi
         target: promise.target ?? 1, played: promise.played ?? 0,
         left: MORALE.WINDOW - (promise.matches ?? 0),
       })
-    : t(`morale.promise.${promise.kind}`, { date: formatDay(promise.until ?? "", i18n.language) });
+    : promise.kind === "challenge"
+      ? t("morale.promise.challenge", { rating: MORALE.CHALLENGE_RATING, played: promise.matches ?? 0, total: MORALE.CHALLENGE_MATCHES, date: formatDay(promise.until ?? "", i18n.language) })
+      : t(`morale.promise.${promise.kind}`, { date: formatDay(promise.until ?? "", i18n.language) });
   return (
     <span className="inline-flex items-center gap-2 text-sm text-foreground">
       <Icon name="handshake" size={16} className="text-chart-4 shrink-0" />

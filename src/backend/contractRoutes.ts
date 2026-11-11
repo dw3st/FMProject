@@ -1,4 +1,5 @@
 import { managerDemandCtx } from "@/backend/managerDemand";
+import { releaseToFreePool } from "@/backend/playerRelease";
 import { arriving } from "@/Domain/settling/settling";
 import { releaseClause } from "@/Domain/negotiation/releaseClause";
 import { saveService } from "@/backend/SaveService";
@@ -13,11 +14,9 @@ import { loadViewer, viewFor } from "@/backend/scoutingWorld";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
-import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal, stripPlayerMorale } from "@/Domain/morale/morale";
+import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal } from "@/Domain/morale/morale";
 import { terminationBreaksDepth, terminationQuote } from "@/Domain/contracts/termination";
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
-import { toFreeAgent } from "@/Domain/contracts/freeAgents";
-import { dropFromLineup, marketWithoutPlayer } from "@/backend/negotiationWorld";
 import { ledgerSeason } from "@/backend/staffRoutes";
 import { freeSigningContext } from "@/backend/freeSigningWorld";
 import { prestigeOf } from "@/backend/rivalWorld";
@@ -25,7 +24,6 @@ import { preferredRival } from "@/Domain/negotiation/freeSigning";
 import { starterChance } from "@/Domain/negotiation/rivals";
 import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { recordMoney } from "@/backend/FinancialService";
-import { closeOffersForPlayer } from "@/backend/seatOfferWorld";
 
 /** The last club of a free agent (his latest history row), for the smaller-club rule (`personality.md`). */
 async function lastClubOf(saveId: string, player: RosterPlayer): Promise<Squad | null> {
@@ -90,12 +88,7 @@ export const contractRoutes = {
           date, kind: "wages", amount: -quote.fee, label: `Contract termination: ${player.name}`, ref: { stage: "termination" },
         }, auth.seatId);
       }
-      const free = await saveService.getFreeAgents(saveId);
-      await saveService.writeFreeAgents(saveId, [...free.filter((f) => f.player.id !== playerId), toFreeAgent(stripPlayerMorale(player), date)]);
-      const market = await saveService.getMarket(saveId, auth.seatId);
-      if (market) await saveService.saveMarket(saveId, marketWithoutPlayer(market, playerId), auth.seatId);
-      await saveService.writeSeatOffers(saveId, await closeOffersForPlayer(saveService, saveId, await saveService.getSeatOffers(saveId), playerId, date));
-      await dropFromLineup(saveService, saveId, auth.seatId, playerId);
+      await releaseToFreePool(saveId, auth.seatId, player, date);
       await emitInboxMessage(saveId, buildContractMessage({ date, kind: "released", players: [{ id: player.id, name: player.name }] }), saveService, auth.seatId);
       return Response.json({ fee: quote.fee });
     };

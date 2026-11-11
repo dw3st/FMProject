@@ -3,6 +3,8 @@
  * `advanceDay` after the matches, training and market of the day) and the sell-list side effects of
  * a transfer request. The model itself is pure (`src/Domain/morale/morale.ts`).
  */
+import { recordMoney } from "@/backend/FinancialService";
+import { ledgerSeason } from "@/backend/staffRoutes";
 import { randomUUID } from "node:crypto";
 import type { SaveService } from "@/backend/SaveService";
 import { emptyMarket } from "@/backend/negotiationWorld";
@@ -104,6 +106,16 @@ export async function applyMoraleDay(
     newId: () => randomUUID(),
   });
   await service.saveSquadById(saveId, out.squad);
+  // Challenges met (10.0): the promised bonus leaves the club's balance.
+  if (out.bonuses.length > 0 && squad.leagueSlug) {
+    const ref = { leagueSlug: squad.leagueSlug, clubSlug: (await service.getSquadIndex(saveId)).byId(squad.id)?.stem ?? squad.id };
+    const season = await ledgerSeason(service, saveId, squad.leagueSlug, args.date);
+    for (const b of out.bonuses) {
+      await recordMoney(service, saveId, season, ref, {
+        date: args.date, kind: "wages", amount: -b.amount, label: `Bonus: ${b.playerName}`, ref: { stage: "bonus" },
+      }, seatId);
+    }
+  }
   if (market && (out.listRequested.length > 0 || out.unlistRequested.length > 0)) {
     await service.saveMarket(saveId, marketAfterRequests(market, out.listRequested, out.unlistRequested), seatId);
   } else if (!market && out.listRequested.length > 0) {

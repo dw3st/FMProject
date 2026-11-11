@@ -2978,7 +2978,8 @@
       "facilityUpgrade": "Upgrade: {{item}}",
       "boardFundingItem": "Board funding: {{item}}",
       "legendHire": "Legend back to the academy: {{player}}",
-      "signingBonus": "Signing bonus: {{player}}"
+      "signingBonus": "Signing bonus: {{player}}",
+      "playerBonus": "Challenge bonus"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -4036,7 +4037,8 @@
     "promise": {
       "minutes": "plays {{target}} of the next 5 ({{played}} so far, {{left}} matches left)",
       "sale": "sale or loan by {{date}}",
-      "renewal": "contract renewal by {{date}}"
+      "renewal": "contract renewal by {{date}}",
+      "challenge": "average rating {{rating}} over {{total}} matches ({{played}} played) by {{date}}"
     },
     "talk": {
       "title": "Talk",
@@ -4061,7 +4063,9 @@
         "onLoan": "He is on loan.",
         "noClub": "You have no club.",
         "generic": "Could not send the answer."
-      }
+      },
+      "challengeSet": "A {{bonus}} bonus if his average rating over the next {{matches}} matches is {{rating}} or more.",
+      "broke": "He did not take it: he broke his contract and left as a free agent."
     },
     "answer": {
       "promise_minutes": "Promise minutes",
@@ -4069,7 +4073,9 @@
       "promise_renewal": "Promise a renewal",
       "praise": "Praise",
       "demand": "Demand more",
-      "refuse": "Refuse"
+      "refuse": "Refuse",
+      "confront": "Give him a rocket",
+      "challenge": "Challenge with a bonus"
     },
     "answerHint": {
       "promise_minutes": "He plays the matches you promise within the next 5. Kept: +8. Broken: -15 and a transfer request.",
@@ -4077,7 +4083,9 @@
       "promise_renewal": "Opens the renewal now. Renew within 30 days or it is broken (-15).",
       "praise": "+2. Works once a month.",
       "demand": "+1 for a content player, -3 otherwise. Once a month.",
-      "refuse": "-5 (-10 on a contract talk)."
+      "refuse": "-5 (-10 on a contract talk).",
+      "confront": "Risky: a professional reacts very well (+10); a hothead may blow up (-12 and a transfer request) and, already furious, even break his contract and leave for free. Once a month.",
+      "challenge": "+4 now. If his average rating over the next 5 matches is 7 or more, he gets a bonus of 4 weeks of wages and +6. If not, -3. Once a month."
     },
     "contract": {
       "refuses": "He is furious and will not renew unless you promised him a renewal.",
@@ -4100,12 +4108,14 @@
       "promise_kept": {
         "minutes": "You gave {{player}} the matches you promised. He is happier.",
         "sale": "{{player}} left as promised.",
-        "renewal": "You renewed the contract of {{player}} as promised. He is happier."
+        "renewal": "You renewed the contract of {{player}} as promised. He is happier.",
+        "challenge": "{{player}} met the challenge: the bonus was paid and he is happier."
       },
       "promise_broken": {
         "minutes": "{{player}} did not get the matches you promised. He is upset and asked to leave.",
         "sale": "{{player}} is still here after the deadline you promised. He is upset and asked to leave.",
-        "renewal": "{{player}} did not get the renewal you promised. He is upset and asked to leave."
+        "renewal": "{{player}} did not get the renewal you promised. He is upset and asked to leave.",
+        "challenge": "{{player}} missed the challenge. No bonus, a little upset."
       },
       "transfer_request": "{{player}} asked for a transfer. He is on your sell list.",
       "closed": "This talk is closed."
@@ -4119,7 +4129,8 @@
     "answerTone": {
       "up": "Morale goes up",
       "mid": "Small effect",
-      "down": "Morale goes down"
+      "down": "Morale goes down",
+      "risk": "Risky"
     }
   },
   "facilities": {

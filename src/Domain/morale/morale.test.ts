@@ -314,9 +314,9 @@ describe("talks and promises", () => {
   const withTalk = (reason: "minutes" | "contract" | "wants_move" | "chance"): Squad =>
     ({ ...fullSquad(), moraleClub: { talks: [{ id: "t1", playerId: "d4", playerName: "P d4", reason, date: "2027-03-01", expires: "2027-03-15" }], promises: [] } });
 
-  test("answers per reason; free talk only praise/demand", () => {
+  test("answers per reason; free talk: praise, demand and the tougher ones", () => {
     expect(answersFor("contract")).toContain("promise_renewal");
-    expect(answersFor(null)).toEqual(["praise", "demand"]);
+    expect(answersFor(null)).toEqual(["praise", "demand", "confront", "challenge"]);
     const r = answerTalk({ squad: fullSquad(), playerId: "d4", answer: "refuse", date: "2027-03-02", newId });
     expect(r).toEqual({ error: "invalidAnswer" });
   });
@@ -477,5 +477,74 @@ describe("aiFormMorale (4.39)", () => {
     expect(aiFormMorale(["W", "D", "L", "W", "L"])).toBe(MORALE.NEUTRAL + 2 * (7 - 7.5));
     expect(aiFormMorale(["W", "W", "W", "W", "W"])).toBe(MORALE.AI_FORM_MAX);
     expect(aiFormMorale(["L", "L", "L", "L", "L"])).toBe(MORALE.AI_FORM_MIN);
+  });
+});
+
+describe("tougher talks (10.0)", () => {
+  const match = (result: ClubMatchSummary["result"], minutes: Record<string, number>, extra: Partial<ClubMatchSummary> = {}): ClubMatchSummary =>
+    ({ result, minutes, goals: {}, ratings: {}, ...extra });
+  const withPlayer = (extra: Partial<RosterPlayer>) => {
+    const sq = fullSquad();
+    return { ...sq, players: sq.players.map((p) => (p.id === "d4" ? { ...p, ...extra } : p)) };
+  };
+
+  test("confront: a model professional reacts well, a furious hothead blows up and may break his contract", () => {
+    const pro = answerTalk({
+      squad: withPlayer({ personality: { ambition: 10, loyalty: 10, professionalism: 20, temperament: 1 } }),
+      playerId: "d4", answer: "confront", date: "2027-03-02", newId,
+    });
+    if ("error" in pro) throw new Error(pro.error);
+    // Good-reaction chance 0.85 at these traits: over many days most go well.
+    let good = 0;
+    let broke = 0;
+    for (let i = 0; i < 200; i++) {
+      const date = `2027-${String(1 + (i % 12)).padStart(2, "0")}-${String(1 + Math.floor(i / 12)).padStart(2, "0")}`;
+      const a = answerTalk({ squad: withPlayer({ personality: { ambition: 10, loyalty: 10, professionalism: 20, temperament: 1 } }), playerId: "d4", answer: "confront", date, newId });
+      if (!("error" in a) && a.change > 0) good++;
+      const b = answerTalk({ squad: withPlayer({ morale: 10, personality: { ambition: 10, loyalty: 10, professionalism: 1, temperament: 20 } }), playerId: "d4", answer: "confront", date, newId });
+      if (!("error" in b) && b.broke) broke++;
+    }
+    expect(good).toBeGreaterThan(150);
+    expect(broke).toBeGreaterThan(0);
+    expect(broke).toBeLessThan(40);
+  });
+
+  test("confront: a calm player is never pushed out of his contract", () => {
+    for (let d = 1; d <= 28; d++) {
+      const r = answerTalk({ squad: withPlayer({ morale: 10, personality: { ambition: 10, loyalty: 10, professionalism: 1, temperament: 10 } }), playerId: "d4", answer: "confront", date: `2027-03-${String(d).padStart(2, "0")}`, newId });
+      if ("error" in r) throw new Error(r.error);
+      expect(r.broke).toBeUndefined();
+    }
+  });
+
+  test("challenge: a promise with the bonus; met over 5 played matches pays it, missed costs a little", () => {
+    const sq = withPlayer({ contract: { until: "2029-06-30", wage: 10_000 } });
+    const r = answerTalk({ squad: sq, playerId: "d4", answer: "challenge", date: "2027-03-02", newId });
+    if ("error" in r) throw new Error(r.error);
+    expect(r.change).toBe(MORALE.CHALLENGE_NOW);
+    expect(r.promise?.bonus).toBe(40_000);
+    const play = (squad: Squad, rating: number) => moraleDay({
+      squad, date: "2027-03-05", monday: false, bids: [], sellList: [], newId,
+      matches: [match("D", { d4: 90 }, { ratings: { d4: rating } })],
+    });
+    let s = r.squad;
+    let last: ReturnType<typeof moraleDay> | null = null;
+    for (let i = 0; i < 5; i++) { last = play(s, 7.4); s = last.squad; }
+    expect(last!.bonuses).toEqual([{ playerId: "d4", playerName: "P d4", amount: 40_000 }]);
+    expect(s.moraleClub?.promises.some((p) => p.kind === "challenge")).toBe(false);
+
+    let t = r.squad;
+    let miss: ReturnType<typeof moraleDay> | null = null;
+    for (let i = 0; i < 5; i++) { miss = play(t, 6.2); t = miss.squad; }
+    expect(miss!.bonuses).toEqual([]);
+    expect(miss!.news.some((n) => n.kind === "promise_broken" && n.promiseKind === "challenge")).toBe(true);
+  });
+
+  test("once a month for both", () => {
+    const r = answerTalk({ squad: fullSquad(), playerId: "d4", answer: "challenge", date: "2027-03-02", newId });
+    if ("error" in r) throw new Error(r.error);
+    const again = answerTalk({ squad: r.squad, playerId: "d4", answer: "confront", date: "2027-03-10", newId });
+    if ("error" in again) throw new Error(again.error);
+    expect(again.noEffect).toBe(true);
   });
 });

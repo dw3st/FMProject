@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { releaseToFreePool } from "@/backend/playerRelease";
+import { buildContractMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
@@ -14,7 +16,7 @@ import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
-const ANSWERS: readonly TalkAnswer[] = ["promise_minutes", "promise_sale", "promise_renewal", "praise", "demand", "refuse"];
+const ANSWERS: readonly TalkAnswer[] = ["promise_minutes", "promise_sale", "promise_renewal", "praise", "demand", "refuse", "confront", "challenge"];
 
 /** The human club, or a 409 `noClub` when the manager is unemployed (`.claude/rules/game/jobs.md`). */
 async function loadHuman(saveId: string, seatId: string): Promise<{ squad: Squad; date: string } | Response> {
@@ -102,7 +104,14 @@ export const moraleRoutes = {
       if ("error" in r) {
         return Response.json({ error: r.error }, { status: r.error === "notYourPlayer" ? 404 : 400 });
       }
-      await saveService.saveSquadById(saveId, r.squad);
+      // A bad confront with a furious hothead (10.0): he breaks his contract and leaves for free.
+      const leaving = r.broke ? r.squad.players.find((p) => p.id === playerId) : undefined;
+      await saveService.saveSquadById(saveId, leaving ? { ...r.squad, players: r.squad.players.filter((p) => p.id !== playerId) } : r.squad);
+      if (leaving) {
+        await releaseToFreePool(saveId, auth.seatId, leaving, found.date);
+        await emitInboxMessage(saveId, buildContractMessage({ date: found.date, kind: "released", players: [{ id: leaving.id, name: leaving.name }] }), saveService, auth.seatId);
+        return Response.json({ change: r.change, morale: moraleOf(leaving), broke: true });
+      }
       if (r.listRequested) {
         const market = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
         await saveService.saveMarket(saveId, marketAfterRequests(market, [playerId], []), auth.seatId);
@@ -113,6 +122,7 @@ export const moraleRoutes = {
         morale: moraleOf(player),
         ...(r.noEffect ? { noEffect: true } : {}),
         ...(r.promise ? { promise: r.promise } : {}),
+        ...(r.promise?.kind === "challenge" ? { bonus: r.promise.bonus ?? 0 } : {}),
         ...(answer === "promise_renewal" ? { openRenewal: true } : {}),
       });
     });

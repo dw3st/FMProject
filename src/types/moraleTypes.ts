@@ -15,7 +15,7 @@ export type MoraleBand = "very_happy" | "content" | "neutral" | "unhappy" | "fur
 export type TalkReason = "minutes" | "contract" | "wants_move" | "chance";
 
 /** Answers to a talk. `praise` / `demand` are also the free talks (no request). */
-export type TalkAnswer = "promise_minutes" | "promise_sale" | "promise_renewal" | "praise" | "demand" | "refuse";
+export type TalkAnswer = "promise_minutes" | "promise_sale" | "promise_renewal" | "praise" | "demand" | "refuse" | "confront" | "challenge";
 
 /** Per-player morale bookkeeping (human club only). */
 export interface PlayerMoraleLog {
@@ -55,15 +55,18 @@ export interface PlayerPromise {
   id: string;
   playerId: string;
   playerName: string;
-  kind: "minutes" | "sale" | "renewal";
+  kind: "minutes" | "sale" | "renewal" | "challenge";
   madeOn: string;
   /** minutes: play in `target` of the next `MINUTES_WINDOW` official matches. */
   target?: number;
   /** minutes: club matches counted since the promise, and how many he played. */
   matches?: number;
   played?: number;
-  /** sale / renewal: deadline (ISO). */
+  /** sale / renewal / challenge: deadline (ISO). */
   until?: string;
+  /** challenge (10.0): sum of his ratings in the matches counted, and the bonus promised (EUR). */
+  ratingSum?: number;
+  bonus?: number;
 }
 
 /** Club-level morale state of the human club (`Squad.moraleClub`). */

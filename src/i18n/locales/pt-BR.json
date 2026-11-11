@@ -2978,7 +2978,8 @@
       "facilityUpgrade": "Melhoria: {{item}}",
       "boardFundingItem": "Verba da diretoria: {{item}}",
       "legendHire": "Lenda de volta à base: {{player}}",
-      "signingBonus": "Luvas: {{player}}"
+      "signingBonus": "Luvas: {{player}}",
+      "playerBonus": "Bônus por desafio"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -4036,7 +4037,8 @@
     "promise": {
       "minutes": "joga {{target}} das próximas 5 ({{played}} até agora, faltam {{left}} jogos)",
       "sale": "venda ou empréstimo até {{date}}",
-      "renewal": "renovação até {{date}}"
+      "renewal": "renovação até {{date}}",
+      "challenge": "nota média {{rating}} em {{total}} jogos ({{played}} jogados) até {{date}}"
     },
     "talk": {
       "title": "Conversa",
@@ -4061,7 +4063,9 @@
         "onLoan": "Ele está emprestado.",
         "noClub": "Você está sem clube.",
         "generic": "Não foi possível enviar a resposta."
-      }
+      },
+      "challengeSet": "Bônus de {{bonus}} se a nota média nos próximos {{matches}} jogos for {{rating}} ou mais.",
+      "broke": "Ele não aceitou: rompeu o contrato e saiu livre."
     },
     "answer": {
       "promise_minutes": "Prometer minutos",
@@ -4069,7 +4073,9 @@
       "promise_renewal": "Prometer renovação",
       "praise": "Elogiar",
       "demand": "Cobrar",
-      "refuse": "Recusar"
+      "refuse": "Recusar",
+      "confront": "Dar uma dura",
+      "challenge": "Desafio com prêmio"
     },
     "answerHint": {
       "promise_minutes": "Ele joga os jogos prometidos dentro dos próximos 5. Cumprida: +8. Quebrada: -15 e pedido de transferência.",
@@ -4077,7 +4083,9 @@
       "promise_renewal": "Abre a renovação agora. Renove em até 30 dias ou a promessa é quebrada (-15).",
       "praise": "+2. Funciona uma vez por mês.",
       "demand": "+1 para quem está contente, -3 nos demais. Uma vez por mês.",
-      "refuse": "-5 (-10 numa conversa de contrato)."
+      "refuse": "-5 (-10 numa conversa de contrato).",
+      "confront": "Arriscado: o profissional reage muito bem (+10); o cabeça quente pode explodir (-12 e pedido de transferência) e, já revoltado, até romper o contrato e sair livre. Uma vez por mês.",
+      "challenge": "+4 agora. Se a nota média dele nos próximos 5 jogos for 7 ou mais, ganha um bônus de 4 semanas de salário e +6. Se não, -3. Uma vez por mês."
     },
     "contract": {
       "refuses": "Ele está revoltado e não renova sem uma promessa de renovação.",
@@ -4100,12 +4108,14 @@
       "promise_kept": {
         "minutes": "Você deu a {{player}} os jogos prometidos. Ele está mais feliz.",
         "sale": "{{player}} saiu como prometido.",
-        "renewal": "Você renovou com {{player}} como prometido. Ele está mais feliz."
+        "renewal": "Você renovou com {{player}} como prometido. Ele está mais feliz.",
+        "challenge": "{{player}} cumpriu o desafio: o bônus foi pago e ele está mais feliz."
       },
       "promise_broken": {
         "minutes": "{{player}} não teve os jogos prometidos. Está chateado e pediu para sair.",
         "sale": "{{player}} continua no clube depois do prazo prometido. Está chateado e pediu para sair.",
-        "renewal": "{{player}} não teve a renovação prometida. Está chateado e pediu para sair."
+        "renewal": "{{player}} não teve a renovação prometida. Está chateado e pediu para sair.",
+        "challenge": "{{player}} não cumpriu o desafio. Sem bônus, um pouco chateado."
       },
       "transfer_request": "{{player}} pediu para sair. Ele está na sua lista de venda.",
       "closed": "Esta conversa está encerrada."
@@ -4119,7 +4129,8 @@
     "answerTone": {
       "up": "A moral sobe",
       "mid": "Efeito pequeno",
-      "down": "A moral cai"
+      "down": "A moral cai",
+      "risk": "Arriscado"
     }
   },
   "facilities": {

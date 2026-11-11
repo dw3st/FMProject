@@ -8,6 +8,7 @@ import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
 import { MoraleBadge } from "@/GameInterface/Components/MoraleBadge";
 import { answersFor, moraleOf } from "@/Domain/morale/morale";
 import { MORALE } from "@/Domain/morale/moraleConfig";
+import { formatEuros } from "@/Domain/money";
 import { newVisualOn, paintedNews } from "@/Domain/art/paintedFaces";
 import type { TalkAnswer, TalkReason } from "@/types/moraleTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -16,10 +17,11 @@ import { summaryTrait } from "@/Domain/personality/personality";
 const SALE_DAYS = [30, 60, 90] as const;
 
 /** How the answer usually moves his morale, for the card's colored line. */
-const ANSWER_TONE: Record<TalkAnswer, "up" | "mid" | "down"> = {
+const ANSWER_TONE: Record<TalkAnswer, "up" | "mid" | "down" | "risk"> = {
   promise_minutes: "up", promise_sale: "up", promise_renewal: "up", praise: "mid", demand: "mid", refuse: "down",
+  confront: "risk", challenge: "up",
 };
-const TONE_CLASS = { up: "text-chart-2", mid: "text-chart-4", down: "text-destructive" } as const;
+const TONE_CLASS = { up: "text-chart-2", mid: "text-chart-4", down: "text-destructive", risk: "text-chart-5" } as const;
 
 interface Props {
   saveId: string;
@@ -51,7 +53,7 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
   const [days, setDays] = useState<number>(MORALE.SALE_PROMISE_DAYS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ change: number; noEffect?: boolean } | null>(null);
+  const [result, setResult] = useState<{ change: number; noEffect?: boolean; broke?: boolean; bonus?: number } | null>(null);
   const [sceneFailed, setSceneFailed] = useState(false);
 
   useEffect(() => {
@@ -78,12 +80,12 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
           ...(answer === "promise_sale" ? { days } : {}),
         }),
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string; change?: number; noEffect?: boolean; openRenewal?: boolean };
+      const body = (await res.json().catch(() => ({}))) as { error?: string; change?: number; noEffect?: boolean; openRenewal?: boolean; broke?: boolean; bonus?: number };
       if (!res.ok) {
         setError(t(`morale.talk.error.${body.error ?? "generic"}`, { defaultValue: t("morale.talk.error.generic") }));
         return;
       }
-      const r = { change: body.change ?? 0, ...(body.noEffect ? { noEffect: true } : {}), ...(body.openRenewal ? { openRenewal: true } : {}) };
+      const r = { change: body.change ?? 0, ...(body.noEffect ? { noEffect: true } : {}), ...(body.openRenewal ? { openRenewal: true } : {}), ...(body.broke ? { broke: true } : {}), ...(body.bonus !== undefined ? { bonus: body.bonus } : {}) };
       setResult(r);
       onDone(r);
     } finally {
@@ -125,6 +127,8 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
                 {result.noEffect
                   ? t("morale.talk.noEffect")
                   : t("morale.talk.done", { change: result.change > 0 ? `+${result.change}` : String(result.change) })}
+                {result.bonus !== undefined && !result.noEffect ? ` ${t("morale.talk.challengeSet", { bonus: formatEuros(result.bonus), matches: MORALE.CHALLENGE_MATCHES, rating: MORALE.CHALLENGE_RATING })}` : ""}
+                {result.broke ? ` ${t("morale.talk.broke")}` : ""}
               </p>
               <Button onClick={onClose}>{t("common.close")}</Button>
             </div>

@@ -76,6 +76,24 @@ export const MORALE = {
   DEMAND_GOOD: 1,
   DEMAND_BAD: -3,
   REFUSE: -5,
+  /**
+   * Tougher talks (10.0, approved by the user). "Confront": good reaction CONFRONT_GOOD, bad CONFRONT_BAD with a
+   * transfer request; a hothead (temperament >= BREAK_TEMPERAMENT) already furious may break his contract (BREAK_CHANCE).
+   * Good-reaction chance = 0.5 + CONFRONT_TRAIT_WEIGHT x (professionalism t - temperament t), in [0.1, 0.9].
+   */
+  CONFRONT_GOOD: 10,
+  CONFRONT_BAD: -12,
+  CONFRONT_TRAIT_WEIGHT: 0.35,
+  BREAK_TEMPERAMENT: 15,
+  BREAK_CHANCE: 0.1,
+  /** "Challenge": a bonus if his average rating over the next CHALLENGE_MATCHES he plays reaches CHALLENGE_RATING. */
+  CHALLENGE_NOW: 4,
+  CHALLENGE_KEPT: 6,
+  CHALLENGE_FAILED: -3,
+  CHALLENGE_MATCHES: 5,
+  CHALLENGE_RATING: 7,
+  CHALLENGE_BONUS_WEEKS: 4,
+  CHALLENGE_DAYS: 60,
   /** Weekly drift towards NEUTRAL (share of the distance). */
   DRIFT: 0.05,
 

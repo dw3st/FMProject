@@ -29,7 +29,7 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
   switch (entry.kind) {
     case "wages":
       // A friendly termination of a player's contract (tester suggestion).
-      return { key: ref?.stage === "termination" ? "playerTermination" : "wages" };
+      return { key: ref?.stage === "termination" ? "playerTermination" : ref?.stage === "bonus" ? "playerBonus" : "wages" };
     case "broadcasting":
     case "commercial":
     case "operational":

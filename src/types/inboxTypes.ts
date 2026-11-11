@@ -337,7 +337,7 @@ export interface PlayerInboxMessage extends InboxMessageBase {
   reason?: "minutes" | "contract" | "wants_move" | "chance";
   talkId?: string;
   /** promise_kept / promise_broken. */
-  promiseKind?: "minutes" | "sale" | "renewal";
+  promiseKind?: "minutes" | "sale" | "renewal" | "challenge";
   /** wants_move: the club that bid for him. */
   clubName?: string;
   /** mentality: the trait, its band now and whether the work is over. */
