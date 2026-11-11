@@ -22,6 +22,7 @@ import {
   midSeasonOfferCount, recentTitleBonus, moveHumanManager, pickOfferingClubs, seasonEndOfferCount, unemployedBand,
   unemployedOfferCount, seekingBand, seekingOfferCount, sackHumanManager, type OfferCandidate, type PrestigeBand,
 } from "@/Domain/jobs/jobs";
+import { countryOfferWeight, idolClubs, licenceReputation, spokenLanguages, type ManagerStudies } from "@/Domain/managers/courses";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { initialStaff } from "@/Domain/staff/staff";
 import { getStaffNameBook, leagueCountryMap } from "@/backend/staffNameBook";
@@ -204,6 +205,18 @@ export interface OfferRequest {
   /** His belongings: their fame adds to the reputation (8.9.39). */
   assets?: ManagerAssets;
   decor?: readonly string[];
+  /** Languages and licences (9.3): licences add reputation, languages and idol clubs weigh the offers. */
+  studies?: ManagerStudies;
+  nationalityIso?: string;
+}
+
+/** Language and idol pull of the seat's manager (9.3, `courses.ts`). */
+function offerCountryWeight(req: OfferRequest, candidates: readonly OfferCandidate[]): (country: string | null) => number {
+  const spoken = spokenLanguages(req.nationalityIso, req.studies, req.date);
+  const me = req.managers.find((m) => m.seatId === req.seatId);
+  const countryOf = new Map(candidates.map((c) => [c.squadId, c.country]));
+  const idolCountries = new Set([...idolClubs(me, req.date)].map((id) => countryOf.get(id)).filter((c): c is string => !!c));
+  return (country) => countryOfferWeight(country, spoken, idolCountries);
 }
 
 /**
@@ -212,7 +225,7 @@ export interface OfferRequest {
  */
 export async function generateJobOffers(service: SaveService, saveId: string, req: OfferRequest): Promise<JobOffer[]> {
   const year = parseInt(req.date.slice(0, 4), 10);
-  const rep = managerReputation(req.managers, req.board, year, req.seatId, req.assets, req.decor);
+  const rep = managerReputation(req.managers, req.board, year, req.seatId, req.assets, req.decor, licenceReputation(req.studies, req.date));
   // The seat is in the seed: two managers of the same world never draw the same offers on the same day.
   const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.seatId}:${req.date}:${req.window}`));
   const count = req.seeking
@@ -242,6 +255,7 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
     candidates: eligible, band, count,
     home: { country: from?.country ?? null, continent: from?.continent ?? null }, rng,
     ...(req.vacant ? { vacant: req.vacant } : {}),
+    countryWeight: offerCountryWeight(req, world.candidates),
   });
   if (picked.length === 0 && guaranteed) {
     const g = guaranteedClub(world.candidates.filter((c) => !exclude.has(c.squadId)), band);
@@ -570,7 +584,7 @@ export async function reputationOf(service: SaveService, saveId: string, meta: S
   const board = meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60);
   const year = parseInt((meta.currentDate ?? "2026").slice(0, 4), 10);
   try {
-    return managerReputation(managers, board, year, meta.seatId, meta.managerAssets, meta.managerDecor);
+    return managerReputation(managers, board, year, meta.seatId, meta.managerAssets, meta.managerDecor, licenceReputation(meta.managerStudies, meta.currentDate ?? ""));
   } catch (e) {
     logError("jobs", `save ${saveId}: reputation failed`, e);
     return 0;

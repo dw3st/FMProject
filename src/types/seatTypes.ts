@@ -92,6 +92,8 @@ export interface SeatState {
   managerAssets?: import("@/Domain/managers/assets").ManagerAssets;
   /** Stadium decorations bought with his money (9.1, `decorShop.ts`): they stay with him from club to club. */
   managerDecor?: string[];
+  /** Languages and coaching licences bought with his money (9.3, `src/Domain/managers/courses.ts`). */
+  managerStudies?: import("@/Domain/managers/courses").ManagerStudies;
   /** Payout minus stake of the resolved bets (`.claude/rules/game/bets.md`); never touches the earnings. */
   betNet?: number;
   betExact?: number;
@@ -114,7 +116,7 @@ export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
-  "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "betNet", "betExact", "betLongshot", "managerRenewal",
+  "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerStudies", "betNet", "betExact", "betLongshot", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
 ] as const satisfies readonly (keyof SeatState)[];

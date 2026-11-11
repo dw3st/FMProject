@@ -5096,7 +5096,8 @@
       "players": "Jogadores",
       "legends": "Lendas do clube",
       "belongings": "Bens",
-      "stadium": "Estádio"
+      "stadium": "Estádio",
+      "courses": "Cursos"
     },
     "loading": "Carregando conquistas…",
     "loadFailed": "Não foi possível carregar as conquistas.",
@@ -7106,6 +7107,37 @@
       "fans": "Notas, gols e assistências e tempo no clube. Atualizado toda segunda.",
       "club": "Papel no elenco; ídolos e lendas do clube ficam no alto. Atualizado toda segunda.",
       "world": "Posição no ranking mundial e prêmios recentes. Atualizado toda segunda."
+    }
+  },
+  "courses": {
+    "tab": "Cursos",
+    "wallet": "Carteira",
+    "speaks": "Fala",
+    "current": "Curso em andamento",
+    "none": "Nenhum",
+    "until": "{{course}} até {{date}}",
+    "languagesTitle": "Idiomas",
+    "languagesNote": "Cada curso custa {{price}} e leva cerca de {{months}} meses. Clubes de países onde você não fala a língua mandam metade das propostas.",
+    "languageCourse": "Curso de {{language}}",
+    "start": "{{course}} por {{price}}",
+    "cancel": "Cancelar",
+    "licencesTitle": "Licenças de técnico",
+    "licencesNote": "As licenças somam pontos de reputação. Hoje: +{{points}}.",
+    "licenceDesc": "+{{points}} de reputação · cerca de {{months}} meses",
+    "done": "Concluída",
+    "licence": {
+      "a": "Licença A",
+      "pro": "Licença Pro"
+    },
+    "serbocroatian": "Servo-croata",
+    "offersNote": "Onde você foi ídolo (4 temporadas num clube, ou um título), os clubes do mesmo país mandam mais propostas.",
+    "errors": {
+      "busy": "Já há um curso em andamento.",
+      "known": "Você já tem esse curso.",
+      "needsA": "A Licença Pro exige a Licença A.",
+      "noMoney": "Dinheiro insuficiente na carteira.",
+      "invalidCourse": "Curso inválido.",
+      "generic": "Não foi possível começar o curso."
     }
   }
 }

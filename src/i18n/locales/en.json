@@ -5096,7 +5096,8 @@
       "players": "Players",
       "legends": "Club legends",
       "belongings": "Belongings",
-      "stadium": "Stadium"
+      "stadium": "Stadium",
+      "courses": "Courses"
     },
     "loading": "Loading achievements…",
     "loadFailed": "Could not load the achievements.",
@@ -7106,6 +7107,37 @@
       "fans": "Ratings, goals and assists, and time at the club. Updated every Monday.",
       "club": "Role in the squad; club idols and legends sit at the top. Updated every Monday.",
       "world": "World ranking and recent awards. Updated every Monday."
+    }
+  },
+  "courses": {
+    "tab": "Courses",
+    "wallet": "Wallet",
+    "speaks": "Speaks",
+    "current": "Course in progress",
+    "none": "None",
+    "until": "{{course}} until {{date}}",
+    "languagesTitle": "Languages",
+    "languagesNote": "Each course costs {{price}} and takes about {{months}} months. Clubs from countries where you don't speak the language send half as many offers.",
+    "languageCourse": "{{language}} course",
+    "start": "{{course}} for {{price}}",
+    "cancel": "Cancel",
+    "licencesTitle": "Coaching licences",
+    "licencesNote": "Licences add reputation points. Now: +{{points}}.",
+    "licenceDesc": "+{{points}} reputation · about {{months}} months",
+    "done": "Completed",
+    "licence": {
+      "a": "A Licence",
+      "pro": "Pro Licence"
+    },
+    "serbocroatian": "Serbo-Croatian",
+    "offersNote": "Where you were an idol (4 seasons at a club, or a title), clubs from the same country send more offers.",
+    "errors": {
+      "busy": "A course is already in progress.",
+      "known": "You already have this course.",
+      "needsA": "The Pro Licence needs the A Licence.",
+      "noMoney": "Not enough money in the wallet.",
+      "invalidCourse": "Invalid course.",
+      "generic": "The course could not start."
     }
   }
 }

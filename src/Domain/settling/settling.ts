@@ -25,6 +25,9 @@ const LANGUAGES: Record<string, string[]> = {
   arabic: ["Saudi Arabia", "Egypt", "Morocco", "Algeria", "Tunisia", "Iraq", "Jordan", "Syria", "Lebanon", "Qatar", "United Arab Emirates", "Kuwait", "Oman", "Bahrain", "Libya", "Sudan", "Yemen", "Palestine"],
   serbocroatian: ["Serbia", "Croatia", "Bosnia & Herzegovina", "Montenegro"],
 };
+/** The shared language groups (a nation outside them speaks its own). */
+export const LANGUAGE_GROUPS: readonly string[] = Object.keys(LANGUAGES);
+
 const LANGUAGE_OF = new Map(Object.entries(LANGUAGES).flatMap(([lang, nations]) => nations.map((n) => [n, lang] as const)));
 
 /** His language group; a nation outside the table is its own group. Null without a nationality. */

@@ -27,6 +27,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "9.3",
+    date: "2026-11-11",
+    time: "15:32",
+    items: [
+      {
+        pt: "Idiomas do técnico: ele fala a língua do seu país, e clubes de países onde não fala a língua mandam metade das propostas. Um curso de idioma custa €150 mil e leva cerca de 3 meses (Seu técnico → Cursos).",
+        en: "Manager languages: he speaks his country's language, and clubs from countries where he doesn't send half as many offers. A language course costs €150k and takes about 3 months (Your manager → Courses).",
+      },
+      {
+        pt: "Licenças A (€100 mil) e Pro (€400 mil): somam até 3 pontos de reputação.",
+        en: "A Licence (€100k) and Pro Licence (€400k): up to 3 reputation points.",
+      },
+      {
+        pt: "Técnico ídolo: onde você ficou 4 temporadas ou ganhou um título, os clubes do mesmo país mandam mais propostas.",
+        en: "Idol manager: where you stayed 4 seasons or won a title, clubs from the same country send more offers.",
+      },
+    ],
+  },
+  {
     version: "9.2",
     date: "2026-11-11",
     time: "14:49",
@@ -5682,7 +5701,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Cursos e idiomas para o técnico, e propostas pelo país e pelo idioma", en: "Courses and languages for the manager, and job offers by country and language" },
   { pt: "Troca de jogadores com compensação em dinheiro", en: "Player swaps with a cash adjustment" },
   { pt: "Amistoso com um amigo de outra liga", en: "Friendlies against a friend from another league" },
   { pt: "Jogo ao vivo entre amigos também com as seleções", en: "Live matches between friends for national teams too" },
