@@ -27,6 +27,36 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.1.1",
+    date: "2026-11-11",
+    time: "19:00",
+    items: [],
+    fixes: [
+      { pt: "Olheiros: as tabelas de Relatórios, Joias e Observados seguem o padrão da busca: posição colorida na frente, bandeira, nome com as etiquetas na mesma linha, escudo do clube e nível em destaque.", en: "Scouting: the Reports, Gems and Shortlist tables follow the search layout: coloured position first, flag, name with its labels on one line, club crest and the level badge." },
+    ],
+  },
+  {
+    version: "10.1",
+    date: "2026-11-11",
+    time: "18:50",
+    items: [
+      { pt: "Partida ao vivo: a lista de lances mostra também os chutes defendidos e para fora, e o número de passes conta todos os tipos (curtos, lançamentos, cruzamentos e bolas em profundidade).", en: "Live match: the event list also shows shots saved and off target, and the pass count includes every kind (short, long balls, crosses and through balls)." },
+      { pt: "Conversar também com o jogador emprestado ao seu clube: elogiar, cobrar, dar uma dura ou desafiar. Uma dura que dá errado só baixa a moral dele.", en: "Talk to a player on loan at your club too: praise, demand, give him a rocket or challenge him. A rocket that goes wrong only lowers his morale." },
+    ],
+    fixes: [
+      { pt: "Partida ao vivo: a faixa do jogador embaixo do campo não fica mais vazia entre um toque e outro, e os botões do mapa de posse cabem numa linha.", en: "Live match: the player band under the pitch no longer goes empty between touches, and the possession map buttons fit on one line." },
+    ],
+  },
+  {
+    version: "10.0.1",
+    date: "2026-11-11",
+    time: "18:40",
+    items: [],
+    fixes: [
+      { pt: "Os botões das mensagens abertas pelo rodapé trocam a tela sem recarregar o jogo (a rádio continua tocando).", en: "The buttons of a message opened from the footer change the screen without reloading the game (the radio keeps playing)." },
+    ],
+  },
+  {
     version: "10.0",
     date: "2026-11-11",
     time: "18:22",
