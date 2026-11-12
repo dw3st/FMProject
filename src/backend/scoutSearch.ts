@@ -298,6 +298,33 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
   };
 }
 
+/** Most player ids one `scout-rows` call answers. */
+export const SCOUT_ROWS_MAX = 50;
+
+/** The `ids` query of `scout-rows`: comma-separated player ids, trimmed, unique, at most `SCOUT_ROWS_MAX`. */
+export function parseScoutRowIds(raw: string | null): string[] {
+  if (!raw) return [];
+  const out: string[] = [];
+  for (const part of raw.split(",")) {
+    const id = part.trim();
+    if (!id || id.length > 80 || out.includes(id)) continue;
+    out.push(id);
+    if (out.length >= SCOUT_ROWS_MAX) break;
+  }
+  return out;
+}
+
+/**
+ * The scout's rows of the given players, as the search shows them (blurred by the seat's knowledge): the hover card
+ * of the reports and watch-list tables (10.4.2). A player outside the index (a clubless prospect) has no row.
+ */
+export async function scoutRows(saveId: string, seatId: string, ids: string[]): Promise<DisplayPlayer[] | null> {
+  const index = await getScoutIndex(saveId, seatId);
+  if (!index) return null;
+  const wanted = new Set(ids);
+  return index.players.filter((p) => wanted.has(p.id));
+}
+
 export async function searchScout(saveId: string, seatId: string, query: ScoutQuery): Promise<ScoutSearchResponse | null> {
   const index = await getScoutIndex(saveId, seatId);
   if (!index) return null;

@@ -383,3 +383,7 @@ Reports do usuário. Relatórios, Joias e Observados (`ReportTables.tsx`) usam a
 ## Filtros em três linhas e jovem sem clube (10.4.1)
 
 Reports do usuário. Os filtros da busca ficam em três linhas alinhadas: nome, posição, liga e nacionalidade; as quatro faixas (idade, OVR, potencial, valor); a nota do olheiro. Na tabela de Relatórios, um jovem sem clube (prospecto) não tem estrela: ele ainda não está no mundo e não entra na lista de observados. A linha dele mostra "Contratar para a base" (link para a aba Joias) enquanto a oferta vale, ou "oferta encerrada".
+
+## Ficha ao passar o mouse nos Relatórios e Observados (10.4.2)
+
+Report do usuário. Parar o mouse no nome de um jogador nas tabelas de Relatórios, Joias e Observados abre a mesma ficha flutuante da busca (`ScoutHoverCard`). Essas tabelas só têm o id, então `useScoutHoverCard` (`Scout/useScoutHoverCard.tsx`) busca a linha na primeira vez em `GET /api/saves/:id/scout-rows?ids=a,b` (`scoutRows`, do índice da busca, já borrada pelo conhecimento do assento; até 50 ids, `parseScoutRowIds`) e guarda enquanto a tabela está na tela. Jovem sem clube não tem ficha (não está no índice).

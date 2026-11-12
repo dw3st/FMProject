@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from "bun:test";
-import { getScoutIndex, parseScoutQuery } from "@/backend/scoutSearch";
+import { getScoutIndex, parseScoutQuery, parseScoutRowIds, SCOUT_ROWS_MAX } from "@/backend/scoutSearch";
 import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
 import type { Squad } from "@/types/playerTypes";
@@ -128,6 +128,23 @@ describe("parseScoutQuery", () => {
     const defaults = createDefaultScoutFilters();
     const q = parseScoutQuery({ filters: { attributeRanges: "nope" } });
     expect(q.filters.attributeRanges).toEqual(defaults.attributeRanges);
+  });
+});
+
+describe("parseScoutRowIds", () => {
+  test("splits, trims and drops blanks and repeats", () => {
+    expect(parseScoutRowIds(" a , b,,a ,c")).toEqual(["a", "b", "c"]);
+  });
+
+  test("nothing asked gives nothing", () => {
+    expect(parseScoutRowIds(null)).toEqual([]);
+    expect(parseScoutRowIds("")).toEqual([]);
+  });
+
+  test("stops at the cap and skips an absurdly long id", () => {
+    const many = Array.from({ length: SCOUT_ROWS_MAX + 20 }, (_, i) => `p${i}`).join(",");
+    expect(parseScoutRowIds(many)).toHaveLength(SCOUT_ROWS_MAX);
+    expect(parseScoutRowIds(`${"x".repeat(81)},ok`)).toEqual(["ok"]);
   });
 });
 

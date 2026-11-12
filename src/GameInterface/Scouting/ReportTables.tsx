@@ -19,6 +19,7 @@ import type { ScoutReport } from "@/types/scoutingTypes";
 import { KnowledgeBar } from "@/GameInterface/Scouting/KnowledgeBar";
 import { GemBadge, GradeBadge } from "@/GameInterface/Scouting/Badges";
 import { ShortlistStar } from "@/GameInterface/Scouting/ShortlistStar";
+import { useScoutHoverCard } from "@/GameInterface/Scout/useScoutHoverCard";
 import { playerHref, scoutingCall, type ScoutingData } from "@/GameInterface/Scouting/scoutingApi";
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
 import { RECOMMENDATION_ORIGIN } from "@/types/scoutingTypes";
@@ -95,6 +96,8 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects
   const head = (col: ReportSortKey, label: string) => sort
     ? <SortHead col={col} label={label} sort={sort.key} dir={sort.dir} onSort={sort.onSort} />
     : <th className={th}>{label}</th>;
+  // The search's player card on the name (tester report, 10.4.2).
+  const hoverCard = useScoutHoverCard(saveId);
   return (
     <div className={`${TABLE_STYLE.shell} overflow-x-auto`}>
       <table className="w-full text-sm border-collapse tabular-nums">
@@ -129,7 +132,7 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects
                   {r.prospectId || !r.squadId || r.gone ? (
                     <span className="font-semibold text-foreground">{r.name}</span>
                   ) : (
-                    <a href={playerHref(r.playerId, r.squadId, r.league)} className="font-semibold text-foreground no-underline hover:text-primary hover:underline">{r.name}</a>
+                    <a href={playerHref(r.playerId, r.squadId, r.league)} {...hoverCard.hoverProps(r.playerId)} className="font-semibold text-foreground no-underline hover:text-primary hover:underline">{r.name}</a>
                   )}
                   {r.gem && <GemBadge />}
                   {r.gone && <span className="text-sm text-muted-foreground">{t("scouting.reports.moved")}</span>}
@@ -161,6 +164,7 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects
           ))}
         </tbody>
       </table>
+      {hoverCard.card}
     </div>
   );
 }
@@ -253,6 +257,7 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
   const { t } = useTranslation();
   const th = `${TABLE_CELL.head} text-left`;
   const td = TABLE_CELL.body;
+  const hoverCard = useScoutHoverCard(saveId);
   async function saveNote(playerId: string, squadId: string, note: string) {
     await scoutingCall(`/api/saves/${saveId}/scouting/shortlist`, "POST", { playerId, squadId, note });
     onChanged();
@@ -293,7 +298,7 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
                       <ShortlistStar saveId={saveId} playerId={e.playerId} squadId={e.squadId} on onChange={onChanged} />
                       <NationFlag nationality={e.nationality} />
                       {e.squadId ? (
-                        <a href={playerHref(e.playerId, e.squadId, e.leagueSlug)} className="font-semibold text-foreground no-underline hover:text-primary hover:underline">{e.name}</a>
+                        <a href={playerHref(e.playerId, e.squadId, e.leagueSlug)} {...hoverCard.hoverProps(e.playerId)} className="font-semibold text-foreground no-underline hover:text-primary hover:underline">{e.name}</a>
                       ) : (
                         <span className="font-semibold text-foreground">{e.name}</span>
                       )}
@@ -326,6 +331,7 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
           </tbody>
         </table>
       </div>
+      {hoverCard.card}
     </div>
   );
 }

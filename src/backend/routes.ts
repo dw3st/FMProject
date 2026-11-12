@@ -60,7 +60,7 @@ import { staticAssetRoutes } from "@/backend/staticAssets";
 import { artAssetRoutes } from "@/backend/artAssets";
 import { requireAuth, requireSeat } from "@/backend/auth/middleware";
 import { listUserSaveIds, memberOf } from "@/backend/auth/saveOwnership";
-import { parseScoutQuery, searchScout } from "@/backend/scoutSearch";
+import { parseScoutQuery, parseScoutRowIds, scoutRows, searchScout } from "@/backend/scoutSearch";
 import { getStarPlayers } from "@/backend/starsIndex";
 import { getCompetitionRankings } from "@/backend/statsRankings";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
@@ -337,6 +337,21 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
     const result = await searchScout(saveId!, auth.seatId, parseScoutQuery(body));
     if (!result) return Response.json({ error: "save not found" }, { status: 404 });
     return Response.json(result);
+  },
+
+  "/api/saves/:saveId/scout-rows": async (
+    req: Request & { params: Record<string, string> },
+  ) => {
+    if (req.method !== "GET")
+      return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSeat(req, saveId!);
+    if (auth instanceof Response) return auth;
+    const ids = parseScoutRowIds(new URL(req.url).searchParams.get("ids"));
+    if (ids.length === 0) return Response.json({ rows: [] });
+    const rows = await scoutRows(saveId!, auth.seatId, ids);
+    if (!rows) return Response.json({ error: "save not found" }, { status: 404 });
+    return Response.json({ rows });
   },
 
   "/api/saves/:saveId/import-squads": async (

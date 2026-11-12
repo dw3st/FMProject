@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.4.2",
+    date: "2026-11-11",
+    time: "21:03",
+    items: [],
+    fixes: [
+      { pt: "Olheiro: parar o mouse no nome de um jogador nas listas de Relatórios, Joias e Observados abre a ficha dele com os atributos, como já acontecia na busca.", en: "Scout: resting the mouse on a player's name in the Reports, Gems and Shortlist lists opens his card with the attributes, as the search already did." },
+    ],
+  },
+  {
     version: "10.4.1",
     date: "2026-11-11",
     time: "20:57",
