@@ -5097,6 +5097,7 @@
     "resultLine_other": "VAR: {{count}} revisões, {{overturned}} decisões alteradas"
   },
   "national": {
+    "friendly": "Amistoso",
     "tabs": {
       "ranking": "Ranking",
       "competitions": "Competições",

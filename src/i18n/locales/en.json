@@ -5100,6 +5100,7 @@
     "resultLine_other": "VAR: {{count}} checks, {{overturned}} calls changed"
   },
   "national": {
+    "friendly": "Friendly",
     "tabs": {
       "ranking": "Ranking",
       "competitions": "Competitions",

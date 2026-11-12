@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
     items: [],
     fixes: [
       { pt: "Seleções: nos jogos de seleção, cada lado aparece com a bandeira do país no lugar do escudo (antes era um escudo genérico), na partida ao vivo, na prévia, no resultado e no próximo jogo do Painel.", en: "National teams: in a national team's game each side shows its country's flag where the crest goes (it used to be a generic shield), in the live match, the preview, the result and the next match of the Dashboard." },
+      { pt: "Amistoso de seleção: a linha abaixo do placar diz só Amistoso, sem o número interno da rodada (aparecia \"Rodada 187\").", en: "National team friendly: the line under the score just says Friendly, without the internal round number (it showed \"Matchday 187\")." },
     ],
   },
   {

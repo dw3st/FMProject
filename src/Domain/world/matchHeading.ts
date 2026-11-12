@@ -18,10 +18,12 @@ export interface MatchHeadingInput {
 /**
  * One-line match heading shared by the match preview and the live match: league → "Matchday N · X",
  * cup → "<stage> · X", continental → "<group round | stage · leg> · X". Falls back to the plain
- * competition name while a cup/continental stage is still unknown.
+ * competition name while a cup/continental stage is still unknown. A national teams' friendly is just
+ * "Friendly": its round is a running count of the year's friendlies, not a matchday.
  */
 export function matchHeading(input: MatchHeadingInput, t: Translate): string {
   const { fixture, competition } = input;
+  if (/^friendly_\d{4}$/.test(fixture.competition)) return t("national.friendly");
   if (isCupSlug(fixture.competition)) {
     return input.cupStage ? `${t(`cups.stage.${input.cupStage}`)} • ${competition}` : competition;
   }

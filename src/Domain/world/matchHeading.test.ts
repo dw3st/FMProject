@@ -8,6 +8,9 @@ describe("matchHeading", () => {
     expect(matchHeading({ fixture: { competition: "premier_league", round: 7 }, competition: "Premier League" }, t))
       .toBe('leagues.matchday:{"round":7} • Premier League');
   });
+  test("a national teams' friendly is just \"Friendly\", without the round count", () => {
+    expect(matchHeading({ fixture: { competition: "friendly_2035", round: 187 }, competition: "Friendlies 2035" }, t)).toBe("national.friendly");
+  });
   test("cup shows the stage, or the name alone while unknown", () => {
     const fixture = { competition: "cup_england", round: 3 };
     expect(matchHeading({ fixture, competition: "FA Cup", cupStage: "qf" }, t)).toBe("cups.stage.qf • FA Cup");
