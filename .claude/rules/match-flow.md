@@ -559,18 +559,16 @@ own pass) within `ATTACK_HOLD_DIST` (30) yards of the goal line that side attack
 game-seconds past the period's end (~3.5 real s). It stops holding as soon as the ball is lost, leaves the zone or a
 restart is given (restarts keep their own rule). Both teams, every live period. Test: `AttackHold.engine.test.ts`.
 
-# Bigger pitch and side rails (10.9)
+# Side rails in the live match (10.9, stadium back in 10.9.1)
 
-Tester report, mock option B1 chosen by the user (top bar and footer fixed, rails with a title). The pitch area of the
-live match is the whole row between the top bar and the footer (HUD + broadcast line); the team list and the summary no
-longer take columns.
+Tester report, mock option B1 chosen by the user (top bar and footer fixed, rails with a title). The team list and the
+summary no longer take columns: the pitch area of the live match is the whole row between the top bar and the footer
+(HUD + broadcast line).
 
-- **Layout** (`src/GameInterface/matchPitchLayout.ts`, pure, tested): with a stadium the canvas is the row's width (at
-  most `MAX_END_YDS` 75 yards of end stand past each net) and taller than the row, so the row crops it evenly above and
-  below: the pitch, the top apron (LED boards) and the benches stay in view with `VIEW_MARGIN_YDS` (1.5) of stand, and
-  the pitch is drawn about 18% bigger than the old fitted canvas. A narrow row is bound by its width and nothing is
-  cropped. Without a stadium the canvas keeps the 124:80 ratio, centred. `MatchScreen` re-measures when the stadium is
-  known. The camera, the replay and the effects work on the canvas; the crop is symmetric, so their centre is the view's.
+- **Layout** (`src/GameInterface/matchPitchLayout.ts`, pure, tested): the canvas keeps the 124:80 ratio, fitted to the
+  row and centred; the whole stadium stays in view. 10.9 cropped the two long stands and widened the canvas to draw the
+  pitch ~18% bigger, which left two huge end stands; the user asked for the stadium as it was (10.9.1). Do not crop or
+  stretch the match canvas again without showing the real render first.
 - **Rails** (`src/GameInterface/MatchRails.tsx`): `LineupRail` on the left (position and fitness of the shown team, the
   ball holder marked) and `SummaryRail` on the right (minute and kind of the last `RAIL_EVENTS` 8 events), each with its
   title. Pointing at a rail opens the whole panel over the pitch (closes 220 ms after the mouse leaves); a click keeps

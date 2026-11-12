@@ -27,11 +27,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.9.1",
+    date: "2026-11-12",
+    time: "20:11",
+    items: [],
+    fixes: [
+      { pt: "Partida ao vivo: o estádio voltou a aparecer inteiro, com as arquibancadas no tamanho de antes. Na 10.9 as arquibancadas atrás dos gols tinham ficado grandes demais.", en: "Live match: the whole stadium is back in view, with the stands at their previous size. In 10.9 the stands behind the goals had become too big." },
+    ],
+  },
+  {
     version: "10.9",
     date: "2026-11-12",
     time: "20:00",
     items: [
-      { pt: "Partida ao vivo: o campo ficou maior e ocupa a tela toda entre a barra de cima e o rodapé. A escalação e o resumo viraram trilhos nas bordas: passe o mouse num deles para abrir o painel inteiro, ou clique para manter aberto.", en: "Live match: the pitch is bigger and takes the whole screen between the top bar and the footer. The line-up and the summary became rails at the edges: point at one to open the whole panel, or click to keep it open." },
+      { pt: "Partida ao vivo: a escalação e o resumo viraram trilhos nas bordas da tela. Passe o mouse num deles para abrir o painel inteiro, ou clique para manter aberto.", en: "Live match: the line-up and the summary became rails at the edges of the screen. Point at one to open the whole panel, or click to keep it open." },
     ],
   },
   {

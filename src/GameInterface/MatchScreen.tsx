@@ -387,8 +387,6 @@ export function MatchScreen() {
     railTimerRef.current = setTimeout(() => setRailHover((cur) => (cur === side ? null : cur)), 220);
   }, []);
   useEffect(() => () => { if (railTimerRef.current) clearTimeout(railTimerRef.current); }, []);
-  // Read by `measurePitch` (declared before the stadium is known).
-  const pitchStadiumRef = useRef<{ stadium: boolean; shape: boolean }>({ stadium: false, shape: false });
   // Two-phase render: layout paints first with a loader in the host slot, then we measure on the
   // next animation frame (once the layout has settled) and mount PixiPitch with the measured size.
   // ResizeObserver is intentionally avoided — it can fire during PixiPitch's own layout reflow and
@@ -398,7 +396,7 @@ export function MatchScreen() {
     const host = pitchHostElRef.current;
     if (!host) return;
     const rect = host.getBoundingClientRect();
-    const next = matchPitchLayout(rect.width, rect.height, pitchStadiumRef.current);
+    const next = matchPitchLayout(rect.width, rect.height);
     if (!next) return;
     setPitchSize((prev) => (prev && (Object.keys(next) as (keyof MatchPitchLayout)[]).every((k) => prev[k] === next[k]) ? prev : next));
   }, []);
@@ -1730,13 +1728,6 @@ export function MatchScreen() {
       },
     };
   }, [matchFixture, crestIds, touchline, faceRoster, t, homeLedLang]);
-  // The canvas is laid out for the stadium (cropped above and below) once it is known.
-  const hasStadium = !!stadium, hasShape = !!stadium?.shape;
-  useEffect(() => {
-    pitchStadiumRef.current = { stadium: hasStadium, shape: hasShape };
-    measurePitch();
-  }, [hasStadium, hasShape, measurePitch]);
-
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
   const coaches = useMemo(() => {
     const colorsOf = (tm: TeamId, kit: string) => {
