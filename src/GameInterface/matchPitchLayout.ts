@@ -19,6 +19,20 @@ export const MATCH_PITCH_LAYOUT = {
   MIN_W: 320,
 } as const;
 
+/** Gap between a rail and the stadium's edge, and the room a rail needs beside the stadium to sit outside it (px). */
+export const RAIL_GAP = 8;
+export const RAIL_ROOM = 112;
+
+/**
+ * Where a side rail sits (10.9.2, user request: the rails at the stadium's edge, not at the screen's). `stadiumEdge`
+ * is the distance from the rail's side of the pitch area to the canvas. With room there the rail stands beside the
+ * stadium: the result is the distance from that side to the rail's inner edge. Without room (a narrow screen, the
+ * stadium takes the whole row) it is null and the rail stays by the screen edge, over the stand.
+ */
+export function railOffset(stadiumEdge: number | null): number | null {
+  return stadiumEdge !== null && stadiumEdge >= RAIL_ROOM ? Math.round(stadiumEdge) - RAIL_GAP : null;
+}
+
 export function matchPitchLayout(viewW: number, viewH: number): MatchPitchLayout | null {
   if (viewW <= 0 || viewH <= 0) return null;
   const W = Math.floor(viewW), H = Math.floor(viewH);

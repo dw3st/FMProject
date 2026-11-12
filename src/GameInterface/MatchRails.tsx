@@ -5,6 +5,7 @@ import { gamePlayerNaturalRole } from "@/GameInterface/positionHelpers";
 import { energyTextClass } from "@/GameInterface/TeamPanel";
 import { FEED_KIND_MARK, type MatchFeedItem } from "@/GameInterface/MatchSummaryPanel";
 import { shirtName } from "@/Domain/shirtName";
+import { railOffset } from "@/GameInterface/matchPitchLayout";
 
 /**
  * The live match's side rails (10.9): with the team list and the summary floating over the pitch, a thin rail at each
@@ -13,9 +14,15 @@ import { shirtName } from "@/Domain/shirtName";
  */
 export const RAIL_EVENTS = 8;
 
-function Rail({ side, title, hint, onOpen, onPin, children }: {
-  side: "left" | "right"; title: string; hint: string; onOpen: () => void; onPin: () => void; children: ReactNode;
+function Rail({ side, title, hint, stadiumEdge, onOpen, onPin, children }: {
+  side: "left" | "right"; title: string; hint: string; stadiumEdge: number | null;
+  onOpen: () => void; onPin: () => void; children: ReactNode;
 }) {
+  // Beside the stadium when there is room (10.9.2): anchored by its inner edge, a small gap before the canvas.
+  const offset = railOffset(stadiumEdge);
+  const style = offset === null ? undefined : side === "left"
+    ? { right: `calc(100% - ${offset}px)` }
+    : { left: `calc(100% - ${offset}px)` };
   return (
     <button
       type="button"
@@ -23,7 +30,8 @@ function Rail({ side, title, hint, onOpen, onPin, children }: {
       aria-label={hint}
       onMouseEnter={onOpen}
       onClick={onPin}
-      className={`absolute top-1/2 -translate-y-1/2 z-20 ${side === "left" ? "left-2" : "right-2"} phone:hidden flex flex-col items-stretch rounded-lg border border-border bg-background/80 backdrop-blur-sm px-2 pb-2 pt-1.5 cursor-pointer text-left hover:border-primary/50`}
+      style={style}
+      className={`absolute top-1/2 -translate-y-1/2 z-20 ${offset !== null ? "" : side === "left" ? "left-2" : "right-2"} phone:hidden flex flex-col items-stretch rounded-lg border border-border bg-background/80 backdrop-blur-sm px-2 pb-2 pt-1.5 cursor-pointer text-left hover:border-primary/50`}
     >
       <span className="block text-center font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground pb-1.5 mb-1 border-b border-border">
         {title}
@@ -34,12 +42,12 @@ function Rail({ side, title, hint, onOpen, onPin, children }: {
 }
 
 /** Left rail: position and fitness of every player of the shown team on the pitch. */
-export function LineupRail({ players, ballHolderId, onOpen, onPin }: {
-  players: GamePlayer[]; ballHolderId: number; onOpen: () => void; onPin: () => void;
+export function LineupRail({ players, ballHolderId, stadiumEdge, onOpen, onPin }: {
+  players: GamePlayer[]; ballHolderId: number; stadiumEdge: number | null; onOpen: () => void; onPin: () => void;
 }) {
   const { t } = useTranslation();
   return (
-    <Rail side="left" title={t("match.phone.team")} hint={t("match.rails.openTeam")} onOpen={onOpen} onPin={onPin}>
+    <Rail side="left" title={t("match.phone.team")} hint={t("match.rails.openTeam")} stadiumEdge={stadiumEdge} onOpen={onOpen} onPin={onPin}>
       {players.map((p) => {
         const role = gamePlayerNaturalRole(p);
         const energy = Math.max(0, Math.min(100, p.energy));
@@ -60,11 +68,13 @@ export function LineupRail({ players, ballHolderId, onOpen, onPin }: {
 }
 
 /** Right rail: minute and kind of the last events, newest first. */
-export function SummaryRail({ feed, onOpen, onPin }: { feed: MatchFeedItem[]; onOpen: () => void; onPin: () => void }) {
+export function SummaryRail({ feed, stadiumEdge, onOpen, onPin }: {
+  feed: MatchFeedItem[]; stadiumEdge: number | null; onOpen: () => void; onPin: () => void;
+}) {
   const { t } = useTranslation();
   const last = feed.slice(-RAIL_EVENTS).reverse();
   return (
-    <Rail side="right" title={t("match.phone.summary")} hint={t("match.rails.openSummary")} onOpen={onOpen} onPin={onPin}>
+    <Rail side="right" title={t("match.phone.summary")} hint={t("match.rails.openSummary")} stadiumEdge={stadiumEdge} onOpen={onOpen} onPin={onPin}>
       {last.length === 0 && <span className="h-7 px-1.5 flex items-center text-sm text-muted-foreground">{t("match.rails.noEvents")}</span>}
       {last.map((e, i) => {
         const card = e.kind === "yellow" || e.kind === "red" || e.kind === "managerYellow" || e.kind === "managerRed";

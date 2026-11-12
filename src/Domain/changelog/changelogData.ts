@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.9.2",
+    date: "2026-11-12",
+    time: "20:17",
+    items: [],
+    fixes: [
+      { pt: "Partida ao vivo: os trilhos da escalação e do resumo ficam encostados no estádio, não mais nos cantos da tela.", en: "Live match: the line-up and summary rails now sit next to the stadium, no longer at the corners of the screen." },
+    ],
+  },
+  {
     version: "10.9.1",
     date: "2026-11-12",
     time: "20:11",

@@ -1,5 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { matchPitchLayout } from "@/GameInterface/matchPitchLayout";
+import { matchPitchLayout, railOffset, RAIL_GAP, RAIL_ROOM } from "@/GameInterface/matchPitchLayout";
+
+describe("railOffset", () => {
+  test("with room beside the stadium the rail ends a gap before it", () => {
+    expect(railOffset(251)).toBe(251 - RAIL_GAP);
+    expect(railOffset(RAIL_ROOM)).toBe(RAIL_ROOM - RAIL_GAP);
+  });
+  test("without room (or before the layout is known) the rail stays by the screen edge", () => {
+    expect(railOffset(RAIL_ROOM - 1)).toBeNull();
+    expect(railOffset(0)).toBeNull();
+    expect(railOffset(null)).toBeNull();
+  });
+});
 
 describe("matchPitchLayout", () => {
   test("no room, no layout", () => {

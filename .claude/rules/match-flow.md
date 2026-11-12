@@ -574,4 +574,8 @@ summary no longer take columns: the pitch area of the live match is the whole ro
   title. Pointing at a rail opens the whole panel over the pitch (closes 220 ms after the mouse leaves); a click keeps
   it open, with a close button in the panel. The view switches (zoom, replay, sound, figures) and, for testers, the
   report button live in the panels. On a phone the rails are hidden and the panels still open from the two buttons.
+- **Where the rails sit (10.9.2, user request):** beside the stadium, not at the screen's edge. `railOffset`
+  (`matchPitchLayout.ts`): with at least `RAIL_ROOM` (112) px between the side of the row and the canvas, the rail's
+  inner edge ends `RAIL_GAP` (8) px before the canvas; with less (narrow screens) it stays by the screen edge, over
+  the stand.
 - Drawing and layout only: nothing in the engine, `/test` or `/lab`.

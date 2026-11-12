@@ -2214,6 +2214,7 @@ export function MatchScreen() {
           <LineupRail
             players={gameState.players.filter((p) => p.team === panelTeam)}
             ballHolderId={gameState.ballHolderId}
+            stadiumEdge={pitchSize ? pitchSize.x : null}
             onOpen={() => railEnter("team")}
             onPin={() => setRailPinned((p) => ({ ...p, team: true }))}
           />
@@ -2352,7 +2353,7 @@ export function MatchScreen() {
           </div>
 
         {!summaryOpen && (
-          <SummaryRail feed={feed} onOpen={() => railEnter("summary")} onPin={() => setRailPinned((p) => ({ ...p, summary: true }))} />
+          <SummaryRail feed={feed} stadiumEdge={pitchSize ? pitchSize.viewW - pitchSize.x - pitchSize.canvasW : null} onOpen={() => railEnter("summary")} onPin={() => setRailPinned((p) => ({ ...p, summary: true }))} />
         )}
         {/* Friends and the tester's report above the summary (tester report, 4.41.20). */}
         <div
