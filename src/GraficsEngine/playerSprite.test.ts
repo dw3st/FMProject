@@ -98,6 +98,10 @@ describe("ground ring colour (10.2)", () => {
     expect(groundRingColor(0xc8102e, 0x000000, 0.2, 0xd9dde3)).toBe(0xc8102e);
     expect(groundRingColor(0x111111, 0xc8102e, 0.2, 0xd9dde3)).toBe(0xc8102e);
     expect(groundRingColor(0x111111, 0x1e1e22, 0.2, 0xd9dde3)).toBe(0xd9dde3);
+    // The second colour is the other side's shirt: grey instead.
+    expect(groundRingColor(0x111111, 0xc8102e, 0.2, 0xd9dde3, 0xd22630)).toBe(0xd9dde3);
+    expect(groundRingColor(0x111111, 0xc8102e, 0.2, 0xd9dde3, 0x1f4fd0)).toBe(0xc8102e);
+    expect(groundRingColor(0xc8102e, 0x000000, 0.2, 0xd9dde3, 0xd22630)).toBe(0xc8102e);
     expect(colorLuma(0xffffff)).toBeCloseTo(1, 5);
     expect(colorLuma(0x000000)).toBe(0);
   });

@@ -11,6 +11,8 @@ export interface EffectCtx {
   netDepth: number;    // goal net depth px
   /** Visual 2 (#129): the whole net shakes after a goal instead of one bulging line. */
   netShake?: boolean;
+  /** The goals are the standing ones (10.7): the flat net is not there to shake. */
+  standingGoal?: boolean;
 }
 
 function dashed(g: Graphics, x1: number, y1: number, x2: number, y2: number, color: number, alpha: number, width: number = X.LINE_W) {
@@ -54,7 +56,8 @@ export function drawEffect(g: Graphics, e: PitchEffect, now: number, ctx: Effect
       const top = ctx.toPixel(e.goalX, GOAL_Y_MIN), bot = ctx.toPixel(e.goalX, GOAL_Y_MAX);
       // Drawn side, not yards: a mirrored pitch (#98) draws the x = 0 goal on the right.
       const outward = top.px > ctx.toPixel(PITCH_LENGTH / 2, 0).px ? 1 : -1; // right goal bulges right
-      if (ctx.netShake) drawShakingNet(g, top, bot, outward, ctx.netDepth, p, a);
+      if (ctx.standingGoal) { /* the standing goal shakes its own net */ }
+      else if (ctx.netShake) drawShakingNet(g, top, bot, outward, ctx.netDepth, p, a);
       else {
         const bulge = ctx.netDepth * (1 + X.NET_BULGE * Math.sin(Math.PI * p)) * outward;
         g.moveTo(top.px, top.py).quadraticCurveTo(top.px + bulge * X.NET_CTRL, (top.py + bot.py) / 2, bot.px, bot.py)

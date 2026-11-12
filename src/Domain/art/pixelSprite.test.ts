@@ -22,6 +22,19 @@ describe("parsePixelAtlas", () => {
     expect(a.rects[1]).toEqual([11, 0, 6, 4]);
   });
 
+  test("pixel art by default; a painted atlas says it is smooth and how many px it has per art pixel", () => {
+    const a = parsePixelAtlas(valid())!;
+    expect(a.smooth).toBeUndefined();
+    expect(a.scale).toBe(1);
+    const b = parsePixelAtlas({ ...valid(), smooth: true, scale: 3, body: 45, height: 93 })!;
+    expect(b.smooth).toBe(true);
+    expect(b.scale).toBe(3);
+    expect(parsePixelAtlas({ ...valid(), smooth: false })!.smooth).toBeUndefined();
+    expect(parsePixelAtlas({ ...valid(), smooth: "yes" })).toBeNull();
+    expect(parsePixelAtlas({ ...valid(), scale: 0 })).toBeNull();
+    expect(parsePixelAtlas({ ...valid(), scale: 2.5 })).toBeNull();
+  });
+
   test("the image must be a png inside sprites/", () => {
     for (const image of ["../secret.png", "sprites/../x.png", "faces/a.png", "sprites/a.webp", "/sprites/a.png", "sprites/a b.png", 3])
       expect(parsePixelAtlas({ ...valid(), image })).toBeNull();
@@ -74,5 +87,10 @@ describe("pointer", () => {
     setPixelSprite({ data: "sprites/goals-1.json", image: "nope" });
     expect(pixelSprite()).toBeNull();
     expect(parsePixelPointer({ image: "sprites/a.png" })).toBeNull();
+  });
+
+  test("a painted atlas is announced as smooth", () => {
+    expect(parsePixelPointer({ data: "sprites/c-1.json", image: "sprites/c-1.png", smooth: true })).toEqual({ data: "sprites/c-1.json", image: "sprites/c-1.png", smooth: true });
+    expect(parsePixelPointer({ data: "sprites/c-1.json", image: "sprites/c-1.png", smooth: "yes" })).toEqual({ data: "sprites/c-1.json", image: "sprites/c-1.png" });
   });
 });

@@ -22,7 +22,7 @@ import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@
 import { GRASS_PHOTO, grassPhoto } from "@/GraficsEngine/grassPhoto";
 import { gameArtUrl, newVisualOn, paintedBackdrop, paintedSurround, pixelSpriteUrls } from "@/Domain/art/paintedFaces";
 import { parsePixelAtlas, type PixelAtlas } from "@/Domain/art/pixelSprite";
-import { PIXEL_FIGURE, hairLayers, pickPixelTrick, pixelFacing, pixelFrame, pixelKit, pixelLayerTint, pixelLook, pixelVariant, pixelZoom, stepPixelPlay, type PixelColours, type PixelPlay } from "@/GraficsEngine/pixelFigure";
+import { PIXEL_FIGURE, hairLayers, hasPixelOfficial, isPixelOfficial, officialPixelColours, officialPixelFrame, pickPixelTrick, pixelBallTurn, pixelFacing, pixelFrame, pixelKit, pixelLayerTint, pixelLook, pixelSnap, pixelVariant, pixelZoom, stepPixelPlay, type PixelColours, type PixelOfficialState, type PixelPlay } from "@/GraficsEngine/pixelFigure";
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { bounceHeight } from "@/GraficsEngine/ballHeight";
 import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
@@ -74,6 +74,7 @@ import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics, type StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { STAND_TILE_ROTATION, drawDecor, drawRoofRim, drawStandBase, drawStandDetails, drawStandEdges, drawSurroundings, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
 import { decorRects, hexNumber, type CrestPixels } from "@/GraficsEngine/stadiumDecor";
+import { STANDING_GOAL, goalWarpY, meshLines, standingGoalShape, type Pt } from "@/GraficsEngine/standingGoal";
 import { decorColors } from "@/Domain/achievements/decorStyle";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, drawnDepths, drawnFill, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
@@ -1205,8 +1206,10 @@ export function PixiPitch({
         }
         pitchGraphics.clear();
         drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha * MATCH_LOOK.LINE_GLOW_ALPHA, dashed: lines.dashedLines, width: MATCH_LOOK.LINE_GLOW_W, goals: false });
-        drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha, dashed: lines.dashedLines, goals: !goalArt });
+        drawPitch(pitchGraphics, m, { alpha: lines.lineAlpha, dashed: lines.dashedLines, goals: !goalArt && !standingGoalOn });
       };
+      // The standing goals (10.7) replace the flat ones while the side-view figures are shown.
+      let standingGoalOn = false;
       // The art pack's goals (art phase 9): the net under the players, the frame over them (`goal/goal.json`).
       let goalArt: { net: Sprite[]; frame: Sprite[] } | null = null;
       const goalNetLayer = new Container();
@@ -1655,9 +1658,18 @@ export function PixiPitch({
       // new visual off) the disc with the face, as before.
       let spriteSheets: Record<SpriteAtlas, Spritesheet> | null = null;
       // Pixel-art figures (10.7): the atlas of the art volume; a figure is one tinted sprite per layer.
-      let pixelArt: { atlas: PixelAtlas; source: CanvasSource; pieces: Map<number, Texture>; hair: string[] } | null = null;
-      const pixelBodies = new WeakMap<Container, { layers: (Sprite | null)[]; frame: number }>();
+      let pixelArt: { atlas: PixelAtlas; source: CanvasSource; pieces: Map<number, Texture>; hair: string[]; ballLayer: number } | null = null;
+      /** `ball`: the shown frame carries the ball (drawn only on the player who has it). */
+      const pixelBodies = new WeakMap<Container, { layers: (Sprite | null)[]; frame: number; ball: boolean }>();
       const pixelFace = new Map<number, 1 | -1>();
+      /** Headers that are only a jump (the loser of an aerial duel, the wall): player → the action's start. */
+      const pixelJumps = new Map<number, number>();
+      /** The player whose figure shows the ball itself this frame (the loose ball is hidden). */
+      let pixelBallOwner: number | null = null;
+      /** Who an official's container is, for his pixel figure. */
+      const figureInfo = new WeakMap<Container, { kind: OfficialKind; id: string; clubColor?: number }>();
+      const figureFace = new WeakMap<Container, 1 | -1>();
+      const figureFlag = new WeakMap<Container, string>();
       /** The clip each player is in the middle of (`stepPixelPlay`). */
       const pixelPlays = new Map<number, PixelPlay>();
       /** Kicks and headers that are attempts at goal: player → the action's start. */
@@ -1933,7 +1945,7 @@ export function PixiPitch({
         // No ring around a figure (4.42.18, mock option K): a soft shadow in the kit under it.
         // No ring around the figure: a contact shadow and a thin kit ring on the ground (10.2, option D).
         const R = MATCH_LOOK.TEAM_RING;
-        addGround(marker, groundRingColor(kit, keeper ? teamKit : trim, R.DARK_LUMA, R.FALLBACK), body);
+        addGround(marker, groundRingColor(kit, keeper ? teamKit : trim, R.DARK_LUMA, R.FALLBACK, keeper ? undefined : player.team === "A" ? fillB : fillA), body);
         applyMarkerMode(marker);
         const { px, py } = toPixel(player.x, player.y);
         spriteMotion.set(player.id, newMotion(px / m.scale, py / m.scale));
@@ -1955,14 +1967,43 @@ export function PixiPitch({
         const art = pixelArt, body = pixelBodies.get(fig);
         if (!art || !body || body.frame === frame) return;
         body.frame = frame;
+        body.ball = false;
         for (const sp of body.layers) if (sp) sp.visible = false;
         for (const part of art.atlas.frames[frame] ?? []) {
           const sp = body.layers[part.layer];
           if (!sp) continue;
+          if (part.layer === art.ballLayer) body.ball = true;
           sp.texture = pixelPiece(part.rect);
           sp.position.set(part.x, part.y);
           sp.visible = true;
         }
+      }
+
+      /** A pixel figure in someone's colours: one tinted sprite per layer of the atlas, nothing shown yet. */
+      function makePixelFig(colours: PixelColours): Container {
+        const fig = new Container();
+        fig.label = 'pixel';
+        const layers = pixelArt!.atlas.layers.map((name) => {
+          const tint = pixelLayerTint(name, colours);
+          if (tint === null) return null;
+          const sp = new Sprite(Texture.EMPTY);
+          sp.tint = tint;
+          sp.visible = false;
+          fig.addChild(sp);
+          return sp;
+        });
+        pixelBodies.set(fig, { layers, frame: -1, ball: false });
+        return fig;
+      }
+      /** A figure's own ball: shown only on who has the ball (orange in snow). True when it is showing. */
+      function showPixelBall(fig: Container, own: boolean): boolean {
+        const art = pixelArt, body = pixelBodies.get(fig);
+        const sp = art && body && art.ballLayer >= 0 ? body.layers[art.ballLayer] : null;
+        if (!sp || !body) return false;
+        const on = own && body.ball;
+        sp.visible = on;
+        if (on) sp.tint = lightingRef.current?.weather === "snow" ? PIXEL_FIGURE.BALL_SNOW : 0xffffff;
+        return on;
       }
 
       /**
@@ -1979,23 +2020,12 @@ export function PixiPitch({
         const keeper = player.role === "GK";
         const kit = keeper ? pixelKit(benchKits(["GK"], teamKit)[0]!, PLAYER_SPRITE.KEEPER_TRIM) : pixelKit(teamKit, second);
         const rosterId = player.rosterId ?? String(player.id);
-        const look = spriteLook(rosterId), own = pixelLook(rosterId, art.hair.length);
+        const look = spriteLook(rosterId), own = pixelLook(rosterId, art.hair.length, !art.atlas.smooth);
         const colours: PixelColours = { ...kit, skin: look.skin, hair: look.hair, boots: own.boots, hairLayer: art.hair[own.hairStyle] ?? null };
-        const fig = new Container();
-        fig.label = 'pixel';
-        const layers = art.atlas.layers.map((name) => {
-          const tint = pixelLayerTint(name, colours);
-          if (tint === null) return null;
-          const sp = new Sprite(Texture.EMPTY);
-          sp.tint = tint;
-          sp.visible = false;
-          fig.addChild(sp);
-          return sp;
-        });
-        pixelBodies.set(fig, { layers, frame: -1 });
+        const fig = makePixelFig(colours);
         // The feet stand in the ground ring.
         fig.y = markerR * MATCH_LOOK.TEAM_RING.DY;
-        fig.scale.set(pixelZoom(markerR, art.atlas.height, MATCH_LOOK.FIGURE_SCALE, app.renderer.resolution));
+        fig.scale.set(pixelZoom(markerR, art.atlas.height, MATCH_LOOK.FIGURE_SCALE, app.renderer.resolution, art.atlas.smooth));
         setPixelFrame(fig, art.atlas.clips.idle!.frames[0]!);
         const under = marker.getChildByLabel('body') ?? marker.getChildByLabel('ring');
         marker.addChildAt(fig, under ? marker.getChildIndex(under) + 1 : marker.children.length);
@@ -2005,7 +2035,7 @@ export function PixiPitch({
         const rx = art.atlas.body * Math.abs(fig.scale.x) * G.RX, feetY = markerR * R.DY;
         const ground = new Graphics();
         ground.ellipse(0, feetY, rx * G.SHADOW, rx * G.SHADOW * G.FLAT).fill({ color: 0x000000, alpha: G.SHADOW_ALPHA });
-        ground.ellipse(0, feetY, rx, rx * G.FLAT).stroke({ color: groundRingColor(kit.shirt, keeper ? teamKit : second, R.DARK_LUMA, R.FALLBACK), width: Math.max(1.5, markerR * G.WIDTH), alpha: G.ALPHA });
+        ground.ellipse(0, feetY, rx, rx * G.FLAT).stroke({ color: groundRingColor(kit.shirt, keeper ? teamKit : second, R.DARK_LUMA, R.FALLBACK, keeper ? undefined : player.team === "A" ? fillB : fillA), width: Math.max(1.5, markerR * G.WIDTH), alpha: G.ALPHA });
         ground.label = 'pixelGround';
         marker.addChildAt(ground, marker.getChildIndex(fig));
         applyMarkerMode(marker);
@@ -2062,6 +2092,7 @@ export function PixiPitch({
        * Nothing without the atlas.
        */
       function attachFigure(c: Container | null, kind: OfficialKind, id: string, clubColor?: number): void {
+        if (c && !c.destroyed) figureInfo.set(c, { kind, id, clubColor });
         if (!officialSheet || !c || c.destroyed || c.getChildByLabel('body')) return;
         const body = makeFigureBody(kind, officialTints(kind, id, clubColor));
         c.addChildAt(body, Math.min(1, c.children.length));
@@ -2138,9 +2169,12 @@ export function PixiPitch({
             canvas.width = image.naturalWidth;
             canvas.height = image.naturalHeight;
             canvas.getContext("2d")?.drawImage(image, 0, 0);
-            // Nearest sampling: the art's pixels stay square at the whole-pixel zoom.
-            const source = new CanvasSource({ resource: canvas, transparent: true, scaleMode: "nearest" });
-            pixelArt = { atlas, source, pieces: new Map(), hair: hairLayers(atlas) };
+            // Pixel art: nearest sampling, its pixels stay square at the whole-pixel zoom. A painted atlas is drawn
+            // smaller than it is stored, so it gets mipmaps.
+            const source = atlas.smooth
+              ? new CanvasSource({ resource: canvas, transparent: true, scaleMode: "linear", mipmapFilter: "linear", autoGenerateMipmaps: true })
+              : new CanvasSource({ resource: canvas, transparent: true, scaleMode: "nearest" });
+            pixelArt = { atlas, source, pieces: new Map(), hair: hairLayers(atlas), ballLayer: atlas.layers.indexOf("ball") };
             for (const p of stateRef.current.players) addPixel(p);
           })().catch(() => { /* the other figures stay */ });
         }
@@ -2217,14 +2251,24 @@ export function PixiPitch({
       ballSprite.scale.set((ballR * 2) / BALL_SPRITE.SIZE);
       ball.addChild(ballSprite);
       let ballRoll = { roll: 0, heading: 0 };
+      // The pixel-art ball (10.7): the atlas's ball, shown with the pixel figures.
+      const pixelBall = new Sprite(Texture.EMPTY);
+      pixelBall.anchor.set(0.5);
+      pixelBall.visible = false;
+      ball.addChild(pixelBall);
+      let ballLook: "pixel" | "art" | "drawn" = "drawn";
+      /** Shows the ball of the current look and hides the other two. */
+      const applyBallLook = (look: "pixel" | "art" | "drawn") => {
+        ballLook = look;
+        for (const c of ball.children) c.visible = look === "pixel" ? c === pixelBall : look === "art" ? c === ballSprite : c !== ballSprite && c !== pixelBall;
+      };
       if (newVisualOn()) {
         void Assets.load<Spritesheet>(gameArtUrl("ball/ball-atlas.json")).then((sheet) => {
           if (facesDisposed || !sheet) return;
           const frames = Array.from({ length: BALL_SPRITE.FRAMES }, (_, i) => sheet.textures[`ball-spin-0${i + 1}.png`]);
           if (frames.some((t) => !t)) return;
           ballFrames = frames as Texture[];
-          for (const c of ball.children) c.visible = c === ballSprite;
-          ballSprite.visible = true;
+          applyBallLook(ballLook === "pixel" ? "pixel" : "art");
         }).catch(() => { /* the drawn ball stays */ });
         void Promise.all([Assets.load<Texture>(gameArtUrl("goal/goal-net.png")), Assets.load<Texture>(gameArtUrl("goal/goal-frame.png"))])
           .then(([netTex, frameTex]) => {
@@ -2246,6 +2290,7 @@ export function PixiPitch({
             goalArt = { net: ends.map(([x, l]) => make(netTex, x, l)), frame: ends.map(([x, l]) => make(frameTex, x, l)) };
             goalNetLayer.addChild(...goalArt.net);
             for (const f of goalArt.frame) { f.zIndex = 11; world.addChild(f); }
+            if (standingGoalOn) for (const s of [...goalArt.net, ...goalArt.frame]) s.visible = false;
             redrawSurfaceRef.current?.();
           }).catch(() => { /* the drawn goals stay */ });
       }
@@ -2265,7 +2310,74 @@ export function PixiPitch({
         fill: 0xffffff,
         dropShadow: { color: 0x000000, blur: 3, distance: 0, alpha: 0.9 },
       });
-      const effectCtx: EffectCtx = { toPixel, markerR, netDepth: m.goalNetDepth };
+      // With the standing goals what happens near a goal is drawn stretched onto their wider mouth (`goalWarpY`).
+      const warpY = (x: number, y: number) => (standingGoalOn ? goalWarpY(x, y) : y);
+      const toPixelNearGoal = (x: number, y: number) => toPixel(x, warpY(x, y));
+      const effectCtx: EffectCtx = { toPixel: toPixelNearGoal, markerR, netDepth: m.goalNetDepth };
+      // The trail follows the drawn ball, already stretched.
+      const trailCtx: EffectCtx = { toPixel, markerR, netDepth: m.goalNetDepth };
+
+      // The standing goals (10.7, `standingGoal.ts`): the back of the net under the players, the roof, the near side
+      // and the crossbar over them and the ball, each post sorted by depth with the figures.
+      const standGoal = { back: new Graphics(), front: new Graphics(), posts: [] as Graphics[], height: 0 };
+      standGoal.back.zIndex = -0.4;
+      standGoal.front.zIndex = 10.5;
+      for (const g of [standGoal.back, standGoal.front]) { g.eventMode = 'none'; g.visible = false; world.addChild(g); }
+      const drawStandingGoals = (height: number) => {
+        const G = STANDING_GOAL, cy = m.marginY + m.height / 2;
+        standGoal.back.clear();
+        standGoal.front.clear();
+        for (const p of standGoal.posts) p.destroy();
+        standGoal.posts = [];
+        const postW = Math.max(2.5, markerR * G.POST_W), barW = Math.max(1.2, markerR * G.BAR_W), cell = Math.max(4, markerR * G.MESH_CELL);
+        const bar = (g: Graphics, a: Pt, b: Pt, w: number, color: number) => {
+          g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: w + 2, color: G.OUTLINE, cap: "round" });
+          g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: w, color, cap: "round" });
+        };
+        const panel = (g: Graphics, a: Pt, b: Pt, c: Pt, d: Pt, alpha: number) => {
+          g.poly([a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y]).fill({ color: 0xffffff, alpha: G.NET_FILL });
+          const n = Math.max(2, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / cell)), rows = Math.max(2, Math.round(Math.hypot(d.x - a.x, d.y - a.y) / cell));
+          for (const [p, q] of meshLines(a, b, c, d, n, rows)) g.moveTo(p.x, p.y).lineTo(q.x, q.y);
+          g.stroke({ width: 1, color: 0xffffff, alpha });
+        };
+        for (const [lineX, away] of [[m.marginX, -1], [m.marginX + m.width, 1]] as const) {
+          const s = standingGoalShape(lineX, cy, away, m.scale, height);
+          const { back, front } = standGoal;
+          back.poly([s.farFoot.x, s.farFoot.y, s.nearFoot.x, s.nearFoot.y, s.nearBack.x, s.nearBack.y + postW, s.farBack.x, s.farBack.y + postW]).fill({ color: 0x000000, alpha: G.SHADOW_ALPHA });
+          panel(back, s.farBackTop, s.nearBackTop, s.nearBack, s.farBack, G.MESH_ALPHA);
+          panel(back, s.farTop, s.farBackTop, s.farBack, s.farFoot, G.MESH_ALPHA);
+          bar(back, s.farBack, s.farBackTop, barW, G.BAR);
+          bar(back, s.farBackTop, s.farTop, barW, G.BAR);
+          panel(front, s.farTop, s.nearTop, s.nearBackTop, s.farBackTop, G.MESH_ALPHA);
+          panel(front, s.nearTop, s.nearBackTop, s.nearBack, s.nearFoot, G.FRONT_MESH_ALPHA);
+          bar(front, s.farBackTop, s.nearBackTop, barW, G.BAR);
+          bar(front, s.nearBack, s.nearBackTop, barW, G.BAR);
+          bar(front, s.nearBackTop, s.nearTop, barW, G.BAR);
+          bar(front, s.farTop, s.nearTop, postW, G.POST);
+          for (const [foot, top] of [[s.farFoot, s.farTop], [s.nearFoot, s.nearTop]] as const) {
+            const post = new Graphics();
+            bar(post, foot, top, postW, G.POST);
+            post.zIndex = Math.round(foot.y) * PIXEL_FIGURE.Z_PER_PX;
+            post.eventMode = 'none';
+            world.addChild(post);
+            standGoal.posts.push(post);
+          }
+        }
+      };
+      /** Shows the standing goals with the side-view figures and the flat ones otherwise (only when it changes). */
+      const syncStandingGoals = () => {
+        const art = markersRef.current === "pixel" ? pixelArt : null;
+        const height = art ? STANDING_GOAL.HEIGHT * art.atlas.height * pixelZoom(markerR, art.atlas.height, MATCH_LOOK.FIGURE_SCALE, app.renderer.resolution, art.atlas.smooth) : 0;
+        const on = height > 0;
+        if (on === standingGoalOn && Math.abs(height - standGoal.height) < 0.5) return;
+        standingGoalOn = on;
+        standGoal.height = height;
+        if (on) drawStandingGoals(height);
+        for (const g of [standGoal.back, standGoal.front, ...standGoal.posts]) g.visible = on;
+        if (goalArt) for (const s of [...goalArt.net, ...goalArt.frame]) s.visible = !on;
+        effectCtx.standingGoal = on;
+        redrawSurfaceRef.current?.();
+      };
       let effectNow = 0;
       let effects: PitchEffect[] = [];
       let trail: TrailPoint[] = [];
@@ -2316,14 +2428,14 @@ export function PixiPitch({
           }
         }
         if (st.shot) {
-          const a = toPixel(st.shot.fromX, st.shot.fromY), b = toPixel(st.shot.toX, st.shot.toY);
+          const a = toPixelNearGoal(st.shot.fromX, st.shot.fromY), b = toPixelNearGoal(st.shot.toX, st.shot.toY);
           const lift = Math.min(60, Math.hypot(b.px - a.px, b.py - a.py) * 0.18);
           playGfx.moveTo(a.px, a.py).quadraticCurveTo((a.px + b.px) / 2, Math.min(a.py, b.py) - lift, b.px, b.py)
             .stroke({ width: 2, color: 0xffe678, alpha: 0.75 });
         }
         impacts = impacts.filter((i) => effectNow - i.at < 0.6);
         for (const i of impacts) {
-          const k = (effectNow - i.at) / 0.6, { px, py } = toPixel(i.x, i.y);
+          const k = (effectNow - i.at) / 0.6, { px, py } = toPixelNearGoal(i.x, i.y);
           playGfx.circle(px, py, markerR * (0.5 + k * 2.5)).stroke({ width: 2, color: 0xffffff, alpha: 1 - k });
         }
       };
@@ -2430,7 +2542,10 @@ export function PixiPitch({
         anims = addAnim(anims, { playerId: w.id, kind: "jump", dir: { x: e.x - w.x, y: e.y - w.y }, side: 1 }, effectNow);
         anims = addAnim(anims, { playerId: l.id, kind: "jump", dir: { x: e.x - l.x, y: e.y - l.y }, side: 1 }, effectNow);
         act(w.id, "header");
-        act(l.id, seedFrom(`duel:${e.winnerId}:${e.loserId}:${Math.round(e.x * 10)}`) % 4 === 0 ? "fall" : "header");
+        const falls = seedFrom(`duel:${e.winnerId}:${e.loserId}:${Math.round(e.x * 10)}`) % 4 === 0;
+        act(l.id, falls ? "fall" : "header");
+        // The pixel figure of the one who lost the ball only jumps.
+        if (!falls) pixelJumps.set(l.id, effectNow);
       });
       const unsubAnimHeader = gameBus.on("header", (e) => {
         if (!framesShown()) return;
@@ -2475,6 +2590,8 @@ export function PixiPitch({
       // ── Sprite poses (art phase 2): the engine's events start a short action of the player's sprite ──
       /** The taker of the current throw-in: his throw shows the throw frame. */
       let throwTaker: number | null = null;
+      /** The wall of the last direct free kick set up (kept past the kick, when the state has already dropped it). */
+      let lastWallIds: number[] = [];
       const act = (playerId: number | null | undefined, kind: SpriteAction["kind"], side: 1 | -1 = 1) => {
         if (playerId === null || playerId === undefined || (!spriteSheets && !pixelArt) || !framesShown()) return;
         spriteActions = addAction(spriteActions, { playerId, kind, side }, effectNow);
@@ -2486,8 +2603,14 @@ export function PixiPitch({
         // A won dribble: the pixel figure plays one of its tricks (kept through a pose he is still in).
         gameBus.on("dribble", (e) => {
           if (!e.success || !pixelArt || !framesShown()) return;
-          const clip = pickPixelTrick(pixelArt.atlas, pixelVariant(e.player, effectNow));
+          const moving = (spriteMotion.get(e.player)?.gait ?? "idle") !== "idle";
+          const clip = pickPixelTrick(pixelArt.atlas, pixelVariant(e.player, effectNow), moving);
           if (clip) pixelPlays.set(e.player, { clip, startedAt: effectNow, key: spriteActions.find((a) => a.playerId === e.player)?.startedAt ?? -1 });
+        }),
+        // A direct free kick: the wall of pixel figures jumps.
+        gameBus.on("directFreeKick", () => {
+          if (!pixelArt || markersRef.current !== "pixel" || !framesShown()) return;
+          for (const id of stateRef.current.setPiece?.wallIds ?? lastWallIds) { act(id, "header"); pixelJumps.set(id, effectNow); }
         }),
         // The preview's choice: a keeper throws a short ball, a long pass is a kick, a short one a pass.
         gameBus.on("passAttempted", (e) => {
@@ -2524,7 +2647,7 @@ export function PixiPitch({
       stretcherGfx.eventMode = 'none';
       world.addChild(stretcherGfx);
       // `tints`: the injured player's kit for the lying figure, taken while he is still on the pitch.
-      let stretchers: { run: StretcherRun; color: number; tints: Record<string, number> | null; medics?: Container[]; patient?: Container }[] = [];
+      let stretchers: { run: StretcherRun; color: number; tints: Record<string, number> | null; pixel: PixelColours | null; medics?: Container[]; patient?: Container; pixelPatient?: Container }[] = [];
       const unsubStretcher = gameBus.on("injury", (e) => {
         if (!extrasRef.current || !framesShown()) return;
         const at = lastDrawnPos?.get(e.playerId) ?? playerPos(e.playerId);
@@ -2538,7 +2661,14 @@ export function PixiPitch({
         const kit = keeper ? benchKits(["GK"], teamKit)[0]! : teamKit;
         const look = spriteLook(who?.rosterId ?? String(e.playerId));
         const tints = { socks: kit, shirt: kit, trim: keeper ? PLAYER_SPRITE.KEEPER_TRIM : e.team === "A" ? fillA2 : fillB2, skin: look.skin, hair: look.hair };
-        stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow, mouth), color: teamKit, tints }];
+        // The same colours as his pixel figure, for the one lying on the stretcher.
+        let pixel: PixelColours | null = null;
+        if (pixelArt) {
+          const rosterId = who?.rosterId ?? String(e.playerId), own = pixelLook(rosterId, pixelArt.hair.length, !pixelArt.atlas.smooth);
+          const second = e.team === "A" ? fillA2 : fillB2;
+          pixel = { ...(keeper ? pixelKit(kit, PLAYER_SPRITE.KEEPER_TRIM) : pixelKit(teamKit, second)), skin: look.skin, hair: look.hair, boots: own.boots, hairLayer: pixelArt.hair[own.hairStyle] ?? null };
+        }
+        stretchers = [...stretchers, { run: startStretcher({ x: px, y: py }, m, effectNow, mouth), color: teamKit, tints, pixel }];
       });
       // While a stretcher is on the pitch the match waits (only drawn ones: none with the tab hidden or without extras).
       stretcherHolds = () => framesVisible() && stretchers.some((st) => !stretcherPose(st.run, effectNow).done);
@@ -2552,6 +2682,7 @@ export function PixiPitch({
           if (!stretcherPose(st.run, effectNow).done) continue;
           for (const c of st.medics ?? []) c.destroy({ children: true });
           st.patient?.destroy({ children: true });
+          st.pixelPatient?.destroy({ children: true });
         }
         stretchers = stretchers.filter((st) => !stretcherPose(st.run, effectNow).done);
         for (const [si, st] of stretchers.entries()) {
@@ -2578,11 +2709,31 @@ export function PixiPitch({
             world.addChild(body);
             st.patient = body;
           }
+          // With the pixel figures he lies on it in pixel art.
+          const pixelDown = markersRef.current === "pixel" && pixelArt?.atlas.clips.down ? pixelArt.atlas.clips.down : null;
+          if (showPatient && pixelDown && st.pixel && !st.pixelPatient) {
+            const fig = makePixelFig(st.pixel);
+            fig.zIndex = 6.05;
+            fig.eventMode = 'none';
+            world.addChild(fig);
+            st.pixelPatient = fig;
+          }
+          if (st.pixelPatient) {
+            const on = showPatient && !!pixelDown;
+            st.pixelPatient.visible = on;
+            if (on && pixelArt) {
+              const res = app.renderer.resolution, snap = (v: number) => pixelSnap(v, res, pixelArt?.atlas.smooth);
+              setPixelFrame(st.pixelPatient, pixelDown!.frames[pixelDown!.frames.length - 1]!);
+              showPixelBall(st.pixelPatient, false);
+              st.pixelPatient.scale.set(pixelZoom(markerR, pixelArt.atlas.height, MATCH_LOOK.FIGURE_SCALE, res, pixelArt.atlas.smooth));
+              st.pixelPatient.position.set(snap(pose.x), snap(pose.y + h * 0.3));
+            }
+          }
           if (st.patient) {
             st.patient.position.set(pose.x, pose.y);
-            st.patient.visible = showPatient && figures;
+            st.patient.visible = showPatient && figures && !st.pixelPatient?.visible;
           }
-          if (showPatient && !figures) stretcherGfx.circle(pose.x, pose.y, markerR * L.DISC_R).fill(st.color).stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
+          if (showPatient && !figures && !st.pixelPatient?.visible) stretcherGfx.circle(pose.x, pose.y, markerR * L.DISC_R).fill(st.color).stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
           // Sprite medics (art phase 3): run in, kneel by the player, carry him off.
           if (officialSheet) {
             if (!st.medics) {
@@ -2592,6 +2743,7 @@ export function PixiPitch({
                 c.eventMode = 'none';
                 world.addChild(c);
                 c.addChild(makeFigureBody("medic", officialTints("medic", `medic:${si}:${end}`)));
+                figureInfo.set(c, { kind: "medic", id: `medic:${si}:${end}` });
                 return c;
               });
             }
@@ -2620,7 +2772,7 @@ export function PixiPitch({
        * Steps a figure's motion from its container's drawn position and shows its frame. `look` (px) is where it faces
        * when standing; `face` (radians) forces the facing (an assistant side-stepping, a medic kneeling).
        */
-      function animateFigure(c: Container, kind: OfficialKind, look: { x: number; y: number } | null, s: OfficialPoseState, face?: number): void {
+      function animateFigure(c: Container, kind: OfficialKind, look: { x: number; y: number } | null, s: OfficialPoseState, face?: number, pix?: PixelOfficialState): void {
         const body = c.getChildByLabel('body') as Container | null;
         if (!body) return;
         const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
@@ -2634,9 +2786,63 @@ export function PixiPitch({
           mo = { ...mo, angle: mo.angle + d * Math.min(1, dtS * 6) };
         }
         figureMotion.set(c, { m: mo, side });
+        // With the pixel figures the people around the pitch are pixel art too (10.7): the referee's figure for the
+        // referee, the assistants and the fourth official; a player's figure for the managers and the medics.
+        const art = pixelArt, info = figureInfo.get(c);
+        const pixelOn = markersRef.current === "pixel" && !!art && !!info && isPixelOfficial(kind) && hasPixelOfficial(art.atlas, kind);
+        let fig = c.getChildByLabel('pixel') as Container | null;
+        if (pixelOn && !fig && art && info && isPixelOfficial(kind)) {
+          fig = makePixelFig(officialPixelColours(kind, info.id, art.hair, info.clubColor, !art.atlas.smooth));
+          c.addChildAt(fig, c.getChildIndex(body) + 1);
+          const G = PIXEL_FIGURE.GROUND, rx = art.atlas.body * pixelZoom(markerR, art.atlas.height, MATCH_LOOK.FIGURE_SCALE, app.renderer.resolution, art.atlas.smooth) * G.RX;
+          const ground = new Graphics().ellipse(0, markerR * MATCH_LOOK.TEAM_RING.DY, rx * G.SHADOW, rx * G.SHADOW * G.FLAT).fill({ color: 0x000000, alpha: G.SHADOW_ALPHA });
+          ground.label = 'pixelGround';
+          c.addChildAt(ground, c.getChildIndex(fig));
+          // The flag is drawn in the original art's pixels.
+          if (kind === "assistant") { const flag = new Graphics(); flag.label = 'pixelFlag'; flag.scale.set(art.atlas.scale); fig.addChild(flag); }
+        }
+        const pixelShown = pixelOn && !!fig;
+        body.visible = !pixelShown;
+        if (fig) fig.visible = pixelShown;
+        for (const l of ['pixelGround']) { const ch = c.getChildByLabel(l); if (ch) ch.visible = pixelShown; }
+        { const sh = c.getChildByLabel('shadow'); if (sh) sh.visible = !pixelShown; }
+        if (pixelShown && fig && art && isPixelOfficial(kind)) {
+          const res = app.renderer.resolution, zoom = pixelZoom(markerR, art.atlas.height, MATCH_LOOK.FIGURE_SCALE, res, art.atlas.smooth);
+          // A kneeling medic or a side-stepping assistant faces the pitch: he keeps the side he had.
+          const facing = forced !== undefined && kind !== "assistant" ? figureFace.get(c) ?? 1 : pixelFacing(figureFace.get(c) ?? 1, mo.angle);
+          figureFace.set(c, facing);
+          setPixelFrame(fig, officialPixelFrame(art.atlas, kind, s.kneel ? { ...mo, gait: "idle" } : mo, effectNow, pix));
+          showPixelBall(fig, false);
+          fig.scale.set(facing * zoom, zoom);
+          const snap = (v: number) => pixelSnap(v, res, art.atlas.smooth);
+          fig.position.set(snap(c.x) - c.x, snap(c.y + markerR * MATCH_LOOK.TEAM_RING.DY) - c.y);
+          const flag = fig.getChildByLabel('pixelFlag') as Graphics | null;
+          if (flag) {
+            const key = s.flagUp ? "up" : "down";
+            if (figureFlag.get(c) !== key) {
+              figureFlag.set(c, key);
+              const F = PIXEL_FIGURE.FLAG, H = art.atlas.height / art.atlas.scale;
+              flag.clear();
+              if (s.flagUp) {
+                // Held straight up, the cloth at the top.
+                const x = 5, top = -H - F.POLE + 4;
+                flag.rect(x, top, 1, F.POLE + 6).fill(F.POLE_COLOR);
+                flag.rect(x + 1, top, F.CLOTH, F.CLOTH).fill(F.A).rect(x + 1, top, 3, 3).fill(F.B).rect(x + 4, top + 3, 2, 2).fill(F.B);
+              } else {
+                // Down by his side, the cloth near the ground.
+                const x = 6, top = -15;
+                flag.rect(x, top, 1, F.POLE).fill(F.POLE_COLOR);
+                flag.rect(x + 1, top + F.POLE - F.CLOTH, F.CLOTH, F.CLOTH).fill(F.A).rect(x + 1, top + F.POLE - F.CLOTH, 3, 3).fill(F.B).rect(x + 4, top + F.POLE - 2, 2, 2).fill(F.B);
+              }
+            }
+          }
+          return;
+        }
         setFigurePose(body, officialPose(kind, mo, { ...s, sideStep: side }));
         body.rotation = mo.angle + Math.PI / 2;
       }
+      /** Whether an official's container shows its pixel figure. */
+      const pixelFigureOn = (c: Container | null | undefined): boolean => !!c?.getChildByLabel('pixel')?.visible;
 
       // ── Referee, assistants, managers (spec 2026-10-08-match-visual §3–§4) ──
       const officialsOn = !!officials;
@@ -2815,6 +3021,7 @@ export function PixiPitch({
           fourth.y = coachSpot.left.y;
           world.addChild(fourth);
           fourth.addChild(makeFigureBody("fourth", officialTints("fourth", "fourth")));
+          figureInfo.set(fourth, { kind: "fourth", id: "fourth" });
         }
       };
       if (officialSheet) onOfficialsReady();
@@ -3519,10 +3726,15 @@ export function PixiPitch({
           referee.x = px;
           referee.y = py;
           if (refCard && effectNow >= refCard.until) refCard = null;
-          showCard(referee, refCard?.card ?? null);
           const look = review ? varMonitorSpot(mirrorRef.current) : ball;
           const lookPx = toPixel(look.x, look.y);
-          animateFigure(referee, "referee", { x: lookPx.px, y: lookPx.py }, { card: !!refCard });
+          animateFigure(referee, "referee", { x: lookPx.px, y: lookPx.py }, { card: !!refCard }, undefined,
+            { card: refCard ? { card: refCard.card, at: refCard.until - EFFECT_DURATION.card } : null });
+          // The pixel referee takes the card out himself; standing up, he is sorted by depth with the players.
+          const pixelRef = pixelFigureOn(referee);
+          showCard(referee, pixelRef ? null : refCard?.card ?? null);
+          const z = pixelRef ? Math.round(py) * PIXEL_FIGURE.Z_PER_PX : -0.5;
+          if (referee.zIndex !== z) referee.zIndex = z;
         }
         for (const side of ["top", "bottom"] as const) {
           const c = assistantC[side];
@@ -3537,8 +3749,8 @@ export function PixiPitch({
           c.x = px;
           // Without a stadium there may be no run-off: keep the assistant on the canvas.
           c.y = Math.min(canvasHeight - markerR, Math.max(markerR, py));
-          setFlagRaised(c, effectNow < flagUntil[side]);
           animateFigure(c, "assistant", null, { flagUp: effectNow < flagUntil[side] });
+          setFlagRaised(c, effectNow < flagUntil[side] && !pixelFigureOn(c));
         }
         if (fourth) {
           const ballPx = toPixel(ball.x, ball.y);
@@ -3595,7 +3807,7 @@ export function PixiPitch({
           const ballPx = toPixel(ball.x, ball.y);
           // Pointing through a gesture; on a goal, alternating with the arms down.
           const point = !!live && (live.kind !== "celebrate" || Math.floor((effectNow - live.at) * 4) % 2 === 0);
-          animateFigure(entry.sprite.root, "coach", { x: ballPx.px, y: ballPx.py }, { point });
+          animateFigure(entry.sprite.root, "coach", { x: ballPx.px, y: ballPx.py }, { point }, undefined, { celebrate: live?.kind === "celebrate", offset: side === "left" ? 0 : 0.37 });
         }
       };
 
@@ -4215,6 +4427,14 @@ export function PixiPitch({
             drawnPos = next;
           }
         }
+        syncStandingGoals();
+        if (standingGoalOn) {
+          // The wider drawn mouth: players and the ball near a goal are drawn stretched across it (drawing only).
+          const next = new Map<number, Pos>();
+          for (const [id, p] of drawnPos) next.set(id, { ...p, y: goalWarpY(p.x, p.y) });
+          drawnPos = next;
+          drawnB = { ...drawnB, y: goalWarpY(drawnB.x, drawnB.y) };
+        }
         lastDrawnPos = drawnPos;
         lastDrawnBall = drawnB;
         const heldId = heldBallId(stateRef.current, drawnPos, drawnB, Boolean(remote));
@@ -4270,6 +4490,10 @@ export function PixiPitch({
         // ballHolderId keeps the last toucher while the ball travels: glow only on a real holder.
         const st0 = stateRef.current;
         const glowId = heldId;
+        // Pixel figures: who shows the ball himself is found again every frame; the wall is remembered past the kick.
+        pixelBallOwner = null;
+        const deadPhase = stateRef.current.matchPhase === "preMatch" || stateRef.current.matchPhase === "halfTime" || stateRef.current.matchPhase === "extraTimeBreak";
+        { const wall = stateRef.current.setPiece?.wallIds; if (wall?.length) lastWallIds = wall; }
         // Short player animations: an offset on top of the interpolated marker (engine untouched).
         anims = liveAnims(anims, effectNow);
         const animOf = new Map(anims.map((a) => [a.playerId, a] as const));
@@ -4359,7 +4583,7 @@ export function PixiPitch({
             } else if (pixelFig && pixelArt) {
               const A = pixelArt.atlas, keeper = player.role === "GK";
               const res = app.renderer.resolution;
-              const zoom = pixelZoom(markerR, A.height, MATCH_LOOK.FIGURE_SCALE, res);
+              const zoom = pixelZoom(markerR, A.height, MATCH_LOOK.FIGURE_SCALE, res, A.smooth);
               // Side view: he looks left or right, toward where he moves (or the ball, standing still).
               const facing = pixelFacing(pixelFace.get(player.id) ?? (player.attackDir * xSign() >= 0 ? 1 : -1), mo.angle);
               pixelFace.set(player.id, facing);
@@ -4368,6 +4592,7 @@ export function PixiPitch({
                 keeper,
                 diveDown: action?.kind === "dive" && action.side * (mirrorRef.current ? -1 : 1) > 0,
                 shot: action !== null && pixelShots.get(player.id) === action.startedAt,
+                jump: action !== null && pixelJumps.get(player.id) === action.startedAt,
                 variant: action ? pixelVariant(player.id, action.startedAt) : 1,
               });
               if (play) pixelPlays.set(player.id, play); else pixelPlays.delete(player.id);
@@ -4377,12 +4602,17 @@ export function PixiPitch({
                 ready: ballDist <= PIXEL_FIGURE.KEEPER_READY_YDS,
                 stance: withBall !== null && withBall !== player.team && ballDist <= PIXEL_FIGURE.STANCE_YDS,
                 hold: throwing,
+                setPiece: !!sp && sp.takerId === player.id && !throwing,
+                // Before the whistle the one on the ball juggles it.
+                juggle: !sp && deadPhase,
                 offset: player.id * 0.137,
               }));
+              // The frame's own ball (dribble, trick, juggling, in the keeper's hands) only on who has the ball.
+              if (showPixelBall(pixelFig, player.id === heldId)) pixelBallOwner = player.id;
               pixelFig.scale.set(facing * zoom, zoom);
               pixelFig.rotation = -g.rotation;
               // On whole device pixels, so the art's pixels stay square and the layers never part.
-              const snap = (v: number) => Math.round(v * res) / res;
+              const snap = (v: number) => pixelSnap(v, res, A.smooth);
               pixelFig.position.set(snap(g.x) - g.x, snap(g.y + markerR * MATCH_LOOK.TEAM_RING.DY) - g.y);
               headR = A.height * zoom - markerR * MATCH_LOOK.TEAM_RING.DY;
             }
@@ -4933,6 +5163,10 @@ export function PixiPitch({
           }
         }
         const h = drawnB.h;
+        {
+          const want = markersRef.current === "pixel" && pixelArt?.atlas.clips.ball ? "pixel" : ballFrames ? "art" : "drawn";
+          if (want !== ballLook) applyBallLook(want);
+        }
         seamAngle = nextSpinAngle(seamAngle, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX, BALL.SPIN_MAX_PER_FRAME);
         if (ballFrames) {
           ballRoll = nextBallRoll(ballRoll, prevBallPx, { x: bx, y: by }, ballR, pausedRef.current, BALL.SPIN_TELEPORT_PX, BALL.SPIN_MAX_PER_FRAME);
@@ -4946,6 +5180,23 @@ export function PixiPitch({
         ball.x = bx;
         ball.y = by - h * m.scale * BALL.LIFT_PX_PER_YD;
         ball.scale.set(1 + h * BALL.GROW_PER_YD);
+        // A figure that shows the ball itself (a dribble frame, a trick, the keeper's hands) hides the loose one.
+        const figureHasBall = pixelBallOwner !== null && pixelBallOwner === heldId;
+        ball.visible = !figureHasBall;
+        ballShadow.visible = !figureHasBall;
+        if (ballLook === "pixel" && pixelArt) {
+          const A = pixelArt.atlas, res = app.renderer.resolution, snap = (v: number) => pixelSnap(v, res, A.smooth);
+          const part = A.frames[A.clips.ball!.frames[0]!]?.[0];
+          if (part) pixelBall.texture = pixelPiece(part.rect);
+          // Whole device pixels: the size steps up with the height instead of growing smoothly.
+          const zoom = pixelZoom(markerR, A.height, MATCH_LOOK.FIGURE_SCALE, res, A.smooth);
+          ball.scale.set(1);
+          pixelBall.scale.set(A.smooth ? zoom * (1 + h * BALL.GROW_PER_YD) : Math.max(1 / res, Math.round(zoom * (1 + h * BALL.GROW_PER_YD) * res) / res));
+          pixelBall.rotation = pixelBallTurn(seamAngle, A.smooth);
+          pixelBall.tint = lightingRef.current?.weather === "snow" ? PIXEL_FIGURE.BALL_SNOW : 0xffffff;
+          ball.x = snap(ball.x);
+          ball.y = snap(ball.y);
+        }
         ballShadow.x = bx + BALL.SHADOW_DX;
         ballShadow.y = by + BALL.SHADOW_DY;
         ballShadow.scale.set(Math.max(BALL.SHADOW_MIN_SCALE, 1 - h * BALL.SHADOW_SHRINK_PER_YD));
@@ -5059,7 +5310,7 @@ export function PixiPitch({
           if (!effects.includes(fx)) { world.removeChild(txt); txt.destroy(); effectTexts.delete(fx); }
         }
         effectsGfx.clear();
-        drawTrail(effectsGfx, trail, effectNow, effectCtx);
+        drawTrail(effectsGfx, trail, effectNow, trailCtx);
         for (const fx of effects) {
           drawEffect(effectsGfx, fx, effectNow, effectCtx);
           const txt = effectTexts.get(fx);

@@ -31,6 +31,13 @@ export interface PixelAtlas {
   /** Width and height of a standing figure (px): the zoom and what sits over the head follow them. */
   body: number;
   height: number;
+  /**
+   * A painted (not pixel-art) atlas: drawn with smooth sampling at any zoom, never snapped to whole pixels. Absent =
+   * pixel art (whole-pixel zoom, nearest sampling).
+   */
+  smooth?: true;
+  /** Atlas px per pixel of the original art (1 for pixel art, more for a painted atlas drawn bigger). */
+  scale: number;
   /** Tint layers, in drawing order (`skin`, `socks`, `boots`, `shorts`, `shirt`, `gloves`, `hair0`…, `vfx`). */
   layers: string[];
   /** The pieces in the image: x, y, width, height. */
@@ -43,6 +50,8 @@ export interface PixelAtlas {
 export interface PixelSpritePointer {
   data: string;
   image: string;
+  /** The atlas is a painted one (cartoon figures), not pixel art: the option is named after it. */
+  smooth?: true;
 }
 
 /** Clips every atlas must have; the others fall back to these. */
@@ -50,7 +59,7 @@ export const PIXEL_REQUIRED_CLIPS = ["idle", "walk", "run", "kick"] as const;
 /** Layers every atlas must have. */
 export const PIXEL_REQUIRED_LAYERS = ["skin", "socks", "shorts", "shirt"] as const;
 
-export const PIXEL_LIMITS = { LAYERS: 24, RECTS: 8192, FRAMES: 1024, PARTS: 24, CLIPS: 64, CLIP_FRAMES: 32, IMAGE_PX: 4096, OFFSET: 256 } as const;
+export const PIXEL_LIMITS = { LAYERS: 24, RECTS: 8192, FRAMES: 1024, PARTS: 24, CLIPS: 96, CLIP_FRAMES: 64, IMAGE_PX: 4096, OFFSET: 512, SIZE: 512, SCALE: 8 } as const;
 
 const IMAGE_RE = /^sprites\/[A-Za-z0-9_-]{1,64}\.png$/;
 const DATA_RE = /^sprites\/[A-Za-z0-9_-]{1,64}\.json$/;
@@ -70,7 +79,8 @@ export function parsePixelDataPath(raw: unknown): string | null {
 export function parsePixelPointer(raw: unknown): PixelSpritePointer | null {
   const data = parsePixelDataPath(raw);
   const image = raw && typeof raw === "object" ? (raw as Record<string, unknown>).image : null;
-  return data && typeof image === "string" && IMAGE_RE.test(image) ? { data, image } : null;
+  if (!data || typeof image !== "string" || !IMAGE_RE.test(image)) return null;
+  return (raw as Record<string, unknown>).smooth === true ? { data, image, smooth: true } : { data, image };
 }
 
 /** The description of an atlas, or null when anything in it is off (the option then does not exist). */
@@ -79,8 +89,10 @@ export function parsePixelAtlas(raw: unknown): PixelAtlas | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.image !== "string" || !IMAGE_RE.test(r.image)) return null;
-  const body = int(r.body, 4, 128), height = int(r.height, 4, 128);
+  const body = int(r.body, 4, L.SIZE), height = int(r.height, 4, L.SIZE);
   if (body === null || height === null) return null;
+  const scale = r.scale === undefined ? 1 : int(r.scale, 1, L.SCALE);
+  if (scale === null || (r.smooth !== undefined && typeof r.smooth !== "boolean")) return null;
 
   if (!Array.isArray(r.layers) || r.layers.length === 0 || r.layers.length > L.LAYERS) return null;
   if (!r.layers.every((n) => typeof n === "string" && NAME_RE.test(n)) || new Set(r.layers).size !== r.layers.length) return null;
@@ -123,7 +135,7 @@ export function parsePixelAtlas(raw: unknown): PixelAtlas | null {
     clips[name] = { frames: cl.frames as number[], dur: cl.dur, ...(cl.loop === true ? { loop: true } : {}) };
   }
   for (const need of PIXEL_REQUIRED_CLIPS) if (!clips[need]) return null;
-  return { image: r.image, body, height, layers, rects, frames, clips };
+  return { image: r.image, body, height, scale, ...(r.smooth === true ? { smooth: true as const } : {}), layers, rects, frames, clips };
 }
 
 let current: PixelSpritePointer | null = null;

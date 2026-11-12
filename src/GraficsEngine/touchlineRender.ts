@@ -16,9 +16,11 @@ export const OFFICIAL_LOOK = {
 } as const;
 
 function shadowOf(r: number): Graphics {
-  return new Graphics()
+  const g = new Graphics()
     .ellipse(r * MARKER_SHADOW.DX, r * MARKER_SHADOW.DY, r, r * MARKER_SHADOW.SCALE_Y)
     .fill({ color: 0x000000, alpha: MARKER_SHADOW.ALPHA });
+  g.label = "shadow";
+  return g;
 }
 
 function flag(r: number, raised: boolean): Graphics {

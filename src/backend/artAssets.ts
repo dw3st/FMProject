@@ -122,7 +122,9 @@ export function loadPixelSprite(): PixelSpritePointer | null {
     const key = `${pointerFile}|${statSync(pointerFile).mtimeMs}|${data}|${statSync(dataFile).mtimeMs}`;
     if (pixelCache?.key === key) return pixelCache.pointer;
     const atlas = parsePixelAtlas(JSON.parse(readFileSync(dataFile, "utf8")));
-    const pointer = atlas && statSync(join(dir, atlas.image)).isFile() ? { data, image: atlas.image } : null;
+    const pointer: PixelSpritePointer | null = atlas && statSync(join(dir, atlas.image)).isFile()
+      ? { data, image: atlas.image, ...(atlas.smooth ? { smooth: true as const } : {}) }
+      : null;
     pixelCache = { key, pointer };
     return pointer;
   } catch {

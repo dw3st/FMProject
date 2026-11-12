@@ -1276,6 +1276,8 @@
       "figures": "Figures",
       "figuresOn": "Players drawn as figures (click to change)",
       "figuresOff": "Players drawn as discs with the face (click to change)",
+      "cartoon": "Cartoon",
+      "cartoonOn": "Players drawn as cartoon figures seen from the side (click to change)",
       "pixel": "Pixel art",
       "pixelOn": "Players drawn as pixel-art figures (click to change)",
       "sound": "Sound",

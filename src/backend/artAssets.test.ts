@@ -109,6 +109,10 @@ describe("art assets", () => {
       // A pointer outside sprites/, or to itself: nothing.
       rewrite("sheet-1.json", atlas);
       expect((await faces().json()).pixelSprite).not.toBeNull();
+      // A painted atlas is announced as smooth (the option is named after it).
+      rewrite("sheet-1.json", { ...atlas, smooth: true, scale: 3 });
+      expect((await faces().json()).pixelSprite).toEqual({ data: "sprites/sheet-1.json", image: "sprites/sheet-1.png", smooth: true });
+      rewrite("sheet-1.json", atlas);
       rewrite("pixel-players.json", { data: "../index.json" });
       expect((await faces().json()).pixelSprite).toBeNull();
       rewrite("pixel-players.json", { data: "sprites/pixel-players.json" });

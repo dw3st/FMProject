@@ -6,6 +6,7 @@
  * Atlases in `src/example_data/assets/player` and `/keeper` (frames face −y, six layers each).
  */
 import { mulberry32, seedFrom } from "@/Domain/rng";
+import { kitsClash } from "@/Domain/matchday/matchKits";
 
 export const SPRITE_LAYERS = ["socks", "shirt", "trim", "skin", "hair", "detail"] as const;
 export type SpriteLayer = (typeof SPRITE_LAYERS)[number];
@@ -203,9 +204,12 @@ export function colorLuma(c: number): number {
  * Colour of the ground ring under a figure: the kit, or, for a kit too dark to show on the grass, the club's second
  * colour (a light grey when that one is dark too).
  */
-export function groundRingColor(kit: number, second: number, darkLuma: number, fallback: number): number {
+export function groundRingColor(kit: number, second: number, darkLuma: number, fallback: number, avoid?: number): number {
   if (colorLuma(kit) >= darkLuma) return kit;
-  return colorLuma(second) >= darkLuma ? second : fallback;
+  if (colorLuma(second) < darkLuma) return fallback;
+  // A dark kit never borrows a second colour the other side already wears (both rings would look the same).
+  const hex = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
+  return avoid !== undefined && kitsClash(hex(second), hex(avoid)) ? fallback : second;
 }
 
 /** Sprite scale so the body is as wide as the marker (`markerR` px radius). */

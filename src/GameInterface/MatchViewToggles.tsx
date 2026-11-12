@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/GameInterface/Icons";
+import { pixelSprite } from "@/Domain/art/pixelSprite";
 import type { MatchMarkers } from "@/GameInterface/artPrefs";
 
 /** One TV-style switch: icon, label and a small on/off light; `aria-pressed` carries the state. */
@@ -51,6 +52,8 @@ export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onRepl
   sound?: boolean; onSound?: () => void;
 }) {
   const { t } = useTranslation();
+  // The side-view figures are pixel art or, with a painted atlas, cartoon figures.
+  const cartoon = pixelSprite()?.smooth === true;
   return (
     <div role="group" aria-label={t("match.view.label")} className={`flex items-stretch overflow-hidden rounded-lg ${fill ? "w-full" : ""} border border-border bg-secondary/50 divide-x divide-border`}>
       <ViewSwitch icon="zoom-in" label={t("match.view.zoom")} on={zoom} title={t(zoom ? "match.view.zoomOn" : "match.view.zoomOff")} onClick={onZoom} fill={fill} />
@@ -76,9 +79,9 @@ export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onRepl
       {onMarkers && (
         <ViewSwitch
           icon="user"
-          label={t(markers === "pixel" ? "match.view.pixel" : "match.view.figures")}
+          label={t(markers === "pixel" ? (cartoon ? "match.view.cartoon" : "match.view.pixel") : "match.view.figures")}
           on={markers !== "discs"}
-          title={t(markers === "pixel" ? "match.view.pixelOn" : markers === "discs" ? "match.view.figuresOff" : "match.view.figuresOn")}
+          title={t(markers === "pixel" ? (cartoon ? "match.view.cartoonOn" : "match.view.pixelOn") : markers === "discs" ? "match.view.figuresOff" : "match.view.figuresOn")}
           onClick={onMarkers}
           fill={fill}
         />
