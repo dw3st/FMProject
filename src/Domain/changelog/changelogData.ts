@@ -29,7 +29,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "10.6.1",
     date: "2026-11-12",
-    time: "11:02",
+    time: "11:06",
     items: [],
     fixes: [
       { pt: "Seleções: nos jogos de seleção, cada lado aparece com a bandeira do país no lugar do escudo (antes era um escudo genérico), na partida ao vivo, na prévia, no resultado e no próximo jogo do Painel.", en: "National teams: in a national team's game each side shows its country's flag where the crest goes (it used to be a generic shield), in the live match, the preview, the result and the next match of the Dashboard." },
