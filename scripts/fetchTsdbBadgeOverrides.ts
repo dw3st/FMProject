@@ -14,7 +14,9 @@ import { fileURLToPath } from "node:url";
 import { curlFile, sleep } from "@/../scripts/faces/wikidata";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
-const { pairs } = JSON.parse(readFileSync(join(ROOT, "data_process/thesportsdb/badgeOverrides.json"), "utf8")) as { pairs: Record<string, string> };
+const { pairs, anyCountry = [] } = JSON.parse(readFileSync(join(ROOT, "data_process/thesportsdb/badgeOverrides.json"), "utf8")) as { pairs: Record<string, string>; anyCountry?: string[] };
+/** Clubs that play in another country's league (Vaduz, of Liechtenstein, in the Swiss one): no country check. */
+const foreign = new Set(anyCountry);
 const leagues = JSON.parse(readFileSync(join(ROOT, "src/example_data/leagueData.json"), "utf8")) as Record<string, { country?: string; standings?: { squadId: string }[] }>;
 const logoDir = join(ROOT, "src/example_data/logos/tsdb");
 
@@ -38,7 +40,7 @@ for (const [squadId, idTeam] of Object.entries(pairs)) {
     : team.strSport !== "Soccer" ? `sport ${team.strSport}`
       : !team.strBadge ? "no crest"
         : NOT_FIRST_TEAM.test(team.strTeam ?? "") ? `name ${team.strTeam}`
-          : country && !sameCountry(country, team.strCountry ?? "") ? `country ${team.strCountry} x ${country}`
+          : country && !foreign.has(squadId) && !sameCountry(country, team.strCountry ?? "") ? `country ${team.strCountry} x ${country}`
             : null;
   if (reason) { dropped.push(`${squadId} (${idTeam}): ${reason}`); console.log("DROP", squadId, reason); continue; }
   if (await curlFile(`${team!.strBadge}/small`, file) || await curlFile(team!.strBadge!, file)) { ok++; console.log("ok", squadId, team!.strTeam); }

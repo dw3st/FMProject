@@ -1623,6 +1623,11 @@
     }
   },
   "settling": {
+    "label": "Adaptação",
+    "left_one": "Falta {{count}} jogo para se adaptar ao clube",
+    "left_other": "Faltam {{count}} jogos para se adaptar ao clube",
+    "progress_one": "{{games}}/{{need}} · falta {{count}} jogo",
+    "progress_other": "{{games}}/{{need}} · faltam {{count}} jogos",
     "badge": "Adaptação {{games}}/{{need}}",
     "title": "Chegou há pouco: rende um pouco abaixo do nível até completar {{need}} jogos pelo clube, amistosos inclusive, ou o fim da temporada."
   },

@@ -15,6 +15,8 @@ Report de tester, regra aprovada pelo usuário em 2026-11-04 (a alternativa por 
 - Selo "Adaptação 3/15" no elenco e na ficha (`SettlingBadge`, `DisplayPlayer.settling`), com a explicação no `title`.
 - `/test`: cenário `newcomers`, linha "Newcomers" no `EnergyPanel`. `/lab`: `Variant.newcomers` (slider), rótulo `· new N`, `TeamRawStats.newcomers` → `avgNewcomers`, linha "New signings" no `PairDetail`. `Statistics.ts`: nada novo (como a moral, o efeito aparece em vitórias, gols e chutes).
 
+- Formação (10.6.2, report do usuário): quantos jogos faltam (`need − games`). Na lista de titulares e reservas, um número em âmbar depois do nome (só o número, para não espremer o nome; a frase vai no `title`); no campo, ícone e número ao lado do fôlego; na ficha ao passar o mouse (`PlayerTipBody`, também no painel de substituições da partida), a linha "Adaptação 3/15 · faltam 12 jogos". i18n `settling.label`, `settling.left`, `settling.progress`.
+
 ## Medição (`bun scripts/settling-measure.ts`)
 
 Motor, 4-3-3, equilibrado, fôlego 88, 5 titulares recém-chegados (no primeiro jogo, o pior caso) de um lado; cada par duas vezes com os lados trocados. V − D do lado com contratações (o ganho em vitórias é a metade, como na moral):

@@ -27,6 +27,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.6.2",
+    date: "2026-11-12",
+    time: "11:49",
+    items: [],
+    fixes: [
+      { pt: "Escudos: mais 89 clubes ganharam escudo, entre eles Legia, Pogoń, Śląsk, Zagłębie, APOEL, Omonia, Anorthosis, Partizan, Levski, HJK, St. Gallen, Vaduz, Hapoel Tel Aviv, Hapoel Beer Sheva e Ternana. Os times reservas russos usam o escudo do time principal. Agora 1250 dos 1273 clubes têm escudo.", en: "Crests: 89 more clubs got their crest, among them Legia, Pogoń, Śląsk, Zagłębie, APOEL, Omonia, Anorthosis, Partizan, Levski, HJK, St. Gallen, Vaduz, Hapoel Tel Aviv, Hapoel Beer Sheva and Ternana. The Russian reserve sides wear the first team's crest. 1250 of the 1273 clubs now have a crest." },
+      { pt: "Formação: o jogador recém-chegado mostra quantos jogos faltam para ele se adaptar ao clube. No campo, ao lado do fôlego; na lista de titulares e reservas, um número em laranja depois do nome; e na ficha ao passar o mouse, a linha Adaptação com os jogos feitos e os que faltam.", en: "Formation: a new signing shows how many games he still needs to settle at the club. On the pitch, next to his fitness; in the starters and bench lists, an orange number after the name; and on the hover card, the Settling in line with the games played and the games left." },
+    ],
+  },
+  {
     version: "10.6.1",
     date: "2026-11-12",
     time: "11:06",

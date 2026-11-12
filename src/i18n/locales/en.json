@@ -1623,6 +1623,11 @@
     }
   },
   "settling": {
+    "label": "Settling in",
+    "left_one": "{{count}} game left to settle at the club",
+    "left_other": "{{count}} games left to settle at the club",
+    "progress_one": "{{games}}/{{need}} · {{count}} game left",
+    "progress_other": "{{games}}/{{need}} · {{count}} games left",
     "badge": "Settling {{games}}/{{need}}",
     "title": "Just arrived: plays a little below his level until {{need}} games for the club, friendlies included, or the end of the season."
   },

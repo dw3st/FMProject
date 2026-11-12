@@ -45,7 +45,12 @@ test("no two different native squads share byte-identical crest content", () => 
     bySquadForHash.set(hash, list);
   }
 
-  const collisions = [...bySquadForHash.entries()].filter(([, squadIds]) => squadIds.length > 1);
+  // A reserve side wears the crest of its first team (`of_ru_ural` and `of_ru_ural_2_ekaterinburg`, 10.6.2).
+  const reservesOfOne = (squadIds: string[]): boolean => {
+    const [first, ...rest] = [...squadIds].sort((a, b) => a.length - b.length);
+    return rest.every((id) => id.startsWith(`${first}_2`));
+  };
+  const collisions = [...bySquadForHash.entries()].filter(([, squadIds]) => squadIds.length > 1 && !reservesOfOne(squadIds));
   const details = collisions.map(([hash, squadIds]) => `${hash}: ${squadIds.map((id) => `${id} -> ${index[id]}`).join(", ")}`);
   expect(details).toEqual([]);
 });

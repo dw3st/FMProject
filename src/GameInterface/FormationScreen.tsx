@@ -1154,6 +1154,7 @@ function SquadPlayerRow({
     ? undefined
     : t("formations.ratingAtSlot", { value: attrDisplay(avg), natural: attrDisplay(slotValue(player, natural)), role: t(`roles.detailedAbbr.${natural}` as never) });
   const energy = player.seasonLog?.fitness ?? 100;
+  const settlingLeft = player.settling ? Math.max(0, player.settling.need - player.settling.games) : 0;
   // Slot rows show the slot's detailed role; bench rows show the player's natural one (#40).
   const badgeRole = showSlot && slotLabel ? slotLabel : preferredRole(player);
   const badgeLabel = positionLabel(t, badgeRole, badgeRole);
@@ -1214,6 +1215,15 @@ function SquadPlayerRow({
         {outOfPosition && (
           <span title={t("formations.outOfPosition")} className="shrink-0 inline-flex">
             <Icon name="alert" size={16} className="text-chart-4" aria-hidden />
+          </span>
+        )}
+        {/* A new signing: the games he still needs to settle (tester report). */}
+        {settlingLeft > 0 && (
+          <span
+            title={t("settling.left", { count: settlingLeft })}
+            className="shrink-0 rounded bg-chart-4/20 px-1 text-sm font-semibold leading-5 tabular-nums text-chart-4"
+          >
+            {settlingLeft}
           </span>
         )}
         {unavailableTitle && (
@@ -1432,6 +1442,13 @@ function FormationPitch({
                       <span className={`block h-full rounded-full ${energyBarClass(energy)}`} style={{ width: `${Math.max(0, Math.min(100, energy))}%` }} />
                     </span>
                     <span className="text-sm font-semibold tabular-nums text-foreground leading-none">{Math.round(energy)}</span>
+                    {/* A new signing: games left to settle (tester report). */}
+                    {player.settling && player.settling.need > player.settling.games && (
+                      <span className="ml-1 flex items-center gap-0.5 text-sm font-semibold tabular-nums leading-none text-chart-4">
+                        <Icon name="handshake" size={14} aria-hidden />
+                        {player.settling.need - player.settling.games}
+                      </span>
+                    )}
                   </div>
 
                   <div className={`opacity-0 ${dragging ? "" : "group-hover:opacity-100"} transition-opacity duration-200 pointer-events-none`}>

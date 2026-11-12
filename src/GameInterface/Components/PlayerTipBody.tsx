@@ -11,7 +11,7 @@ import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 export const ROW_TIP_W = 240;
-export const ROW_TIP_H = 310;
+export const ROW_TIP_H = 334;
 
 export function getEnergyColor(energy: number) {
   if (energy >= 80) return "bg-chart-2";
@@ -91,6 +91,18 @@ export function PlayerTipBody({ player, role, avg, energy, oop, note, matchRatin
           </div>
         )}
         {note && <p className="m-0 text-sm text-muted-foreground">{note}</p>}
+        {/* A new signing: how far he is from settling (tester report). */}
+        {player.settling && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Icon name="handshake" className="w-3 h-3" />
+              <span>{t("settling.label")}</span>
+            </div>
+            <span className="text-sm font-semibold tabular-nums text-chart-4">
+              {t("settling.progress", { games: player.settling.games, need: player.settling.need, count: Math.max(0, player.settling.need - player.settling.games) })}
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Icon name="zap" className="w-3 h-3" />
