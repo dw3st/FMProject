@@ -336,6 +336,8 @@ export function pixelFrame(atlas: PixelAtlas, m: SpriteMotion, play: PixelPlay |
   if (o.juggle && o.hasBall && m.gait === "idle" && c.juggle) return clipFrame(c.juggle, t);
   const stride = (clip: PixelClip) => clip.frames[Math.floor(m.phase * clip.frames.length) % clip.frames.length]!;
   if (o.keeper) {
+    // A goal kick or a free kick of his: the ball on the ground at his feet.
+    if (m.gait === "idle" && o.hasBall && o.setPiece && c.keeperIdleBall) return clipFrame(c.keeperIdleBall, t);
     // The ball in his hands while he stands with it.
     if (m.gait === "idle" && o.hasBall && c.keeperHold) return clipFrame(c.keeperHold, t);
     if (m.gait === "idle") return clipFrame((o.ready && c.keeperReady) || c.keeperIdle || c.idle!, t);
