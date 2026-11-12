@@ -14,7 +14,7 @@ import { kitDotStyle, readableOnDark } from "@/GameInterface/matchTeamColors";
 import { cardRowClass, countCell, isOneYellowFromBan, type PlayerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 
 /** Fitness number coloured by band (#149): green, amber, red. */
-export function energyTextClass(energy: number): string {
+function energyTextClass(energy: number): string {
   if (energy >= 60) return "text-chart-2";
   if (energy >= 35) return "text-chart-4";
   return "text-destructive";

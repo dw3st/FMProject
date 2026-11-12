@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.9.3",
+    date: "2026-11-12",
+    time: "20:20",
+    items: [],
+    fixes: [
+      { pt: "Partida ao vivo: a escalação e o resumo voltaram a ser as colunas fixas ao lado do campo, como antes da 10.9. Os trilhos saíram.", en: "Live match: the line-up and the summary are back as fixed columns beside the pitch, as before 10.9. The rails are gone." },
+    ],
+  },
+  {
     version: "10.9.2",
     date: "2026-11-12",
     time: "20:17",

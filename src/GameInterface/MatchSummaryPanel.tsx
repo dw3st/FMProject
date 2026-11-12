@@ -39,7 +39,7 @@ export interface MatchFeedItem {
   what?: string;
 }
 
-export const FEED_KIND_MARK: Record<MatchFeedItem["kind"], string> = {
+const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
   goal: "bg-primary",
   penaltyGoal: "bg-primary",
   penaltyMissed: "bg-muted-foreground",
@@ -109,7 +109,7 @@ export function MatchFeedList({ feed, className = "" }: { feed: MatchFeedItem[];
           className={`flex items-start gap-2 border-t border-border py-1.5 text-sm ${e.team === "B" ? "flex-row-reverse text-right" : ""}`}
         >
           <span className="w-8 shrink-0 font-display font-bold tabular-nums text-muted-foreground">{e.minute}'</span>
-          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${FEED_KIND_MARK[e.kind]}`} aria-hidden />
+          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${KIND_MARK[e.kind]}`} aria-hidden />
           <span className="min-w-0 flex-1 text-foreground">
             {t(`match.summary.kind.${e.kind}`, { player: e.player ? shirtName(e.player) : "", playerIn: e.playerIn ? shirtName(e.playerIn) : "", what: e.what ?? "" })}
           </span>
