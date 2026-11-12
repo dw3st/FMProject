@@ -33,6 +33,7 @@ import { negotiationRoutes } from "@/backend/negotiationRoutes";
 import { seatOfferRoutes } from "@/backend/seatOfferRoutes";
 import { marketRoutes } from "@/backend/marketRoutes";
 import { clubHistoryRoutes } from "@/backend/clubHistoryRoutes";
+import { seasonSummaryRoutes } from "@/backend/seasonSummaryRoutes";
 import { clubListRoutes } from "@/backend/clubListRoutes";
 import { championRoutes } from "@/backend/championRoutes";
 import { loadViewer, obscureSquadForViewer } from "@/backend/scoutingWorld";
@@ -126,6 +127,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...seatOfferRoutes,
   ...marketRoutes,
   ...clubHistoryRoutes,
+  ...seasonSummaryRoutes,
   ...clubListRoutes,
   ...championRoutes,
   ...inboxRoutes,

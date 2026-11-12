@@ -84,6 +84,8 @@ export interface DaySeat {
     move: ClubMove | null;
     championOf: string | null;
     objectiveMet: boolean;
+    /** The objective the board judged the closed season by (the end-of-season report). */
+    objectiveTarget?: number;
     followersChange: { before: number; after: number; leagueSlug: string } | null;
     leaguePrize: number;
     boardBonusEntry: LedgerEntry | null;

@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { LeagueData } from "@/types/playerTypes";
+import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import { Modal } from "@/GameInterface/Components/Modal";
+import { SeasonSummaryView } from "@/GameInterface/Components/SeasonSummaryView";
 import { Icon } from "@/GameInterface/Icons";
 import type { FastForwardProgress, SeasonNotice } from "@/GameInterface/useAdvanceDay";
 
@@ -8,15 +11,39 @@ function leagueNameOf(slug: string, leagues: LeagueData[]): string {
   return leagues.find((l) => l.slug === slug)?.name ?? slug;
 }
 
-/** End of the player's country season: champion (if it was the player), promotion/relegation. */
+/** The season report of the club the notice is about: null while loading, "none" when there is nothing to show. */
+function useSeasonSummary(saveId: string, notice: SeasonNotice): SeasonSummary | null | "none" {
+  const year = notice.archiveYear;
+  const clubId = notice.playerClubId;
+  const wanted = !!saveId && year != null && !!clubId;
+  const [state, setState] = useState<SeasonSummary | null | "none">(wanted ? null : "none");
+  useEffect(() => {
+    if (!wanted) { setState("none"); return; }
+    let live = true;
+    setState(null);
+    fetch(`/api/saves/${saveId}/season-summary?year=${year}&club=${encodeURIComponent(clubId!)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<SeasonSummary>) : null))
+      .then((s) => { if (live) setState(s ?? "none"); })
+      .catch(() => { if (live) setState("none"); });
+    return () => { live = false; };
+  }, [wanted, saveId, year, clubId]);
+  return state;
+}
+
+/**
+ * End of the player's country season: the season report (table line, cups, money, market, highlights) when the
+ * server has it, else the short notice (champion, promotion/relegation).
+ */
 export function SeasonNoticeModal({
   notice,
+  saveId,
   leagues,
   currentLeagueName,
   currentClubId,
   onDismiss,
 }: {
   notice: SeasonNotice;
+  saveId: string;
   leagues: LeagueData[];
   /** Shown when the club stayed in its division. */
   currentLeagueName: string;
@@ -27,6 +54,29 @@ export function SeasonNoticeModal({
   const { t } = useTranslation();
   const move = notice.playerMove;
   const formerClub = notice.playerClubName && notice.playerClubId !== currentClubId ? notice.playerClubName : null;
+  const summary = useSeasonSummary(saveId, notice);
+
+  if (summary === null) {
+    return (
+      <Modal open onClose={onDismiss} size="sm">
+        <p className="p-6 m-0 text-sm text-muted-foreground">{t("seasonSummary.loading")}</p>
+      </Modal>
+    );
+  }
+  if (summary !== "none") {
+    return (
+      <Modal open onClose={onDismiss} size="report" panelClassName="max-h-[94vh] overflow-y-auto overflow-x-hidden">
+        <SeasonSummaryView
+          summary={summary}
+          leagues={leagues}
+          movedTo={move?.to ?? null}
+          formerClub={formerClub}
+          otherMoves={notice.moves.length}
+          onDismiss={onDismiss}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal open onClose={onDismiss} size="sm">

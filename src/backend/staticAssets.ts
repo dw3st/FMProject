@@ -165,6 +165,13 @@ export const GAME_ART_FILES: Record<string, string> = {
   "club/stadium-lv-4.webp": "image/webp",
   "club/stadium-lv-5.webp": "image/webp",
   "club/grass-plain.webp": "image/webp",
+  // End-of-season report (10.5): trophies and banners painted with FLUX (data_process/assets/season_end).
+  "season/trophy-league.webp": "image/webp",
+  "season/trophy-cup.webp": "image/webp",
+  "season/trophy-continental.webp": "image/webp",
+  "season/banner-title.webp": "image/webp",
+  "season/banner-good.webp": "image/webp",
+  "season/banner-bad.webp": "image/webp",
   "formation/pitch-board.webp": "image/webp",
   // Match sounds (leva 3), made with Stable Audio Open on the local ComfyUI (data_process/assets/audio); the ball strike
   // is a real recording (Freesound 555042, bittermelonheart, CC0). Cached forever: a changed sound gets a new file name.

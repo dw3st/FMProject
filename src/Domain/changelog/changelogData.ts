@@ -27,6 +27,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.5",
+    date: "2026-11-11",
+    time: "21:45",
+    items: [
+      { pt: "Fim de temporada: a tela que fecha a temporada virou um relatório do seu clube. Mostra a posição final e os pontos, vitórias, empates e derrotas, gols, até onde o time foi na copa e na continental, o público em casa, o dinheiro do ano (receitas, despesas, prêmios, bilheteria, folha e resultado), o mercado (contratações, vendas, gasto, recebido, maior compra e maior venda) e os destaques do elenco: artilheiro, mais assistências, melhor nota e quem mais jogou.", en: "End of season: the screen that closes the season is now a report of your club. It shows the final position and points, wins, draws and defeats, goals, how far the team went in the cup and the continental competition, the home crowd, the money of the year (income, expenses, prizes, gate, wages and the result), the transfers (signings, sales, spent, received, biggest signing and biggest sale) and the squad's highlights: top scorer, most assists, best rating and most games." },
+      { pt: "Cada título da temporada aparece com um troféu pintado (liga, copa e continental), e o fundo da tela muda com a temporada: festa com fogos quando há título ou acesso, fim de tarde numa temporada normal e chuva quando a meta não foi cumprida ou o time caiu.", en: "Each title of the season comes with a painted trophy (league, cup and continental), and the backdrop changes with the season: fireworks for a title or a promotion, a late afternoon for an ordinary season and rain when the objective was missed or the team went down." },
+      { pt: "A partir da próxima virada, o relatório também diz se a meta da diretoria foi cumprida.", en: "From the next season change on, the report also says whether the board's objective was met." },
+    ],
+  },
+  {
     version: "10.4.3",
     date: "2026-11-11",
     time: "21:17",

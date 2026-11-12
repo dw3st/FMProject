@@ -12,6 +12,7 @@ import type { ManagerContract, ManagerRenewalOffer } from "@/Domain/managers/man
 import type { InboxPrefs } from "@/Domain/inbox/inboxTopics";
 import type { DirectorDecision, Responsibilities } from "@/Domain/responsibilities/director";
 import type { YouthCallUps } from "@/Domain/youthComps/callUps";
+import type { SeatLastSeason } from "@/types/seasonSummaryTypes";
 
 /** Manager identity picked at new-game time (moved here from `SaveService`, which re-exports it). */
 export interface SaveManager {
@@ -109,6 +110,8 @@ export interface SeatState {
   matchDecision?: MatchDecision;
   /** Friends' league standings (part 5a): the open passage at the current club. */
   standing?: SeatStanding;
+  /** The board's objective of the season the club has just closed, for the end-of-season report. */
+  lastSeason?: SeatLastSeason;
 }
 
 /** Every key of `SeatState` (the split of a merged patch, `splitSeatPatch`). */
@@ -118,7 +121,7 @@ export const SEAT_KEYS = [
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerStudies", "betNet", "betExact", "betLongshot", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
-  "readyUntil", "matchDecision", "standing", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
+  "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
 ] as const satisfies readonly (keyof SeatState)[];
 
 type MissingSeatKeys = Exclude<keyof SeatState, (typeof SEAT_KEYS)[number]>;

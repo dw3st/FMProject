@@ -2348,6 +2348,7 @@ export async function advanceOneDay(
               const row = tablePos >= 0 ? table[tablePos]! : null;
               const position = row && row.mp > 0 ? tablePos + 1 : null;
               ds.rollover.objectiveMet = position !== null && !!ds.board.objective && position <= ds.board.objective.target;
+              ds.rollover.objectiveTarget = ds.board.objective?.target;
               ds.board = evaluateSeason(ds.board, { position });
               if (position === 1) ds.board = applyCompetitionEvent(ds.board, { kind: "title", title: `league:${slug}` });
               if (ds.rollover.move?.kind === "promoted") ds.board = applyCompetitionEvent(ds.board, { kind: "promoted" });
@@ -2698,6 +2699,9 @@ export async function advanceOneDay(
         }
         const archiveYear = closedYear.get(ds.meta.leagueSlug)!;
         ds.rollover.archiveYear = archiveYear;
+        if (ds.clubId && ds.rollover.objectiveTarget !== undefined) {
+          ds.patch.lastSeason = { year: archiveYear, clubId: ds.clubId, target: ds.rollover.objectiveTarget, met: ds.rollover.objectiveMet };
+        }
         ds.rollover.moves = plan.moves;
         const nameOf = await leagueNameResolver(activeLeagues);
         const { move, championOf, followersChange, leaguePrize: prizeNow } = ds.rollover;

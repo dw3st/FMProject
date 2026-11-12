@@ -228,7 +228,7 @@ export function GroupAdvanceProvider({ leagues, mySquadId, children }: { leagues
         <TurnNoticeCard view={view} myNickname={me?.nickname ?? null} onClose={() => setTurnCard(false)} />
       )}
       {notice && (
-        <SeasonNoticeModal notice={notice} leagues={leagues} currentLeagueName={session?.leagueName ?? ""} currentClubId={session?.clubId ?? ""} onDismiss={dismissNotice} />
+        <SeasonNoticeModal notice={notice} saveId={saveId} leagues={leagues} currentLeagueName={session?.leagueName ?? ""} currentClubId={session?.clubId ?? ""} onDismiss={dismissNotice} />
       )}
     </GroupAdvanceContext.Provider>
   );

@@ -148,6 +148,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
         {seasonNotice && !fastForward && (
           <SeasonNoticeModal
             notice={seasonNotice}
+            saveId={session?.saveId ?? ""}
             leagues={leagues}
             currentLeagueName={session?.leagueName ?? ""}
             currentClubId={session?.clubId ?? ""}
