@@ -72,3 +72,11 @@ data_process/assets/club_debug/
 
 # New art package: painted faces of real people, copied by hand to the server volume; never in the public repo
 fmproject-art-handoff/
+
+# Painted faces of real people live on the server art volume, never in the public repo (the two generic ones stay tracked)
+src/example_data/assets/faces/
+# Art generators: layouts and paintings they write next to themselves (the finished art goes to src/example_data/assets)
+data_process/assets/**/*.png
+data_process/assets/**/*.webp
+data_process/assets/**/*.jpg
+__pycache__/
