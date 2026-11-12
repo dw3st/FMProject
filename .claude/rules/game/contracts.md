@@ -163,3 +163,5 @@ Report de tester. A janela de renovação (`ContractOfferModal`, `onListForSale`
 Report de tester. O botão Renovar da tabela do Elenco abre a `ContractOfferModal` ali mesmo (e a promessa de renovação de uma conversa também), sem ir à ficha.
 
 Renovação do técnico (8.9.37, report de tester): `years` é o tamanho do contrato novo a partir de agora (`renewalUntil`: `contractEndFor` com os anos, nunca antes do fim atual), até 5 e limitado pela idade; antes os anos eram somados ao que faltava e um jovem com 2 temporadas restantes não assinava 5. O diretor continua somando pela regra da IA (`renewalWithinLimits`).
+
+Id repetido do jovem de reposição (10.4.3, report do usuário): o id do jovem era `youth_<clube>_<prefixo>_<tamanho do elenco>`, e três emprestados voltando no mesmo dia deixavam o elenco do mesmo tamanho três vezes: três jogadores com um id só (a tabela do Elenco repetia linhas). `refillSquad` agora acrescenta `_2`, `_3`… quando o id já existe no elenco ou na base. Saves com o problema foram consertados à mão (`dedupe_ids.py`, backup em `persistent/backup-dup-ids-20261111`).

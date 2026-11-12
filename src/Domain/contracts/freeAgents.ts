@@ -123,7 +123,12 @@ export function refillSquad(args: {
       }
     }
     if (!added) {
-      const y = makeYouthPlayer(squad, role, `${tagPrefix}_${squad.players.length}`);
+      // The tag is the squad size, and the same size can come round again with the same prefix (three loans back
+      // on one day each leave the squad at the same size): never reuse an id already at the club.
+      const ids = new Set([...squad.players, ...(squad.youth ?? [])].map((p) => p.id));
+      let tag = `${tagPrefix}_${squad.players.length}`;
+      for (let n = 2; ids.has(`youth_${squad.id}_${tag}`); n++) tag = `${tagPrefix}_${squad.players.length}_${n}`;
+      const y = makeYouthPlayer(squad, role, tag);
       added = { ...y, contract: renewalContract(y, squad, nextSeasonEnd, C.YOUTH_CONTRACT_YEARS) };
       youth.push(added);
     }

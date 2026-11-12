@@ -63,6 +63,20 @@ describe("refillSquad", () => {
     expect(r.signed.length).toBe(0);
   });
 
+  test("two refills with the same tag and squad size never share a player id", () => {
+    // Three loans back on the same day: each return leaves the squad at the same size and asks for a youngster
+    // with the same tag (tester report: three players with one id in the squad).
+    const base = squad(full().filter((p) => p.id !== "d6"));
+    const first = refillSquad({ squad: base, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "loan20270517" });
+    expect(first.youth).toHaveLength(1);
+    const afterReturn = { ...first.squad, players: first.squad.players.filter((p) => p.id !== "d5") };
+    const second = refillSquad({ squad: afterReturn, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "loan20270517" });
+    expect(second.youth).toHaveLength(1);
+    expect(second.youth[0]!.id).not.toBe(first.youth[0]!.id);
+    const ids = second.squad.players.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   test("deterministic", () => {
     const sq = squad(full().slice(0, 15));
     const a = refillSquad({ squad: sq, pool: [], nextSeasonEnd: "2028-05-31", isHuman: false, tagPrefix: "t" });

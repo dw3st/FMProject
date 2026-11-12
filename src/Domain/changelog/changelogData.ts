@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.4.3",
+    date: "2026-11-11",
+    time: "21:17",
+    items: [],
+    fixes: [
+      { pt: "Elenco: quando vários emprestados voltavam ao clube de origem no mesmo dia, os jovens que entravam para completar o elenco saíam repetidos, e a lista do Elenco mostrava o mesmo jogador várias vezes. Corrigido, e os elencos afetados foram consertados.", en: "Squad: when several loaned players went back to their clubs on the same day, the youngsters brought in to fill the squad came out duplicated, and the Squad list showed the same player several times. Fixed, and the affected squads were repaired." },
+    ],
+  },
+  {
     version: "10.4.2",
     date: "2026-11-11",
     time: "21:03",
