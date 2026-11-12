@@ -22,11 +22,22 @@ export async function answerPress(
   saveId: string,
   pressId: string,
   answers: Record<string, string>,
-): Promise<{ ok: true } | { error: string }> {
+): Promise<{ ok: true; fine?: number; banned?: number } | { error: string }> {
   const res = await fetch(`/api/saves/${saveId}/press/${encodeURIComponent(pressId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(answersPayload(answers)),
   });
-  return res.ok ? { ok: true } : ((await res.json().catch(() => ({ error: "unknown" }))) as { error: string });
+  const json = await res.json().catch(() => null);
+  return res.ok ? { ok: true, ...(json ?? {}) } : ((json ?? { error: "unknown" }) as { error: string });
+}
+
+/** The director goes to the conference in the manager's place: no effect and no penalty. */
+export async function sendDirectorToPress(saveId: string, pressId: string): Promise<boolean> {
+  const res = await fetch(`/api/saves/${saveId}/press/${encodeURIComponent(pressId)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ director: true }),
+  });
+  return res.ok;
 }

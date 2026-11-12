@@ -4,6 +4,7 @@ import { DialogTitle } from "@headlessui/react";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { Button } from "@/GameInterface/ui/Button";
 import { allAnswered, answerPress } from "@/GameInterface/Press/pressApi";
+import { formatFee } from "@/Domain/money";
 import type { PressConferenceView } from "@/types/pressTypes";
 
 interface Props {
@@ -20,6 +21,8 @@ export function PressModal({ saveId, conference, onClose, onDone }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  // What an attack on the press cost him (the only consequence shown: it is a punishment, not an effect of the tone).
+  const [punished, setPunished] = useState<{ fine?: number; banned?: number }>({});
   const [error, setError] = useState<string | null>(null);
   const ready = allAnswered(conference, answers);
 
@@ -33,6 +36,7 @@ export function PressModal({ saveId, conference, onClose, onDone }: Props) {
         setError(res.error === "pressClosed" ? t("press.closed") : t("press.error"));
         return;
       }
+      setPunished({ ...(res.fine ? { fine: res.fine } : {}), ...(res.banned ? { banned: res.banned } : {}) });
       setSent(true);
       onDone();
     } catch {
@@ -54,6 +58,12 @@ export function PressModal({ saveId, conference, onClose, onDone }: Props) {
           {sent ? (
             <div className="space-y-4">
               <p className="text-sm text-foreground m-0" role="status">{t("press.sent")}</p>
+              {punished.fine !== undefined && (
+                <p className="text-sm text-destructive m-0 tabular-nums">{t("press.attack.fine", { fine: formatFee(punished.fine) })}</p>
+              )}
+              {punished.banned !== undefined && (
+                <p className="text-sm text-destructive m-0 tabular-nums">{t("press.attack.ban", { count: punished.banned })}</p>
+              )}
               <Button onClick={onClose}>{t("common.close")}</Button>
             </div>
           ) : (

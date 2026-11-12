@@ -1683,6 +1683,11 @@
       "director": "Director: renews (or lets go) the contracts about to end and answers the players' contract talks. You can still renew anyone on the player page.",
       "manager": "Manager: you get the 90-day warning and the contract talks, and renew on the player page."
     },
+    "press": {
+      "label": "Press",
+      "manager": "Manager: you answer the press conferences. The answers move morale, the board and the fans.",
+      "director": "Director: he speaks at every conference, always in a neutral tone. Nothing changes: no gain, no loss and no promise."
+    },
     "friendlies": {
       "label": "Friendlies",
       "none": "Nobody: no friendlies.",
@@ -6017,6 +6022,12 @@
     "closed": "This press conference is already over.",
     "error": "Could not send the answers.",
     "sent": "Answers sent",
+    "attack": {
+      "inboxSubject": "Punished for attacking the press",
+      "fine": "The federation fined you {{fine}} for attacking the press. It came out of your own wallet.",
+      "ban_one": "Second attack on the press in 60 days: you are banned for {{count}} match.",
+      "ban_other": "Second attack on the press in 60 days: you are banned for {{count}} matches."
+    },
     "send": "Send answers",
     "question": "Question {{n}}",
     "modal": {
@@ -6029,6 +6040,9 @@
       "postNoOpponent": "The press wants to hear from you.",
       "until": "Open until {{date}}",
       "answer": "Answer",
+      "sendDirector": "Send the director",
+      "directorHint": "The director answers in a neutral tone: nothing changes, for better or worse.",
+      "directorSent": "The director spoke to the press in your place.",
       "closed": "Press conference closed"
     },
     "trigger": {
@@ -6177,6 +6191,10 @@
       "deflect": {
         "0": "My focus is on the next game.",
         "1": "That's not up to me."
+      },
+      "attack_press": {
+        "0": "You understand nothing about football. Next question.",
+        "1": "That question is a disgrace. Whoever wrote it has never set foot on a pitch."
       }
     }
   },
@@ -6218,6 +6236,7 @@
       "criticize": "{{manager}} criticises {{player}} in public",
       "praise": "{{manager}} heaps praise on {{player}}",
       "ask_signings": "{{manager}} asks the {{club}} board for signings",
+      "attack_press": "{{manager}} lashes out at the press",
       "other": "{{manager}} speaks to the press"
     },
     "big_transfer_free": {

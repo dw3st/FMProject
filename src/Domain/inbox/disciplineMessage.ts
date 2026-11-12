@@ -14,3 +14,19 @@ export function buildManagerBanMessage(date: string, matches: number): Disciplin
     matches,
   };
 }
+
+/** Punished for attacking the press (`.claude/rules/game/press.md`). English fallback; the screen translates. */
+export function buildPressPunishedMessage(date: string, fine: number, matches: number): DisciplineInboxMessage {
+  return {
+    id: `discipline-press-${date}`,
+    date,
+    createdAt: date,
+    read: false,
+    category: "discipline",
+    subject: "Punished for attacking the press",
+    preview: [fine > 0 ? `Fined ${fine}` : "", matches > 0 ? `banned for ${matches} match${matches === 1 ? "" : "es"}` : ""].filter(Boolean).join(", "),
+    kind: "press_punished",
+    matches,
+    ...(fine > 0 ? { fine } : {}),
+  };
+}

@@ -114,3 +114,7 @@ A categoria de inbox `achievement` tem tópico próprio, `achievements` (ligado 
 ## Amistosos (8.4.7)
 
 Report de tester. `Responsibilities.friendlies` (`none`, padrão, ou `director`; terceiro bloco da aba). Com o diretor, no sábado sem jogo oficial, fora dos dias bloqueados do país, com o próximo jogo oficial do clube entre 6 e 56 dias (`FRIENDLY`, `src/Domain/friendlies/`; até 8 por pausa; 42 dias e 6 até a 10.6.3, pedido do usuário), o clube joga contra um clube da IA da mesma liga, sorteado (`playFriendlyDay`, `src/backend/friendlyWorld.ts`, depois da base e das seleções). É um quickSim: um sábado o elenco inteiro, o seguinte sem o XI salvo, para os reservas jogarem; fora quem está indisponível ou com fôlego abaixo de 60. Só o elenco humano muda (`applyYouthMatch(..., { friendly: true })`: fôlego e carga de 90 minutos, lesões, DP de crescimento × `DP_MULT` 0,5, sem declínio); quem jogou não treina no dia. Nada oficial conta, salvo a adaptação do recém-chegado (`settling.md`): fora de `seasonLog`, `youthCup`, tabela, moral, diretoria, histórico e log do dia. Inbox `friendly` (tópico `competitions`), depois do `clearInbox`. Sem efeito no motor: nada em `/test` nem `/lab`. Limitações: só o mandante humano e adversário da própria liga; o jogo não aparece no calendário nem no resumo do dia.
+
+## Imprensa (10.8)
+
+`Responsibilities.press` (`manager`, padrão, ou `director`): quarto bloco da aba. Com o diretor, toda coletiva é respondida por ele em tom neutro, sem efeito. Ver `.claude/rules/game/press.md` → "Atacar a imprensa e o diretor na coletiva".

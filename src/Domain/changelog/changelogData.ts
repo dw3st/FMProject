@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.8",
+    date: "2026-11-12",
+    time: "18:33",
+    items: [
+      { pt: "Coletivas: nova resposta para atacar a imprensa. O elenco gosta e a torcida também, a diretoria não. Pode render multa do seu bolso e, na segunda vez em 60 dias, um jogo de suspensão.", en: "Press conferences: a new answer to lash out at the press. The squad likes it and so do the fans, the board does not. It can cost a fine from your own pocket and, the second time in 60 days, a one-match ban." },
+      { pt: "Coletivas: o diretor pode falar no seu lugar. Botão Mandar o diretor em cada convite, ou deixe a imprensa com ele em Equipe técnica, Responsabilidades. Ele responde em tom neutro: nada muda.", en: "Press conferences: the director can speak in your place. Send the director button on each invite, or leave the press to him in Coaching staff, Responsibilities. He answers in a neutral tone: nothing changes." },
+    ],
+  },
+  {
     version: "10.7",
     date: "2026-11-12",
     time: "18:24",

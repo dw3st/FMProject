@@ -13,12 +13,12 @@ describe("buildConference", () => {
   test("clássico pré-jogo: pergunta do jogo com provocação, e do elenco", () => {
     const c = buildConference({ ...base, trigger: "derby", kind: "pre" });
     expect(c.questions.map((q) => q.topic)).toEqual(["match", "squad"]);
-    expect(tones(c.questions[0]!)).toEqual(sorted(["confident", "cautious", "provocative"]));
+    expect(tones(c.questions[0]!)).toEqual(sorted(["confident", "cautious", "provocative", "attack_press"]));
   });
   test("derrota: assumir a culpa; com destaque, pergunta do jogador", () => {
     const c = buildConference({ ...base, trigger: "heavy_defeat", kind: "post", player: { id: "p9", name: "Zé", angle: "culprit" } });
     expect(c.questions.map((q) => q.topic)).toEqual(["match", "player", "squad"]);
-    expect(tones(c.questions[0]!)).toEqual(sorted(["confident", "cautious", "blame_self"]));
+    expect(tones(c.questions[0]!)).toEqual(sorted(["confident", "cautious", "blame_self", "attack_press"]));
     expect(c.questions[1]!.playerId).toBe("p9");
     expect(tones(c.questions[1]!)).toEqual(sorted(["praise", "criticize", "protect"]));
   });
@@ -33,15 +33,16 @@ describe("buildConference", () => {
     expect(a).toEqual(b);
     expect(a.questions[0]!.key).toMatch(/^press\.q\.match\.derby\.[01]$/);
     for (const x of a.questions[0]!.answers) expect(["0", "1"].map((v) => `press.a.${x.tone}.${v}`)).toContain(x.key);
-    expect(new Set(a.questions.flatMap((q) => q.answers.map((x) => x.id))).size).toBe(a.questions.length * 3);
+    // Three answers a question, four on the match one (the attack on the press).
+    expect(new Set(a.questions.flatMap((q) => q.answers.map((x) => x.id))).size).toBe(a.questions.length * 3 + 1);
   });
   test("a ordem das respostas é embaralhada pela semente (o tom não sai sempre na mesma posição)", () => {
     const orders = new Set<string>();
     for (let i = 0; i < 40; i++) {
       const c = buildConference({ ...base, trigger: "derby", kind: "pre", seed: `s${i}` });
       orders.add(c.questions[0]!.answers.map((a) => a.tone).join(","));
-      // Ids are positional: a0, a1, a2 in display order.
-      expect(c.questions[0]!.answers.map((a) => a.id)).toEqual([0, 1, 2].map((i2) => `${c.questions[0]!.id}-a${i2}`));
+      // Ids are positional: a0, a1, a2, a3 in display order.
+      expect(c.questions[0]!.answers.map((a) => a.id)).toEqual([0, 1, 2, 3].map((i2) => `${c.questions[0]!.id}-a${i2}`));
     }
     expect(orders.size).toBeGreaterThan(3);
   });

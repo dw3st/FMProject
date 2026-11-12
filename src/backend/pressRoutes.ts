@@ -4,7 +4,11 @@ import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { buildDayNews, emptyDayNewsInput } from "@/Domain/news/buildDayNews";
-import { answerConference, emptyPressState, validateAnswers } from "@/Domain/press/effects";
+import { answerConference, directorConference, emptyPressState, validateAnswers } from "@/Domain/press/effects";
+import { PRESS } from "@/Domain/press/pressConfig";
+import { managerWallet } from "@/Domain/managers/assets";
+import { openTotal } from "@/Domain/bets/bets";
+import { buildPressPunishedMessage } from "@/Domain/inbox/disciplineMessage";
 import { conferenceView } from "@/Domain/press/questions";
 import { logError } from "@/Logger";
 
@@ -60,7 +64,10 @@ export const pressRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return bad("method not allowed", 405);
-    const answers = parseAnswers(await req.json().catch(() => null));
+    const body = await req.json().catch(() => null);
+    // `{ director: true }`: the director goes in his place (no effect, no penalty).
+    const sendDirector = (body as { director?: unknown } | null)?.director === true;
+    const answers = sendDirector ? {} : parseAnswers(body);
     if (!answers) return bad("invalidAnswers");
     return withSaveLock(saveId, () => inUnit(saveId, async (service) => {
       const meta = await service.getSeatMeta(saveId, auth.seatId);
@@ -70,6 +77,10 @@ export const pressRoutes = {
       const today = meta.currentDate ?? "";
       // Answerable through the deadline day itself; the day advance ignores it when it moves on from `expires`.
       if (!pending || pending.id !== pressId || today > pending.expires) return bad("pressClosed", 409);
+      if (sendDirector) {
+        await service.updateSeat(saveId, auth.seatId, { press: directorConference({ conference: pending, state: meta.press ?? emptyPressState() }) });
+        return Response.json({ ok: true, director: true });
+      }
       if (!validateAnswers(pending, answers)) return bad("invalidAnswers");
       const squad = await service.getSquadById(saveId, meta.clubId);
       if (!squad || !meta.board) return bad("save not found", 404);
@@ -78,7 +89,22 @@ export const pressRoutes = {
         conference: pending, answers, squad, board: meta.board, state: meta.press ?? emptyPressState(),
       });
       await service.saveSquadById(saveId, out.squad);
-      await service.updateSeat(saveId, auth.seatId, { press: out.state, board: out.board });
+      // Attacking the press: the fine leaves his own wallet (never more than he has), the ban adds to a running one.
+      let fine = 0;
+      let banned = 0;
+      if (out.attack) {
+        if (out.attack.fined) {
+          const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await service.getBets(saveId, auth.seatId)));
+          fine = Math.min(wallet, Math.round(PRESS.ATTACK.FINE_WEEKS * (meta.managerContract?.wage ?? 0)));
+        }
+        if (out.attack.banned) banned = PRESS.ATTACK.BAN_MATCHES;
+      }
+      await service.updateSeat(saveId, auth.seatId, {
+        press: out.state, board: out.board,
+        ...(fine > 0 ? { managerSpent: (meta.managerSpent ?? 0) + fine } : {}),
+        ...(banned > 0 ? { managerBan: { matches: (meta.managerBan?.matches ?? 0) + banned, since: today } } : {}),
+      });
+      if (fine > 0 || banned > 0) await service.appendInbox(saveId, buildPressPunishedMessage(today, fine, banned), auth.seatId);
 
       if (out.quotes.length > 0) {
         const club = { id: meta.clubId, name: meta.clubName ?? squad.name };
@@ -93,7 +119,7 @@ export const pressRoutes = {
         });
         await service.appendNews(saveId, items);
       }
-      return Response.json({ ok: true });
+      return Response.json({ ok: true, ...(fine > 0 ? { fine } : {}), ...(banned > 0 ? { banned } : {}) });
     }));
   },
 };

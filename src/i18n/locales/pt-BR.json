@@ -1683,6 +1683,11 @@
       "director": "Diretor: renova (ou deixa sair) os contratos que vencem e responde as conversas de contrato dos jogadores. Você ainda pode renovar qualquer um na ficha.",
       "manager": "Técnico: você recebe o aviso de 90 dias e as conversas de contrato, e renova na ficha do jogador."
     },
+    "press": {
+      "label": "Imprensa",
+      "manager": "Técnico: você responde às coletivas. As respostas mexem na moral, na diretoria e na torcida.",
+      "director": "Diretor: ele fala em todas as coletivas, sempre em tom neutro. Nada muda: sem ganho, sem perda e sem promessa."
+    },
     "friendlies": {
       "label": "Amistosos",
       "none": "Ninguém: sem amistosos.",
@@ -6014,6 +6019,12 @@
     "closed": "Esta coletiva já foi encerrada.",
     "error": "Não foi possível enviar as respostas.",
     "sent": "Respostas enviadas",
+    "attack": {
+      "inboxSubject": "Punição por atacar a imprensa",
+      "fine": "A federação multou você em {{fine}} por atacar a imprensa. O valor saiu da sua carteira.",
+      "ban_one": "Segundo ataque à imprensa em 60 dias: você está suspenso por {{count}} jogo.",
+      "ban_other": "Segundo ataque à imprensa em 60 dias: você está suspenso por {{count}} jogos."
+    },
     "send": "Enviar respostas",
     "question": "Pergunta {{n}}",
     "modal": {
@@ -6026,6 +6037,9 @@
       "postNoOpponent": "A imprensa quer ouvir você.",
       "until": "Vale até {{date}}",
       "answer": "Responder",
+      "sendDirector": "Mandar o diretor",
+      "directorHint": "O diretor responde em tom neutro: nada muda, nem para melhor nem para pior.",
+      "directorSent": "O diretor falou com a imprensa no seu lugar.",
       "closed": "Coletiva encerrada"
     },
     "trigger": {
@@ -6174,6 +6188,10 @@
       "deflect": {
         "0": "Meu foco é o próximo jogo.",
         "1": "Isso não depende de mim."
+      },
+      "attack_press": {
+        "0": "Vocês não entendem nada de futebol. Próxima pergunta.",
+        "1": "Essa pergunta é uma vergonha. Quem escreveu isso nunca pisou num gramado."
       }
     }
   },
@@ -6215,6 +6233,7 @@
       "criticize": "{{manager}} critica {{player}} publicamente",
       "praise": "{{manager}} enche {{player}} de elogios",
       "ask_signings": "{{manager}} pede reforços à diretoria do {{club}}",
+      "attack_press": "{{manager}} ataca a imprensa na coletiva",
       "other": "{{manager}} fala à imprensa"
     },
     "big_transfer_free": {

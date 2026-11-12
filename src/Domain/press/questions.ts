@@ -21,7 +21,8 @@ export interface ConferenceInput {
 function tonesOf(topic: PressTopic, trigger: PressTrigger): PressTone[] {
   switch (topic) {
     case "match":
-      return ["confident", "cautious", PRESS.BAD.includes(trigger) ? "blame_self" : "provocative"];
+      // The attack on the press comes last, so the variant picks of the first three stay what they were.
+      return ["confident", "cautious", PRESS.BAD.includes(trigger) ? "blame_self" : "provocative", "attack_press"];
     case "squad":
       return ["defend_squad", "demand_squad", "neutral"];
     case "player":

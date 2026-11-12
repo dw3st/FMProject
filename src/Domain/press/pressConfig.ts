@@ -38,6 +38,7 @@ export const PRESS = {
     job_confident: { squad: 0, board: 1, fans: 0 },
     ask_signings:  { squad: 0, board: -2, fans: 1 },
     deflect:       { squad: 0, board: 0, fans: 0 },
+    attack_press:  { squad: 2, board: -2, fans: 1 },
   } as Record<PressTone, { squad?: number; player?: number; board: number; fans: number }>,
   /** `defend_squad` numa fase ruim. */
   DEFEND_BAD_BOARD: -1,
@@ -53,5 +54,10 @@ export const PRESS = {
   /** Variantes de texto por pergunta e por resposta. */
   VARIANTS: 2,
   /** Tons que viram manchete `press_quote`. */
-  QUOTE_TONES: ["provocative", "demand_squad", "criticize", "praise", "ask_signings"] as PressTone[],
+  QUOTE_TONES: ["provocative", "demand_squad", "criticize", "praise", "ask_signings", "attack_press"] as PressTone[],
+  /**
+   * Attacking the press (tester report, 10.8): a chance of a fine of N weeks of the manager's own salary (from his
+   * wallet), and a touchline ban when it is the second attack within `REPEAT_DAYS`.
+   */
+  ATTACK: { FINE_CHANCE: 0.25, FINE_WEEKS: 2, REPEAT_DAYS: 60, BAN_MATCHES: 1 },
 } as const;
