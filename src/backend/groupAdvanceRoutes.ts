@@ -12,6 +12,7 @@ import { isGroupWorld, laterDate, resolveReadyUntil } from "@/Domain/groupAdvanc
 import { buildMatchEventFromRecording, withWeatherLog } from "@/Domain/advanceDay/matches";
 import { matchWeatherOf } from "@/backend/stadiumData";
 import { officialsFor } from "@/backend/refereeWorld";
+import { callUpSquad, nationalMatchEvent } from "@/backend/nationalWorld";
 
 type Req = Request & { params: Record<string, string> };
 type Handler = (req: Req) => Promise<Response>;
@@ -156,9 +157,18 @@ export const groupAdvanceRoutes = {
       const fixture = await seatMatchOn(saveService, saveId, auth.seatId, file.date);
       const home = fixture ? await saveService.getSquadById(saveId, fixture.home) : null;
       const away = fixture ? await saveService.getSquadById(saveId, fixture.away) : null;
-      const base = fixture && home && away
+      let base = fixture && home && away
         ? withWeatherLog(buildMatchEventFromRecording(fixture, home, away, file.recording).event, matchWeatherOf(fixture, home))
         : null;
+      // His national team's game (10.6.4, tester report: the result screen failed until the day ran): the two
+      // call-ups stand in for the club squads, as in the day's own log.
+      if (!base && fixture && fixture.home.startsWith("nat_")) {
+        const state = await saveService.getNationalState(saveId);
+        const squadOf = (id: string) => saveService.getSquadById(saveId, id);
+        const h = state ? await callUpSquad(saveId, state, fixture.home, squadOf) : null;
+        const a = state ? await callUpSquad(saveId, state, fixture.away, squadOf) : null;
+        if (h && a) base = nationalMatchEvent(fixture, file.recording, h.players, a.players);
+      }
       // The referee of the day's appointment (the one the day will log): the recording never carries him.
       const officials = base && fixture ? await officialsFor(saveService, saveId, file.date, fixture).catch(() => null) : null;
       const event = base && officials

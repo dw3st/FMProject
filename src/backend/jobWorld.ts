@@ -24,6 +24,7 @@ import {
 } from "@/Domain/jobs/jobs";
 import { countryOfferWeight, idolClubs, licenceReputation, spokenLanguages, type ManagerStudies } from "@/Domain/managers/courses";
 import { JOBS } from "@/Domain/jobs/jobsConfig";
+import { clubHappyWithManager } from "@/backend/jobSecurityWorld";
 import { initialStaff } from "@/Domain/staff/staff";
 import { getStaffNameBook, leagueCountryMap } from "@/backend/staffNameBook";
 import { startingFacilities } from "@/backend/facilityWorld";
@@ -251,12 +252,22 @@ export async function generateJobOffers(service: SaveService, saveId: string, re
     band, exclude,
     ...(req.window === "mid_season" && from?.city ? { rivalCity: from.city } : {}),
   });
-  let picked = pickOfferingClubs({
-    candidates: eligible, band, count,
+  // A few more clubs are drawn than needed: one happy with its manager (secure job, a fresh title) makes no offer.
+  const drawn = pickOfferingClubs({
+    candidates: eligible, band, count: count + JOBS.content.EXTRA_DRAWS,
     home: { country: from?.country ?? null, continent: from?.continent ?? null }, rng,
     ...(req.vacant ? { vacant: req.vacant } : {}),
     countryWeight: offerCountryWeight(req, world.candidates),
   });
+  let picked: OfferCandidate[] = [];
+  for (const c of drawn) {
+    if (picked.length >= count) break;
+    const happy = await clubHappyWithManager(service, saveId, {
+      squadId: c.squadId, date: req.date, index: req.index, activeLeagues: req.activeLeagues, managers: req.managers,
+      ...(req.vacant ? { vacant: req.vacant } : {}),
+    });
+    if (!happy) picked.push(c);
+  }
   if (picked.length === 0 && guaranteed) {
     const g = guaranteedClub(world.candidates.filter((c) => !exclude.has(c.squadId)), band);
     if (g) picked = [g];

@@ -6642,6 +6642,8 @@
         "oneReady": "{{name}} já está pronto até {{date}}.",
         "markReady": "Pronto até o próximo jogo",
         "seeMatch": "Ver o jogo de hoje",
+        "markReadyShort": "Ficar pronto",
+        "seeMatchShort": "Ver o jogo",
         "title": "Só falta você",
         "body": "Os outros técnicos estão prontos."
       },

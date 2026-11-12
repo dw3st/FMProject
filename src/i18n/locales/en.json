@@ -6645,6 +6645,8 @@
         "oneReady": "{{name}} is ready until {{date}}.",
         "markReady": "Ready until my next game",
         "seeMatch": "See today's game",
+        "markReadyShort": "Ready up",
+        "seeMatchShort": "See the game",
         "title": "Only you left",
         "body": "The other managers are ready."
       },

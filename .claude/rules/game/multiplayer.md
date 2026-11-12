@@ -355,6 +355,14 @@ bun test src/Domain/groupAdvance src/Domain/inbox/worldAdvanceMessage.test.ts sr
   `withSaveLock` (até ~14 s num dia com rodada no motor completo).
 - Depois do teto de 450 dias, sem prazo, só um novo kick continua.
 
+### Resultado provisório do jogo de seleção (10.6.4)
+
+Report do usuário. `GET …/live-recording` de um jogo de seleção monta o evento com as duas convocações (`callUpSquad` + `nationalMatchEvent`), como o log do dia: antes respondia sem evento (nenhum elenco se chama `nat_…`) e a tela de resultado mostrava erro até o dia rodar. Teste: `src/backend/groupAdvance.national.test.ts`.
+
+### Aviso de vez numa linha (10.6.4)
+
+Report de tester. `TurnNoticeCard` virou uma linha de 44px (sino, Só falta você, botão curto, fechar); quem está pronto fica no `title`. Antes o cartão alto cobria os botões abaixo da barra.
+
 ### Som de pronto (8.2.6)
 
 Pedido do usuário. Um toque curto de duas notas (`GameInterface/readySound.ts`, sintetizado) quando outro técnico sai da lista de espera do `world_progress` (`othersNowReady`, puro; o próprio técnico não conta) e, na sala do jogo entre técnicos, quando o outro aperta Começar. Toca com a aba em segundo plano; só depois de um clique no site (regra do navegador). Preferência `fm.world.readySound` em Configurações, volume o da partida. Não toca na partida ao vivo, onde o `GroupAdvanceProvider` não está montado.

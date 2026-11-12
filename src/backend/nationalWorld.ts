@@ -959,7 +959,7 @@ export async function callUpSquad(
 }
 
 /** The day-log event of the human manager's national game (no development: the post-match is `applyNationalMatch`). */
-function nationalMatchEvent(fx: Fixture, rec: PlayedMatchRecording, home: RosterPlayer[], away: RosterPlayer[]): MatchEvent {
+export function nationalMatchEvent(fx: Fixture, rec: PlayedMatchRecording, home: RosterPlayer[], away: RosterPlayer[]): MatchEvent {
   const playerNames: Record<string, string> = {};
   const playerTeams: Record<string, "home" | "away"> = {};
   for (const p of home) { playerNames[p.id] = p.name; playerTeams[p.id] = "home"; }

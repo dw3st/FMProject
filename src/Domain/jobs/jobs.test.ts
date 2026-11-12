@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  clubKeepsManager, recentClubTitle,
   clubPrestiges,
   eligibleCandidates,
   employedBand,
@@ -210,5 +211,26 @@ describe("managers when the human changes club", () => {
     expect(hired.find((m) => m.id === "x")!.squadId).toBe("");
     const clubs = hired.filter((m) => m.squadId).map((m) => m.squadId);
     expect(new Set(clubs).size).toBe(clubs.length);
+  });
+});
+
+describe("a club happy with its manager makes no offer (10.6.4)", () => {
+  const title = (on: string | undefined, squadId = "66") => ({ titles: [{ season: "2034-35", kind: "league" as const, competition: "premier_league", squadId, points: 100, ...(on ? { on } : {}) }] });
+
+  test("a title with the club in the last year keeps him; an older one, another club's or an undated one does not", () => {
+    expect(recentClubTitle(title("2035-05-20"), "66", "2035-09-01")).toBe(true);
+    expect(recentClubTitle(title("2034-08-30"), "66", "2035-09-01")).toBe(false);
+    expect(recentClubTitle(title("2035-05-20", "42"), "66", "2035-09-01")).toBe(false);
+    expect(recentClubTitle(title(undefined), "66", "2035-09-01")).toBe(false);
+    expect(recentClubTitle(undefined, "66", "2035-09-01")).toBe(false);
+  });
+
+  test("a secure job (levels 1 and 2) keeps him; stable or threatened does not; a fresh title always does", () => {
+    expect(clubKeepsManager({ level: 1, recentTitle: false })).toBe(true);
+    expect(clubKeepsManager({ level: 2, recentTitle: false })).toBe(true);
+    expect(clubKeepsManager({ level: 3, recentTitle: false })).toBe(false);
+    expect(clubKeepsManager({ level: 5, recentTitle: false })).toBe(false);
+    expect(clubKeepsManager({ level: 5, recentTitle: true })).toBe(true);
+    expect(clubKeepsManager({ level: null, recentTitle: false })).toBe(false);
   });
 });

@@ -27,6 +27,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.6.4",
+    date: "2026-11-12",
+    items: [],
+    fixes: [
+      { pt: "Seleção numa liga de amigos: depois de jogar ao vivo pela seleção, a tela de resultado abre com o placar e os números do jogo. Antes ela mostrava um erro até o dia avançar.", en: "National team in a friends' league: after playing live for your national team, the result screen opens with the score and the match numbers. It used to show an error until the day advanced." },
+      { pt: "Propostas de emprego: um clube satisfeito com o técnico não faz proposta. Clube com o cargo seguro (bem acima da meta da diretoria) ou que ganhou um título com o técnico atual no último ano fica com ele.", en: "Job offers: a club happy with its manager makes no offer. A club whose manager's job is secure (well above the board's target) or that won a title with him in the last year keeps him." },
+      { pt: "Substituições na partida: o painel mostra quem ainda está em adaptação. No campo, um aperto de mão laranja com os jogos que faltam; no banco, o número em laranja depois do nome.", en: "Substitutions in the match: the panel shows who is still settling in. On the pitch, an orange handshake with the games left; on the bench, the number in orange after the name." },
+      { pt: "Liga de amigos: o aviso Só falta você ficou pequeno, numa linha só, e não cobre mais os botões abaixo dele.", en: "Friends' league: the Only you left notice is small now, one line, and no longer covers the buttons under it." },
+    ],
+  },
+  {
     version: "10.6.3",
     date: "2026-11-12",
     time: "12:08",
@@ -5953,5 +5964,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Partida em pixel art: jogadores, juiz e bola desenhados em pixel art, com chutes, dribles e defesas novos", en: "Pixel-art match: players, referee and ball drawn in pixel art, with new shots, dribbles and saves" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

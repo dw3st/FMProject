@@ -114,6 +114,13 @@ export const JOBS = {
   /** A club with a vacant job (AI manager sacked, interim in charge) is this much likelier to offer (Etapa 25). */
   VACANCY_WEIGHT: 3,
 
+  /**
+   * A club happy with its manager makes no offer (10.6.4): job security at this level or safer (1 very secure,
+   * 2 secure), or a title won with him in the last `TITLE_DAYS`. `EXTRA_DRAWS`: how many more clubs may be drawn to
+   * replace the happy ones.
+   */
+  content: { LEVEL: 2, TITLE_DAYS: 365, EXTRA_DRAWS: 12 },
+
   /** Season-end offers without a known first match of the new season stay this long. */
   SEASON_END_FALLBACK_DAYS: 30,
 } as const;

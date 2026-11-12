@@ -188,6 +188,20 @@ export function eligibleCandidates(candidates: OfferCandidate[], f: CandidateFil
     && !(rival && normCity(c.city) === rival));
 }
 
+/** The club's manager won a title with it in the last `JOBS.content.TITLE_DAYS` before `date`. */
+export function recentClubTitle(manager: Pick<ManagerRecord, "titles"> | undefined, squadId: string, date: string): boolean {
+  const from = addDays(date, -JOBS.content.TITLE_DAYS);
+  return (manager?.titles ?? []).some((t) => t.squadId === squadId && !!t.on && t.on > from && t.on <= date);
+}
+
+/**
+ * A club that keeps its manager makes no job offer (10.6.4): his job is secure (`level` 1 or 2 of the Jobs tab) or
+ * he has just won a title there. `level` null = unknown (no league): only the title counts.
+ */
+export function clubKeepsManager(args: { level: 1 | 2 | 3 | 4 | 5 | null; recentTitle: boolean }): boolean {
+  return args.recentTitle || (args.level !== null && args.level <= JOBS.content.LEVEL);
+}
+
 /** Location weight: same country 3, same continent 2, elsewhere 1. */
 function locationWeight(c: OfferCandidate, home: { country: string | null; continent: string | null }): number {
   const l = JOBS.location;

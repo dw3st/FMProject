@@ -223,6 +223,12 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
     return r ? slotValue(r, gamePlayerNaturalRole(p)) : displayRating10(p, ratings);
   };
 
+  // A new signing still settling in: the games he has left (tester report: show it on this panel too).
+  const settlingLeft = (p: GamePlayer): number => {
+    const s = roster?.find((x) => x.id === p.rosterId)?.settling;
+    return s ? Math.max(0, s.need - s.games) : 0;
+  };
+
   return (
     <>
       <DragGhost drag={drag} />
@@ -293,6 +299,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
               const banRisk = isOneYellowFromBan(p.seasonYellows, { goals: 0, assists: 0, yellows: yellowCount.get(p.id) ?? 0, red: false });
               const injured = injuredIds.has(p.id);
               const face = faceUrls?.[p.rosterId];
+              const settling = settlingLeft(p);
               return (
                 <button
                   key={p.id}
@@ -331,6 +338,16 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                     <span className={`absolute -bottom-1 -right-5 rounded border border-border bg-background/95 px-1 text-sm font-black tabular-nums leading-tight ${ratingTextClass10(r10)}`}>
                       {r10.toFixed(1)}
                     </span>
+                    {settling > 0 && (
+                      <span
+                        title={t("settling.left", { count: settling })}
+                        aria-label={t("settling.left", { count: settling })}
+                        className="absolute -bottom-1 right-[calc(100%-6px)] flex items-center gap-0.5 rounded border border-border bg-background/95 px-1 text-sm font-semibold tabular-nums leading-tight text-chart-4"
+                      >
+                        <Icon name="handshake" size={14} aria-hidden />
+                        {settling}
+                      </span>
+                    )}
                     {(booked || banRisk || injured || isOut) && (
                       <span className="absolute -top-2 -right-3 flex items-center gap-0.5">
                         {booked && <span className="inline-block w-2.5 h-3.5 rounded-sm bg-card-yellow" title={t("substitutionPanel.booked")} aria-label={t("substitutionPanel.booked")} />}
@@ -374,6 +391,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                 const r10 = benchNumber(p);
                 const isSelected = selection?.kind === "bench" && selection.id === p.id;
                 const over = drag?.over === `bench:${p.id}`;
+                const settling = settlingLeft(p);
                 return (
                   <button
                     key={p.id}
@@ -394,6 +412,15 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                       {t(`roles.detailedAbbr.${gamePlayerNaturalRole(p)}`, { defaultValue: gamePlayerNaturalRole(p) })}
                     </span>
                     <span className="flex-1 min-w-0 text-sm font-semibold text-foreground truncate">{shirtName(p.name)}</span>
+                    {settling > 0 && (
+                      <span
+                        title={t("settling.left", { count: settling })}
+                        aria-label={t("settling.left", { count: settling })}
+                        className="shrink-0 rounded bg-chart-4/20 px-1 text-sm font-semibold leading-5 tabular-nums text-chart-4"
+                      >
+                        {settling}
+                      </span>
+                    )}
                     {isOneYellowFromBan(p.seasonYellows) && <BanRiskMark />}
                     <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>{r10.toFixed(1)}</span>
                     <span className="w-24 shrink-0">

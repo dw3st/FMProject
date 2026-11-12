@@ -17,6 +17,8 @@ Report de tester, regra aprovada pelo usuário em 2026-11-04 (a alternativa por 
 
 - Formação (10.6.2, report do usuário): quantos jogos faltam (`need − games`). Na lista de titulares e reservas, um número em âmbar depois do nome (só o número, para não espremer o nome; a frase vai no `title`); no campo, ícone e número ao lado do fôlego; na ficha ao passar o mouse (`PlayerTipBody`, também no painel de substituições da partida), a linha "Adaptação 3/15 · faltam 12 jogos". i18n `settling.label`, `settling.left`, `settling.progress`.
 
+- Substituições da partida (10.6.4, report do usuário): no painel (`SubsPitchView`), aperto de mão em âmbar com os jogos que faltam ao lado do rosto no mini campo, e só o número em âmbar depois do nome no banco.
+
 ## Medição (`bun scripts/settling-measure.ts`)
 
 Motor, 4-3-3, equilibrado, fôlego 88, 5 titulares recém-chegados (no primeiro jogo, o pior caso) de um lado; cada par duas vezes com os lados trocados. V − D do lado com contratações (o ganho em vitórias é a metade, como na moral):
