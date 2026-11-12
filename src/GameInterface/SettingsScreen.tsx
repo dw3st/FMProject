@@ -6,6 +6,7 @@ import { fetchCurrentUser, logout, type CurrentUser } from "@/GameInterface/Auth
 import { Icon } from "@/GameInterface/Icons";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { AppInstallBlock } from "@/GameInterface/pwa/AppInstallBlock";
 import { readMatchSound, writeMatchSound, readMatchVolume, writeMatchVolume, readReadySound, writeReadySound, readChatSound, writeChatSound } from "@/GameInterface/artPrefs";
 import { playChatSound, playReadySound } from "@/GameInterface/readySound";
 import { disableTurnNotification, enableTurnNotification, readTurnNotification, turnNotificationSupported } from "@/GameInterface/World/turnNotice";
@@ -123,6 +124,8 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.matchInFrameDescription")}</p>
         </div>
+
+        <AppInstallBlock />
 
         <div className="mt-6 flex flex-col gap-2">
           <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.matchSound")}</div>

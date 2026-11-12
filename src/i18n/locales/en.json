@@ -128,6 +128,7 @@
     "footerText": "© 2026 FMProject · based on TouchLines (AGPL-3.0)"
   },
   "unsupportedScreen": {
+    "fullscreen": "Play full screen",
     "title": "Use a larger window",
     "minimum": "minimum",
     "current": "current",
@@ -573,6 +574,8 @@
     "makeOffer": "Make offer"
   },
   "nav": {
+    "fullscreen": "Full screen",
+    "fullscreenExit": "Leave full screen",
     "worldTab": "My league",
     "world": "League",
     "squad": "Squad",
@@ -597,6 +600,16 @@
     "national": "National teams"
   },
   "settings": {
+    "app": {
+      "title": "App",
+      "install": "Install the game",
+      "prompt": "Installed, the game opens full screen, without the browser's bars, with an icon on the home screen.",
+      "installed": "The game is installed on this device.",
+      "ios": "On an iPhone or iPad: open the game in Safari, tap Share and then Add to Home Screen.",
+      "none": "To install, open the browser's menu and choose Install app or Add to home screen.",
+      "fullscreen": "Full screen",
+      "fullscreenDescription": "Hides the browser's bars. On a phone the game also turns on its side."
+    },
     "language": "Language",
     "languageDescription": "Choose the language used across the game.",
     "mainMenu": "Main Menu",

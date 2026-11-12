@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.6",
+    date: "2026-11-12",
+    time: "10:19",
+    items: [
+      { pt: "Celular: o jogo pode ser instalado como aplicativo. Em Configurações, no bloco Aplicativo, toque em Instalar o jogo (no iPhone e no iPad: abra no Safari, toque em Compartilhar e em Adicionar à Tela de Início). Instalado, ele abre em tela cheia e deitado, sem as barras do navegador, com um ícone na tela inicial.", en: "Phone: the game can be installed as an app. In Settings, in the App block, tap Install the game (on an iPhone or iPad: open it in Safari, tap Share and then Add to Home Screen). Installed, it opens full screen and on its side, without the browser's bars, with an icon on the home screen." },
+      { pt: "Sem instalar, também dá para jogar em tela cheia no navegador: um botão novo na barra de baixo no celular, uma opção em Configurações e um botão na tela que pede para girar o aparelho. No Android o jogo já vira para o lado.", en: "Without installing, you can also play full screen in the browser: a new button in the bottom bar on a phone, an option in Settings and a button on the screen that asks you to turn the device. On Android the game turns on its side by itself." },
+    ],
+  },
+  {
     version: "10.5",
     date: "2026-11-11",
     time: "21:45",
@@ -5915,6 +5924,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Celular: jogo em tela cheia, instalável como app", en: "Phone: full-screen game, installable as an app" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

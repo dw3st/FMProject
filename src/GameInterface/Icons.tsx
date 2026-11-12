@@ -111,6 +111,8 @@ import {
   Clipboard,
   Copy,
   Download,
+  Maximize,
+  Minimize,
   FileJson,
   Pencil,
   Plus,
@@ -265,6 +267,8 @@ export type IconName =
   | "clipboard"
   | "copy"
   | "download"
+  | "fullscreen"
+  | "fullscreen-exit"
   | "file-json"
   | "pencil"
   | "plus"
@@ -424,6 +428,8 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "clipboard": Clipboard,
   "copy": Copy,
   "download": Download,
+  "fullscreen": Maximize,
+  "fullscreen-exit": Minimize,
   "file-json": FileJson,
   "pencil": Pencil,
   "plus": Plus,

@@ -128,6 +128,7 @@
     "footerText": "© 2026 FMProject · baseado em TouchLines (AGPL-3.0)"
   },
   "unsupportedScreen": {
+    "fullscreen": "Jogar em tela cheia",
     "title": "Use uma janela maior",
     "minimum": "mínimo",
     "current": "atual",
@@ -573,6 +574,8 @@
     "makeOffer": "Fazer Oferta"
   },
   "nav": {
+    "fullscreen": "Tela cheia",
+    "fullscreenExit": "Sair da tela cheia",
     "worldTab": "Sua liga",
     "world": "Liga",
     "squad": "Elenco",
@@ -597,6 +600,16 @@
     "national": "Seleções"
   },
   "settings": {
+    "app": {
+      "title": "Aplicativo",
+      "install": "Instalar o jogo",
+      "prompt": "Instalado, o jogo abre em tela cheia, sem as barras do navegador, com um ícone na tela inicial.",
+      "installed": "O jogo está instalado neste aparelho.",
+      "ios": "No iPhone ou iPad: abra o jogo no Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.",
+      "none": "Para instalar, abra o menu do navegador e escolha Instalar app ou Adicionar à tela inicial.",
+      "fullscreen": "Tela cheia",
+      "fullscreenDescription": "Esconde as barras do navegador. No celular, o jogo também vira para o lado."
+    },
     "language": "Idioma",
     "languageDescription": "Escolha o idioma usado em todo o jogo.",
     "mainMenu": "Menu Principal",

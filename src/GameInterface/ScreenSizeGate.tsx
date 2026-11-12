@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
+import { useFullscreen } from "@/GameInterface/pwa/appInstall";
+import { Button } from "@/GameInterface/ui/Button";
 
 const MIN_WIDTH = 1024;
 const MIN_HEIGHT = 600;
@@ -42,6 +44,7 @@ export function ScreenSizeGate({ children }: { children: ReactNode }) {
 function UnsupportedScreen({ rotate }: { rotate: boolean }) {
   const { t } = useTranslation();
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const fullscreen = useFullscreen();
 
   useEffect(() => {
     const update = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -65,6 +68,9 @@ function UnsupportedScreen({ rotate }: { rotate: boolean }) {
             ? t("unsupportedScreen.rotateText")
             : <>{t("unsupportedScreen.current")} {size.w} × {size.h} · {t("unsupportedScreen.minimum")} {MIN_WIDTH} × {MIN_HEIGHT}</>}
         </p>
+        {rotate && fullscreen.supported && !fullscreen.active && (
+          <Button onClick={fullscreen.toggle} className="mt-6">{t("unsupportedScreen.fullscreen")}</Button>
+        )}
       </div>
     </div>
   );

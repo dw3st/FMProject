@@ -241,3 +241,14 @@ Report de tester. `useTableSort` (`src/GameInterface/ui/tableSort.ts`, com teste
 ## Celular deitado (9.8)
 
 Pedido do usuário: um código só, com modo compacto. Variante `phone:` do Tailwind (`index.css`: `@custom-variant phone (@media (orientation: landscape) and (max-height: 520px))`). `ScreenSizeGate` aceita celular deitado a partir de 640 × 320 e, em pé, pede para girar (`unsupportedScreen.rotate*`). No `phone:`: barra de cima de 44px só com ícones (sem logo, data nem rótulo do dia), barra de baixo de 36px sem a rádio, `ScreenContainer` com `px-3 py-3 gap-3`, título `text-2xl` sem subtítulo, caixa de entrada em duas colunas. Partida ao vivo: placar e controles numa linha (rótulos curtos da mentalidade, `match.mentalityShort.*`, botões só com ícone), sem a linha do jogo/estádio, o HUD e a faixa de narração; escalação e resumo viram gavetas sobre o campo (`phoneDrawer`, botões `match.phone.*`), e a medida do campo ignora um painel absoluto. Testado com Chromium em emulação móvel (844 × 390 e 740 × 360).
+
+## App instalável e tela cheia (10.6)
+
+Item do "Em breve". O jogo é um app instalável (sem service worker: não é exigido para instalar e evita página velha em cache).
+
+- **Manifesto:** `appManifest()` (`src/Domain/pwa/manifest.ts`, com teste), servido por rota em `/manifest.webmanifest` (`staticAssets.ts`, `application/manifest+json`, cache de 1 h): `display: fullscreen`, `orientation: landscape`, `start_url: /start`, ícones `brand/app-192.png`, `brand/favicon-512.png` e `brand/app-maskable-512.png` (`GAME_ART_FILES`).
+- **Cabeçalho:** `installAppHead()` (`src/GameInterface/pwa/appInstall.ts`, chamado pelo `createPage`) injeta o link do manifesto, `theme-color` e as metas de app em toda página, menos dentro de um iframe (a partida no quadro). Nada disso vai nos HTML das páginas: o empacotador do Bun tentaria resolver o link.
+- **Instalar:** `useAppInstall()` guarda o `beforeinstallprompt` do navegador; estado por `installState` (`installed`, `prompt`, `ios`, `none`). Bloco Aplicativo em Configurações (`pwa/AppInstallBlock.tsx`): botão Instalar o jogo só com o diálogo do navegador em mãos; no iPhone e no iPad, os passos do Safari; no resto, o caminho pelo menu do navegador.
+- **Tela cheia no navegador:** `useFullscreen()` (`requestFullscreen` + `screen.orientation.lock("landscape")`, que só o Android aceita): chips em Configurações (somem com o app instalado), botão só no `phone:` na barra de baixo (`StatusBar`) e botão "Jogar em tela cheia" na tela que pede para girar (`ScreenSizeGate`). Onde o navegador não tem tela cheia (iPhone), nada aparece.
+- i18n `settings.app.*`, `nav.fullscreen`, `nav.fullscreenExit`, `unsupportedScreen.fullscreen`.
+- Limitações: com F11 no computador o bloco diz "instalado" (o navegador informa o mesmo modo de exibição); o diálogo de instalar e a tela cheia não foram testados num aparelho real (o navegador de teste recusa os dois sem gesto do usuário).

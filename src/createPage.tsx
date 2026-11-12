@@ -9,6 +9,7 @@ import { ScreenSizeGate } from "@/GameInterface/ScreenSizeGate";
 import { initAnalytics } from "@/analytics";
 import { loadPaintedFaces } from "@/Domain/art/paintedFaces";
 import { readNewVisual } from "@/GameInterface/artPrefs";
+import { installAppHead } from "@/GameInterface/pwa/appInstall";
 
 export interface CreatePageOptions {
   /** Skip the auth gate + GameSaveProvider. Used for landing & login. */
@@ -23,6 +24,7 @@ export interface CreatePageOptions {
 
 export function createPage(Component: React.ComponentType, options: CreatePageOptions = {}) {
   installFontFaces();
+  installAppHead();
   void initAnalytics();
 
   function start() {

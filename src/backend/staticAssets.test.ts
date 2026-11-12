@@ -90,3 +90,18 @@ describe("game art", () => {
     expect(ok.headers.get("content-type")).toBe("application/json");
   });
 });
+
+describe("web manifest", () => {
+  test("served as a manifest, with icons the game art route really serves", async () => {
+    const res = (staticAssetRoutes["/manifest.webmanifest"] as () => Response)();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/manifest+json");
+    const m = (await res.json()) as { display: string; icons: { src: string }[] };
+    expect(m.display).toBe("fullscreen");
+    const art = staticAssetRoutes["/assets/game/v1/:dir/:file"] as (req: Request & { params: { dir: string; file: string } }) => Response;
+    for (const icon of m.icons) {
+      const [dir, file] = icon.src.replace("/assets/game/v1/", "").split("/");
+      expect(art(Object.assign(new Request(`http://x${icon.src}`), { params: { dir: dir!, file: file! } })).status).toBe(200);
+    }
+  });
+});

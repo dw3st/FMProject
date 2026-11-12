@@ -10,6 +10,7 @@ import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { MATCH_RADIO_SLOT } from "@/GameInterface/World/frameHost";
 import { RadioPlayer } from "@/GameInterface/Components/RadioPlayer";
+import { useFullscreen } from "@/GameInterface/pwa/appInstall";
 
 const ITEM = "flex items-center gap-2 text-base phone:text-sm text-muted-foreground tabular-nums";
 const ICON_BTN =
@@ -36,6 +37,7 @@ export function StatusBar({
   changelogNotice?: { version: string; onOpen: () => void; onDismiss: () => void } | null;
 }) {
   const { t } = useTranslation();
+  const fullscreen = useFullscreen();
   const { session, squad, unreadInboxCount, save } = useGameSave();
   // Unemployed (Etapa 20): no club, so no club money to show.
   const noClub = !!save?.unemployed;
@@ -102,6 +104,15 @@ export function StatusBar({
             />
           )}
           <Divider />
+          {/* A phone in the browser (10.6): one tap hides the browser's bars. */}
+          {fullscreen.supported && (
+            <button
+              type="button" onClick={fullscreen.toggle} className={`${ICON_BTN} hidden phone:flex`}
+              title={t(fullscreen.active ? "nav.fullscreenExit" : "nav.fullscreen")} aria-label={t(fullscreen.active ? "nav.fullscreenExit" : "nav.fullscreen")}
+            >
+              <Icon name={fullscreen.active ? "fullscreen-exit" : "fullscreen"} size={18} />
+            </button>
+          )}
           <button type="button" onClick={onOpenSettings} title={t("nav.settings")} aria-label={t("nav.settings")} className={ICON_BTN}>
             <Icon name="settings" size={18} />
           </button>

@@ -20,6 +20,7 @@ import { dirname, join } from "node:path";
 import { FLAG_ASSET_VERSION } from "@/Domain/world/flags";
 import { FONT_ASSET_VERSION, FONT_FACES } from "@/fontFaces";
 import { GAME_ART_VERSION } from "@/Domain/art/paintedFaces";
+import { appManifest, MANIFEST_PATH } from "@/Domain/pwa/manifest";
 
 const CACHE_FOREVER = "public, max-age=31536000, immutable";
 
@@ -215,6 +216,9 @@ export const GAME_ART_FILES: Record<string, string> = {
   "brand/icon.svg": "image/svg+xml",
   "brand/favicon-32.png": "image/png",
   "brand/favicon-512.png": "image/png",
+  // The installable app (10.6): icons of the web manifest.
+  "brand/app-192.png": "image/png",
+  "brand/app-maskable-512.png": "image/png",
   "brand/og-image.png": "image/png",
   ...ICON_FILES,
 };
@@ -240,6 +244,10 @@ const LOCALES: Record<string, unknown> = { "en.json": enLocale, "pt-BR.json": pt
 const localeBodies = new Map<string, string>();
 
 export const staticAssetRoutes = {
+  // The web manifest (10.6): what makes the game installable as an app. Short cache: it may change with a release.
+  [MANIFEST_PATH]: () => new Response(JSON.stringify(appManifest()), {
+    headers: { "Content-Type": "application/manifest+json; charset=utf-8", "Cache-Control": "public, max-age=3600", "X-Content-Type-Options": "nosniff" },
+  }),
   // The game version is in the path (`/assets/i18n/<version>/<lang>.json`), so the answer never changes for a URL.
   "/assets/i18n/:ver/:file": (req: Request & { params: { ver: string; file: string } }) => {
     const data = LOCALES[req.params.file];
