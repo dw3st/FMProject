@@ -363,6 +363,7 @@ const STAFF_CONTRACT_SUBJECT: Record<StaffContractNews["kind"], string> = {
   staff_leaving:  "Staff leaving at the end of the contract",
   staff_left:     "Staff contracts ended",
   staff_retired:  "Staff retired",
+  staff_course_done: "Staff back from a course",
 };
 
 /**

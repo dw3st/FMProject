@@ -2,6 +2,8 @@ import { PRESS } from "@/Domain/press/pressConfig";
 import { applyPressEffect } from "@/Domain/boardFans/boardFans";
 import { afterPressAnswer } from "@/Domain/morale/morale";
 import { takesDemandWell } from "@/Domain/personality/personality";
+import { daysBetween } from "@/Domain/dates";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { BoardState } from "@/types/boardTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { PressConference, PressPromise, PressRecord, PressState, PressTone } from "@/types/pressTypes";
@@ -22,7 +24,7 @@ const pushHistory = (st: PressState, rec: PressRecord): PressRecord[] => [rec, .
 /** Aplica as respostas (já validadas). */
 export function answerConference(a: {
   conference: PressConference; answers: Record<string, string>; squad: Squad; board: BoardState; state: PressState;
-}): { squad: Squad; board: BoardState; state: PressState; quotes: PressQuote[] } {
+}): { squad: Squad; board: BoardState; state: PressState; quotes: PressQuote[]; attack?: PressAttack } {
   const c = a.conference;
   let squad = a.squad;
   let board = a.board;
@@ -56,11 +58,36 @@ export function answerConference(a: {
     }
   }
 
+  // An attack on the press: the fine is drawn from the conference's id; a second attack within the window bans him.
+  const attack: PressAttack | undefined = chosen.some((x) => x.tone === "attack_press")
+    ? {
+      fined: mulberry32(seedFrom(`${c.id}:attack`))() < PRESS.ATTACK.FINE_CHANCE,
+      banned: a.state.history.some((r) => attackedPress(r) && Math.abs(daysBetween(r.date, c.date)) <= PRESS.ATTACK.REPEAT_DAYS),
+    }
+    : undefined;
+
   const { pending: _p, ...rest } = a.state;
   return {
     squad, board, quotes,
+    ...(attack ? { attack } : {}),
     state: { ...rest, lastDate: c.date, promises, history: pushHistory(a.state, { id: c.id, date: c.date, trigger: c.trigger, answers: chosen }) },
   };
+}
+
+/** What an attack on the press costs him beyond the answer's own effect (`PRESS.ATTACK`). */
+export interface PressAttack { fined: boolean; banned: boolean }
+
+const attackedPress = (r: PressRecord): boolean =>
+  Array.isArray(r.answers) && r.answers.some((x) => x.tone === "attack_press");
+
+/**
+ * The director speaks in the manager's place (10.8): the conference closes with no effect, no promise and no
+ * penalty for the absence; the 7-day gap counts from it like any other.
+ */
+export function directorConference(a: { conference: Pick<PressConference, "id" | "date" | "trigger">; state: PressState }): PressState {
+  const { pending: _p, ...rest } = a.state;
+  const c = a.conference;
+  return { ...rest, lastDate: c.date, history: pushHistory(a.state, { id: c.id, date: c.date, trigger: c.trigger, answers: "director" }) };
 }
 
 export function ignoreConference(a: { conference: PressConference; board: BoardState; state: PressState }): { board: BoardState; state: PressState } {

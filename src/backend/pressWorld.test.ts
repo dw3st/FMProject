@@ -37,5 +37,22 @@ describe("pressDay", () => {
     expect(out.press.history[0]).toMatchObject({ id: "press-old", answers: "ignored" });
     expect(out.press.pending?.id).not.toBe("press-old");
     expect(out.news.map((n) => n.kind)).toEqual(["press_absent"]);
+
+    // With the director answering the press (10.8) the same expired invite costs nothing: closed as his, no news.
+    const his = await pressDay({
+      saveId, seatId: meta.seatId, service: saveService,
+      meta: { ...meta, responsibilities: { contracts: "director", press: "director" }, press: { pending, winless: 0, promises: [], history: [] } },
+      date: today, clubId: "33", leagueSlug: "premier_league",
+      leagueState: meta.activeLeagues?.find((l) => l.leagueSlug === "premier_league"),
+      leagueZones: [],
+      index: await saveService.getSquadIndex(saveId),
+      board,
+      myMatches: [], titlesToday: [], eliminatedToday: [],
+      matchContext: new Map(),
+    });
+    expect(his.board).toEqual(board);
+    expect(his.press.pending).toBeUndefined();
+    expect(his.press.history[0]).toEqual({ id: "press-old", date: pending.date, trigger: "derby", answers: "director" });
+    expect(his.news).toEqual([]);
   }, 180_000);
 });

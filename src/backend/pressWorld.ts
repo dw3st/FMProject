@@ -7,7 +7,10 @@ import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
 import { addDays } from "@/Domain/dates";
 import { PRESS } from "@/Domain/press/pressConfig";
-import { emptyPressState, ignoreConference, resolveMatchPromises, resolveObjectivePromise, type PromiseOutcome } from "@/Domain/press/effects";
+import {
+  directorConference, emptyPressState, ignoreConference, resolveMatchPromises, resolveObjectivePromise, type PromiseOutcome,
+} from "@/Domain/press/effects";
+import { directorSpeaksToPress } from "@/Domain/responsibilities/director";
 import { buildConference, type ConferenceInput } from "@/Domain/press/questions";
 import { isRunIn, nextWinless, pickTrigger, postMatchTriggers, preMatchTriggers, zoneBoundaries } from "@/Domain/press/triggers";
 import { buildPressInviteMessage } from "@/Domain/inbox/inboxEvents";
@@ -109,6 +112,10 @@ export async function pressDay(input: PressDayInput): Promise<PressDayResult> {
     }
   };
 
+  // 0. With the director answering the press, an open invite is his: closed with no effect and no penalty.
+  const directorSpeaks = directorSpeaksToPress(input.meta.responsibilities);
+  if (state.pending && directorSpeaks) state = directorConference({ conference: state.pending, state });
+
   // 1. An invite past its expiry was ignored.
   if (state.pending && date >= state.pending.expires) ignorePending();
 
@@ -206,6 +213,11 @@ export async function pressDay(input: PressDayInput): Promise<PressDayResult> {
     if (winner === "title" && state.pending) ignorePending();
     const c = candidates.find((x) => x.trigger === winner)!;
     const id = `press-${inviteDate}`;
+    if (directorSpeaks) {
+      // The director takes it on the spot: no invite, nothing pending.
+      state = directorConference({ conference: { id, date: inviteDate, trigger: c.trigger }, state });
+      return { press: state, board, news };
+    }
     const expires = c.kind === "pre" ? addDays(c.matchDate!, -1) : addDays(inviteDate, PRESS.POST_VALID_DAYS);
     const conference = buildConference({
       id, trigger: c.trigger, kind: c.kind, date: inviteDate, expires,

@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { answerConference, ignoreConference, resolveMatchPromises, resolveObjectivePromise, validateAnswers, emptyPressState } from "@/Domain/press/effects";
+import {
+  answerConference, directorConference, ignoreConference, resolveMatchPromises, resolveObjectivePromise, validateAnswers, emptyPressState,
+} from "@/Domain/press/effects";
+import { PRESS } from "@/Domain/press/pressConfig";
+import { mulberry32, seedFrom } from "@/Domain/rng";
 import { buildConference } from "@/Domain/press/questions";
 import { initialBoardState } from "@/Domain/boardFans/boardFans";
 import type { Squad } from "@/types/playerTypes";
@@ -18,6 +22,39 @@ describe("validateAnswers", () => {
     expect(validateAnswers(conf, ans(["confident", "praise", "defend_squad"]))).toBe(true);
     expect(validateAnswers(conf, { [conf.questions[0]!.id]: conf.questions[0]!.answers[0]!.id })).toBe(false);
     expect(validateAnswers(conf, { ...ans(["confident", "praise", "defend_squad"]), [conf.questions[0]!.id]: "x" })).toBe(false);
+  });
+});
+
+describe("attacking the press and the director (10.8)", () => {
+  test("the attack lifts the squad, costs the board, makes a headline and draws the fine from the conference id", () => {
+    const r = answerConference({ conference: conf, answers: ans(["attack_press", "protect", "neutral"]), squad, board, state: emptyPressState() });
+    expect(r.board.board).toBeLessThan(board.board);
+    expect(r.board.fans).toBeGreaterThan(board.fans);
+    expect(r.squad.players[0]!.morale!).toBeGreaterThan(60);
+    expect(r.quotes.map((q) => q.tone)).toContain("attack_press");
+    expect(r.state.promises).toEqual([]);
+    expect(r.attack).toEqual({ fined: mulberry32(seedFrom("c1:attack"))() < PRESS.ATTACK.FINE_CHANCE, banned: false });
+    // No attack, no punishment field.
+    expect(answerConference({ conference: conf, answers: ans(["cautious", "protect", "neutral"]), squad, board, state: emptyPressState() }).attack).toBeUndefined();
+  });
+
+  test("a second attack within 60 days bans him; an older one does not", () => {
+    const attacked = (date: string) => ({ ...emptyPressState(), history: [{ id: "old", date, trigger: "derby" as const,
+      answers: [{ questionId: "q", tone: "attack_press" as const }] }] });
+    const again = (date: string) => answerConference({
+      conference: conf, answers: ans(["attack_press", "protect", "neutral"]), squad, board, state: attacked(date),
+    }).attack!.banned;
+    expect(again("2027-02-01")).toBe(true);
+    expect(again("2026-12-01")).toBe(false);
+  });
+
+  test("the director closes a conference with no effect, no promise and no absence", () => {
+    const state = { ...emptyPressState(), pending: conf };
+    const out = directorConference({ conference: conf, state });
+    expect(out.pending).toBeUndefined();
+    expect(out.lastDate).toBe("2027-03-10");
+    expect(out.promises).toEqual([]);
+    expect(out.history[0]).toEqual({ id: "c1", date: "2027-03-10", trigger: "derby", answers: "director" });
   });
 });
 

@@ -30,6 +30,8 @@ import {
   REPORT_GRADES, defaultDir, filterReports, sortReports, type ReportSortKey, type SortDir,
 } from "@/Domain/scouting/reportView";
 import type { ScoutGrade } from "@/types/scoutingTypes";
+import { SortButton } from "@/GameInterface/ui/SortButton";
+import { useTableSort } from "@/GameInterface/ui/tableSort";
 
 function SortHead({ col, label, sort, dir, onSort }: {
   col: ReportSortKey; label: string; sort: ReportSortKey; dir: SortDir; onSort: (col: ReportSortKey) => void;
@@ -258,6 +260,25 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
   const th = `${TABLE_CELL.head} text-left`;
   const td = TABLE_CELL.body;
   const hoverCard = useScoutHoverCard(saveId);
+  type Row = ScoutingData["shortlist"][number];
+  const midOf = (r?: [number, number]) => (r ? (r[0] + r[1]) / 2 : null);
+  // The order the list came in until a header is clicked.
+  const { sorted, head } = useTableSort<Row>(data.shortlist, {
+    player: (e) => e.name,
+    age: (e) => e.age,
+    club: (e) => e.club,
+    overall: (e) => midOf(e.overall),
+    knowledge: (e) => e.knowledge,
+    value: (e) => midOf(e.value),
+  });
+  const sortTh = (key: string, label: string) => {
+    const s = head(key);
+    return (
+      <th className={th} aria-sort={s?.active ? (s.dir === "asc" ? "ascending" : "descending") : "none"}>
+        {s ? <SortButton sort={s}>{label}</SortButton> : label}
+      </th>
+    );
+  };
   async function saveNote(playerId: string, squadId: string, note: string) {
     await scoutingCall(`/api/saves/${saveId}/scouting/shortlist`, "POST", { playerId, squadId, note });
     onChanged();
@@ -271,18 +292,18 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
           <thead className={TABLE_STYLE.head}>
             <tr>
               <th className={th}>{t("scout.table.columns.pos")}</th>
-              <th className={th}>{t("scouting.col.player")}</th>
-              <th className={th}>{t("scouting.col.age")}</th>
-              <th className={th}>{t("scouting.col.club")}</th>
-              <th className={th}>{t("scouting.col.overall")}</th>
-              <th className={th}>{t("scouting.knowledge")}</th>
-              <th className={th}>{t("scouting.col.value")}</th>
+              {sortTh("player", t("scouting.col.player"))}
+              {sortTh("age", t("scouting.col.age"))}
+              {sortTh("club", t("scouting.col.club"))}
+              {sortTh("overall", t("scouting.col.overall"))}
+              {sortTh("knowledge", t("scouting.knowledge"))}
+              {sortTh("value", t("scouting.col.value"))}
               <th className={th}>{t("scouting.col.status")}</th>
               <th className={th}>{t("scouting.col.note")}</th>
             </tr>
           </thead>
           <tbody className={TABLE_STYLE.body}>
-            {data.shortlist.map((e) => {
+            {sorted.map((e) => {
               const status = [
                 e.free ? t("scouting.status.free") : null,
                 e.contractEnding ? t("scouting.status.contractEnding", { year: (e.contractUntil ?? "").slice(0, 4) }) : null,
@@ -340,9 +361,18 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const shortlisted = useMemo(() => new Set(data.shortlist.map((e) => e.playerId)), [data.shortlist]);
+  // Newest first until a header is clicked (tester report, 10.7).
+  const [sortKey, setSortKey] = useState<ReportSortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const onSort = (col: ReportSortKey) => {
+    if (col === sortKey) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortKey(col); setSortDir(defaultDir(col)); }
+  };
   // One row per player: several scouts (and weeks) often report the same gem.
-  const gems = filterReports(data.reports.filter((r) => r.gem && !r.prospectId), { mission: "all", scout: "all", grades: [] }, data.missions)
-    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  const gems = sortReports(
+    filterReports(data.reports.filter((r) => r.gem && !r.prospectId), { mission: "all", scout: "all", grades: [] }, data.missions),
+    sortKey, sortDir,
+  );
   const reportOf = new Map(data.reports.map((r) => [r.id, r]));
   async function sign(id: string) {
     setError(null);
@@ -394,7 +424,8 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
         <SectionTitle>{t("scouting.gems.title")}</SectionTitle>
         {gems.length === 0
           ? <p className="text-sm text-muted-foreground m-0">{t("scouting.gems.empty")}</p>
-          : <ReportsTable reports={gems} saveId={saveId} shortlisted={shortlisted} onShortlist={() => onChanged()} openProspects={NO_PROSPECTS} />}
+          : <ReportsTable reports={gems} saveId={saveId} shortlisted={shortlisted} onShortlist={() => onChanged()} openProspects={NO_PROSPECTS}
+              sort={{ key: sortKey, dir: sortDir, onSort }} />}
       </section>
     </div>
   );

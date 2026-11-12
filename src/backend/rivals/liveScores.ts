@@ -2,6 +2,8 @@
 // (`live_score` on `/api/ws`); the other members get `friend_live`. Provisional: the official result is the day's.
 import { watchLiveGone } from "@/backend/watch/watchRooms";
 import { saveService } from "@/backend/SaveService";
+import { nationalFixtureOn } from "@/backend/nationalCoachWorld";
+import { callUpSquad } from "@/backend/nationalWorld";
 import { listSaveMembers, memberOf } from "@/backend/auth/saveOwnership";
 import { getSocialUser } from "@/backend/social/socialStore";
 import { liveStageOf } from "@/Domain/rivals/liveStage";
@@ -41,9 +43,29 @@ const defaultResolver: LiveResolver = async (saveId, userId, fixtureId) => {
   if (meta?.mode !== "multi" || meta.world?.phase !== "running" || !meta.currentDate) return null;
   const seat = await saveService.getSeat(saveId, member.seatId);
   if (!seat?.clubId || seat.unemployed) return null;
+  const nickname = getSocialUser(userId)?.nickname ?? seat.manager?.name ?? "?";
   const fixture = (await saveService.getFixturesForDate(saveId, meta.currentDate))
     .find((f) => f.id === fixtureId && !f.played && (f.home === seat.clubId || f.away === seat.clubId));
-  if (!fixture) return null;
+  if (!fixture) {
+    // His national team's game of today (tester report, 10.7): the same frames, the two nations as the sides.
+    const state = await saveService.getNationalState(saveId);
+    const teamId = state?.human?.[member.seatId]?.teamId;
+    const game = teamId ? await nationalFixtureOn(saveService, saveId, member.seatId, meta.currentDate) : null;
+    if (!state || !teamId || !game || game.id !== fixtureId) return null;
+    const home = game.home === teamId;
+    const opponentId = home ? game.away : game.home;
+    const squadOf = (id: string) => saveService.getSquadById(saveId, id);
+    const [mine, opp] = await Promise.all([callUpSquad(saveId, state, teamId, squadOf), callUpSquad(saveId, state, opponentId, squadOf)]);
+    return {
+      base: {
+        seatId: member.seatId, nickname,
+        clubId: teamId, clubName: state.teams[teamId]?.nation ?? teamId,
+        opponentId, opponentName: state.teams[opponentId]?.nation ?? opponentId,
+        home, fixtureId, date: meta.currentDate, competition: game.competition, national: true,
+      },
+      scorers: [...(mine?.players ?? []), ...(opp?.players ?? [])].map((p) => p.name),
+    };
+  }
   const home = fixture.home === seat.clubId;
   const opponentId = home ? fixture.away : fixture.home;
   const [mine, opp, compMeta] = await Promise.all([
@@ -53,7 +75,7 @@ const defaultResolver: LiveResolver = async (saveId, userId, fixtureId) => {
   return {
     base: {
       seatId: member.seatId,
-      nickname: getSocialUser(userId)?.nickname ?? seat.manager?.name ?? "?",
+      nickname,
       clubId: seat.clubId, clubName: seat.clubName, opponentId, opponentName: opp?.name ?? opponentId,
       home, fixtureId, date: meta.currentDate, competition: fixture.competition, ...(stage ? { stage } : {}),
       ...(fixture.aggregate

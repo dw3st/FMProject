@@ -10,7 +10,9 @@ export type PressTone =
   | "confident" | "cautious" | "provocative" | "blame_self"
   | "defend_squad" | "demand_squad" | "neutral"
   | "praise" | "criticize" | "protect"
-  | "job_confident" | "ask_signings" | "deflect";
+  | "job_confident" | "ask_signings" | "deflect"
+  /** Lashing out at the press (10.8): a fourth answer of the match question. */
+  | "attack_press";
 
 /** Parâmetros de texto já resolvidos (nomes congelados na criação). */
 export interface PressParams {
@@ -56,7 +58,8 @@ export interface PressRecord {
   id: string;
   date: string;
   trigger: PressTrigger;
-  answers: { questionId: string; tone: PressTone }[] | "ignored";
+  /** `"director"`: the director spoke in the manager's place (10.8): no effect at all. */
+  answers: { questionId: string; tone: PressTone }[] | "ignored" | "director";
 }
 
 export interface PressState {

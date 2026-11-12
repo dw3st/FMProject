@@ -34,11 +34,12 @@ export function renewedContract(
 
 /** The director keeps whoever is near the tier's level and not too old. */
 export function directorRenews(m: StaffMember, impliedStars: number): boolean {
-  return memberStars(m) >= impliedStars - C.DIRECTOR_STAR_MARGIN && m.age < C.DIRECTOR_MAX_AGE;
+  // The manager's trusted professionals stay whatever their level.
+  return (m.trusted === true || memberStars(m) >= impliedStars - C.DIRECTOR_STAR_MARGIN) && m.age < C.DIRECTOR_MAX_AGE;
 }
 
 export interface StaffContractNews {
-  kind: "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left" | "staff_retired";
+  kind: "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left" | "staff_retired" | "staff_course_done";
   member: { id: string; name: string; role: StaffMember["role"] };
   until?: string;
 }

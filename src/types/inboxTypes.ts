@@ -180,7 +180,7 @@ export interface ContractInboxMessage extends InboxMessageBase {
   category: "contract";
   kind:     "expiring" | "renewed" | "released" | "director_summary"
     /** Coaching-staff contracts (`.claude/rules/game/staff.md`); `players` is empty, `staff` lists them. */
-    | "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left" | "staff_retired";
+    | "staff_expiring" | "staff_renewed" | "staff_leaving" | "staff_left" | "staff_retired" | "staff_course_done";
   /** Everyone the message is about (director_summary: every decided player). */
   players:  { id: string; name: string }[];
   /** Renewed only: new contract end (ISO). */
@@ -649,7 +649,10 @@ export interface AchievementInboxMessage extends InboxMessageBase {
 /** The human manager was sent off for complaining and is banned from the touchline (`.claude/rules/game/var.md` §4). */
 export interface DisciplineInboxMessage extends InboxMessageBase {
   category: "discipline";
-  kind: "manager_banned";
-  /** Official matches of the ban. */
+  /** `press_punished` (10.8): fined and / or banned for attacking the press at a conference. */
+  kind: "manager_banned" | "press_punished";
+  /** Official matches of the ban (0: only the fine). */
   matches: number;
+  /** `press_punished`: EUR taken from the manager's own wallet. */
+  fine?: number;
 }

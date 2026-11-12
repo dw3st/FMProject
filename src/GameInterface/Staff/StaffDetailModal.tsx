@@ -8,13 +8,13 @@ import { Notice } from "@/GameInterface/ui/Notice";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { StatBar } from "@/GameInterface/ui/StatBar";
-import { formatWageFull } from "@/Domain/money";
+import { formatEuros, formatWageFull } from "@/Domain/money";
 import { nationalityDisplayName } from "@/Domain/world/labels";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { COACH_AREAS, ROLE_SPECIALTY, type CoachArea, type StaffMember } from "@/Domain/staff/staffTypes";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffFace } from "@/GameInterface/Components/PersonFace";
-import { contractEnd, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
+import { contractEnd, dayLabel, staffCall, type StaffData, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
 import { ScoutCountriesPanel } from "@/GameInterface/Scouting/ScoutCountriesPanel";
 import { isScoutRole } from "@/Domain/scouting/countryKnowledge";
 
@@ -25,7 +25,7 @@ export type StaffProfile = StaffMember & {
   stars: number;
   starsByArea?: Partial<Record<CoachArea, number>>;
   askingWage?: number;
-} & Pick<StaffMemberView, "severance" | "renewYears" | "renewWage">;
+} & Pick<StaffMemberView, "severance" | "renewYears" | "renewWage" | "courseOffer">;
 
 /**
  * Profile of a professional: the five 1..20 attributes, stars per area (area coaches), contract.
@@ -33,8 +33,11 @@ export type StaffProfile = StaffMember & {
  * pool mode shows the asking wage and hands the hire over to `onHire`.
  */
 export function StaffDetailModal({
-  saveId, member, mode, onClose, onChanged, onHire, clubColors, effect,
+  saveId, member, mode, onClose, onChanged, onHire, clubColors, effect, trusted, wallet,
 }: {
+  /** Club mode: the manager's trusted places and his own money (it pays the courses). */
+  trusted?: { used: number; max: number };
+  wallet?: number;
   /** What he does for the club today, as the staff card says it ("Player development +6%"). */
   effect?: string;
   /** Shirt colours of the face (the club's staff); none in the free pool (neutral). */
@@ -51,11 +54,15 @@ export function StaffDetailModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmFire, setConfirmFire] = useState(false);
+  const [confirmCourse, setConfirmCourse] = useState(false);
 
+  // Keyed by the professional: a trust or course change re-sends him and must not reset the chosen years.
+  const memberId = member?.id;
   useEffect(() => {
     setYears(member?.renewYears?.length ? (String(member.renewYears[0]) as Years) : null);
     setError(null);
-  }, [member]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberId]);
 
   if (!member) return <Modal open={false} onClose={onClose}>{null}</Modal>;
   const m = member;
@@ -83,6 +90,33 @@ export function StaffDetailModal({
     if (r.ok) { onChanged?.(r.data); onClose(); }
     else setError(t(`staff.errors.${r.error}`, { defaultValue: t("staff.errors.generic") }));
   }
+
+  async function setTrust(on: boolean) {
+    setBusy(true);
+    setError(null);
+    const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff/trusted`, "PUT", { memberId: m.id, trusted: on });
+    setBusy(false);
+    if (r.ok) onChanged?.(r.data);
+    else setError(t(`staff.errors.${r.error}`, { defaultValue: t("staff.errors.generic") }));
+  }
+
+  async function sendOnCourse() {
+    setBusy(true);
+    setError(null);
+    const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff/course`, "POST", { memberId: m.id });
+    setBusy(false);
+    setConfirmCourse(false);
+    if (r.ok) onChanged?.(r.data);
+    else setError(t(`staff.errors.${r.error}`, { defaultValue: t("staff.errors.generic") }));
+  }
+
+  const offer = m.courseOffer;
+  const trustFull = !!trusted && trusted.used >= trusted.max;
+  const gainText = offer
+    ? (m.role === "coach"
+      ? t("staff.course.gainArea", { gain: offer.gain.toLocaleString(i18n.language), area: t(`staff.area.${offer.specialty}`) })
+      : t("staff.course.gain", { gain: offer.gain.toLocaleString(i18n.language) }))
+    : "";
 
   return (
     <>
@@ -155,6 +189,37 @@ export function StaffDetailModal({
             </div>
           )}
 
+          {mode === "club" && (
+            <div className="flex flex-col gap-2">
+              <Label>{t("staff.trusted.title")}</Label>
+              <p className="text-sm text-muted-foreground m-0">
+                {m.trusted ? t("staff.trusted.isTrusted") : t("staff.trusted.help")}
+                {trusted ? ` ${t("staff.trusted.summary", { used: trusted.used, max: trusted.max })}` : ""}
+              </p>
+              {m.course && (
+                <p className="text-sm text-chart-4 m-0">{t("staff.course.away", { until: dayLabel(m.course.until) })}. {t("staff.course.awayHelp")}</p>
+              )}
+              {offer && (
+                <p className="text-sm m-0 tabular-nums">
+                  {offer.price === null
+                    ? t("staff.course.atBest")
+                    : t("staff.course.offer", { days: offer.days, gain: gainText, price: formatEuros(offer.price), wallet: formatEuros(wallet ?? 0) })}
+                </p>
+              )}
+              {offer?.refusal && offer.refusal !== "atBest" && (
+                <p className="text-sm text-muted-foreground m-0">{t(`staff.errors.${offer.refusal}`)}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-3">
+                {m.trusted
+                  ? <Button variant="secondary" flush disabled={busy} onClick={() => void setTrust(false)}>{t("staff.trusted.remove")}</Button>
+                  : <Button variant="secondary" flush disabled={busy || trustFull} onClick={() => void setTrust(true)}>{t("staff.trusted.add")}</Button>}
+                {offer && offer.price !== null && (
+                  <Button variant="secondary" flush disabled={busy || !!offer.refusal} onClick={() => setConfirmCourse(true)}>{t("staff.course.send")}</Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {mode === "pool" && m.askingWage !== undefined && (
             <p className="text-sm tabular-nums m-0">{t("staff.askingWage", { wage: formatWageFull(m.askingWage) })}</p>
           )}
@@ -182,6 +247,15 @@ export function StaffDetailModal({
         confirmLabel={t("staff.fire")}
         onConfirm={() => void fire()}
         onClose={() => setConfirmFire(false)}
+        busy={busy}
+      />
+      <ConfirmDialog
+        open={confirmCourse}
+        title={t("staff.course.confirmTitle", { name: m.name })}
+        body={t("staff.course.confirmBody", { days: offer?.days ?? 0, price: formatEuros(offer?.price ?? 0) })}
+        confirmLabel={t("staff.course.send")}
+        onConfirm={() => void sendOnCourse()}
+        onClose={() => setConfirmCourse(false)}
         busy={busy}
       />
     </>

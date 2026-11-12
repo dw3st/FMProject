@@ -27,11 +27,72 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.9.3",
+    date: "2026-11-12",
+    time: "20:20",
+    items: [],
+    fixes: [
+      { pt: "Partida ao vivo: a escalação e o resumo voltaram a ser as colunas fixas ao lado do campo, como antes da 10.9. Os trilhos saíram.", en: "Live match: the line-up and the summary are back as fixed columns beside the pitch, as before 10.9. The rails are gone." },
+    ],
+  },
+  {
+    version: "10.9.2",
+    date: "2026-11-12",
+    time: "20:17",
+    items: [],
+    fixes: [
+      { pt: "Partida ao vivo: os trilhos da escalação e do resumo ficam encostados no estádio, não mais nos cantos da tela.", en: "Live match: the line-up and summary rails now sit next to the stadium, no longer at the corners of the screen." },
+    ],
+  },
+  {
+    version: "10.9.1",
+    date: "2026-11-12",
+    time: "20:11",
+    items: [],
+    fixes: [
+      { pt: "Partida ao vivo: o estádio voltou a aparecer inteiro, com as arquibancadas no tamanho de antes. Na 10.9 as arquibancadas atrás dos gols tinham ficado grandes demais.", en: "Live match: the whole stadium is back in view, with the stands at their previous size. In 10.9 the stands behind the goals had become too big." },
+    ],
+  },
+  {
+    version: "10.9",
+    date: "2026-11-12",
+    time: "20:00",
+    items: [
+      { pt: "Partida ao vivo: a escalação e o resumo viraram trilhos nas bordas da tela. Passe o mouse num deles para abrir o painel inteiro, ou clique para manter aberto.", en: "Live match: the line-up and the summary became rails at the edges of the screen. Point at one to open the whole panel, or click to keep it open." },
+    ],
+  },
+  {
+    version: "10.8",
+    date: "2026-11-12",
+    time: "18:55",
+    items: [
+      { pt: "Coletivas: nova resposta para atacar a imprensa. O elenco gosta e a torcida também, a diretoria não. Pode render multa do seu bolso e, na segunda vez em 60 dias, um jogo de suspensão.", en: "Press conferences: a new answer to lash out at the press. The squad likes it and so do the fans, the board does not. It can cost a fine from your own pocket and, the second time in 60 days, a one-match ban." },
+      { pt: "Coletivas: o diretor pode falar no seu lugar. Botão Mandar o diretor em cada convite, ou deixe a imprensa com ele em Equipe técnica, Responsabilidades. Ele responde em tom neutro: nada muda.", en: "Press conferences: the director can speak in your place. Send the director button on each invite, or leave the press to him in Coaching staff, Responsibilities. He answers in a neutral tone: nothing changes." },
+    ],
+  },
+  {
     version: "10.7",
     date: "2026-11-12",
+    time: "18:24",
     items: [
-      { pt: "Bonecos em pixel art na partida: o botão Bonecos agora alterna entre os bonecos de sempre, os bonecos em pixel art e os discos. Em pixel art cada jogador fica em pé no gramado, com o uniforme do time, tom de pele, cabelo e chuteiras próprios.", en: "Pixel-art figures in the match: the Figures button now switches between the usual figures, pixel-art figures and discs. In pixel art each player stands on the pitch in his team's kit, with his own skin tone, hair and boots." },
-      { pt: "Movimentos novos em pixel art: chute, voleio, letra e bicicleta nas finalizações, cabeceio no salto, carrinho, dribles (roleta, elástico e hocus pocus), postura de marcação, comemoração e goleiro que se posiciona, salta e cai na bola.", en: "New moves in pixel art: shots, volleys, rabonas and bicycle kicks on attempts at goal, jumping headers, slide tackles, dribble tricks (roulette, elastico and hocus pocus), a defensive stance, celebrations and a keeper who sets himself, dives and lands on the ball." },
+      { pt: "Comissão de confiança: marque até 3 profissionais da comissão. Quando você troca de clube, eles vão junto e assinam por 2 temporadas no clube novo.", en: "Trusted staff: mark up to 3 members of your staff. When you change clubs they go with you and sign for 2 seasons at the new club." },
+      { pt: "Cursos da comissão: você paga do seu bolso um curso de 60 dias para um profissional de confiança e ele volta com meia estrela a mais. Enquanto estuda, ele fica fora e a função dele rende menos.", en: "Staff courses: you pay from your own pocket a 60-day course for a trusted professional and he comes back with half a star more. While he studies he is away and his role does less." },
+      { pt: "Jogo ao vivo entre dois técnicos: dá para acelerar em 2x e 4x. A partida anda na menor velocidade escolhida, então só acelera quando os dois pedem.", en: "Live match between two managers: it can run at 2x and 4x. The match runs at the lower of the two choices, so it only speeds up when both ask." },
+      { pt: "Propostas pelos seus jogadores: a proposta mostra quanto o clube pagou por ele, quando, e o valor de mercado de hoje.", en: "Bids for your players: the bid shows what the club paid for him, when, and his market value today." },
+      { pt: "Rivais no Painel: reações e frases no jogo ao vivo de um amigo, direto no cartão, sem abrir a transmissão.", en: "Rivals on the Dashboard: reactions and phrases on a friend's live match, right on the card, without opening the broadcast." },
+      { pt: "Liga de amigos: o jogo da seleção de um amigo também aparece ao vivo no cartão Rivais e na faixa de amigos, com as bandeiras e o placar.", en: "Friends' league: a friend's national team game also shows live on the Rivals card and the friends strip, with the flags and the score." },
+      { pt: "Página do técnico: os bens que ele comprou aparecem na página dele, com os lendários em destaque.", en: "Manager page: what he bought shows on his page, with the legendary items highlighted." },
+      { pt: "Equipe técnica: aviso no topo e no cartão quando o contrato de um profissional acaba em até 60 dias.", en: "Coaching staff: a notice at the top and on the card when a contract ends within 60 days." },
+      { pt: "Olheiro: as tabelas de Joias e de Observados ordenam pela coluna. Clique no cabeçalho.", en: "Scouting: the Gems and Shortlist tables sort by column. Click the header." },
+    ],
+    fixes: [
+      { pt: "Fim de tempo: o árbitro espera um ataque perto da área terminar antes de apitar. Antes o tempo acabava com o jogador na cara do gol.", en: "End of a half: the referee waits for an attack near the box to finish before the whistle. It used to end with a player through on goal." },
+      { pt: "Escanteios: bem menos escanteios seguidos. O cruzamento do escanteio cortado pela defesa quase sempre virava outro escanteio.", en: "Corners: far fewer corners in a row. The corner's cross, when cleared by the defence, almost always turned into another corner." },
+      { pt: "Drible: um jogador sozinho, sem companheiro por perto, só tenta o drible se dribla bem. Quem dribla mal segura a bola, chuta ou espera o apoio.", en: "Dribbling: a player on his own, with no teammate near, only tries the dribble if he is good at it. A poor dribbler keeps the ball, shoots or waits for support." },
+      { pt: "Liga de amigos: o aviso Só falta você não aparece mais por cima da prévia, da partida e do resultado.", en: "Friends' league: the Only you left notice no longer shows over the match preview, the match and the result." },
+      { pt: "Amigos ao vivo: a janela com os lances do jogo de um amigo ganhou o botão de fechar.", en: "Friends live: the window with the plays of a friend's match now has a close button." },
+      { pt: "Estádio: os vendedores não passam mais por cima do mosaico da torcida.", en: "Stadium: the vendors no longer walk over the fans' mosaic." },
+      { pt: "Painel: os últimos 5 jogos do clube não misturam mais os jogos da seleção.", en: "Dashboard: the club's last 5 games no longer mix in the national team's games." },
     ],
   },
   {
@@ -5973,5 +6034,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Partida em pixel art: jogadores, juiz e bola desenhados em pixel art, com chutes, dribles e defesas novos", en: "Pixel-art match: players, referee and ball drawn in pixel art, with new shots, dribbles and saves" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

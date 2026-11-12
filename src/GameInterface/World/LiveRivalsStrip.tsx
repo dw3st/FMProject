@@ -91,6 +91,15 @@ export function LiveRivalsStrip({ saveId, live, highlight, viewers = [], exclude
                   className={`${footer ? "fixed bottom-14" : "absolute left-0 top-full mt-1"} z-[60] w-[320px] rounded-md border border-border bg-card shadow-lg p-3 flex flex-col gap-3 whitespace-normal`}
                   style={footer ? { left: Math.max(8, Math.min(openLeft, window.innerWidth - 328)) } : undefined}
                 >
+                  <button
+                    type="button"
+                    onClick={() => setOpen(null)}
+                    aria-label={t("common.close")}
+                    title={t("common.close")}
+                    className="absolute top-1 right-1 w-8 h-8 flex items-center justify-center rounded border-0 bg-transparent text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <Icon name="close" size={16} />
+                  </button>
                   <LiveMoments live={l} />
                   <div className="flex"><WatchButton live={l} saveId={saveId} /></div>
                   <div className="border-t border-border pt-2">

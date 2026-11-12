@@ -700,6 +700,7 @@ function leaguePrizeTexts(
     return { subject: x.subject, preview: x.body };
   }
   if (message.category === "discipline") {
+    if (message.kind === "press_punished") return { subject: t("press.attack.inboxSubject"), preview: pressPunishedText(message, t) };
     return { subject: t("complaint.inbox.subject"), preview: t("complaint.inbox.body", { count: message.matches }) };
   }
   if (message.category === "national") {
@@ -896,6 +897,14 @@ function MessageDetail({ message, leagues }: { message: InboxMessage; leagues: L
  * The body of a message with its actions (accept, answer, open the player...): the inbox detail and the dashboard
  * inbox card (quick answer, tester report) render the same thing.
  */
+/** Fine and ban of an attack on the press, one line. */
+function pressPunishedText(m: { fine?: number; matches: number }, t: (k: string, o?: Record<string, unknown>) => string): string {
+  return [
+    m.fine ? t("press.attack.fine", { fine: formatFee(m.fine) }) : "",
+    m.matches > 0 ? t("press.attack.ban", { count: m.matches }) : "",
+  ].filter(Boolean).join(" ");
+}
+
 export function InboxMessageBody({ message, leagues }: { message: InboxMessage; leagues: LeagueData[] }) {
   const { t, i18n } = useTranslation();
   return (
@@ -984,7 +993,11 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     )}
     {message.category === "world" && message.kind === "h2h_invite" && <H2HInviteJoin match={message.match} />}
     {message.category === "world" && message.kind === "friendly_invite" && <SeatFriendlyAnswer friendlyId={message.friendlyId} date={message.match} />}
-    {message.category === "discipline" && <p className="text-sm text-foreground m-0">{t("complaint.inbox.body", { count: message.matches })}</p>}
+    {message.category === "discipline" && (
+      <p className="text-sm text-foreground m-0 tabular-nums">
+        {message.kind === "press_punished" ? pressPunishedText(message, t) : t("complaint.inbox.body", { count: message.matches })}
+      </p>
+    )}
     {message.category === "national" && <NationalInboxBody message={message} />}
     {message.category === "national_coach" && <NationalCoachInboxBody message={message} />}
     {message.category === "bets" && <BetsInboxBody bets={message.bets} net={message.net} />}

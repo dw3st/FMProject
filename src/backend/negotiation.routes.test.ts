@@ -122,7 +122,11 @@ describe("negotiation routes", () => {
     expect((await get("nobody", club.id)).status).toBe(404);
     const own = (await human()).players[0]!;
     await saveService.saveMarket(saveId, { ...((await saveService.getMarket(saveId, (await saveService.listSeats(saveId))[0]!.seatId)) ?? emptyMarket()), playerLoanList: [own.id] }, (await saveService.listSeats(saveId))[0]!.seatId);
-    expect(((await (await get(own.id)).json()) as { loanable: boolean }).loanable).toBe(true);
+    const mine = (await (await get(own.id)).json()) as { loanable: boolean; value?: number };
+    expect(mine.loanable).toBe(true);
+    // His own player also shows what he is worth today; another club's player never does.
+    expect(mine.value).toBeGreaterThan(0);
+    expect("value" in s).toBe(false);
     await saveService.saveMarket(saveId, { ...((await saveService.getMarket(saveId, (await saveService.listSeats(saveId))[0]!.seatId)) ?? emptyMarket()), playerLoanList: [] }, (await saveService.listSeats(saveId))[0]!.seatId);
   });
 

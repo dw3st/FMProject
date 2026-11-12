@@ -120,6 +120,44 @@ describe("press routes", () => {
     expect(month.some((n) => n.kind === "press_quote")).toBe(true);
   });
 
+  test("POST { director: true } closes it with no effect at all (10.8)", async () => {
+    await setPending("press-d");
+    const before = (await saveService.getSeatMeta(saveId, seatId))!;
+    const squadBefore = JSON.stringify((await saveService.getSquadById(saveId, "33"))!.players.map((p) => p.morale));
+    const res = await postPress("press-d", token, { director: true });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, director: true });
+    const meta = (await saveService.getSeatMeta(saveId, seatId))!;
+    expect(meta.press!.pending).toBeUndefined();
+    expect(meta.press!.history[0]!.answers).toBe("director");
+    expect(meta.board).toEqual(before.board!);
+    expect(JSON.stringify((await saveService.getSquadById(saveId, "33"))!.players.map((p) => p.morale))).toBe(squadBefore);
+    expect((await postPress("press-d", token, { director: true })).status).toBe(409);
+  });
+
+  test("attacking the press twice: the second one bans the manager (10.8)", async () => {
+    const attack = async (id: string, keepHistory = false) => {
+      const history = keepHistory ? (await saveService.getSeatMeta(saveId, seatId))!.press!.history : [];
+      const pending = buildConference({ id, trigger: "derby", kind: "pre", date: today, expires: today, params: { opponent: "Rival" }, seed: id });
+      await saveService.updateSeat(saveId, seatId, { press: { pending, winless: 0, promises: [], history } });
+      const stored = (await saveService.getSeatMeta(saveId, seatId))!.press!.pending!;
+      const tones: PressTone[] = ["attack_press", "neutral"];
+      const answers = stored.questions.map((q, i) => ({ questionId: q.id, answerId: q.answers.find((a) => a.tone === tones[i])!.id }));
+      const res = await postPress(id, token, { answers });
+      expect(res.status).toBe(200);
+      return (await res.json()) as { ok: boolean; fine?: number; banned?: number };
+    };
+    const banBefore = (await saveService.getSeatMeta(saveId, seatId))!.managerBan?.matches ?? 0;
+    const first = await attack("press-a1");
+    expect(first.banned).toBeUndefined();
+    const second = await attack("press-a2", true);
+    expect(second.banned).toBe(1);
+    const meta = (await saveService.getSeatMeta(saveId, seatId))!;
+    expect(meta.managerBan?.matches).toBe(banBefore + 1);
+    const inbox = await saveService.getInbox(saveId, seatId);
+    expect(inbox.some((m) => m.category === "discipline" && (m as { kind?: string }).kind === "press_punished")).toBe(true);
+  });
+
   test("POST again with the same id is 409 pressClosed", async () => {
     const c = await setPending("press-r");
     expect((await postPress("press-r", token, { answers: provocative(c) })).status).toBe(200);

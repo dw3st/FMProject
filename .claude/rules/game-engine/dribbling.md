@@ -223,3 +223,13 @@ loser.recoveryTime = DUEL_RECOVERY_TIME
 ---
 
 This aligns very well with your engine — minimal change, high impact.
+
+---
+
+## Sozinho, só dribla quem sabe (10.7)
+
+Report de tester (o atacante isolado tentava o drible e perdia a bola). `loneDribbleFactor` (`DecisionTree.ts`, `LONE_DRIBBLE` em `CarryConfig.ts`): sem companheiro de linha a até 15 jardas (`SUPPORT_RADIUS`) e com um adversário ou mais a até 8 (`CROWD_RADIUS`), a nota do drible é multiplicada pelo drible do jogador: 0 com drible até 0,4 (40 na tela), cheia a partir de 0,6, linear no meio. Com a nota zerada ele conduz, chuta ou passa. Só a decisão muda; o duelo (`resolveDribble`) é o mesmo. Vale para todos os times.
+
+Medido com `bun scripts/lone-dribble-probe.ts 150 premier_league 3` (`LONE_DRIBBLE_OVERRIDES='{"ENABLED":false}'` para o antes): dribles sem apoio 2,29 → 1,62 por jogo (total 6,5 → 5,5); os que sobram são de quem dribla bem. Com os limites 0,5 / 0,75 o total caía a 3,7 e as faltas 8,5%: descartado.
+
+`/test`: cenário `lone-dribbler`; a linha do drible em Decision Scores mostra `alone ×N`. Teste: `LoneDribble.test.ts`.

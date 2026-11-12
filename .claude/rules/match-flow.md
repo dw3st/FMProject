@@ -550,3 +550,19 @@ Report de tester. A aba Formação do painel ao vivo lista "Minhas formações":
 # Live match polish (10.1)
 
 User request after a measured audit (60 FPS at 1x and 4x, no long task). The feed also lists shots saved and off target (`shotSaved`, `shotWide`, from `shotResolved`); the summary and the HUD count passes of every kind (short + through + cross + long ball completed); `MatchHud` keeps the last player dimmed after the linger instead of an empty band; `SegmentedTabs` labels never wrap (`fill` + `compact` uses `px-2`).
+
+# The whistle waits for an attack (10.7)
+
+Tester report (periods ended with a player through on goal). `attackHoldsPeriod` (`gameState.ts`, next to
+`restartHoldsPeriod`): a period does not end while the ball is with the attacking side (held, passed, or loose from its
+own pass) within `ATTACK_HOLD_DIST` (30) yards of the goal line that side attacks, for at most `ATTACK_HOLD_MAX` (45)
+game-seconds past the period's end (~3.5 real s). It stops holding as soon as the ball is lost, leaves the zone or a
+restart is given (restarts keep their own rule). Both teams, every live period. Test: `AttackHold.engine.test.ts`.
+
+# Side rails tried and removed (10.9 to 10.9.3)
+
+10.9 moved the team list and the summary of the live match to floating rails over a bigger, cropped pitch. The user
+rejected the result in the real game: the cropped stadium (10.9.1), then the rails themselves (10.9.3). The match
+screen is back to the layout of 10.8: team list on the left, summary on the right, the 124:80 canvas between them.
+Lesson: a change to the match layout goes to the user as a real render of the dev build before it is published; a
+painted mock is not enough.

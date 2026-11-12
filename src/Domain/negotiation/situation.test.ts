@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { playerSituation } from "@/Domain/negotiation/situation";
+import { paidFor, playerSituation } from "@/Domain/negotiation/situation";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const STATS = (n: number) => ({ finishing: n, dribbling: n, speed: n, acceleration: n, strength: n, stamina: n, passing: n, vision: n, tackling: n, pressing: n, heading: n, jump: n, reflex: n });
@@ -24,5 +24,16 @@ describe("a player's situation at his club", () => {
     const s = playerSituation(borrowed, squad([borrowed]), { forSale: false, loanable: true });
     expect(s.loanable).toBe(false);
     expect(s.onLoan).toBe(true);
+  });
+  test("what the club paid for him: only the arrival at this club, and only when asked for", () => {
+    const bought = player("p", 6, { arrival: { squadId: "c", kind: "transfer", fee: 40_000_000, on: "2033-07-10" } });
+    expect(paidFor(bought, "c")).toEqual({ kind: "transfer", fee: 40_000_000, on: "2033-07-10" });
+    expect(paidFor(bought, "other")).toBeNull();
+    expect(paidFor(player("old", 6), "c")).toBeNull();
+    expect(paidFor(player("f", 6, { arrival: { squadId: "c", kind: "free", on: "2033-07-10" } }), "c")).toEqual({ kind: "free", fee: 0, on: "2033-07-10" });
+    const s = playerSituation(bought, squad([bought]), { forSale: false, loanable: false, paid: paidFor(bought, "c"), value: 52_000_000 });
+    expect(s.paid?.fee).toBe(40_000_000);
+    expect(s.value).toBe(52_000_000);
+    expect("paid" in playerSituation(bought, squad([bought]), { forSale: false, loanable: false })).toBe(false);
   });
 });

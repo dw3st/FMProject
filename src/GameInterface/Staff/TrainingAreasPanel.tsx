@@ -73,10 +73,13 @@ export function TrainingAreasPanel({
                           },
                           ...coaches.map((c) => {
                             const full = c.id !== manual && (manualLoad.get(c.id) ?? 0) >= STAFF_AREAS_PER_COACH;
+                            // Away on a course he leads nothing until he is back.
+                            const away = !!c.course;
                             return {
                               value: c.id,
-                              label: full ? t("staff.coachFull", { name: c.name, n: STAFF_AREAS_PER_COACH }) : c.name,
-                              disabled: full,
+                              label: away ? t("staff.course.coachAway", { name: c.name })
+                                : full ? t("staff.coachFull", { name: c.name, n: STAFF_AREAS_PER_COACH }) : c.name,
+                              disabled: full || (away && c.id !== manual),
                             };
                           }),
                         ]}

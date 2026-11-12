@@ -83,6 +83,12 @@ export function mosaicCells(r: SideRect, decor: Pick<StadiumDecor, "pattern" | "
   return out;
 }
 
+/** The end stands a mosaic covers: the home end, and the other one with the "both ends" item. Nobody sells there. */
+export function mosaicSides(decor: StadiumDecor | undefined, homeSide: "left" | "right"): ("left" | "right")[] {
+  if (!decor?.mosaic) return [];
+  return decor.owned?.includes("doubleEnd") ? ["left", "right"] : [homeSide];
+}
+
 /**
  * Rectangles of the decorations in the home end (`homeSide`, the drawn side of the home club's end stand),
  * in drawing order: mosaic (the whole end), banner (a strip along the pitch edge). The giant flag is not

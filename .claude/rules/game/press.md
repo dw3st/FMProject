@@ -207,3 +207,11 @@ nenhum dia com mais de 30 itens e nenhuma liga com mais de 3 num dia (fora `pres
 - **A chave de texto de cada resposta revela o tom** (`press.a.<tom>.<variante>`): aceito, o jogo é single-player. A ordem das três
   respostas é embaralhada pela semente da coletiva (`buildConference`, fluxo próprio `:order`; ids posicionais `-a0..-a2`), então a
   posição não diz o tom; a rota nunca manda o campo `tone`.
+
+## Atacar a imprensa e o diretor na coletiva (10.8)
+
+Reports de tester, regras aprovadas pelo usuário.
+
+- **Atacar a imprensa** (`attack_press`): 4ª resposta da pergunta do jogo, em toda coletiva (a última da lista de tons, para as variantes das três primeiras não mudarem). Efeito `PRESS.TONE.attack_press`: elenco +2, diretoria −2, torcida +1; vira manchete (`QUOTE_TONES`, `news.pressQuote.attack_press`); sem promessa. Punição (`PRESS.ATTACK`, `answerConference` devolve `attack { fined, banned }`): multa com 25% de chance (sorteio pelo id da coletiva) de 2 semanas do salário do técnico, tirada da carteira dele (`managerSpent`, no máximo o que ele tem); segundo ataque em 60 dias (pelo `history`) = 1 jogo de suspensão somado ao `managerBan`. A rota responde `{ ok, fine?, banned? }`, o `PressModal` mostra a punição e a caixa de entrada recebe `discipline` / `press_punished` (`buildPressPunishedMessage`).
+- **Diretor na coletiva:** `Responsibilities.press` (`manager` padrão, `director`; bloco Imprensa da aba Responsabilidades). Com o diretor, o `pressDay` fecha na hora qualquer convite (o pendente e o novo, sem mensagem): `directorConference` grava `answers: "director"` no histórico e `lastDate`, sem efeito, sem promessa e sem a perda por ausência. Por convite: botão "Mandar o diretor" (`POST /press/:id { director: true }`), mesma regra.
+- Testes: `effects.test.ts`, `questions.test.ts`, `press.routes.test.ts`.

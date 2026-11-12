@@ -4,7 +4,8 @@ import { formatWageFull } from "@/Domain/money";
 import type { StaffRole } from "@/Domain/staff/staffTypes";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
 import { StaffFace } from "@/GameInterface/Components/PersonFace";
-import { contractEnd, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
+import { contractEnd, dayLabel, type StaffMemberView } from "@/GameInterface/Staff/staffApi";
+import { Icon } from "@/GameInterface/Icons";
 import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
 import { navigate } from "@/GameInterface/router/navigation";
 
@@ -30,10 +31,25 @@ export function StaffCard({ member, effect, onOpen, clubColors }: { member: Staf
         </div>
       </div>
       <StaffStars stars={member.stars} />
+      {member.trusted && (
+        <p className="flex items-center gap-1.5 text-sm text-primary m-0" title={t("staff.trusted.help")}>
+          <Icon name="handshake" size={16} />{t("staff.trusted.badge")}
+        </p>
+      )}
+      {member.course && (
+        <p className="flex items-center gap-1.5 text-sm text-chart-4 m-0" title={t("staff.course.awayHelp")}>
+          <Icon name="clock" size={16} />{t("staff.course.away", { until: dayLabel(member.course.until) })}
+        </p>
+      )}
       {c && (
         <p className={`text-sm tabular-nums m-0 ${leaving ? "text-destructive" : "text-foreground"}`}>
           {t("staff.contractLine", { until: contractEnd(c.until), wage: formatWageFull(c.wage) })}
           {leaving ? ` · ${t("staff.leaving")}` : ""}
+        </p>
+      )}
+      {member.endsInDays !== undefined && !leaving && (
+        <p className="flex items-center gap-1.5 text-sm text-chart-4 m-0 tabular-nums">
+          <Icon name="alert" size={16} />{t("staff.expiring.card", { days: member.endsInDays })}
         </p>
       )}
       <p className="text-sm text-muted-foreground m-0 tabular-nums" title={t("staff.effectsHelp")}>{effect}</p>

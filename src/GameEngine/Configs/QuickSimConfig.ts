@@ -312,7 +312,8 @@ export const QUICK_SIM_CONFIG = {
    * already a header is re-attributed by SET_PIECE_LINE_WEIGHT × (0.5 + heading/10). Penalty goals
    * count as set-piece goals too. The score never changes.
    */
-  CORNERS_PER_SIDE: 2.84,
+  // 2.84 until 10.7: the engine now gives ~22% fewer corners (a cleared corner rarely becomes another one).
+  CORNERS_PER_SIDE: 2.2,
   DIRECT_FK_SHOTS_PER_SIDE: 0.068,
   SET_PIECE_GOAL_SHARE: 0.125,
   DIRECT_FK_GOAL_SHARE: 0.023,

@@ -9,7 +9,7 @@ import { reconnectDelay } from "@/GameInterface/Social/socialState";
 import { mergeWireState, parseH2HEvent } from "@/GameInterface/H2H/h2hState";
 import type { ClientEvent } from "@/types/socialTypes";
 import type { KickOutcome, PenaltyChoice } from "@/Domain/penalty/penaltyKick";
-import type { H2HCloseReason, H2HCommand, H2HRoomView, H2HSide } from "@/types/h2hTypes";
+import type { H2HCloseReason, H2HCommand, H2HRoomView, H2HSide, H2HSpeed } from "@/types/h2hTypes";
 
 const LOGOUT_CLOSE_CODE = 4001;
 
@@ -33,6 +33,8 @@ export interface H2HSocket {
   send: (cmd: H2HCommand) => void;
   requestPause: () => void;
   resume: () => void;
+  /** Asks for a match speed; it runs at the lower of the two managers' choices (`room.speed`). */
+  setSpeed: (speed: H2HSpeed) => void;
   /** Start: `penalty2d` = this manager kicks and saves his penalties (2D). */
   ready: (penalty2d: boolean) => void;
   leave: () => void;
@@ -85,6 +87,8 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
           case "h2h_room":
             setRoom(ev.room);
             setMySide(ev.mySide);
+            // A faster match sends its frames closer together: the drawing blends over that shorter step.
+            feedRef.current.stepMs = H2H.FRAME_MS / (ev.room.speed || 1);
             setPause(ev.room.pause);
             setPausesLeft({ A: ev.room.sides.A.pausesLeft, B: ev.room.sides.B.pausesLeft });
             break;
@@ -147,6 +151,7 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
   const send = useCallback((cmd: H2HCommand) => sendEvent({ type: "h2h_cmd", cmd }), [sendEvent]);
   const requestPause = useCallback(() => sendEvent({ type: "h2h_pause" }), [sendEvent]);
   const resume = useCallback(() => sendEvent({ type: "h2h_resume" }), [sendEvent]);
+  const setSpeed = useCallback((speed: H2HSpeed) => sendEvent({ type: "h2h_speed", speed }), [sendEvent]);
   const ready = useCallback((penalty2d: boolean) => sendEvent(penalty2d ? { type: "h2h_ready", penalty2d: true } : { type: "h2h_ready" }), [sendEvent]);
   const choosePenalty = useCallback((choice: PenaltyChoice) => new Promise<KickOutcome>((resolve) => {
     penaltyWaitersRef.current.push(resolve);
@@ -156,6 +161,6 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
 
   return {
     room, mySide, state, feed: feedRef.current, pause, pausesLeft, closed, done,
-    send, requestPause, resume, ready, leave, choosePenalty,
+    send, requestPause, resume, setSpeed, ready, leave, choosePenalty,
   };
 }

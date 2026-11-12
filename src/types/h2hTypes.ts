@@ -11,6 +11,9 @@ export type H2HSeatStatus = "away" | "in" | "ready";
 
 export type H2HPhase = "lobby" | "live" | "done" | "closed";
 
+/** Match speed a manager asks for (`H2H.SPEEDS`). */
+export type H2HSpeed = 1 | 2 | 4;
+
 export interface H2HSideView {
   seatId: string;
   nickname: string | null;
@@ -19,6 +22,8 @@ export interface H2HSideView {
   status: H2HSeatStatus;
   pausesLeft: number;
   connected: boolean;
+  /** The speed this manager asked for. */
+  speed: H2HSpeed;
 }
 
 /** What both managers see of the room (`h2h_room`). */
@@ -30,6 +35,8 @@ export interface H2HRoomView {
   sides: Record<H2HSide, H2HSideView>;
   /** Active pause: who paused and until when (epoch ms). */
   pause: { by: H2HSide; until: number } | null;
+  /** The speed the match runs at: the lower of the choices of the managers in the match. */
+  speed: H2HSpeed;
 }
 
 /** A manager's command on his own side (engine player ids, `GamePlayer.id`). */

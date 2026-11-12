@@ -4,7 +4,7 @@ import { parseAxesOverride } from "@/Domain/formation/zones";
 import { isRoleVariantId } from "@/GameEngine/Configs/RoleVariantConfig";
 import { MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import type { Mentality, PressLevel, SlotInstruction, TacticalStyle } from "@/types/tacticsTypes";
-import type { H2HCommand, H2HPhase, H2HRoomView, H2HSeatStatus, H2HSide } from "@/types/h2hTypes";
+import type { H2HCommand, H2HPhase, H2HRoomView, H2HSeatStatus, H2HSide, H2HSpeed } from "@/types/h2hTypes";
 
 /** One side of a room (pure state; the sockets live elsewhere). */
 export interface H2HRoomSide {
@@ -15,6 +15,8 @@ export interface H2HRoomSide {
   status: H2HSeatStatus;
   pausesLeft: number;
   connected: boolean;
+  /** The speed he asked for (1 until he picks another). */
+  speed: H2HSpeed;
 }
 
 /** The pure state of a live-match room. */
@@ -38,7 +40,7 @@ export interface H2HRoomChange {
 const SIDES: readonly H2HSide[] = ["A", "B"];
 
 function freshSide(id: H2HSideIdentity): H2HRoomSide {
-  return { ...id, status: "away", pausesLeft: H2H.PAUSES, connected: false };
+  return { ...id, status: "away", pausesLeft: H2H.PAUSES, connected: false, speed: 1 };
 }
 
 function withSide(room: H2HRoom, side: H2HSide, patch: Partial<H2HRoomSide>): H2HRoom {
@@ -98,6 +100,26 @@ export function closeRoom(room: H2HRoom): H2HRoom {
   return { ...room, phase: "closed", pause: null };
 }
 
+export function isH2HSpeed(v: unknown): v is H2HSpeed {
+  return (H2H.SPEEDS as readonly unknown[]).includes(v);
+}
+
+/** A manager picks his speed during the match (the same room when nothing changes or it is not live). */
+export function setSideSpeed(room: H2HRoom, side: H2HSide, speed: H2HSpeed): H2HRoom {
+  if (room.phase !== "live" || room.sides[side].speed === speed) return room;
+  return withSide(room, side, { speed });
+}
+
+/**
+ * The speed the match runs at (tester report, 10.7): faster only when both managers asked for it, so the lower of the
+ * two choices; a manager who dropped (the assistant plays for him) does not hold the other back. 1 outside a live match.
+ */
+export function matchSpeed(room: H2HRoom): H2HSpeed {
+  if (room.phase !== "live") return 1;
+  const asked = SIDES.filter((s) => room.sides[s].connected).map((s) => room.sides[s].speed);
+  return asked.length === 0 ? 1 : (Math.min(...asked) as H2HSpeed);
+}
+
 export function canPause(room: H2HRoom, side: H2HSide, _now: number): boolean {
   return room.phase === "live" && room.pause === null && room.sides[side].pausesLeft > 0;
 }
@@ -131,6 +153,7 @@ export function roomView(room: H2HRoom): H2HRoomView {
     phase: room.phase,
     sides: { A: side("A"), B: side("B") },
     pause: room.pause ? { ...room.pause } : null,
+    speed: matchSpeed(room),
   };
 }
 

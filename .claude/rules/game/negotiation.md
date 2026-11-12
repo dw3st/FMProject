@@ -269,3 +269,7 @@ Desenho aprovado pelo usuário (report de tester). `POST /transfers { ..., swapP
 ## Comprar o jogador emprestado ao seu clube (9.9)
 
 Report do usuário. Um jogador emprestado ao clube do jogador por um clube da IA (`loanedInFrom`, `loans.ts`) pode ser comprado do clube dono: `POST /transfers` com `fromSquadId` = o clube dono acha o jogador no elenco do comprador, não conta o teto nem o top 25 (ele já está lá), e no aceite o empréstimo acaba sem notícia (`squadsAfterLoanEnd`, a linha sai de `market.loans`) e a compra segue; ele fica com a adaptação, a moral e o papel que tinha. `POST /pre-contracts` e `GET /demand?from=` aceitam o mesmo caso. Ficha: `LoanedInCard` (empréstimo, contrato com o clube dono, a parte do salário, o que dá para tentar) e o botão "Oferta ao <clube>".
+
+## Quanto o clube pagou, na proposta (10.7)
+
+Report do usuário. A linha de situação de uma proposta por um jogador do próprio técnico (`PlayerSituationLine` com `listing`: proposta da IA e proposta entre técnicos) ganhou uma segunda linha: quanto o clube pagou por ele e quando (`paidFor`, `situation.ts`, do `RosterPlayer.arrival` neste clube: taxa, multa, livre, pré-contrato, base) e o valor de mercado de hoje (`playerMarketValue`). A rota `situation` só devolve `paid` e `value` para o jogador do próprio assento. Quem chegou antes da 8.4.4 não tem o registro: só o valor de mercado.

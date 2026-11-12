@@ -1,7 +1,8 @@
 import { loanAvailability } from "@/Domain/negotiation/loans";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { negotiationSummary } from "@/Domain/negotiation/summary";
-import { playerSituation } from "@/Domain/negotiation/situation";
+import { paidFor, playerSituation } from "@/Domain/negotiation/situation";
+import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { starLimitResponse } from "@/backend/starLimitWorld";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -57,7 +58,7 @@ export const negotiationRoutes = {
         forSale: !!listed,
         loanable: (market?.playerLoanList ?? []).includes(playerId),
         // His morale and the role he was given stay with his own manager.
-        ...(own ? { requested: !!listed?.requested, ...(player.squadStatus ? { ownRole: player.squadStatus } : {}), thinAfter: thinAfterSale(player, squad) } : {}),
+        ...(own ? { requested: !!listed?.requested, ...(player.squadStatus ? { ownRole: player.squadStatus } : {}), thinAfter: thinAfterSale(player, squad), paid: paidFor(player, squad.id), value: playerMarketValue(player) } : {}),
       }));
     }
     const sellList = (await saveService.getWorldMarket(saveId))?.profiles?.[squad.id]?.sellList ?? [];

@@ -206,3 +206,20 @@ contratos; nenhum clube da IA com `staff`.
 ## Trocar com a função cheia (8.7.10)
 
 Report do usuário. Com a função no limite, a janela de contratação lista quem está nela (estrelas, salário, fim do contrato, multa de hoje); escolher um troca os dois num passo só: `POST /staff/hire { memberId, years, replaceId }` dispensa o escolhido (multa no extrato, volta à lista de livres, áreas liberadas, missão cancelada se olheiro de campo) e contrata o novo no mesmo `BufferingSaveDAL`. `replaceId` de outra função ou fora da comissão: 404 `notYourStaff`.
+
+## Comissão de confiança e cursos (10.7)
+
+Report de tester, desenho aprovado pelo usuário (3 profissionais, o técnico paga, ausente durante o curso). Lógica pura em `src/Domain/staff/trustedStaff.ts` (`TRUSTED`, com teste); só o clube do jogador.
+
+- **Confiança:** `StaffMember.trusted`, até `TRUSTED.MAX` (3), qualquer função. `PUT /api/saves/:id/staff/trusted { memberId, trusted }` (404 `notYourStaff`, 409 `trustedFull`). O diretor sempre renova um profissional de confiança (a idade continua valendo). Demitido ou com o contrato encerrado, ele volta à lista de livres sem a marca.
+- **Segue o técnico:** ao sair de um clube (troca, demissão, fim de contrato, pedido de demissão), `releaseHumanClub` guarda os de confiança, sem contrato, em `SeatState.trustedStaff`. Ao assumir um clube, `takeOverClub` → `joinNewClub`: cada um toma o lugar do mais fraco da função dele na comissão inicial (ou uma vaga livre da função) e assina por `NEW_CLUB_YEARS` (2) temporadas com o salário do clube novo. Quem não tem lugar (a função já cheia de outros de confiança) fica de fora.
+- **Curso:** `POST /api/saves/:id/staff/course { memberId }`, pago da carteira do técnico (`managerSpent`, apostas abertas descontadas): `COURSE_DAYS` (60) dias, +`STAR_GAIN` (0,5) estrela na especialidade (a da função; no treinador de área, a melhor área; `withStarGain` sobe o conhecimento e, no teto, os atributos gerais; nunca passa de 5). Preço pelas estrelas de hoje: até 3★ €150 mil, 3,5★ €300 mil, 4★ €600 mil, 4,5★ €1,2 milhão. Recusas (409): `notTrusted`, `onCourse`, `courseBusy` (um por vez no clube), `atBest`, `tooSoon` (um curso a cada 365 dias por profissional), `contractEnds` (o contrato acaba antes do fim do curso), `onMission` (lidera uma missão de observação), `noMoney`. Guarda de lobby nas duas rotas.
+- **Ausente:** com `course`, ele não conta em `membersOf` / `headOf` / `resolveAreaAssignments`: a função vale como vaga (2★) e a área dele fica sem responsável (×0,4) ou vai para outro treinador. O salário continua. Um olheiro em curso não lidera missão.
+- **Volta:** no avanço do dia (junto dos contratos da comissão), `settleCourses` aplica o ganho no dia `until`; mensagem `contract` / `staff_course_done`. Um curso que acaba enquanto ele espera sem clube é concluído quando ele entra no clube novo.
+- **Tela:** ficha do profissional (bloco Confiança: marcar, tirar, curso com preço, carteira e o motivo quando não pode; confirmação antes de mandar), selo "De confiança" e "Em curso até" no cartão, "De confiança: N de 3" no topo da Equipe técnica, treinador em curso indisponível no seletor das áreas. `GET /staff` devolve `trusted { used, max }`, `wallet` e, por profissional de confiança fora de curso, `courseOffer`.
+- A IA não usa nada disso. Testes: `bun test src/Domain/staff/trustedStaff.test.ts src/backend/staffTrusted.routes.test.ts`.
+- Limitações: os de confiança não envelhecem enquanto esperam sem clube; o curso não escolhe a área do treinador (sempre a melhor); quem sai do mundo (liga de amigos) perde a lista.
+
+## Contrato perto do fim na tela (10.7)
+
+Report de tester. `GET /staff` devolve `endsInDays` em cada profissional com contrato a até `STAFF.CONTRACT.RENEW_WINDOW_DAYS` (60) dias do fim: linha em âmbar no cartão e um aviso no topo da Equipe técnica com os nomes (`staff.expiring.*`).

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
-import { navigate } from "@/GameInterface/router/navigation";
+import { navigate, useRoute } from "@/GameInterface/router/navigation";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import type { GroupAdvanceView } from "@/types/groupAdvanceTypes";
 
@@ -16,13 +16,15 @@ const ARROW_MAX = 200;
 /**
  * "Só falta você" hanging below the ready button, with an arrow to it and the button inside (tester report, 8.9.9,
  * option A). One row since 10.6.4 (tester report: the tall card covered the buttons under it); who is ready goes in the
- * `title`. Without the slot on the page (match screen), nothing.
+ * `title`. Without the slot on the page (match preview, match, result: no top bar), nothing; it is looked for again on
+ * every navigation (tester report, 10.7: the card stayed over the match preview).
  */
 export function TurnNoticeCard({ view, myNickname, onClose }: { view: GroupAdvanceView | null; myNickname: string | null; onClose: () => void }) {
   const { t, i18n } = useTranslation();
   const { markReady, busy } = useGroupAdvance();
   const matchToday = !!view?.me.matchToday && !view.me.decision;
   const [anchor, setAnchor] = useState<{ top: number; right: number; arrow: number } | null>(null);
+  const route = useRoute();
 
   useLayoutEffect(() => {
     const place = () => {
@@ -35,7 +37,7 @@ export function TurnNoticeCard({ view, myNickname, onClose }: { view: GroupAdvan
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, []);
+  }, [route.key]);
   if (!anchor) return null;
 
   const others = (view?.members ?? []).filter((m) => m.nickname !== myNickname && m.status !== "no_club");

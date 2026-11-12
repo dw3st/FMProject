@@ -231,3 +231,22 @@ Medido: cerca de 3 por jogo (Premier, 100 jogos, `bun scripts/shot-miss-probe.ts
 ## Passe de reposição (8.8.9)
 
 Revisão de código: o passe da cobrança (lateral, escanteio curto, falta curta) leva `PassState.fromSetPiece` e não passa pelo sorteio de "passe perto da linha sai pela lateral" da 8.6.1; antes um lateral curto podia sair de novo para o outro time.
+
+## Escanteios em sequência (10.7)
+
+Report de tester (5 ou mais escanteios seguidos com frequência). Medido com `bun scripts/corner-streak-probe.ts 200 <liga> 7` (4-3-3, equilibrado; um escanteio continua a sequência quando o mesmo time teve o anterior até 75 s de jogo antes): cada escanteio gerava outro em 53% das vezes, porque o cruzamento da cobrança cortado na área virava escanteio de novo com a mesma chance de um cruzamento de jogo corrido.
+
+- `CORNER_REPEAT_MULT` 0,25: a chance de escanteio de um cruzamento cortado cai a um quarto quando o cruzamento é a própria cobrança de área (escanteio ou falta cruzada).
+- Para o total não despencar, as fontes de jogo corrido sobem: `CROSS_CLEAR_CORNER_CHANCE` 0,55 → 0,75 e `OFF_TARGET_CORNER_CHANCE` 0,6 → 0,8.
+
+| | Premier antes | depois | Championship antes | depois |
+|---|---|---|---|---|
+| Escanteios por jogo | 6,46 | 4,71 | 5,09 | 4,23 |
+| Partidas com 3+ seguidos | 57,0% | 7,5% | 40,0% | 9,5% |
+| Partidas com 5+ seguidos | 19,5% | 0,5% | 10,0% | 0,0% |
+| Cruzamentos / disputas aéreas (um time) | 15,9 / 14,4 | 14,2 / 13,0 | 13,6 / 11,9 | 13,3 / 11,6 |
+| Gols de cabeça | 0,375 | 0,340 | 0,280 | 0,265 |
+
+O total de escanteios fica abaixo do alvo antigo (6 a 10): mantê-lo exigiria subir ainda mais as outras fontes (defesa espalmada, desarme), que encadeiam do mesmo jeito.
+
+Mundo da 10.7 inteira (escanteios, apito que espera o ataque, drible de quem está sozinho; `ai-formation-goals.ts --engine 800 --chunks 4 --modes ai --quick 0`, contra a 10.6.4): Premier 2,125 → 2,116 gols, 5,68 → 5,75 chutes; Championship 1,786 → 1,843, 5,29 → 5,48; somadas +1,2% e +2,4%, gols do quickSim não recalibrados. `QUICK_SIM_CONFIG.CORNERS_PER_SIDE` 2,84 → 2,2 (o motor dá cerca de 22% menos escanteios).

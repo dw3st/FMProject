@@ -593,3 +593,7 @@ do `PixiPitch` (`figures` | `pixel` | `discs`; botão Bonecos da partida alterna
 - Limitações: árbitro, técnicos e reservas continuam os de cima; sem ação "reclamar" nem arremesso lateral próprios; os
   dribles com a bola no ar do pack (lambreta, embaixadinhas) ficaram de fora porque a bola é a do jogo; o goleiro corre
   com os quadros do jogador (sem luvas); a transmissão (assistir) usa os bonecos de cima.
+
+## Vendedores fora do mosaico (10.7)
+
+Report de tester. `mosaicSides` (`stadiumDecor.ts`): o fundo da casa com mosaico (os dois com o item das duas pontas) fica fechado para os vendedores, como um setor em obra (`refreshWalkways`, `PixiPitch`); nunca em campo neutro. Só desenho.

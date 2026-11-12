@@ -1,6 +1,7 @@
 import type { StaffEffects } from "@/Domain/staff/staff";
 import type { StaffPoolItem } from "@/Domain/staff/staffPool";
-import type { CoachArea, StaffMember, StaffRole, TrainingArea } from "@/Domain/staff/staffTypes";
+import type { CoachArea, Specialty, StaffMember, StaffRole, TrainingArea } from "@/Domain/staff/staffTypes";
+import type { CourseRefusal } from "@/Domain/staff/trustedStaff";
 
 /** A member of the club's staff as `GET /api/saves/:id/staff` sends it (`staffView`, `src/backend/staffRoutes.ts`). */
 export interface StaffMemberView extends StaffMember {
@@ -12,8 +13,12 @@ export interface StaffMemberView extends StaffMember {
   /** Years (1..3) the renewal route accepts today, and the wage of a renewal. */
   renewYears?: number[];
   renewWage?: number;
+  /** Days left on his contract when it is inside the renewal window (`STAFF.CONTRACT.RENEW_WINDOW_DAYS`). */
+  endsInDays?: number;
   /** Scouts: the country they know best (`scouting.md` → "Conhecimento por país"). */
   strongCountry?: { country: string; k: number };
+  /** A trusted professional who is not on a course: what his next one costs and raises, and why not today. */
+  courseOffer?: { price: number | null; days: number; gain: number; specialty: Specialty; refusal?: CourseRefusal };
 }
 
 export interface StaffAreaView {
@@ -31,6 +36,10 @@ export interface StaffData {
   limits: Record<StaffRole, { used: number; max: number }>;
   effects: StaffEffects;
   weeklyTotal: number;
+  /** The manager's trusted professionals: how many of the places are taken. */
+  trusted: { used: number; max: number };
+  /** The manager's own money (it pays the courses). */
+  wallet?: number;
 }
 
 export interface StaffPoolPage {
@@ -71,6 +80,11 @@ export function formatEffect(mult: number, lang: string, noEffect: string): stri
   const pct = Math.round((mult - 1) * 100);
   if (pct === 0) return noEffect;
   return `${pct > 0 ? "+" : "−"}${Math.abs(pct).toLocaleString(lang)}%`;
+}
+
+/** `30/09/2030`: the day a course ends. */
+export function dayLabel(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 }
 
 /** `12/2028`: month and year of a contract end. */

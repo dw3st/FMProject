@@ -49,6 +49,8 @@ export function StaffScreen() {
 
   function changed(next: StaffData) {
     setData(next);
+    // The profile stays open on a trust or course change: it shows the professional as he is now.
+    setOpen((cur) => (cur ? next.members.find((m) => m.id === cur.id) ?? null : null));
     void refresh();
   }
 
@@ -70,6 +72,7 @@ export function StaffScreen() {
   }
 
   const lang = i18n.language;
+  const expiring = data.members.filter((m) => m.endsInDays !== undefined);
   const vacantSlowdown = Math.round((1 - STAFF.AREA_VACANT_MULT) * 100);
   const areaMult = (area: string) => data.areas.find((a) => a.area === area)?.mult ?? 1;
   const pct = (mult: number) => formatEffect(mult, lang, t("staff.noEffect"));
@@ -132,7 +135,13 @@ export function StaffScreen() {
       {pageTab === "staff" && (
         <>
           {actionError && <Notice kind="error">{actionError}</Notice>}
+          {expiring.length > 0 && (
+            <Notice kind="warning">
+              {t("staff.expiring.notice", { count: expiring.length, days: STAFF.CONTRACT.RENEW_WINDOW_DAYS, names: expiring.map((m) => m.name).join(", ") })}
+            </Notice>
+          )}
           <p className="text-sm text-muted-foreground m-0">{t("staff.effectsHelp")}</p>
+          <p className="text-sm text-muted-foreground m-0 tabular-nums">{t("staff.trusted.summary", { used: data.trusted.used, max: data.trusted.max })}</p>
           {STAFF_GROUPS.map((group) => (
             <section key={group.key} className="flex flex-col gap-3">
               <SectionTitle>{t(`staff.groups.${group.key}`)}</SectionTitle>
@@ -164,7 +173,7 @@ export function StaffScreen() {
       )}
 
       {saveId && (
-        <StaffDetailModal saveId={saveId} member={open} mode="club" effect={open ? effectLine(open) : undefined} clubColors={session?.clubColors} onClose={() => setOpen(null)} onChanged={changed} />
+        <StaffDetailModal saveId={saveId} member={open} mode="club" effect={open ? effectLine(open) : undefined} trusted={data.trusted} wallet={data.wallet} clubColors={session?.clubColors} onClose={() => setOpen(null)} onChanged={changed} />
       )}
     </ScreenContainer>
   );

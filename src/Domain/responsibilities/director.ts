@@ -109,6 +109,12 @@ export interface Responsibilities {
   scouting?: "manager" | "chief";
   /** Off-season friendlies: nobody arranges them (absent) or the director does. */
   friendlies?: "none" | "director";
+  /** Press conferences: the manager answers (absent) or the director does, always neutral (10.8). */
+  press?: "manager" | "director";
+}
+
+export function directorSpeaksToPress(r: Responsibilities | undefined): boolean {
+  return r?.press === "director";
 }
 
 export function directorHandlesContracts(r: Responsibilities | undefined): boolean {
@@ -126,7 +132,10 @@ export function friendliesByDirector(r: Responsibilities | undefined): boolean {
 
 /** A full view of the responsibilities with the defaults filled in. */
 export function responsibilitiesOf(r: Responsibilities | undefined): Required<Responsibilities> {
-  return { contracts: r?.contracts ?? "director", scouting: r?.scouting ?? "manager", friendlies: r?.friendlies ?? "none" };
+  return {
+    contracts: r?.contracts ?? "director", scouting: r?.scouting ?? "manager", friendlies: r?.friendlies ?? "none",
+    press: r?.press ?? "manager",
+  };
 }
 
 /**
@@ -137,7 +146,7 @@ export function parseResponsibilitiesPatch(v: unknown): Partial<Responsibilities
   if (!v || typeof v !== "object" || Array.isArray(v)) return null;
   const o = v as Record<string, unknown>;
   const keys = Object.keys(o);
-  if (keys.length === 0 || keys.some((k) => k !== "contracts" && k !== "scouting" && k !== "friendlies")) return null;
+  if (keys.length === 0 || keys.some((k) => k !== "contracts" && k !== "scouting" && k !== "friendlies" && k !== "press")) return null;
   const out: Partial<Responsibilities> = {};
   if ("contracts" in o) {
     if (o.contracts !== "director" && o.contracts !== "manager") return null;
@@ -150,6 +159,10 @@ export function parseResponsibilitiesPatch(v: unknown): Partial<Responsibilities
   if ("friendlies" in o) {
     if (o.friendlies !== "none" && o.friendlies !== "director") return null;
     out.friendlies = o.friendlies;
+  }
+  if ("press" in o) {
+    if (o.press !== "manager" && o.press !== "director") return null;
+    out.press = o.press;
   }
   return out;
 }

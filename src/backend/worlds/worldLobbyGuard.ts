@@ -23,6 +23,8 @@ export const LOBBY_GUARDED_PATHS = [
   "/api/saves/:saveId/staff/hire",
   "/api/saves/:saveId/staff/fire",
   "/api/saves/:saveId/staff/renew",
+  "/api/saves/:saveId/staff/trusted",
+  "/api/saves/:saveId/staff/course",
   "/api/saves/:saveId/facilities/request",
   "/api/saves/:saveId/bank-loan",
   "/api/saves/:saveId/players/:playerId/mentoring",

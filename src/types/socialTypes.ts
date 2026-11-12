@@ -3,7 +3,7 @@
 import type { WatchCloseReason, WatchEventPayload, WatchFramePayload, WatchInfo, WatchStatePayload } from "@/types/watchTypes";
 import type { KickOutcome, PenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { LiveScoreFrame, LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
-import type { H2HCloseReason, H2HCommand, H2HFrame, H2HRoomView, H2HSide, H2HWireState, H2HWireStats } from "@/types/h2hTypes";
+import type { H2HCloseReason, H2HCommand, H2HFrame, H2HRoomView, H2HSide, H2HSpeed, H2HWireState, H2HWireStats } from "@/types/h2hTypes";
 
 export type FriendStatus = "online" | "offline" | "playing";
 
@@ -82,6 +82,7 @@ export type ClientEvent =
   | { type: "h2h_cmd"; cmd: H2HCommand }
   | { type: "h2h_pause" }
   | { type: "h2h_resume" }
+  | { type: "h2h_speed"; speed: H2HSpeed }
   | { type: "h2h_leave" }
   | { type: "h2h_penalty"; choice: PenaltyChoice }
   // Watching a friend's live match: the spectator joins and leaves; the friend's browser relays its match (only after

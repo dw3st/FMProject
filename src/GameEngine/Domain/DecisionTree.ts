@@ -26,6 +26,7 @@ export function isPlayerInRecovery(player: GamePlayer): boolean {
 }
 import { engineOf } from '@/GameEngine/Domain/roleEngineData';
 import { getTeamBuildUp, getTeamCarryConfig, getTeamPassConfig } from '@/GameEngine/Configs/AttackConfig';
+import { LONE_DRIBBLE } from '@/GameEngine/Configs/CarryConfig';
 import { ONE_ON_ONE_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { applyCarryIntent, getShootIntentBonus, getExtraCarryLanes } from '@/GameEngine/Configs/IntentConfig';
 import { evaluateDefensiveDecision } from '@/GameEngine/Domain/DefensivePositioning';
@@ -377,6 +378,22 @@ interface DribbleBreakdown {
   forwardBlock: number;
   rawScore:     number;
   score:        number;
+  /** Below 1 when he is alone against opponents and not skilful enough to take them on (`LONE_DRIBBLE`). */
+  loneFactor?:  number;
+}
+
+/**
+ * How much of his dribble score a holder keeps when he has nobody to play with (`LONE_DRIBBLE`): 1 with a teammate
+ * close, too few opponents around or the rule off; otherwise his dribbling skill between `SKILL_FROM` and `SKILL_FULL`.
+ */
+export function loneDribbleFactor(player: GamePlayer, opponents: GamePlayer[], teammates: GamePlayer[]): number {
+  const L = LONE_DRIBBLE;
+  if (!L.ENABLED) return 1;
+  const within = (p: GamePlayer, r: number) => Math.hypot(p.x - player.x, p.y - player.y) <= r;
+  if (teammates.some(t => t.id !== player.id && t.role !== 'GK' && within(t, L.SUPPORT_RADIUS))) return 1;
+  if (opponents.filter(o => o.recoveryTime <= 0 && within(o, L.CROWD_RADIUS)).length < L.MIN_CROWD) return 1;
+  const skill = player.runtimeStats.withBall.dribbling;
+  return Math.max(0, Math.min(1, (skill - L.SKILL_FROM) / (L.SKILL_FULL - L.SKILL_FROM)));
 }
 
 /** Carry breakdown attached to the carry ActionScore (best lane only). */
@@ -634,7 +651,7 @@ function evalLongBall(player: GamePlayer, allPlayers: GamePlayer[]): ActionScore
   };
 }
 
-function evalDribble(player: GamePlayer, opponents: GamePlayer[]): ActionScore {
+function evalDribble(player: GamePlayer, opponents: GamePlayer[], teammates: GamePlayer[] = []): ActionScore {
   const roleTendency = engineOf(player).carryBias;
   if (roleTendency < DRIBBLE_MIN_BIAS) {
     return {
@@ -670,10 +687,12 @@ function evalDribble(player: GamePlayer, opponents: GamePlayer[]): ActionScore {
   // Score = role says "I like dribbling" AND the defender is actually blocking me.
   // No execution quality here — that belongs in resolveDribble (gameState.ts).
   const raw   = roleTendency * 0.6 + forwardBlock * 0.4;
-  const score = compress(raw, DRIBBLE_STRONG_RAW);
+  // Alone against them, only a skilful dribbler takes them on (`LONE_DRIBBLE`).
+  const loneFactor = loneDribbleFactor(player, opponents, teammates);
+  const score = compress(raw, DRIBBLE_STRONG_RAW) * loneFactor;
   return {
     type: 'dribble', score, targetId: closest.id,
-    dribbleBreakdown: { targetId: closest.id, roleTendency, forwardBlock, rawScore: raw, score },
+    dribbleBreakdown: { targetId: closest.id, roleTendency, forwardBlock, rawScore: raw, score, ...(loneFactor < 1 ? { loneFactor } : {}) },
   };
 }
 
@@ -734,7 +753,7 @@ function decideBallHolder(
   const gate = oneOnOneGate(player, opponents, outfieldOpponents, allPlayers, sh.shootBreakdown?.xg ?? 0);
   const ps = evalPass(player, opponents, allPlayers, intent, gate && (r => gate(r.x, r.y, r.id)));
   const ca = evalCarry(player, outfieldOpponents, allPlayers, defendingOutfield, intent);  // GK excluded — handled by shoot decision
-  const dr = evalDribble(player, outfieldOpponents); // GK excluded — don't dribble the GK
+  const dr = evalDribble(player, outfieldOpponents, allPlayers.filter(p => p.team === player.team)); // GK excluded — don't dribble the GK
   const tbResult = evalThroughBall(player, allPlayers, crowdGrid, tbCachedCells, gate);
   const tb = tbResult.action;
   const crResult = evalCross(player, allPlayers, gate && ((x, y, id) => gate(x, y, id, AERIAL_CONFIG.HEADER_XG_MULT)));

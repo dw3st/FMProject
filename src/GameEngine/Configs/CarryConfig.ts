@@ -111,3 +111,18 @@ export const CARRY_CONFIG = {
    */
   PATH_DENSITY_SATURATION: 30,
 } as const;
+
+/**
+ * A holder with nobody to play with (tester report, 10.7: the lone forward kept taking defenders on and losing the
+ * ball). With no outfield teammate within `SUPPORT_RADIUS` and `MIN_CROWD` or more opponents within `CROWD_RADIUS`,
+ * the dribble score is scaled by his dribbling: 0 at `SKILL_FROM` or below (he keeps the ball, passes or carries
+ * instead), full from `SKILL_FULL`. Decision only: the duel itself is unchanged.
+ */
+export const LONE_DRIBBLE = {
+  ENABLED: true,
+  SUPPORT_RADIUS: 15,
+  CROWD_RADIUS: 8,
+  MIN_CROWD: 1,
+  SKILL_FROM: 0.4,
+  SKILL_FULL: 0.6,
+};

@@ -54,6 +54,21 @@ export interface StaffMember {
   since?: string;
   /** Scouts only: countries they learned on missions (sparse; absent = derived from the nationality). */
   countryKnowledge?: Record<string, CountryKnowledgeEntry>;
+  /** One of the manager's trusted professionals (10.7): he follows the manager from club to club. */
+  trusted?: true;
+  /** On a course paid by the manager: away from the club (his role counts as vacant) until `until`. */
+  course?: StaffCourse;
+  /** The day his last course started (one a year). */
+  lastCourse?: string;
+}
+
+/** A course in progress (`src/Domain/staff/trustedStaff.ts`). */
+export interface StaffCourse {
+  started: string;
+  /** The day he is back, with the gain. */
+  until: string;
+  /** The specialty the course raises. */
+  specialty: Specialty;
 }
 
 /** The human club's staff (`Squad.staff`); AI clubs never store it. */
