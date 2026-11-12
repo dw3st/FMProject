@@ -959,6 +959,11 @@
       "applied": "Escalação {{key}} em uso.",
       "appliedWithSwaps": "Escalação {{key}} em uso, com trocas:",
       "confirmUse": "Trocar o time não salvo pela escalação {{key}}?",
+      "rename": "Renomear a escalação {{key}}",
+      "nameLabel": "Nome da escalação {{key}}",
+      "namePlaceholder": "Ex.: Ataque total",
+      "nameSave": "Salvar nome",
+      "nameHint": "Até {{n}} letras. Vazio volta para a letra.",
       "noReplacement": {
         "injured": "{{out}} está lesionado: sem reserva para a vaga",
         "suspended": "{{out}} está suspenso: sem reserva para a vaga",
@@ -2877,7 +2882,8 @@
     "myFormations": "Minhas formações",
     "freeFormation": "Formação livre",
     "freeShort": "livre",
-    "presetFormation": "Escalação {{key}} · {{formation}}"
+    "presetFormation": "Escalação {{key}} · {{formation}}",
+    "presetNamed": "{{name}} · {{formation}}"
   },
   "scoreBar": {},
   "matchOverlay": {

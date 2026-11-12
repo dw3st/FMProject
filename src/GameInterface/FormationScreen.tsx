@@ -34,7 +34,7 @@ import {
   hasAxesOverride,
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
-import { applyLineupPreset, buildLineupPreset } from "@/Domain/tactics/lineupPresets";
+import { applyLineupPreset, buildLineupPreset, renamePreset } from "@/Domain/tactics/lineupPresets";
 import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
 import type { LeagueData, RosterPlayer } from "@/types/playerTypes";
 import { getDetailedPositionColor, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -280,10 +280,15 @@ export function FormationScreen() {
   function handleSavePreset(key: LineupPresetKey) {
     if (editing) return;
     const preset = buildLineupPreset(
-      { formation: formationId, customFormation, lineup, slotInstructions, tacticalStyle: activeStyle, axesOverride },
+      { formation: formationId, customFormation, lineup, slotInstructions, tacticalStyle: activeStyle, axesOverride, name: lineupPresets[key]?.name },
       currentDate,
     );
     void putPresets({ ...lineupPresets, [key]: preset });
+  }
+
+  function handleRenamePreset(key: LineupPresetKey, name: string) {
+    const next = renamePreset(lineupPresets, key, name);
+    if (next !== lineupPresets) void putPresets(next);
   }
 
   function handleDeletePreset(key: LineupPresetKey) {
@@ -953,6 +958,7 @@ export function FormationScreen() {
             onSave={handleSavePreset}
             onUse={handleUsePreset}
             onDelete={handleDeletePreset}
+            onRename={handleRenamePreset}
           />
 
           {/* Assistant rotation */}

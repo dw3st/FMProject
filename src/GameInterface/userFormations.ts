@@ -20,7 +20,10 @@ export function userFormationsOf(tactics: TacticsSave | undefined, t: TFunction)
       ? customToFormation(preset.customFormation)
       : formationForSimId(preset.formation);
     const name = preset.formation === CUSTOM_FORMATION_ID ? t("substitutionPanel.freeShort") : preset.formation;
-    out.push({ id: `user:${key}`, label: t("substitutionPanel.presetFormation", { key, formation: name }), formation: { ...base, id: `user:${key}` } });
+    const label = preset.name
+      ? t("substitutionPanel.presetNamed", { name: preset.name, formation: name })
+      : t("substitutionPanel.presetFormation", { key, formation: name });
+    out.push({ id: `user:${key}`, label, formation: { ...base, id: `user:${key}` } });
   }
   return out;
 }

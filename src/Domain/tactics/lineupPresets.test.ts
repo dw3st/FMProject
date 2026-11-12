@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer } from "@/types/playerTypes";
-import { applyLineupPreset, buildLineupPreset, parseLineupPresets, type PresetReplacement, presetsForNewClub } from "@/Domain/tactics/lineupPresets";
+import {
+  applyLineupPreset, buildLineupPreset, cleanPresetName, parseLineupPresets, PRESET_NAME_MAX, presetDisplayName, type PresetReplacement,
+  presetsForNewClub, renamePreset,
+} from "@/Domain/tactics/lineupPresets";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID, snapToZones } from "@/Domain/formation/zones";
 
@@ -181,5 +184,41 @@ describe("applyLineupPreset", () => {
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: xi }, DATE), today, DATE);
     expect(applied.lineup[gk]).toBe(injuredGk.id);
     expect(applied.replaced).toEqual([{ out: injuredGk.id, in: "", slot: gk, reason: "injured" }]);
+  });
+});
+
+describe("preset names", () => {
+  const base = { formation: "4-3-3", lineup: [], savedOn: "2027-03-01" };
+  test("a typed name is cleaned and cut", () => {
+    expect(cleanPresetName("  Ataque   total \n")).toBe("Ataque total");
+    expect(cleanPresetName("x".repeat(40))).toHaveLength(PRESET_NAME_MAX);
+    expect(cleanPresetName(" ‮ ")).toBe("");
+  });
+  test("renaming sets, replaces and clears the name; an empty slot stays empty", () => {
+    const named = renamePreset({ A: base }, "A", " Posse ");
+    expect(named.A!.name).toBe("Posse");
+    expect(renamePreset(named, "A", "").A).toEqual(base);
+    const none = {};
+    expect(renamePreset(none, "B", "x")).toBe(none);
+  });
+  test("the slot is shown by its name, else its letter", () => {
+    expect(presetDisplayName("A", { name: "Posse" })).toBe("Posse");
+    expect(presetDisplayName("B", {})).toBe("B");
+    expect(presetDisplayName("C", undefined)).toBe("C");
+  });
+  test("saving over a slot keeps its name", () => {
+    expect(buildLineupPreset({ formation: "4-4-2", lineup: [], name: "Posse" }, "2027-03-02").name).toBe("Posse");
+    expect(buildLineupPreset({ formation: "4-4-2", lineup: [] }, "2027-03-02").name).toBeUndefined();
+  });
+  test("the route takes a clean name and refuses a dirty or long one", () => {
+    const ok = parseLineupPresets({ A: { ...base, name: "Posse" } });
+    expect(ok.ok && ok.value.A!.name).toBe("Posse");
+    expect(parseLineupPresets({ A: { ...base, name: " Posse" } }).ok).toBe(false);
+    expect(parseLineupPresets({ A: { ...base, name: "" } }).ok).toBe(false);
+    expect(parseLineupPresets({ A: { ...base, name: "x".repeat(PRESET_NAME_MAX + 1) } }).ok).toBe(false);
+    expect(parseLineupPresets({ A: { ...base, name: 3 } }).ok).toBe(false);
+  });
+  test("the name follows the manager to a new club", () => {
+    expect(presetsForNewClub({ A: { ...base, name: "Posse" } }, "Arsenal")!.A!.name).toBe("Posse");
   });
 });

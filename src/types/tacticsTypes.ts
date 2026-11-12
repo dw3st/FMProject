@@ -261,6 +261,8 @@ export type LineupPresetKey = "A" | "B" | "C";
 
 /** One saved lineup: formation (free formation included), XI in slot order and slot instructions. */
 export interface LineupPreset {
+  /** The manager's own name for the slot ("Ataque total"); absent = the slot letter. */
+  name?: string;
   formation: string;
   customFormation?: CustomFormation;
   lineup: string[];

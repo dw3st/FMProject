@@ -959,6 +959,11 @@
       "applied": "Lineup {{key}} in use.",
       "appliedWithSwaps": "Lineup {{key}} in use, with changes:",
       "confirmUse": "Replace the unsaved XI with lineup {{key}}?",
+      "rename": "Rename lineup {{key}}",
+      "nameLabel": "Name of lineup {{key}}",
+      "namePlaceholder": "E.g. All-out attack",
+      "nameSave": "Save name",
+      "nameHint": "Up to {{n}} letters. Empty goes back to the letter.",
       "noReplacement": {
         "injured": "{{out}} is injured: no replacement for the slot",
         "suspended": "{{out}} is suspended: no replacement for the slot",
@@ -2877,7 +2882,8 @@
     "myFormations": "My formations",
     "freeFormation": "Free formation",
     "freeShort": "free",
-    "presetFormation": "Lineup {{key}} · {{formation}}"
+    "presetFormation": "Lineup {{key}} · {{formation}}",
+    "presetNamed": "{{name}} · {{formation}}"
   },
   "scoreBar": {},
   "matchOverlay": {
