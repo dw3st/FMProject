@@ -1320,6 +1320,12 @@
       "team": "Escalação",
       "summary": "Resumo"
     },
+    "rails": {
+      "openTeam": "Escalação: passe o mouse para abrir, clique para manter aberta",
+      "openSummary": "Resumo: passe o mouse para abrir, clique para manter aberto",
+      "noEvents": "Sem lances",
+      "close": "Fechar"
+    },
     "mentalityShort": {
       "attacking": "Ataque",
       "balanced": "Equil.",

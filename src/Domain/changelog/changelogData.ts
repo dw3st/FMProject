@@ -27,6 +27,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.9",
+    date: "2026-11-12",
+    time: "20:00",
+    items: [
+      { pt: "Partida ao vivo: o campo ficou maior e ocupa a tela toda entre a barra de cima e o rodapé. A escalação e o resumo viraram trilhos nas bordas: passe o mouse num deles para abrir o painel inteiro, ou clique para manter aberto.", en: "Live match: the pitch is bigger and takes the whole screen between the top bar and the footer. The line-up and the summary became rails at the edges: point at one to open the whole panel, or click to keep it open." },
+    ],
+  },
+  {
     version: "10.8",
     date: "2026-11-12",
     time: "18:55",

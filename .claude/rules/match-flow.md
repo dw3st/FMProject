@@ -558,3 +558,22 @@ Tester report (periods ended with a player through on goal). `attackHoldsPeriod`
 own pass) within `ATTACK_HOLD_DIST` (30) yards of the goal line that side attacks, for at most `ATTACK_HOLD_MAX` (45)
 game-seconds past the period's end (~3.5 real s). It stops holding as soon as the ball is lost, leaves the zone or a
 restart is given (restarts keep their own rule). Both teams, every live period. Test: `AttackHold.engine.test.ts`.
+
+# Bigger pitch and side rails (10.9)
+
+Tester report, mock option B1 chosen by the user (top bar and footer fixed, rails with a title). The pitch area of the
+live match is the whole row between the top bar and the footer (HUD + broadcast line); the team list and the summary no
+longer take columns.
+
+- **Layout** (`src/GameInterface/matchPitchLayout.ts`, pure, tested): with a stadium the canvas is the row's width (at
+  most `MAX_END_YDS` 75 yards of end stand past each net) and taller than the row, so the row crops it evenly above and
+  below: the pitch, the top apron (LED boards) and the benches stay in view with `VIEW_MARGIN_YDS` (1.5) of stand, and
+  the pitch is drawn about 18% bigger than the old fitted canvas. A narrow row is bound by its width and nothing is
+  cropped. Without a stadium the canvas keeps the 124:80 ratio, centred. `MatchScreen` re-measures when the stadium is
+  known. The camera, the replay and the effects work on the canvas; the crop is symmetric, so their centre is the view's.
+- **Rails** (`src/GameInterface/MatchRails.tsx`): `LineupRail` on the left (position and fitness of the shown team, the
+  ball holder marked) and `SummaryRail` on the right (minute and kind of the last `RAIL_EVENTS` 8 events), each with its
+  title. Pointing at a rail opens the whole panel over the pitch (closes 220 ms after the mouse leaves); a click keeps
+  it open, with a close button in the panel. The view switches (zoom, replay, sound, figures) and, for testers, the
+  report button live in the panels. On a phone the rails are hidden and the panels still open from the two buttons.
+- Drawing and layout only: nothing in the engine, `/test` or `/lab`.

@@ -1320,6 +1320,12 @@
       "team": "Line-up",
       "summary": "Summary"
     },
+    "rails": {
+      "openTeam": "Line-up: point to open, click to keep it open",
+      "openSummary": "Summary: point to open, click to keep it open",
+      "noEvents": "No events",
+      "close": "Close"
+    },
     "mentalityShort": {
       "attacking": "Attack",
       "balanced": "Bal.",

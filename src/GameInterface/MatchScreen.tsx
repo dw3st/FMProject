@@ -130,6 +130,8 @@ import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/Bro
 import { Icon } from "@/GameInterface/Icons";
 import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
 import { MatchHud } from "@/GameInterface/MatchHud";
+import { LineupRail, SummaryRail } from "@/GameInterface/MatchRails";
+import { matchPitchLayout, type MatchPitchLayout } from "@/GameInterface/matchPitchLayout";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -145,26 +147,9 @@ import { PenaltyOverlay } from "@/GameInterface/Penalty/PenaltyOverlay";
 import { loadPenaltyMode } from "@/GameInterface/Penalty/penaltyMode";
 import { navigate } from "@/GameInterface/router/navigation";
 
-// Pitch geometry: 120 yds + 2×2 yd goal nets = 124, width 80. Aspect locks the canvas to that ratio.
-// No max cap — the pitch fills the available host space (which is itself constrained by the column
-// layout: 100vh − header − broadcast vertically, and viewport − 2× team panel widths horizontally).
-// PixiPitch is initialised with autoDensity: true so the canvas's CSS size matches the requested
-// logical dims (any DPR multiplication only affects the backing-store buffer for HiDPI sharpness).
-const PITCH_ASPECT = 124 / 80;
-const PITCH_MIN_W = 320;
-const PITCH_MIN_H = Math.round(PITCH_MIN_W / PITCH_ASPECT);
-
-function fitPitch(containerW: number, containerH: number): { w: number; h: number } | null {
-  if (containerW <= 0 || containerH <= 0) return null;
-  const widthFromHeight = containerH * PITCH_ASPECT;
-  let w: number, h: number;
-  if (widthFromHeight <= containerW) { w = widthFromHeight; h = containerH; }
-  else { w = containerW; h = containerW / PITCH_ASPECT; }
-  return {
-    w: Math.max(PITCH_MIN_W, Math.floor(w)),
-    h: Math.max(PITCH_MIN_H, Math.floor(h)),
-  };
-}
+// The pitch area is the whole row between the top bar and the footer (the team list and the summary float over it as
+// rails, 10.9); `matchPitchLayout` sizes the canvas inside it. PixiPitch is initialised with autoDensity: true so the
+// canvas's CSS size matches the requested logical dims (the DPR only affects the backing-store buffer).
 
 /** Team A must come from a saved tactics file — no silent defaults. */
 function assertSavedMyClubTactics(t: TacticsSave): void {
@@ -385,9 +370,25 @@ export function MatchScreen() {
   const knownPlayersRef = useRef(new Map<number, GamePlayer>());
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [broadcastLine, setBroadcastLine] = useState(() => getBroadcastLine());
-  const [pitchSize, setPitchSize] = useState<{ w: number; h: number } | null>(null);
+  const [pitchSize, setPitchSize] = useState<MatchPitchLayout | null>(null);
   // On a phone lying down the team list and the summary open as drawers over the pitch (9.8).
   const [phoneDrawer, setPhoneDrawer] = useState<"team" | "summary" | null>(null);
+  // Everywhere else they are rails at the edges of the pitch (10.9): pointing at one opens its panel over the pitch,
+  // a click keeps it open.
+  const [railHover, setRailHover] = useState<"team" | "summary" | null>(null);
+  const [railPinned, setRailPinned] = useState<{ team: boolean; summary: boolean }>({ team: false, summary: false });
+  const railTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const railEnter = useCallback((side: "team" | "summary") => {
+    if (railTimerRef.current) clearTimeout(railTimerRef.current);
+    setRailHover(side);
+  }, []);
+  const railLeave = useCallback((side: "team" | "summary") => {
+    if (railTimerRef.current) clearTimeout(railTimerRef.current);
+    railTimerRef.current = setTimeout(() => setRailHover((cur) => (cur === side ? null : cur)), 220);
+  }, []);
+  useEffect(() => () => { if (railTimerRef.current) clearTimeout(railTimerRef.current); }, []);
+  // Read by `measurePitch` (declared before the stadium is known).
+  const pitchStadiumRef = useRef<{ stadium: boolean; shape: boolean }>({ stadium: false, shape: false });
   // Two-phase render: layout paints first with a loader in the host slot, then we measure on the
   // next animation frame (once the layout has settled) and mount PixiPitch with the measured size.
   // ResizeObserver is intentionally avoided — it can fire during PixiPitch's own layout reflow and
@@ -397,18 +398,9 @@ export function MatchScreen() {
     const host = pitchHostElRef.current;
     if (!host) return;
     const rect = host.getBoundingClientRect();
-    // The pitch column is sized to the pitch so the side cards hug it; the width available to the
-    // pitch is the whole row minus the two side cards, not the (already shrunk) column itself.
-    const column = host.parentElement;
-    const row = column?.parentElement;
-    // A side drawer floating over the pitch on a phone (9.8) takes no room from it.
-    const sideWidth = (el: Element | null | undefined) =>
-      el && getComputedStyle(el).position !== "absolute" ? el.getBoundingClientRect().width : 0;
-    const sides = sideWidth(column?.previousElementSibling) + sideWidth(column?.nextElementSibling);
-    const availableWidth = row ? row.getBoundingClientRect().width - sides : rect.width;
-    const next = fitPitch(availableWidth, rect.height);
+    const next = matchPitchLayout(rect.width, rect.height, pitchStadiumRef.current);
     if (!next) return;
-    setPitchSize((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+    setPitchSize((prev) => (prev && (Object.keys(next) as (keyof MatchPitchLayout)[]).every((k) => prev[k] === next[k]) ? prev : next));
   }, []);
   const pitchHostRef = useCallback(
     (host: HTMLDivElement | null) => {
@@ -1738,6 +1730,12 @@ export function MatchScreen() {
       },
     };
   }, [matchFixture, crestIds, touchline, faceRoster, t, homeLedLang]);
+  // The canvas is laid out for the stadium (cropped above and below) once it is known.
+  const hasStadium = !!stadium, hasShape = !!stadium?.shape;
+  useEffect(() => {
+    pitchStadiumRef.current = { stadium: hasStadium, shape: hasShape };
+    measurePitch();
+  }, [hasStadium, hasShape, measurePitch]);
 
   // Managers on the touchline: faces drawn by the server, the shirt in the kit worn today.
   const coaches = useMemo(() => {
@@ -1944,6 +1942,26 @@ export function MatchScreen() {
       }`}
     >
       <Icon name={icon} size={16} />
+    </button>
+  );
+  const teamOpen = phoneDrawer === "team" || railPinned.team || railHover === "team";
+  const summaryOpen = phoneDrawer === "summary" || railPinned.summary || railHover === "summary";
+  // Closes a panel that was kept open by a click (or by its phone button).
+  const railCloseButton = (side: "team" | "summary") => (
+    <button
+      type="button"
+      onClick={() => {
+        setRailPinned((p) => ({ ...p, [side]: false }));
+        setRailHover((cur) => (cur === side ? null : cur));
+        setPhoneDrawer((d) => (d === side ? null : d));
+      }}
+      aria-label={t("match.rails.close")}
+      title={t("match.rails.close")}
+      className={`shrink-0 items-center justify-center w-9 h-9 rounded-md border border-border bg-secondary/50 text-foreground cursor-pointer hover:border-primary/50 ${
+        railPinned[side] || phoneDrawer === side ? "flex" : "hidden"
+      }`}
+    >
+      <Icon name="close" size={16} />
     </button>
   );
   const phoneDrawerButtons = (
@@ -2198,10 +2216,25 @@ export function MatchScreen() {
       </div>
 
       {/* Main Match View */}
-      <main className="relative flex-1 flex justify-center overflow-hidden min-h-0">
+      <main className="relative flex-1 flex flex-col overflow-hidden min-h-0">
+        {/* The pitch area: the canvas, the two rails and their panels (10.9). */}
+        <div ref={pitchHostRef} className="relative flex-1 min-h-0 overflow-hidden">
+        {!teamOpen && (
+          <LineupRail
+            players={gameState.players.filter((p) => p.team === panelTeam)}
+            ballHolderId={gameState.ballHolderId}
+            onOpen={() => railEnter("team")}
+            onPin={() => setRailPinned((p) => ({ ...p, team: true }))}
+          />
+        )}
         {/* View switches above the team list, apart from the match controls (tester report, 4.41.20). */}
-        <div className={`w-72 shrink-0 flex flex-col min-h-0 ${phoneDrawer === "team" ? "phone:absolute phone:inset-y-0 phone:left-0 phone:z-30 phone:bg-background phone:shadow-lg" : "phone:hidden"}`}>
-          <div className="shrink-0 p-2 card-arcade border-r border-b border-border">
+        <div
+          onMouseEnter={() => railEnter("team")}
+          onMouseLeave={() => railLeave("team")}
+          className={`absolute inset-y-0 left-0 z-30 w-72 flex-col min-h-0 bg-background shadow-lg ${teamOpen ? "flex" : "hidden"}`}
+        >
+          <div className="shrink-0 flex items-center gap-2 p-2 card-arcade border-r border-b border-border">
+            {railCloseButton("team")}
             <MatchViewToggles
               fill
               zoom={matchCameraPref === "follow"}
@@ -2244,22 +2277,16 @@ export function MatchScreen() {
           </div>
         </div>
 
-        <div
-          className={`flex flex-col min-w-0 ${pitchSize ? "shrink-0" : "flex-1"}`}
-          style={pitchSize ? { width: pitchSize.w } : undefined}
-        >
-          <div
-            ref={pitchHostRef}
-            className="flex-1 flex items-center justify-center min-h-0 overflow-hidden"
-          >
+          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
             {pitchSize ? (
-              // Sized to the canvas so the short notices sit on the pitch's top edge, never over
-              // the scoreboard or the control bar.
-              <div className="relative shrink-0" style={{ width: pitchSize.w, height: pitchSize.h }}>
+              // The visible area: the notices sit on its top edge, never over the scoreboard or the control bar. The
+              // canvas is taller than it with a stadium and is cropped evenly above and below (`matchPitchLayout`).
+              <div className="relative shrink-0 overflow-hidden" style={{ width: pitchSize.viewW, height: pitchSize.viewH }}>
+                <div className="absolute" style={{ left: pitchSize.x, top: pitchSize.y, width: pitchSize.canvasW, height: pitchSize.canvasH }}>
                 <PixiPitch
-                  key={`${pitchSize.w}x${pitchSize.h}${stadium ? `s${stadium.shape ?? ""}${stadium.depths ? Object.values(stadium.depths).join(",") : ""}` : ""}${touchline?.referee ? "r" : ""}`}
-                  canvasWidth={pitchSize.w}
-                  canvasHeight={pitchSize.h}
+                  key={`${pitchSize.canvasW}x${pitchSize.canvasH}${stadium ? `s${stadium.shape ?? ""}${stadium.depths ? Object.values(stadium.depths).join(",") : ""}` : ""}${touchline?.referee ? "r" : ""}`}
+                  canvasWidth={pitchSize.canvasW}
+                  canvasHeight={pitchSize.canvasH}
                   paused={effectivePaused}
                   keepTickerAlive={h2hMode}
                   remote={h2hMode ? h2h.feed : null}
@@ -2291,13 +2318,14 @@ export function MatchScreen() {
                   pitch={setupPitch && matchFixture ? { ...setupPitch, seed: matchFixture.id, ground: matchFixture.home } : null}
                   lighting={matchLightingProp}
                 />
+                </div>
                 {banner && (
                   <MatchEventBanner
                     item={banner}
                     // Level with the bottom corner flags, over the stand instead of the bottom of the pitch.
                     bottom={(() => {
-                      const m = buildMetrics(pitchSize.w, pitchSize.h, { stadium: !!stadium, shape: stadium?.shape });
-                      return Math.max(8, pitchSize.h - (m.marginY + m.height));
+                      const m = buildMetrics(pitchSize.canvasW, pitchSize.canvasH, { stadium: !!stadium, shape: stadium?.shape });
+                      return Math.max(8, pitchSize.viewH - (pitchSize.y + m.marginY + m.height));
                     })()}
                   />
                 )}
@@ -2331,6 +2359,39 @@ export function MatchScreen() {
               <span className="text-muted-foreground text-sm">{t("common.sizingPitch")}</span>
             )}
           </div>
+
+        {!summaryOpen && (
+          <SummaryRail feed={feed} onOpen={() => railEnter("summary")} onPin={() => setRailPinned((p) => ({ ...p, summary: true }))} />
+        )}
+        {/* Friends and the tester's report above the summary (tester report, 4.41.20). */}
+        <div
+          onMouseEnter={() => railEnter("summary")}
+          onMouseLeave={() => railLeave("summary")}
+          className={`absolute inset-y-0 right-0 z-30 w-64 flex-col min-h-0 bg-background shadow-lg ${summaryOpen ? "flex" : "hidden"}`}
+        >
+          {(!radioSlot || isTester || railPinned.summary || phoneDrawer === "summary") && (
+          <div className="shrink-0 flex items-center justify-end gap-2 p-2 card-arcade border-l border-b border-border">
+            {!radioSlot && <FriendsButton variant="toolbar" />}
+            {isTester && <ReportButton onClick={handleOpenReport} iconOnly />}
+            {railCloseButton("summary")}
+          </div>
+          )}
+          <div className="flex-1 min-h-0 flex">
+        <MatchSummaryPanel
+          managers={summaryManagers}
+          teamA={shownTeams.A}
+          teamB={shownTeams.B}
+          statsA={summaryStats(sides.left)}
+          statsB={summaryStats(sides.right)}
+          possessionA={awayView ? 1 - possessionA : possessionA}
+          feed={feed}
+          extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} />}
+          referee={touchline?.referee ?? null}
+        />
+          </div>
+        </div>
+        </div>
+
           {gameState && (
             <div className="contents phone:hidden">
             <MatchHud
@@ -2368,30 +2429,6 @@ export function MatchScreen() {
               <DebugPanel gameState={gameState} selectedPlayerId={selectedPlayerId} ballHolderId={gameState.ballHolderId} />
             </Suspense>
           )}
-        </div>
-
-        {/* Friends and the tester's report above the summary (tester report, 4.41.20). */}
-        <div className={`w-64 shrink-0 flex flex-col min-h-0 ${phoneDrawer === "summary" ? "phone:absolute phone:inset-y-0 phone:right-0 phone:z-30 phone:bg-background phone:shadow-lg" : "phone:hidden"}`}>
-          {(!radioSlot || isTester) && (
-          <div className="shrink-0 flex items-center justify-end gap-2 p-2 card-arcade border-l border-b border-border">
-            {!radioSlot && <FriendsButton variant="toolbar" />}
-            {isTester && <ReportButton onClick={handleOpenReport} iconOnly />}
-          </div>
-          )}
-          <div className="flex-1 min-h-0 flex">
-        <MatchSummaryPanel
-          managers={summaryManagers}
-          teamA={shownTeams.A}
-          teamB={shownTeams.B}
-          statsA={summaryStats(sides.left)}
-          statsB={summaryStats(sides.right)}
-          possessionA={awayView ? 1 - possessionA : possessionA}
-          feed={feed}
-          extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} />}
-          referee={touchline?.referee ?? null}
-        />
-          </div>
-        </div>
       </main>
 
       {showSubPanel && (
