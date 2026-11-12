@@ -33,6 +33,7 @@ export interface YouthEligible {
   id: string;
   name: string;
   age: number;
+  nationality: string | null;
   role: string;
   overall: number;
   fitness: number;
@@ -42,7 +43,7 @@ export interface YouthEligible {
 /** Players who may be called up for an age: squad + academy, ≤ 19 for the under-19. */
 export function eligibleForCallUp(squad: Squad, age: YouthCompAge): YouthEligible[] {
   const view = (p: RosterPlayer, academy: boolean): YouthEligible => ({
-    id: p.id, name: p.name, age: p.age, role: preferredRole(p), overall: overallAvg(p),
+    id: p.id, name: p.name, age: p.age, nationality: p.nationality ?? null, role: preferredRole(p), overall: overallAvg(p),
     fitness: p.seasonLog?.fitness ?? emptySeasonLog().fitness, academy,
   });
   return [...squad.players.map((p) => view(p, false)), ...(squad.youth ?? []).map((p) => view(p, true))]

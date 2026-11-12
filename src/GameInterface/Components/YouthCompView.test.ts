@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { initialYouthRound, youthLeaderboards } from "@/GameInterface/Components/YouthCompView";
-import { applyCallUpDuration, callUpLeftLabel, toggleCallUp } from "@/GameInterface/Squad/YouthCallUpsPanel";
+import { applyCallUpDuration, callUpLeftLabel, callUpRows, toggleCallUp } from "@/GameInterface/Squad/YouthCallUpsPanel";
 import { newCallUp } from "@/Domain/youthComps/callUps";
 import type { Fixture } from "@/types/calendarTypes";
 
@@ -43,5 +43,17 @@ describe("youth competition view helpers", () => {
     expect(callUpLeftLabel(newCallUp("a", "next"), t)).toBe("1");
     expect(callUpLeftLabel(newCallUp("a", "indefinite"), t)).toBe("∞");
     expect(callUpLeftLabel({ id: "a", duration: "rhythm", streak: 1 }, t)).toBe('youthComps.callUps.rhythmLeft:{"n":1,"of":3}');
+  });
+});
+
+describe("callUpRows", () => {
+  const p = (id: string, age: number) => ({ id, name: id, age, nationality: null, role: "CM", overall: 5, fitness: 80, academy: false });
+  const all = [p("kid", 17), p("young", 21), p("old", 28)];
+  test("opens on the young ones plus whoever is called up", () => {
+    expect(callUpRows(all, true, new Set()).map((r) => r.id)).toEqual(["kid", "young"]);
+    expect(callUpRows(all, true, new Set(["old"])).map((r) => r.id)).toEqual(["kid", "young", "old"]);
+  });
+  test("everyone with the filter off", () => {
+    expect(callUpRows(all, false, new Set()).map((r) => r.id)).toEqual(["kid", "young", "old"]);
   });
 });

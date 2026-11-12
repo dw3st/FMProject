@@ -4973,7 +4973,21 @@
         "rhythm": "Até ganhar ritmo"
       },
       "applyAll": "Aplicar a todos os selecionados",
-      "rhythmLeft": "ritmo {{n}}/{{of}}"
+      "rhythmLeft": "ritmo {{n}}/{{of}}",
+      "cols": {
+        "pos": "Pos",
+        "player": "Jogador",
+        "age": "Idade",
+        "nation": "Nação",
+        "ovr": "OVR",
+        "fitness": "Fôlego"
+      },
+      "onlyYoung": "Só até 21 anos",
+      "academy": "Base",
+      "markLabel": "{{age}}: {{player}}",
+      "tooOld": "Acima de 19 anos: não joga o sub-19",
+      "full": "Limite de {{n}} convocados",
+      "unsaved": "Mudanças não salvas"
     }
   },
   "referees": {
@@ -5092,7 +5106,9 @@
       "greenCard": "{{competition}}: conta como doméstico pelo green card."
     },
     "out": "Eliminado desta competição: a lista não vale para mais nenhum jogo.",
-    "outTab": "{{name}} · eliminado"
+    "outTab": "{{name}} · eliminado",
+    "markLabel": "{{competition}}: {{player}}",
+    "legend": "Caixa azul: jovem livre, sempre inscrito, não ocupa vaga. Caixa apagada: prazo fechado ou sem vaga (o motivo aparece ao passar o mouse)."
   },
   "complaint": {
     "manager": "Técnico",

@@ -4976,7 +4976,21 @@
         "rhythm": "Until match fit"
       },
       "applyAll": "Apply to all selected",
-      "rhythmLeft": "rhythm {{n}}/{{of}}"
+      "rhythmLeft": "rhythm {{n}}/{{of}}",
+      "cols": {
+        "pos": "Pos",
+        "player": "Player",
+        "age": "Age",
+        "nation": "Nation",
+        "ovr": "OVR",
+        "fitness": "Fitness"
+      },
+      "onlyYoung": "Up to 21 only",
+      "academy": "Academy",
+      "markLabel": "{{age}}: {{player}}",
+      "tooOld": "Over 19: cannot play for the under-19s",
+      "full": "Limit of {{n}} call-ups",
+      "unsaved": "Unsaved changes"
     }
   },
   "referees": {
@@ -5095,7 +5109,9 @@
       "greenCard": "{{competition}}: counts as domestic through the green card."
     },
     "out": "Knocked out of this competition: the list counts for no more matches.",
-    "outTab": "{{name}} · out"
+    "outTab": "{{name}} · out",
+    "markLabel": "{{competition}}: {{player}}",
+    "legend": "Blue box: a free young player, always registered, takes no place. Dimmed box: deadline closed or no place left (hover for the reason)."
   },
   "complaint": {
     "manager": "Manager",
