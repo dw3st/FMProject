@@ -29,6 +29,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "10.6.4",
     date: "2026-11-12",
+    time: "14:06",
     items: [],
     fixes: [
       { pt: "Seleção numa liga de amigos: depois de jogar ao vivo pela seleção, a tela de resultado abre com o placar e os números do jogo. Antes ela mostrava um erro até o dia avançar.", en: "National team in a friends' league: after playing live for your national team, the result screen opens with the score and the match numbers. It used to show an error until the day advanced." },
