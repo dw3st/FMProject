@@ -8,9 +8,14 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
 import {
-  areaMultsOf, areaStars, memberStars, resolveAreaAssignments, roleLimit, signContract, squadStaffWages,
+  areaMultsOf, areaStars, headOf, memberStars, resolveAreaAssignments, roleLimit, signContract, squadStaffWages,
   staffEffectsOf, starsIn, STAFF_AREAS_PER_COACH,
 } from "@/Domain/staff/staff";
+import {
+  TRUSTED, coursePriceOf, courseRefusal, courseSpecialty, setTrusted, startStaffCourse, trustedOf,
+} from "@/Domain/staff/trustedStaff";
+import { managerWallet } from "@/Domain/managers/assets";
+import { openTotal } from "@/Domain/bets/bets";
 import { renewedContract, severanceOf } from "@/Domain/staff/staffContracts";
 import { POOL_PAGE, returnToPool, searchPool, takeFromPool, isStaffPoolSort, type StaffPoolQuery } from "@/Domain/staff/staffPool";
 import { STAFF } from "@/Domain/staff/staffConfig";
@@ -23,12 +28,19 @@ import {
 } from "@/Domain/scouting/countryKnowledge";
 import countriesRaw from "@/Data/countries.json";
 import { wageFactorOf } from "@/Domain/finance/wages";
+import { daysBetween } from "@/Domain/dates";
 import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 type CountryInfo = { slug: string; name: string; flag: string; iso2: string; continent?: string };
 
-interface Human { meta: SeatMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string }
+interface Human {
+  meta: SeatMeta; squad: Squad; ref: { leagueSlug: string; clubSlug: string }; date: string; seasonEnd: string;
+  /** What the manager can spend of his own money (courses of his trusted staff). */
+  wallet: number;
+  /** Staff ids leading a scouting mission now. */
+  leading: Set<string>;
+}
 
 /** The human club (409 `noClub` when unemployed). */
 async function human(saveId: string, seatId: string, service: SaveService = saveService): Promise<Human | Response> {
@@ -40,7 +52,14 @@ async function human(saveId: string, seatId: string, service: SaveService = save
   if (!ref || !squad) return Response.json({ error: "squad not found" }, { status: 404 });
   const date = meta.currentDate ?? "";
   const seasonEnd = meta.activeLeagues?.find((l) => l.leagueSlug === ref.leagueSlug)?.end ?? date;
-  return { meta, squad, ref, date, seasonEnd };
+  const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await service.getBets(saveId, seatId)));
+  const chiefId = headOf(squad, "scout")?.id;
+  const leading = new Set<string>();
+  for (const m of (await service.getScouting(saveId, seatId)).missions) {
+    const id = m.scoutId === "chief" ? chiefId : m.scoutId;
+    if (id) leading.add(id);
+  }
+  return { meta, squad, ref, date, seasonEnd, wallet, leading };
 }
 
 async function readJson(req: Request): Promise<Record<string, unknown> | null> {
@@ -60,12 +79,12 @@ const validYears = (v: unknown): v is number =>
  * With the club's context, every member also carries the severance of firing him today and the
  * renewal offer (`renewYears`: the 1..3 years the route accepts, `renewWage`).
  */
-export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string }) {
+export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string; wallet?: number; leading?: Set<string> }) {
   const staff: StaffRecord = squad.staff ?? { members: [] };
   const assigned = resolveAreaAssignments(staff);
   const stars = areaStars(squad);
   const mults = areaMultsOf(squad);
-  const best = (role: StaffRole) => staff.members.filter((m) => m.role === role)
+  const best = (role: StaffRole) => staff.members.filter((m) => m.role === role && !m.course)
     .sort((a, b) => memberStars(b) - memberStars(a) || a.id.localeCompare(b.id))[0]?.id;
   const leader = (area: DPCategory): string | undefined => {
     if (area === "physical") return best("fitness");
@@ -79,7 +98,10 @@ export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string 
       ...(m.role === "coach" ? { starsByArea: Object.fromEntries(COACH_AREAS.map((a) => [a, starsIn(m, a)])) } : {}),
       ...(ctx && isScoutRole(m.role) ? { strongCountry: strongCountry(m, ctx.date) } : {}),
       ...(ctx ? memberOffer(squad, m, ctx) : {}),
+      ...(ctx && m.trusted && !m.course ? { courseOffer: courseOfferOf(staff, m, ctx) } : {}),
     })),
+    trusted: { used: trustedOf(staff).length, max: TRUSTED.MAX },
+    ...(ctx?.wallet !== undefined ? { wallet: ctx.wallet } : {}),
     areas: DP_CATEGORIES.map((area) => {
       const memberId = stars[area] === null ? undefined : leader(area);
       return { area, stars: stars[area], mult: mults[area], ...(memberId ? { memberId } : {}) };
@@ -97,10 +119,22 @@ function memberOffer(squad: Squad, m: StaffMember, ctx: { date: string; seasonEn
   const renewals = ([1, 2, 3] as const)
     .map((years) => ({ years, c: renewedContract(m, { ...ctx, years, clubFactor: wageFactorOf(squad) }) }))
     .filter((r) => r.c !== null);
+  // Inside the renewal window the staff sheet says so (tester report, 10.7).
+  const left = m.contract ? daysBetween(ctx.date, m.contract.until) : null;
   return {
+    ...(left !== null && left <= STAFF.CONTRACT.RENEW_WINDOW_DAYS ? { endsInDays: Math.max(0, left) } : {}),
     severance: severanceOf(m, ctx.date),
     renewYears: renewals.map((r) => r.years),
     ...(renewals[0] ? { renewWage: renewals[0].c!.wage } : {}),
+  };
+}
+
+/** The course a trusted professional can take today: price, length, what it raises, and why not (if so). */
+function courseOfferOf(staff: StaffRecord, m: StaffMember, ctx: { date: string; wallet?: number; leading?: Set<string> }) {
+  const refusal = courseRefusal({ staff, member: m, date: ctx.date, wallet: ctx.wallet ?? 0, leading: ctx.leading?.has(m.id) ?? false });
+  return {
+    price: coursePriceOf(m), days: TRUSTED.COURSE_DAYS, gain: TRUSTED.STAR_GAIN, specialty: courseSpecialty(m),
+    ...(refusal ? { refusal } : {}),
   };
 }
 
@@ -328,6 +362,61 @@ export const staffRoutes = {
       await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       return Response.json(staffView(next, h));
     });
+  },
+
+  /** `PUT { memberId, trusted }` - marks one of the manager's trusted professionals (409 `trustedFull` past the limit). */
+  "/api/saves/:saveId/staff/trusted": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await readJson(req);
+    if (!body || typeof body.memberId !== "string" || typeof body.trusted !== "boolean") {
+      return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+    }
+    const memberId = body.memberId;
+    const trusted = body.trusted;
+    return withSaveLock(saveId, async () => {
+      const h = await human(saveId, auth.seatId);
+      if (h instanceof Response) return h;
+      const staff = setTrusted(h.squad.staff ?? { members: [] }, memberId, trusted);
+      if (staff === null) return Response.json({ error: "notYourStaff" }, { status: 404 });
+      if (staff === "trustedFull") return Response.json({ error: "trustedFull" }, { status: 409 });
+      const next: Squad = { ...h.squad, staff };
+      if (staff !== h.squad.staff) await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      return Response.json(staffView(next, h));
+    });
+  },
+
+  /**
+   * `POST { memberId }` - sends a trusted professional on a course paid from the manager's wallet: away for
+   * `TRUSTED.COURSE_DAYS` days (his role counts as vacant), back with half a star more. 409 with the refusal.
+   */
+  "/api/saves/:saveId/staff/course": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await readJson(req);
+    if (!body || typeof body.memberId !== "string") return Response.json({ error: "missing or invalid fields" }, { status: 400 });
+    const memberId = body.memberId;
+    return withSaveLock(saveId, () => inUnit(saveId, "start a staff course", async (service) => {
+      const h = await human(saveId, auth.seatId, service);
+      if (h instanceof Response) return h;
+      const staff = h.squad.staff ?? { members: [] };
+      const member = staff.members.find((m) => m.id === memberId);
+      if (!member) return Response.json({ error: "notYourStaff" }, { status: 404 });
+      const refusal = courseRefusal({ staff, member, date: h.date, wallet: h.wallet, leading: h.leading.has(member.id) });
+      if (refusal) return Response.json({ error: refusal }, { status: 409 });
+      const price = coursePriceOf(member)!;
+      const next: Squad = {
+        ...h.squad,
+        staff: { ...staff, members: staff.members.map((m) => (m.id === member.id ? startStaffCourse(m, h.date) : m)) },
+      };
+      await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      await service.updateSeat(saveId, auth.seatId, { managerSpent: (h.meta.managerSpent ?? 0) + price });
+      return Response.json(staffView(next, { ...h, wallet: h.wallet - price }));
+    }));
   },
 
   /** `PUT { [area]: memberId | null }` - the user's coach for a field area (`null` = automatic). */

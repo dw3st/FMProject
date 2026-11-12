@@ -102,12 +102,17 @@ export const SET_PIECE_CONFIG = {
   /** A keeper's save is parried behind for a corner. */
   SAVE_CORNER_CHANCE: 0.5,
   /** An off-target shot was deflected behind by a defender (needs one within SHOT_DEFLECT_RADIUS of the shooter). */
-  OFF_TARGET_CORNER_CHANCE: 0.6,
+  OFF_TARGET_CORNER_CHANCE: 0.8,
   SHOT_DEFLECT_RADIUS: 6,
   /** A blocked cross goes behind for a corner. */
   CROSS_BLOCK_CORNER_CHANCE: 0.5,
   /** A cross headed clear inside the box goes behind for a corner. */
-  CROSS_CLEAR_CORNER_CHANCE: 0.55,
+  CROSS_CLEAR_CORNER_CHANCE: 0.75,
+  /**
+   * The same chance when the cleared cross was itself a corner or a crossed free kick, as a share of the chance above
+   * (tester report, 10.7: five or more corners in a row were common, each cleared corner giving the next one).
+   */
+  CORNER_REPEAT_MULT: 0.25,
   /** A loose ball over the defending team's goal line with a defender within this distance: his touch, corner. */
   LOOSE_CORNER_RADIUS: 3,
   LOOSE_CORNER_CHANCE: 0.6,

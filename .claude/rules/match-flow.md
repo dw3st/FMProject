@@ -550,3 +550,11 @@ Report de tester. A aba Formação do painel ao vivo lista "Minhas formações":
 # Live match polish (10.1)
 
 User request after a measured audit (60 FPS at 1x and 4x, no long task). The feed also lists shots saved and off target (`shotSaved`, `shotWide`, from `shotResolved`); the summary and the HUD count passes of every kind (short + through + cross + long ball completed); `MatchHud` keeps the last player dimmed after the linger instead of an empty band; `SegmentedTabs` labels never wrap (`fill` + `compact` uses `px-2`).
+
+# The whistle waits for an attack (10.7)
+
+Tester report (periods ended with a player through on goal). `attackHoldsPeriod` (`gameState.ts`, next to
+`restartHoldsPeriod`): a period does not end while the ball is with the attacking side (held, passed, or loose from its
+own pass) within `ATTACK_HOLD_DIST` (30) yards of the goal line that side attacks, for at most `ATTACK_HOLD_MAX` (45)
+game-seconds past the period's end (~3.5 real s). It stops holding as soon as the ball is lost, leaves the zone or a
+restart is given (restarts keep their own rule). Both teams, every live period. Test: `AttackHold.engine.test.ts`.

@@ -337,6 +337,7 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
                         </div>
                         <div className="text-[9px] tabular-nums text-muted-foreground/50">
                           raw {b.rawScore.toFixed(2)}
+                          {b.loneFactor !== undefined && <span className="ml-2 text-fuchsia-400/80">alone ×{b.loneFactor.toFixed(2)}</span>}
                           {b.targetId != null && (() => {
                             const t = gameState?.players.find(p => p.id === b.targetId);
                             return t ? <span className="ml-2">vs {t.name}</span> : null;

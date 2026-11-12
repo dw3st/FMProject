@@ -252,3 +252,7 @@ Item do "Em breve". O jogo é um app instalável (sem service worker: não é ex
 - **Tela cheia no navegador:** `useFullscreen()` (`requestFullscreen` + `screen.orientation.lock("landscape")`, que só o Android aceita): chips em Configurações (somem com o app instalado), botão só no `phone:` na barra de baixo (`StatusBar`) e botão "Jogar em tela cheia" na tela que pede para girar (`ScreenSizeGate`). Onde o navegador não tem tela cheia (iPhone), nada aparece.
 - i18n `settings.app.*`, `nav.fullscreen`, `nav.fullscreenExit`, `unsupportedScreen.fullscreen`.
 - Limitações: com F11 no computador o bloco diz "instalado" (o navegador informa o mesmo modo de exibição); o diálogo de instalar e a tela cheia não foram testados num aparelho real (o navegador de teste recusa os dois sem gesto do usuário).
+
+## Últimos jogos do clube sem a seleção (10.7)
+
+Report de tester. `lastResults` (`Dashboard/dashboardData.ts`) ignora os jogos com `Fixture.nationalTeam` (a seleção que o técnico treina divide o calendário com o clube).

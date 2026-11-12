@@ -98,6 +98,8 @@ export interface LiveBase {
   stage?: LiveStage;
   /** Two-legged tie: first-leg goals from this seat's side (absent in a single game). */
   aggregate?: { for: number; against: number };
+  /** A game of the national team he coaches (10.7): `clubId` / `opponentId` are `nat_…` ids, the names are nations. */
+  national?: true;
 }
 
 export interface LiveScoreView extends LiveBase {

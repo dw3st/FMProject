@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import {
   canPause, canResume, closeRoom, endPause, finishRoom, joinRoom, leaveRoom, newRoom,
-  parseH2HCommand, pauseExpired, roomView, setReady, startPause, type H2HRoom,
+  isH2HSpeed, matchSpeed, parseH2HCommand, pauseExpired, roomView, setReady, setSideSpeed, startPause, type H2HRoom,
 } from "@/Domain/h2h/h2hRules";
 
 const T0 = 1_000_000;
@@ -133,6 +133,39 @@ describe("pauses", () => {
   });
 });
 
+describe("match speed", () => {
+  test("faster only when both asked: the lower of the two choices", () => {
+    let r = liveRoom();
+    expect(matchSpeed(r)).toBe(1);
+    r = setSideSpeed(r, "A", 4);
+    expect(r.sides.A.speed).toBe(4);
+    expect(matchSpeed(r)).toBe(1);
+    r = setSideSpeed(r, "B", 2);
+    expect(matchSpeed(r)).toBe(2);
+    r = setSideSpeed(r, "B", 4);
+    expect(matchSpeed(r)).toBe(4);
+    expect(roomView(r).speed).toBe(4);
+    // Asking for what he already has changes nothing.
+    expect(setSideSpeed(r, "B", 4)).toBe(r);
+  });
+
+  test("a manager who dropped does not hold the other back; nothing outside a live match", () => {
+    let r = setSideSpeed(liveRoom(), "A", 4);
+    expect(matchSpeed(leaveRoom(r, "B").room)).toBe(4);
+    expect(matchSpeed(joinRoom(leaveRoom(r, "B").room, "B").room)).toBe(1);
+    expect(matchSpeed(leaveRoom(leaveRoom(r, "A").room, "B").room)).toBe(1);
+    const lobby = joinRoom(room(), "A").room;
+    expect(setSideSpeed(lobby, "A", 2)).toBe(lobby);
+    r = finishRoom(setSideSpeed(setSideSpeed(liveRoom(), "A", 2), "B", 2));
+    expect(matchSpeed(r)).toBe(1);
+  });
+
+  test("only 1, 2 and 4 are speeds", () => {
+    expect([1, 2, 4].every(isH2HSpeed)).toBe(true);
+    expect([0, 3, 8, "2", null, 1.5].some(isH2HSpeed)).toBe(false);
+  });
+});
+
 describe("roomView", () => {
   test("copies the room state", () => {
     const r = startPause(liveRoom(), "A", T0);
@@ -140,10 +173,11 @@ describe("roomView", () => {
     expect(v).toEqual({
       saveId: "s1", fixtureId: "f1", date: "2027-03-01", phase: "live",
       sides: {
-        A: { seatId: "a", nickname: "Ana", clubId: "33", clubName: "Home", status: "ready", pausesLeft: 2, connected: true },
-        B: { seatId: "b", nickname: null, clubId: "40", clubName: "Away", status: "ready", pausesLeft: 3, connected: true },
+        A: { seatId: "a", nickname: "Ana", clubId: "33", clubName: "Home", status: "ready", pausesLeft: 2, connected: true, speed: 1 },
+        B: { seatId: "b", nickname: null, clubId: "40", clubName: "Away", status: "ready", pausesLeft: 3, connected: true, speed: 1 },
       },
       pause: { by: "A", until: T0 + 30_000 },
+      speed: 1,
     });
     v.sides.A.pausesLeft = 0;
     expect(r.sides.A.pausesLeft).toBe(2);

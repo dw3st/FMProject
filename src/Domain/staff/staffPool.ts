@@ -81,7 +81,8 @@ export function takeFromPool(pool: StaffPool, id: string): { pool: StaffPool; me
 
 /** A fired or departing professional goes back without his contract, listed since `date`. */
 export function returnToPool(pool: StaffPool, member: StaffMember, date: string): StaffPool {
-  const { contract: _c, ...rest } = member;
+  // Out of the club he is nobody's trusted professional, and a course in progress is lost.
+  const { contract: _c, trusted: _t, course: _k, ...rest } = member;
   const back: StaffMember = { ...rest, since: date };
   return { ...pool, members: [...pool.members.filter((m) => m.id !== member.id), back] };
 }

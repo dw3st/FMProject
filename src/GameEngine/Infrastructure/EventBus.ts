@@ -227,6 +227,7 @@ export interface GameEvents {
         forwardBlock: number;
         rawScore:     number;
         score:        number;
+        loneFactor?:  number;
       };
     };
   };

@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { resultLetter } from "@/Domain/rivals/results";
-import { competitionName } from "@/Domain/world/labels";
+import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { useLeagueCatalog } from "@/GameInterface/World/useLeagueCatalog";
 import { liveGroups } from "@/Domain/rivals/taunts";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
@@ -71,8 +71,10 @@ function RivalPopupCard({ popup }: { popup: RivalPopup }) {
   const clubId = r?.clubId ?? l!.clubId;
   const letter = r ? resultLetter(r) : null;
   const side = r ?? l!;
-  const homeName = side.home ? side.clubName : side.opponentName;
-  const awayName = side.home ? side.opponentName : side.clubName;
+  // A live national game (10.7): the two nations in the reader's language.
+  const nameOf = (n: string) => (l?.national ? nationalityDisplayName(n, i18n.language, t) : n);
+  const homeName = nameOf(side.home ? side.clubName : side.opponentName);
+  const awayName = nameOf(side.home ? side.opponentName : side.clubName);
   const homeGoals = side.home ? side.score.for : side.score.against;
   const awayGoals = side.home ? side.score.against : side.score.for;
   const friendTone = letter ? RESULT_TEXT[letter] : "text-foreground";

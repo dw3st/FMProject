@@ -2,19 +2,24 @@ import { useTranslation } from "react-i18next";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
 import { homeAwayOf } from "@/Domain/rivals/homeAway";
+import { nationalityDisplayName } from "@/Domain/world/labels";
 import { LiveCompetitionLine } from "@/GameInterface/World/LiveCompetitionLine";
 import type { LiveMoment, LiveScoreView } from "@/types/rivalsTypes";
 
 /** A friend's live game in the popup of the live strip: the score and the latest moments, newest first. */
 export function LiveMoments({ live }: { live: LiveScoreView }) {
-  const { t } = useTranslation();
-  const teamOf = (side: LiveMoment["side"]) => (side === "against" ? live.opponentName : live.clubName);
+  const { t, i18n } = useTranslation();
+  // A national team's game: the nations in the reader's language.
+  const nameOf = (n: string) => (live.national ? nationalityDisplayName(n, i18n.language, t) : n);
+  const clubName = nameOf(live.clubName);
+  const opponentName = nameOf(live.opponentName);
+  const teamOf = (side: LiveMoment["side"]) => (side === "against" ? opponentName : clubName);
   const home = live.home
-    ? { id: live.clubId, name: live.clubName, goals: live.score.for }
-    : { id: live.opponentId, name: live.opponentName, goals: live.score.against };
+    ? { id: live.clubId, name: clubName, goals: live.score.for }
+    : { id: live.opponentId, name: opponentName, goals: live.score.against };
   const away = live.home
-    ? { id: live.opponentId, name: live.opponentName, goals: live.score.against }
-    : { id: live.clubId, name: live.clubName, goals: live.score.for };
+    ? { id: live.opponentId, name: opponentName, goals: live.score.against }
+    : { id: live.clubId, name: clubName, goals: live.score.for };
   const aggregate = homeAwayOf(live).aggregate;
   const moments = [...(live.moments ?? [])].reverse();
   const line = (m: LiveMoment) => {

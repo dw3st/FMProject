@@ -507,7 +507,42 @@
       "notACoach": "Só um treinador de área pode cuidar dessa área.",
       "notInPool": "Esse profissional não está mais disponível.",
       "notYourStaff": "Esse profissional não é da sua comissão.",
-      "invalidYears": "Escolha de 1 a 3 anos."
+      "invalidYears": "Escolha de 1 a 3 anos.",
+      "trustedFull": "Você já tem 3 profissionais de confiança.",
+      "notTrusted": "Só um profissional de confiança faz curso.",
+      "onCourse": "Ele já está em curso.",
+      "courseBusy": "Já há um profissional em curso. Um por vez.",
+      "atBest": "Ele já tem 5 estrelas.",
+      "tooSoon": "Ele fez um curso há menos de um ano.",
+      "contractEnds": "O contrato dele acaba antes do fim do curso. Renove primeiro.",
+      "onMission": "Ele está numa missão de observação.",
+      "noMoney": "Sua carteira não cobre o curso."
+    },
+    "expiring": {
+      "card": "Contrato acaba em {{days}} dias",
+      "notice_one": "{{count}} contrato da comissão acaba em até {{days}} dias: {{names}}.",
+      "notice_other": "{{count}} contratos da comissão acabam em até {{days}} dias: {{names}}."
+    },
+    "trusted": {
+      "title": "Confiança",
+      "badge": "De confiança",
+      "summary": "De confiança: {{used}} de {{max}}.",
+      "help": "Um profissional de confiança vai com você quando você troca de clube e pode fazer cursos pagos por você.",
+      "isTrusted": "É de confiança: vai com você para o próximo clube, com contrato de 2 temporadas.",
+      "add": "Tornar de confiança",
+      "remove": "Tirar da confiança"
+    },
+    "course": {
+      "away": "Em curso até {{until}}",
+      "awayHelp": "Enquanto isso a função conta como vaga. O salário continua.",
+      "coachAway": "{{name}} · em curso",
+      "gain": "+{{gain}} estrela",
+      "gainArea": "+{{gain}} estrela em {{area}}",
+      "offer": "Curso de {{days}} dias: {{gain}}. Custa {{price}} da sua carteira (você tem {{wallet}}).",
+      "atBest": "Ele já tem 5 estrelas: não há curso para ele.",
+      "send": "Mandar para o curso",
+      "confirmTitle": "Mandar {{name}} para o curso?",
+      "confirmBody": "Ele fica {{days}} dias fora e a função dele conta como vaga nesse tempo. O curso custa {{price}} da sua carteira e o clube continua pagando o salário."
     },
     "scouts": {
       "fireConfirmBody": "Ele sai com multa de {{amount}} (metade do contrato restante) e volta à lista de livres; a missão dele é cancelada."
@@ -1892,7 +1927,9 @@
       "staff_leavingSubject": "Comissão de saída no fim do contrato",
       "staff_leftSubject": "Contratos da comissão encerrados",
       "staff_retired": "Aposentou-se e deixou o clube: {{players}}",
-      "staff_retiredSubject": "Aposentadoria na comissão"
+      "staff_retiredSubject": "Aposentadoria na comissão",
+      "staff_course_done": "Voltou do curso com meia estrela a mais: {{players}}",
+      "staff_course_doneSubject": "Curso da comissão concluído"
     },
     "youth": {
       "intake": "A safra {{year}} da base chegou: {{count}} jovens. Destaque: {{best}}.",
@@ -3856,7 +3893,16 @@
       "loanable": "Disponível para empréstimo",
       "notLoanable": "Não disponível para empréstimo",
       "onLoan": "Emprestado a este clube",
-      "requested": "Pediu para sair"
+      "requested": "Pediu para sair",
+      "paid": {
+        "transfer": "O clube pagou {{fee}} por ele em {{date}}",
+        "clause": "O clube pagou a multa de {{fee}} por ele em {{date}}",
+        "noFee": "Chegou em {{date}}, sem taxa",
+        "free": "Chegou livre em {{date}}, sem taxa",
+        "pre_contract": "Chegou por pré-contrato em {{date}}, sem taxa",
+        "academy": "Veio da base, sem taxa"
+      },
+      "value": "Valor de mercado hoje: {{value}}"
     },
     "offer": {
       "value": "Valor de mercado",
@@ -6975,6 +7021,10 @@
   },
   "h2h": {
     "pausesLeft": "Pausar · {{count}}",
+    "speed": {
+      "hint": "A partida acelera quando os dois técnicos escolhem: vale a menor das duas velocidades.",
+      "waiting": "{{name}} está em {{speed}}×"
+    },
     "pausedBy": "{{name}} pausou · {{time}}",
     "resume": "Retomar",
     "opponentAway": "{{name}} saiu · auxiliar no comando",
@@ -7162,6 +7212,8 @@
     "tabOverview": "Visão geral"
   },
   "managerPage": {
+    "belongings": "Bens",
+    "stadiumItems": "Enfeites do estádio",
     "notFound": "Técnico não encontrado.",
     "you": "Você",
     "ai": "Técnico da IA",

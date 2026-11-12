@@ -999,3 +999,15 @@ Dois assentos que treinam as duas seleções de um jogo jogam como dois clubes d
 ## Técnico expulso na faixa dos amigos (9.7)
 
 `useLiveRivals` acende a linha do amigo em vermelho ("técnico expulso", `LiveFlash` `managerRed`) quando chega um lance novo de vermelho do técnico (`LiveMoment.manager`), como o gol acende em azul. Reclamação no jogo entre técnicos: `.claude/rules/game/var.md` → "Reclamação no jogo entre técnicos". Na 9.7 o fim do jogo de seleção entre técnicos passou a montar as convocações (`callUpSquad`) no lugar dos elencos de clube.
+
+### Aviso de vez fora da prévia, reações no cartão Rivais (10.7)
+
+Reports. O `TurnNoticeCard` procura o encaixe do "Pronto até" de novo a cada navegação (`useRoute().key`): na prévia, na partida e no resultado (sem a barra de cima) ele some, e volta com a barra. No cartão Rivais do Painel, o jogo ao vivo do amigo tem as reações e frases ali mesmo (`TauntActions`, alvo `live`), sem abrir a transmissão.
+
+### Velocidade no jogo entre técnicos (10.7)
+
+Report de tester. Cada técnico escolhe 1×, 2× ou 4× na barra da partida (`h2h_speed { speed }`, `H2H.SPEEDS`); a partida roda na **menor das duas escolhas** (`matchSpeed`, `h2hRules.ts`), então só acelera quando os dois pedem. Um técnico que caiu (auxiliar no comando) não segura o outro; quando volta, a escolha dele conta de novo. `H2HRoomSide.speed` guarda o pedido de cada um, `H2HRoomView.speed` a velocidade em uso; o `h2hRooms` manda `speed` ao worker só quando ela muda (`syncSpeed`). Com a velocidade maior os quadros chegam mais juntos e o desenho mistura no passo menor (`feed.stepMs = FRAME_MS / speed`); as pausas de apresentação (gol, intervalo) encurtam junto, como na partida sozinho. Ao lado dos botões aparece "<nome> está em N×" quando a escolha do outro segura a partida. Testes: `h2hRules.test.ts`, `h2hRooms.test.ts`.
+
+### Jogo de seleção ao vivo no Rivais, fechar a janela de lances (10.7)
+
+Reports de tester. O placar ao vivo de um jogo da seleção que o técnico treina vai aos amigos como o do clube: o `MatchScreen` manda os `live_score` com o id do jogo da seleção, e o `defaultResolver` (`liveScores.ts`), sem jogo do clube com esse id, aceita o jogo da seleção dele no dia (`nationalFixtureOn`), com `LiveBase.national`, `clubId` / `opponentId` = `nat_…` (o escudo vira a bandeira) e os nomes das nações (traduzidos na tela por `nationalityDisplayName`: `LiveMoments`, aviso de gol); autores = as duas convocações. Vale no cartão Rivais, na faixa de amigos, no aviso de gol e na resenha. O feed de Resultados continua só com jogos de clube. Teste: `groupAdvance.national.test.ts`. A janela de lances de um amigo (`LiveRivalsStrip`) tem botão de fechar.

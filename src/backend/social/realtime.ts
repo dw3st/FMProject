@@ -16,7 +16,7 @@ import { acceptLiveScore } from "@/backend/rivals/liveScores";
 import { parseLiveFrame } from "@/Domain/rivals/liveScore";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import { H2H } from "@/Domain/h2h/h2hConfig";
-import { parseH2HCommand } from "@/Domain/h2h/h2hRules";
+import { isH2HSpeed, parseH2HCommand } from "@/Domain/h2h/h2hRules";
 import { handleH2HEvent, h2hSocketClosed, resendH2HInvites } from "@/backend/h2h/h2hRooms";
 import type { ClientEvent, FriendStatus, ServerEvent } from "@/types/socialTypes";
 
@@ -282,6 +282,8 @@ function parseH2HEvent(e: Record<string, unknown>): ClientEvent | null {
       const choice = parsePenaltyChoice(e.choice);
       return choice ? { type: "h2h_penalty", choice } : null;
     }
+    case "h2h_speed":
+      return only("speed") && isH2HSpeed(e.speed) ? { type: "h2h_speed", speed: e.speed } : null;
     case "h2h_pause":
     case "h2h_resume":
     case "h2h_leave":

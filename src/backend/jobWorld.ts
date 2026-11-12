@@ -26,6 +26,7 @@ import { countryOfferWeight, idolClubs, licenceReputation, spokenLanguages, type
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { clubHappyWithManager } from "@/backend/jobSecurityWorld";
 import { initialStaff } from "@/Domain/staff/staff";
+import { joinNewClub, leavingTrusted } from "@/Domain/staff/trustedStaff";
 import { getStaffNameBook, leagueCountryMap } from "@/backend/staffNameBook";
 import { startingFacilities } from "@/backend/facilityWorld";
 import { academyToAi } from "@/Domain/youth/youth";
@@ -332,6 +333,9 @@ export async function releaseHumanClub(
   // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
   // Facilities too (`.claude/rules/game/facilities.md`): the AI club uses its tier's implied level;
   // the stadium it has built stays (venue capacity), works in progress are dropped.
+  // His trusted professionals go with the manager (10.7): they wait on the seat for his next club.
+  const following = leavingTrusted(academy.squad.staff);
+  if (following.length > 0) await service.updateSeat(saveId, seatId, { trustedStaff: following });
   const { staff: _s, styleFamiliarity: _f, facilities: _fac, managerAttributes: _a, youthTraining: _yt, playerTraining: _pt, bankLoan: _loan, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
   const grant = seasonalTransferBudgetFor(tier, popularityOf(rest));
@@ -413,13 +417,18 @@ export async function takeOverClub(
     squad, date: seasonEnd > args.date ? seasonEnd : args.date, nextSeasonEnd: addYearsIso(seasonEnd, 1),
   }).squad;
   const { financialTier: _t, aiTransferBudget: _b, ...rest } = renewed;
+  // The club's starting staff, with the manager's trusted professionals in the place of the weakest of
+  // their roles (10.7): two seasons at this club's wage.
+  const startingStaff = initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad, { date: args.date, seasonEnd }, {
+    book: await getStaffNameBook(), home: (await leagueCountryMap()).get(entry.leagueSlug),
+  });
+  const following = (await service.getSeat(saveId, seatId))?.trustedStaff ?? [];
+  if (following.length > 0) await service.updateSeat(saveId, seatId, { trustedStaff: undefined });
   // Morale starts over at the new club: everyone at 65, no talks or promises.
   const human: Squad = {
     ...initClubMorale(rest),
     finances: { ...(rest.finances ?? { broadcasting: 0, commercial: 0, total: 0, followers: 0 }), budget: 0 },
-    staff: initialStaff(`${saveId}:${args.squadId}:${args.date}`, squad, { date: args.date, seasonEnd }, {
-      book: await getStaffNameBook(), home: (await leagueCountryMap()).get(entry.leagueSlug),
-    }),
+    staff: following.length > 0 ? joinNewClub(squad, startingStaff, following, { date: args.date, seasonEnd }) : startingStaff,
     styleFamiliarity: initialFamiliarity(DEFAULT_TACTICAL_STYLE),
     // The manager brings his attributes (`.claude/rules/game/achievements.md`).
     managerAttributes: (await service.getAchievements(saveId, seatId)).attributes,

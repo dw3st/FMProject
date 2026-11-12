@@ -560,3 +560,7 @@ Pedido do usuário, opção D de quatro renderizações reais. `STADIUM.ROW_DEPT
 ## Bonecos separados quando se cobrem (10.4)
 
 Pedido do usuário, opção D de quatro renderizações reais. Os bonecos são desenhados bem mais largos que o espaço real de um jogador, então dois jogadores a 1 ou 2 jardas se cobriam. `markerSpread.ts` (puro, com teste): `spreadOffsets` empurra cada par mais perto que `MATCH_LOOK.SPREAD.MIN_DIST` (2,1 raios do marcador) ao longo da linha entre eles, no máximo `MAX_SHIFT` (1 raio, cerca de 2 jardas) da posição real; `easeOffsets` entra e sai aos poucos (`RATE` 10 por segundo). Ficam no lugar real os goleiros, a barreira, quem tem a bola e quem vai receber o passe (a bola nunca salta). Aplicado ao `drawnPos` no fim, depois da gravação do replay, então vale ao vivo, no replay, na transmissão e no jogo entre técnicos. Só desenho: o motor não vê essas posições. Medido: 60 quadros por segundo, antes e depois.
+
+## Vendedores fora do mosaico (10.7)
+
+Report de tester. `mosaicSides` (`stadiumDecor.ts`): o fundo da casa com mosaico (os dois com o item das duas pontas) fica fechado para os vendedores, como um setor em obra (`refreshWalkways`, `PixiPitch`); nunca em campo neutro. Só desenho.

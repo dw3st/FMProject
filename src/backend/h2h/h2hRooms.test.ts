@@ -266,6 +266,23 @@ describe("h2h rooms (live match between two managers)", () => {
     expect(eventsOf(b.user.id, "h2h_paused").length).toBeGreaterThan(0);
   });
 
+  test("speed: the worker gets the lower of the two choices, only when it changes", async () => {
+    const speeds = () => engine!.posted.flatMap((m) => (m.type === "speed" ? [m.factor] : []));
+    await handleClientEvent(sockA, JSON.stringify({ type: "h2h_speed", speed: 4 }));
+    expect(h2hRoomOf(saveId, match.id)!.sides.A.speed).toBe(4);
+    expect(speeds()).toEqual([]);
+    await handleClientEvent(sockB, JSON.stringify({ type: "h2h_speed", speed: 2 }));
+    expect(speeds()).toEqual([2]);
+    // Not a speed: refused by the socket parser.
+    await handleClientEvent(sockB, JSON.stringify({ type: "h2h_speed", speed: 3 }));
+    expect(speeds()).toEqual([2]);
+    const rooms = eventsOf(b.user.id, "h2h_room") as Extract<ServerEvent, { type: "h2h_room" }>[];
+    expect(rooms[rooms.length - 1]!.room.speed).toBe(2);
+    await handleH2HEvent(sockA, { type: "h2h_speed", speed: 1 });
+    await handleH2HEvent(sockB, { type: "h2h_speed", speed: 1 });
+    expect(speeds()).toEqual([2, 1]);
+  });
+
   test("a drop hands the side to the assistant; the rejoin takes it back with the full state", async () => {
     h2hSocketClosed(sockB);
     expect(h2hRoomOf(saveId, match.id)!.sides.B.connected).toBe(false);

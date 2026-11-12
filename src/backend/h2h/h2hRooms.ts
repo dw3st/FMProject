@@ -27,7 +27,7 @@ import { isGroupWorld, laterDate } from "@/Domain/groupAdvance/groupAdvance";
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import {
   canPause, canResume, closeRoom as closeRoomState, endPause, finishRoom, joinRoom, leaveRoom, newRoom, pauseExpired,
-  roomView, setReady, startPause, type H2HRoom,
+  matchSpeed, roomView, setReady, setSideSpeed, startPause, type H2HRoom,
 } from "@/Domain/h2h/h2hRules";
 import { eligibleLivePlayers, type LiveMatchInput, type LiveSideInput } from "@/Domain/match/liveMatchSetup";
 import { buildPlayedMatchRecording } from "@/Domain/advanceDay/buildPlayedMatchRecording";
@@ -50,7 +50,7 @@ import type { H2HLiveEntry } from "@/types/multiplayerTypes";
 import type { LiveBase, LivePhase } from "@/types/rivalsTypes";
 import type { ClientEvent, ServerEvent } from "@/types/socialTypes";
 import type {
-  H2HCloseReason, H2HCommand, H2HSide, H2HStatsPayload, H2HWireState, H2HWireStats, WorkerIn, WorkerOut,
+  H2HCloseReason, H2HCommand, H2HSide, H2HSpeed, H2HStatsPayload, H2HWireState, H2HWireStats, WorkerIn, WorkerOut,
 } from "@/types/h2hTypes";
 
 // ── Engine (a Bun Worker; tests run the match in-process) ────────────────────
@@ -130,6 +130,8 @@ interface Rec {
   complaints: Record<H2HSide, SideComplaints>;
   /** The match referee's strictness (none = no referee: no complaint). */
   strictness: number | null;
+  /** The speed the worker runs at (`matchSpeed`), to post it only when it changes. */
+  speed: number;
 }
 
 interface SideComplaints {
@@ -436,6 +438,7 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
         penalty: null,
         complaints: { A: noComplaints(), B: noComplaints() },
         strictness: null,
+        speed: 1,
       };
       rooms.set(key, rec);
     }
@@ -458,6 +461,7 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
     }
     if (rec.room.pause) sendRaw(ws, JSON.stringify(pausedEvent(rec)));
     if (!wasConnected && !rec.banned[side] && !rec.complaints[side].sentOff) rec.engine?.post({ type: "auto", side, on: false });
+    syncSpeed(rec);
   }
   broadcastRoom(rec);
   const other: H2HSide = side === "A" ? "B" : "A";
@@ -514,6 +518,7 @@ function leaveSocket(ws: SocialSocket): void {
   if (rec.room.phase === "live") {
     // Nobody of that side left: the assistant takes over at once (the match never stops).
     rec.engine?.post({ type: "auto", side, on: true });
+    syncSpeed(rec);
   } else if (rec.room.phase === "lobby" && SIDES.every((s) => rec.room.sides[s].status === "away")) {
     dropRoom(rec);
     return;
@@ -583,6 +588,26 @@ function complain(rec: Rec, side: H2HSide): void {
   }
 }
 
+/** The speed the two managers agree on reaches the worker when it changes (a choice, a drop, a return). */
+function syncSpeed(rec: Rec): void {
+  const next = matchSpeed(rec.room);
+  if (next === rec.speed) return;
+  rec.speed = next;
+  rec.engine?.post({ type: "speed", factor: next });
+}
+
+/** A manager picks 1x, 2x or 4x: the match runs at the lower of the two choices. */
+function speed(ws: SocialSocket, value: H2HSpeed): void {
+  const rec = recOf(ws);
+  const side = rec && sideOfSocket(rec, ws);
+  if (!rec || !side) return;
+  const next = setSideSpeed(rec.room, side, value);
+  if (next === rec.room) return;
+  rec.room = next;
+  syncSpeed(rec);
+  broadcastRoom(rec);
+}
+
 function armPauseTimer(rec: Rec): void {
   if (rec.pauseTimer) clearTimeout(rec.pauseTimer);
   rec.pauseTimer = null;
@@ -636,6 +661,7 @@ export async function handleH2HEvent(
     case "h2h_cmd": command(ws, event.cmd); break;
     case "h2h_pause": pause(ws); break;
     case "h2h_resume": resume(ws); break;
+    case "h2h_speed": speed(ws, event.speed); break;
     case "h2h_leave": leaveSocket(ws); break;
   }
 }

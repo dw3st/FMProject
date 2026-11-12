@@ -19,6 +19,8 @@ import type { NewsItem } from "@/types/newsTypes";
 import { NewsStoryRow } from "@/GameInterface/News/NewsList";
 import { RivalForm } from "@/GameInterface/World/RivalForm";
 import { LiveMoments } from "@/GameInterface/World/LiveMoments";
+import { TauntActions } from "@/GameInterface/World/TauntActions";
+import { liveGroups } from "@/Domain/rivals/taunts";
 import { WatchButton } from "@/GameInterface/Watch/WatchButton";
 import { SeatFriendlyLine, useSeatFriendlies } from "@/GameInterface/World/SeatFriendlyControls";
 import type { RivalRow } from "@/types/rivalsTypes";
@@ -1099,6 +1101,8 @@ export function RivalsCard({ rows }: { rows: RivalRow[] }) {
                     <WatchButton live={r.live} />
                   </div>
                   <LiveMoments live={r.live} />
+                  {/* Reactions and phrases right here, without opening the game (tester report, 10.7). */}
+                  {friendlies.saveId && <TauntActions saveId={friendlies.saveId} target={{ live: r.seatId }} groups={liveGroups(r.live)} />}
                 </div>
               ) : r.next ? (
                 <p className="m-0 text-sm text-muted-foreground pl-11">

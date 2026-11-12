@@ -71,7 +71,7 @@ import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, PENALTY_AREA_DEPTH, 
 import { mirrorX, mirrorY } from "@/GraficsEngine/pitchMirror";
 import { buildMetrics, PITCH_SPEC, type PitchMetrics, type StandGeometry } from "@/GraficsEngine/pitchMetrics";
 import { STAND_TILE_ROTATION, drawDecor, drawRoofRim, drawStandBase, drawStandDetails, drawStandEdges, drawSurroundings, goalPulseAlpha } from "@/GraficsEngine/stadiumRender";
-import { decorRects, hexNumber, type CrestPixels } from "@/GraficsEngine/stadiumDecor";
+import { decorRects, hexNumber, mosaicSides, type CrestPixels } from "@/GraficsEngine/stadiumDecor";
 import { decorColors } from "@/Domain/achievements/decorStyle";
 import type { StadiumDecor } from "@/types/achievementTypes";
 import { crowdSeats, drawnDepths, drawnFill, seatCellPx, standConcreteRows, standSideRects, worksSides, standTunnel } from "@/GraficsEngine/crowd";
@@ -3264,7 +3264,14 @@ export function PixiPitch({
       let sellers: ReturnType<typeof vendors> = [];
       let walkwaysKey: string | null = null;
       const refreshWalkways = () => {
-        const closed = worksSides(stadiumRef.current?.works, mirrorRef.current);
+        const sd = stadiumRef.current;
+        // A stand under works has nobody selling, and neither has an end covered by the mosaic (tester report:
+        // the vendor walked over it).
+        const homeEnd = (sd?.homeTeam === "A") !== mirrorRef.current ? "left" : "right";
+        const closed: string[] = [
+          ...worksSides(sd?.works, mirrorRef.current),
+          ...(sd && !sd.neutral ? mosaicSides(sd.decor, homeEnd) : []),
+        ];
         const key = `${closed.join(",")}|${stadiumRef.current?.seed ?? "match"}`;
         if (key === walkwaysKey) return;
         walkwaysKey = key;

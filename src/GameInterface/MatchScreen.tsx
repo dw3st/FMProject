@@ -15,7 +15,8 @@ import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMin
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
 import { PauseBar } from "@/GameInterface/H2H/PauseBar";
 import { otherSide } from "@/GameInterface/H2H/h2hState";
-import type { H2HCommand } from "@/types/h2hTypes";
+import type { H2HCommand, H2HSpeed } from "@/types/h2hTypes";
+import { H2H } from "@/Domain/h2h/h2hConfig";
 import { applyLiveSideConfigs, buildLiveMatchState, eligibleLivePlayers } from "@/Domain/match/liveMatchSetup";
 import { overlayDismissDelayMs } from "@/GameInterface/matchOverlayTiming";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
@@ -750,7 +751,8 @@ export function MatchScreen() {
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
         setMyClubId(data.mySquadId);
         setMatchFixture(data.fixture);
-        liveFixtureRef.current = liveTarget && !data.national ? (data.matchDay?.fixtureId ?? data.fixture.id) : null;
+        // A national team's game goes to the friends too (10.7): under the fixture's own id.
+        liveFixtureRef.current = liveTarget ? (data.national ? data.fixture.id : data.matchDay?.fixtureId ?? data.fixture.id) : null;
         // Resumed after a reload: `matchStart` never fires again, so tell the friends where the game is (a `start`
         // frame rebuilds the live entry even when the server dropped it meanwhile).
         if (snap && liveFixtureRef.current && state.matchPhase !== "matchEnd" && state.matchPhase !== "preMatch") {
@@ -1841,9 +1843,12 @@ export function MatchScreen() {
     h2h.room?.sides[tm].nickname ?? h2h.room?.sides[tm].clubName ?? (tm === "A" ? teamAWithCrest?.name : teamBWithCrest?.name) ?? tm;
   const opponentAway = h2hMode && h2h.room?.phase === "live" && !h2h.room.sides[otherH2HSide].connected;
   const myPausesLeft = h2h.pausesLeft?.[mySide] ?? h2h.room?.sides[mySide].pausesLeft ?? 0;
+  /** What I asked for, and what the match runs at (the lower of the two choices). */
+  const myH2HSpeed = h2h.room?.sides[mySide].speed ?? 1;
+  const h2hSpeed = h2h.room?.speed ?? 1;
   // H2H clock: the last state's time, run on by the real time since it arrived (at most 1.5 s, frozen in a pause).
   const shownMatchTime = h2hMode && isLivePhase(gameState.matchPhase) && !h2h.pause
-    ? (gameState.matchTime ?? 0) + Math.min(1.5, Math.max(0, (clockNow - h2hStateAtRef.current) / 1000)) * TIME_SCALE
+    ? (gameState.matchTime ?? 0) + Math.min(1.5, Math.max(0, (clockNow - h2hStateAtRef.current) / 1000)) * TIME_SCALE * h2hSpeed
     : gameState.matchTime ?? 0;
   const mySubsRemaining = mySide === "A" ? gameState.subsRemainingA : gameState.subsRemainingB;
   const myPendingSubs = (mySide === "A" ? gameState.pendingSubsA : gameState.pendingSubsB).length;
@@ -2035,16 +2040,32 @@ export function MatchScreen() {
           <div className="flex items-center justify-center gap-2 flex-wrap phone:flex-1 phone:justify-end phone:gap-1.5">
             {phoneDrawerButtons}
             {h2hMode ? (
-              // Live match between two managers: fixed speed, a few pauses each (the bar below shows a pause).
-              <button
-                type="button"
-                onClick={() => h2h.requestPause()}
-                disabled={!!h2h.pause || myPausesLeft <= 0 || !isLivePhase(gameState.matchPhase)}
-                className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Icon name="pause" className="w-4 h-4" />
-                <span className="tabular-nums">{t("h2h.pausesLeft", { count: myPausesLeft })}</span>
-              </button>
+              // Live match between two managers: a few pauses each (the bar below shows a pause), and the speed both
+              // asked for (the lower of the two choices).
+              <>
+                <button
+                  type="button"
+                  onClick={() => h2h.requestPause()}
+                  disabled={!!h2h.pause || myPausesLeft <= 0 || !isLivePhase(gameState.matchPhase)}
+                  className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Icon name="pause" className="w-4 h-4" />
+                  <span className="tabular-nums">{t("h2h.pausesLeft", { count: myPausesLeft })}</span>
+                </button>
+                <span className="flex items-center gap-2" title={t("h2h.speed.hint")}>
+                  <SegmentedTabs
+                    compact
+                    tabs={H2H.SPEEDS.map((s) => ({ key: String(s), label: <span className="tabular-nums">{s}×</span> }))}
+                    active={String(myH2HSpeed)}
+                    onChange={(k) => h2h.setSpeed(Number(k) as H2HSpeed)}
+                  />
+                  {h2hSpeed !== myH2HSpeed && (
+                    <span className="text-sm text-muted-foreground whitespace-nowrap phone:hidden">
+                      {t("h2h.speed.waiting", { name: sideName(otherH2HSide), speed: h2hSpeed })}
+                    </span>
+                  )}
+                </span>
+              </>
             ) : (
               <>
                 <button

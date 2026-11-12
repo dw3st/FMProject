@@ -4,6 +4,8 @@ export const H2H = {
   PAUSES: 3,
   /** Longest pause (seconds). */
   PAUSE_SECONDS: 30,
+  /** Speeds a manager may ask for; the match runs at the lower of the two choices. */
+  SPEEDS: [1, 2, 4],
   /** Worker simulation step (real ms). */
   TICK_MS: 50,
   /** Position frames to the browsers: one per sim step (`SIM_STEP`, 200 real ms). */

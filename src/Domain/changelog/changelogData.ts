@@ -27,6 +27,31 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.7",
+    date: "2026-11-12",
+    time: "18:24",
+    items: [
+      { pt: "Comissão de confiança: marque até 3 profissionais da comissão. Quando você troca de clube, eles vão junto e assinam por 2 temporadas no clube novo.", en: "Trusted staff: mark up to 3 members of your staff. When you change clubs they go with you and sign for 2 seasons at the new club." },
+      { pt: "Cursos da comissão: você paga do seu bolso um curso de 60 dias para um profissional de confiança e ele volta com meia estrela a mais. Enquanto estuda, ele fica fora e a função dele rende menos.", en: "Staff courses: you pay from your own pocket a 60-day course for a trusted professional and he comes back with half a star more. While he studies he is away and his role does less." },
+      { pt: "Jogo ao vivo entre dois técnicos: dá para acelerar em 2x e 4x. A partida anda na menor velocidade escolhida, então só acelera quando os dois pedem.", en: "Live match between two managers: it can run at 2x and 4x. The match runs at the lower of the two choices, so it only speeds up when both ask." },
+      { pt: "Propostas pelos seus jogadores: a proposta mostra quanto o clube pagou por ele, quando, e o valor de mercado de hoje.", en: "Bids for your players: the bid shows what the club paid for him, when, and his market value today." },
+      { pt: "Rivais no Painel: reações e frases no jogo ao vivo de um amigo, direto no cartão, sem abrir a transmissão.", en: "Rivals on the Dashboard: reactions and phrases on a friend's live match, right on the card, without opening the broadcast." },
+      { pt: "Liga de amigos: o jogo da seleção de um amigo também aparece ao vivo no cartão Rivais e na faixa de amigos, com as bandeiras e o placar.", en: "Friends' league: a friend's national team game also shows live on the Rivals card and the friends strip, with the flags and the score." },
+      { pt: "Página do técnico: os bens que ele comprou aparecem na página dele, com os lendários em destaque.", en: "Manager page: what he bought shows on his page, with the legendary items highlighted." },
+      { pt: "Equipe técnica: aviso no topo e no cartão quando o contrato de um profissional acaba em até 60 dias.", en: "Coaching staff: a notice at the top and on the card when a contract ends within 60 days." },
+      { pt: "Olheiro: as tabelas de Joias e de Observados ordenam pela coluna. Clique no cabeçalho.", en: "Scouting: the Gems and Shortlist tables sort by column. Click the header." },
+    ],
+    fixes: [
+      { pt: "Fim de tempo: o árbitro espera um ataque perto da área terminar antes de apitar. Antes o tempo acabava com o jogador na cara do gol.", en: "End of a half: the referee waits for an attack near the box to finish before the whistle. It used to end with a player through on goal." },
+      { pt: "Escanteios: bem menos escanteios seguidos. O cruzamento do escanteio cortado pela defesa quase sempre virava outro escanteio.", en: "Corners: far fewer corners in a row. The corner's cross, when cleared by the defence, almost always turned into another corner." },
+      { pt: "Drible: um jogador sozinho, sem companheiro por perto, só tenta o drible se dribla bem. Quem dribla mal segura a bola, chuta ou espera o apoio.", en: "Dribbling: a player on his own, with no teammate near, only tries the dribble if he is good at it. A poor dribbler keeps the ball, shoots or waits for support." },
+      { pt: "Liga de amigos: o aviso Só falta você não aparece mais por cima da prévia, da partida e do resultado.", en: "Friends' league: the Only you left notice no longer shows over the match preview, the match and the result." },
+      { pt: "Amigos ao vivo: a janela com os lances do jogo de um amigo ganhou o botão de fechar.", en: "Friends live: the window with the plays of a friend's match now has a close button." },
+      { pt: "Estádio: os vendedores não passam mais por cima do mosaico da torcida.", en: "Stadium: the vendors no longer walk over the fans' mosaic." },
+      { pt: "Painel: os últimos 5 jogos do clube não misturam mais os jogos da seleção.", en: "Dashboard: the club's last 5 games no longer mix in the national team's games." },
+    ],
+  },
+  {
     version: "10.6.4",
     date: "2026-11-12",
     time: "14:06",

@@ -12,6 +12,8 @@ import { callApi } from "@/backend/worlds/worldTestUtils";
 import { addSeat } from "@/backend/seats";
 import { ensureNationalWorld } from "@/backend/nationalWorld";
 import { setKickScheduler, waitWorld } from "@/backend/groupAdvance";
+import { acceptLiveScore, liveScoresOf, resetLiveScores } from "@/backend/rivals/liveScores";
+import type { ServerEvent } from "@/types/socialTypes";
 import type { Fixture } from "@/types/calendarTypes";
 
 describe("provisional result of a national game", () => {
@@ -65,6 +67,24 @@ describe("provisional result of a national game", () => {
     await waitWorld(saveId);
     deleteSaveMembers(saveId);
     await saveService.deleteSave(saveId);
+  }, 120_000);
+
+  test("his live national game reaches the friends as the two nations (10.7)", async () => {
+    const sent: { userId: string; event: ServerEvent }[] = [];
+    const notify = (userId: string, event: ServerEvent) => sent.push({ userId, event });
+    const frame = { saveId, fixtureId: fixture.id, phase: "start" as const, minute: 0, score: { for: 0, against: 0 } };
+    expect(await acceptLiveScore(a.user.id, frame, notify)).toBe(true);
+    const state = (await saveService.getNationalState(saveId))!;
+    const live = liveScoresOf(saveId)[0]!;
+    expect(live).toMatchObject({
+      national: true, clubId: fixture.home, opponentId: fixture.away, home: true, competition: fixture.competition,
+      clubName: state.teams[fixture.home]!.nation, opponentName: state.teams[fixture.away]!.nation,
+    });
+    // Only the other member hears of it, and another fixture id of the day is refused.
+    expect(sent.length).toBeGreaterThan(0);
+    expect(sent.every((s) => s.userId !== a.user.id)).toBe(true);
+    expect(await acceptLiveScore(a.user.id, { ...frame, fixtureId: "nope" }, notify)).toBe(false);
+    resetLiveScores();
   }, 120_000);
 
   test("the recording is stored and read back as the match event", async () => {

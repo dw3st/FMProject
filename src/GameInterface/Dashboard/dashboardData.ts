@@ -51,7 +51,8 @@ function resultFor(f: Fixture, clubId: string): FormResult | null {
 /** The club's last `n` results, oldest first (so the newest sits on the right). */
 export function lastResults(fixtures: Fixture[], clubId: string, n = 5): FormResult[] {
   return fixtures
-    .filter((f) => f.played && f.result && (f.home === clubId || f.away === clubId))
+    // His national team's games sit in the same calendar under the club's id (`Fixture.nationalTeam`): not the club's form.
+    .filter((f) => f.played && f.result && !f.nationalTeam && (f.home === clubId || f.away === clubId))
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
     .slice(-n)
     .map((f) => resultFor(f, clubId)!)

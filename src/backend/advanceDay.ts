@@ -181,6 +181,7 @@ import { buildManagerNewsMessage, buildPressInviteMessage, buildScheduleMessage,
 import { drawnLeaguesOf, playerRestDaysAfterMoves, rescheduleFixtureConflicts, syncPlayerRestDays } from "@/backend/reschedulingWorld";
 import { firstMatchAfterMoves, rescheduledGamesOf, type FixtureMove } from "@/Domain/calendar/rescheduling";
 import { ageStaff, staffContractDay } from "@/Domain/staff/staffContracts";
+import { settleCourses } from "@/Domain/staff/trustedStaff";
 import { refreshPool, returnToPool } from "@/Domain/staff/staffPool";
 import { WINDOWS } from "@/Domain/market/windowConfig";
 import { daysToClose } from "@/Domain/market/windows";
@@ -3211,6 +3212,12 @@ export async function advanceOneDay(
           const aged = ageStaff(staff);
           staff = aged.staff;
           ds.staffNews = [...ds.staffNews, ...aged.news];
+        }
+        // Courses of the manager's trusted staff (10.7): whoever is back today returns with the gain.
+        const courses = settleCourses(staff.members, currentDate);
+        if (courses.done.length > 0) {
+          staff = { ...staff, members: courses.members };
+          ds.staffNews = [...ds.staffNews, ...courses.done.map((m) => ({ kind: "staff_course_done" as const, member: { id: m.id, name: m.name, role: m.role } }))];
         }
         if (staff !== humanForStaff.staff) await saveService.saveSquadById(saveId, { ...humanForStaff, staff });
         if (r.left.length > 0) {

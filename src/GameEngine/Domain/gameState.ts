@@ -1150,6 +1150,33 @@ export function restartHoldsPeriod(state: GameState, newMatchTime: number, perio
   return Math.abs(goalX - sp.position.x) <= FOUL_CONFIG.DANGEROUS_FREE_KICK_DIST;
 }
 
+/** How close to the goal line it attacks (yards) the ball has to be for the whistle to wait, and for how long (game-seconds). */
+const ATTACK_HOLD_DIST = 30;
+const ATTACK_HOLD_MAX = 45;
+
+/**
+ * True when the whistle must wait for an attack in progress (tester report, 10.7: periods ended with a player
+ * through on goal): the ball is with the attacking side (held, passed, or loose from its own pass) within
+ * `ATTACK_HOLD_DIST` yards of the goal line that side attacks. It stops holding as soon as the ball is lost, goes
+ * away from the goal or a restart is given (restarts have `restartHoldsPeriod`), and at most `ATTACK_HOLD_MAX`
+ * game-seconds past `periodEnd` (shorter than `RESTART_HOLD_MAX`, so a shot taken at the end is still resolved).
+ */
+export function attackHoldsPeriod(state: GameState, newMatchTime: number, periodEnd: number): boolean {
+  if (newMatchTime >= periodEnd + ATTACK_HOLD_MAX || state.setPiece) return false;
+  const near = (dir: number, x: number) => (dir === 1 ? PITCH_LENGTH - x : x) <= ATTACK_HOLD_DIST;
+  if (state.pass) {
+    const from = state.players.find(p => p.id === state.pass!.fromId);
+    return !!from && near(from.attackDir, state.pass.toX);
+  }
+  if (state.looseBall) {
+    const side = state.players.find(p => p.team === state.looseBall!.fromTeamLastTouch);
+    return !!side && near(side.attackDir, state.looseBall.x);
+  }
+  if (state.shot) return false;
+  const holder = state.players.find(p => p.id === state.ballHolderId);
+  return !!holder && near(holder.attackDir, holder.x);
+}
+
 /** Penalty spot of the goal whose goal line is at `goalX`. */
 function penaltySpot(goalX: number): { x: number; y: number } {
   const d = FOUL_CONFIG.PENALTY_SPOT_DIST;
@@ -3632,7 +3659,8 @@ export function resolveAerialLanding(state: GameState, rng: () => number = Math.
     debugLog('aerial', `${winner.name} heads it clear`, { playerId: winner.id });
     // A cross headed clear in the box (or near the byline) goes behind for a corner sometimes.
     const deep = isInGoalScoreArea(point.x, point.y, ownGoalX) || Math.abs(point.x - ownGoalX) <= C.CLEARANCE_CORNER_DEPTH;
-    if (kind === 'cross' && deep && rng() < SET_PIECE_CONFIG.CROSS_CLEAR_CORNER_CHANCE) {
+    const again = pass.fromSetPiece && pass.setPieceVariant === 'box' ? SET_PIECE_CONFIG.CORNER_REPEAT_MULT : 1;
+    if (kind === 'cross' && deep && rng() < SET_PIECE_CONFIG.CROSS_CLEAR_CORNER_CHANCE * again) {
       const exitX = ownGoalX === 0 ? -1 : PITCH_LENGTH + 1;
       return resolveOOBSetPiece(s, 'corner', passerTeam, exitX, point.y, winner.id, 'clearance', 'cross_clearance');
     }
@@ -3777,7 +3805,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     state.matchPhase === 'extraTimeFirst'  ? ET_HALF_DURATION + (state.etStoppageFirst ?? 0) :
                                              ET_HALF_DURATION + (state.etStoppageSecond ?? 0);
 
-  if (!state.testMode && newMatchTime >= periodEnd && !restartHoldsPeriod(state, newMatchTime, periodEnd)) {
+  if (!state.testMode && newMatchTime >= periodEnd && !restartHoldsPeriod(state, newMatchTime, periodEnd) && !attackHoldsPeriod(state, newMatchTime, periodEnd)) {
     return noop(endCurrentPeriod(state, newMatchTime));
   }
 

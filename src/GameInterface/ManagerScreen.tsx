@@ -18,7 +18,9 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
-import { fameBand, legendaryCount, type ManagerAssets } from "@/Domain/managers/assets";
+import { ASSET_KINDS, LEGENDARY_LEVEL, fameBand, legendaryCount, type ManagerAssets } from "@/Domain/managers/assets";
+import { DECOR_ITEMS, type DecorItemId } from "@/Domain/achievements/decorShop";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import type { ManagerRecord } from "@/types/managerTypes";
 import type { LeagueData } from "@/types/playerTypes";
 
@@ -129,6 +131,11 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
     assets: data.assets,
     national: data.national,
   });
+  const owned = ASSET_KINDS.filter((k) => (data.assets?.[k] ?? 0) > 0);
+  const decorOwned = (data.decor ?? []).filter((id): id is DecorItemId => id in DECOR_ITEMS);
+  const decorName = (id: DecorItemId) => DECOR_ITEMS[id].kind === "mosaic" && id !== "titles"
+    ? t("achievements.decorShop.mosaicName", { name: t(`achievements.decorStyle.patterns.${id}`) })
+    : t(`achievements.decorShop.items.${id}.name`);
   const autoBioFull = joke ? `${autoBio} ${t(`managerPage.bio.joke.${joke.id}`, joke.params ?? {})}` : autoBio;
 
   return (
@@ -292,6 +299,44 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
           )}
         </section>
       </div>
+
+      {/* What he bought with his own money, as status (tester report, 10.7). */}
+      {(owned.length > 0 || decorOwned.length > 0) && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t("managerPage.belongings")}</SectionTitle>
+          {owned.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+              {owned.map((kind) => {
+                const level = data.assets![kind]!;
+                const legendary = level >= LEGENDARY_LEVEL;
+                return (
+                  <div key={kind} className={`rounded-md border bg-card p-3 flex flex-col gap-2 ${legendary ? "border-star-gold" : "border-border"}`}>
+                    {newVisualOn() && (
+                      <img
+                        src={gameArtUrl(`manager-assets/${kind}-${level}.webp`)}
+                        alt=""
+                        loading="lazy"
+                        className="w-full aspect-[8/5] object-cover rounded"
+                      />
+                    )}
+                    <p className={LABEL}>{t(`achievements.assets.kind.${kind}`)}</p>
+                    <p className="text-sm font-semibold m-0 flex items-center gap-1.5">
+                      {legendary && <Icon name="crown" size={16} className="text-star-gold shrink-0" />}
+                      <span className="min-w-0">{t(`achievements.assets.level.${kind}.${level}`)}</span>
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {decorOwned.length > 0 && (
+            <p className="text-sm m-0">
+              <span className="text-muted-foreground">{t("managerPage.stadiumItems")}: </span>
+              {decorOwned.map(decorName).join(", ")}
+            </p>
+          )}
+        </section>
+      )}
     </ScreenContainer>
   );
 }

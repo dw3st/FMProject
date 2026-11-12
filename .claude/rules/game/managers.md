@@ -211,3 +211,7 @@ Pedido do usuário. Técnico sem biografia escrita (`ManagerProfile.bio`, `achie
 ## Frases provocativas da biografia (8.9.41)
 
 Pedido do usuário, 50 frases aprovadas. `src/Domain/managers/bioJokes.ts` (com teste): `matchingJokes` lista as situações que a carreira encaixa (demissões, jejum de títulos, cartões, fama dos bens, ranking, cargo ameaçado, tempo sem clube…), `pickJoke` dá uma a cerca de 1 em 5 técnicos (`BIO_JOKES.ONE_IN`, sorteio fixo pelo id: a frase não muda). Texto em `managerPage.bio.joke.<id>`, depois da biografia automática; quem escreveu a própria não recebe.
+
+## Bens na página do técnico (10.7)
+
+Report de tester. A página do técnico (`ManagerScreen`) tem a seção Bens: um cartão por bem comprado (imagem do nível com o visual novo, nome do nível, borda dourada e coroa no lendário) e a lista dos enfeites de estádio comprados (`decor`).

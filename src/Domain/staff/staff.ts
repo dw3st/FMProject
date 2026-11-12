@@ -79,8 +79,9 @@ export function memberStars(m: StaffMember): number {
   return starsIn(m, ROLE_SPECIALTY[m.role]);
 }
 
+/** The professionals of `role` at work: one away on a course does not count (his role is vacant meanwhile). */
 export const membersOf = (squad: Squad, role: StaffRole): StaffMember[] =>
-  (squad.staff?.members ?? []).filter((m) => m.role === role);
+  (squad.staff?.members ?? []).filter((m) => m.role === role && !m.course);
 
 /** Best member of a single-holder role (in practice the only one). */
 export function headOf(squad: Squad, role: StaffRole): StaffMember | undefined {
@@ -111,7 +112,8 @@ export const STAFF_AREAS_PER_COACH = 2;
 
 /** Coach areas -> member: valid manual choices first, then each free area to the best coach with room. */
 export function resolveAreaAssignments(staff: StaffRecord): Partial<Record<CoachArea, StaffMember>> {
-  const coaches = staff.members.filter((m) => m.role === "coach");
+  // A coach away on a course leads nothing: his areas go to the others, or stay vacant.
+  const coaches = staff.members.filter((m) => m.role === "coach" && !m.course);
   const byId = new Map(coaches.map((c) => [c.id, c]));
   const load = new Map<string, number>();
   const out: Partial<Record<CoachArea, StaffMember>> = {};

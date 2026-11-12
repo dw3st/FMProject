@@ -507,7 +507,42 @@
       "notACoach": "Only an area coach can lead this area.",
       "notInPool": "This professional is no longer available.",
       "notYourStaff": "This professional is not in your staff.",
-      "invalidYears": "Choose 1 to 3 years."
+      "invalidYears": "Choose 1 to 3 years.",
+      "trustedFull": "You already have 3 trusted professionals.",
+      "notTrusted": "Only a trusted professional takes a course.",
+      "onCourse": "He is already on a course.",
+      "courseBusy": "Someone is already on a course. One at a time.",
+      "atBest": "He already has 5 stars.",
+      "tooSoon": "He took a course less than a year ago.",
+      "contractEnds": "His contract ends before the course does. Renew it first.",
+      "onMission": "He is on a scouting mission.",
+      "noMoney": "Your wallet does not cover the course."
+    },
+    "expiring": {
+      "card": "Contract ends in {{days}} days",
+      "notice_one": "{{count}} staff contract ends within {{days}} days: {{names}}.",
+      "notice_other": "{{count}} staff contracts end within {{days}} days: {{names}}."
+    },
+    "trusted": {
+      "title": "Trust",
+      "badge": "Trusted",
+      "summary": "Trusted: {{used}} of {{max}}.",
+      "help": "A trusted professional goes with you when you change clubs and can take courses you pay for.",
+      "isTrusted": "Trusted: he goes with you to your next club, on a 2-season contract.",
+      "add": "Make trusted",
+      "remove": "Remove trust"
+    },
+    "course": {
+      "away": "On a course until {{until}}",
+      "awayHelp": "Meanwhile his role counts as vacant. His wage is still paid.",
+      "coachAway": "{{name}} · on a course",
+      "gain": "+{{gain}} star",
+      "gainArea": "+{{gain}} star in {{area}}",
+      "offer": "{{days}}-day course: {{gain}}. It costs {{price}} from your wallet (you have {{wallet}}).",
+      "atBest": "He already has 5 stars: there is no course for him.",
+      "send": "Send on the course",
+      "confirmTitle": "Send {{name}} on the course?",
+      "confirmBody": "He is away for {{days}} days and his role counts as vacant meanwhile. The course costs {{price}} from your wallet and the club keeps paying his wage."
     },
     "scouts": {
       "fireConfirmBody": "He leaves with a severance of {{amount}} (half his remaining contract) and goes back to the free pool; his mission is cancelled."
@@ -1892,7 +1927,9 @@
       "staff_leavingSubject": "Staff leaving at the end of the contract",
       "staff_leftSubject": "Staff contracts ended",
       "staff_retired": "Retired from football and left the club: {{players}}",
-      "staff_retiredSubject": "Staff retired"
+      "staff_retiredSubject": "Staff retired",
+      "staff_course_done": "Back from the course with half a star more: {{players}}",
+      "staff_course_doneSubject": "Staff course finished"
     },
     "youth": {
       "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",
@@ -3859,7 +3896,16 @@
       "loanable": "Available on loan",
       "notLoanable": "Not available on loan",
       "onLoan": "On loan at this club",
-      "requested": "Asked to leave"
+      "requested": "Asked to leave",
+      "paid": {
+        "transfer": "The club paid {{fee}} for him in {{date}}",
+        "clause": "The club paid his {{fee}} release clause in {{date}}",
+        "noFee": "Signed in {{date}}, no fee",
+        "free": "Signed as a free agent in {{date}}, no fee",
+        "pre_contract": "Signed on a pre-contract in {{date}}, no fee",
+        "academy": "Came through the academy, no fee"
+      },
+      "value": "Market value today: {{value}}"
     },
     "offer": {
       "value": "Market value",
@@ -6978,6 +7024,10 @@
   },
   "h2h": {
     "pausesLeft": "Pause · {{count}}",
+    "speed": {
+      "hint": "The match speeds up when both managers choose it: it runs at the lower of the two speeds.",
+      "waiting": "{{name}} is on {{speed}}×"
+    },
     "pausedBy": "{{name}} paused · {{time}}",
     "resume": "Resume",
     "opponentAway": "{{name}} left · assistant in charge",
@@ -7165,6 +7215,8 @@
     "tabOverview": "Overview"
   },
   "managerPage": {
+    "belongings": "Belongings",
+    "stadiumItems": "Stadium items",
     "notFound": "Manager not found.",
     "you": "You",
     "ai": "AI manager",

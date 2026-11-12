@@ -271,6 +271,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'lone-dribbler',
+    name:        'Lone forward — dribble or keep it?',
+    description: 'A target man with poor dribbling (3) holds the ball 35 yd out with a CB in front of him and no teammate within 15 yd; his midfielder is 25 yd behind. Tester report (10.7): alone, he no longer takes the defender on (`LONE_DRIBBLE`, the dribble line of Decision Scores shows "alone ×0"); he carries, shoots or plays it back. Swap him for a skilful dribbler and he goes at the CB.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Santos',   'A', 'ST',   80, 37, { ...STRIKER, dribbling: 3 }),
+        makePlayer('Garcia',   'A', 'CM',   55, 40, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB',   84, 37.5, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   90, 31, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'keeper-sweeper',
     name:        'Keeper — sweeper on a ball over the top',
     description: 'CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. The keeper (Kowalski) leaves his box and gets there first (`Keeper.ts`, sweeper). Toggle "Keeper" for the sweeper zone and his target; watch the "keeper" debug log.',
