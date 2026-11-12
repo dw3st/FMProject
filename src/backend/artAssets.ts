@@ -10,11 +10,16 @@
  *   backdrops (`backdrops`), unless the new visual is switched off (`ART_VISUAL=0`).
  *
  * The index is re-read when the file's modification time changes (a new art sync needs no restart).
+ *
+ * Pixel-art player figures (10.7): `art/sprites/pixel-players.json` points to an atlas description (`parsePixelAtlas`)
+ * that names its image; a valid one is announced in the manifest (`{ data, image }`) and those two files are served
+ * like listed ones. Files of their own because `sync_art.py` rewrites `index.json`.
  */
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 import { ART_ASSET_VERSION, type ArtManifest, type PaintedFaceIds } from "@/Domain/art/paintedFaces";
+import { parsePixelAtlas, parsePixelDataPath, type PixelSpritePointer } from "@/Domain/art/pixelSprite";
 
 const CACHE_FOREVER = "public, max-age=31536000, immutable";
 const CONTENT_TYPE: Record<string, string> = { webp: "image/webp", png: "image/png", jpg: "image/jpeg" };
@@ -101,6 +106,30 @@ function loadIndex(): ArtIndex | null {
   }
 }
 
+let pixelCache: { key: string; pointer: PixelSpritePointer | null } | null = null;
+
+/**
+ * The pixel-art atlas on the volume (`{ data, image }`), or null: no pointer file, a description that does not
+ * validate, or a missing image. Read again when the pointer or the description changes.
+ */
+export function loadPixelSprite(): PixelSpritePointer | null {
+  const dir = artDir();
+  const pointerFile = join(dir, "sprites", "pixel-players.json");
+  try {
+    const data = parsePixelDataPath(JSON.parse(readFileSync(pointerFile, "utf8")));
+    if (!data) return null;
+    const dataFile = join(dir, data);
+    const key = `${pointerFile}|${statSync(pointerFile).mtimeMs}|${data}|${statSync(dataFile).mtimeMs}`;
+    if (pixelCache?.key === key) return pixelCache.pointer;
+    const atlas = parsePixelAtlas(JSON.parse(readFileSync(dataFile, "utf8")));
+    const pointer = atlas && statSync(join(dir, atlas.image)).isFile() ? { data, image: atlas.image } : null;
+    pixelCache = { key, pointer };
+    return pointer;
+  } catch {
+    return null;
+  }
+}
+
 /** The painted faces are on (`ART_FACES=1`, decision 4). */
 export function paintedFacesEnabled(): boolean {
   return process.env.ART_FACES === "1";
@@ -120,8 +149,12 @@ export const artAssetRoutes = {
   [`${PREFIX}*`]: (req: Request) => {
     const path = decodeURIComponent(new URL(req.url).pathname.slice(PREFIX.length));
     const index = loadIndex();
-    if (!index || !index.paths.has(path)) return notFound();
-    const type = CONTENT_TYPE[path.slice(path.lastIndexOf(".") + 1).toLowerCase()];
+    const listed = index?.paths.has(path) === true;
+    const pixel = listed ? null : loadPixelSprite();
+    // The atlas description is the one JSON this route serves.
+    const pixelData = pixel?.data === path;
+    if (!listed && pixel?.image !== path && !pixelData) return notFound();
+    const type = pixelData ? "application/json" : CONTENT_TYPE[path.slice(path.lastIndexOf(".") + 1).toLowerCase()];
     if (!type) return notFound();
     const file = Bun.file(join(artDir(), path));
     return file.exists().then((ok) => ok
@@ -141,6 +174,7 @@ export const artAssetRoutes = {
       surround: index && visual ? index.surround : [],
       facilities: index && visual ? index.facilities : [],
       news: index && visual ? index.news : [],
+      pixelSprite: visual ? loadPixelSprite() : null,
       visual,
     };
     return Response.json(body, { headers: { "Cache-Control": "no-cache" } });

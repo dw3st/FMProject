@@ -1274,8 +1274,10 @@
       "replayOff": "Replay dos gols desligado. Clique para ligar.",
       "replayH2h": "Sem replay no jogo entre técnicos.",
       "figures": "Bonecos",
-      "figuresOn": "Jogadores como bonecos (clique para discos com o rosto)",
-      "figuresOff": "Jogadores como discos com o rosto (clique para bonecos)",
+      "figuresOn": "Jogadores como bonecos (clique para trocar)",
+      "figuresOff": "Jogadores como discos com o rosto (clique para trocar)",
+      "pixel": "Pixel art",
+      "pixelOn": "Jogadores como bonecos em pixel art (clique para trocar)",
       "sound": "Som",
       "soundOn": "Som ligado: torcida, apito e bola (clique para desligar)",
       "soundOff": "Som desligado (clique para ligar)"

@@ -20,7 +20,9 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { pitchSurface, type PitchSurface, type SurfaceShape } from "@/GraficsEngine/pitchSurface";
 import { PAINTED_TURF, paintedOverlay, paintedPlacement, paintedTurfId } from "@/GraficsEngine/paintedTurf";
 import { GRASS_PHOTO, grassPhoto } from "@/GraficsEngine/grassPhoto";
-import { gameArtUrl, newVisualOn, paintedBackdrop, paintedSurround } from "@/Domain/art/paintedFaces";
+import { gameArtUrl, newVisualOn, paintedBackdrop, paintedSurround, pixelSpriteUrls } from "@/Domain/art/paintedFaces";
+import { parsePixelAtlas, type PixelAtlas } from "@/Domain/art/pixelSprite";
+import { PIXEL_FIGURE, hairLayers, pickPixelTrick, pixelFacing, pixelFrame, pixelKit, pixelLayerTint, pixelLook, pixelVariant, pixelZoom, stepPixelPlay, type PixelColours, type PixelPlay } from "@/GraficsEngine/pixelFigure";
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { bounceHeight } from "@/GraficsEngine/ballHeight";
 import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
@@ -546,7 +548,7 @@ interface Props {
   /** Art phase 9: the art pack's slimmer players ("Mais realista") instead of the current ones. Read at mount. */
   realPlayers?: boolean;
   /** Figures (the art sprites) or discs with the face (4.41.19); switched live. Absent: figures. */
-  markers?: "figures" | "discs";
+  markers?: "figures" | "discs" | "pixel";
 }
 
 export interface PitchOfficials {
@@ -1652,6 +1654,15 @@ export function PixiPitch({
       // Players as animated sprites (art phase 2, `playerSprite.ts`): the atlases load on demand; until then (or with the
       // new visual off) the disc with the face, as before.
       let spriteSheets: Record<SpriteAtlas, Spritesheet> | null = null;
+      // Pixel-art figures (10.7): the atlas of the art volume; a figure is one tinted sprite per layer.
+      let pixelArt: { atlas: PixelAtlas; source: CanvasSource; pieces: Map<number, Texture>; hair: string[] } | null = null;
+      const pixelBodies = new WeakMap<Container, { layers: (Sprite | null)[]; frame: number }>();
+      const pixelFace = new Map<number, 1 | -1>();
+      /** The clip each player is in the middle of (`stepPixelPlay`). */
+      const pixelPlays = new Map<number, PixelPlay>();
+      /** Kicks and headers that are attempts at goal: player → the action's start. */
+      const pixelShots = new Map<number, number>();
+      const markerModeDrawn = new WeakMap<Container, string>();
       const spriteMotion = new Map<number, SpriteMotion>();
       let spriteActions: SpriteAction[] = [];
       const bodyPose = new WeakMap<Container, string>();
@@ -1680,7 +1691,38 @@ export function PixiPitch({
 
       /** The marker shows the sprite figure (it has one and the mode is figures), else the disc with the face. */
       function figureShown(marker: Container): boolean {
-        return !!marker.getChildByLabel('body') && markersRef.current !== "discs";
+        return markerMode(marker) !== "discs";
+      }
+      /** What a marker shows: the mode asked for when it has that picture, else the next one it has. */
+      function markerMode(marker: Container): "pixel" | "figures" | "discs" {
+        const want = markersRef.current;
+        if (want === "pixel" && marker.getChildByLabel('pixel')) return "pixel";
+        if (want !== "discs" && marker.getChildByLabel('body')) return "figures";
+        return "discs";
+      }
+      /** Shows the parts of the marker's mode and hides the others. */
+      function applyMarkerMode(marker: Container): void {
+        const mode = markerMode(marker);
+        const set = (label: string, on: boolean) => { const c = marker.getChildByLabel(label); if (c) c.visible = on; };
+        set('body', mode === "figures");
+        set('pixel', mode === "pixel");
+        set('teamGlow', mode === "figures");
+        set('pixelGround', mode === "pixel");
+        for (const l of MARKER_DISC_PARTS) set(l, mode === "discs");
+        markerModeDrawn.set(marker, mode);
+      }
+      /** The contact shadow and the thin kit ring on the ground under a figure, right below `before`. */
+      function addGround(marker: Container, ringColor: number, before: Container): void {
+        const R = MATCH_LOOK.TEAM_RING;
+        let glow = marker.getChildByLabel('teamGlow') as Graphics | null;
+        if (glow) marker.removeChild(glow);
+        else {
+          glow = new Graphics();
+          glow.ellipse(0, markerR * R.DY, markerR * R.SHADOW_RX, markerR * R.SHADOW_RY).fill({ color: 0x000000, alpha: R.SHADOW_ALPHA });
+          glow.ellipse(0, markerR * R.DY, markerR * R.RX, markerR * R.RY).stroke({ color: ringColor, width: Math.max(1.5, markerR * R.WIDTH), alpha: R.ALPHA });
+          glow.label = 'teamGlow';
+        }
+        marker.addChildAt(glow, marker.getChildIndex(before));
       }
       // The disc's painted rim (4.41.19, vector layout refined with FLUX): tinted with the kit over the two-tone border.
       let rimTexture: Texture | null = null;
@@ -1857,6 +1899,7 @@ export function PixiPitch({
 
         applyFace(player);
         addBody(player);
+        addPixel(player);
       }
 
       /**
@@ -1890,23 +1933,86 @@ export function PixiPitch({
         // No ring around a figure (4.42.18, mock option K): a soft shadow in the kit under it.
         // No ring around the figure: a contact shadow and a thin kit ring on the ground (10.2, option D).
         const R = MATCH_LOOK.TEAM_RING;
-        const glow = new Graphics();
-        glow.ellipse(0, markerR * R.DY, markerR * R.SHADOW_RX, markerR * R.SHADOW_RY).fill({ color: 0x000000, alpha: R.SHADOW_ALPHA });
-        glow.ellipse(0, markerR * R.DY, markerR * R.RX, markerR * R.RY).stroke({
-          color: groundRingColor(kit, keeper ? teamKit : trim, R.DARK_LUMA, R.FALLBACK),
-          width: Math.max(1.5, markerR * R.WIDTH), alpha: R.ALPHA,
-        });
-        glow.label = 'teamGlow';
-        marker.addChildAt(glow, marker.getChildIndex(body));
-        const fig = markersRef.current !== "discs";
-        body.visible = fig;
-        glow.visible = fig;
-        for (const l of MARKER_DISC_PARTS) {
-          const c = marker.getChildByLabel(l);
-          if (c) c.visible = !fig;
-        }
+        addGround(marker, groundRingColor(kit, keeper ? teamKit : trim, R.DARK_LUMA, R.FALLBACK), body);
+        applyMarkerMode(marker);
         const { px, py } = toPixel(player.x, player.y);
         spriteMotion.set(player.id, newMotion(px / m.scale, py / m.scale));
+      }
+
+      /** The texture of one piece of the pixel atlas (made once, shared by every player: the tint is the sprite's). */
+      function pixelPiece(rect: number): Texture {
+        const art = pixelArt!;
+        let tex = art.pieces.get(rect);
+        if (!tex) {
+          const [x, y, w, h] = art.atlas.rects[rect]!;
+          tex = new Texture({ source: art.source, frame: new Rectangle(x, y, w, h) });
+          art.pieces.set(rect, tex);
+        }
+        return tex;
+      }
+      /** Shows a frame on a pixel figure: each layer's piece at its place (only when the frame changes). */
+      function setPixelFrame(fig: Container, frame: number): void {
+        const art = pixelArt, body = pixelBodies.get(fig);
+        if (!art || !body || body.frame === frame) return;
+        body.frame = frame;
+        for (const sp of body.layers) if (sp) sp.visible = false;
+        for (const part of art.atlas.frames[frame] ?? []) {
+          const sp = body.layers[part.layer];
+          if (!sp) continue;
+          sp.texture = pixelPiece(part.rect);
+          sp.position.set(part.x, part.y);
+          sp.visible = true;
+        }
+      }
+
+      /**
+       * The player's pixel-art figure (10.7): a side-view figure standing on his spot, one sprite per layer of the
+       * atlas tinted with his kit, skin, hair and boots. It shares the ground ring, the motion and the actions of the
+       * top-down figure. Nothing without the atlas.
+       */
+      function addPixel(player: PitchPlayer): void {
+        const marker = playerGraphics.get(player.id);
+        const art = pixelArt;
+        if (!art || !marker || marker.getChildByLabel('pixel')) return;
+        const teamKit = player.team === "A" ? fillA : fillB;
+        const second = player.team === "A" ? fillA2 : fillB2;
+        const keeper = player.role === "GK";
+        const kit = keeper ? pixelKit(benchKits(["GK"], teamKit)[0]!, PLAYER_SPRITE.KEEPER_TRIM) : pixelKit(teamKit, second);
+        const rosterId = player.rosterId ?? String(player.id);
+        const look = spriteLook(rosterId), own = pixelLook(rosterId, art.hair.length);
+        const colours: PixelColours = { ...kit, skin: look.skin, hair: look.hair, boots: own.boots, hairLayer: art.hair[own.hairStyle] ?? null };
+        const fig = new Container();
+        fig.label = 'pixel';
+        const layers = art.atlas.layers.map((name) => {
+          const tint = pixelLayerTint(name, colours);
+          if (tint === null) return null;
+          const sp = new Sprite(Texture.EMPTY);
+          sp.tint = tint;
+          sp.visible = false;
+          fig.addChild(sp);
+          return sp;
+        });
+        pixelBodies.set(fig, { layers, frame: -1 });
+        // The feet stand in the ground ring.
+        fig.y = markerR * MATCH_LOOK.TEAM_RING.DY;
+        fig.scale.set(pixelZoom(markerR, art.atlas.height, MATCH_LOOK.FIGURE_SCALE, app.renderer.resolution));
+        setPixelFrame(fig, art.atlas.clips.idle!.frames[0]!);
+        const under = marker.getChildByLabel('body') ?? marker.getChildByLabel('ring');
+        marker.addChildAt(fig, under ? marker.getChildIndex(under) + 1 : marker.children.length);
+        // His own ground: a flat shadow and a thin kit ring under the feet (the top-down figure's ring is a circle
+        // around a body seen from above, too big under a standing one).
+        const G = PIXEL_FIGURE.GROUND, R = MATCH_LOOK.TEAM_RING;
+        const rx = art.atlas.body * Math.abs(fig.scale.x) * G.RX, feetY = markerR * R.DY;
+        const ground = new Graphics();
+        ground.ellipse(0, feetY, rx * G.SHADOW, rx * G.SHADOW * G.FLAT).fill({ color: 0x000000, alpha: G.SHADOW_ALPHA });
+        ground.ellipse(0, feetY, rx, rx * G.FLAT).stroke({ color: groundRingColor(kit.shirt, keeper ? teamKit : second, R.DARK_LUMA, R.FALLBACK), width: Math.max(1.5, markerR * G.WIDTH), alpha: G.ALPHA });
+        ground.label = 'pixelGround';
+        marker.addChildAt(ground, marker.getChildIndex(fig));
+        applyMarkerMode(marker);
+        if (!spriteMotion.has(player.id)) {
+          const { px, py } = toPixel(player.x, player.y);
+          spriteMotion.set(player.id, newMotion(px / m.scale, py / m.scale));
+        }
       }
 
       /** Shows the frame `base` of `atlas` on a body (only the textures that change). */
@@ -2020,6 +2126,24 @@ export function PixiPitch({
           }
           for (const p of stateRef.current.players) addBody(p);
         }).catch(() => { /* the discs stay */ });
+        const pixelUrls = pixelSpriteUrls();
+        if (pixelUrls) {
+          void (async () => {
+            const atlas = parsePixelAtlas(await fetch(pixelUrls.data).then((r) => (r.ok ? r.json() : null)));
+            const image = atlas ? await loadImage(pixelUrls.image) : null;
+            if (facesDisposed || !atlas || !image) return;
+            // A description ahead of its image (a piece outside it): no pixel figures.
+            if (atlas.rects.some(([x, y, w, h]) => x + w > image.naturalWidth || y + h > image.naturalHeight)) return;
+            const canvas = document.createElement("canvas");
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            canvas.getContext("2d")?.drawImage(image, 0, 0);
+            // Nearest sampling: the art's pixels stay square at the whole-pixel zoom.
+            const source = new CanvasSource({ resource: canvas, transparent: true, scaleMode: "nearest" });
+            pixelArt = { atlas, source, pieces: new Map(), hair: hairLayers(atlas) };
+            for (const p of stateRef.current.players) addPixel(p);
+          })().catch(() => { /* the other figures stay */ });
+        }
         void (async () => {
           const json = await fetch(gameArtUrl("crowd/crowd-atlas.json")).then((r) => (r.ok ? r.json() : null)) as { frames: Record<string, { frame: { x: number; y: number; w: number; h: number } }> } | null;
           const image = json ? await loadImage(gameArtUrl("crowd/crowd-atlas.png")) : null;
@@ -2352,12 +2476,19 @@ export function PixiPitch({
       /** The taker of the current throw-in: his throw shows the throw frame. */
       let throwTaker: number | null = null;
       const act = (playerId: number | null | undefined, kind: SpriteAction["kind"], side: 1 | -1 = 1) => {
-        if (playerId === null || playerId === undefined || !spriteSheets || !framesShown()) return;
+        if (playerId === null || playerId === undefined || (!spriteSheets && !pixelArt) || !framesShown()) return;
         spriteActions = addAction(spriteActions, { playerId, kind, side }, effectNow);
       };
       const unsubPoses = [
-        gameBus.on("shot", (e) => act(e.player, "kick")),
-        gameBus.on("header", (e) => act(e.player, "header")),
+        // An attempt at goal: the pixel figures may strike it with a showy move (volley, rabona, bicycle kick).
+        gameBus.on("shot", (e) => { act(e.player, "kick"); pixelShots.set(e.player, effectNow); }),
+        gameBus.on("header", (e) => { act(e.player, "header"); pixelShots.set(e.player, effectNow); }),
+        // A won dribble: the pixel figure plays one of its tricks (kept through a pose he is still in).
+        gameBus.on("dribble", (e) => {
+          if (!e.success || !pixelArt || !framesShown()) return;
+          const clip = pickPixelTrick(pixelArt.atlas, pixelVariant(e.player, effectNow));
+          if (clip) pixelPlays.set(e.player, { clip, startedAt: effectNow, key: spriteActions.find((a) => a.playerId === e.player)?.startedAt ?? -1 });
+        }),
         // The preview's choice: a keeper throws a short ball, a long pass is a kick, a short one a pass.
         gameBus.on("passAttempted", (e) => {
           const d = e.distance ?? 0;
@@ -4197,22 +4328,16 @@ export function PixiPitch({
               starDrawnRef.current.set(player.id, kind);
             }
           }
-          const bodyC = g.getChildByLabel('body') as Container | null;
-          if (bodyC) {
-            // Figures or discs, switched live (4.41.19).
-            const fig = markersRef.current !== "discs";
-            if (bodyC.visible !== fig) {
-              bodyC.visible = fig;
-              const glow = g.getChildByLabel('teamGlow');
-              if (glow) glow.visible = fig;
-              for (const l of MARKER_DISC_PARTS) {
-                const c = g.getChildByLabel(l);
-                if (c) c.visible = !fig;
-              }
-            }
-          }
-          const body = bodyC?.visible ? bodyC : null;
-          if (body) {
+          // Figures, pixel figures or discs, switched live (4.41.19, 10.7).
+          const mode = markerMode(g);
+          if (markerModeDrawn.get(g) !== mode) applyMarkerMode(g);
+          const body = mode === "figures" ? g.getChildByLabel('body') as Container | null : null;
+          const pixelFig = mode === "pixel" ? g.getChildByLabel('pixel') as Container | null : null;
+          // A pixel figure stands up: the one lower on the screen is drawn over the one above it.
+          { const z = pixelFig ? Math.round(py) * PIXEL_FIGURE.Z_PER_PX : 0; if (g.zIndex !== z) g.zIndex = z; }
+          // How far above the spot the figure ends: what sits over the head (stamina, name) starts there.
+          let headR = drawnR;
+          if (body || pixelFig) {
             const prevM = spriteMotion.get(player.id) ?? newMotion(px / m.scale, py / m.scale);
             const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
             const ballPx = toPixel(drawnB.x, drawnB.y);
@@ -4221,15 +4346,46 @@ export function PixiPitch({
             const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, backpedals(player.role === "GK", withBall !== null && withBall !== player.team, ballDist));
             spriteMotion.set(player.id, mo);
             const action = actionOf.get(player.id) ?? null;
-            // A dive's side as drawn: the engine side (+y / -y, turned with the mirror) against the keeper's right hand.
-            const diveSide = action?.kind === "dive" && Math.sin(mo.angle + Math.PI / 2) * action.side * (mirrorRef.current ? -1 : 1) >= 0 ? "right" : "left";
             const sp = stateRef.current.setPiece;
             const throwing = sp?.type === "throw_in" && sp.takerId === player.id;
             if (throwing) throwTaker = player.id;
-            const pose = poseOf(mo, action, effectNow, player.role === "GK", diveSide, throwing ? THROW_IN_HOLD : undefined);
-            setPose(body, pose.atlas, pose.base);
-            // The sprite faces -y: turn it to where he faces, against the marker's own animation turn.
-            body.rotation = mo.angle + Math.PI / 2 - g.rotation;
+            if (body) {
+              // A dive's side as drawn: the engine side (+y / -y, turned with the mirror) against the keeper's right hand.
+              const diveSide = action?.kind === "dive" && Math.sin(mo.angle + Math.PI / 2) * action.side * (mirrorRef.current ? -1 : 1) >= 0 ? "right" : "left";
+              const pose = poseOf(mo, action, effectNow, player.role === "GK", diveSide, throwing ? THROW_IN_HOLD : undefined);
+              setPose(body, pose.atlas, pose.base);
+              // The sprite faces -y: turn it to where he faces, against the marker's own animation turn.
+              body.rotation = mo.angle + Math.PI / 2 - g.rotation;
+            } else if (pixelFig && pixelArt) {
+              const A = pixelArt.atlas, keeper = player.role === "GK";
+              const res = app.renderer.resolution;
+              const zoom = pixelZoom(markerR, A.height, MATCH_LOOK.FIGURE_SCALE, res);
+              // Side view: he looks left or right, toward where he moves (or the ball, standing still).
+              const facing = pixelFacing(pixelFace.get(player.id) ?? (player.attackDir * xSign() >= 0 ? 1 : -1), mo.angle);
+              pixelFace.set(player.id, facing);
+              // The clip he is in: a new action starts one, and it plays to its end.
+              const play = stepPixelPlay(A, pixelPlays.get(player.id) ?? null, action, effectNow, {
+                keeper,
+                diveDown: action?.kind === "dive" && action.side * (mirrorRef.current ? -1 : 1) > 0,
+                shot: action !== null && pixelShots.get(player.id) === action.startedAt,
+                variant: action ? pixelVariant(player.id, action.startedAt) : 1,
+              });
+              if (play) pixelPlays.set(player.id, play); else pixelPlays.delete(player.id);
+              setPixelFrame(pixelFig, pixelFrame(A, mo, play, effectNow, {
+                keeper,
+                hasBall: player.id === heldId,
+                ready: ballDist <= PIXEL_FIGURE.KEEPER_READY_YDS,
+                stance: withBall !== null && withBall !== player.team && ballDist <= PIXEL_FIGURE.STANCE_YDS,
+                hold: throwing,
+                offset: player.id * 0.137,
+              }));
+              pixelFig.scale.set(facing * zoom, zoom);
+              pixelFig.rotation = -g.rotation;
+              // On whole device pixels, so the art's pixels stay square and the layers never part.
+              const snap = (v: number) => Math.round(v * res) / res;
+              pixelFig.position.set(snap(g.x) - g.x, snap(g.y + markerR * MATCH_LOOK.TEAM_RING.DY) - g.y);
+              headR = A.height * zoom - markerR * MATCH_LOOK.TEAM_RING.DY;
+            }
           }
           if (player.id === glowId) {
             // A gold ring pulsing on the ground under the ball holder.
@@ -4245,7 +4401,7 @@ export function PixiPitch({
           // Stamina as a straight bar above the head, filling left to right (only the user's players live).
           const B = MATCH_LOOK.STAMINA_BAR;
           const showStamina = !staminaTeamsRef.current || staminaTeamsRef.current.includes(player.team);
-          const bw = drawnR * B.W, bx = px - bw / 2, by = py - drawnR - B.GAP - B.H;
+          const bw = drawnR * B.W, bx = px - bw / 2, by = py - headR - B.GAP - B.H;
           if (showStamina) fatigueGfx.roundRect(bx - 1, by - 1, bw + 2, B.H + 2, B.R + 1).fill({ color: 0x000000, alpha: FATIGUE_BAR.TRACK_ALPHA });
           const fill = fatigueFill(player.energy);
           if (showStamina && fill > 0) {
@@ -4281,7 +4437,7 @@ export function PixiPitch({
             { const shirt = shirtName(player.name); if (label.text !== shirt) label.text = shirt; }
             label.x = px;
             // The name sits over the stamina bar when both show.
-            label.y = py - (drawnR + MATCH_LOOK.PILL.LIFT + (showStamina ? B.GAP + B.H : 0));
+            label.y = py - (headR + MATCH_LOOK.PILL.LIFT + (showStamina ? B.GAP + B.H : 0));
             const pill = playerPills.get(player.id);
             if (pill) {
               // Sprite players: the face goes in the pill, left of the name (the marker has none).
@@ -4770,7 +4926,10 @@ export function PixiPitch({
             const sp = v ? Math.hypot(v.vx, v.vy) : 0;
             const dx = sp > 0.15 ? v!.vx / sp : holder.attackDir * xSign(), dy = sp > 0.15 ? v!.vy / sp : 0;
             const reach = markerR * (figureShown(hg) ? MATCH_LOOK.FIGURE_SCALE : MATCH_LOOK.DISC_SCALE) + ballR * 0.9;
-            bx = hg.x + dx * reach; by = hg.y + dy * reach;
+            if (markerMode(hg) === "pixel") {
+              // A side-view figure: the ball on the ground in front of the foot, on the side he looks.
+              bx = hg.x + (pixelFace.get(holder.id) ?? 1) * reach * 0.85; by = hg.y + markerR * MATCH_LOOK.TEAM_RING.DY;
+            } else { bx = hg.x + dx * reach; by = hg.y + dy * reach; }
           }
         }
         const h = drawnB.h;
@@ -5148,6 +5307,11 @@ export function PixiPitch({
         refreshFacesRef.current = null;
         for (const tex of faceTextures.values()) tex.destroy(true);
         faceTextures.clear();
+        if (pixelArt) {
+          for (const tex of pixelArt.pieces.values()) tex.destroy(false);
+          pixelArt.source.destroy();
+        }
+        pixelArt = null;
         simClock.destroy();
         unsubMatchStateSync();
         unsubRemoteState?.();

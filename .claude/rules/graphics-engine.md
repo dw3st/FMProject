@@ -560,3 +560,36 @@ Pedido do usuário, opção D de quatro renderizações reais. `STADIUM.ROW_DEPT
 ## Bonecos separados quando se cobrem (10.4)
 
 Pedido do usuário, opção D de quatro renderizações reais. Os bonecos são desenhados bem mais largos que o espaço real de um jogador, então dois jogadores a 1 ou 2 jardas se cobriam. `markerSpread.ts` (puro, com teste): `spreadOffsets` empurra cada par mais perto que `MATCH_LOOK.SPREAD.MIN_DIST` (2,1 raios do marcador) ao longo da linha entre eles, no máximo `MAX_SHIFT` (1 raio, cerca de 2 jardas) da posição real; `easeOffsets` entra e sai aos poucos (`RATE` 10 por segundo). Ficam no lugar real os goleiros, a barreira, quem tem a bola e quem vai receber o passe (a bola nunca salta). Aplicado ao `drawnPos` no fim, depois da gravação do replay, então vale ao vivo, no replay, na transmissão e no jogo entre técnicos. Só desenho: o motor não vê essas posições. Medido: 60 quadros por segundo, antes e depois.
+
+## Bonecos em pixel art (10.7)
+
+Pedido do usuário (visual de arcade, só os bonecos: gramado, torcida e estádio não mudam). Terceira opção de `markers`
+do `PixiPitch` (`figures` | `pixel` | `discs`; botão Bonecos da partida alterna, `fm.match.markers`, `nextMatchMarkers` /
+`shownMatchMarkers` em `artPrefs.ts`; chip no `/test`). Só desenho: nada no `GameState`.
+
+- **Arte:** pack comprado "Goals in Pixels" (n3cloud, itch.io), que **não pode ser redistribuído**: fontes em
+  `fmproject-art-handoff/packs/goals-in-pixels/` e saída em `art/sprites/` do volume de arte (local `src/Data/art/sprites/`),
+  nunca no git. `python -I data_process/assets/pixel_players/build_pixel_players.py <pack> <saída>…` lê os `.aseprite`
+  (`ase.py`), separa cada quadro em camadas de tinta (pele, meias, chuteiras, calção, camisa, luvas, 5 cabelos, efeitos),
+  passa as tingíveis para cinza, recorta, tira repetidas e empacota: `goals-in-pixels-1.png` (512 × 341, 896 peças) +
+  `.json` (258 quadros: 194 do jogador, 64 do goleiro; 34 clipes) + o ponteiro `pixel-players.json`. Atlas alterado =
+  nome novo (`NAME` no script; URL de arte é `immutable`). `preview_clips.py` desenha a folha de contato dos clipes.
+- **Servidor** (`artAssets.ts`, `loadPixelSprite`): lê o ponteiro, valida a descrição (`parsePixelAtlas`,
+  `src/Domain/art/pixelSprite.ts`) e confere a imagem; anuncia `pixelSprite: { data, image }` no manifesto
+  (`/api/art/faces`, só com `ART_VISUAL` ligado) e serve só esses dois arquivos além do `index.json`. Sem atlas válido a
+  opção não existe (o botão fica em bonecos ⇄ discos).
+- **Desenho** (`pixelFigure.ts`, puro, com teste): um `Container` `pixel` por jogador com um `Sprite` por camada, tingido
+  (`pixelLayerTint`: uniforme `pixelKit`, pele e cabelo de `spriteLook`, estilo de cabelo e chuteira de `pixelLook`); as
+  texturas das peças são compartilhadas. Zoom em pixels inteiros do aparelho (`pixelZoom`, altura ≈ 1,7 × a largura do
+  boneco de cima), amostragem `nearest`, posição presa ao pixel. Vira para a esquerda ou direita pela direção
+  (`pixelFacing`); quem está mais abaixo na tela é desenhado por cima (`zIndex`); chão próprio (`pixelGround`: sombra e anel
+  achatado na cor do uniforme); a bola com dono fica ao lado do pé.
+- **Movimentos:** os mesmos `SpriteAction` dos bonecos de cima escolhem o clipe (`pickPixelClip`), e o clipe vai até o
+  fim mesmo depois de a ação acabar (`stepPixelPlay`). Parado, andando (`run` do pack) e correndo (`sprint`), com a bola
+  (`walkBall` / `runBall`), postura de marcação a até 9 jardas da bola, goleiro atento com a bola a até 45 jardas.
+  Finalização (`shot` / `header`): 12% voleio, 4% letra, 12% dos cabeceios viram bicicleta. Drible ganho (`dribble`):
+  roleta, hocus pocus ou elástico (`pickPixelTrick`). Goleiro: clipes próprios (`keeper*`, saltos `diveUp` / `diveDown`).
+- Testes: `bun test src/Domain/art src/GraficsEngine/pixelFigure.test.ts src/backend/artAssets.test.ts`.
+- Limitações: árbitro, técnicos e reservas continuam os de cima; sem ação "reclamar" nem arremesso lateral próprios; os
+  dribles com a bola no ar do pack (lambreta, embaixadinhas) ficaram de fora porque a bola é a do jogo; o goleiro corre
+  com os quadros do jogador (sem luvas); a transmissão (assistir) usa os bonecos de cima.

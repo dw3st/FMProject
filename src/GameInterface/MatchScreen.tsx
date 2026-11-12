@@ -47,7 +47,8 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
-import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS } from "@/GameInterface/artPrefs";
+import { pixelSprite } from "@/Domain/art/pixelSprite";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, nextMatchMarkers, shownMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS } from "@/GameInterface/artPrefs";
 import { MatchAudio } from "@/GameInterface/MatchAudio/matchAudio";
 import { crowdExcitement } from "@/Domain/match/matchSound";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
@@ -243,7 +244,7 @@ export function MatchScreen() {
     return !on;
   }), []);
   const toggleMarkers = useCallback(() => setMarkersPref((m) => {
-    const next = m === "discs" ? "figures" : "discs";
+    const next = nextMatchMarkers(shownMatchMarkers(m, pixelSprite() !== null), pixelSprite() !== null);
     writeMatchMarkers(next);
     return next;
   }), []);
@@ -2188,8 +2189,8 @@ export function MatchScreen() {
               replayAvailable={!h2hMode}
               onZoom={toggleCamera}
               onReplay={toggleReplay}
-              figures={markersPref === "figures"}
-              onFigures={newVisualOn() ? toggleMarkers : undefined}
+              markers={shownMatchMarkers(markersPref, pixelSprite() !== null)}
+              onMarkers={newVisualOn() ? toggleMarkers : undefined}
               sound={soundPref}
               onSound={toggleSound}
             />

@@ -6,6 +6,7 @@
 import { personCombo } from "@/Domain/art/personCombo";
 import type { ManagerFace } from "@/Domain/faces/managerFace";
 import { seedFrom } from "@/Domain/rng";
+import { pixelSprite, setPixelSprite } from "@/Domain/art/pixelSprite";
 
 /** Version segment of the art URLs (`/assets/art/v3/...`): bump it whenever the art files change. */
 export const ART_ASSET_VERSION = "v8";
@@ -26,6 +27,8 @@ export interface ArtManifest extends PaintedFaceIds {
   /** Painted facilities and inbox illustrations (art phase 7). */
   facilities?: string[];
   news?: string[];
+  /** Pixel-art player figures (10.7): where the atlas is (`PixelSpritePointer`), or null. */
+  pixelSprite?: unknown;
   /** The new visual is on on the server (`ART_VISUAL` not 0). */
   visual?: boolean;
 }
@@ -127,6 +130,12 @@ export function setPaintedFaces(ids: PaintedFaceIds | null): void {
 
 const artUrl = (path: string) => `/assets/art/${ART_ASSET_VERSION}/${path}`;
 
+/** URLs of the pixel-art players' atlas (description and image), or null without one. */
+export function pixelSpriteUrls(): { data: string; image: string } | null {
+  const p = pixelSprite();
+  return p ? { data: artUrl(p.data), image: artUrl(p.image) } : null;
+}
+
 /** Painted webp of a player, or null. */
 export function paintedPlayerFace(playerId: string): string | null {
   return painted.players.has(playerId) ? artUrl(`faces/players/${encodeURIComponent(playerId)}.webp`) : null;
@@ -195,6 +204,7 @@ function applyManifest(body: Partial<ArtManifest>, wantsNewVisual: boolean): voi
     wantsNewVisual && Array.isArray(body.news) ? body.news : [],
   );
   setNewVisual(wantsNewVisual && body.visual === true);
+  setPixelSprite(wantsNewVisual && body.visual === true ? body.pixelSprite : null);
   setPaintedFaces({
     players: Array.isArray(body.players) ? body.players : [],
     coaches: Array.isArray(body.coaches) ? body.coaches : [],

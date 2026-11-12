@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/GameInterface/Icons";
+import type { MatchMarkers } from "@/GameInterface/artPrefs";
 
 /** One TV-style switch: icon, label and a small on/off light; `aria-pressed` carries the state. */
 function ViewSwitch({ icon, label, on, disabled, title, onClick, fill }: {
@@ -40,12 +41,12 @@ function ViewSwitch({ icon, label, on, disabled, title, onClick, fill }: {
  * Live match view switches (4.41.17, tester request): the camera following the ball (zoom) and the goal replay, on
  * and off at any moment; the choice is saved for the next match. The replay does not exist between two managers.
  */
-export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onReplay, figures, onFigures, fill, sound, onSound }: {
+export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onReplay, markers, onMarkers, fill, sound, onSound }: {
   zoom: boolean; replay: boolean; replayAvailable: boolean; onZoom: () => void; onReplay: () => void;
   /** Spread over the full width (the block above the team list, 4.41.20). */
   fill?: boolean;
-  /** Figures or discs (4.41.19); absent without the new visual (only discs then). */
-  figures?: boolean; onFigures?: () => void;
+  /** Figures, pixel-art figures or discs (4.41.19, 10.7): one click goes to the next; absent without the new visual (only discs then). */
+  markers?: MatchMarkers; onMarkers?: () => void;
   /** Match sound on / off (leva 3). */
   sound?: boolean; onSound?: () => void;
 }) {
@@ -72,13 +73,13 @@ export function MatchViewToggles({ zoom, replay, replayAvailable, onZoom, onRepl
           fill={fill}
         />
       )}
-      {onFigures && (
+      {onMarkers && (
         <ViewSwitch
           icon="user"
-          label={t("match.view.figures")}
-          on={!!figures}
-          title={t(figures ? "match.view.figuresOn" : "match.view.figuresOff")}
-          onClick={onFigures}
+          label={t(markers === "pixel" ? "match.view.pixel" : "match.view.figures")}
+          on={markers !== "discs"}
+          title={t(markers === "pixel" ? "match.view.pixelOn" : markers === "discs" ? "match.view.figuresOff" : "match.view.figuresOn")}
+          onClick={onMarkers}
           fill={fill}
         />
       )}

@@ -1274,8 +1274,10 @@
       "replayOff": "Goal replays off. Click to turn them on.",
       "replayH2h": "No replay in a match between two managers.",
       "figures": "Figures",
-      "figuresOn": "Players drawn as figures (click for discs with the face)",
-      "figuresOff": "Players drawn as discs with the face (click for figures)",
+      "figuresOn": "Players drawn as figures (click to change)",
+      "figuresOff": "Players drawn as discs with the face (click to change)",
+      "pixel": "Pixel art",
+      "pixelOn": "Players drawn as pixel-art figures (click to change)",
       "sound": "Sound",
       "soundOn": "Sound on: crowd, whistle and ball (click to turn off)",
       "soundOff": "Sound off (click to turn on)"

@@ -548,6 +548,8 @@ export function TestScreen() {
   const [officialsOn, setOfficialsOn] = useState(false);
   /** Visual 2 (#129): stretcher, pacing managers, benches, shaking net, jumping fans, celebration. */
   const [extrasOn, setExtrasOn] = useState(false);
+  // Players as top-down figures, pixel-art figures (10.7, with the atlas on the art volume) or discs.
+  const [markersMode, setMarkersMode] = useState<"figures" | "pixel" | "discs">("figures");
   const [followCam, setFollowCam] = useState(false);
   const [replayTest, setReplayTest] = useState(false);
   const [crowdFill, setCrowdFill] = useState<CrowdFillKey>("default");
@@ -1693,6 +1695,7 @@ export function TestScreen() {
         <Chip selected={stadiumOn} onClick={() => setStadiumOn(v => !v)} title="Stadium band with the crowd">Stadium</Chip>
         <Chip selected={officialsOn} onClick={() => setOfficialsOn(v => !v)} title="Referee, assistants and managers">Officials</Chip>
         <Chip selected={extrasOn} onClick={() => setExtrasOn(v => !v)} title="Stretcher, pacing managers and benches (with Officials), shaking net, jumping fans, goal celebration">Extras</Chip>
+        <Chip selected={markersMode !== "figures"} onClick={() => setMarkersMode(v => (v === "figures" ? "pixel" : v === "pixel" ? "discs" : "figures"))} title="Players as top-down figures, pixel-art figures (needs the atlas on the art volume) or discs">{markersMode === "figures" ? "Figures" : markersMode === "pixel" ? "Pixel art" : "Discs"}</Chip>
         <Chip selected={followCam} onClick={() => setFollowCam(v => !v)} title="Camera zoomed in following the ball (art phase 5)">Follow cam</Chip>
         <Chip selected={replayTest} onClick={() => setReplayTest(v => !v)} title="Slow-motion replay after a goal (art phase 5)">Replay</Chip>
         {stadiumOn && (
@@ -1967,6 +1970,7 @@ export function TestScreen() {
               perfRef={pitchPerfRef}
               stadium={pitchStadium}
               extras={extrasOn}
+              markers={markersMode}
               camera={followCam ? "follow" : "fixed"}
               replay={replayTest}
               onReplay={(on) => debugLog("shot", on ? "goal replay started" : "goal replay ended")}

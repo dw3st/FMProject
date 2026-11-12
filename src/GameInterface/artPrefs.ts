@@ -59,16 +59,31 @@ export function writeGoalReplay(on: boolean): void {
   }
 }
 
-/** Players drawn as figures (the art sprites, default) or as discs with the face (4.41.19), switched in the match. */
+/**
+ * Players drawn as figures (the art sprites, default), as pixel-art figures (10.7, only with the atlas on the server)
+ * or as discs with the face (4.41.19), switched in the match.
+ */
 const MARKERS_KEY = "fm.match.markers";
-export type MatchMarkers = "figures" | "discs";
+export type MatchMarkers = "figures" | "pixel" | "discs";
 
 export function readMatchMarkers(): MatchMarkers {
   try {
-    return localStorage.getItem(MARKERS_KEY) === "discs" ? "discs" : "figures";
+    const v = localStorage.getItem(MARKERS_KEY);
+    return v === "discs" || v === "pixel" ? v : "figures";
   } catch {
     return "figures";
   }
+}
+
+/** The next way to draw the players when the switch is clicked: figures → pixel art (when there is any) → discs. */
+export function nextMatchMarkers(current: MatchMarkers, pixelAvailable: boolean): MatchMarkers {
+  if (current === "figures") return pixelAvailable ? "pixel" : "discs";
+  return current === "pixel" ? "discs" : "figures";
+}
+
+/** What is drawn for a saved choice: pixel art without its atlas falls back to the figures. */
+export function shownMatchMarkers(saved: MatchMarkers, pixelAvailable: boolean): MatchMarkers {
+  return saved === "pixel" && !pixelAvailable ? "figures" : saved;
 }
 
 export function writeMatchMarkers(v: MatchMarkers): void {

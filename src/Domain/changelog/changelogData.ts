@@ -27,6 +27,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.7",
+    date: "2026-11-12",
+    items: [
+      { pt: "Bonecos em pixel art na partida: o botão Bonecos agora alterna entre os bonecos de sempre, os bonecos em pixel art e os discos. Em pixel art cada jogador fica em pé no gramado, com o uniforme do time, tom de pele, cabelo e chuteiras próprios.", en: "Pixel-art figures in the match: the Figures button now switches between the usual figures, pixel-art figures and discs. In pixel art each player stands on the pitch in his team's kit, with his own skin tone, hair and boots." },
+      { pt: "Movimentos novos em pixel art: chute, voleio, letra e bicicleta nas finalizações, cabeceio no salto, carrinho, dribles (roleta, elástico e hocus pocus), postura de marcação, comemoração e goleiro que se posiciona, salta e cai na bola.", en: "New moves in pixel art: shots, volleys, rabonas and bicycle kicks on attempts at goal, jumping headers, slide tackles, dribble tricks (roulette, elastico and hocus pocus), a defensive stance, celebrations and a keeper who sets himself, dives and lands on the ball." },
+    ],
+  },
+  {
     version: "10.6.4",
     date: "2026-11-12",
     time: "14:06",
@@ -5965,6 +5973,5 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Partida em pixel art: jogadores, juiz e bola desenhados em pixel art, com chutes, dribles e defesas novos", en: "Pixel-art match: players, referee and ball drawn in pixel art, with new shots, dribbles and saves" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];
