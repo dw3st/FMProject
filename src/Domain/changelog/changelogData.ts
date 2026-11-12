@@ -29,7 +29,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "10.6.2",
     date: "2026-11-12",
-    time: "11:49",
+    time: "11:51",
     items: [],
     fixes: [
       { pt: "Escudos: mais 89 clubes ganharam escudo, entre eles Legia, Pogoń, Śląsk, Zagłębie, APOEL, Omonia, Anorthosis, Partizan, Levski, HJK, St. Gallen, Vaduz, Hapoel Tel Aviv, Hapoel Beer Sheva e Ternana. Os times reservas russos usam o escudo do time principal. Agora 1250 dos 1273 clubes têm escudo.", en: "Crests: 89 more clubs got their crest, among them Legia, Pogoń, Śląsk, Zagłębie, APOEL, Omonia, Anorthosis, Partizan, Levski, HJK, St. Gallen, Vaduz, Hapoel Tel Aviv, Hapoel Beer Sheva and Ternana. The Russian reserve sides wear the first team's crest. 1250 of the 1273 clubs now have a crest." },
