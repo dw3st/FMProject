@@ -15,7 +15,10 @@ describe("friendlyDue", () => {
   });
   test("not on another day", () => expect(friendlyDue({ ...base, date: "2026-08-02" })).toBe(false));
   test("not too close to the next official game", () => expect(friendlyDue({ ...base, nextOfficial: "2026-08-06" })).toBe(false));
-  test("not too long before it", () => expect(friendlyDue({ ...base, nextOfficial: "2026-09-13" })).toBe(false));
+  test("from eight weeks before it, not earlier", () => {
+    expect(friendlyDue({ ...base, nextOfficial: "2026-09-26" })).toBe(true);
+    expect(friendlyDue({ ...base, nextOfficial: "2026-09-27" })).toBe(false);
+  });
   test("not on a FIFA date, a match day, or with no game ahead", () => {
     expect(friendlyDue({ ...base, blocked: true })).toBe(false);
     expect(friendlyDue({ ...base, playsToday: true })).toBe(false);

@@ -27,6 +27,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "10.6.3",
+    date: "2026-11-12",
+    time: "12:05",
+    items: [],
+    fixes: [
+      { pt: "Amistosos do diretor: a pré-temporada começa mais cedo. O diretor marca amistosos nos sábados livres a partir de oito semanas antes do primeiro jogo oficial (eram seis).", en: "Director's friendlies: the pre-season starts earlier. The director arranges friendlies on the free Saturdays from eight weeks before the first official game (it was six)." },
+    ],
+  },
+  {
     version: "10.6.2",
     date: "2026-11-12",
     time: "11:51",

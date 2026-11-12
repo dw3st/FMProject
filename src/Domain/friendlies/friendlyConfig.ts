@@ -4,8 +4,8 @@ export const FRIENDLY = {
   WEEKDAY: 6,
   /** The next official game has to be at least this far: the last friendly never tires the team for it. */
   MIN_DAYS_BEFORE: 6,
-  /** ...and at most this far: friendlies are the pre-season, not the whole break. Up to 6 Saturdays. */
-  MAX_DAYS_BEFORE: 42,
+  /** ...and at most this far: friendlies are the pre-season, not the whole break. Up to 8 Saturdays (6 until 10.6.3). */
+  MAX_DAYS_BEFORE: 56,
   /** DP of a friendly against an official game (growth only). */
   DP_MULT: 0.5,
   /** Below this fitness a player stays out. */
