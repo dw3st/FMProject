@@ -1033,7 +1033,7 @@ export function MatchPreviewScreen() {
     ? matchHeading({ fixture, competition, cupStage: cupStageName, continentalStage: continentalStageName, continentalGroup }, t)
     : competition;
 
-  const myLogoUrl  = national ? undefined : squadLogoUrl(mySquadId || session.clubId);
+  const myLogoUrl  = squadLogoUrl(matchSetup?.national?.teamId ?? (mySquadId || session.clubId));
   const oppLogoUrl = opponentId ? squadLogoUrl(opponentId) : undefined;
 
   // Assign home/away

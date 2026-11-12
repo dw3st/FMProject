@@ -31,16 +31,26 @@ function fontPath(file: string, pkg: string): string {
   return join(dirname(Bun.resolveSync(`@fontsource/${pkg}/400.css`, import.meta.dir)), "files", file);
 }
 
-let flagFiles: Set<string> | null = null;
-let flagDir: string | null = null;
+type FlagShape = "4x3" | "1x1";
+const flagCache: Partial<Record<FlagShape, { dir: string; files: Set<string> }>> = {};
 
-function flags(): { dir: string; files: Set<string> } {
-  if (flagFiles === null || flagDir === null) {
+function flags(shape: FlagShape = "4x3"): { dir: string; files: Set<string> } {
+  let hit = flagCache[shape];
+  if (!hit) {
     const css = Bun.resolveSync("flag-icons/css/flag-icons.min.css", import.meta.dir);
-    flagDir = join(dirname(css), "..", "flags", "4x3");
-    flagFiles = new Set(readdirSync(flagDir).filter((f) => f.endsWith(".svg")));
+    const dir = join(dirname(css), "..", "flags", shape);
+    hit = { dir, files: new Set(readdirSync(dir).filter((f) => f.endsWith(".svg"))) };
+    flagCache[shape] = hit;
   }
-  return { dir: flagDir, files: flagFiles };
+  return hit;
+}
+
+function serveFlag(shape: FlagShape, file: string): Response {
+  const { dir, files } = flags(shape);
+  if (!files.has(file)) return notFound();
+  return serveFile(join(dir, file), "image/svg+xml", {
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
+  });
 }
 
 /** The pack's tab and inbox icons (art phase 9): `icons/tab-*.svg`, `icons/inbox-*.svg`. */
@@ -270,12 +280,7 @@ export const staticAssetRoutes = {
     if (pkg === undefined) return notFound();
     return serveFile(fontPath(file, pkg), "font/woff2");
   },
-  [`/assets/flags/${FLAG_ASSET_VERSION}/:file`]: (req: Request & { params: { file: string } }) => {
-    const { file } = req.params;
-    const { dir, files } = flags();
-    if (!files.has(file)) return notFound();
-    return serveFile(join(dir, file), "image/svg+xml", {
-      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
-    });
-  },
+  [`/assets/flags/${FLAG_ASSET_VERSION}/:file`]: (req: Request & { params: { file: string } }) => serveFlag("4x3", req.params.file),
+  // The square flags: the crest of a national team (`squareFlagUrl`).
+  [`/assets/flags/${FLAG_ASSET_VERSION}/1x1/:file`]: (req: Request & { params: { file: string } }) => serveFlag("1x1", req.params.file),
 };

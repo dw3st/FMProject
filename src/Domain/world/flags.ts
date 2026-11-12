@@ -13,3 +13,16 @@ export function flagUrl(code: string): string | undefined {
   const c = code.toLowerCase();
   return FLAG_CODE_RE.test(c) ? `/assets/flags/${FLAG_ASSET_VERSION}/${c}.svg` : undefined;
 }
+
+/** The square (1x1) flags: what a national team shows where a club shows its crest. */
+export const SQUARE_FLAG_PREFIX = `/assets/flags/${FLAG_ASSET_VERSION}/1x1/`;
+
+/** URL of a country's square flag, or `undefined` for a code that can't be a flag. */
+export function squareFlagUrl(code: string): string | undefined {
+  const c = code.toLowerCase();
+  return FLAG_CODE_RE.test(c) ? `${SQUARE_FLAG_PREFIX}${c}.svg` : undefined;
+}
+
+export function isSquareFlagUrl(url: string): boolean {
+  return url.startsWith(SQUARE_FLAG_PREFIX);
+}

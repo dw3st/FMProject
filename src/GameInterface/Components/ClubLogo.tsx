@@ -1,7 +1,9 @@
 import { useState } from "react";
 import LOGO_INDEX from "@/Data/logoIndex.json";
 import LOGO_BACKING from "@/Data/logoBacking.json";
+import { isSquareFlagUrl, squareFlagUrl } from "@/Domain/world/flags";
 import { logoUrlFromIndex } from "@/Domain/world/logos";
+import { nationalTeamFlagCode } from "@/Domain/world/nationalityFlag";
 import { Icon } from "@/GameInterface/Icons";
 
 /** Crests of thin dark lines that vanish on the dark background (`scripts/logoContrast.ts`): drawn on a light disc. */
@@ -15,8 +17,11 @@ const failedLogoUrls = new Set<string>();
 /**
  * Crest URL for a squad from the generated logo index (native SVG/PNG or the ESPN crest).
  * Returns undefined when the club has no crest, so the UI draws the colour shield without a request.
+ * A national team (`nat_…`) has its country's square flag for a crest.
  */
 export function squadLogoUrl(squadId: string): string | undefined {
+  const flag = nationalTeamFlagCode(squadId);
+  if (flag) return squareFlagUrl(flag);
   return logoUrlFromIndex(LOGO_INDEX as Record<string, string>, squadId);
 }
 
@@ -53,6 +58,24 @@ export function ClubLogo({
   // showing the fallback for a URL that never actually failed.
   const [failedUrl, setFailedUrl] = useState<string | undefined>(undefined);
   const failed = !!logoUrl && (failedLogoUrls.has(logoUrl) || failedUrl === logoUrl);
+
+  if (logoUrl && !failed && isSquareFlagUrl(logoUrl)) {
+    // A national team: the flag fills a disc with a thin light rim (a flag has no outline of its own).
+    return (
+      <div title={title} className={`${crestBoxClass(className)} flex items-center justify-center shrink-0`}>
+        <img
+          src={logoUrl}
+          alt={title ?? ""}
+          draggable={false}
+          className="w-[84%] h-[84%] rounded-full object-cover ring-1 ring-white/40"
+          onError={() => {
+            failedLogoUrls.add(logoUrl);
+            setFailedUrl(logoUrl);
+          }}
+        />
+      </div>
+    );
+  }
 
   if (logoUrl && !failed) {
     // A real crest is never clipped (#53): a circular mask (`rounded-full` + `overflow-hidden`,

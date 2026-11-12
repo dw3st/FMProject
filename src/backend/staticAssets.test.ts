@@ -3,14 +3,15 @@ import { Glob } from "bun";
 import { readdirSync } from "node:fs";
 import { staticAssetRoutes } from "@/backend/staticAssets";
 import { FONT_FACES, fontFacesCss, fontUrl } from "@/fontFaces";
-import { flagUrl } from "@/Domain/world/flags";
+import { flagUrl, squareFlagUrl } from "@/Domain/world/flags";
 
 type Handler = (req: Request & { params: { file: string } }) => Response;
 
 function get(path: string): Response {
-  const [prefix, handler] = Object.entries(staticAssetRoutes).find(([route]) =>
-    path.startsWith(route.replace(":file", "")),
-  )!;
+  // The longest matching route wins (the square flags live under the flags' own prefix).
+  const [prefix, handler] = Object.entries(staticAssetRoutes)
+    .filter(([route]) => path.startsWith(route.replace(":file", "")))
+    .sort((a, b) => b[0].length - a[0].length)[0]!;
   const file = path.slice(prefix.replace(":file", "").length);
   const req = Object.assign(new Request(`http://localhost${path}`), { params: { file } });
   return (handler as Handler)(req);
@@ -43,6 +44,17 @@ describe("static assets (fonts and flags served as files)", () => {
     }
     expect(get("/assets/flags/v1/zz.svg").status).toBe(404);
     expect(get("/assets/flags/v1/..%2Fbr.svg").status).toBe(404);
+  });
+
+  test("square flags (a national team's crest) are served as SVG; unknown files are 404", async () => {
+    for (const code of ["pl", "ro", "gb-eng"]) {
+      const res = get(squareFlagUrl(code)!);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Content-Type")).toBe("image/svg+xml");
+      expect(await res.text()).toContain("<svg");
+    }
+    expect(get("/assets/flags/v1/1x1/zz.svg").status).toBe(404);
+    expect(get("/assets/flags/v1/1x1/..%2Fpl.svg").status).toBe(404);
   });
 
   test("flagUrl only builds URLs for flag-shaped codes", () => {

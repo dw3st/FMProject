@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
-import { flagUrl } from "@/Domain/world/flags";
+import { countryKey } from "@/Domain/cups/cupIds";
+import { NATION_CONFED } from "@/Domain/registration/nations";
+import { nationalityFlagCode, nationalTeamFlagCode } from "@/Domain/world/nationalityFlag";
+import { flagUrl, isSquareFlagUrl, squareFlagUrl } from "@/Domain/world/flags";
 
 describe("nationalityFlagCode", () => {
   test("maps names, the home nations and handles empty", () => {
@@ -57,4 +59,31 @@ describe("nationalityFlagCode", () => {
     }
     expect([...missing]).toEqual([]);
   }, 30_000); // reads every squad of the world
+});
+
+describe("national team flag (the crest of a national team)", () => {
+  test("a national team id gives its country's flag; a club id gives none", () => {
+    expect(nationalTeamFlagCode("nat_poland")).toBe("pl");
+    expect(nationalTeamFlagCode("nat_england")).toBe("gb-eng");
+    expect(nationalTeamFlagCode(`nat_${countryKey("Côte d’Ivoire")}`)).toBe("ci");
+    expect(nationalTeamFlagCode("36")).toBeUndefined();
+    expect(nationalTeamFlagCode("of_uy_albion")).toBeUndefined();
+    expect(nationalTeamFlagCode("nat_atlantis")).toBeUndefined();
+    expect(nationalTeamFlagCode(null)).toBeUndefined();
+  });
+
+  test("every nation that can have a national team has a square flag", () => {
+    const missing = Object.keys(NATION_CONFED).filter((nation) => {
+      const code = nationalTeamFlagCode(`nat_${countryKey(nation)}`);
+      return !code || !squareFlagUrl(code);
+    });
+    expect(missing).toEqual([]);
+  });
+
+  test("square flag URLs are told apart from the 4x3 ones", () => {
+    expect(squareFlagUrl("PL")).toBe("/assets/flags/v1/1x1/pl.svg");
+    expect(squareFlagUrl("../x")).toBeUndefined();
+    expect(isSquareFlagUrl(squareFlagUrl("pl")!)).toBe(true);
+    expect(isSquareFlagUrl(flagUrl("pl")!)).toBe(false);
+  });
 });

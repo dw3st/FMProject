@@ -54,6 +54,10 @@ cada instância montada — cai no brasão gerado com as cores do clube. Ver `.c
 traço escuro, quase nada claro: QPR, Bolton e outros 9; ou contorno escuro em mais de 75% da borda, figura branca desenhada com traço fino: Millwall, Modena, Eibar, Albacete); o `ClubLogo` desenha esses sobre um disco claro. Rodar de novo
 quando o índice de escudos mudar.
 
+### Bandeira das seleções (10.6.1)
+
+Report do usuário (Polônia × Romênia ao vivo com o escudo genérico). `squadLogoUrl("nat_<país>")` devolve a bandeira quadrada do país (`nationalTeamFlagCode`, `src/Domain/world/nationalityFlag.ts`: a chave do id é o `countryKey` do nome da nação; `squareFlagUrl`, `src/Domain/world/flags.ts`), servida em `/assets/flags/v1/1x1/<código>.svg` (as 1x1 do `flag-icons`, `staticAssets.ts`). O `ClubLogo` desenha uma URL de bandeira quadrada como um disco (84% da caixa, aro claro fino), sem o contorno dos escudos. Vale em todo lugar que usa `squadLogoUrl` + `ClubLogo` com o id da seleção: partida ao vivo, prévia (o lado do técnico usa `matchSetup.national.teamId`), resultado, próximo jogo do Painel. Na torcida da partida, a bandeirinha de mão leva a bandeira no meio. Nação sem bandeira na tabela: o brasão de cores, como antes.
+
 ## Ligas seguidas
 
 Até 3 (`MAX_FOLLOWED_LEAGUES` em `src/Domain/advanceDay/simMode.ts`), guardadas em

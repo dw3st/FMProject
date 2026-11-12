@@ -1,3 +1,5 @@
+import { countryKey } from "@/Domain/cups/cupIds";
+
 /**
  * Flag code (flag-icons stem, see `flags.ts`) of a player nationality as written in the world data
  * (`RosterPlayer.nationality`, a plain country name). `undefined` for an unknown or empty name, so
@@ -57,4 +59,20 @@ export const NATIONALITY_NAMES: readonly string[] = (() => {
 export function nationalityFlagCode(nationality: string | null | undefined): string | undefined {
   const name = nationality?.trim();
   return name ? FLAG_OF[name] : undefined;
+}
+
+/** `nat_<countryKey>` (a national team's id) → flag code; built once from the nationality table. */
+let flagByTeamKey: Map<string, string> | null = null;
+
+/** Flag code of a national team id (`nat_poland` → `pl`); `undefined` for a club id or an unknown nation. */
+export function nationalTeamFlagCode(teamId: string | null | undefined): string | undefined {
+  if (!teamId || !teamId.startsWith("nat_")) return undefined;
+  if (flagByTeamKey === null) {
+    flagByTeamKey = new Map();
+    for (const [name, code] of Object.entries(FLAG_OF)) {
+      const key = countryKey(name);
+      if (!flagByTeamKey.has(key)) flagByTeamKey.set(key, code);
+    }
+  }
+  return flagByTeamKey.get(teamId.slice(4));
 }
