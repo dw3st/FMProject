@@ -101,27 +101,39 @@ export function NavMenuEditor() {
   const full = groupCount(menu) >= NAV_MENU_LIMITS.GROUPS;
 
   return (
-    <div className="mt-6 flex flex-col gap-3">
-      <div className={LABEL}>{t("settings.menu.title")}</div>
+    <div className="grid grid-cols-1 gap-x-8 gap-y-4 lg:grid-cols-3">
+      <div className="flex flex-col gap-4 lg:col-span-1">
+        <div className="flex flex-col gap-2">
+          <div className={LABEL}>{t("settings.menu.position")}</div>
+          <OptionChips<NavPosition>
+            value={menu.position}
+            onChange={(k) => apply(setPosition(menu, k))}
+            options={[{ key: "top", label: t("settings.menu.top") }, { key: "left", label: t("settings.menu.left") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.menu.positionHint")}</p>
+        </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="text-sm text-muted-foreground">{t("settings.menu.position")}</div>
-        <OptionChips<NavPosition>
-          value={menu.position}
-          onChange={(k) => apply(setPosition(menu, k))}
-          options={[{ key: "top", label: t("settings.menu.top") }, { key: "left", label: t("settings.menu.left") }]}
-        />
-        <p className="m-0 text-sm text-muted-foreground">{t("settings.menu.positionHint")}</p>
+        <div className="flex flex-wrap items-center gap-x-5">
+          <Button variant="secondary" flush onClick={() => apply({ ...defaultMenu(), position: menu.position })}>{t("settings.menu.presetFlat")}</Button>
+          <Button variant="secondary" flush onClick={() => apply({ ...groupedMenu(), position: menu.position })}>{t("settings.menu.presetGroups")}</Button>
+        </div>
+
+        <p className="m-0 text-sm text-muted-foreground">{t("settings.menu.help")}</p>
+
+        <div className="flex flex-wrap items-center gap-x-5">
+          <Button variant="secondary" flush disabled={full} title={full ? t("settings.menu.groupLimit") : undefined} onClick={() => apply(addGroup(menu, t("settings.menu.newGroup")))}>
+            <Icon name="plus" size={16} />
+            {t("settings.menu.newGroup")}
+          </Button>
+          <Button variant="secondary" flush onClick={() => apply(resetMenu())}>{t("settings.menu.reset")}</Button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-5">
-        <Button variant="secondary" flush onClick={() => apply({ ...defaultMenu(), position: menu.position })}>{t("settings.menu.presetFlat")}</Button>
-        <Button variant="secondary" flush onClick={() => apply({ ...groupedMenu(), position: menu.position })}>{t("settings.menu.presetGroups")}</Button>
-      </div>
-
-      <p className="m-0 text-sm text-muted-foreground">{t("settings.menu.help")}</p>
-
-      <ul className="m-0 flex max-w-xl list-none flex-col gap-1.5 p-0" onDragEnd={endDrag}>
+      {/* The list scrolls inside its own panel, so the controls beside it stay in view. */}
+      <ul
+        className="m-0 flex list-none flex-col gap-1.5 overflow-y-auto p-0 pr-1 lg:col-span-2 lg:max-h-[calc(100vh-17rem)]"
+        onDragEnd={endDrag}
+      >
         {menu.items.map((node, i) => {
           const last = i === menu.items.length - 1;
           if (node.kind === "tab") {
@@ -206,14 +218,6 @@ export function NavMenuEditor() {
           className={`h-3 rounded border border-dashed ${drag ? rowTone("end") : "border-transparent"}`}
         />
       </ul>
-
-      <div className="flex flex-wrap items-center gap-x-5">
-        <Button variant="secondary" flush disabled={full} title={full ? t("settings.menu.groupLimit") : undefined} onClick={() => apply(addGroup(menu, t("settings.menu.newGroup")))}>
-          <Icon name="plus" size={16} />
-          {t("settings.menu.newGroup")}
-        </Button>
-        <Button variant="secondary" flush onClick={() => apply(resetMenu())}>{t("settings.menu.reset")}</Button>
-      </div>
     </div>
   );
 }
