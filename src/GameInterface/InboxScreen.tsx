@@ -299,7 +299,7 @@ function formatFullDate(dateStr: string): string {
   return dateStr ? formatGameDate(dateStr, i18next.language, "long") : "—";
 }
 
-export function InboxScreen({ onClose }: { onClose?: () => void }) {
+export function InboxScreen({ onClose, embedded = false }: { onClose?: () => void; embedded?: boolean }) {
   const { t } = useTranslation();
   const { session, inboxMessages, setInboxMessages, refreshInbox } = useGameSave();
   const [filter, setFilter] = useState<FilterTab>("all");
@@ -394,10 +394,12 @@ export function InboxScreen({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Modal header */}
-      <div className="flex items-center gap-3 px-5 py-4 phone:px-3 phone:py-2 border-b border-border shrink-0">
-        <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex-1">
-          <TitleParts accent={t("screenTitles.inbox.accent")}>{t("screenTitles.inbox.main")}</TitleParts>
-        </h2>
+      <div className={`flex items-center gap-3 phone:px-3 phone:py-2 border-b border-border shrink-0 ${embedded ? "px-4 py-2" : "px-5 py-4"}`}>
+        {embedded ? <span className="flex-1" /> : (
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex-1">
+            <TitleParts accent={t("screenTitles.inbox.accent")}>{t("screenTitles.inbox.main")}</TitleParts>
+          </h2>
+        )}
         <div className="flex items-center gap-2">
           <SegmentedTabs
             compact

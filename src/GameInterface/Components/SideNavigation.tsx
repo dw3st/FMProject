@@ -21,7 +21,7 @@ function TabLink({ tab, inGroup }: { tab: NavTabView; inGroup?: boolean }) {
       href={tab.to}
       title={tab.fullLabel}
       aria-current={tab.active ? "page" : undefined}
-      className={`flex h-10 shrink-0 items-center gap-3 border-l-2 pr-3 no-underline font-display font-bold uppercase tracking-[0.08em] text-sm transition-colors ${inGroup ? "pl-7" : "pl-4"} ${
+      className={`flex shrink-0 items-center gap-2.5 border-l-2 pr-3 no-underline font-display font-bold uppercase tracking-[0.08em] transition-colors ${inGroup ? "h-8 pl-7 text-[13px]" : "h-9 pl-4 text-sm"} ${
         tab.active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-secondary/30 hover:text-foreground"
       }`}
     >
@@ -61,7 +61,7 @@ export function SideNavigation() {
               onClick={() => toggle(entry.id)}
               aria-expanded={open}
               title={entry.label}
-              className={`flex h-9 w-full cursor-pointer items-center gap-3 border-l-2 bg-transparent pl-4 pr-3 text-left font-display font-bold uppercase tracking-[0.08em] text-[13px] hover:text-foreground ${
+              className={`flex h-9 w-full cursor-pointer items-center gap-3 border-l-2 bg-transparent pl-4 pr-3 text-left font-display font-bold uppercase tracking-[0.08em] text-sm hover:text-foreground ${
                 !open && entry.active ? "border-primary text-foreground" : "border-transparent text-muted-foreground"
               }`}
             >
