@@ -1808,7 +1808,7 @@
     "scouting": {
       "label": "Scouting missions",
       "manager": "Manager: you create and cancel the scouts' missions in the scouting centre.",
-      "chief": "Chief scout: every Monday he sends each free scout on a mission (one on youths, the others where they know the country best, looking for the line the squad needs most). You can still create and cancel."
+      "chief": "Chief scout: every Monday he sends each free scout on a mission (one on youths, the others where they know the country best, each looking for a different line, starting with the one the squad needs most). You can still create and cancel."
     },
     "owner": {
       "director": "Director",

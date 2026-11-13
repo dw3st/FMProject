@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.1",
     date: "2026-11-13",
-    time: "17:00",
+    time: "15:55",
     items: [
       { tab: "staff", pt: "Treinador da base: uma função nova na comissão, um por clube, contratado em Mercado, aba Comissão. Quanto mais estrelas, mais rápido os jovens da base evoluem no treino e nos jogos da base (até 8% a mais com 5 estrelas; sem ninguém na função, 4% a menos).", en: "Youth coach: a new staff role, one per club, hired in Transfers, Staff tab. The more stars, the faster the academy youngsters develop in training and in youth games (up to 8% more with 5 stars; with nobody in the role, 4% less)." },
       { tab: "staff", pt: "Em Equipe técnica, aba Responsabilidades, o bloco Base deixa o treinador da base cuidar das convocações e do treino da base. O padrão continua sendo você.", en: "In Staff, Responsibilities tab, the Academy block lets the youth coach look after the youth call-ups and the academy's training. The default is still you." },

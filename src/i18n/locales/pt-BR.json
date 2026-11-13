@@ -1808,7 +1808,7 @@
     "scouting": {
       "label": "Missões dos olheiros",
       "manager": "Técnico: você cria e cancela as missões dos olheiros na central de olheiros.",
-      "chief": "Olheiro-chefe: toda segunda ele manda cada olheiro livre em missão (um atrás de jovens, os outros onde conhecem melhor o país, buscando a linha mais carente do elenco). Você ainda pode criar e cancelar."
+      "chief": "Olheiro-chefe: toda segunda ele manda cada olheiro livre em missão (um atrás de jovens, os outros onde conhecem melhor o país, cada um buscando uma linha diferente, a começar pela mais carente do elenco). Você ainda pode criar e cancelar."
     },
     "owner": {
       "director": "Diretor",
@@ -7824,7 +7824,7 @@
       "mine": {
         "title": "Com o seu clube",
         "open": "Ir para Patrocínios",
-        "left": "restantes",
+        "left": "de contrato",
         "paid": "Já recebido",
         "bonusPaid": "Bônus: {{value}} (vale {{bonus}} por meta)",
         "goals": "Metas",

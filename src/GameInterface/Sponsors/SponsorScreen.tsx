@@ -157,7 +157,7 @@ export function SponsorScreen({ companyId }: { companyId: string }) {
             <dl className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3 m-0">
               <Term label={t(`sponsors.slot.${mine.contract.slot}`)}>
                 <span className="font-display font-bold text-lg text-primary">{perSeason(mine.contract.annual, t)}</span>
-                <span className="block text-muted-foreground">{t("sponsors.seasons", { count: mine.contract.seasonsLeft })}{" · "}{t("sponsors.page.mine.left")}</span>
+                <span className="block text-muted-foreground">{t("sponsors.seasons", { count: mine.contract.seasonsLeft })}{" "}{t("sponsors.page.mine.left")}</span>
               </Term>
               <Term label={t("sponsors.goalLabel")}>
                 <span className="block">{sponsorGoalText(mine.contract.goal, t, lang)}</span>
