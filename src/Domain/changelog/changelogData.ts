@@ -33,7 +33,9 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "11.2",
     date: "2026-11-13",
+    time: "09:31",
     items: [
+      { tab: "match", pt: "Bonecos da partida redesenhados: corpo mais atlético e movimentos novos, como voleio, bicicleta, toque de letra, pedalada, roleta, domínio no peito, arrancada, postura de marcação e defesas novas do goleiro. Vale para a opção Bonecos; só o desenho muda.", en: "Match figures redrawn: a more athletic body and new moves, such as volley, bicycle kick, backheel, step-over, roulette, chest control, sprint, a marking stance and new keeper saves. For the Figures option; only the drawing changes." },
       { tab: "general", pt: "Menu do seu jeito: em Configurações → Menu você escolhe o menu em cima ou numa coluna à esquerda, muda a ordem das telas arrastando e cria seus próprios grupos. Quem não mexer continua com o menu de sempre.", en: "Your own menu: in Settings → Menu you pick the menu on top or in a column on the left, change the order of the screens by dragging and create your own groups. If you change nothing, the menu stays as it was." },
       { tab: "general", pt: "Configurações reorganizadas: janela mais larga, dividida em Geral, Partida, Visual, Som e Menu, sem aquela rolagem comprida.", en: "Settings reorganised: a wider window split into General, Match, Graphics, Sound and Menu, without the long scroll." },
       { tab: "formation", pt: "Jogadas ensaiadas: até 3 jogadas para escanteios e 3 para faltas cruzadas. Em cada uma você escolhe onde a bola vai (primeiro pau, marca do pênalti, segundo pau ou toque curto) e quantos sobem para a área. A cada cobrança o time usa uma delas.", en: "Rehearsed routines: up to 3 routines for corners and 3 for crossed free kicks. In each one you pick where the ball goes (near post, penalty spot, far post or short) and how many go up into the box. At each set piece the team uses one of them." },
@@ -6088,6 +6090,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Bonecos novos na partida: jogadores redesenhados, com chutes, dribles, cabeçadas e defesas novos", en: "New figures in the match: redrawn players with new shots, dribbles, headers and saves" },
+  { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];
