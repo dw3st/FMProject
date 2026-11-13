@@ -20,7 +20,56 @@ import { getMainRole } from "@/Domain/roles";
 import { isRealIsoDate } from "@/Domain/dates";
 
 /** The saved-lineup slots of the formation screen (#84). */
-export const LINEUP_PRESET_KEYS: readonly LineupPresetKey[] = ["A", "B", "C"];
+export const LINEUP_PRESET_KEYS: readonly LineupPresetKey[] = ["A", "B", "C", "D", "E", "F"];
+/** The slots offered during a match (the shortcuts under the pitch, "Minhas formações"). */
+export const MATCH_PRESET_KEYS: readonly LineupPresetKey[] = ["A", "B", "C"];
+
+export function isMatchPreset(key: LineupPresetKey): boolean {
+  return MATCH_PRESET_KEYS.includes(key);
+}
+
+/** The first empty slot, or null with all six taken. */
+export function firstFreeSlot(presets: LineupPresets): LineupPresetKey | null {
+  return LINEUP_PRESET_KEYS.find((k) => !presets[k]) ?? null;
+}
+
+/** A copy of a saved line-up in another slot (same name, XI and instructions); nothing changes without the source. */
+export function copyPreset(presets: LineupPresets, from: LineupPresetKey, to: LineupPresetKey): LineupPresets {
+  const source = presets[from];
+  if (!source || from === to) return presets;
+  return { ...presets, [to]: structuredClone(source) };
+}
+
+const EXPORT_PREFIX = "FMT1:";
+/** Longest code accepted on import (a free formation with every instruction is ~1.5 KB). */
+export const PRESET_CODE_MAX = 6000;
+
+/**
+ * A saved line-up as a code to paste in another save: formation, style, axes, instructions and name. The XI stays
+ * out: the players of another save are other people.
+ */
+export function exportPreset(preset: LineupPreset): string {
+  const { lineup: _lineup, savedOn: _savedOn, fromClub: _fromClub, ...rest } = preset;
+  const bytes = new TextEncoder().encode(JSON.stringify(rest));
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return EXPORT_PREFIX + btoa(bin);
+}
+
+/** The line-up of a pasted code, saved today without an XI; null for anything that is not a valid code. */
+export function importPreset(code: string, savedOn: string): LineupPreset | null {
+  const text = code.trim();
+  if (!text.startsWith(EXPORT_PREFIX) || text.length > PRESET_CODE_MAX) return null;
+  try {
+    const bin = atob(text.slice(EXPORT_PREFIX.length));
+    const raw = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))) as unknown;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const parsed = parseLineupPresets({ A: { ...(raw as Record<string, unknown>), lineup: [], savedOn } });
+    return parsed.ok ? parsed.value.A ?? null : null;
+  } catch {
+    return null;
+  }
+}
 
 const TACTICAL_STYLES: readonly TacticalStyle[] = ["counter_attack", "high_press", "possession", "balanced", "direct_play"];
 const MAX_CLUB_NAME = 80;

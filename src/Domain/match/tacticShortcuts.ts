@@ -4,7 +4,7 @@
  * stay. One change every `COOLDOWN_MIN` game minutes, so the team is not reshuffled every attack; a new period (the
  * team talk at the break) frees it.
  */
-import { LINEUP_PRESET_KEYS } from "@/Domain/tactics/lineupPresets";
+import { MATCH_PRESET_KEYS } from "@/Domain/tactics/lineupPresets";
 import type { LineupPreset, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
 
 export const TACTIC_SHORTCUTS = {
@@ -31,7 +31,7 @@ export function shortcutLocked(last: ShortcutUse | null, minute: number, phase: 
 
 /** The three slots in order, each with its saved line-up or null (empty slot). */
 export function tacticShortcutSlots(presets: LineupPresets | undefined): { key: LineupPresetKey; preset: LineupPreset | null }[] {
-  return LINEUP_PRESET_KEYS.map((key) => ({ key, preset: presets?.[key] ?? null }));
+  return MATCH_PRESET_KEYS.map((key) => ({ key, preset: presets?.[key] ?? null }));
 }
 
 /** The 11 slot instructions a shortcut sets: the saved ones, every other slot cleared. */

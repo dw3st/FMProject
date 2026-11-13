@@ -1,4 +1,6 @@
 import type { SetPieceTakersSave } from "@/types/tacticsTypes";
+import { ROUTINE_LIMITS } from "@/GameEngine/Domain/SetPieces";
+import type { SetPieceRoutine, SetPieceRoutines, SetPieceTarget } from "@/GameEngine/types";
 
 const DUTIES = ["corners", "freeKicks", "penalties"] as const;
 
@@ -17,7 +19,12 @@ export function parseSetPieceTakers(raw: unknown): SetPieceTakersSave | null {
   if (typeof raw !== "object" || Array.isArray(raw)) return null;
   const src = raw as Record<string, unknown>;
   const out: SetPieceTakersSave = {};
-  for (const key of Object.keys(src)) if (!(DUTIES as readonly string[]).includes(key)) return null;
+  for (const key of Object.keys(src)) if (key !== "routines" && !(DUTIES as readonly string[]).includes(key)) return null;
+  if (src.routines !== undefined && src.routines !== null) {
+    const routines = parseRoutines(src.routines);
+    if (!routines) return null;
+    if (Object.keys(routines).length > 0) out.routines = routines;
+  }
   for (const duty of DUTIES) {
     const v = src[duty];
     if (v === undefined || v === null) continue;
@@ -30,6 +37,32 @@ export function parseSetPieceTakers(raw: unknown): SetPieceTakersSave | null {
       ids.push(id);
     }
     if (ids.length > 0) out[duty] = ids;
+  }
+  return out;
+}
+
+const ROUTINE_KINDS = ["corners", "freeKicks"] as const;
+const ROUTINE_TARGETS: readonly SetPieceTarget[] = ["auto", "near_post", "penalty_spot", "far_post", "short"];
+
+/** `routines` of the body: per restart a list of up to 3 `{ target, attackers }`; null when the shape is invalid. */
+function parseRoutines(raw: unknown): SetPieceRoutines | null {
+  if (typeof raw !== "object" || Array.isArray(raw)) return null;
+  const src = raw as Record<string, unknown>;
+  const out: SetPieceRoutines = {};
+  for (const key of Object.keys(src)) if (!(ROUTINE_KINDS as readonly string[]).includes(key)) return null;
+  for (const kind of ROUTINE_KINDS) {
+    const list = src[kind];
+    if (list === undefined || list === null) continue;
+    if (!Array.isArray(list) || list.length > ROUTINE_LIMITS.MAX) return null;
+    const routines: SetPieceRoutine[] = [];
+    for (const r of list) {
+      if (!r || typeof r !== "object" || Array.isArray(r)) return null;
+      const { target, attackers, ...rest } = r as Record<string, unknown>;
+      if (Object.keys(rest).length > 0 || !ROUTINE_TARGETS.includes(target as SetPieceTarget)) return null;
+      if (!Number.isInteger(attackers) || (attackers as number) < ROUTINE_LIMITS.MIN_ATTACKERS || (attackers as number) > ROUTINE_LIMITS.MAX_ATTACKERS) return null;
+      routines.push({ target: target as SetPieceTarget, attackers: attackers as number });
+    }
+    if (routines.length > 0) out[kind] = routines;
   }
   return out;
 }

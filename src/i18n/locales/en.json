@@ -963,13 +963,36 @@
       "corners": "Corners",
       "freeKicks": "Free kicks",
       "penalties": "Penalties"
+    },
+    "routines": {
+      "title": "Rehearsed routines",
+      "hint": "Up to 3 routines per set piece. At each one the team uses one of them, drawn. With none, the taker decides on the spot.",
+      "corners": "Corners",
+      "freeKicks": "Crossed free kicks",
+      "none": "No routine: the taker decides.",
+      "routine": "Routine {{n}}",
+      "add": "New routine",
+      "remove": "Remove",
+      "target": "Where the ball goes",
+      "attackers": "Go up into the box",
+      "fewer": "One fewer in the box",
+      "more": "One more in the box",
+      "stayBack_one": "{{count}} stays outside the box",
+      "stayBack_other": "{{count}} stay outside the box",
+      "targets": {
+        "auto": "Taker decides",
+        "near_post": "Near post",
+        "penalty_spot": "Penalty spot",
+        "far_post": "Far post",
+        "short": "Short"
+      }
     }
   },
   "formations": {
     "presets": {
       "unknownPlayer": "A player",
       "title": "Saved lineups",
-      "hint": "Keep up to three line-ups (formation, style, starters and instructions) and switch between them in one click. They come with you when you change clubs, without the starters.",
+      "hint": "Keep up to six line-ups (formation, style, starters and instructions) and switch between them with one click. A, B and C show during a match; D, E and F are for trying things out. They go with you to a new club, without the starters.",
       "empty": "Empty",
       "starters_one": "{{count}} starter",
       "starters_other": "{{count}} starters",
@@ -1000,7 +1023,18 @@
         "injured": "{{out}} is injured: {{in}} comes in",
         "suspended": "{{out}} is suspended: {{in}} comes in",
         "left": "{{out}} left the squad: {{in}} comes in"
-      }
+      },
+      "inMatch": "Shows during a match",
+      "testOnly": "For testing only",
+      "duplicate": "Duplicate line-up {{key}}",
+      "duplicateTo": "Duplicate line-up {{key}} into slot {{to}}",
+      "noFreeSlot": "No empty slot: delete a line-up first",
+      "export": "Copy the code of line-up {{key}} to use in another save",
+      "exported": "Code copied",
+      "import": "Import line-up",
+      "importLabel": "Paste the line-up code",
+      "importSave": "Save into slot {{key}}",
+      "importFailed": "This code is not a line-up."
     },
     "custom": "Custom",
     "editor": {
@@ -1320,7 +1354,7 @@
       "empty": "Empty",
       "emptyHint": "Save a line-up in this slot on the Formation screen",
       "use": "Use {{name}}: formation, instructions and style",
-      "heatmap": "Heat map"
+      "heatmap": "Possession map"
     },
     "hud": {
       "overall": "Overall",
@@ -4911,7 +4945,8 @@
       "empty": "No prospect available. Send a scout on a youth mission.",
       "fee": "Compensation {{fee}}",
       "until": "Available until {{date}}",
-      "sign": "Sign for the academy"
+      "sign": "Sign for the academy",
+      "openAcademy": "Open the academy to release players"
     },
     "gems": {
       "title": "Gems",

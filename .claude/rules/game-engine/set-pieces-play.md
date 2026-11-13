@@ -250,3 +250,15 @@ Report de tester (5 ou mais escanteios seguidos com frequência). Medido com `bu
 O total de escanteios fica abaixo do alvo antigo (6 a 10): mantê-lo exigiria subir ainda mais as outras fontes (defesa espalmada, desarme), que encadeiam do mesmo jeito.
 
 Mundo da 10.7 inteira (escanteios, apito que espera o ataque, drible de quem está sozinho; `ai-formation-goals.ts --engine 800 --chunks 4 --modes ai --quick 0`, contra a 10.6.4): Premier 2,125 → 2,116 gols, 5,68 → 5,75 chutes; Championship 1,786 → 1,843, 5,29 → 5,48; somadas +1,2% e +2,4%, gols do quickSim não recalibrados. `QUICK_SIM_CONFIG.CORNERS_PER_SIDE` 2,84 → 2,2 (o motor dá cerca de 22% menos escanteios).
+
+## Jogadas ensaiadas (11.2)
+
+Pedido do usuário. `TacticsSave.setPieceTakers.routines { corners?, freeKicks? }`: até `ROUTINE_LIMITS.MAX` (3) jogadas por bola parada, cada uma `{ target, attackers }` (`SetPieceRoutine`, `src/types/tacticsTypes.ts`). `target`: `auto` (o cobrador decide, como sempre), `near_post`, `penalty_spot`, `far_post` ou `short`. `attackers`: quantos sobem para a área, de 3 a 7 (padrão do motor: `BOX_ATTACKERS` 5); o resto fica fora. Só o clube do jogador; a IA nunca define. Validação no `PUT /api/saves/:id/tactics` (`parseSetPieceTakers` → `parseRoutines`: alvo desconhecido, número fora da faixa ou mais de 3 → 400).
+
+- **Motor:** no escanteio (`awardCorner`) e na falta cruzada, `drawRoutine` sorteia uma das jogadas do time (`pickRoutine`), posiciona a área com esse número de atacantes (`attackingBoxPositions(..., boxCount)`) e guarda a jogada em `SetPiece.routine`. Na cobrança, `decideBoxSetPiece(..., routine)` usa `routineOption`: o alvo pedido quando ele existe entre as opções (curto precisa de um companheiro para receber), senão a melhor nota de sempre. Sem jogadas, nada muda e nenhum sorteio novo acontece.
+- As jogadas viajam com os cobradores (`GameState.setPieceTakers[time].routines`): partida simulada, ao vivo e entre dois técnicos.
+- Evento `setPieceRoutine { team, takerId, kind, target, attackers }`, debug `setPiece`, `Statistics.setPieceRoutines` (creditado ao cobrador).
+- **Tela:** bloco "Jogadas ensaiadas" no painel de cobradores da Formação (`SetPieceTakersPanel`): por bola parada, as jogadas com o alvo em chips e os botões − e + de quem sobe. i18n `tactics.routines.*`.
+- `/test`: cenário `corner-routine`. `/lab`: `Variant.setPieceRoutine` (alvo e atacantes), rótulo `· sp alvo/n`, `avgSetPieceRoutines` e a linha "Set-piece routines" no `PairDetail`.
+- Testes: `SetPieces.engine.test.ts` ("rehearsed routines"), `src/Domain/tactics/setPieceTakers.test.ts`.
+- Limitações: a jogada não escolhe quem sobe (os melhores no alto, como sempre) nem movimentos combinados; a defesa adversária não reage à jogada; sem medição de equilíbrio entre os alvos (o mundo não muda: a IA não usa).

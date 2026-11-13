@@ -1,5 +1,5 @@
 import { PlayerNameLink } from "@/GameInterface/Inbox/PlayerNameText";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { TesterReportButton } from "@/GameInterface/Components/ReportButton";
 import { TitleParts } from "@/GameInterface/ui/TitleParts";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
@@ -131,7 +131,8 @@ function ResultPlayerRow({
 }) {
   const name = event.playerNames[playerId] ?? roster?.name ?? playerId;
   const lastName = name.split(" ").pop() ?? name;
-  const role = roster ? preferredRole(roster) : "CM";
+  // A national side has no roster here: no position is better than a wrong one (tester report).
+  const role = roster ? preferredRole(roster) : "";
   const rating = event.playerRatings[playerId];
   const goals = event.playerStats[playerId]?.goals ?? 0;
   const assists = event.playerStats[playerId]?.assists ?? 0;
@@ -318,6 +319,7 @@ export function MatchResultScreen() {
   const [homeSquad, setHomeSquad] = useState<Squad | null>(null);
   const [awaySquad, setAwaySquad] = useState<Squad | null>(null);
   const [loading, setLoading] = useState(true);
+  const shownRef = useRef(false);
   const [redirectingToDashboard, setRedirectingToDashboard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolvedDate, setResolvedDate] = useState<string>("");
@@ -341,7 +343,9 @@ export function MatchResultScreen() {
     if (saveLoading || !session) return;
 
     let cancelled = false;
-    setLoading(true);
+    // The save refreshes in the background after the match: a result already on screen stays while it is read again
+    // (tester report: the screen blinked twice).
+    if (!shownRef.current) setLoading(true);
     setError(null);
     setRedirectingToDashboard(false);
 
@@ -381,6 +385,7 @@ export function MatchResultScreen() {
               fetch(`/api/saves/${session.saveId}/squad/${session.leagueSlug}/${encodeURIComponent(ev.away)}`).then((r) => (r.ok ? (r.json() as Promise<Squad>) : null)),
             ]);
             if (cancelled) return;
+            shownRef.current = true;
             setMatchEvent(ev);
             setResolvedDate(date);
             setHomeSquad(hs);
@@ -437,6 +442,7 @@ export function MatchResultScreen() {
         ]);
 
         if (cancelled) return;
+        shownRef.current = true;
         setMatchEvent(ev);
         setResolvedDate(date);
         setHomeSquad(hs);

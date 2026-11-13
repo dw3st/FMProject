@@ -1,6 +1,6 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning, ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
@@ -9,7 +9,7 @@ import { LONG_SHOT_DISTANCE, weatherEffectOf, type WeatherEffect } from '@/GameE
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
 import { SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
 import {
-  attackingBoxPositions, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick, keepDistanceFromBall,
+  attackingBoxPositions, pickRoutine, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick, keepDistanceFromBall,
   pickSetPieceTaker, wallBlockChance, wallSize, wallSpots, type SetPieceDuty,
 } from '@/GameEngine/Domain/SetPieces';
 import type { CornerSource } from '@/GameEngine/Infrastructure/EventBus';
@@ -1204,6 +1204,16 @@ function setPieceGoalOf(state: GameState, team: TeamId): SetPieceGoalKind | unde
   return ph && ph.team === team && state.matchTime <= ph.until ? ph.kind : undefined;
 }
 
+/** The routine `team` plays at this corner / crossed free kick (one of the manager's, drawn), announced when there is one. */
+function drawRoutine(state: GameState, team: TeamId, kind: 'corner' | 'free_kick', takerId: number): SetPieceRoutine | undefined {
+  const routine = pickRoutine(state.setPieceTakers?.[team]?.routines?.[kind === 'corner' ? 'corners' : 'freeKicks'], Math.random);
+  if (routine) {
+    gameBus.emit('setPieceRoutine', { team, takerId, kind, target: routine.target, attackers: routine.attackers });
+    debugLog('setPiece', `Routine for team ${team} (${kind}): ${routine.target}, ${routine.attackers} in the box`, { data: { ...routine } });
+  }
+  return routine;
+}
+
 /**
  * Both teams into the box set-piece layout (corner / crossed free kick) with `taker` on `ball`:
  * `attackingBoxPositions` for his team, `defendingBoxPositions` for the other.
@@ -1214,8 +1224,9 @@ function applyBoxSetPiece(
   ball: { x: number; y: number },
   kind: 'corner' | 'free_kick',
   rng: () => number,
+  routine?: SetPieceRoutine,
 ): GamePlayer[] {
-  const att = attackingBoxPositions(players.filter(p => p.team === taker.team), taker.id, ball, taker.attackDir, kind, rng);
+  const att = attackingBoxPositions(players.filter(p => p.team === taker.team), taker.id, ball, taker.attackDir, kind, rng, routine?.attackers);
   const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
   const def = defendingBoxPositions(players.filter(p => p.team !== taker.team), att, ball, goalX, kind);
   return players.map(p => {
@@ -1367,13 +1378,14 @@ function awardFoulRestart(
     const box = !direct && distToLine <= SET_PIECE_CONFIG.FK_CROSS_RANGE;
     const taker = direct || box ? (setPieceTakerOf(state, fouledTeam, 'freeKicks') ?? nearestPlayerTo(pool, pos)) : nearestPlayerTo(pool, pos);
     let wallIds: number[] | undefined;
+    const routine = box ? drawRoutine(state, fouledTeam, 'free_kick', taker.id) : undefined;
     if (direct) ({ players, wallIds } = applyDirectFreeKick(state, players, taker, pos));
-    else if (box) players = applyBoxSetPiece(players, taker, pos, 'free_kick', Math.random);
+    else if (box) players = applyBoxSetPiece(players, taker, pos, 'free_kick', Math.random, routine);
     players = players.map(p => (p.id === taker.id ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p));
     setPiece = direct
       ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN, position: pos, variant: 'direct', wallIds }
       : box
-        ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.BOX_FREE_KICK_COUNTDOWN, position: pos, variant: 'box' }
+        ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.BOX_FREE_KICK_COUNTDOWN, position: pos, variant: 'box', ...(routine ? { routine } : {}) }
         : { type: 'free_kick', takerId: taker.id, countdown: FOUL_CONFIG.FREE_KICK_COUNTDOWN, position: pos };
     gameBus.emit('freeKickAwarded', { team: fouledTeam, takerId: taker.id, x: pos.x, y: pos.y, dangerous, minute });
     debugLog('foul', `Free kick to team ${fouledTeam}${dangerous ? ' (dangerous)' : ''} at (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) — ${taker.name}`, {
@@ -2880,7 +2892,8 @@ export function awardCorner(
   const s0 = clearAllChasers({ ...s, pass: null, shot: null, looseBall: null });
   const taker = setPieceTakerOf(s0, awardedTeam, 'corners')
     ?? pickOOBTaker('corner', awardedTeam, position, s0.players);
-  const players = applyBoxSetPiece(s0.players, taker, position, 'corner', Math.random);
+  const routine = drawRoutine(s0, awardedTeam, 'corner', taker.id);
+  const players = applyBoxSetPiece(s0.players, taker, position, 'corner', Math.random, routine);
   // A through ball out for a corner to the other team was lost; one out for the passer's own team was not.
   const passer = s0.players.find(p => p.id === fromPasserId);
   if (source === 'through' && passer && passer.team !== awardedTeam) {
@@ -2899,7 +2912,7 @@ export function awardCorner(
     possessionTime: 0,
     lastPasserId:   null,
     tackleCooldown: TACKLE_COOLDOWN,
-    setPiece: { type: 'corner', takerId: taker.id, countdown, position, variant: 'box' },
+    setPiece: { type: 'corner', takerId: taker.id, countdown, position, variant: 'box', ...(routine ? { routine } : {}) },
   }, prevHolderId);
   return { state: openSetPiecePhase(st, awardedTeam, 'corner', countdown), passCompleted: false, tackled: false, goalScored: null };
 }

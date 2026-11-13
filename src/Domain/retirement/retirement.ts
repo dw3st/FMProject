@@ -78,6 +78,7 @@ function toRetiredRecord(
     id: p.id, name: p.name, nationality: p.nationality ?? null, positions: p.positions,
     preferredFoot: p.preferredFoot, profile: p.profile, retiredOn: date, squadId, age: p.age,
     wasWorldClass, statsAtRetirement: p.stats,
+    ...(p.naturalPosition ? { naturalPosition: p.naturalPosition } : {}),
     ...(p.peakLevel !== undefined ? { peakLevel: p.peakLevel } : {}),
     ...(p.history?.length ? { history: p.history } : {}),
     ...(p.national ? { national: p.national } : {}),

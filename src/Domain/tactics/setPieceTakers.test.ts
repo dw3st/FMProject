@@ -54,3 +54,24 @@ describe("set-piece takers reach the simulated match", () => {
     expect(asAway.tactics.A.setPieceTakers).toBeUndefined();
   });
 });
+
+describe("rehearsed routines in the takers body", () => {
+  test("up to three per restart, known targets, 3 to 7 attackers", () => {
+    const ok = { corners: ["p1"], routines: { corners: [{ target: "far_post", attackers: 6 }, { target: "short", attackers: 3 }], freeKicks: [{ target: "auto", attackers: 7 }] } };
+    expect(parseSetPieceTakers(ok)).toEqual(ok as unknown as ReturnType<typeof parseSetPieceTakers>);
+    expect(parseSetPieceTakers({ routines: {} })).toEqual({});
+    expect(parseSetPieceTakers({ routines: { corners: [] } })).toEqual({});
+  });
+
+  test("bad shapes are refused", () => {
+    const r = (x: unknown) => parseSetPieceTakers({ routines: x });
+    expect(r({ corners: [{ target: "goal", attackers: 5 }] })).toBeNull();
+    expect(r({ corners: [{ target: "auto", attackers: 2 }] })).toBeNull();
+    expect(r({ corners: [{ target: "auto", attackers: 8 }] })).toBeNull();
+    expect(r({ corners: [{ target: "auto", attackers: 4.5 }] })).toBeNull();
+    expect(r({ corners: [{ target: "auto", attackers: 5, extra: 1 }] })).toBeNull();
+    expect(r({ corners: Array(4).fill({ target: "auto", attackers: 5 }) })).toBeNull();
+    expect(r({ penalties: [{ target: "auto", attackers: 5 }] })).toBeNull();
+    expect(r([])).toBeNull();
+  });
+});

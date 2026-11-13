@@ -480,6 +480,8 @@ export interface RetiredPlayer {
   name: string;
   nationality: string | null;
   positions: string[];
+  /** His fixed natural position (`positions.md`), kept from the roster; absent = read from the attributes. */
+  naturalPosition?: string;
   preferredFoot: "left" | "right";
   profile: PlayerProfile;
   retiredOn: string;

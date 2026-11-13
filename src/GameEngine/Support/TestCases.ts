@@ -791,6 +791,20 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'corner-routine',
+    name:        '11v11 — Corner (rehearsed routine)',
+    description: 'Team A corner with a rehearsed routine: seven players attack the box and the delivery goes to the far post, whatever the taker would have picked. Compare with "Corner (box layout)" (five in the box, taker picks). The "setPiece" debug log names the routine.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const a = base.players.find(p => p.team === 'A')!;
+      const goalX = a.attackDir === 1 ? PITCH_LENGTH : 0;
+      const withRoutine = { ...base, setPiece: null, setPieceTakers: { A: { routines: { corners: [{ target: 'far_post' as const, attackers: 7 }] } } } };
+      return awardCorner(withRoutine, 'A', { x: goalX, y: 0 }, a.id, 'clearance', 'other').state;
+    },
+  },
+
+  {
     id:          'direct-free-kick',
     name:        '11v11 — Direct Free Kick (wall)',
     description: 'Team B CB fouls Team A ST 22 yards out, central (forced foul, no card): a direct free kick by the Team A free-kick taker over a 2–5 man wall 10 yards from the ball. The "Set pieces" overlay draws the wall and the line to goal; the "setPiece" debug log shows the xG and whether it struck the wall (rebound = loose ball).',

@@ -178,3 +178,7 @@ jogo (time A, com a mentalidade por cima e a familiaridade do clube); nunca grav
 ## Nome das escalações salvas (11.0)
 
 Report de tester. `LineupPreset.name` (até `PRESET_NAME_MAX` 20 letras; `cleanPresetName` tira caracteres de controle e espaços repetidos): o lápis de cada escalação salva abre o campo do nome (`renamePreset`; vazio volta à letra). Salvar por cima mantém o nome e ele segue o técnico na troca de clube. O `PUT` recusa nome vazio, longo ou que não esteja limpo (400 `invalid preset name`). Na partida, "Minhas formações" lista a escalação pelo nome (`substitutionPanel.presetNamed`); sem nome, "Escalação A" como antes (`presetDisplayName`).
+
+## Jogadas ensaiadas e escalações de teste (11.2)
+
+`setPieceTakers.routines` guarda até 3 jogadas ensaiadas por escanteio e por falta cruzada (alvo e quantos sobem); ver `.claude/rules/game-engine/set-pieces-play.md` → "Jogadas ensaiadas". As escalações salvas passaram a seis (`LINEUP_PRESET_KEYS` A–F): A, B e C aparecem na partida (`MATCH_PRESET_KEYS`), D, E e F são só para testar. Cada uma pode ser duplicada para a primeira vaga livre (`copyPreset`) e exportada ou importada por um código de texto (`exportPreset` / `importPreset`, prefixo `FMT1:`, sem os jogadores: só formação, instruções, estilo e eixos).

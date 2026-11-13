@@ -128,6 +128,8 @@ export interface SimulateMatchOptions {
    * scripts) — `tactics[team]` takes precedence when given.
    */
   instructions?: { A?: TeamInstructions; B?: TeamInstructions };
+  /** Rehearsed corners / crossed free kicks per side (`set-pieces-play.md`); the lab's way in. `tactics[team].setPieceTakers` wins. */
+  setPieceRoutines?: { A?: import('@/types/tacticsTypes').SetPieceRoutines; B?: import('@/types/tacticsTypes').SetPieceRoutines };
   /** Referee of the match (his rigor scales fouls and cards, `src/Domain/referees`). Absent = neutral. */
   referee?: import('@/types/refereeTypes').EngineReferee;
   /** Managers' Discipline attribute 1..20 per side (`.claude/rules/game/achievements.md`). Absent = neutral. */
@@ -252,7 +254,12 @@ export function simulateMatch(
       ? { managerDiscipline: { ...options.managerDiscipline } } : {}),
     ...(options.tactics?.A.setPieceTakers || options.tactics?.B.setPieceTakers
       ? { setPieceTakers: { A: options.tactics.A.setPieceTakers, B: options.tactics.B.setPieceTakers } }
-      : {}),
+      : options.setPieceRoutines?.A || options.setPieceRoutines?.B
+        ? { setPieceTakers: {
+            ...(options.setPieceRoutines.A ? { A: { routines: options.setPieceRoutines.A } } : {}),
+            ...(options.setPieceRoutines.B ? { B: { routines: options.setPieceRoutines.B } } : {}),
+          } }
+        : {}),
   };
 
   if (options.weather) debugLog('weather', `Weather: ${options.weather}`, { data: { ...weatherEffectOf(options.weather) } });

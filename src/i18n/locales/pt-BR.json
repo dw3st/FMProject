@@ -963,13 +963,36 @@
       "corners": "Escanteios",
       "freeKicks": "Faltas",
       "penalties": "Pênaltis"
+    },
+    "routines": {
+      "title": "Jogadas ensaiadas",
+      "hint": "Até 3 jogadas por bola parada. A cada cobrança o time usa uma delas, sorteada. Sem jogada, o cobrador decide na hora.",
+      "corners": "Escanteios",
+      "freeKicks": "Faltas cruzadas",
+      "none": "Nenhuma jogada: o cobrador decide.",
+      "routine": "Jogada {{n}}",
+      "add": "Nova jogada",
+      "remove": "Tirar",
+      "target": "Onde a bola vai",
+      "attackers": "Sobem para a área",
+      "fewer": "Um a menos na área",
+      "more": "Um a mais na área",
+      "stayBack_one": "{{count}} fica fora da área",
+      "stayBack_other": "{{count}} ficam fora da área",
+      "targets": {
+        "auto": "Cobrador decide",
+        "near_post": "Primeiro pau",
+        "penalty_spot": "Marca do pênalti",
+        "far_post": "Segundo pau",
+        "short": "Curto"
+      }
     }
   },
   "formations": {
     "presets": {
       "unknownPlayer": "Um jogador",
       "title": "Escalações salvas",
-      "hint": "Guarde até três escalações (formação, estilo, titulares e instruções) e troque entre elas com um clique. Elas vão com você quando trocar de clube, sem os titulares.",
+      "hint": "Guarde até seis escalações (formação, estilo, titulares e instruções) e troque entre elas com um clique. A, B e C aparecem na partida; D, E e F são para testar. Elas vão com você quando trocar de clube, sem os titulares.",
       "empty": "Vazio",
       "starters_one": "{{count}} titular",
       "starters_other": "{{count}} titulares",
@@ -1000,7 +1023,18 @@
         "injured": "{{out}} está lesionado: entra {{in}}",
         "suspended": "{{out}} está suspenso: entra {{in}}",
         "left": "{{out}} saiu do elenco: entra {{in}}"
-      }
+      },
+      "inMatch": "Aparece na partida",
+      "testOnly": "Só para testar",
+      "duplicate": "Duplicar a escalação {{key}}",
+      "duplicateTo": "Duplicar a escalação {{key}} para o espaço {{to}}",
+      "noFreeSlot": "Sem espaço vazio: apague uma escalação antes",
+      "export": "Copiar o código da escalação {{key}} para usar em outro jogo salvo",
+      "exported": "Código copiado",
+      "import": "Importar escalação",
+      "importLabel": "Cole o código da escalação",
+      "importSave": "Salvar no espaço {{key}}",
+      "importFailed": "Este código não é de uma escalação."
     },
     "custom": "Personalizada",
     "editor": {
@@ -1320,7 +1354,7 @@
       "empty": "Vazio",
       "emptyHint": "Salve uma escalação neste espaço na tela de Formação",
       "use": "Usar {{name}}: formação, instruções e estilo",
-      "heatmap": "Mapa de calor"
+      "heatmap": "Mapa de posse"
     },
     "hud": {
       "overall": "Geral",
@@ -4908,7 +4942,8 @@
       "empty": "Nenhum jovem disponível. Mande um olheiro numa missão de jovens.",
       "fee": "Compensação {{fee}}",
       "until": "Disponível até {{date}}",
-      "sign": "Contratar para a base"
+      "sign": "Contratar para a base",
+      "openAcademy": "Abrir a base para dispensar jogadores"
     },
     "gems": {
       "title": "Joias",

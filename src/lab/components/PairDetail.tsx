@@ -89,6 +89,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Keeper smothers",   key: "avgKeeperSmothers" },
     { stat: "Corners",           key: "avgCorners" },
     { stat: "Throw-ins",         key: "avgThrowIns" },
+    { stat: "Set-piece routines",         key: "avgSetPieceRoutines" },
     { stat: "Free kicks",        key: "avgFreeKicks" },
     { stat: "Direct FK shots",   key: "avgDirectFreeKickShots" },
     { stat: "Direct FK goals",   key: "avgDirectFreeKickGoals" },

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
-import { LINEUP_PRESET_KEYS, PRESET_NAME_MAX, presetDisplayName } from "@/Domain/tactics/lineupPresets";
+import { LINEUP_PRESET_KEYS, PRESET_CODE_MAX, PRESET_NAME_MAX, exportPreset, firstFreeSlot, isMatchPreset, presetDisplayName } from "@/Domain/tactics/lineupPresets";
 import { CUSTOM_FORMATION_ID, customShape } from "@/Domain/formation/zones";
 import { Button } from "@/GameInterface/ui/Button";
 import { TextField } from "@/GameInterface/ui/TextField";
@@ -40,6 +40,8 @@ export function LineupPresetsPanel({
   onUse,
   onDelete,
   onRename,
+  onCopy,
+  onImport,
 }: {
   presets: LineupPresets;
   busy: boolean;
@@ -55,10 +57,34 @@ export function LineupPresetsPanel({
   onDelete: (key: LineupPresetKey) => void;
   /** The typed name of a slot ("" clears it). */
   onRename: (key: LineupPresetKey, name: string) => void;
+  /** Copies a saved slot into another one. */
+  onCopy: (from: LineupPresetKey, to: LineupPresetKey) => void;
+  /** Saves a pasted code into a slot; false when the code is not valid. */
+  onImport: (key: LineupPresetKey, code: string) => boolean;
 }) {
   const { t, i18n } = useTranslation();
   const [pending, setPending] = useState<Pending>(null);
   const [renaming, setRenaming] = useState<{ key: LineupPresetKey; value: string } | null>(null);
+  const [copied, setCopied] = useState<LineupPresetKey | null>(null);
+  const [importing, setImporting] = useState<{ code: string; failed: boolean } | null>(null);
+  const free = firstFreeSlot(presets);
+
+  async function copyCode(key: LineupPresetKey) {
+    const preset = presets[key];
+    if (!preset) return;
+    try {
+      await navigator.clipboard.writeText(exportPreset(preset));
+      setCopied(key);
+    } catch {
+      setCopied(null);
+    }
+  }
+
+  function importCode() {
+    if (!importing || !free) return;
+    if (onImport(free, importing.code)) setImporting(null);
+    else setImporting({ ...importing, failed: true });
+  }
   const fmtDate = (iso: string) =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(i18n.language, { day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -74,6 +100,39 @@ export function LineupPresetsPanel({
     <div className="card-arcade rounded-md p-5">
       <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("formations.presets.title")}</h3>
       <p className="text-sm text-muted-foreground mt-2 mb-4">{t("formations.presets.hint")}</p>
+      <div className="mb-4 flex flex-col gap-2">
+        {importing ? (
+          <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); importCode(); }}>
+            <label htmlFor="preset-import" className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+              {t("formations.presets.importLabel")}
+            </label>
+            <textarea
+              id="preset-import"
+              className="h-20 w-full rounded border border-border bg-transparent px-3 py-2 text-sm"
+              value={importing.code}
+              maxLength={PRESET_CODE_MAX}
+              autoFocus
+              onChange={(e) => setImporting({ code: e.target.value, failed: false })}
+            />
+            {importing.failed && <p className="m-0 text-sm text-destructive">{t("formations.presets.importFailed")}</p>}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="submit" disabled={busy || !free || importing.code.trim() === ""}>{t("formations.presets.importSave", { key: free ?? "" })}</Button>
+              <Button variant="secondary" onClick={() => setImporting(null)}>{t("common.cancel")}</Button>
+            </div>
+          </form>
+        ) : (
+          <Button
+            variant="secondary"
+            className="self-start border border-border"
+            disabled={busy || !free}
+            title={free ? undefined : t("formations.presets.noFreeSlot")}
+            onClick={() => setImporting({ code: "", failed: false })}
+          >
+            <Icon name="download" size={16} />
+            {t("formations.presets.import")}
+          </Button>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {LINEUP_PRESET_KEYS.map((key) => {
           const preset = presets[key];
@@ -89,7 +148,7 @@ export function LineupPresetsPanel({
           return (
             <div key={key} className="rounded-md border border-border p-4 flex flex-col gap-3">
               <div className="flex items-baseline gap-3">
-                <span className="font-display font-bold text-2xl leading-none text-primary">{key}</span>
+                <span className={`font-display font-bold text-2xl leading-none ${isMatchPreset(key) ? "text-primary" : "text-muted-foreground"}`}>{key}</span>
                 {preset ? (
                   <div className="min-w-0">
                     {preset.name && (
@@ -110,6 +169,9 @@ export function LineupPresetsPanel({
                   <span className="text-sm text-muted-foreground">{t("formations.presets.empty")}</span>
                 )}
               </div>
+              <span className="text-sm text-muted-foreground">
+                {t(isMatchPreset(key) ? "formations.presets.inMatch" : "formations.presets.testOnly")}
+              </span>
               {naming ? (
                 <form
                   className="flex flex-col gap-2"
@@ -173,6 +235,30 @@ export function LineupPresetsPanel({
                       className="ml-auto !px-2"
                     >
                       <Icon name="pencil" size={16} />
+                    </Button>
+                  )}
+                  {preset && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => free && onCopy(key, free)}
+                      disabled={busy || !free}
+                      aria-label={t("formations.presets.duplicate", { key: shown })}
+                      title={free ? t("formations.presets.duplicateTo", { key: shown, to: free }) : t("formations.presets.noFreeSlot")}
+                      className="!px-2"
+                    >
+                      <Icon name="copy" size={16} />
+                    </Button>
+                  )}
+                  {preset && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => void copyCode(key)}
+                      disabled={busy}
+                      aria-label={t("formations.presets.export", { key: shown })}
+                      title={t(copied === key ? "formations.presets.exported" : "formations.presets.export", { key: shown })}
+                      className={`!px-2 ${copied === key ? "!text-primary" : ""}`}
+                    >
+                      <Icon name={copied === key ? "check" : "upload"} size={16} />
                     </Button>
                   )}
                   {preset && (

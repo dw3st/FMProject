@@ -257,7 +257,8 @@ export interface TacticsSave {
 
 // ── Saved lineups (#84) ──────────────────────────────────────────────────────
 
-export type LineupPresetKey = "A" | "B" | "C";
+/** A, B and C can be used during a match; D, E and F are spare slots to try things out (tester report, 11.2). */
+export type LineupPresetKey = "A" | "B" | "C" | "D" | "E" | "F";
 
 /** One saved lineup: formation (free formation included), XI in slot order and slot instructions. */
 export interface LineupPreset {
@@ -313,11 +314,22 @@ export interface MatchMarking {
   marks: MatchMark[];
 }
 
+/** Where a rehearsed corner / crossed free kick goes: the taker's own choice, one of the three zones, or short. */
+export type SetPieceTarget = "auto" | "near_post" | "penalty_spot" | "far_post" | "short";
+
+/** One rehearsed routine: the delivery and how many players attack the box (the rest stay back). */
+export interface SetPieceRoutine { target: SetPieceTarget; attackers: number }
+
+/** Up to three routines per restart; one is drawn each time. */
+export interface SetPieceRoutines { corners?: SetPieceRoutine[]; freeKicks?: SetPieceRoutine[] }
+
 /** Manager's set-piece takers per duty: up to 3 player ids in order of preference. Absent duty = automatic. */
 export interface SetPieceTakersSave {
   corners?:   string[];
   freeKicks?: string[];
   penalties?: string[];
+  /** Rehearsed corners and crossed free kicks: up to 3 each, one drawn per restart (`set-pieces-play.md`). */
+  routines?:  SetPieceRoutines;
 }
 
 export const DEFAULT_TACTICAL_STYLE: TacticalStyle = "balanced";

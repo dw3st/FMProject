@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { AvailabilityChips } from "@/GameInterface/Scout/AvailabilityChips";
 import { useTranslation } from "react-i18next";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
@@ -359,7 +360,10 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
 
 export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: ScoutingData; onChanged: (next?: ScoutingData) => void }) {
   const { t } = useTranslation();
+  const { session } = useGameSave();
   const [error, setError] = useState<string | null>(null);
+  const [academyFull, setAcademyFull] = useState(false);
+  const academyHref = session ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}?tab=youth` : null;
   const shortlisted = useMemo(() => new Set(data.shortlist.map((e) => e.playerId)), [data.shortlist]);
   // Newest first until a header is clicked (tester report, 10.7).
   const [sortKey, setSortKey] = useState<ReportSortKey>("date");
@@ -376,9 +380,11 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
   const reportOf = new Map(data.reports.map((r) => [r.id, r]));
   async function sign(id: string) {
     setError(null);
+    setAcademyFull(false);
     const r = await scoutingCall(`/api/saves/${saveId}/scouting/prospects/${encodeURIComponent(id)}/sign`, "POST");
     if (r.ok) onChanged(r.json as ScoutingData);
-    else setError(t(`scouting.errors.${r.json?.error ?? "generic"}`, { defaultValue: t("scouting.errors.generic") }));
+    else setAcademyFull(r.json?.error === "youthFull");
+    if (!r.ok) setError(t(`scouting.errors.${r.json?.error ?? "generic"}`, { defaultValue: t("scouting.errors.generic") }));
   }
   return (
     <div className="flex flex-col gap-6">
@@ -386,6 +392,11 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
         <SectionTitle>{t("scouting.prospects.title")}</SectionTitle>
         <p className="text-sm text-muted-foreground m-0">{t("scouting.prospects.hint")}</p>
         {error && <Notice kind="error">{error}</Notice>}
+        {academyFull && academyHref && (
+          <a href={academyHref} className="self-start inline-flex h-10 items-center rounded border border-border bg-card px-4 text-sm font-semibold text-foreground no-underline hover:bg-muted/50">
+            {t("scouting.prospects.openAcademy")}
+          </a>
+        )}
         {data.prospects.length === 0 ? (
           <p className="text-sm text-muted-foreground m-0">{t("scouting.prospects.empty")}</p>
         ) : (
