@@ -15,7 +15,9 @@ import { FaceImage, playerInitials } from "@/GameInterface/Components/PlayerFace
 import { spreadSubsMarkers } from "@/Domain/formation/pitchMarkers";
 import { getFormationSlots } from "@/types/formationSlots";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
-import { slotValue } from "@/Domain/positions/positionAptitude";
+import { aptitudeFor, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
+
+const APT_RANK: Record<Aptitude, number> = { natural: 3, apt: 2, training: 1, unsuitable: 0 };
 import { PlayerTipBody, ROW_TIP_H, ROW_TIP_W } from "@/GameInterface/Components/PlayerTipBody";
 import type { RosterPlayer } from "@/types/playerTypes";
 
@@ -216,12 +218,23 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   const tipRole = tipPlayer ? (onPitch.includes(tipPlayer) ? tipPlayer.role : gamePlayerNaturalRole(tipPlayer)) : "";
   const tipMatchRating = tipPlayer ? ratings?.[tipPlayer.id] : undefined;
   // A substitute with no minutes has no match rating: his level at his position (the number of his card).
+  const benchRole = selectedStarter?.role;
   const benchNumber = (p: GamePlayer): number => {
     const live = ratings?.[p.id];
     if (live !== undefined && !Number.isNaN(live)) return live;
     const r = roster?.find((x) => x.id === p.rosterId);
-    return r ? slotValue(r, gamePlayerNaturalRole(p)) : displayRating10(p, ratings);
+    return r ? slotValue(r, benchRole ?? gamePlayerNaturalRole(p)) : displayRating10(p, ratings);
   };
+  // With a starter picked, the bench lists who suits his position first (natural, then adapted), then the level
+  // there, as on the Formation screen (tester report).
+  const shownBench = useMemo(() => {
+    if (!benchRole) return availableBench;
+    const info = (p: GamePlayer) => {
+      const r = roster?.find((x) => x.id === p.rosterId);
+      return r ? { fit: APT_RANK[aptitudeFor(r, benchRole)], value: slotValue(r, benchRole) } : { fit: 0, value: 0 };
+    };
+    return availableBench.map((p) => ({ p, ...info(p) })).sort((a, b) => b.fit - a.fit || b.value - a.value).map((x) => x.p);
+  }, [availableBench, benchRole, roster]);
 
   // A new signing still settling in: the games he has left (tester report: show it on this panel too).
   const settlingLeft = (p: GamePlayer): number => {
@@ -387,7 +400,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
             {availableBench.length === 0 ? (
               <p className="text-sm text-muted-foreground px-2 py-4 text-center m-0">{t("substitutionPanel.noAvailable")}</p>
             ) : (
-              availableBench.map((p) => {
+              shownBench.map((p) => {
                 const r10 = benchNumber(p);
                 const isSelected = selection?.kind === "bench" && selection.id === p.id;
                 const over = drag?.over === `bench:${p.id}`;
