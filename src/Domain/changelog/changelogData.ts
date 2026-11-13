@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "11.1",
     date: "2026-11-12",
-    time: "22:00",
+    time: "21:39",
     items: [
       { tab: "development", pt: "Base mais equilibrada: um jovem novo chega no máximo com nota 55 (62 se for um prodígio), em qualquer clube. Antes a nota da safra subia junto com a média do elenco, e num elenco cheio de garotos da base cada safra nascia mais forte que a anterior.", en: "A more balanced academy: a new youngster arrives rated 55 at most (62 for a prodigy), at any club. Before, the intake followed the squad's average, and in a squad full of academy graduates each intake was born stronger than the last." },
       { tab: "development", pt: "Evolução perto do topo: acima de nota 60 o jogador evolui cada vez mais devagar, até um décimo do ritmo em 72. Abaixo de 60 nada muda. Quem já passou disso não perde nada, só para de subir tão rápido.", en: "Development near the top: above a rating of 60 a player improves more and more slowly, down to a tenth of the pace at 72. Below 60 nothing changes. Players already past that lose nothing, they only stop climbing so fast." },
