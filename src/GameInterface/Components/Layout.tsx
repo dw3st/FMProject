@@ -96,7 +96,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
 
         {sideMenu && <SideNavigation />}
 
-        <main className={chrome === "full" ? `h-full pt-14 pb-12 phone:pt-11 phone:pb-9 overflow-y-auto flex flex-col ${sideMenu ? "pl-52 phone:pl-0" : ""}` : chrome === "match" ? "h-full pb-12 phone:pb-9 overflow-hidden flex flex-col" : "h-full pb-12 phone:pb-9 overflow-y-auto flex flex-col"}>
+        <main className={chrome === "full" ? `h-full pt-14 pb-12 phone:pt-11 phone:pb-9 overflow-y-auto flex flex-col ${sideMenu ? "pl-[calc(max(0px,(100vw-1488px)/2)+13rem)] phone:pl-0 [&_[data-screen-container]]:pr-[calc(max(0px,(100vw-1488px)/2)+1.5rem)] phone:[&_[data-screen-container]]:pr-3" : ""}` : chrome === "match" ? "h-full pb-12 phone:pb-9 overflow-hidden flex flex-col" : "h-full pb-12 phone:pb-9 overflow-y-auto flex flex-col"}>
           {redirectTo ? (
             <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
           ) : noClub ? <NoClubScreen /> : children}
