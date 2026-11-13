@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.2",
     date: "2026-11-13",
-    time: "18:30",
+    time: "16:56",
     items: [
       { tab: "formation", pt: "Quem treina uma seleção agora tem a tela de Formação completa para ela: no topo da Formação, troque entre Clube e Seleção. Dá para arrastar os jogadores no campo, montar formação livre, mudar as instruções da equipe e de cada posição, escolher cobradores e jogadas ensaiadas e guardar escalações da seleção, separadas das do clube.", en: "A manager who coaches a national team now has the full Formation screen for it: at the top of Formation, switch between Club and National team. Drag players on the pitch, build a free formation, change the team and position instructions, pick set-piece takers and rehearsed routines and keep saved line-ups for the national team, apart from the club's." },
       { tab: "formation", pt: "A tática da seleção ficou mais fácil de achar: a prévia do jogo da seleção, o cartão do próximo jogo no Painel, o cartão Atenção (quando a seleção joga nos próximos 7 dias) e a tela Minha seleção levam direto para ela.", en: "The national team tactics are easier to find: the preview of a national game, the next-match card of the Dashboard, the Attention card (when the national team plays in the next 7 days) and the My national team screen take you straight there." },

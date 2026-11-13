@@ -92,6 +92,7 @@ function TeamBlock({ saveId, data, onChanged }: { saveId: string; data: CoachDat
         <span className="text-sm text-muted-foreground tabular-nums">
           {t("nationalCoach.teamLine", { rank: team.rank, points: team.elo, date: formatDay(team.since, i18n.language, "year"), wage: formatFee(team.wage) })}
         </span>
+        <Button onClick={() => navigate("/formation?team=national")}>{t("nationalCoach.openTactics")}</Button>
         <Button variant="danger" flush onClick={() => setResigning(true)}>{t("nationalCoach.resign")}</Button>
       </div>
 
@@ -119,8 +120,8 @@ function TeamBlock({ saveId, data, onChanged }: { saveId: string; data: CoachDat
         </section>
       </div>
 
-      <CallUpBlock saveId={saveId} data={data} onSaved={onChanged} />
       <TacticsBlock saveId={saveId} data={data} onSaved={onChanged} />
+      <CallUpBlock saveId={saveId} data={data} onSaved={onChanged} />
 
       <Modal open={resigning} onClose={() => !busy && setResigning(false)} size="sm">
         <div className="p-6 space-y-4">
