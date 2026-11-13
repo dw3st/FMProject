@@ -7462,5 +7462,40 @@
     "share": "seu clube paga {{pct}}% ({{wage}}/sem)",
     "options": "Dá para tentar comprá-lo do {{club}} agora: a compra encerra o empréstimo e ele fica no elenco.",
     "optionsPre": "Dá para tentar comprá-lo do {{club}} ou assinar um pré-contrato: o contrato dele acaba em menos de 6 meses."
+  },
+  "fanbase": {
+    "tab": "Redes sociais",
+    "cardLabel": "Seguidores",
+    "scopeLabel": "Quais clubes",
+    "scope": {
+      "league": "Minha liga",
+      "country": "Meu país",
+      "world": "Mundo"
+    },
+    "mine": {
+      "rank": "Seu clube",
+      "rankValue": "{{rank}}º de {{total}}"
+    },
+    "followers": "Seguidores",
+    "trend": "Tendência",
+    "trendLong": "Quanto os seguidores mudariam se a temporada acabasse hoje",
+    "noTrend": "Cedo demais",
+    "mood": "Momento",
+    "heat": {
+      "hot": "Em alta",
+      "warm": "Estável",
+      "cold": "Em baixa"
+    },
+    "effect": {
+      "hot": "A boa fase anima as redes: a torcida sobe um pouco toda semana.",
+      "warm": "As redes estão tranquilas: nada muda na torcida por causa delas.",
+      "cold": "A má fase pesa nas redes: a torcida cai um pouco toda semana."
+    },
+    "club": "Clube",
+    "league": "Liga",
+    "crest": "Escudo",
+    "empty": "Nenhum clube para mostrar.",
+    "loadMore": "Carregar mais",
+    "note": "Os seguidores mudam no fim da temporada, pela campanha. No seu clube, a receita comercial acompanha metade dessa mudança."
   }
 }

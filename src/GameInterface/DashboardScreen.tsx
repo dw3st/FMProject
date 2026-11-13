@@ -1,4 +1,6 @@
 import { autoWatchSeat, readHidden, stillPlaying } from "@/GameInterface/Watch/autoWatch";
+import { fetchFanbase } from "@/GameInterface/Fanbase/fanbaseApi";
+import type { FanbaseRow } from "@/Domain/fanbase/fanbase";
 import { setWatchTarget, watchTarget } from "@/GameInterface/Watch/watchWindow";
 import type { AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import { RenewalPopup } from "@/GameInterface/Components/RenewalPopup";
@@ -86,6 +88,7 @@ export function DashboardScreen() {
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [stageMeta, setStageMeta] = useState<LeagueSeasonMeta | null>(null);
   const [managerRank, setManagerRank] = useState<number | null>(null);
+  const [fanbase, setFanbase] = useState<FanbaseRow | null>(null);
   const [achievements, setAchievements] = useState<ClubCardAchievements | null>(null);
   const [opponentHome, setOpponentHome] = useState<{ id: string; venue: ClubVenue | null; country: string | null } | null>(null);
 
@@ -146,6 +149,16 @@ export function DashboardScreen() {
       .then((r) => (r.ok ? (r.json() as Promise<{ playerRank: number | null }>) : null))
       .catch(() => null)
       .then((d) => { if (!cancelled) setManagerRank(d?.playerRank ?? null); });
+    return () => { cancelled = true; };
+  }, [saveId, currentDate]);
+
+  // The club's place in its league by followers and the season's mood (`.claude/rules/game/fanbase.md`).
+  useEffect(() => {
+    if (!saveId) return;
+    let cancelled = false;
+    fetchFanbase(saveId, "league", 0, 1)
+      .then((v) => { if (!cancelled) setFanbase(v.mine); })
+      .catch(() => { if (!cancelled) setFanbase(null); });
     return () => { cancelled = true; };
   }, [saveId, currentDate]);
 
@@ -331,6 +344,7 @@ export function DashboardScreen() {
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
         managerName={session.manager?.name ?? null}
         managerRank={managerRank}
+        fanbase={fanbase}
         friendsRank={friendsRank}
         publicWorld={!!session?.publicWorld}
         achievements={achievements}

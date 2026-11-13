@@ -7465,5 +7465,40 @@
     "share": "your club pays {{pct}}% ({{wage}}/wk)",
     "options": "You can try to buy him from {{club}} now: the purchase ends the loan and he stays in the squad.",
     "optionsPre": "You can try to buy him from {{club}} or sign a pre-contract: his contract ends in under 6 months."
+  },
+  "fanbase": {
+    "tab": "Social media",
+    "cardLabel": "Followers",
+    "scopeLabel": "Which clubs",
+    "scope": {
+      "league": "My league",
+      "country": "My country",
+      "world": "World"
+    },
+    "mine": {
+      "rank": "Your club",
+      "rankValue": "{{rank}} of {{total}}"
+    },
+    "followers": "Followers",
+    "trend": "Trend",
+    "trendLong": "How much the followers would change if the season ended today",
+    "noTrend": "Too early",
+    "mood": "Mood",
+    "heat": {
+      "hot": "Rising",
+      "warm": "Steady",
+      "cold": "Falling"
+    },
+    "effect": {
+      "hot": "The good run lifts the mood online: the fans meter rises a little every week.",
+      "warm": "Things are quiet online: nothing changes for the fans because of it.",
+      "cold": "The bad run weighs online: the fans meter drops a little every week."
+    },
+    "club": "Club",
+    "league": "League",
+    "crest": "Crest",
+    "empty": "No clubs to show.",
+    "loadMore": "Load more",
+    "note": "Followers change at the end of the season, by the campaign. At your club, commercial income follows half of that change."
   }
 }
