@@ -31,6 +31,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "11.2",
+    date: "2026-11-13",
+    items: [
+      { tab: "general", pt: "Menu do seu jeito: em Configurações → Menu você escolhe o menu em cima ou numa coluna à esquerda, muda a ordem das telas arrastando e cria seus próprios grupos. Quem não mexer continua com o menu de sempre.", en: "Your own menu: in Settings → Menu you pick the menu on top or in a column on the left, change the order of the screens by dragging and create your own groups. If you change nothing, the menu stays as it was." },
+      { tab: "general", pt: "Configurações reorganizadas: janela mais larga, dividida em Geral, Partida, Visual, Som e Menu, sem aquela rolagem comprida.", en: "Settings reorganised: a wider window split into General, Match, Graphics, Sound and Menu, without the long scroll." },
+      { tab: "formation", pt: "Jogadas ensaiadas: até 3 jogadas para escanteios e 3 para faltas cruzadas. Em cada uma você escolhe onde a bola vai (primeiro pau, marca do pênalti, segundo pau ou toque curto) e quantos sobem para a área. A cada cobrança o time usa uma delas.", en: "Rehearsed routines: up to 3 routines for corners and 3 for crossed free kicks. In each one you pick where the ball goes (near post, penalty spot, far post or short) and how many go up into the box. At each set piece the team uses one of them." },
+      { tab: "formation", pt: "Escalações salvas: agora são seis. A, B e C aparecem na partida; D, E e F servem para testar. Dá para duplicar uma escalação e levar uma tática para outro jogo salvo com um código (exportar e importar).", en: "Saved line-ups: there are six now. A, B and C show in the match; D, E and F are for testing. You can duplicate a line-up and take a tactic to another save with a code (export and import)." },
+      { tab: "scout", pt: "Missão de olheiro: escolha quais notas procurar (A, B, C, D, E). A janela de nova missão ficou organizada por posição, idade, nota e elenco.", en: "Scout mission: pick which grades to look for (A, B, C, D, E). The new mission window is now laid out by position, age, grade and squad." },
+      { tab: "stats", pt: "Redes sociais: nova aba em Estatísticas com o ranking de seguidores (sua liga, seu país, mundo) e o momento do seu clube: em alta, estável ou em baixa pela campanha. Em alta a torcida anima um pouco a cada semana; em baixa, desanima.", en: "Social media: a new tab in Stats with the followers ranking (your league, your country, the world) and your club's moment: rising, steady or falling with the campaign. Rising, the fans cheer up a little every week; falling, they lose heart." },
+      { tab: "finances", pt: "Patrocínio acompanha a torcida: na virada da temporada a receita comercial sobe ou cai com metade da variação dos seguidores, até 6% por temporada.", en: "Sponsorship follows the fans: at the season rollover the commercial income rises or falls with half the change in followers, up to 6% a season." },
+      { tab: "development", pt: "Base mais lenta: a sessão de treino da base rende 80% do que rendia, os bônus do clube (comissão, CT, técnico) contam pela metade para quem está na base e o jogo de base rende 70%. O time principal não muda.", en: "Slower academy: an academy training session is worth 80% of what it was, the club's bonuses (staff, training ground, manager) count half for academy players and a youth game is worth 70%. The first team does not change." },
+    ],
+    fixes: [
+      { tab: "match", pt: "A tela de resultado não pisca mais depois de um jogo da seleção, e não mostra posição errada para os jogadores da seleção.", en: "The result screen no longer blinks after a national team match, and no longer shows a wrong position for national team players." },
+      { tab: "match", pt: "O botão do mapa na partida agora se chama Mapa de posse, o mesmo nome do painel.", en: "The map button in the match is now called Possession map, the same name as the panel." },
+      { tab: "scout", pt: "Base cheia ao contratar um jovem de fora: aparece um atalho para a base, onde dá para dispensar jogadores.", en: "Academy full when signing a youngster from abroad: a shortcut to the academy shows up, where players can be released." },
+      { tab: "manager", pt: "Lenda aposentada guarda a posição em que jogava. Vale para quem se aposentar daqui em diante.", en: "A retired legend keeps the position he played. This applies to players who retire from now on." },
+    ],
+  },
+  {
     version: "11.1",
     date: "2026-11-12",
     time: "21:39",
