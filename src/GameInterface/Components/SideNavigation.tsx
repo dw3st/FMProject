@@ -49,7 +49,7 @@ export function SideNavigation() {
   return (
     <nav
       aria-label={t("nav.main")}
-      className="fixed left-0 top-14 bottom-12 z-40 flex w-52 flex-col overflow-y-auto border-r border-border bg-background py-2 phone:hidden"
+      className="fixed left-[max(0px,calc((100vw-1488px)/2))] top-14 bottom-12 z-40 flex w-52 flex-col overflow-y-auto border-x border-border bg-background py-2 phone:hidden"
     >
       {entries.map((entry) => {
         if (entry.kind === "tab") return <TabLink key={entry.tab.item.href} tab={entry.tab} />;
