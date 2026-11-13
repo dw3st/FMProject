@@ -143,7 +143,11 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
   // Both fields travel together — a factor without its matching basis breaks the next season
   // rollover's carry-forward (`carryForwardWageFactor`).
   const freshWage = new Map<string, { wageFactor: number; wageRevenueBasis?: number }>();
+  // Followers come from the base world too: the kits were generated before the followers were recalibrated against
+  // real figures (11.3), and a kit's own season reactions are a few clubs' worth of drift.
+  const freshFollowers = new Map<string, number>();
   for (const f of await saveService.listSquadFiles(saveId)) {
+    if (typeof f.squad.finances?.followers === "number") freshFollowers.set(f.squad.id, f.squad.finances.followers);
     if (typeof f.squad.wageFactor === "number") {
       freshWage.set(f.squad.id, { wageFactor: f.squad.wageFactor, wageRevenueBasis: f.squad.wageRevenueBasis });
     }
@@ -163,7 +167,9 @@ export async function applyKit(kitName: string, saveId: string): Promise<void> {
     const wage = freshWage.get(squad.id);
     // Older kits may still carry the generator's human-only fields: strip them here too.
     const clean = stripHumanOnly(squad);
-    const withWage = wage !== undefined ? { ...clean, ...wage } : clean;
+    const followers = freshFollowers.get(squad.id);
+    const based = followers !== undefined && clean.finances ? { ...clean, finances: { ...clean.finances, followers } } : clean;
+    const withWage = wage !== undefined ? { ...based, ...wage } : based;
     const toWrite = withContracts(withWage, leagueEnds.get(league) ?? fallbackEnd);
     // `club` is the file stem (older kits stored the slug; saveSquad resolves either).
     await saveService.saveSquad(saveId, league, club, toWrite);

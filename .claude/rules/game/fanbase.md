@@ -30,3 +30,7 @@ Report de tester. Versão **11.2**. Lógica pura em `src/Domain/fanbase/fanbase.
 
 - A tendência olha só a liga (copa e continental entram na virada, como sempre).
 - Nenhum nome de rede real; não há publicações nem eventos.
+
+## Seguidores recalibrados (11.2.1)
+
+Report do usuário (Barcelona fora do ranking, Juventude em 8º). Os seguidores do mundo base vinham do dado de origem, com erros grandes (Barcelona 7M, Goiás 173M, Juventude 155M). `scripts/curated/followersTable.ts` lista 140 clubes conhecidos com o total real nas redes (todas as plataformas, 2025: CIES Football Observatory, Goal, Ibope Repucom; Real Madrid 470M, Barcelona 420M, Manchester United 230M, Flamengo 65M, Corinthians 42M). `bun scripts/curated/buildFollowerCorrections.ts` grava `data_process/curated/followerCorrections.json`: os conhecidos pelo número da tabela; os demais ficam com o número de origem, limitado entre um quinto e o dobro do esperado pela receita do clube (ajuste log-log sobre os conhecidos, seguidores = e^2,34 × receita^0,74) e nunca acima de 15M. 305 de 1273 clubes mudaram. `bun scripts/applyFollowerCorrections.ts` aplica ao mundo base (fim da cadeia de `espn-import.md`, depois de `applyCoaches`; copiar para `src/Data`). Os start kits não foram regenerados: `applyKit` usa os seguidores do mundo base do save novo. Saves em andamento não mudam sozinhos; o mundo dos testers foi ajustado à mão (cada clube × novo/antigo do mundo base, mantendo a evolução dele; a âncora de público do clube humano junto).
