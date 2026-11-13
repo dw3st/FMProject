@@ -1,9 +1,7 @@
 /**
- * The top bar in groups (tester report, 11.2): instead of one tab per screen, a few groups that open a short menu.
- * Pure: which group each screen belongs to. The layout is a choice of the viewer (`fm.topnav.layout`).
+ * The ready-made groups of the menu (tester report, 11.2): instead of one tab per screen, a few groups that open a
+ * short menu. Pure: which group each screen belongs to. The player's own menu is `navMenu.ts`.
  */
-
-export type NavLayout = "tabs" | "groups";
 
 export interface NavGroupDef {
   key: "team" | "management" | "market" | "competitions";
@@ -39,22 +37,5 @@ export function groupNav<T extends { href: string }>(items: readonly T[]): NavEn
   return out;
 }
 
-const LAYOUT_KEY = "fm.topnav.layout";
+/** Fired on the window when the player changes his menu (`navMenu.ts`). */
 export const NAV_LAYOUT_EVENT = "fm:nav-layout";
-
-export function readNavLayout(): NavLayout {
-  try {
-    return localStorage.getItem(LAYOUT_KEY) === "groups" ? "groups" : "tabs";
-  } catch {
-    return "tabs";
-  }
-}
-
-export function writeNavLayout(layout: NavLayout): void {
-  try {
-    localStorage.setItem(LAYOUT_KEY, layout);
-  } catch {
-    // no storage: the choice lasts this page
-  }
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(NAV_LAYOUT_EVENT, { detail: layout }));
-}

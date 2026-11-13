@@ -2,6 +2,8 @@ import { ChatPopups } from "@/GameInterface/Social/ChatPopups";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { TopNavigation } from "@/GameInterface/Components/TopNavigation";
+import { SideNavigation } from "@/GameInterface/Components/SideNavigation";
+import { useNavMenu } from "@/GameInterface/Components/useNavEntries";
 import { StatusBar } from "@/GameInterface/Components/StatusBar";
 import { FastForwardModal, SeasonNoticeModal } from "@/GameInterface/Components/SeasonNoticeModal";
 import { Modal } from "@/GameInterface/Components/Modal";
@@ -70,6 +72,9 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
   const mySquadId = squad?.id ?? session?.clubId ?? "";
   const lobby = save?.world?.phase === "lobby";
   const newVersion = useNewVersion();
+  // The menu in a left column (the player's choice, `navMenu.ts`): only with the full chrome, never on a phone.
+  const menuPosition = useNavMenu().position;
+  const sideMenu = chrome === "full" && menuPosition === "left";
 
   // A world in the lobby only shows the league screen; a solo save has none (multiplayer part 2).
   const redirectTo = typeof window === "undefined" ? null : worldRedirect(pathname, save);
@@ -89,7 +94,9 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
           dayAction={!lobby && session?.groupAdvance ? <span id={READY_SLOT_ID} className="flex w-full min-w-0"><ReadyControl publicWorld={save?.world?.kind === "public"} /></span> : undefined}
         />}
 
-        <main className={chrome === "full" ? "h-full pt-14 pb-12 phone:pt-11 phone:pb-9 overflow-y-auto flex flex-col" : chrome === "match" ? "h-full pb-12 phone:pb-9 overflow-hidden flex flex-col" : "h-full pb-12 phone:pb-9 overflow-y-auto flex flex-col"}>
+        {sideMenu && <SideNavigation />}
+
+        <main className={chrome === "full" ? `h-full pt-14 pb-12 phone:pt-11 phone:pb-9 overflow-y-auto flex flex-col ${sideMenu ? "pl-52 phone:pl-0" : ""}` : chrome === "match" ? "h-full pb-12 phone:pb-9 overflow-hidden flex flex-col" : "h-full pb-12 phone:pb-9 overflow-y-auto flex flex-col"}>
           {redirectTo ? (
             <p className="px-6 py-5 text-sm text-muted-foreground">{t("common.loading")}</p>
           ) : noClub ? <NoClubScreen /> : children}
