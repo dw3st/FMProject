@@ -76,6 +76,17 @@ const ACTION_CLIPS: Record<SpriteActionKind, readonly string[]> = {
   punch: ["punch", "header"],
   throwGo: ["throwGo"],
   kneeSlide: ["kneeSlide", "celebrate"],
+  volley: ["volley", "kick"],
+  bicycle: ["bicycle", "header"],
+  backheel: ["rabona", "kick"],
+  roulette: ["roulette"],
+  stepover: ["hocusPocus"],
+  chest: ["receive"],
+  armsUp: ["celebrate"],
+  smother: ["catch", "receive"],
+  tipOver: ["punch", "header"],
+  collect: ["catch", "receive"],
+  goalKick: ["kick"],
 };
 
 /**

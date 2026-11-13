@@ -70,6 +70,12 @@ const ICON_FILES: Record<string, string> = Object.fromEntries(
 /** The game art the pages load (art plan phase 2: the players' and keepers' sprite atlases). */
 export const GAME_ART_FILES: Record<string, string> = {
   "player/player-atlas.json": "application/json",
+  "player/player-atlas-2.json": "application/json",
+  "player/player-atlas-2.png": "image/png",
+  "player/player-real-atlas-2.json": "application/json",
+  "player/player-real-atlas-2.png": "image/png",
+  "keeper/keeper-atlas-2.json": "application/json",
+  "keeper/keeper-atlas-2.png": "image/png",
   "player/player-atlas.png": "image/png",
   "player/disc-rim.png": "image/png",
   "medals/legend-laurel.png": "image/png",

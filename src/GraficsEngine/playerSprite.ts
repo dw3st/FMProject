@@ -33,6 +33,17 @@ export const PLAYER_SPRITE = {
   JUMP_YDS: 4,
   /** A defender (his team without the ball) this close to the ball (yards) retreats facing it instead of turning away. */
   BACKPEDAL_YDS: 22,
+  /** Sprint (the longer stride): above SPRINT_UP drawn yards per second, until below SPRINT_DOWN. */
+  SPRINT_UP: 5.6,
+  SPRINT_DOWN: 4.8,
+  /** A defender moving slowly this close to the ball (yards) shuffles side on, arms out. */
+  JOCKEY_YDS: 9,
+  /** Showy finishes: share of shots struck as a volley or a backheel, of headers at goal turned into a bicycle kick. */
+  VOLLEY_SHARE: 0.12,
+  BACKHEEL_SHARE: 0.04,
+  BICYCLE_SHARE: 0.12,
+  /** Share of the standing celebrations run with both arms up. */
+  ARMS_UP_SHARE: 0.4,
   /** Skin tones and hair colours (the crowd's), picked per player. */
   SKIN: [0xf1c9a5, 0xe0ac83, 0xc68b5e, 0x9b6a42, 0x6f4527, 0x4a2c17],
   HAIR: [0x1b1410, 0x3a2616, 0x6b4423, 0xa8742f, 0xd8c08a, 0x2b2b2b, 0x777777],
@@ -64,16 +75,46 @@ export function actionChain(kind: SpriteActionKind, side: "left" | "right" = "le
       const d = `keeper-dive-${side}`;
       return [[`${d}-0`, 0.09], [`${d}-1`, 0.1], [d, 0.31], [`${d}-3`, 0.15], [`${d}-sprawl`, 0.3], [`${d}-up`, 0.45]];
     }
-    case "catch": return [["keeper-catch", 0.5]];
+    case "catch": return [["keeper-catch", 0.5], ["keeper-hold", 0.4]];
     case "punch": return [["keeper-punch", 0.4]];
     case "throwGo": return [["player-throw-go", 0.35]];
     case "kneeSlide": return [["player-knee-slide", 1.1], ["player-celebrate", 0.4], ["player-fist", 0.4]];
+    case "volley": return [["player-volley-wind", 0.12], ["player-volley", 0.16], ["player-volley-follow", 0.32]];
+    case "bicycle": return [["player-bicycle-jump", 0.14], ["player-bicycle", 0.3], ["player-bicycle-land", 0.5]];
+    case "backheel": return [["player-backheel", 0.36]];
+    case "roulette": return [["player-spin-a", 0.18], ["player-spin-b", 0.18], ["player-spin-a", 0.14]];
+    case "stepover": {
+      const [a, b] = side === "left" ? ["left", "right"] : ["right", "left"];
+      return [[`player-feint-${a}`, 0.17], [`player-feint-${b}`, 0.17]];
+    }
+    case "chest": return [["player-chest", 0.32]];
+    case "armsUp": return [["player-arms-up", 1.3], ["player-fist", 0.4], ["player-arms-up", 0.5]];
+    case "smother": return [["keeper-smother", 0.6], ["keeper-hold", 0.4]];
+    case "tipOver": return [["keeper-tip-over", 0.45], ["keeper-ready", 0.2]];
+    case "collect": return [["keeper-collect", 0.35], ["keeper-hold", 0.4]];
+    case "goalKick": return [["keeper-kick-wind", 0.12], ["keeper-kick", 0.16], ["keeper-kick-follow", 0.3]];
   }
 }
 
 export type SpriteActionKind =
   | "kick" | "pass" | "throw" | "header" | "tackle" | "tackleStand" | "fall" | "appeal" | "receive" | "injured"
-  | "celebrate" | "dive" | "catch" | "punch" | "throwGo" | "kneeSlide";
+  | "celebrate" | "dive" | "catch" | "punch" | "throwGo" | "kneeSlide"
+  | "volley" | "bicycle" | "backheel" | "roulette" | "stepover" | "chest" | "armsUp"
+  | "smother" | "tipOver" | "collect" | "goalKick";
+
+/** Frames drawn with the figure's back to where he faces (he strikes a bicycle kick with his back to goal). */
+const TURNED_FRAMES: ReadonlySet<string> = new Set(["player-bicycle-jump", "player-bicycle", "player-bicycle-land"]);
+
+/**
+ * How a shot is struck (figures): mostly the plain kick; some volleys and backheels, and a bicycle kick for some
+ * headers at goal. `roll` 0..1, stable per player and moment.
+ */
+export function finishKind(header: boolean, roll: number): SpriteActionKind {
+  const S = PLAYER_SPRITE;
+  if (header) return roll < S.BICYCLE_SHARE ? "bicycle" : "header";
+  if (roll < S.VOLLEY_SHARE) return "volley";
+  return roll < S.VOLLEY_SHARE + S.BACKHEEL_SHARE ? "backheel" : "kick";
+}
 
 export interface SpriteAction {
   playerId: number;
@@ -98,6 +139,8 @@ export interface SpriteMotion {
   gait: "idle" | "walk" | "run";
   /** Cycle position 0..1 (8 frames). */
   phase: number;
+  /** Running flat out (the longer stride); absent = no. */
+  sprint?: boolean;
 }
 
 export function newMotion(x: number, y: number, angle = -Math.PI / 2): SpriteMotion {
@@ -143,7 +186,8 @@ export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: n
   else if (look && Math.hypot(look.x - pos.x, look.y - pos.y) > 0.5) angle = turn(angle, Math.atan2(look.y - pos.y, look.x - pos.x), dt, S.TURN_MIN);
   const cycle = gait === "run" ? S.RUN_CYCLE + S.RUN_CYCLE_PER_SPEED * sp : S.WALK_CYCLE;
   const phase = gait === "idle" ? m.phase : (m.phase + (sp / cycle) * dt) % 1;
-  return { x: pos.x, y: pos.y, vx, vy, angle, gait, phase };
+  const sprint = gait === "run" && (m.sprint ? sp > S.SPRINT_DOWN : sp > S.SPRINT_UP);
+  return { x: pos.x, y: pos.y, vx, vy, angle, gait, phase, ...(sprint ? { sprint } : {}) };
 }
 
 /** Adds an action; a new one replaces the player's running one. */
@@ -162,18 +206,25 @@ export interface SpritePose {
   atlas: SpriteAtlas;
   /** Frame base name (`player-run-03`); the layer file is `${base}-${layer}.png`. */
   base: string;
+  /** The frame is drawn turned half a circle (see `TURNED_FRAMES`). */
+  turned?: true;
 }
 
-const poseFor = (base: string): SpritePose => ({ atlas: base.startsWith("keeper-") ? "keeper" : "player", base });
+const poseFor = (base: string): SpritePose => ({
+  atlas: base.startsWith("keeper-") ? "keeper" : "player", base, ...(TURNED_FRAMES.has(base) ? { turned: true as const } : {}),
+});
+
+const cycleFrame = (phase: number) => String((Math.floor(phase * 8) % 8) + 1).padStart(2, "0");
 
 /**
  * The frame a player shows: a running action wins (its step at `now`; `diveSide` the drawn side of a dive), else
- * idle / walk / run by the gait (an idle keeper stands ready).
+ * idle / walk / run by the gait (an idle keeper stands ready). `jockey`: a defender close to the ball.
  */
-export function poseOf(m: SpriteMotion, action: SpriteAction | null, now: number, keeper: boolean, diveSide: "left" | "right" = "left", hold?: string): SpritePose {
+export function poseOf(m: SpriteMotion, action: SpriteAction | null, now: number, keeper: boolean, diveSide: "left" | "right" = "left", hold?: string, jockey = false): SpritePose {
   if (action) {
     let t = now - action.startedAt;
-    const chain = actionChain(action.kind, diveSide);
+    // A step-over starts to the side the action carries; a dive to the drawn side.
+    const chain = actionChain(action.kind, action.kind === "stepover" ? (action.side > 0 ? "right" : "left") : diveSide);
     for (const [base, s] of chain) {
       if (t < s) return poseFor(base);
       t -= s;
@@ -184,8 +235,11 @@ export function poseOf(m: SpriteMotion, action: SpriteAction | null, now: number
   if (hold) return poseFor(hold);
   if (m.gait === "idle") return keeper ? poseFor("keeper-ready") : poseFor("player-idle");
   // A keeper moving slowly shuffles sideways, facing the play.
-  if (keeper && m.gait === "walk") return poseFor(`keeper-side-${String((Math.floor(m.phase * 8) % 8) + 1).padStart(2, "0")}`);
-  return poseFor(`player-${m.gait}-${String((Math.floor(m.phase * 8) % 8) + 1).padStart(2, "0")}`);
+  if (keeper && m.gait === "walk") return poseFor(`keeper-side-${cycleFrame(m.phase)}`);
+  // A defender facing the man on the ball up close: side on, arms out.
+  if (jockey && !keeper && m.gait === "walk") return poseFor(`player-jockey-${cycleFrame(m.phase)}`);
+  if (m.gait === "run" && m.sprint) return poseFor(`player-sprint-${cycleFrame(m.phase)}`);
+  return poseFor(`player-${m.gait}-${cycleFrame(m.phase)}`);
 }
 
 /** Skin tone and hair colour of a player, stable by his roster id. */

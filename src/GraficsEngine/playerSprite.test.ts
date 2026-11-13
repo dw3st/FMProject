@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { actionChain, backpedals, actionDuration, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, stepMotion, THROW_IN_HOLD, colorLuma, groundRingColor } from "@/GraficsEngine/playerSprite";
+import { actionChain, finishKind, backpedals, actionDuration, addAction, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, stepMotion, THROW_IN_HOLD, colorLuma, groundRingColor } from "@/GraficsEngine/playerSprite";
 
 const run = (speed: number, seconds: number, dt = 1 / 60) => {
   let m = newMotion(0, 0);
@@ -32,7 +32,7 @@ describe("player sprite", () => {
   test("poses: idle, keeper ready, run cycle frames, action chains in order", () => {
     expect(poseOf(newMotion(0, 0), null, 0, false).base).toBe("player-idle");
     expect(poseOf(newMotion(0, 0), null, 0, true)).toEqual({ atlas: "keeper", base: "keeper-ready" });
-    expect(poseOf(run(6, 0.3), null, 0, false).base).toMatch(/^player-run-0[1-8]$/);
+    expect(poseOf(run(4, 0.3), null, 0, false).base).toMatch(/^player-run-0[1-8]$/);
     const kick = addAction([], { playerId: 1, kind: "kick", side: 1 }, 10)[0]!;
     expect(poseOf(newMotion(0, 0), kick, 10.05, false).base).toBe("player-kick-wind");
     expect(poseOf(newMotion(0, 0), kick, 10.2, false).base).toBe("player-kick");
@@ -55,7 +55,7 @@ describe("player sprite", () => {
 
 describe("set pieces and keeper extras (art phase 5)", () => {
   const atlas = (n: string) => JSON.parse(require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "example_data", "assets", n), "utf8")) as { frames: Record<string, unknown> };
-  const frames = { ...atlas("player/player-atlas.json").frames, ...atlas("keeper/keeper-atlas.json").frames };
+  const frames = { ...atlas("player/player-atlas-2.json").frames, ...atlas("keeper/keeper-atlas-2.json").frames };
   test("new chains use existing frames", () => {
     for (const k of ["punch", "throwGo", "kneeSlide"] as const) for (const [base] of actionChain(k)) expect(`${base}-shirt.png` in frames).toBe(true);
     expect(`${THROW_IN_HOLD}-shirt.png` in frames).toBe(true);
@@ -104,5 +104,55 @@ describe("ground ring colour (10.2)", () => {
     expect(groundRingColor(0xc8102e, 0x000000, 0.2, 0xd9dde3, 0xd22630)).toBe(0xc8102e);
     expect(colorLuma(0xffffff)).toBeCloseTo(1, 5);
     expect(colorLuma(0x000000)).toBe(0);
+  });
+});
+
+describe("richer moves of the top-down figures", () => {
+  const read = (n: string) => JSON.parse(require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "example_data", "assets", n), "utf8")) as { frames: Record<string, unknown> };
+  const frames = { ...read("player/player-atlas-2.json").frames, ...read("keeper/keeper-atlas-2.json").frames };
+  const real = read("player/player-real-atlas-2.json").frames;
+  const KINDS = ["kick", "pass", "throw", "header", "tackle", "tackleStand", "fall", "appeal", "receive", "injured", "celebrate", "dive", "catch",
+    "punch", "throwGo", "kneeSlide", "volley", "bicycle", "backheel", "roulette", "stepover", "chest", "armsUp", "smother", "tipOver", "collect", "goalKick"] as const;
+
+  test("every step of every chain is a frame of the atlases, both sides", () => {
+    for (const k of KINDS) for (const side of ["left", "right"] as const) for (const [base] of actionChain(k, side)) {
+      expect(`${base}-shirt.png` in frames).toBe(true);
+      if (base.startsWith("player-")) expect(`${base.replace("player-", "player-real-")}-shirt.png` in real).toBe(true);
+    }
+  });
+
+  test("a sprint has its own stride, with hysteresis; a defender close to the ball jockeys at a walk", () => {
+    const S = PLAYER_SPRITE;
+    expect(poseOf(run(S.SPRINT_UP + 1, 2), null, 0, false).base).toMatch(/^player-sprint-0\d$/);
+    expect(poseOf(run(S.RUN_UP + 0.5, 2), null, 0, false).base).toMatch(/^player-run-0\d$/);
+    let m = run(S.SPRINT_UP + 1, 2);
+    for (let i = 0; i < 120; i++) m = stepMotion(m, { x: m.x + (S.SPRINT_DOWN + 0.3) / 60, y: 0 }, 1 / 60, null);
+    expect(m.sprint).toBe(true);
+    for (let i = 0; i < 120; i++) m = stepMotion(m, { x: m.x + (S.SPRINT_DOWN - 0.5) / 60, y: 0 }, 1 / 60, null);
+    expect(m.sprint).toBeUndefined();
+    const walk = { ...newMotion(0, 0), gait: "walk" as const, phase: 0.4 };
+    expect(poseOf(walk, null, 0, false, "left", undefined, true).base).toBe("player-jockey-04");
+    expect(poseOf(walk, null, 0, false).base).toBe("player-walk-04");
+    expect(poseOf(walk, null, 0, true, "left", undefined, true).base).toBe("keeper-side-04");
+    for (let k = 1; k <= 8; k++) for (const g of ["sprint", "jockey"]) expect(`player-${g}-0${k}-shirt.png` in frames).toBe(true);
+  });
+
+  test("finishes: mostly the plain kick and header, by the shares; the bicycle is drawn turned", () => {
+    const S = PLAYER_SPRITE;
+    expect(finishKind(false, 0)).toBe("volley");
+    expect(finishKind(false, S.VOLLEY_SHARE + 0.001)).toBe("backheel");
+    expect(finishKind(false, S.VOLLEY_SHARE + S.BACKHEEL_SHARE)).toBe("kick");
+    expect(finishKind(true, 0)).toBe("bicycle");
+    expect(finishKind(true, S.BICYCLE_SHARE)).toBe("header");
+    const act = (kind: "bicycle" | "volley") => ({ playerId: 1, kind, startedAt: 0, side: 1 as const });
+    expect(poseOf(newMotion(0, 0), act("bicycle"), 0.2, false).turned).toBe(true);
+    expect(poseOf(newMotion(0, 0), act("volley"), 0.2, false).turned).toBeUndefined();
+  });
+
+  test("a step-over goes one way then the other, by the action's side", () => {
+    const step = (side: 1 | -1, t: number) => poseOf(newMotion(0, 0), { playerId: 1, kind: "stepover", startedAt: 0, side }, t, false).base;
+    expect(step(1, 0.05)).toBe("player-feint-right");
+    expect(step(1, 0.25)).toBe("player-feint-left");
+    expect(step(-1, 0.05)).toBe("player-feint-left");
   });
 });

@@ -30,7 +30,7 @@ import { easeOffsets, spreadOffsets } from "@/GraficsEngine/markerSpread";
 import { arrivedMates, celebrationPositions, planCelebration, walkBackPositions, type CelebrationPlan } from "@/GraficsEngine/goalCelebration";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
-import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, backpedals, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion, groundRingColor } from "@/GraficsEngine/playerSprite";
+import { KNEE_SLIDE_SHARE, THROW_IN_HOLD, addAction, backpedals, finishKind, liveActions, newMotion, PLAYER_SPRITE, poseOf, spriteLook, spriteScale, SPRITE_LAYERS, stepMotion, type SpriteAction, type SpriteAtlas, type SpriteMotion, groundRingColor } from "@/GraficsEngine/playerSprite";
 import { STADIUM_ART, loadStadiumArt, type StadiumArt } from "@/GraficsEngine/stadiumArt";
 import { FX_ART, loadFxArt, type FxArt } from "@/GraficsEngine/fxArt";
 import { matchHasFog } from "@/Domain/matchday/matchFog";
@@ -2139,8 +2139,8 @@ export function PixiPitch({
       }
       if (newVisualOn()) {
         void Promise.all([
-          Assets.load<Spritesheet>(gameArtUrl(realPlayers ? "player/player-real-atlas.json" : "player/player-atlas.json")),
-          Assets.load<Spritesheet>(gameArtUrl("keeper/keeper-atlas.json")),
+          Assets.load<Spritesheet>(gameArtUrl(realPlayers ? "player/player-real-atlas-2.json" : "player/player-atlas-2.json")),
+          Assets.load<Spritesheet>(gameArtUrl("keeper/keeper-atlas-2.json")),
         ]).then(([player, keeper]) => {
           if (facesDisposed || !player || !keeper) return;
           // The realistic atlas has the same frames named `player-real-…`: read them under the usual names.
@@ -2596,10 +2596,23 @@ export function PixiPitch({
         if (playerId === null || playerId === undefined || (!spriteSheets && !pixelArt) || !framesShown()) return;
         spriteActions = addAction(spriteActions, { playerId, kind, side }, effectNow);
       };
+      /** The top-down figures play their richer moves; the side-view option has clips of its own. */
+      const topDownMoves = () => markersRef.current === "figures";
+      /** A roll 0..1 for a player's move, stable for that player and moment. */
+      const moveRoll = (id: number, salt: string) => mulberry32(seedFrom(`${salt}:${id}:${Math.floor(stateRef.current.matchTime)}`))();
       const unsubPoses = [
-        // An attempt at goal: the pixel figures may strike it with a showy move (volley, rabona, bicycle kick).
-        gameBus.on("shot", (e) => { act(e.player, "kick"); pixelShots.set(e.player, effectNow); }),
-        gameBus.on("header", (e) => { act(e.player, "header"); pixelShots.set(e.player, effectNow); }),
+        // An attempt at goal: sometimes struck with a showy move (volley, backheel; a header as a bicycle kick).
+        gameBus.on("shot", (e) => { act(e.player, topDownMoves() ? finishKind(false, moveRoll(e.player, "finish")) : "kick"); pixelShots.set(e.player, effectNow); }),
+        gameBus.on("header", (e) => { act(e.player, topDownMoves() ? finishKind(true, moveRoll(e.player, "finish")) : "header"); pixelShots.set(e.player, effectNow); }),
+        // A won dribble: a roulette or a step-over.
+        gameBus.on("dribble", (e) => {
+          if (!e.success || !topDownMoves()) return;
+          const roll = moveRoll(e.player, "trick");
+          act(e.player, roll < 0.5 ? "roulette" : "stepover", roll < 0.75 ? 1 : -1);
+        }),
+        // A high ball brought down: on the chest.
+        gameBus.on("aerialResolved", (e) => { if (e.outcome === "control" && topDownMoves()) act(e.winnerId, "chest"); }),
+        gameBus.on("keeperSmother", (e) => { if (topDownMoves()) act(e.keeperId, "smother"); }),
         // A won dribble: the pixel figure plays one of its tricks (kept through a pose he is still in).
         gameBus.on("dribble", (e) => {
           if (!e.success || !pixelArt || !framesShown()) return;
@@ -2616,9 +2629,10 @@ export function PixiPitch({
         gameBus.on("passAttempted", (e) => {
           const d = e.distance ?? 0;
           if (e.player === throwTaker) { throwTaker = null; act(e.player, "throwGo"); return; }
-          act(e.player, playerPos(e.player)?.role === "GK" ? (d < 32 ? "throw" : "kick") : d < 22 ? "pass" : "kick");
+          const keeper = playerPos(e.player)?.role === "GK";
+          act(e.player, keeper ? (d < 32 ? "throw" : topDownMoves() ? "goalKick" : "kick") : d < 22 ? "pass" : "kick");
         }),
-        gameBus.on("passCompleted", (e) => act(e.toId, "receive")),
+        gameBus.on("passCompleted", (e) => act(e.toId, topDownMoves() && playerPos(e.toId)?.role === "GK" ? "collect" : "receive")),
         gameBus.on("crossStarted", (e) => act(e.player, "kick")),
         gameBus.on("longBallStarted", (e) => act(e.player, "kick")),
         gameBus.on("throughBallStarted", (e) => act(e.player, "pass")),
@@ -2630,14 +2644,18 @@ export function PixiPitch({
           if (celebration) return;
           // Some goals are celebrated with a knee slide (stable per scorer and minute).
           const slide = mulberry32(seedFrom(`slide:${e.scorerId}:${e.minute}`))() < KNEE_SLIDE_SHARE;
-          act(e.scorerId, slide ? "kneeSlide" : "celebrate");
+          const armsUp = topDownMoves() && moveRoll(e.scorerId, "cheer") < PLAYER_SPRITE.ARMS_UP_SHARE;
+          act(e.scorerId, slide ? "kneeSlide" : armsUp ? "armsUp" : "celebrate");
           act(e.assistId, "celebrate");
         }),
         gameBus.on("shotResolved", (e) => {
           if (e.isGoal || !e.inPosts) return;
           const shooter = playerPos(e.player);
           const gk = shooter && stateRef.current.players.find((q) => q.team !== shooter.team && q.role === "GK");
-          if (gk) act(gk.id, "dive", e.toY >= gk.y ? 1 : -1);
+          if (!gk) return;
+          // A shot straight at him is pushed over the bar; anything wider is a dive.
+          if (topDownMoves() && Math.abs(e.toY - gk.y) < 1.2) act(gk.id, "tipOver");
+          else act(gk.id, "dive", e.toY >= gk.y ? 1 : -1);
         }),
       ];
 
@@ -4583,10 +4601,11 @@ export function PixiPitch({
             if (body) {
               // A dive's side as drawn: the engine side (+y / -y, turned with the mirror) against the keeper's right hand.
               const diveSide = action?.kind === "dive" && Math.sin(mo.angle + Math.PI / 2) * action.side * (mirrorRef.current ? -1 : 1) >= 0 ? "right" : "left";
-              const pose = poseOf(mo, action, effectNow, player.role === "GK", diveSide, throwing ? THROW_IN_HOLD : undefined);
+              const jockey = withBall !== null && withBall !== player.team && ballDist <= PLAYER_SPRITE.JOCKEY_YDS;
+              const pose = poseOf(mo, action, effectNow, player.role === "GK", diveSide, throwing ? THROW_IN_HOLD : undefined, jockey);
               setPose(body, pose.atlas, pose.base);
               // The sprite faces -y: turn it to where he faces, against the marker's own animation turn.
-              body.rotation = mo.angle + Math.PI / 2 - g.rotation;
+              body.rotation = mo.angle + Math.PI / 2 - g.rotation + (pose.turned ? Math.PI : 0);
             } else if (pixelFig && pixelArt) {
               const A = pixelArt.atlas, keeper = player.role === "GK";
               const res = app.renderer.resolution;
