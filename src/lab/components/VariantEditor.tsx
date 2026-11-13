@@ -279,6 +279,19 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
       </div>
 
       <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="The other variant plays the AI's game plan against this side (study.md): counter style, and a man-mark at high. Full engine only.">Studied</span>
+        <select
+          value={variant.studied ?? "none"}
+          onChange={(e) => patch({ studied: e.target.value === "none" ? undefined : (e.target.value as NonNullable<Variant["studied"]>) })}
+          className="flex-1 bg-white/10 rounded px-1 py-0.5"
+        >
+          <option value="none">none</option>
+          <option value="medium">medium (style)</option>
+          <option value="high">high (style + mark)</option>
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20" title="Weather of the match (variant A sets it)">Weather</span>
         <select
           value={variant.weather ?? "none"}

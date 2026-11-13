@@ -17,6 +17,7 @@ import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
 import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { counterStyle, pickMarkTarget, pickMarkerSlot } from '@/Domain/study/study';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import formationDiamondJson from '@/Data/formations/4-1-2-1-2.json';
@@ -136,6 +137,8 @@ export interface TestScenario {
   name:        string;
   description: string;
   createState(): GameState;
+  /** Tactical style each team's selector takes when the scenario is picked (absent = whatever is selected). */
+  styles?: { A?: import('@/types/tacticsTypes').TacticalStyle; B?: import('@/types/tacticsTypes').TacticalStyle };
 }
 
 // ── Scenarios ─────────────────────────────────────────────────────────────────
@@ -688,6 +691,31 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const cmSlot = f433.attacking.findIndex(s => s.role === 'CM');
       const stSlot = f433.attacking.findIndex(s => s.role === 'ST');
       return setManMarksBySlot(base, 'B', [{ slot: cmSlot, targetSlot: stSlot }]);
+    },
+  },
+
+  {
+    id:          'studied-plan',
+    name:        '11v11 — Studied plan (AI game plan)',
+    description: 'Team A plays high press and was read by Team B (`study.md`, level high): B comes with the counter style of the table (counter attack; the Team B style selector is set to it) and its best-tackling central midfielder man-marks Team A\'s best attacker (Instructions overlay). The Energy panel header shows "study: high · counter_attack"; `studyPlan` is emitted at kickoff.',
+    styles: { A: 'high_press', B: counterStyle('high_press') },
+    createState() {
+      const f433 = formation433Json as Formation;
+      const redRoster = freshRoster(teamRedPlayers);
+      const blueRoster = freshRoster(teamBluePlayers);
+      const base = createMatchState(redRoster, f433, blueRoster, f433);
+      const roles = f433.attacking.map(s => s.role);
+      const lineupOf = (team: TeamId) => {
+        const xi: string[] = roles.map(() => '');
+        for (const p of base.players) if (p.team === team && p.slotIndex >= 0 && p.slotIndex < xi.length) xi[p.slotIndex] = p.rosterId ?? '';
+        return xi;
+      };
+      const slot = pickMarkerSlot({ roles, lineup: lineupOf('B'), players: blueRoster });
+      const target = pickMarkTarget({ roles, lineup: lineupOf('A'), players: redRoster });
+      const marked = slot !== null && target
+        ? setManMarksBySlot(base, 'B', [{ slot, targetRosterId: target.rosterId }])
+        : base;
+      return { ...marked, study: { B: { level: 'high', style: counterStyle('high_press') } } };
     },
   },
 

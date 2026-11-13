@@ -41,7 +41,8 @@ export function variantAutoLabel(v: Variant): string {
   const withMor2 = v.managerDiscipline === undefined ? withMor1 : `${withMor1} · disc ${v.managerDiscipline}`;
   const withMor = v.pitchCondition === undefined || v.pitchCondition === 90 ? withMor2 : `${withMor2} · pitch ${v.pitchCondition}%`;
   const withTurf = !v.turf || v.turf === "natural" ? withMor : `${withMor} · turf ${v.turf}`;
-  const withWeather = !v.weather ? withTurf : `${withTurf} · ${v.weather}`;
+  const withWeather0 = !v.weather ? withTurf : `${withTurf} · ${v.weather}`;
+  const withWeather = v.studied ? `${withWeather0} · studied` : withWeather0;
   const withRef0 = v.refereeStrictness === undefined ? withWeather : `${withWeather} · ref ${v.refereeStrictness > 0 ? "+" : ""}${v.refereeStrictness}`;
   const withRef = v.setPieceRoutine ? `${withRef0} · sp ${v.setPieceRoutine.target}/${v.setPieceRoutine.attackers}` : withRef0;
   const withQ = v.refereeQuality === undefined ? withRef : `${withRef} · refq ${v.refereeQuality}${v.var ? " · VAR" : ""}`;

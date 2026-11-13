@@ -12,6 +12,9 @@ import { personalityOf } from "@/Domain/personality/personality";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { withNewcomers } from "@/Domain/settling/settling";
 import { simulateMatch, type TeamInstructions } from "@/GameEngine/Domain/SimulateMatch";
+import { counterStyle, pickMarkTarget, pickMarkerSlot } from "@/Domain/study/study";
+import { aiFamiliarity } from "@/Domain/familiarity/familiarity";
+import type { TeamStudy } from "@/GameEngine/types";
 import { addSlotRaws, createSlotCollector } from "@/lab/slotStats";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -108,7 +111,7 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+    newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -157,6 +160,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.pitchCondition              += src.pitchCondition;
   dst.turfInjuryMult              += src.turfInjuryMult;
   dst.weatherActive               += src.weatherActive;
+  dst.preparedAgainst             += src.preparedAgainst;
   dst.refereeStrictness           += src.refereeStrictness;
   dst.refereeErrors += src.refereeErrors;
   dst.varReviews += src.varReviews;
@@ -251,6 +255,8 @@ let matchRefQuality: number | undefined;
 let matchVar = false;
 /** Player instructions of each side (set per worker message): full engine only. */
 let sideInstructions: { A?: TeamInstructions; B?: TeamInstructions } = {};
+/** The side that plays a game plan against a studied opponent (`Variant.studied` of the OTHER variant). */
+let sideStudy: { A?: TeamStudy; B?: TeamStudy } = {};
 let sideRoutines: { A?: import("@/types/tacticsTypes").SetPieceRoutines; B?: import("@/types/tacticsTypes").SetPieceRoutines } = {};
 
 function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
@@ -384,6 +390,7 @@ function runOneMatch(
     managerDiscipline: sideMgrDiscipline,
     instructions: sideInstructions,
     setPieceRoutines: sideRoutines,
+    study: sideStudy,
     ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
     ...(matchTurf ? { turf: matchTurf } : {}),
       ...(matchWeather ? { weather: matchWeather } : {}),
@@ -456,6 +463,8 @@ function runOneMatch(
   teamA.corners             += sA.corners;             teamB.corners             += sB.corners;
   teamA.throwIns            += sA.throwIns ?? 0;       teamB.throwIns            += sB.throwIns ?? 0;
   teamA.setPieceRoutines            += sA.setPieceRoutines ?? 0;       teamB.setPieceRoutines            += sB.setPieceRoutines ?? 0;
+  // The opponent's plan against this side (`studyPlan`, a team counter of the side that brought it).
+  teamA.preparedAgainst             += sB.studyPlans ?? 0;             teamB.preparedAgainst             += sA.studyPlans ?? 0;
   teamA.freeKicks           += sA.freeKicks;           teamB.freeKicks           += sB.freeKicks;
   teamA.directFreeKickShots += sA.directFreeKickShots; teamB.directFreeKickShots += sB.directFreeKickShots;
   teamA.directFreeKickGoals += sA.directFreeKickGoals; teamB.directFreeKickGoals += sB.directFreeKickGoals;
@@ -490,13 +499,23 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     // Apply per-team tactics ONCE — all matches use them.
     // `mentality` is optional (absent ⇒ "balanced", a no-op shift) — see lab/types.ts.
     // `familiarity` (absent = neutral): the side's familiarity with its own style.
-    const famA = variantFamiliarity(variantA);
-    const famB = variantFamiliarity(variantB);
-    applyTeamTacticsConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride, famA);
-    applyTeamAttackConfig("A", variantA.tacticalStyle, variantA.mentality ?? DEFAULT_MENTALITY, variantA.axesOverride, famA);
-    applyTeamTacticsConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
-    applyTeamAttackConfig("B", variantB.tacticalStyle, variantB.mentality ?? DEFAULT_MENTALITY, variantB.axesOverride, famB);
-    sideFamiliarity = { A: variantA.familiarity, B: variantB.familiarity };
+    // A studied side (`Variant.studied`, full engine only): the OTHER side plays the plan against it — the counter
+    // style at the AI's familiarity rule (no axes of its own) instead of its own style.
+    const planOf = (studied: Variant): TeamStudy | undefined =>
+      studied.studied && simEngine === "full" ? { level: studied.studied, style: counterStyle(studied.tacticalStyle) } : undefined;
+    sideStudy = { A: planOf(variantB), B: planOf(variantA) };
+    const styleA = sideStudy.A?.style ?? variantA.tacticalStyle;
+    const styleB = sideStudy.B?.style ?? variantB.tacticalStyle;
+    const famA = sideStudy.A ? aiFamiliarity(styleA) : variantFamiliarity(variantA);
+    const famB = sideStudy.B ? aiFamiliarity(styleB) : variantFamiliarity(variantB);
+    applyTeamTacticsConfig("A", styleA, variantA.mentality ?? DEFAULT_MENTALITY, sideStudy.A ? undefined : variantA.axesOverride, famA);
+    applyTeamAttackConfig("A", styleA, variantA.mentality ?? DEFAULT_MENTALITY, sideStudy.A ? undefined : variantA.axesOverride, famA);
+    applyTeamTacticsConfig("B", styleB, variantB.mentality ?? DEFAULT_MENTALITY, sideStudy.B ? undefined : variantB.axesOverride, famB);
+    applyTeamAttackConfig("B", styleB, variantB.mentality ?? DEFAULT_MENTALITY, sideStudy.B ? undefined : variantB.axesOverride, famB);
+    sideFamiliarity = {
+      A: sideStudy.A ? famA?.[styleA] : variantA.familiarity,
+      B: sideStudy.B ? famB?.[styleB] : variantB.familiarity,
+    };
     sideMorale = { A: variantA.morale, B: variantB.morale };
     sideNewcomers = { A: variantA.newcomers, B: variantB.newcomers };
     sideTemperament = { A: variantA.temperament, B: variantB.temperament };
@@ -522,6 +541,19 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     const quickRolesB = slotRoles(formationB);
     const quickLineupA = variantA.outOfPosition ? lineOrderLineup(quickRolesA, baseSquadA.players) : autoLineupForFormation(baseSquadA, formationA);
     const quickLineupB = variantB.outOfPosition ? lineOrderLineup(quickRolesB, baseSquadB.players) : autoLineupForFormation(baseSquadB, formationB);
+    // A `high` plan also man-marks the studied side's best attacker (by slot: the lab's own XI picker runs).
+    const planMark = (side: "A" | "B") => {
+      if (sideStudy[side]?.level !== "high") return;
+      const mine = side === "A" ? { roles: quickRolesA, lineup: quickLineupA, players: baseSquadA.players } : { roles: quickRolesB, lineup: quickLineupB, players: baseSquadB.players };
+      const theirs = side === "A" ? { roles: quickRolesB, lineup: quickLineupB, players: baseSquadB.players } : { roles: quickRolesA, lineup: quickLineupA, players: baseSquadA.players };
+      const slot = pickMarkerSlot(mine);
+      const target = pickMarkTarget(theirs);
+      const targetSlot = target ? theirs.lineup.indexOf(target.rosterId) : -1;
+      if (slot === null || targetSlot < 0) return;
+      sideInstructions = { ...sideInstructions, [side]: { ...sideInstructions[side], manMarks: [{ slot, targetSlot }] } };
+    };
+    planMark("A");
+    planMark("B");
     // The full engine only gets explicit lineups for out-of-position variants (otherwise its own
     // role picker runs, unchanged); the poor-fit count uses the lineup the quickSim would field.
     const fit: LineupFit = {

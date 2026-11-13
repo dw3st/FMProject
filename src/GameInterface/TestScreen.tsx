@@ -794,6 +794,9 @@ export function TestScreen() {
     setPlayerList(state.players);
     setSelectedPlayerId(null);
     setLivePlayer(null);
+    // A scenario may come with its own styles (e.g. `studied-plan`: the plan's counter style on team B).
+    if (scenario.styles?.A) setTacticsA(scenario.styles.A);
+    if (scenario.styles?.B) setTacticsB(scenario.styles.B);
   }, [scenario, resetKey]);
 
   // A familiarity change rebuilds the scenario state (familiarity scales attributes at build time),

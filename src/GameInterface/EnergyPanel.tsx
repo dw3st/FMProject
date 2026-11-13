@@ -94,6 +94,11 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
               · {gameState.weather} {Object.entries(weatherEffectOf(gameState.weather)).filter(([, v]) => v !== 1).map(([k, v]) => `${k} x${v.toFixed(2)}`).join(" · ")}
             </span>
           )}
+          {(["A", "B"] as const).map((team) => gameState.study?.[team] && (
+            <span key={team} className="ml-2 normal-case">
+              · study: {gameState.study[team]!.level} · {gameState.study[team]!.style} ({team})
+            </span>
+          ))}
           {gameState.referee && (
             <span className="ml-2 normal-case tabular-nums">
               · ref s {gameState.referee.strictness} · foul x{refereeFoulMult(gameState.referee.strictness).toFixed(2)} · yellow x{refereeYellowMult(gameState.referee.strictness).toFixed(2)}

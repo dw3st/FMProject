@@ -123,6 +123,12 @@ export interface Variant {
   /** Weather of the match (`weather.md`); variant A sets it. Absent = neutral. */
   weather?: import("@/GameEngine/Configs/WeatherConfig").EngineWeather;
   /**
+   * This side was studied (`.claude/rules/game/study.md`): the OTHER variant plays the game plan against it — the
+   * counter style of this side's style at the AI's familiarity rule and, at `high`, a man-mark on this side's best
+   * attacker. Full engine only. Absent = no plan.
+   */
+  studied?: "medium" | "high";
+  /**
    * Referee rigor −1..1 of the match (`.claude/rules/game/referees.md`): fouls and cards of both sides. Variant A
    * sets it for the match (like the pitch). Absent = no referee (neutral).
    */
@@ -254,6 +260,8 @@ export interface TeamRawStats {
   turfInjuryMult: number;
   /** 1 when the match had a non-neutral weather. */
   weatherActive: number;
+  /** Matches in which the opponent came with a game plan against this side (`studyPlan`, `study.md`). */
+  preparedAgainst: number;
   /** Referee rigor of the match (0 when absent), summed across games. */
   refereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls of the match (both sides, `var.md`), summed across games. */
@@ -426,6 +434,8 @@ export interface PerMatchView {
   avgTurfInjuryMult: number;
   /** Share of matches with a non-neutral weather. */
   weatherShare: number;
+  /** Share of matches in which the opponent came with a game plan against this side (`study.md`). */
+  preparedShare: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */
   avgRefereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls per match (`var.md`). */
@@ -551,6 +561,8 @@ export interface VariantSummary {
   avgTurfInjuryMult: number;
   /** Share of matches with a non-neutral weather. */
   weatherShare: number;
+  /** Share of matches in which the opponent came with a game plan against this side (`study.md`). */
+  preparedShare: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */
   avgRefereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls per match (`var.md`). */
