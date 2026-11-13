@@ -13,6 +13,7 @@ import { notifyWorld } from "@/backend/worlds/worldNotify";
 import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard, applyPressEffect } from "@/Domain/boardFans/boardFans";
+import { commercialAfterFollowers, fansDeltaOf, heatOf, seasonTrend } from "@/Domain/fanbase/fanbase";
 import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { afterManagerComplaint, aiFormMorale } from "@/Domain/morale/morale";
@@ -132,6 +133,7 @@ import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import {
   aiTransferBudgetOf, applyAITransferSpend, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
+  naturalFinancialTier,
 } from "@/Domain/aiFinance/aiClubFinance";
 import {
   aiBudgetWithPrize, continentalPrize, continentalStagePrizesFromEvents, cupRunnerUpPrize, cupStagePrize, leaguePrize,
@@ -2074,6 +2076,15 @@ export async function advanceOneDay(
           // Monday: the balance moves the board, then both meters drift towards 60.
           if (ds.board && isWeeklyTick) {
             ds.board = applyWeekly(ds.board, { balance: balanceAfter, weeklyRevenue: wageRevenueBasisOf(playerSquad) / 52 });
+            // The mood on the networks (`.claude/rules/game/fanbase.md`): a hot season warms the fans a little, a cold one cools them.
+            const table = (await saveService.getLeagueStandings(saveId, seatEntry.leagueSlug)) ?? [];
+            const pos = table.findIndex((r) => r.squadId === ds.meta.clubId);
+            if (pos >= 0 && playerSquad.finances) {
+              const trend = seasonTrend(
+                { rank: pos + 1, leagueSize: table.length, played: table[pos]!.mp }, naturalFinancialTier(playerSquad.finances),
+              );
+              ds.board = applyPressEffect(ds.board, 0, fansDeltaOf(heatOf(trend)));
+            }
           }
           if (balanceBefore >= 0 && balanceAfter < 0) {
             ds.deferred.negativeBalance = {
@@ -2339,6 +2350,13 @@ export async function advanceOneDay(
               : human.followersAfter;
             if (next.finances && followersAfter !== human.followersAfter) {
               next = { ...next, finances: { ...next.finances, followers: followersAfter } };
+            }
+            // Sponsors follow the audience (`.claude/rules/game/fanbase.md`): commercial income moves by half the change.
+            if (next.finances) {
+              const commercial = commercialAfterFollowers(next.finances.commercial, human.followersBefore, followersAfter);
+              if (commercial !== next.finances.commercial) {
+                next = { ...next, finances: { ...next.finances, commercial, total: next.finances.broadcasting + commercial } };
+              }
             }
             if (followersAfter !== human.followersBefore) {
               ds.rollover.followersChange = { before: human.followersBefore, after: followersAfter, leagueSlug: slug };

@@ -406,3 +406,21 @@ Reports de tester (jovens da base com nota 76 aos 18 e valor acima de €1 bi). 
 | IA comum, 62 | 68,7 → 66,6 | 71,4 → 67,8 |
 
 No mundo dos testers (2036) os 15 melhores da IA iam de 70 a 78 e 62 dos 100 melhores vinham de bases. Quem já passou do freio não perde atributo. Limitação: num clube com tudo no máximo quase todo jovem ainda chega perto de 70 aos 20; o primeiro ano de base (45 → 60) não é freado.
+
+## Ritmo da base (11.2)
+
+Pedido do usuário depois da 11.1 (o primeiro ano de base ainda levava um jovem de 45 a 60 no clube com tudo no máximo). Só a base do clube humano (`squad.youth`) muda; o time principal e a IA não.
+
+- `YOUTH_TRAINING.ACADEMY_PACE` 0,8: a sessão de base rende 80% da de antes.
+- `YOUTH_TRAINING.CLUB_BONUS_SHARE` 0,5: os bônus do clube (auxiliar, CT, atributo Base do técnico e áreas de treino) contam pela metade para quem está na base, no treino e nos jogos de base (`academyClubMult`, `academyAreas`); as penalidades (área vaga, CT gasto) também. Os fatores do próprio jogador (profissionalismo, renascido, moral) e a intensidade do treino contam inteiros.
+- `YOUTH_COMP.DP_MULT` 1,0 → 0,7: um jogo de base rende 70% do de antes para quem tem até 21 anos, em qualquer clube.
+
+`bun scripts/youth-balance-measure.ts 20`, clube humano com tudo no máximo (nota × 10, 11.1 → 11.2):
+
+| Nota aos 16 | aos 17 | aos 19 | aos 22 |
+|---|---|---|---|
+| 45 | 59,9 → 55,2 | 68,3 → 65,6 | 71,0 → 69,9 |
+| 55 | 64,7 → 62,0 | 69,8 → 68,1 | 71,5 → 70,9 |
+| 62 | 67,5 → 66,0 | 71,0 → 69,8 | 72,0 → 71,5 |
+
+Base sem bônus nenhum (treino normal, 30 jogos de base): 45 → 50,7 aos 17 (antes 52,0). `bun scripts/youth-training-pace.ts`: um ano de sessões, média dos 13 atributos: leve +0,40, normal +0,55, pesado +0,66 (antes +0,46 / +0,63 / +0,80). `bun scripts/youth-comp-measure.ts`: 38 jogos de base dão +0,068 na média de um jovem de 17 (antes +0,115; a meta antiga de +0,10 não vale mais).

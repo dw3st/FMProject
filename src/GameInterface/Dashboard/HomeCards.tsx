@@ -1,4 +1,6 @@
 import { seatManagerId } from "@/Domain/seats/seats";
+import { followersLabel } from "@/GameInterface/Fanbase/fanbaseApi";
+import type { FanbaseRow } from "@/Domain/fanbase/fanbase";
 import { ClubLink, clubHref } from "@/GameInterface/Components/EntityLinks";
 import { managerHref } from "@/GameInterface/ManagerScreen";
 /**
@@ -167,6 +169,7 @@ export function ClubCard({
   leagueName,
   managerName,
   managerRank,
+  fanbase = null,
   friendsRank = null,
   publicWorld = false,
   managerFace,
@@ -190,6 +193,8 @@ export function ClubCard({
   leagueName: string;
   managerName: string | null;
   managerRank: number | null;
+  /** The club among its league's clubs by followers, with the season's mood; null while loading or without a club. */
+  fanbase?: FanbaseRow | null;
   /** Place in the friends' league standings (multiplayer part 5a); null outside a friends' league. */
   friendsRank?: { rank: number; of: number } | null;
   publicWorld?: boolean;
@@ -213,7 +218,7 @@ export function ClubCard({
   squadSize: number;
   squadHref: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // The manager's own page (tester report: the name led to the world ranking); the ranking stays on the ranking stat.
   const managerPage = managerFace?.id ? managerHref(managerFace.id) : MANAGER_PROFILE_HREF;
   const summary = achievements && t("achievements.summary", { unlocked: achievements.unlocked, total: achievements.total, points: achievements.points });
@@ -313,6 +318,11 @@ export function ClubCard({
         )}
         {friendsRank && (
           <ClubStat href="/world?tab=standings" label={standingsLabel} note={t("dashboard.clubSidebar.ofTotal", { total: friendsRank.of })}>{friendsRank.rank}</ClubStat>
+        )}
+        {fanbase && (
+          <ClubStat href="/stats?tab=fanbase" label={t("fanbase.cardLabel")} note={t(`fanbase.heat.${fanbase.heat}`)} title={t(`fanbase.effect.${fanbase.heat}`)}>
+            {followersLabel(fanbase.followers, i18n.language)}
+          </ClubStat>
         )}
         {reputationShown !== null && <ClubStat label={t("dashboard.clubSidebar.reputationLabel")}>{reputationShown}</ClubStat>}
         {achievements && (

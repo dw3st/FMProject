@@ -632,7 +632,14 @@
     "changelog": "What's new",
     "dashboard": "Dashboard",
     "club": "Club",
-    "national": "National teams"
+    "national": "National teams",
+    "group": {
+      "team": "Team",
+      "management": "Management",
+      "market": "Market",
+      "competitions": "Competitions"
+    },
+    "transfersFull": "Transfers"
   },
   "settings": {
     "app": {
@@ -678,7 +685,11 @@
     "playerLookReal": "More realistic",
     "playerLookDescription": "Proportions of the players in the match: the current ones or more realistic (smaller head, narrower shoulders). Applies from the next match.",
     "chatSound": "Chat message sound",
-    "chatSoundDescription": "A short tone when a message from a friend or the league arrives in a conversation that is not open."
+    "chatSoundDescription": "A short tone when a message from a friend or the league arrives in a conversation that is not open.",
+    "navLayout": "Top menu",
+    "navLayoutTabs": "Tabs",
+    "navLayoutGroups": "Groups",
+    "navLayoutDescription": "Tabs: one tab per screen. Groups: the Dashboard and four groups (Team, Management, Market, Competitions) that open their screens."
   },
   "reports": {
     "title": "Send a report",
@@ -7469,5 +7480,40 @@
     "share": "your club pays {{pct}}% ({{wage}}/wk)",
     "options": "You can try to buy him from {{club}} now: the purchase ends the loan and he stays in the squad.",
     "optionsPre": "You can try to buy him from {{club}} or sign a pre-contract: his contract ends in under 6 months."
+  },
+  "fanbase": {
+    "tab": "Social media",
+    "cardLabel": "Followers",
+    "scopeLabel": "Which clubs",
+    "scope": {
+      "league": "My league",
+      "country": "My country",
+      "world": "World"
+    },
+    "mine": {
+      "rank": "Your club",
+      "rankValue": "{{rank}} of {{total}}"
+    },
+    "followers": "Followers",
+    "trend": "Trend",
+    "trendLong": "How much the followers would change if the season ended today",
+    "noTrend": "Too early",
+    "mood": "Mood",
+    "heat": {
+      "hot": "Rising",
+      "warm": "Steady",
+      "cold": "Falling"
+    },
+    "effect": {
+      "hot": "The good run lifts the mood online: the fans meter rises a little every week.",
+      "warm": "Things are quiet online: nothing changes for the fans because of it.",
+      "cold": "The bad run weighs online: the fans meter drops a little every week."
+    },
+    "club": "Club",
+    "league": "League",
+    "crest": "Crest",
+    "empty": "No clubs to show.",
+    "loadMore": "Load more",
+    "note": "Followers change at the end of the season, by the campaign. At your club, commercial income follows half of that change."
   }
 }

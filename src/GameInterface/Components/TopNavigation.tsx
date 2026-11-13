@@ -1,7 +1,9 @@
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import { seatManagerId } from "@/Domain/seats/seats";
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { GroupedTabs } from "@/GameInterface/Components/GroupedTabs";
+import { NAV_LAYOUT_EVENT, readNavLayout, type NavLayout } from "@/GameInterface/Components/navGroups";
 import { useTranslation } from "react-i18next";
 import { useRoute } from "@/GameInterface/router/navigation";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
@@ -163,6 +165,19 @@ export function TopNavigation({
   const { outerRef, measureRef, mode } = useCompactTabs(items.length, settled);
   // Not enough room even with the tight gaps: the labels stay, each tab an equal share of the bar, cut with an ellipsis (title = full name).
   const narrow = mode === "icons";
+  // Tabs or groups (`navGroups.ts`): the viewer's choice, changed live from Settings.
+  const [layout, setLayout] = useState<NavLayout>(readNavLayout);
+  useEffect(() => {
+    const onLayout = () => setLayout(readNavLayout());
+    window.addEventListener(NAV_LAYOUT_EVENT, onLayout);
+    return () => window.removeEventListener(NAV_LAYOUT_EVENT, onLayout);
+  }, []);
+  const hrefOf = (item: NavItem) =>
+    item.href === "/squad"
+      ? session && !unemployed
+        ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
+        : "/dashboard"
+      : item.href;
 
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
@@ -229,16 +244,24 @@ export function TopNavigation({
               </span>
             ))}
           </div>
+          {layout === "groups" ? (
+            <GroupedTabs
+              tabClass={tabClass}
+              items={items.map((item) => ({
+                href: item.href,
+                to: hrefOf(item),
+                // Inside the Market group the transfers screen takes its full name.
+                label: t(item.href === "/transfers" ? "nav.transfersFull" : item.labelKey),
+                active: pathname.startsWith(item.href),
+                icon: <ArtIcon art={item.art ?? `tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />,
+              }))}
+            />
+          ) : (
           <div className={`flex items-stretch w-full ${narrow ? "gap-1.5" : `justify-between ${mode === "tight" ? "gap-2" : "gap-3.5"}`}`}>
             {items.map((item) => {
               const label = t(item.labelKey);
               const active = pathname.startsWith(item.href);
-              const href =
-                item.href === "/squad"
-                  ? session && !unemployed
-                    ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
-                    : "/dashboard"
-                  : item.href;
+              const href = hrefOf(item);
               return (
                 <a
                   key={item.labelKey}
@@ -253,6 +276,7 @@ export function TopNavigation({
               );
             })}
           </div>
+          )}
         </nav>
 
         {/* Day block: the tester's report button (#133, #138; inside the block since #139, so it

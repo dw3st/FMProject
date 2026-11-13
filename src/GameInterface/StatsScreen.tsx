@@ -4,6 +4,7 @@ import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ChampionsTab } from "@/GameInterface/Champions/ChampionsTab";
+import { FanbaseTab } from "@/GameInterface/Fanbase/FanbaseTab";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import {
@@ -37,8 +38,8 @@ import { navigate } from "@/GameInterface/router/navigation";
 
 const COUNTRY_BY_NAME = new Map(Object.values(countriesRaw as Record<string, CountryEntry>).map((c) => [c.name, c]));
 
-type Tab = "rankings" | "team" | "retired" | "managers" | "awards" | "referees" | "champions";
-const TABS: Tab[] = ["rankings", "team", "retired", "managers", "awards", "referees", "champions"];
+type Tab = "rankings" | "team" | "retired" | "managers" | "awards" | "referees" | "champions" | "fanbase";
+const TABS: Tab[] = ["rankings", "team", "retired", "managers", "awards", "referees", "champions", "fanbase"];
 type TableKey = keyof CompetitionRankings;
 const TABLES: TableKey[] = ["scorers", "assists", "ratings", "appearances"];
 /** Column label of each ranking table's value. */
@@ -490,6 +491,7 @@ export function StatsScreen() {
             { key: "awards" as const, label: t("statsScreen.awards.tab") },
             { key: "referees" as const, label: t("statsScreen.referees.tab") },
             { key: "champions" as const, label: t("champions.tab") },
+            { key: "fanbase" as const, label: t("fanbase.tab") },
           ]}
           active={tab}
           onChange={setTab}
@@ -536,6 +538,8 @@ export function StatsScreen() {
           session?.saveId ? <ManagersTab saveId={session.saveId} leagues={leagues} refreshKey={currentDate ?? undefined} defaultLeague={session.leagueSlug ?? leagues[0]?.slug ?? ""} /> : null
         ) : tab === "champions" ? (
           session?.saveId ? <ChampionsTab saveId={session.saveId} leagues={leagues} countryByName={COUNTRY_BY_NAME} myClubId={session.clubId ?? ""} refreshKey={currentDate ?? undefined} /> : null
+        ) : tab === "fanbase" ? (
+          session?.saveId ? <FanbaseTab saveId={session.saveId} leagues={leagues} refreshKey={currentDate ?? undefined} /> : null
         ) : tab === "referees" ? (
           session?.saveId ? <RefereesTab saveId={session.saveId} leagues={leagues} countryByName={COUNTRY_BY_NAME} refreshKey={currentDate ?? undefined} /> : null
         ) : tab === "awards" ? (
@@ -570,7 +574,7 @@ export function StatsScreen() {
           </div>
         )}
 
-        {tab !== "champions" && (
+        {tab !== "champions" && tab !== "fanbase" && (
           <p className="text-sm text-muted-foreground m-0 flex flex-wrap items-center gap-x-4 gap-y-1">
             {(["gold", "blue", "green"] as const).map((k) => (
               <span key={k} className="inline-flex items-center gap-1">
