@@ -181,6 +181,7 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgEndEnergy: r2(t.avgEndEnergySum / matches),
     avgFatigueSubs: r2(t.fatigueSubstitutions / matches),
     avgInjuries: r2(t.injuries / matches),
+    avgInjuryStoppages: r2(t.injuryStoppages / matches),
     avgNearBall: r2(t.ballNearSum / Math.max(1, t.ballNearTicks)),
     crowdedPct: pct(t.ballCrowdTicks, t.ballNearTicks),
     avgOutOfPosition: r2(t.outOfPosition / matches),
@@ -244,7 +245,7 @@ function emptyTotals(): VariantTotals {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+    newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
@@ -283,6 +284,7 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.avgEndEnergySum      += src.avgEndEnergySum;
   dst.fatigueSubstitutions += src.fatigueSubstitutions;
   dst.injuries              += src.injuries;
+  dst.injuryStoppages       += src.injuryStoppages;
   dst.ballNearTicks         += src.ballNearTicks;
   dst.ballNearSum           += src.ballNearSum;
   dst.ballCrowdTicks        += src.ballCrowdTicks;
@@ -369,6 +371,7 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgEndEnergy: r2(totals.avgEndEnergySum / games),
     avgFatigueSubs: r2(totals.fatigueSubstitutions / games),
     avgInjuries: r2(totals.injuries / games),
+    avgInjuryStoppages: r2(totals.injuryStoppages / games),
     avgNearBall: r2(totals.ballNearSum / Math.max(1, totals.ballNearTicks)),
     crowdedPct: pct(totals.ballCrowdTicks, totals.ballNearTicks),
     avgOutOfPosition: r2(totals.outOfPosition / games),

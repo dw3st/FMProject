@@ -363,3 +363,11 @@ Report de tester (lesões raras demais). `BASE` 0,0000874 → 0,000109 e `CONTAC
 `HEAVY_TRAINING_CHANCE` 0,01 → 0,0125, `DURATION_DAYS` leve 4–10, média 10–35, grave 35–150 (média ~20 dias, era ~16).
 Medido (`bun scripts/injury-calibrate.ts 150 --pitch ai --quicksim`, 2026-10-29): motor 0,330 lesões por jogo (era
 0,243; ruído ±0,03), quickSim 26 ligas 0,321 (era 0,257). `QUICKSIM_CONTACT_SCALE` não mudou.
+
+## Jogo parado na lesão (12.1)
+
+Report de tester (o jogador saía e a jogada seguia). Depois de uma lesão o árbitro para o jogo: `stopForInjury` (`gameState.ts`, chamado por `rollInMatchInjuries` e `rollContactInjuries`). O time que tinha a bola (o do portador; com a bola solta, o do último toque) recomeça onde a bola estava, como uma falta rápida: o jogador mais perto cobra, ninguém mais se mexe, congelamento de `FREE_KICK_COUNTDOWN`, sem desarme logo depois (`TACKLE_COOLDOWN`). Se o lesionado era o portador, o companheiro mais perto vai para o ponto. Nada acontece quando o jogo já parou no mesmo lance (falta, lateral, escanteio), numa revisão do VAR, com passe ou chute no ar ou fora de uma fase viva. Motor completo, partida ao vivo e jogo entre técnicos; o quickSim não tem lance.
+
+- Evento `injuryStoppage { team, takerId, x, y, minute }`, debug `injury`. `Statistics.ts`: `injuryStoppages` (do time que recomeça).
+- `/test`: o cenário `injury-demo` já começa parado pelo reinício; a linha de lesões do `StatsPanel` mostra os reinícios. `/lab`: `TeamRawStats.injuryStoppages` → `avgInjuryStoppages` → linha "Injury restarts" no `PairDetail`.
+- Teste: `Injury.engine.test.ts` ("play stopped for an injury").

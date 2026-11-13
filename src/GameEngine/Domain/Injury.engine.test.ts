@@ -1,7 +1,7 @@
 import { describe, expect, test, spyOn, afterEach } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
-import { createMatchState, tickState, forceInjurySubstitution } from "@/GameEngine/Domain/gameState";
+import { createMatchState, tickState, forceInjurySubstitution, stopForInjury } from "@/GameEngine/Domain/gameState";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { emptySeasonLog } from "@/types/playerTypes";
 import type { Squad } from "@/types/playerTypes";
@@ -156,5 +156,50 @@ describe("in-match injuries — tickState integration", () => {
     expect(newGk[0]!.baseStats.withoutBall.gkPositioning).toBeGreaterThan(0);
     expect(newGk[0]!.baseStats.withoutBall.gkReflex).toBeGreaterThan(0);
     expect(newGk[0]!.baseStats.withoutBall.gkDiving).toBeGreaterThan(0);
+  });
+});
+
+describe("play stopped for an injury (12.1)", () => {
+  test("the side with the ball restarts where the ball was, with its nearest player", () => {
+    const base = buildFreshState();
+    const holder = base.players.find(p => p.id === base.ballHolderId)!;
+    const victim = base.players.find(p => p.team !== holder.team && p.role !== "GK")!;
+    const stops: { team: string; takerId: number }[] = [];
+    const off = gameBus.on("injuryStoppage", e => { stops.push(e); });
+    const after = stopForInjury(forceInjurySubstitution(base, victim, 10, "medium"), holder.team, { x: holder.x, y: holder.y }, 10);
+    off();
+    expect(after.setPiece?.type).toBe("free_kick");
+    expect(after.setPiece?.takerId).toBe(holder.id);
+    expect(after.ballHolderId).toBe(holder.id);
+    expect(after.looseBall).toBeNull();
+    expect(stops).toHaveLength(1);
+    expect(stops[0]!.team).toBe(holder.team);
+    // Nobody but the taker is moved.
+    for (const p of after.players) {
+      const before = base.players.find(q => q.id === p.id);
+      if (before && p.id !== holder.id) expect([p.x, p.y]).toEqual([before.x, before.y]);
+    }
+  });
+
+  test("the injured holder's side still restarts, with the nearest team-mate on the spot", () => {
+    const base = buildFreshState();
+    const holder = base.players.find(p => p.id === base.ballHolderId)!;
+    const noSubs: GameState = { ...base, subsRemainingA: 0, subsRemainingB: 0 };
+    const after = stopForInjury(forceInjurySubstitution(noSubs, holder, 10, "medium"), holder.team, { x: holder.x, y: holder.y }, 10);
+    const taker = after.players.find(p => p.id === after.setPiece?.takerId)!;
+    expect(taker.team).toBe(holder.team);
+    expect(taker.id).not.toBe(holder.id);
+    expect([taker.x, taker.y]).toEqual([holder.x, holder.y]);
+  });
+
+  test("no second restart when play is already stopped, a pass is in the air or the phase is dead", () => {
+    const base = buildFreshState();
+    const holder = base.players.find(p => p.id === base.ballHolderId)!;
+    const spot = { x: holder.x, y: holder.y };
+    const stopped: GameState = { ...base, setPiece: { type: "throw_in", takerId: holder.id, countdown: 1 } };
+    expect(stopForInjury(stopped, holder.team, spot, 10)).toBe(stopped);
+    const dead: GameState = { ...base, matchPhase: "halfTime" };
+    expect(stopForInjury(dead, holder.team, spot, 10)).toBe(dead);
+    expect(stopForInjury(base, null, spot, 10)).toBe(base);
   });
 });

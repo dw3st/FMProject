@@ -139,6 +139,8 @@ export interface TeamStats extends PlayerStats {
   fatigueSubstitutions: number;
   /** Count of in-match injuries suffered by this team (`injury` event). */
   injuries: number;
+  /** Injury stoppages after which this team restarted play (`injuryStoppage`). */
+  injuryStoppages: number;
   /** Referee errors that hurt this team (`refereeError`, `.claude/rules/game/var.md`). Match total = A + B. */
   refereeErrors: number;
   /**
@@ -224,12 +226,12 @@ const playerTeam = new Map<number, TeamId>();
 
 /** Team-level counters (not derivable from player sums). */
 type TeamFlags = {
-  extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number;
+  extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; injuryStoppages: number;
   refereeErrors: number; varReviews: number; varOverturned: number;
   ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
-  extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
+  extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
   ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
@@ -362,6 +364,10 @@ gameBus.on('shootoutEnd', e => {
 // ── Injury stats ──────────────────────────────────────────────────────────────
 gameBus.on('injury', e => {
   teamFlags[e.team].injuries++;
+  notify();
+});
+gameBus.on('injuryStoppage', e => {
+  teamFlags[e.team].injuryStoppages++;
   notify();
 });
 

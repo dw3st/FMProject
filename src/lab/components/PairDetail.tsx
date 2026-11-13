@@ -59,6 +59,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Avg end energy",    key: "avgEndEnergy" },
     { stat: "Fatigue subs",      key: "avgFatigueSubs" },
     { stat: "Injuries",          key: "avgInjuries" },
+    { stat: "Injury restarts",   key: "avgInjuryStoppages" },
     { stat: "Near ball (def)",   key: "avgNearBall" },
     { stat: "Crowded ball%",     key: "crowdedPct" },
     { stat: "Out of position",   key: "avgOutOfPosition" },
@@ -180,6 +181,7 @@ function CongestionTable({
     { label: "End energy", key: "avgEndEnergy" },
     { label: "Fatigue subs", key: "avgFatigueSubs" },
     { label: "Injuries", key: "avgInjuries" },
+    { label: "Injury restarts", key: "avgInjuryStoppages" },
   ];
 
   return (

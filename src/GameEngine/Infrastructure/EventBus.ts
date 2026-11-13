@@ -402,6 +402,8 @@ export interface GameEvents {
    * §1 "Na partida" and `Domain/injury/injury.ts`.
    */
   injury: { playerId: number; playerName: string; team: TeamId; minute: number; severity: import('@/Domain/injury/injury').InjurySeverity };
+  /** The referee stopped play for an injury; `team` restarts at (x, y) with `takerId` (`stopForInjury`, 12.1). */
+  injuryStoppage: { team: TeamId; takerId: number; x: number; y: number; minute: number };
   /** An injured player of a `manualInjurySubs` team left the pitch with no replacement: the manager picks one (#140). */
   injuryNeedsSub: { team: TeamId; injuredId: number; injuredName: string; slotIndex: number; suggestedInId: number | null };
 

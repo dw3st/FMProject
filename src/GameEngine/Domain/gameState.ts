@@ -899,9 +899,48 @@ export function fillInjuryVacancy(state: GameState, team: TeamId, injuredId: num
   }), team);
 }
 
+/** The side in possession for an injury stoppage: the holder's, else the last touch of a loose ball. */
+function sideWithBall(state: GameState): TeamId | null {
+  const holder = state.players.find(p => p.id === state.ballHolderId);
+  if (holder) return holder.team;
+  return state.looseBall?.fromTeamLastTouch ?? null;
+}
+
+/**
+ * The referee stops play for an injury (12.1, `.claude/rules/game/injuries.md` → "Jogo parado na lesão"): the side
+ * that had the ball restarts where the ball was, as a quick free kick (nearest player, nobody else moves). Nothing
+ * happens when play is already stopped (a restart given in the same tick, a VAR review, a dead phase) or while a pass
+ * or shot is in the air. `team` and `spot` are read BEFORE the injured player leaves.
+ */
+export function stopForInjury(state: GameState, team: TeamId | null, spot: { x: number; y: number }, minute: number): GameState {
+  if (!team || state.setPiece || state.pass || state.shot || state.varReview || state.pendingPenalty) return state;
+  if (!isLivePhase(state.matchPhase)) return state;
+  const pool = state.players.filter(p => p.team === team);
+  if (pool.length === 0) return state;
+  const pos = { x: Math.max(1, Math.min(PITCH_LENGTH - 1, spot.x)), y: Math.max(1, Math.min(PITCH_WIDTH - 1, spot.y)) };
+  const taker = nearestPlayerTo(pool, pos);
+  const prevHolderId = state.ballHolderId;
+  gameBus.emit('injuryStoppage', { team, takerId: taker.id, x: pos.x, y: pos.y, minute });
+  debugLog('injury', `Play stopped for the injury: team ${team} restarts at (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) with ${taker.name}`, {
+    playerId: taker.id, data: { team, minute },
+  });
+  return onPossessionTransfer({
+    ...state,
+    players:        state.players.map(p => (p.id === taker.id ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p)),
+    looseBall:      null,
+    missedOffside:  null,
+    ballHolderId:   taker.id,
+    lastPasserId:   null,
+    tackleCooldown: TACKLE_COOLDOWN,
+    setPiece:       { type: 'free_kick', takerId: taker.id, countdown: FOUL_CONFIG.FREE_KICK_COUNTDOWN, position: pos },
+  }, prevHolderId);
+}
+
 /** Per-tick, per-player injury roll: `injuryRatePerMinute` scaled to the game-minutes elapsed this tick. */
 function rollInMatchInjuries(state: GameState, dt: number): GameState {
   const gameMinutes = (dt * TIME_SCALE) / 60;
+  const side = sideWithBall(state);
+  const spot = getBallPos(state);
   let s = state;
   for (const player of state.players) {
     // Guard against a player removed earlier THIS tick by a prior roll.
@@ -911,7 +950,7 @@ function rollInMatchInjuries(state: GameState, dt: number): GameState {
       s = forceInjurySubstitution(s, player, matchMinute(s), rollSeverity());
     }
   }
-  return s;
+  return s.injuries.length > state.injuries.length ? stopForInjury(s, side, spot, matchMinute(s)) : s;
 }
 
 /**
@@ -920,6 +959,8 @@ function rollInMatchInjuries(state: GameState, dt: number): GameState {
  * state so it's safe to call after possession/recovery updates have already been applied.
  */
 function rollContactInjuries(state: GameState, ids: [number, number], minute: number): GameState {
+  const side = sideWithBall(state);
+  const spot = side ? getBallPos(state) : { x: 0, y: 0 };
   let s = state;
   for (const id of ids) {
     const player = s.players.find(p => p.id === id);
@@ -928,7 +969,7 @@ function rollContactInjuries(state: GameState, ids: [number, number], minute: nu
       s = forceInjurySubstitution(s, player, minute, rollSeverity());
     }
   }
-  return s;
+  return s.injuries.length > state.injuries.length ? stopForInjury(s, side, spot, minute) : s;
 }
 
 // ── Discipline: fouls, cards, free kicks, penalties ───────────────────────────

@@ -227,6 +227,8 @@ export interface TeamRawStats {
   fatigueSubstitutions: number;
   /** In-match injuries suffered by this team, summed across `matches` games. */
   injuries: number;
+  /** Injury stoppages after which this team restarted play, summed across `matches` games. */
+  injuryStoppages: number;
   /**
    * Ball cluster (#145), summed across games: live ticks spent defending, outfield players within
    * 8 yards of the ball over those ticks, ticks with 3+ of them (`Statistics.ts`, `BallCluster.ts`).
@@ -401,6 +403,8 @@ export interface PerMatchView {
   avgFatigueSubs: number;
   /** Injuries per match. */
   avgInjuries: number;
+  /** Injury stoppages per match after which this team restarted play. */
+  avgInjuryStoppages: number;
   /** Outfield players within 8 yards of the ball per tick while defending (#145). */
   avgNearBall: number;
   /** Share (0–100) of the defending ticks with 3+ of them there. */
@@ -523,6 +527,8 @@ export interface VariantSummary {
   avgFatigueSubs: number;
   /** Injuries per match. */
   avgInjuries: number;
+  /** Injury stoppages per match after which this team restarted play. */
+  avgInjuryStoppages: number;
   /** Outfield players within 8 yards of the ball per tick while defending (#145). */
   avgNearBall: number;
   /** Share (0–100) of the defending ticks with 3+ of them there. */

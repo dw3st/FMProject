@@ -16,7 +16,7 @@ import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import formationDiamondJson from '@/Data/formations/4-1-2-1-2.json';
@@ -700,7 +700,11 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
       const target = base.players.find(p => p.team === 'A' && p.role !== 'GK');
       if (!target) return base;
-      return forceInjurySubstitution(base, target, 1, 'severe');
+      // Play is stopped for the injury and the holder's side restarts where the ball was (`stopForInjury`).
+      const holder = base.players.find(p => p.id === base.ballHolderId);
+      const live: GameState = { ...base, matchPhase: 'firstHalf', setPiece: null };
+      const spot = holder ? { x: holder.x, y: holder.y } : { x: PITCH_LENGTH / 2, y: 37 };
+      return stopForInjury(forceInjurySubstitution(live, target, 1, 'severe'), holder?.team ?? 'A', spot, 1);
     },
   },
 
