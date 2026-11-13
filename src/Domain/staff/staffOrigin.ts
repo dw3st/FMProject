@@ -14,6 +14,8 @@ const COUNTRIES = countriesRaw as Record<string, { continent?: string }>;
 export interface StaffNameEntry {
   first: string[];
   last: string[];
+  /** Surnames of `last` that no well-known player (`NamedPlayer.known`) carries: the academy's draw (`academyNames.ts`). */
+  lastYouth?: string[];
   /** Clubs of the country's leagues in the world (the draw weight). */
   clubs: number;
 }
@@ -33,7 +35,7 @@ export const STAFF_ORIGIN = {
 const NATIONALITY_ALIASES: Record<string, string> = { Czechia: "Czech Republic", "Türkiye": "Turkey", "United States": "USA" };
 
 /** A player as the name book reads him. */
-interface NamedPlayer { name: string; fullName?: string; nationality?: string }
+interface NamedPlayer { name: string; fullName?: string; nationality?: string; /** A player people recognise (the world's better players). */ known?: boolean }
 
 const WORD = /^[\p{L}][\p{L}'’-]+$/u;
 const firstToken = (s: string | undefined) => s?.trim().split(/\s+/)[0] ?? "";
@@ -77,6 +79,7 @@ export function buildStaffNameBook(squads: { country: string; players: NamedPlay
     }
   }
   const book: StaffNameBook = {};
+  const everyone = squads.flatMap((sq) => sq.players);
   for (const country of Object.keys(COUNTRIES)) {
     const own = namesOf(byNationality.get(country) ?? []);
     if (own.first.size < STAFF_ORIGIN.MIN_NAMES || own.last.size < STAFF_ORIGIN.MIN_NAMES) {
@@ -85,7 +88,10 @@ export function buildStaffNameBook(squads: { country: string; players: NamedPlay
       for (const l of local.last) own.last.add(l);
     }
     if (own.first.size === 0 || own.last.size === 0) continue;
-    book[country] = { first: [...own.first].sort(), last: [...own.last].sort(), clubs: clubs.get(country) ?? 0 };
+    const known = new Set(everyone.filter((p) => p.known).map((p) => lastToken(p.name)));
+    const last = [...own.last].sort();
+    const lastYouth = last.filter((l) => !known.has(l));
+    book[country] = { first: [...own.first].sort(), last, ...(lastYouth.length < last.length ? { lastYouth } : {}), clubs: clubs.get(country) ?? 0 };
   }
   return book;
 }

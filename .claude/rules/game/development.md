@@ -389,3 +389,20 @@ clube do jogador (partida, treino, temporada da base, torneios de base) por 1 ±
 da posição de treino (ou a natural) com a área de foco × 1,8 e renormalizados (`planDpWeights`, `youthTraining.ts`): o
 total não muda, só para onde vai. A DP de partida continua com os pesos naturais. Tela Desenvolvimento → "Treino
 individual"; `PUT /api/saves/:id/players/:playerId/training { focus, position }` (`{}` limpa).
+
+## Freio de elite (11.1)
+
+Reports de tester (jovens da base com nota 76 aos 18 e valor acima de €1 bi). Com a melhor comissão, CT e treino pesado um clube humano ganha quase 3× a DP de um clube comum, e o teto suave por atributo não segurava. `ELITE_BRAKE` (`PlayerDevelopment.ts`, `eliteBrake(overall)`): o crescimento de todo jogador é × 1 até a nota 6,0 e cai em linha reta até × 0,1 em 7,2 (e acima). O declínio nunca é freado; abaixo de 6,0 a evolução é idêntica à de antes (teste). O potencial mostrado (`potentialBand`) usa o mesmo freio ano a ano.
+
+`bun scripts/youth-balance-measure.ts 30` (16 a 24 anos; "humano no máximo" = base no treino pesado, comissão e CT no topo, 60 jogos de base, time principal aos 18 com 45 jogos e treino pesado; "IA comum" = tudo neutro; nota × 10):
+
+| Caso (nota aos 16) | 19 anos antes → depois | 22 anos antes → depois |
+|---|---|---|
+| Humano no máximo, 45 | 71,8 → 68,3 | 78,2 → 71,0 |
+| Humano no máximo, 55 | 75,2 → 69,8 | 80,5 → 71,5 |
+| Humano no máximo, 62 | 78,1 → 71,0 | 82,6 → 72,0 |
+| IA comum, 45 | 57,1 → 57,1 | 61,6 → 61,5 |
+| IA comum, 55 | 63,7 → 63,3 | 67,1 → 65,6 |
+| IA comum, 62 | 68,7 → 66,6 | 71,4 → 67,8 |
+
+No mundo dos testers (2036) os 15 melhores da IA iam de 70 a 78 e 62 dos 100 melhores vinham de bases. Quem já passou do freio não perde atributo. Limitação: num clube com tudo no máximo quase todo jovem ainda chega perto de 70 aos 20; o primeiro ano de base (45 → 60) não é freado.

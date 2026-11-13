@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "11.1",
+    date: "2026-11-12",
+    time: "22:00",
+    items: [
+      { tab: "development", pt: "Base mais equilibrada: um jovem novo chega no máximo com nota 55 (62 se for um prodígio), em qualquer clube. Antes a nota da safra subia junto com a média do elenco, e num elenco cheio de garotos da base cada safra nascia mais forte que a anterior.", en: "A more balanced academy: a new youngster arrives rated 55 at most (62 for a prodigy), at any club. Before, the intake followed the squad's average, and in a squad full of academy graduates each intake was born stronger than the last." },
+      { tab: "development", pt: "Evolução perto do topo: acima de nota 60 o jogador evolui cada vez mais devagar, até um décimo do ritmo em 72. Abaixo de 60 nada muda. Quem já passou disso não perde nada, só para de subir tão rápido.", en: "Development near the top: above a rating of 60 a player improves more and more slowly, down to a tenth of the pace at 72. Below 60 nothing changes. Players already past that lose nothing, they only stop climbing so fast." },
+      { tab: "market", pt: "Valor de mercado: acima de €200 milhões o valor cresce bem mais devagar. Acabaram os jogadores de 18 anos valendo mais de €1 bilhão; a multa rescisória e o preço pedido acompanham.", en: "Market value: above €200 million the value grows much more slowly. No more 18-year-olds worth over €1 billion; the release clause and the asking price follow." },
+      { tab: "squad", pt: "Nomes da base: um jovem novo não repete o sobrenome de ninguém do clube (elenco e base) nem o de jogadores conhecidos, e os jovens que completam o elenco na virada também ganham nome próprio.", en: "Academy names: a new youngster no longer repeats the surname of anyone at the club (squad and academy) or of well-known players, and the youngsters who fill the squad at the turn of the season get names of their own too." },
+      { tab: "scout", pt: "O potencial mostrado de um jovem passou a seguir a mesma regra da evolução: não aparece mais potencial acima do topo do mundo.", en: "A youngster's displayed potential now follows the same rule as his development: no more potential shown above the top of the world." },
+    ],
+  },
+  {
     version: "11.0",
     date: "2026-11-12",
     time: "21:30",
@@ -6057,7 +6069,5 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Bonecos novos na partida: jogadores redesenhados, com chutes, dribles, cabeçadas e defesas novos", en: "New figures in the match: redrawn players with new shots, dribbles, headers and saves" },
-  { pt: "Base mais equilibrada: jovens chegando com notas menores e valores de mercado mais realistas", en: "A more balanced academy: youngsters arriving with lower ratings and more realistic market values" },
-  { pt: "Mais variedade nos nomes dos jogadores da base", en: "More variety in the names of academy players" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];
