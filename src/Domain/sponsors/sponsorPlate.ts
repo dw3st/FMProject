@@ -13,9 +13,17 @@ export const SPONSOR_PLATE = { w: 512, h: 170, symbol: 170 } as const;
 /** Below this luma (0..255) a plate gets a thin border, so it does not vanish on the game's dark background. */
 export const DARK_PLATE_LUMA = 60;
 
+/**
+ * Plates repainted after their release: the art URL is cached for good, so a repainted plate gets `?r=<n>` to be
+ * fetched again. Raise the number every time that plate changes.
+ */
+export const PLATE_REVISION: Readonly<Record<string, number>> = { sp_sturmlauf_sport: 2 };
+
 /** URL of a sponsor's painted plate, null for an id the server would not serve. */
 export function sponsorPlateUrl(id: string): string | null {
-  return SPONSOR_ID.test(id) ? gameArtUrl(`sponsors/${id}.webp`) : null;
+  if (!SPONSOR_ID.test(id)) return null;
+  const rev = PLATE_REVISION[id];
+  return gameArtUrl(`sponsors/${id}.webp`) + (rev ? `?r=${rev}` : "");
 }
 
 /** "#RRGGBB" / "#RGB" → [r, g, b]; null for anything else. */

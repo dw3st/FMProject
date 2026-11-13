@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.1.1",
+    date: "2026-11-13",
+    time: "16:16",
+    items: [
+      { tab: "squad", pt: "O treinador da base no comando monta a lista de convocados um dia antes do jogo do sub-21 ou do sub-19. Você vê a lista na véspera, na aba Base, e pode mudar; no dia do jogo ele não refaz o que você deixou.", en: "The youth coach in charge makes the call-up list a day before the under-21 or under-19 game. You see the list the day before, in the Academy tab, and can change it; on the game day he does not redo what you left." },
+      { tab: "finances", pt: "Quando um técnico sai de um clube, os contratos de patrocínio daquele clube ficam guardados e continuam aparecendo na página de cada empresa, em Quem já patrocinou. Vale para as saídas a partir de agora.", en: "When a manager leaves a club, that club's sponsor contracts are kept and still show on each company's page, under Past deals. It applies to departures from now on." },
+      { tab: "finances", pt: "A placa da Sturmlauf Sport foi repintada.", en: "The Sturmlauf Sport plate was repainted." },
+    ],
+  },
+  {
     version: "12.1",
     date: "2026-11-13",
     time: "15:55",
