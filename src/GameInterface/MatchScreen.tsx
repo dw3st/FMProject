@@ -559,6 +559,8 @@ export function MatchScreen() {
           h2h?: boolean;
           /** An AI opponent's morale from its form (absent: own / neutral). */
           oppMorale?: number;
+          /** The AI opponent's plan against this manager (`.claude/rules/game/study.md`). */
+          study?: import("@/types/studyTypes").MatchSetupStudy;
         };
       })
       .then((data) => {
@@ -630,10 +632,12 @@ export function MatchScreen() {
           // Style familiarity (`src/Domain/familiarity`): the club's trained record; the AI its rule.
           familiarity: squadFamiliarityLevels(data.mySquad, tactics.tactical_style),
         };
+        // An AI club that studied the manager plays its plan's style, at its own familiarity rule.
+        const aiStyle = data.study?.style ?? DEFAULT_TACTICAL_STYLE;
         const teamB: TeamTacticsSnapshot = snap?.tactics.B ?? {
-          style: DEFAULT_TACTICAL_STYLE,
+          style: aiStyle,
           mentality: DEFAULT_MENTALITY,
-          familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE),
+          familiarity: aiFamiliarity(aiStyle),
         };
         myTacticalStyleRef.current = teamA.style;
         myAxesOverrideRef.current = teamA.axesOverride;
@@ -688,6 +692,10 @@ export function MatchScreen() {
                 ...(data.opponentSquad ? { staffInjuryMult: staffEffectsOf(data.opponentSquad).injuryMult } : {}),
                 morale: oppMorale,
                 human: false,
+                ...(data.study ? {
+                  study: { level: data.study.level, style: data.study.style },
+                  ...(data.study.mark ? { marks: [{ slot: data.study.mark.slot, targetRosterId: data.study.mark.targetRosterId }] } : {}),
+                } : {}),
               },
               date: matchDate,
               knockout: data.fixture.knockout === true,

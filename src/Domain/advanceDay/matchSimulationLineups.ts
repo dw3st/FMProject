@@ -21,6 +21,8 @@ import {
 import type { RegistrationRule } from "@/types/registrationTypes";
 import { limitForeignPool, matchdayPool } from "@/Domain/registration/rules";
 import { isUnavailable } from "@/Domain/discipline/discipline";
+import { aiStudyPlan } from "@/Domain/study/study";
+import type { MatchStudy, StudyPlan, TacticLogEntry } from "@/types/studyTypes";
 
 /**
  * Registered players of one side for the competition of a match (`.claude/rules/game/registration.md`): the
@@ -208,6 +210,8 @@ export function computeMatchSimulationLineups(
   rotationOverride?: RotationOverride | null,
   matchMarking?: MatchMarking | null,
   registration?: { home?: MatchRegistration; away?: MatchRegistration },
+  /** The human manager's tactic log before this game: the AI side studies it (`.claude/rules/game/study.md`). */
+  tacticLog?: readonly TacticLogEntry[],
 ): {
   homeFormation: Formation;
   homeLineup: string[];
@@ -222,6 +226,8 @@ export function computeMatchSimulationLineups(
   aiFormations: { home?: AiFormationRecord; away?: AiFormationRecord };
   /** Players each side may name (XI + bench) when registration applies; absent = everyone available. */
   pools: { home?: Set<string>; away?: Set<string> };
+  /** The AI side's game plan against the human club (day log). Absent: no plan. */
+  study?: MatchStudy;
 } {
   const homePool = registeredPool(homeSquad, registration?.home);
   const awayPool = registeredPool(awaySquad, registration?.away);
@@ -271,14 +277,17 @@ export function computeMatchSimulationLineups(
   if (fixture.home === playerSquadId) {
     const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date, rot, registration?.home);
     const ai = aiMatchFormation(awaySquad, homeSquad, date);
+    const aiLineup = autoLineupForFormationWithFitness(awayPool, ai.formation, date);
+    const plan = studyPlanFor(tacticLog, awaySquad, ai.formation, aiLineup, homeSquad, userFormation, user.lineup);
     return {
       homeFormation: userFormation,
       homeLineup: user.lineup,
       awayFormation: ai.formation,
-      awayLineup: autoLineupForFormationWithFitness(awayPool, ai.formation, date),
+      awayLineup: aiLineup,
       userInjuredReplaced: user.injuredReplaced,
       userRotationApplied: user.rotationApplied,
-      tactics: { A: userTactics, B: aiTactics },
+      tactics: { A: userTactics, B: plan ? studiedAiTactics(plan) : aiTactics },
+      ...(plan ? { study: matchStudyOf(plan, "away") } : {}),
       aiFormations: { away: ai.record },
       pools: {
         ...(user.pool ? { home: user.pool } : {}),
@@ -289,14 +298,17 @@ export function computeMatchSimulationLineups(
 
   const user = resolveUserLineup(awaySquad, userFormation, t.lineup ?? [], date, rot, registration?.away);
   const ai = aiMatchFormation(homeSquad, awaySquad, date);
+  const aiLineup = autoLineupForFormationWithFitness(homePool, ai.formation, date);
+  const plan = studyPlanFor(tacticLog, homeSquad, ai.formation, aiLineup, awaySquad, userFormation, user.lineup);
   return {
     homeFormation: ai.formation,
-    homeLineup: autoLineupForFormationWithFitness(homePool, ai.formation, date),
+    homeLineup: aiLineup,
     awayFormation: userFormation,
     awayLineup: user.lineup,
     userInjuredReplaced: user.injuredReplaced,
     userRotationApplied: user.rotationApplied,
-    tactics: { A: aiTactics, B: userTactics },
+    tactics: { A: plan ? studiedAiTactics(plan) : aiTactics, B: userTactics },
+    ...(plan ? { study: matchStudyOf(plan, "home") } : {}),
     aiFormations: { home: ai.record },
     pools: {
       ...(registration?.home ? { home: idsOf(homePool) } : {}),
@@ -305,8 +317,47 @@ export function computeMatchSimulationLineups(
   };
 }
 
+/**
+ * The game plan of an AI club against the human club it studied (`.claude/rules/game/study.md`): one function for
+ * the simulated match (here) and the live one (`match-setup`). Null: no plan, the AI plays as always.
+ */
+export function studyPlanFor(
+  tacticLog: readonly TacticLogEntry[] | undefined,
+  aiSquad: Squad,
+  aiFormation: Formation,
+  aiLineup: string[],
+  humanSquad: Squad,
+  humanFormation: Formation,
+  humanLineup: string[],
+): StudyPlan | null {
+  if (!tacticLog || tacticLog.length === 0) return null;
+  return aiStudyPlan({
+    log: tacticLog,
+    aiSquad,
+    humanSquad,
+    ai: { roles: slotRoles(aiFormation), lineup: aiLineup },
+    human: { roles: slotRoles(humanFormation), lineup: humanLineup },
+  });
+}
+
+/** The AI's tactics when it brings a plan: the plan's style at the AI's own familiarity rule, and the marking. */
+export function studiedAiTactics(plan: StudyPlan): TeamTactics {
+  return {
+    style: plan.style,
+    familiarity: aiFamiliarity(plan.style),
+    study: { level: plan.level, style: plan.style },
+    ...(plan.mark ? { manMarks: [{ slot: plan.mark.slot, targetRosterId: plan.mark.targetRosterId }] } : {}),
+  };
+}
+
+export function matchStudyOf(plan: StudyPlan, side: "home" | "away"): MatchStudy {
+  return { side, level: plan.level, style: plan.style, ...(plan.mark ? { marked: plan.mark.targetName } : {}) };
+}
+
 /** A seat's side of a fixture: its saved tactics, the rotation it accepted and its man-marking. */
 export interface HumanMatchSide {
+  /** The seat's tactic log before this game (read by an AI opponent, never by another seat). */
+  tacticLog?: readonly TacticLogEntry[];
   tactics: TacticsSave | null;
   rotationOverride?: RotationOverride | null;
   matchMarking?: MatchMarking | null;
@@ -329,6 +380,7 @@ export function computeSeatedMatchLineups(
     const humanId = humans.home ? homeSquad.id : humans.away ? awaySquad.id : undefined;
     return computeMatchSimulationLineups(
       fixture, homeSquad, awaySquad, humanId, side?.tactics ?? null, side?.rotationOverride, side?.matchMarking, registration,
+      side?.tacticLog,
     );
   }
   const date = fixture.date;

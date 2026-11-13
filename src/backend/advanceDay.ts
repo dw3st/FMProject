@@ -111,6 +111,9 @@ import { homeMatchImportance } from "@/backend/matchImportance";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
 import { leagueTierOf } from "@/backend/facilityWorld";
 import { computeSeatedMatchLineups, type HumanMatchSide } from "@/Domain/advanceDay/matchSimulationLineups";
+import { appendTacticLog, tacticLogEntry } from "@/Domain/study/study";
+import { DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
+import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import { defaultRng } from "@/Domain/transfer/transferNeeds";
 import { earlyRenewalDue, earlyRenewals } from "@/Domain/contracts/earlyRenewal";
 import { dailyMarketTick, humanBidsTick, initMarketState, squadsAfterTick } from "@/Domain/transfer/marketRotation";
@@ -754,6 +757,20 @@ export async function advanceOneDay(
             return { ok: false, status: 400, error: "a match between two seats has no live recording" };
           }
 
+          // The plan each seat started this official game with (`.claude/rules/game/study.md`): AI opponents read
+          // the log of the days before; today's game enters it once (date + fixture id).
+          const humanSide = (ds: DaySeat): HumanMatchSide => ({
+            tactics: ds.tactics, rotationOverride: ds.meta.rotationOverride, matchMarking: ds.meta.matchMarking,
+            tacticLog: ds.meta.tacticLog,
+          });
+          for (const ds of [homeSeat, awaySeat]) {
+            if (!ds) continue;
+            ds.patch.tacticLog = appendTacticLog(ds.patch.tacticLog ?? ds.meta.tacticLog, tacticLogEntry(ds.tactics ?? {
+              formation: ds.meta.formation ?? DEFAULT_SIM_FORMATION_ID,
+              tactical_style: ds.meta.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+            }, currentDate, fixture.id));
+          }
+
           if (recording && recSeat) {
             if (!knockoutRecordingDecided(fixture, recording)) {
               return { ok: false, status: 400, error: "knockout recording without a winner" };
@@ -764,6 +781,14 @@ export async function advanceOneDay(
             }
             const r = buildMatchEventFromRecording(fixture, homeSquad, awaySquad, recording);
             r.event = withWeatherLog(withRefereeLog(r.event, await refereeOf(fixture)), matchWeatherOf(fixture, homeSquad));
+            // Against an AI club: the plan it came with (the same computation `match-setup` gave the live match).
+            if (!(homeSeat && awaySeat)) {
+              const study = computeSeatedMatchLineups(fixture, homeSquad, awaySquad, {
+                ...(homeSeat ? { home: humanSide(homeSeat) } : {}),
+                ...(awaySeat ? { away: humanSide(awaySeat) } : {}),
+              }, registration).study;
+              if (study) r.event = { ...r.event, study };
+            }
             dayEvents.push(r.event);
             const complained = recording.complaintMorale === true;
             const backed = (sq: Squad) => (complained && sq.id === recSeat.clubId ? afterManagerComplaint(sq) : sq);
@@ -802,9 +827,6 @@ export async function advanceOneDay(
             };
             pending.delete(recSeat.seatId);
           } else {
-            const humanSide = (ds: DaySeat): HumanMatchSide => ({
-              tactics: ds.tactics, rotationOverride: ds.meta.rotationOverride, matchMarking: ds.meta.matchMarking,
-            });
             const sim = computeSeatedMatchLineups(fixture, homeSquad, awaySquad, {
               ...(homeSeat ? { home: humanSide(homeSeat) } : {}),
               ...(awaySeat ? { away: humanSide(awaySeat) } : {}),
@@ -828,6 +850,7 @@ export async function advanceOneDay(
             const r = mode === "full"
               ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather, ...(aiMorale ? { aiMorale } : {}) })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather });
+            if (sim.study && mode === "full") r.event = { ...r.event, study: sim.study };
             registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
@@ -3699,6 +3722,7 @@ export async function advanceOneDay(
         ds.patch.board = undefined;
         ds.patch.press = undefined;
         ds.patch.rotationOverride = undefined;
+        ds.patch.tacticLog = undefined;
         ds.patch.youthCallUps = undefined;
         ds.patch.youthCallUpsSkipped = undefined;
         ds.patch.jobSeeking = undefined;

@@ -56,6 +56,11 @@ export interface LiveSideInput {
   managerDiscipline?: number;
   /** The manager kicks and saves his penalties in 2D (`GameState.penaltyInteractive`); absent = automatic. */
   penalty2d?: boolean;
+  /**
+   * An AI side that studied the human manager (`.claude/rules/game/study.md`): its plan's style is already in
+   * `tactics`; `marks` (its man-marking) is applied for it too.
+   */
+  study?: import("@/GameEngine/types").TeamStudy;
 }
 
 export interface LiveMatchInput {
@@ -111,6 +116,7 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
   const manualInjurySubs: Partial<Record<TeamId, true>> = {};
   const setPieceTakers: Partial<Record<TeamId, SetPieceTakers>> = {};
   const managerDiscipline: Partial<Record<TeamId, number>> = {};
+  const study: NonNullable<GameState["study"]> = {};
   for (const team of SIDES) {
     const side = input[team];
     // #140: a human picks the replacement of an injured player; a banned manager watches from the stands and his
@@ -119,6 +125,7 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
     else if (side.human) manualInjurySubs[team] = true;
     if (side.human && side.setPieceTakers) setPieceTakers[team] = side.setPieceTakers;
     if (side.managerDiscipline !== undefined) managerDiscipline[team] = side.managerDiscipline;
+    if (side.study) study[team] = side.study;
   }
   const some = (o: object) => Object.keys(o).length > 0;
 
@@ -131,13 +138,18 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
     ...(some(manualInjurySubs) ? { manualInjurySubs } : {}),
     ...(some(setPieceTakers) ? { setPieceTakers } : {}),
     ...(some(managerDiscipline) ? { managerDiscipline } : {}),
+    ...(some(study) ? { study } : {}),
     ...(input.aggregate ? { aggregate: input.aggregate } : {}),
     ...(SIDES.some((t) => input[t].penalty2d) ? { penaltyInteractive: SIDES.filter((t) => input[t].penalty2d) } : {}),
   };
   // Player instructions of each human side: the saved slot instructions and this match's man-marking.
   for (const team of SIDES) {
     const side = input[team];
-    if (!side.human) continue;
+    if (!side.human) {
+      // An AI side only ever marks by its study plan.
+      if (side.study && side.marks?.length) state = setManMarksBySlot(state, team, side.marks);
+      continue;
+    }
     state = setManMarksBySlot(applyTeamInstructions(state, team, side.slotInstructions), team, side.marks ?? []);
   }
   return state;

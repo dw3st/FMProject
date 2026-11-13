@@ -21,8 +21,10 @@ import {
   autoLineupForFormationWithFitness,
   registeredPool,
   resolveUserLineup,
+  studyPlanFor,
   type MatchRegistration,
 } from "@/Domain/advanceDay/matchSimulationLineups";
+import { matchSetupStudy } from "@/Domain/study/study";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
@@ -298,6 +300,12 @@ export async function matchSetupFor(
     oppMorale = aiFormMorale(rows?.find((r) => r.squadId === opponentSquad!.id)?.form);
   }
 
+  // An AI opponent that studied the manager (`.claude/rules/game/study.md`): the plan the day advance computes for
+  // a simulated match (same function, same log). Never against another seat.
+  const plan = !legacy && matchFixture && opponentSquad && !seatOpponent && oppFormation
+    ? studyPlanFor(save.tacticLog, opponentSquad, oppFormation, oppLineup, mySquad, resolvedMyFormation, resolved.lineup)
+    : null;
+
   return { ok: true, body: {
     save,
     mySquad,
@@ -329,6 +337,7 @@ export async function matchSetupFor(
     managerBanned: !!save.managerBan && save.managerBan.matches > 0,
     seatOpponent,
     ...(oppMorale !== undefined ? { oppMorale } : {}),
+    ...(plan ? { study: matchSetupStudy(plan, mySquad) } : {}),
     h2h: seatOpponent && opts.live && !!opts.h2h,
   } };
 }

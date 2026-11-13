@@ -414,6 +414,8 @@ export interface GameEvents {
   kickOff: { team: TeamId; phase: 'firstHalf' | 'secondHalf' | 'extraTimeFirst' | 'extraTimeSecond' | 'afterGoal' };
   /** Emitted once when the match clock starts (preMatch countdown ends). */
   matchStart: { extraTime: number };
+  /** At kickoff, by a side that came with a game plan against a studied manager (`.claude/rules/game/study.md`). */
+  studyPlan: { team: TeamId; level: 'medium' | 'high'; style: string };
   /** Emitted when the first half clock expires. Engine will auto-switch sides. */
   halfTime: { score: { A: number; B: number }; extraTime: number };
   /**

@@ -608,6 +608,8 @@ export async function acceptJobOffer(
     youthCallUps: undefined,
     youthCallUpsSkipped: undefined,
     style_focus: undefined,
+    // A new club: opponents start reading the manager again (`.claude/rules/game/study.md`).
+    tacticLog: undefined,
     ...(standings ? {
       standing: newPassage({ date, clubId: offer.squadId, clubName: taken.clubName, leagueSlug: taken.leagueSlug, board: taken.board }),
     } : {}),
@@ -661,6 +663,7 @@ export async function resignFromClub(
     board: undefined,
     press: undefined,
     rotationOverride: undefined,
+    tacticLog: undefined,
     youthCallUps: undefined,
     youthCallUpsSkipped: undefined,
     managerContract: undefined,

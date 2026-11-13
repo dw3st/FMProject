@@ -1896,6 +1896,19 @@ export function applyTeamInstructions(
   return { ...s, slotInstructions: { ...s.slotInstructions, [team]: [...instructions] } };
 }
 
+/**
+ * `studyPlan` for every side that came with a game plan (`GameState.study`, `.claude/rules/game/study.md`).
+ * Called once at kickoff (the live match's `matchStart`; `simulateMatch` after it resets the statistics).
+ */
+export function emitStudyPlans(state: GameState): void {
+  for (const team of ['A', 'B'] as const) {
+    const st = state.study?.[team];
+    if (!st) continue;
+    gameBus.emit('studyPlan', { team, level: st.level, style: st.style });
+    debugLog('instruction', `Team ${team} came prepared: ${st.style} (${st.level} read)`, { data: { ...st } });
+  }
+}
+
 /** Maximum man-marking pairs per team and match. */
 const MAX_MAN_MARKS = 2;
 
@@ -3771,6 +3784,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const countdown = state.presentationCountdown - dt;
     if (countdown <= 0) {
       gameBus.emit('matchStart', { extraTime: Math.round(state.extraTimeFirst / 60) });
+      emitStudyPlans(state);
       gameBus.emit('kickOff', { team: 'A', phase: 'firstHalf' });
       return noop({ ...state, matchPhase: 'firstHalf', presentationCountdown: 0 });
     }

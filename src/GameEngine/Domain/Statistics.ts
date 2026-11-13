@@ -143,6 +143,8 @@ export interface TeamStats extends PlayerStats {
   injuries: number;
   /** Injury stoppages after which this team restarted play (`injuryStoppage`). */
   injuryStoppages: number;
+  /** 1 when this team came with a game plan against a studied manager (`studyPlan`, `study.md`). */
+  studyPlans: number;
   /** Referee errors that hurt this team (`refereeError`, `.claude/rules/game/var.md`). Match total = A + B. */
   refereeErrors: number;
   /**
@@ -232,10 +234,11 @@ type TeamFlags = {
   extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; injuryStoppages: number;
   refereeErrors: number; varReviews: number; varOverturned: number;
   ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
+  studyPlans: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
-  ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0,
+  ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -345,6 +348,12 @@ gameBus.on('looseBallWon', e => {
 // ── Switch-of-play stats ──────────────────────────────────────────────────────
 gameBus.on('switchPlayPass', e => {
   get(e.player).switchPlays++;
+  notify();
+});
+
+// ── Study plan (`.claude/rules/game/study.md`) ───────────────────────────────
+gameBus.on('studyPlan', e => {
+  teamFlags[e.team].studyPlans++;
   notify();
 });
 

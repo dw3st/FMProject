@@ -177,6 +177,8 @@ export interface MatchEvent {
   referee?: import("@/types/refereeTypes").MatchReferee;
   /** Referee errors and VAR checks of the match (`.claude/rules/game/var.md`). Absent: no referee. */
   var?: MatchVarStats;
+  /** The AI side came with a game plan against the human manager it studied (`.claude/rules/game/study.md`). */
+  study?: import("@/types/studyTypes").MatchStudy;
 }
 
 /** Referee errors and VAR checks of one match (both teams). `overturned` ≤ `errors` (every overturn fixes an error). */

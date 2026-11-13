@@ -460,6 +460,13 @@ export interface GamePlayer {
   manMarkTargetId?: number;
 }
 
+/** A side's game plan against a manager it studied (`.claude/rules/game/study.md`). */
+export interface TeamStudy {
+  level: 'medium' | 'high';
+  /** The style the plan plays. */
+  style: import('@/types/tacticsTypes').TacticalStyle;
+}
+
 /** One man-marking pair (`GameState.manMarks`). */
 export interface ManMarkPair {
   markerSlot: number;
@@ -799,6 +806,12 @@ export interface GameState {
    * target left the pitch is dropped. Only applies while the marking team is defending.
    */
   manMarks?: Partial<Record<TeamId, ManMarkPair[]>>;
+  /**
+   * Teams that came with a game plan against a studied manager (`.claude/rules/game/study.md`): only an AI club
+   * against a human one. Information only (the plan itself is the team's tactics and `manMarks`); `studyPlan` is
+   * emitted at kickoff.
+   */
+  study?: Partial<Record<TeamId, TeamStudy>>;
   /**
    * Open set-piece phase: a goal by `team` before `until` (match-time, game-seconds) counts as a
    * set-piece goal of `kind`. Opened by a corner, a free kick in the attacking third or a penalty;

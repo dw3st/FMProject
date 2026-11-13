@@ -19,7 +19,7 @@ import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
-import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot } from '@/GameEngine/Domain/gameState';
+import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getGoalLog, getTeamStats, type GoalLogEntry } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
@@ -130,6 +130,8 @@ export interface SimulateMatchOptions {
   instructions?: { A?: TeamInstructions; B?: TeamInstructions };
   /** Rehearsed corners / crossed free kicks per side (`set-pieces-play.md`); the lab's way in. `tactics[team].setPieceTakers` wins. */
   setPieceRoutines?: { A?: import('@/types/tacticsTypes').SetPieceRoutines; B?: import('@/types/tacticsTypes').SetPieceRoutines };
+  /** Study plan per side for callers that apply their own tactics (the lab); `tactics[team].study` wins. */
+  study?: { A?: import('@/GameEngine/types').TeamStudy; B?: import('@/GameEngine/types').TeamStudy };
   /** Referee of the match (his rigor scales fouls and cards, `src/Domain/referees`). Absent = neutral. */
   referee?: import('@/types/refereeTypes').EngineReferee;
   /** Managers' Discipline attribute 1..20 per side (`.claude/rules/game/achievements.md`). Absent = neutral. */
@@ -158,6 +160,11 @@ export interface TeamTactics {
    * (`targetRosterId`) or by the opponent's slot (`targetSlot`, the lab). At most 2.
    */
   manMarks?: { slot: number; targetRosterId?: string; targetSlot?: number }[];
+  /**
+   * This side comes with a game plan against a manager it studied (`.claude/rules/game/study.md`): emits
+   * `studyPlan` at kickoff. Only an AI club against a human one has it.
+   */
+  study?: import('@/GameEngine/types').TeamStudy;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -198,6 +205,16 @@ export const DEFAULT_FORMATION: Formation = {
     { role: 'RW',  x: 50, y: 66 },
   ],
 };
+
+/** The sides that come with a study plan (`tactics[team].study`, else `options.study`). */
+function studyOf(options: SimulateMatchOptions): GameState['study'] {
+  const out: NonNullable<GameState['study']> = {};
+  for (const team of ['A', 'B'] as const) {
+    const st = options.tactics?.[team].study ?? options.study?.[team];
+    if (st) out[team] = st;
+  }
+  return out.A || out.B ? out : undefined;
+}
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -250,6 +267,7 @@ export function simulateMatch(
     ...(options.aggregate ? { aggregate: options.aggregate } : {}),
     ...(options.referee ? { referee: options.referee } : {}),
     ...(options.weather ? { weather: options.weather } : {}),
+    ...(studyOf(options) ? { study: studyOf(options) } : {}),
     ...(options.managerDiscipline && (options.managerDiscipline.A !== undefined || options.managerDiscipline.B !== undefined)
       ? { managerDiscipline: { ...options.managerDiscipline } } : {}),
     ...(options.tactics?.A.setPieceTakers || options.tactics?.B.setPieceTakers
@@ -274,6 +292,7 @@ export function simulateMatch(
   // Reset shared accumulators so live-game stats don't bleed in
   initStats(s.players.map(p => ({ id: p.id, team: p.team })));
   initRatings(s.players.map(p => p.id));
+  emitStudyPlans(s);
 
   const dt = options.simDt ?? SIM_DT;
   let ticks = 0;

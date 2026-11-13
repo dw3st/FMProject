@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { computeMatchSimulationLineups, computeSeatedMatchLineups, resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
+import { aiFamiliarity } from "@/Domain/familiarity/familiarity";
+import { axesFor, type TacticsSave } from "@/types/tacticsTypes";
+import type { Fixture } from "@/types/calendarTypes";
+import type { TacticLogEntry } from "@/types/studyTypes";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { getFormationSlots } from "@/types/formationSlots";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
@@ -144,5 +148,65 @@ describe("resolveUserLineup — rotation", () => {
     const r = resolveUserLineup(squad, formation, saved, DATE, { assistantRotation: true, override });
     expect(r.lineup).toEqual(saved);
     expect(r.rotationApplied).toEqual([]);
+  });
+});
+
+describe("AI study plan (`.claude/rules/game/study.md`)", () => {
+  const fixture = { id: "f1", date: "2027-03-20", home: "h", away: "a", competition: "l", round: 1, played: false } as unknown as Fixture;
+  const club = (id: string): Squad => {
+    const s = squadOf11();
+    return { ...s, id, name: id, players: s.players.map((p) => ({ ...p, id: `${id}-${p.id}`, squadId: id })) };
+  };
+  const log: TacticLogEntry[] = Array.from({ length: 5 }, (_, i) => ({
+    date: `2027-03-0${i + 1}`, fixtureId: `g${i}`, formation: "4-3-3", style: "high_press" as const, axes: axesFor("high_press"),
+  }));
+  const tactics: TacticsSave = { formation: "4-3-3", tactical_style: "high_press", lineup: [] };
+
+  test("AI against AI is unchanged, with or without a log", () => {
+    const base = computeMatchSimulationLineups(fixture, club("h"), club("a"), undefined, null);
+    const withLog = computeMatchSimulationLineups(fixture, club("h"), club("a"), undefined, null, null, null, undefined, log);
+    expect(withLog).toEqual(base);
+    expect(base.study).toBeUndefined();
+    expect(base.tactics.A).toEqual({ style: "balanced", familiarity: aiFamiliarity("balanced") });
+    expect(base.tactics.B).toEqual(base.tactics.A);
+  });
+
+  test("human against AI without a log: the AI plays balanced as before", () => {
+    const sim = computeMatchSimulationLineups(fixture, club("h"), club("a"), "h", tactics);
+    expect(sim.tactics.B).toEqual({ style: "balanced", familiarity: aiFamiliarity("balanced") });
+    expect(sim.study).toBeUndefined();
+  });
+
+  test("human against AI with a high read: the AI gets the counter style and a man-mark", () => {
+    const sim = computeMatchSimulationLineups(fixture, club("h"), club("a"), "h", tactics, null, null, undefined, log);
+    expect(sim.tactics.B.style).toBe("counter_attack");
+    expect(sim.tactics.B.familiarity).toEqual(aiFamiliarity("counter_attack"));
+    expect(sim.tactics.B.study).toEqual({ level: "high", style: "counter_attack" });
+    expect(sim.tactics.B.manMarks).toHaveLength(1);
+    const mark = sim.tactics.B.manMarks![0]!;
+    expect(sim.homeLineup).toContain(mark.targetRosterId!);
+    expect(sim.study).toEqual({ side: "away", level: "high", style: "counter_attack", marked: expect.any(String) });
+    // The human side is untouched.
+    expect(sim.tactics.A.style).toBe("high_press");
+    expect(sim.tactics.A.manMarks).toBeUndefined();
+  });
+
+  test("the human away: the plan is the home side's", () => {
+    const sim = computeMatchSimulationLineups(fixture, club("h"), club("a"), "a", tactics, null, null, undefined, log.slice(0, 3));
+    expect(sim.tactics.A.style).toBe("counter_attack");
+    expect(sim.tactics.A.manMarks).toBeUndefined();
+    expect(sim.study).toEqual({ side: "home", level: "medium", style: "counter_attack" });
+  });
+
+  test("two seats: nobody reads the other's log", () => {
+    const side = { tactics, tacticLog: log };
+    const sim = computeSeatedMatchLineups(fixture, club("h"), club("a"), { home: side, away: side });
+    expect(sim.study).toBeUndefined();
+    expect(sim.tactics.A.style).toBe("high_press");
+    expect(sim.tactics.B.style).toBe("high_press");
+    expect(sim.tactics.A.manMarks).toBeUndefined();
+    expect(sim.tactics.B.manMarks).toBeUndefined();
+    // One seat: its log reaches the AI side.
+    expect(computeSeatedMatchLineups(fixture, club("h"), club("a"), { home: side }).study?.side).toBe("away");
   });
 });

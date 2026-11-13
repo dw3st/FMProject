@@ -116,6 +116,11 @@ export interface SeatState {
   standing?: SeatStanding;
   /** The board's objective of the season the club has just closed, for the end-of-season report. */
   lastSeason?: SeatLastSeason;
+  /**
+   * The plan the manager started his last official club games with (`.claude/rules/game/study.md`): AI opponents
+   * read it. Cleared on a change of club and on a sacking.
+   */
+  tacticLog?: import("@/types/studyTypes").TacticLogEntry[];
 }
 
 /** Every key of `SeatState` (the split of a merged patch, `splitSeatPatch`). */
@@ -125,7 +130,7 @@ export const SEAT_KEYS = [
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "youthCoachPlanned", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerStudies", "trustedStaff", "betNet", "betExact", "betLongshot", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
-  "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",
+  "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites", "tacticLog",
 ] as const satisfies readonly (keyof SeatState)[];
 
 type MissingSeatKeys = Exclude<keyof SeatState, (typeof SEAT_KEYS)[number]>;
