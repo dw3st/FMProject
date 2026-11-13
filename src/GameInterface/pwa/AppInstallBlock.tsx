@@ -14,7 +14,7 @@ export function AppInstallBlock() {
 
   return (
     <>
-      <div className="mt-6 flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <div className={LABEL}>{t("settings.app.title")}</div>
         {state === "prompt" && (
           <Button onClick={() => void install()} className="self-start">
@@ -26,7 +26,7 @@ export function AppInstallBlock() {
       </div>
 
       {fullscreen.supported && state !== "installed" && (
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <div className={LABEL}>{t("settings.app.fullscreen")}</div>
           <OptionChips
             value={fullscreen.active ? "on" : "off"}

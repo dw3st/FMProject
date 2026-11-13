@@ -643,6 +643,14 @@
     "transfersFull": "Transfers"
   },
   "settings": {
+    "title": "Settings",
+    "sections": {
+      "general": "General",
+      "match": "Match",
+      "graphics": "Graphics",
+      "sound": "Sound",
+      "menu": "Menu"
+    },
     "app": {
       "title": "App",
       "install": "Install the game",

@@ -643,6 +643,14 @@
     "transfersFull": "Transferências"
   },
   "settings": {
+    "title": "Configurações",
+    "sections": {
+      "general": "Geral",
+      "match": "Partida",
+      "graphics": "Visual",
+      "sound": "Som",
+      "menu": "Menu"
+    },
     "app": {
       "title": "Aplicativo",
       "install": "Instalar o jogo",
