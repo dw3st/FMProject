@@ -720,7 +720,23 @@
     "reload": "Reload",
     "tabNews": "What's new",
     "tabUpcoming": "Coming soon",
-    "upcomingSubtitle": "What we are working on next"
+    "upcomingSubtitle": "What we are working on next",
+    "tabs": {
+      "match": "Match",
+      "squad": "Squad",
+      "formation": "Formation",
+      "club": "Club",
+      "development": "Development",
+      "finances": "Finances",
+      "staff": "Staff",
+      "leagues": "Leagues",
+      "market": "Transfers",
+      "scout": "Scout",
+      "stats": "Stats",
+      "manager": "Your manager",
+      "friends": "Friends",
+      "general": "General"
+    }
   },
   "status": {
     "onlineShort": "{{count}} online",

@@ -10,9 +10,13 @@
  * See .claude/rules/changelog.md for the versioning rule and update process.
  */
 
+import type { ChangelogTab } from "@/Domain/changelog/changelogTabs";
+
 export interface ChangelogText {
   pt: string;
   en: string;
+  /** Where in the game it is found; shown in brackets before the text. Every new item has one. */
+  tab?: ChangelogTab;
 }
 
 export interface ChangelogEntry {
@@ -26,6 +30,17 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: "11.0",
+    date: "2026-11-12",
+    time: "21:00",
+    items: [
+      { tab: "squad", pt: "Inscritos: uma lista só de jogadores, com uma coluna por competição e uma caixa para marcar em cada uma. Não é mais preciso trocar de competição para ver quem está inscrito onde.", en: "Registration: one list of players with a column per competition and a box to tick in each. No more switching competitions to see who is registered where." },
+      { tab: "squad", pt: "Base: a convocação para os jogos da base virou uma lista com posição, nacionalidade, idade, OVR e fôlego, e duas colunas de marcar (sub-21 e sub-19). Um botão salva as duas.", en: "Academy: the call-ups for the youth games are now one list with position, nationality, age, OVR and fitness, and two tick columns (under-21 and under-19). One button saves both." },
+      { tab: "formation", pt: "As escalações salvas A, B e C podem ganhar um nome (o lápis ao lado de cada uma). O nome aparece também na troca de formação durante a partida.", en: "The saved line-ups A, B and C can be given a name (the pencil next to each). The name also shows when changing formation during a match." },
+      { tab: "general", pt: "Novidades: cada item mostra entre colchetes a aba do jogo onde a mudança está, com uma cor por aba, e os itens de uma versão saem agrupados por aba.", en: "What's new: each item shows in brackets the tab of the game where the change is, one colour per tab, and the items of a version are grouped by tab." },
+    ],
+  },
   {
     version: "10.9.3",
     date: "2026-11-12",

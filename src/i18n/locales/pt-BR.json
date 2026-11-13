@@ -720,7 +720,23 @@
     "reload": "Recarregar",
     "tabNews": "Novidades",
     "tabUpcoming": "Em breve",
-    "upcomingSubtitle": "No que estamos trabalhando agora"
+    "upcomingSubtitle": "No que estamos trabalhando agora",
+    "tabs": {
+      "match": "Partida",
+      "squad": "Elenco",
+      "formation": "Formação",
+      "club": "Clube",
+      "development": "Evolução",
+      "finances": "Finanças",
+      "staff": "Comissão",
+      "leagues": "Ligas",
+      "market": "Mercado",
+      "scout": "Olheiro",
+      "stats": "Estatísticas",
+      "manager": "Seu técnico",
+      "friends": "Amigos",
+      "general": "Geral"
+    }
   },
   "status": {
     "onlineShort": "{{count}} online",

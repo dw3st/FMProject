@@ -174,3 +174,7 @@ Detalhes e números: `.claude/rules/game/formations.md`.
 Na partida ao vivo, a aba "Tática" do painel de substituições muda o estilo e os quatro eixos só para o
 jogo (time A, com a mentalidade por cima e a familiaridade do clube); nunca grava `tactics.json`. Ver
 `.claude/rules/match-flow.md` → "Live heat map and live tactics".
+
+## Nome das escalações salvas (11.0)
+
+Report de tester. `LineupPreset.name` (até `PRESET_NAME_MAX` 20 letras; `cleanPresetName` tira caracteres de controle e espaços repetidos): o lápis de cada escalação salva abre o campo do nome (`renamePreset`; vazio volta à letra). Salvar por cima mantém o nome e ele segue o técnico na troca de clube. O `PUT` recusa nome vazio, longo ou que não esteja limpo (400 `invalid preset name`). Na partida, "Minhas formações" lista a escalação pelo nome (`substitutionPanel.presetNamed`); sem nome, "Escalação A" como antes (`presetDisplayName`).
