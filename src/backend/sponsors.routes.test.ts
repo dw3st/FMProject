@@ -197,7 +197,7 @@ describe("sponsors routes", () => {
     // The club page and the pitch boards: the human club's contracts, an AI club's derived names (stable).
     const seat = (await saveService.getSeatMeta(saveId, meta.seatId))!;
     const mine = await clubOverview(saveService, saveId, seat, sq3);
-    expect(mine.masterSponsor).toEqual({ name: master[0]!.company.name, sector: master[0]!.company.sector, colors: master[0]!.company.colors });
+    expect(mine.masterSponsor).toEqual({ id: master[0]!.company.id, name: master[0]!.company.name, sector: master[0]!.company.sector, colors: master[0]!.company.colors });
     const rival = (await saveService.getSquadById(saveId, "50"))!;
     const theirs = await clubOverview(saveService, saveId, seat, rival);
     expect(theirs.masterSponsor!.name.length).toBeGreaterThan(0);
@@ -206,7 +206,7 @@ describe("sponsors routes", () => {
     expect(aiBoards.map((b) => b.weight)).toEqual([3, 2, 1, 1, 1, 1]);
     expect(new Set(aiBoards.map((b) => b.name)).size).toBe(6);
     const myBoards = await sponsorBoardsOf(saveService, saveId, sq3, seat.activeLeagues, seat.currentDate!);
-    expect(myBoards[0]).toEqual({ name: master[0]!.company.name, colors: master[0]!.company.colors, weight: 3 });
+    expect(myBoards[0]).toEqual({ id: master[0]!.company.id, name: master[0]!.company.name, colors: master[0]!.company.colors, weight: 3 });
     expect(myBoards).toHaveLength(sq3.sponsors!.contracts.length);
 
     // Private to the seat, and never in a start kit.

@@ -2,6 +2,7 @@
 import type { H2HWireState } from "@/types/h2hTypes";
 import type { WatchInfo, WatchLook, WatchTeam } from "@/types/watchTypes";
 import type { LiveScoreView } from "@/types/rivalsTypes";
+import { SPONSOR_ID } from "@/Domain/sponsors/sponsorPlate";
 
 /** The relayed state with the benches of the previous one when it left them out (unchanged). */
 export function withBenches(prev: H2HWireState | undefined, next: H2HWireState): H2HWireState {
@@ -52,6 +53,21 @@ function plainData(v: unknown, depth = 0): unknown {
   return out;
 }
 
+/** The home club's LED sponsors of a relayed look: catalog ids, short names, two colours and a small weight only. */
+function sponsorBoards(raw: unknown): { id: string; name: string; colors: [string, string]; weight: number }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { id: string; name: string; colors: [string, string]; weight: number }[] = [];
+  for (const item of raw.slice(0, 8)) {
+    const o = obj(item);
+    const colors = o && Array.isArray(o.colors) ? o.colors : [];
+    const bg = color(colors[0]), fg = color(colors[1]);
+    if (!o || !str(o.id, 84) || !SPONSOR_ID.test(o.id) || !str(o.name, 40) || o.name.trim() === "" || !bg || !fg) continue;
+    const weight = typeof o.weight === "number" && Number.isFinite(o.weight) ? Math.max(1, Math.min(3, Math.round(o.weight))) : 1;
+    out.push({ id: o.id, name: o.name, colors: [bg, fg], weight });
+  }
+  return out;
+}
+
 /**
  * The friend's pitch look as the spectator may use it: colours, the game's own face / art / logo URLs, and plain
  * drawing data. Anything else is dropped (it came from another browser). Null without the two kit colours.
@@ -83,9 +99,10 @@ export function sanitizeWatchLook(raw: unknown): WatchLook | null {
   }
   const stadium = obj(o.stadium);
   if (stadium) {
-    const { homeCrest, led: _led, ...rest } = stadium;
+    const { homeCrest, led: _led, sponsors, ...rest } = stadium;
     const data = plainData(rest) as Record<string, unknown> | undefined;
-    if (data) look.stadium = { ...data, ...(url(homeCrest) ? { homeCrest: url(homeCrest) } : {}) };
+    const boards = sponsorBoards(sponsors);
+    if (data) look.stadium = { ...data, ...(url(homeCrest) ? { homeCrest: url(homeCrest) } : {}), ...(boards.length > 0 ? { sponsors: boards } : {}) };
   }
   const pitch = plainData(o.pitch);
   if (pitch && typeof pitch === "object") look.pitch = pitch as Record<string, unknown>;

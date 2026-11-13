@@ -116,6 +116,8 @@ export type SponsorNegotiation = "raised" | "kept" | "withdrawn";
 
 /** A sponsor as the pitch boards and the club page show it. */
 export interface SponsorBoard {
+  /** Catalog id: the painted plate is `sponsors/<id>.webp`. */
+  id: string;
   name: string;
   colors: [string, string];
   /** Share of the LED panels: master 3, kit 2, board 1. */
@@ -124,6 +126,7 @@ export interface SponsorBoard {
 
 /** The master (shirt) sponsor shown on the club page and the match preview. */
 export interface MasterSponsor {
+  id: string;
   name: string;
   sector: string;
   colors: [string, string];

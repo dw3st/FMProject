@@ -1761,6 +1761,8 @@ export function MatchScreen() {
       // The manager's decorations (achievements): only sent for the human club's home games.
       ...(crowd?.decor ? { decor: crowd.decor } : {}),
       ...(crowd?.bigMatch ? { bigMatch: true } : {}),
+      // The home club's sponsors on the LED boards (12.0).
+      ...(crowd?.sponsors?.length ? { sponsors: crowd.sponsors } : {}),
       // The home club's colours for the crowd's flags, banners and scarves.
       ...(homeClubColors ? { homeColors: homeClubColors } : {}),
       // The home crest on the crowd's flags and banners.

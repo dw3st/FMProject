@@ -312,6 +312,7 @@ export function DashboardScreen() {
     players, today: currentDate, seasonEnd: save?.season?.end ?? null, inbox, morale: squad?.moraleClub,
     window: windowsData?.player ?? null,
     renewalPending: !!save?.managerRenewal && save.managerRenewal.expires >= currentDate,
+    ...(squad?.sponsors ? { sponsors: squad.sponsors } : {}),
   });
   const highlights = seasonHighlights(players);
   // Unread first, then the newest read ones (the inbox is newest first).

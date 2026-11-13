@@ -15,6 +15,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import type { ClubOverview } from "@/types/clubOverviewTypes";
+import { SponsorPlate } from "@/GameInterface/Sponsors/SponsorPlate";
 import type { LeagueData, Squad } from "@/types/playerTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
@@ -156,6 +157,14 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
             </div>
           )}
         </Card>
+
+        {data.masterSponsor && (
+          <Card>
+            <SectionTitle>{t("sponsors.master.title")}</SectionTitle>
+            <SponsorPlate company={data.masterSponsor} size="lg" className="max-w-full" />
+            <span className="text-sm text-muted-foreground">{t(`sponsors.sector.${data.masterSponsor.sector}`, { defaultValue: "" })}</span>
+          </Card>
+        )}
 
         {m && (
           <Card>

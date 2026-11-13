@@ -38,6 +38,7 @@ import { formatEuros } from "@/Domain/money";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { attrDisplay } from "@/Domain/attributes";
 import { navigate } from "@/GameInterface/router/navigation";
+import { SponsorInboxBody, sponsorInboxTexts } from "@/GameInterface/Sponsors/SponsorInboxBody";
 
 const ArrowDownLeft = iconOf("arrow-down-left");
 const ArrowUpRight = iconOf("arrow-up-right");
@@ -48,6 +49,7 @@ const TrendingUp = iconOf("trend-up");
 const Trophy = iconOf("trophy");
 const Prospect = iconOf("user");
 const BoardIcon = iconOf("building");
+const SponsorIcon = iconOf("handshake");
 const JobIcon = iconOf("file-signature");
 const RegistrationIcon = iconOf("clipboard");
 const TagIcon = iconOf("tag");
@@ -166,7 +168,7 @@ const CATEGORY_META: Record<
     color: "text-chart-4",
     bg: "bg-chart-4/15",
     border: "border-chart-4/30",
-    Icon: BoardIcon,
+    Icon: SponsorIcon,
   },
   board: {
     labelKey: "inbox.categories.board",
@@ -706,6 +708,7 @@ function leaguePrizeTexts(
     const x = facilityTexts(message, t);
     return { subject: x.subject, preview: x.body };
   }
+  if (message.category === "sponsor") return sponsorInboxTexts(message, t, i18nLang());
   if (message.category === "discipline") {
     if (message.kind === "press_punished") return { subject: t("press.attack.inboxSubject"), preview: pressPunishedText(message, t) };
     return { subject: t("complaint.inbox.subject"), preview: t("complaint.inbox.body", { count: message.matches }) };
@@ -957,6 +960,7 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
     )}
     {message.category === "retirement" && <RetirementBody message={message} />}
     {message.category === "facilities" && <p className="text-sm text-foreground m-0">{facilityTexts(message, t).body}</p>}
+    {message.category === "sponsor" && <SponsorInboxBody message={message} />}
     {message.category === "job" && <JobBody message={message} leagues={leagues} />}
     {message.category === "transfer" && <TransferNegotiationBody message={message} />}
     {message.category === "player" && <PlayerTalkBody message={message} />}

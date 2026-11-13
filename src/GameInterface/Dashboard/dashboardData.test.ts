@@ -88,6 +88,13 @@ describe("attentionItems", () => {
     expect(items[0]).toMatchObject({ kind: "lowFitnessGroup", count: 4 });
   });
 
+  test("sponsor offers still on the table: one line with the count and the first deadline", () => {
+    const offer = (id: string, expires: string) => ({ id, expires }) as never;
+    const sponsors = { contracts: [], offers: [offer("a", "2999-01-10"), offer("b", "2999-01-05"), offer("old", "2000-01-01")] };
+    expect(attentionItems({ players: [], today, seasonEnd: null, inbox: [], sponsors })).toEqual([{ kind: "sponsorOffers", count: 2, expires: "2999-01-05" }]);
+    expect(attentionItems({ players: [], today, seasonEnd: null, inbox: [], sponsors: { contracts: [], offers: [offer("old", "2000-01-01")] } })).toEqual([]);
+  });
+
   test("facility items worn or condemned in the last week, once per item", () => {
     const msg = (date: string, kind: "worn" | "condemned", item: string, condition: number) =>
       ({ id: `${date}${kind}`, date, createdAt: date, read: false, category: "facilities", subject: "", preview: "", kind, item, condition }) as never;

@@ -25,6 +25,8 @@ import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import { getMainRole } from "@/Domain/roles";
 import { MAIN_ROLE_ABBR, getPositionColor, MAIN_ROLE_BADGE_CLASSES } from "@/GameInterface/positionHelpers";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { SponsorPlate } from "@/GameInterface/Sponsors/SponsorPlate";
+import type { MasterSponsor } from "@/types/sponsorTypes";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { autoFillLineupWithFitness } from "@/Domain/lineupHelpers";
 import { LoadIndicator } from "@/GameInterface/Components/LoadIndicator";
@@ -218,6 +220,7 @@ function TeamCard({
   logoUrl,
   accentHex,
   squadUrl,
+  sponsor,
 }: {
   side: "home" | "away";
   squadName: string;
@@ -229,6 +232,8 @@ function TeamCard({
   logoUrl?: string;
   accentHex: string;
   squadUrl?: string;
+  /** The club's master sponsor (`.claude/rules/game/sponsors.md`); nothing shown without one. */
+  sponsor?: MasterSponsor | null;
 }) {
   const { t } = useTranslation();
   const allOrdered = squad ? getOrderedPlayers(squad.players, lineup) : [];
@@ -281,6 +286,13 @@ function TeamCard({
         </div>
         <div className="flex-1" />
       </div>
+
+      {sponsor && (
+        <div className={`flex items-center gap-2 ${isHome ? "" : "flex-row-reverse"}`}>
+          <SponsorPlate company={sponsor} size="sm" />
+          <span className="text-sm text-muted-foreground">{t("sponsors.master.label")}</span>
+        </div>
+      )}
 
       <div className="border-t border-border/30" />
 
@@ -624,6 +636,8 @@ interface MatchSetupData {
   managerBanned?: boolean;
   /** His national team's game (Etapa 41b): no crowd, marking or club tactics. */
   national?: { teamId: string; competition: string } | null;
+  /** Master sponsor of each club (`.claude/rules/game/sponsors.md`); null on a national team's game. */
+  sponsors?: { mine: MasterSponsor | null; opponent: MasterSponsor | null } | null;
 }
 
 export function MatchPreviewScreen() {
@@ -1191,6 +1205,7 @@ export function MatchPreviewScreen() {
           tacticalStyle={homeTactics}
           logoUrl={homeLogoUrl}
           accentHex={homeHex}
+          sponsor={isHome ? matchSetup?.sponsors?.mine : matchSetup?.sponsors?.opponent}
           squadUrl={isHome ? `/squad/${session.leagueSlug}/${session.clubId}` : (opponentFileSlug ? `/squad/${session.leagueSlug}/${opponentFileSlug}` : undefined)}
         />
 
@@ -1215,6 +1230,7 @@ export function MatchPreviewScreen() {
           tacticalStyle={awayTactics}
           logoUrl={awayLogoUrl}
           accentHex={awayHex}
+          sponsor={isHome ? matchSetup?.sponsors?.opponent : matchSetup?.sponsors?.mine}
           squadUrl={isHome ? (opponentFileSlug ? `/squad/${session.leagueSlug}/${opponentFileSlug}` : undefined) : `/squad/${session.leagueSlug}/${session.clubId}`}
         />
       </div>

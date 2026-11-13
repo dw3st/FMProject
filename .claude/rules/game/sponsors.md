@@ -91,17 +91,41 @@ Clube sem `Squad.sponsors` (save de antes): o campo nasce aqui, com propostas pa
 | `GET /api/saves/:id/sponsors` | `SponsorsView`: `date`, `slots` (vaga, lugares, parte, ocupados), `contracts` e `offers` com `progress` da meta hoje, `base`, `weekly`, `appeal`, `active` (false = save de antes, ainda na receita antiga). 409 `noClub` |
 | `POST /api/saves/:id/sponsors/offers/:offerId { action: "accept" \| "decline" \| "negotiate" }` | `withSaveLock`, guarda de lobby. `{ ok, action, contract?, negotiation?, view }`. 400 `invalidAction`; 404 `notFound` (desconhecida ou vencida); 409 `slotTaken` / `alreadyNegotiated` / `noClub` / `lobby` |
 
-`POST /api/match-setup`: `sponsors: { mine, opponent }` (patrocinador máster de cada lado, `{ name, sector, colors }` ou null) e `crowd.sponsors: { name, colors, weight }[]` do mandante (máster 3, material 2, placa 1; ausente em campo neutro). `GET …/clubs/:squadId/overview`: `masterSponsor`. Clube humano com o campo = os contratos (máster vazio = null); IA e clube humano ainda sem o campo = derivados. `publicSeatSquad` tira `sponsors` do elenco de outro assento.
+`POST /api/match-setup`: `sponsors: { mine, opponent }` (patrocinador máster de cada lado, `{ id, name, sector, colors }` ou null) e `crowd.sponsors: { id, name, colors, weight }[]` do mandante (máster 3, material 2, placa 1; ausente em campo neutro). `GET …/clubs/:squadId/overview`: `masterSponsor`. Clube humano com o campo = os contratos (máster vazio = null); IA e clube humano ainda sem o campo = derivados. `publicSeatSquad` tira `sponsors` do elenco de outro assento.
+
+## Placa da marca (`SponsorPlate`)
+
+`src/GameInterface/Sponsors/SponsorPlate.tsx`: o logo de uma empresa em toda tela. Uma placa na cor de fundo da marca (`colors[0]`), o símbolo à esquerda e o nome em `colors[1]`, `font-display` em caixa-alta.
+
+- **Símbolo:** o terço esquerdo da placa pintada `/assets/game/v1/sponsors/<id>.webp` (512 × 170, fundo exatamente `colors[0]`, sem texto); sem a imagem (404 ou erro), o ícone do setor (`SECTOR_ICON`, `sponsorPlateStyle.ts`; setor desconhecido = aperto de mão). Uma placa que deu 404 não é pedida de novo na página.
+- **Nome:** escrito pelo componente, tamanho em degraus fixos de classe pelo comprimento (`plateNameClass`), até duas linhas, nunca fora da placa. Nenhum estilo de fonte inline: só as cores da marca vão em `style`.
+- **Tamanhos:** `sm` 40px (listas, prévia), `md` 64px (cartões), `lg` 96px (patrocinador máster na página do clube).
+- **Fundo escuro** (luma < 60, `isDarkPlate`): borda de 1px na cor do texto a 35%.
+- **Servidor:** `staticAssets.ts` serve `sponsors/<id>.webp` de `src/Data/assets/sponsors/` só para ids `/^sp_[a-z0-9_]{1,80}$/` (`SPONSOR_ID`, `src/Domain/sponsors/sponsorPlate.ts`), cache `immutable`, 404 no resto. As imagens ficam em `src/example_data/assets/sponsors/`. Imagem trocada = nome novo.
+
+## Telas
+
+- **Finanças → Patrocínios** (`?tab=sponsors`; abas Contas | Patrocínios, `SponsorsPanel.tsx`): receita semanal dos patrocínios, base por temporada e atrativo (em % sobre o neutro, com uma linha do que mexe nele); por vaga (máster, material, placas) os contratos (placa, perfil, fixo por temporada e por semana, bônus, meta em palavras com a situação de hoje pelo `progress`, temporadas restantes) e, com lugar livre, a caixa tracejada da vaga com as propostas (perfil, fixo, bônus, meta, duração, prazo, selos Renovação e Já negociada; Aceitar, Negociar uma vez, Recusar). A resposta mostra uma linha com o resultado e a tela usa a `view` devolvida. `active: false`: uma linha dizendo que o clube ainda está na receita comercial antiga. A linha "comercial" da semana normal de Finanças usa `weeklyCommercialIncome`.
+- **Caixa de entrada** (`SponsorInboxBody.tsx`, ícone de aperto de mão): `offers`, `auto_signed`, `season_review`, com o botão para `/finances?tab=sponsors`.
+- **Painel:** o cartão Atenção lista as propostas na mesa (`sponsorOffers`: quantas e o primeiro prazo), lidas de `squad.sponsors`, com o botão Responder.
+- **Página de outro clube** (`ClubOverviewView`): bloco Patrocinador máster (placa `lg` e o setor). **Prévia da partida:** a placa `sm` do máster sob cada clube; nada sem máster.
+- i18n `sponsors.*`, `inbox.sponsor.*` (en, pt-BR), teste `src/i18n/sponsors.keys.test.ts`.
+
+## Placas de LED na partida
+
+Só desenho (`src/GraficsEngine/ledSponsors.ts`, puro, com teste): `PitchStadium.sponsors` (de `crowd.sponsors`, passado pelo `MatchScreen`). `ledPanelFor(seed, ciclo, painel, idioma, sponsors)`: cerca de 60% (`LED_SPONSORS.SHARE`) dos painéis de cada ciclo mostram um patrocinador sorteado pelo peso (máster 3, material 2, placa 1), fixo por jogo, ciclo e painel, nunca o mesmo em dois painéis vizinhos quando há outro; o resto mostra a propaganda genérica que mostraria de qualquer jeito. Sem `sponsors` o resultado é exatamente `ledAdFor`. O painel de patrocinador usa as cores da marca e o nome; com a placa pintada carregada (uma vez por patrocinador, falha em silêncio) o símbolo vai à esquerda quando o nome cabe no resto. O gol piscando e as transições não mudam. Na transmissão para amigos os patrocinadores vão no `WatchLook` (`sanitizeWatchLook`: ids no formato do catálogo, nome curto, duas cores, peso 1..3, até 8).
 
 ## Testes
 
 ```
 bun test src/Domain/sponsors src/backend/sponsorCatalog.test.ts src/backend/sponsors.routes.test.ts \
-  src/backend/sponsors.advanceDay.test.ts src/Domain/advanceDay src/Domain/finance
+  src/backend/sponsors.advanceDay.test.ts src/Domain/advanceDay src/Domain/finance   src/GameInterface/Sponsors src/i18n/sponsors.keys.test.ts src/GraficsEngine/ledSponsors.test.ts   src/Domain/watch src/backend/staticAssets.test.ts
 ```
 
 ## Limitações
 
+- As telas, as placas e os painéis de LED não foram vistos num navegador nesta etapa (só typecheck, auditoria de UI e testes).
+- Empresa sem placa pintada mostra o ícone do setor; um nome longo num painel de LED fica sem o símbolo.
 - Carreira nova: nenhuma receita comercial até o primeiro contrato (no máximo 21 dias, quando o diretor fecha).
 - A meta de um contrato de mais de uma temporada não muda até a renovação.
 - O atrativo das primeiras propostas não conhece campanha nem tendência (carreira nova: 0).

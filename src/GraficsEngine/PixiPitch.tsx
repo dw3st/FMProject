@@ -10,7 +10,7 @@ import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, typ
 import { benchPropSpots } from "@/GraficsEngine/benchProps";
 import { BENCH_HAIR, BENCH_SKIN, BENCH_VIEW, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { FACE_RETRY_S, faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledAdFor, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -47,6 +47,7 @@ import { bookedPlayerIds, fatigueColor, fatigueFill } from "@/GraficsEngine/mark
 import { drawStarBadge, STAR_BADGE } from "@/GraficsEngine/starBadge";
 import type { StarKind } from "@/Domain/world/stars";
 import { ledLang, type LedLang } from "@/GraficsEngine/ledAds";
+import { LED_SPONSORS, ledPanelFor, sponsorPlateUrl, type LedSponsor } from "@/GraficsEngine/ledSponsors";
 import { bystanders, clearOfBenches, cornerFlags, dashes, EXTRAS, ledFit, ledMarqueeX, ledTransition, openWalkways, standCorners, standFootprint, techArea, vendorAlong, vendors } from "@/GraficsEngine/stadiumExtras";
 import i18n from "@/i18n/i18n";
 import {
@@ -582,6 +583,11 @@ export interface PitchStadium {
    * the goal text (`{name}` and `{minute}` replaced) on every panel. Absent: no boards.
    */
   led?: { goal: string; lang?: LedLang };
+  /**
+   * The home club's sponsors (12.0, `.claude/rules/game/sponsors.md`): about 60% of the LED panels of every cycle show
+   * one of them in its brand colours (`ledPanelFor`). Absent: only the made-up ads, as before.
+   */
+  sponsors?: LedSponsor[];
   /**
    * The stadium seen from above (stadium mock of 2026-11-05): the stands stop short of the canvas edges, cut by the
    * shape at the corners, and the ground around them shows. Absent: the stand fills the canvas, as before.
@@ -3269,7 +3275,7 @@ export function PixiPitch({
       ledLayer.zIndex = -0.68;
       ledLayer.eventMode = 'none';
       world.addChild(ledLayer);
-      type LedSlot = { root: Container; bg: Graphics; text: Text; textW: number; scroll: boolean; since: number };
+      type LedSlot = { root: Container; bg: Graphics; logo: Sprite; text: Text; textW: number; scroll: boolean; since: number };
       type LedPanel = {
         panel: Container; screen: Container; slots: [LedSlot, LedSlot]; cur: 0 | 1;
         scan: Graphics; wipe: Graphics; w: number; h: number; order: number; shown: string;
@@ -3309,8 +3315,11 @@ export function PixiPitch({
         text.resolution = Math.max(2, app.renderer.resolution * 2);
         text.anchor.set(0.5);
         text.position.set(w / 2, h / 2);
-        root.addChild(bg, text);
-        return { root, bg, text, textW: 0, scroll: false, since: 0 };
+        // A sponsor's painted symbol (the left third of its plate), on the left of its panels.
+        const logo = new Sprite(Texture.EMPTY);
+        logo.visible = false;
+        root.addChild(bg, logo, text);
+        return { root, bg, logo, text, textW: 0, scroll: false, since: 0 };
       };
       if (m.stand && stadiumRef.current?.led) {
         // Big framed boards on the apron (art preview, 4.41.15): four above the top touchline, two below the bottom
@@ -3374,6 +3383,21 @@ export function PixiPitch({
           }).catch(() => { ledFramed = false; });
         }
       }
+      // The sponsors' painted plates, loaded once each; a missing plate just leaves the panel with colours and name.
+      const sponsorSymbols = new Map<string, Texture>();
+      const sponsorAsked = new Set<string>();
+      const loadSponsorSymbol = (id: string) => {
+        if (sponsorAsked.has(id)) return;
+        sponsorAsked.add(id);
+        const plate = sponsorPlateUrl(id);
+        if (!plate) return;
+        void Assets.load<Texture>(plate).then((tex) => {
+          if (!tex || ledPanels[0]?.panel.destroyed) return;
+          const side = Math.min(LED_SPONSORS.PLATE.symbol, tex.source.width, tex.source.height);
+          sponsorSymbols.set(id, new Texture({ source: tex.source, frame: new Rectangle(0, 0, side, side) }));
+        }).catch(() => {});
+      };
+      if (ledPanels.length > 0) for (const sp of stadiumRef.current?.sponsors ?? []) loadSponsorSymbol(sp.id);
       let ledGoal: { text: string; at: number } | null = null;
       const unsubLedGoal = gameBus.on("goalScored", (e) => {
         const tpl = stadiumRef.current?.led?.goal;
@@ -3383,16 +3407,25 @@ export function PixiPitch({
         ledGoal = { text: tpl.replace("{name}", name).replace("{minute}", String(e.minute + 1)), at: effectNow };
       });
       /** Puts a text on a slot: background, colour and glow, fitted to the screen or set to scroll. */
-      const fillSlot = (s: LedSlot, w: number, h: number, text: string, bg: number, fg: number) => {
+      const fillSlot = (s: LedSlot, w: number, h: number, text: string, bg: number, fg: number, sponsorId?: string) => {
         s.bg.clear().rect(0, 0, w, h).fill(bg);
         s.text.text = text;
         s.text.style.fill = fg;
         s.text.style.dropShadow = { color: fg, blur: Math.max(1, h * 0.12), distance: 0, alpha: 0.55, angle: 0 };
         s.textW = CanvasTextMetrics.measureText(text, s.text.style).width;
-        const fit = ledFit(s.textW, w * 0.92);
+        // A sponsor panel with its plate loaded: the symbol on the left, the name in the rest (when it fits there).
+        const symbol = sponsorId ? sponsorSymbols.get(sponsorId) : undefined;
+        const withSymbol = symbol ? ledFit(s.textW, (w - h) * 0.92) : null;
+        const left = symbol && withSymbol && !withSymbol.scroll ? h : 0;
+        s.logo.visible = left > 0;
+        if (left > 0 && symbol) {
+          s.logo.texture = symbol;
+          s.logo.width = h; s.logo.height = h;
+        }
+        const fit = left > 0 && withSymbol ? withSymbol : ledFit(s.textW, w * 0.92);
         s.scroll = fit.scroll;
         s.text.scale.set(fit.scale, 1);
-        s.text.x = w / 2;
+        s.text.x = left + (w - left) / 2;
         s.since = effectNow;
       };
       const drawLed = () => {
@@ -3434,15 +3467,16 @@ export function PixiPitch({
           } else {
             const key = `ad:${showCycle}:${lang}`;
             if (p.shown !== key) {
-              const ad = ledAdFor(ledSeed, showCycle, p.order, lang);
+              const ad = ledPanelFor(ledSeed, showCycle, p.order, lang, stadiumRef.current?.sponsors);
+              if (ad.sponsorId) loadSponsorSymbol(ad.sponsorId);
               const instant = p.shown === "" || p.shown.startsWith("goal:") || calm();
               p.shown = key;
               if (instant) {
-                fillSlot(p.slots[p.cur], p.w, p.h, ad.text, ad.bg, ad.fg);
+                fillSlot(p.slots[p.cur], p.w, p.h, ad.text, ad.bg, ad.fg, ad.sponsorId);
                 p.trans = null;
               } else {
                 p.cur = p.cur === 0 ? 1 : 0;
-                fillSlot(p.slots[p.cur], p.w, p.h, ad.text, ad.bg, ad.fg);
+                fillSlot(p.slots[p.cur], p.w, p.h, ad.text, ad.bg, ad.fg, ad.sponsorId);
                 p.trans = { kind: ledTransition(ledSeed, showCycle), at: effectNow };
               }
             }

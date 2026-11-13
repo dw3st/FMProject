@@ -15,6 +15,11 @@ import { averageGate, buildStatement, journalRows, lastWeekScouting, monthsOf, r
 import { BankLoanCard } from "@/GameInterface/Finances/BankLoanCard";
 import { BalanceStrip, JournalCard, PeriodControl, StatementCard, WeekCard, type StatementMode } from "@/GameInterface/Finances/FinanceStatement";
 import { navigate } from "@/GameInterface/router/navigation";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { SponsorsPanel } from "@/GameInterface/Sponsors/SponsorsPanel";
+import { weeklyCommercialIncome } from "@/Domain/sponsors/sponsors";
+
+type FinancesTab = "accounts" | "sponsors";
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -63,6 +68,9 @@ export function FinancesScreen() {
   const [monthPick, setMonthPick] = useState("last");
   const [kindFilter, setKindFilter] = useState<LedgerKind | "all">("all");
   const [ledgerVersion, setLedgerVersion] = useState(0);
+  // `?tab=sponsors` opens the sponsors (inbox and dashboard links).
+  const [tab, setTab] = useState<FinancesTab>(() =>
+    new URLSearchParams(window.location.search).get("tab") === "sponsors" ? "sponsors" : "accounts");
   // The facilities moved to the Club screen (#120): old `/finances?tab=facilities` links go there.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "facilities") navigate("/club", { replace: true });
@@ -128,7 +136,8 @@ export function FinancesScreen() {
     const scouting = ledger && ledger.season === seasons[seasons.length - 1] ? lastWeekScouting(entries) : 0;
     const label = (account: string) => t(`financesScreen.statement.accounts.${account}`);
     return [
-      { label: label("commercial"), value: Math.round((squad.finances?.commercial ?? 0) / 52) },
+      // The sponsors' contracts once the club has them, else the old weekly commercial income.
+      { label: label("commercial"), value: weeklyCommercialIncome(squad) },
       { label: label("wages"), value: -squadWeeklyWages(squad.players, wageFactorOf(squad)) },
       { label: label("staff"), value: -squadStaffWages(squad.staff) },
       ...(manager > 0 ? [{ label: label("manager"), value: -manager }] : []),
@@ -169,7 +178,7 @@ export function FinancesScreen() {
     <ScreenContainer>
         <ScreenTitle
           accent={t("screenTitles.finances.accent")}
-          trailing={ledger ? (
+          trailing={ledger && tab === "accounts" ? (
             <PeriodControl
               mode={mode}
               onMode={(m) => { setMode(m); setMonthPick("last"); }}
@@ -183,7 +192,21 @@ export function FinancesScreen() {
           {t("screenTitles.finances.main")}
         </ScreenTitle>
 
-        {balance < 0 && (
+        <SegmentedTabs
+          aria-label={t("sponsors.tabsLabel")}
+          tabs={[
+            { key: "accounts", label: t("sponsors.tabAccounts") },
+            { key: "sponsors", label: t("sponsors.tab") },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
+
+        {tab === "sponsors" && (
+          <SponsorsPanel saveId={session.saveId} onChanged={() => { void refresh({ background: true }); }} />
+        )}
+
+        {tab === "accounts" && balance < 0 && (
           <div className="card-arcade rounded-md p-4 border border-destructive/50 bg-destructive/10 flex items-start gap-3">
             <Icon name="alert" size={20} className="text-destructive shrink-0 mt-0.5" />
             <div>
@@ -193,7 +216,7 @@ export function FinancesScreen() {
           </div>
         )}
 
-        {ledger ? (
+        {tab !== "accounts" ? null : ledger ? (
           <>
             <BalanceStrip statement={statement} />
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4">
@@ -222,7 +245,7 @@ export function FinancesScreen() {
           <p className="text-sm text-muted-foreground m-0">{t("financesScreen.noEntries")}</p>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4 items-start">
+        {tab === "accounts" && <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4 items-start">
           {squad && <WeekCard lines={weekLines} avgGate={averageGate(entries)} />}
           {squad && (
             <BankLoanCard
@@ -232,7 +255,7 @@ export function FinancesScreen() {
               onTaken={() => { void refresh({ background: true }); setLedgerVersion((v) => v + 1); }}
             />
           )}
-        </div>
+        </div>}
     </ScreenContainer>
   );
 }

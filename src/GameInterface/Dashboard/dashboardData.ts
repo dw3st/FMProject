@@ -3,6 +3,7 @@
  * the player's club, the attention list, season highlights and the week's money. No I/O, no React —
  * the screen fetches and renders, these functions only shape what it already has.
  */
+import type { ClubSponsors } from "@/types/sponsorTypes";
 import type { FacilityItemId } from "@/types/facilityTypes";
 import { moraleAttention } from "@/Domain/morale/morale";
 import { daysBetween } from "@/Domain/dates";
@@ -86,7 +87,9 @@ export type AttentionItem =
   // Etapa 28 (`.claude/rules/game/scouting.md`): a gem found / a shortlist alert in the last 7 days.
   | { kind: "scoutGem"; name: string; club: string }
   | { kind: "shortlistAlert"; name: string; reason: ShortlistReason }
-  | { kind: "facilityWorn"; item: FacilityItemId; condemned: boolean; condition: number };
+  | { kind: "facilityWorn"; item: FacilityItemId; condemned: boolean; condition: number }
+  /** Sponsor offers waiting for an answer (`.claude/rules/game/sponsors.md`): how many, and the first deadline. */
+  | { kind: "sponsorOffers"; count: number; expires: string };
 
 /** More than this many players of the same soft alert (fitness, contracts) collapse into one line. */
 const ATTENTION_GROUP_AFTER = 3;
@@ -107,11 +110,17 @@ export function attentionItems(input: {
   window?: { open: boolean; until?: string } | null;
   /** The board's renewal offer is waiting for an answer. */
   renewalPending?: boolean;
+  /** The club's sponsors: offers still on the table come up as one line. */
+  sponsors?: ClubSponsors;
 }): AttentionItem[] {
   const { players, today, seasonEnd, inbox } = input;
   const items: AttentionItem[] = [];
 
   if (input.renewalPending) items.push({ kind: "managerRenewal" });
+  const sponsorOffers = (input.sponsors?.offers ?? []).filter((o) => o.expires >= today);
+  if (sponsorOffers.length > 0) {
+    items.push({ kind: "sponsorOffers", count: sponsorOffers.length, expires: sponsorOffers.map((o) => o.expires).sort()[0]! });
+  }
   if (input.window?.open && input.window.until) {
     const days = daysBetween(today, input.window.until);
     // An open window is the green strip above the cards (`MarketWindowStrip`); only its last days come here.

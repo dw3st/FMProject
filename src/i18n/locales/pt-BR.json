@@ -2297,6 +2297,35 @@
       "lineup": "Ajustar a escalação",
       "youth": "Ver a base",
       "finances": "Ver as finanças"
+    },
+    "sponsor": {
+      "subject": {
+        "offers": "Propostas de patrocínio na mesa",
+        "auto_signed": "O diretor fechou patrocínios",
+        "season_review": "Patrocínios: o balanço da temporada"
+      },
+      "preview": {
+        "offers": "{{list}}. Responda até {{date}}",
+        "season_review": "Bônus {{bonus}} · {{renewals}} querem renovar · {{left}} saíram"
+      },
+      "offerCount": "{{slot}} ({{count}})",
+      "body": {
+        "offers": "Chegaram propostas de patrocínio: {{list}}. Responda até {{date}}. Depois disso o diretor fecha a maior proposta de cada vaga livre.",
+        "auto_signed": "As propostas ficaram sem resposta, então o diretor fechou a maior de cada vaga livre.",
+        "season_review": "Os patrocinadores avaliaram a temporada.",
+        "season_review_quiet": "Os patrocinadores avaliaram a temporada. Nenhum bônus foi pago e nenhum contrato acabou."
+      },
+      "signed": "Fechados",
+      "signedLine_one": "{{slot}} · {{value}} por temporada · {{count}} temporada",
+      "signedLine_other": "{{slot}} · {{value}} por temporada · {{count}} temporadas",
+      "bonuses": "Bônus pagos",
+      "renewals": "Querem renovar",
+      "left": "Saíram do clube",
+      "leftReason": {
+        "relegated": "o clube foi rebaixado",
+        "missed": "a meta não foi cumprida"
+      },
+      "open": "Ver patrocínios"
     }
   },
   "finances": {
@@ -7583,5 +7612,140 @@
     "empty": "Nenhum clube para mostrar.",
     "loadMore": "Carregar mais",
     "note": "Os seguidores mudam no fim da temporada, pela campanha. No seu clube, a receita comercial acompanha metade dessa mudança."
+  },
+  "sponsors": {
+    "tab": "Patrocínios",
+    "tabAccounts": "Contas",
+    "tabsLabel": "Seções de Finanças",
+    "loading": "Carregando patrocínios…",
+    "retry": "Tentar de novo",
+    "inactive": "O clube ainda recebe a receita comercial antiga. Os patrocínios começam na virada da temporada: as propostas para todas as vagas chegam nela.",
+    "summary": {
+      "weekly": "Patrocínios por semana",
+      "weeklyOld": "Receita comercial por semana",
+      "base": "Base por temporada",
+      "baseHint": "Quanto vale o clube com todas as vagas ocupadas. Cada vaga leva a sua parte.",
+      "appeal": "Atrativo do clube",
+      "appealHint": "Campanha na liga, redes sociais, reputação do técnico e craques no elenco mexem nele. Ele muda o valor das próximas propostas."
+    },
+    "slot": {
+      "master": "Patrocinador máster",
+      "kit": "Fornecedor de material",
+      "board": "Placas de publicidade"
+    },
+    "master": {
+      "title": "Patrocinador máster",
+      "label": "Patrocinador máster"
+    },
+    "sector": {
+      "bank": "Banco",
+      "insurance": "Seguros",
+      "beer": "Cervejaria",
+      "soft_drink": "Refrigerantes",
+      "betting": "Apostas",
+      "airline": "Companhia aérea",
+      "car_maker": "Montadora",
+      "telecom": "Telecomunicações",
+      "energy": "Energia",
+      "tech": "Tecnologia",
+      "fashion": "Moda",
+      "sportswear": "Material esportivo",
+      "food": "Alimentos",
+      "fast_food": "Lanchonete",
+      "logistics": "Logística",
+      "travel": "Viagens",
+      "crypto": "Criptomoedas",
+      "home_appliances": "Eletrodomésticos",
+      "media": "Mídia",
+      "health": "Saúde",
+      "tyre_shop": "Borracharia",
+      "bakery": "Padaria",
+      "pharmacy": "Farmácia",
+      "construction": "Construção",
+      "supermarket": "Supermercado",
+      "real_estate": "Imobiliária",
+      "car_dealer": "Concessionária",
+      "education": "Educação"
+    },
+    "filled": "{{filled}} de {{count}} ocupadas",
+    "share": "{{pct}}% da base",
+    "shareEach": "{{pct}}% da base cada",
+    "free_one": "{{count}} vaga livre",
+    "free_other": "{{count}} vagas livres",
+    "freeWithOffers_one": "Vaga livre não rende. {{count}} proposta na mesa.",
+    "freeWithOffers_other": "Vaga livre não rende. {{count}} propostas na mesa.",
+    "noOffers": "Vaga livre não rende. Nenhuma proposta na mesa: novas chegam na virada da temporada.",
+    "acceptNote": "Ao aceitar uma, as outras propostas desta vaga saem da mesa.",
+    "acceptNoteBoards": "Com as {{count}} placas fechadas, as propostas que sobrarem saem da mesa.",
+    "profile": {
+      "safe": "Seguro",
+      "standard": "Padrão",
+      "demanding": "Exigente"
+    },
+    "profileHint": {
+      "safe": "Paga um pouco menos e pede pouco. Bônus pequeno.",
+      "standard": "O contrato comum: fixo justo e bônus médio.",
+      "demanding": "Paga mais e tem o maior bônus, por uma meta difícil."
+    },
+    "annual": "Fixo por temporada",
+    "bonus": "Bônus pela meta",
+    "goalLabel": "Meta",
+    "years": "Duração",
+    "seasonsLeft": "Tempo restante",
+    "seasons_one": "{{count}} temporada",
+    "seasons_other": "{{count}} temporadas",
+    "expires": "Responder até {{date}}",
+    "perWeek": "{{value}} por semana",
+    "perSeason": "{{value}} por temporada",
+    "badge": {
+      "renewal": "Renovação",
+      "negotiated": "Já negociada",
+      "auto": "Fechado pelo diretor"
+    },
+    "action": {
+      "accept": "Aceitar",
+      "negotiate": "Negociar",
+      "decline": "Recusar"
+    },
+    "negotiateHint": "Uma tentativa por proposta: a empresa pode subir o fixo, manter ou desistir.",
+    "result": {
+      "accepted": "Contrato assinado com {{company}}.",
+      "declined": "Proposta de {{company}} recusada.",
+      "raised": "{{company}} subiu a proposta para {{value}}.",
+      "kept": "{{company}} manteve a proposta como estava.",
+      "withdrawn": "{{company}} retirou a proposta."
+    },
+    "error": {
+      "notFound": "Esta proposta não está mais na mesa.",
+      "slotTaken": "Esta vaga já está ocupada.",
+      "alreadyNegotiated": "Esta proposta já foi negociada.",
+      "noClub": "Você está sem clube no momento.",
+      "lobby": "A liga ainda não começou.",
+      "invalidAction": "Não foi possível enviar a resposta.",
+      "load": "Não foi possível carregar os patrocínios.",
+      "generic": "Não foi possível enviar a resposta. Tente de novo."
+    },
+    "goal": {
+      "league_position_ordinal_other": "Terminar até o {{count}}º lugar",
+      "continental": "Vaga em competição continental",
+      "cup_stage": {
+        "qf": "Chegar às quartas da copa",
+        "sf": "Chegar à semifinal da copa"
+      },
+      "promotion": "Subir de divisão",
+      "followers_growth": "Seguidores crescerem {{pct}}%",
+      "attendance": "Público médio de {{avg}}"
+    },
+    "progress": {
+      "met": "dentro da meta",
+      "missed": "fora da meta",
+      "unknown": "Ainda cedo para dizer",
+      "cupReached": "Fase já alcançada",
+      "position_ordinal_other": "{{count}}º hoje",
+      "followers": "Caminho de {{pct}}%",
+      "attendance": "Média de {{avg}} até aqui"
+    },
+    "attention_one": "{{count}} proposta de patrocínio esperando, responda até {{date}}",
+    "attention_other": "{{count}} propostas de patrocínio esperando, responda até {{date}}"
   }
 }

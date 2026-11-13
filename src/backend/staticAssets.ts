@@ -8,14 +8,15 @@
  *   `flag-icons`.
  *
  * - `GET /assets/game/v1/:dir/:file` — the in-repo game art (sprite atlases of `src/example_data/assets`, copied to
- *   `src/Data/assets`), only the files in `GAME_ART_FILES`.
+ *   `src/Data/assets`), only the files in `GAME_ART_FILES`; and the sponsors' painted plates,
+ *   `sponsors/<companyId>.webp` (ids shaped like the catalog's, `sp_…`).
  *
  * Only whitelisted files are served (the font list below, the flag directory listing); the URL
  * carries a version segment, so the responses are `immutable`.
  */
 import enLocale from "@/i18n/locales/en.json";
 import ptLocale from "@/i18n/locales/pt-BR.json";
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { FLAG_ASSET_VERSION } from "@/Domain/world/flags";
 import { FONT_ASSET_VERSION, FONT_FACES } from "@/fontFaces";
@@ -255,6 +256,15 @@ function serveFile(path: string, contentType: string, extra: Record<string, stri
   });
 }
 
+/** A sponsor's painted plate (`sponsors/<companyId>.webp`, 12.0): catalog-shaped ids only, 404 while it is not painted. */
+const SPONSOR_PLATE = /^sp_[a-z0-9_]{1,80}\.webp$/;
+
+function serveSponsorPlate(file: string): Response {
+  if (!SPONSOR_PLATE.test(file)) return notFound();
+  const path = join(GAME_ART_DIR, "sponsors", file);
+  return existsSync(path) ? serveFile(path, "image/webp") : notFound();
+}
+
 /** Locale texts, fetched by the page for the active language only (perf audit 4.41.29: both were in every bundle). */
 const LOCALES: Record<string, unknown> = { "en.json": enLocale, "pt-BR.json": ptLocale };
 const localeBodies = new Map<string, string>();
@@ -276,6 +286,7 @@ export const staticAssetRoutes = {
   },
   [`/assets/game/${GAME_ART_VERSION}/:dir/:file`]: (req: Request & { params: { dir: string; file: string } }) => {
     const path = `${req.params.dir}/${req.params.file}`;
+    if (req.params.dir === "sponsors") return serveSponsorPlate(req.params.file);
     const type = GAME_ART_FILES[path];
     if (!type) return notFound();
     return serveFile(join(GAME_ART_DIR, path), type);

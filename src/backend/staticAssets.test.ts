@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Glob } from "bun";
-import { readdirSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { staticAssetRoutes } from "@/backend/staticAssets";
 import { FONT_FACES, fontFacesCss, fontUrl } from "@/fontFaces";
 import { flagUrl, squareFlagUrl } from "@/Domain/world/flags";
@@ -100,6 +101,34 @@ describe("game art", () => {
     const ok = get("player", "player-atlas.json");
     expect(ok.status).toBe(200);
     expect(ok.headers.get("content-type")).toBe("application/json");
+  });
+});
+
+describe("sponsor plates", () => {
+  const route = staticAssetRoutes["/assets/game/v1/:dir/:file"] as (req: Request & { params: { dir: string; file: string } }) => Response;
+  const get = (file: string) => route(Object.assign(new Request("http://x/assets/game/v1/sponsors/x"), { params: { dir: "sponsors", file } }));
+
+  test("a painted plate is served as webp, cached forever; one not painted yet is 404", async () => {
+    const dir = join("src", "Data", "assets", "sponsors");
+    const file = join(dir, "sp_test_plate_zz9.webp");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(file, "RIFFxxxxWEBP");
+    try {
+      const ok = get("sp_test_plate_zz9.webp");
+      expect(ok.status).toBe(200);
+      expect(ok.headers.get("content-type")).toBe("image/webp");
+      expect(ok.headers.get("cache-control")).toContain("immutable");
+      expect(await ok.text()).toBe("RIFFxxxxWEBP");
+    } finally {
+      rmSync(file, { force: true });
+    }
+    expect(get("sp_test_plate_zz9.webp").status).toBe(404);
+  });
+
+  test("only catalog-shaped ids: no traversal, no other file type", () => {
+    for (const file of ["..%2F..%2Fpackage.json", "../player/player-atlas.png", "sp_../x.webp", "sp_a/b.webp", "sp_Upper.webp", "norvane.webp", "sp_x.png", "sp_x.webp.json", `sp_${"a".repeat(81)}.webp`, "sp_.webp"]) {
+      expect(get(file).status).toBe(404);
+    }
   });
 });
 

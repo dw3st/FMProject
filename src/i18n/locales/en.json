@@ -2297,6 +2297,35 @@
       "lineup": "Adjust the lineup",
       "youth": "See the academy",
       "finances": "See the finances"
+    },
+    "sponsor": {
+      "subject": {
+        "offers": "Sponsor offers on the table",
+        "auto_signed": "The director signed sponsors",
+        "season_review": "Sponsors: the season's review"
+      },
+      "preview": {
+        "offers": "{{list}}. Answer by {{date}}",
+        "season_review": "Bonuses {{bonus}} · {{renewals}} to renew · {{left}} left"
+      },
+      "offerCount": "{{slot}} ({{count}})",
+      "body": {
+        "offers": "Sponsor offers arrived: {{list}}. Answer by {{date}}. After that the director signs the highest offer of each free slot.",
+        "auto_signed": "The offers went unanswered, so the director signed the highest one of each free slot.",
+        "season_review": "The sponsors looked at the season.",
+        "season_review_quiet": "The sponsors looked at the season. No bonus was paid and no contract ended."
+      },
+      "signed": "Signed",
+      "signedLine_one": "{{slot}} · {{value}} per season · {{count}} season",
+      "signedLine_other": "{{slot}} · {{value}} per season · {{count}} seasons",
+      "bonuses": "Bonuses paid",
+      "renewals": "Want to renew",
+      "left": "Left the club",
+      "leftReason": {
+        "relegated": "the club went down",
+        "missed": "the goal was missed"
+      },
+      "open": "See the sponsors"
     }
   },
   "finances": {
@@ -7586,5 +7615,146 @@
     "empty": "No clubs to show.",
     "loadMore": "Load more",
     "note": "Followers change at the end of the season, by the campaign. At your club, commercial income follows half of that change."
+  },
+  "sponsors": {
+    "tab": "Sponsors",
+    "tabAccounts": "Accounts",
+    "tabsLabel": "Finances sections",
+    "loading": "Loading sponsors…",
+    "retry": "Try again",
+    "inactive": "The club is still on the old commercial income. Sponsors start when the season turns: offers for every slot arrive then.",
+    "summary": {
+      "weekly": "Sponsors per week",
+      "weeklyOld": "Commercial income per week",
+      "base": "Base per season",
+      "baseHint": "What a full set of sponsors is worth. Each slot takes its share.",
+      "appeal": "Club appeal",
+      "appealHint": "League campaign, social media, the manager's reputation and stars in the squad move it. It changes the value of the next offers."
+    },
+    "slot": {
+      "master": "Master sponsor",
+      "kit": "Kit supplier",
+      "board": "Advertising boards"
+    },
+    "master": {
+      "title": "Master sponsor",
+      "label": "Master sponsor"
+    },
+    "sector": {
+      "bank": "Bank",
+      "insurance": "Insurance",
+      "beer": "Brewery",
+      "soft_drink": "Soft drinks",
+      "betting": "Betting",
+      "airline": "Airline",
+      "car_maker": "Car maker",
+      "telecom": "Telecoms",
+      "energy": "Energy",
+      "tech": "Technology",
+      "fashion": "Fashion",
+      "sportswear": "Sportswear",
+      "food": "Food",
+      "fast_food": "Fast food",
+      "logistics": "Logistics",
+      "travel": "Travel",
+      "crypto": "Crypto",
+      "home_appliances": "Home appliances",
+      "media": "Media",
+      "health": "Health",
+      "tyre_shop": "Tyre shop",
+      "bakery": "Bakery",
+      "pharmacy": "Pharmacy",
+      "construction": "Construction",
+      "supermarket": "Supermarket",
+      "real_estate": "Real estate",
+      "car_dealer": "Car dealer",
+      "education": "Education"
+    },
+    "filled": "{{filled}} of {{count}} taken",
+    "share": "{{pct}}% of the base",
+    "shareEach": "{{pct}}% of the base each",
+    "free_one": "{{count}} free slot",
+    "free_other": "{{count}} free slots",
+    "freeWithOffers_one": "A free slot earns nothing. {{count}} offer on the table.",
+    "freeWithOffers_other": "A free slot earns nothing. {{count}} offers on the table.",
+    "noOffers": "A free slot earns nothing. No offer on the table: new ones arrive when the season turns.",
+    "acceptNote": "Accepting one takes the other offers for this slot off the table.",
+    "acceptNoteBoards": "Once the {{count}} boards are taken, the offers left go off the table.",
+    "profile": {
+      "safe": "Safe",
+      "standard": "Standard",
+      "demanding": "Demanding"
+    },
+    "profileHint": {
+      "safe": "Pays a little less and asks for little. Small bonus.",
+      "standard": "The usual deal: a fair fixed value and a medium bonus.",
+      "demanding": "Pays the most and has the biggest bonus, for a hard goal."
+    },
+    "annual": "Fixed per season",
+    "bonus": "Bonus for the goal",
+    "goalLabel": "Goal",
+    "years": "Length",
+    "seasonsLeft": "Time left",
+    "seasons_one": "{{count}} season",
+    "seasons_other": "{{count}} seasons",
+    "expires": "Answer by {{date}}",
+    "perWeek": "{{value}} per week",
+    "perSeason": "{{value}} per season",
+    "badge": {
+      "renewal": "Renewal",
+      "negotiated": "Already negotiated",
+      "auto": "Signed by the director"
+    },
+    "action": {
+      "accept": "Accept",
+      "negotiate": "Negotiate",
+      "decline": "Decline"
+    },
+    "negotiateHint": "One try per offer: the company may raise the fixed value, keep it or walk away.",
+    "result": {
+      "accepted": "Contract signed with {{company}}.",
+      "declined": "Offer from {{company}} declined.",
+      "raised": "{{company}} raised the offer to {{value}}.",
+      "kept": "{{company}} kept the offer as it was.",
+      "withdrawn": "{{company}} withdrew the offer."
+    },
+    "error": {
+      "notFound": "This offer is no longer on the table.",
+      "slotTaken": "This slot is already taken.",
+      "alreadyNegotiated": "This offer was already negotiated.",
+      "noClub": "You have no club at the moment.",
+      "lobby": "The league has not started yet.",
+      "invalidAction": "The answer could not be sent.",
+      "load": "The sponsors could not be loaded.",
+      "generic": "The answer could not be sent. Try again."
+    },
+    "goal": {
+      "league_position_ordinal_one": "Finish {{count}}st or better",
+      "league_position_ordinal_two": "Finish {{count}}nd or better",
+      "league_position_ordinal_few": "Finish {{count}}rd or better",
+      "league_position_ordinal_other": "Finish {{count}}th or better",
+      "continental": "Qualify for a continental competition",
+      "cup_stage": {
+        "qf": "Reach the cup quarter-finals",
+        "sf": "Reach the cup semi-finals"
+      },
+      "promotion": "Win promotion",
+      "followers_growth": "Followers growing {{pct}}%",
+      "attendance": "Average home crowd of {{avg}}"
+    },
+    "progress": {
+      "met": "inside the goal",
+      "missed": "outside the goal",
+      "unknown": "Too early to tell",
+      "cupReached": "Stage already reached",
+      "position_ordinal_one": "{{count}}st today",
+      "position_ordinal_two": "{{count}}nd today",
+      "position_ordinal_few": "{{count}}rd today",
+      "position_ordinal_other": "{{count}}th today",
+      "followers": "Heading for {{pct}}%",
+      "attendance": "Average of {{avg}} so far"
+    },
+    "attention_one": "{{count}} sponsor offer waiting, answer by {{date}}",
+    "attention_other": "{{count}} sponsor offers waiting, answer by {{date}}"
   }
 }

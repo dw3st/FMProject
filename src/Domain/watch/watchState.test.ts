@@ -46,4 +46,29 @@ describe("sanitizeWatchLook", () => {
     expect(look.coaches?.A).toEqual({ color: "#da291c", faceUrl: "/api/faces/manager/avatar.svg?seed=1" });
     expect(sanitizeWatchLook({ teamAColor: "red" })).toBeNull();
   });
+
+  test("the home club's LED sponsors: catalog ids, names and colours only", async () => {
+    const { sanitizeWatchLook } = await import("@/Domain/watch/watchState");
+    const look = sanitizeWatchLook({
+      teamAColor: "#da291c", teamBColor: "#87ceeb",
+      stadium: {
+        fill: 0.9, seed: "f1",
+        sponsors: [
+          { id: "sp_norvane_bank", name: "Norvane Bank", colors: ["#FF6D00", "#111111"], weight: 3, extra: "x" },
+          { id: "../../etc", name: "Bad id", colors: ["#000000", "#ffffff"], weight: 1 },
+          { id: "sp_ok", name: "Bad colour", colors: ["url(x)", "#ffffff"], weight: 1 },
+          { id: "sp_big", name: "Weight", colors: ["#000", "#fff"], weight: 99 },
+          "junk",
+        ],
+      },
+    })!;
+    expect(look.stadium).toEqual({
+      fill: 0.9, seed: "f1",
+      sponsors: [
+        { id: "sp_norvane_bank", name: "Norvane Bank", colors: ["#FF6D00", "#111111"], weight: 3 },
+        { id: "sp_big", name: "Weight", colors: ["#000", "#fff"], weight: 3 },
+      ],
+    });
+    expect(sanitizeWatchLook({ teamAColor: "#da291c", teamBColor: "#87ceeb", stadium: { fill: 1, sponsors: "x" } })!.stadium).toEqual({ fill: 1 });
+  });
 });

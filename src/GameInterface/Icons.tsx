@@ -126,6 +126,25 @@ import {
   Ellipsis,
   HeartCrack,
   Radio,
+  ShieldCheck,
+  Beer,
+  CupSoda,
+  Dices,
+  RadioTower,
+  Cpu,
+  Footprints,
+  Sandwich,
+  Truck,
+  Luggage,
+  Coins,
+  WashingMachine,
+  LifeBuoy,
+  Croissant,
+  Pill,
+  HardHat,
+  ShoppingCart,
+  KeyRound,
+  GraduationCap,
 } from "lucide-react";
 import { useId, type SVGProps } from "react";
 
@@ -288,6 +307,25 @@ export type IconName =
   | "radio"
   | "ban"
   | "more"
+  | "shield-check"
+  | "beer"
+  | "soda"
+  | "dices"
+  | "radio-tower"
+  | "cpu"
+  | "footprints"
+  | "sandwich"
+  | "truck"
+  | "luggage"
+  | "coins"
+  | "washing-machine"
+  | "life-buoy"
+  | "croissant"
+  | "pill"
+  | "hard-hat"
+  | "cart"
+  | "key"
+  | "graduation-cap"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -448,6 +486,26 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "radio":          Radio,
   "ban": Ban,
   "more": Ellipsis,
+  // Sponsor sectors (12.0, `SponsorPlate`).
+  "shield-check": ShieldCheck,
+  "beer": Beer,
+  "soda": CupSoda,
+  "dices": Dices,
+  "radio-tower": RadioTower,
+  "cpu": Cpu,
+  "footprints": Footprints,
+  "sandwich": Sandwich,
+  "truck": Truck,
+  "luggage": Luggage,
+  "coins": Coins,
+  "washing-machine": WashingMachine,
+  "life-buoy": LifeBuoy,
+  "croissant": Croissant,
+  "pill": Pill,
+  "hard-hat": HardHat,
+  "cart": ShoppingCart,
+  "key": KeyRound,
+  "graduation-cap": GraduationCap,
 };
 
 export interface IconProps {

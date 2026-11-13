@@ -627,6 +627,7 @@ export function AttentionCard({
       case "windowClosing": return to("market");
       case "talk": return to("talk", `${playerHref(item.playerId)}?action=talk`);
       case "managerRenewal": return to("respond");
+      case "sponsorOffers": return to("respond");
       case "facilityWorn": return to("repair");
       default: return to("view");
     }
@@ -716,6 +717,13 @@ export function AttentionCard({
           tone: "text-primary",
           text: t("managerContract.attention"),
           href: "/inbox",
+        };
+      case "sponsorOffers":
+        return {
+          icon: "handshake",
+          tone: "text-chart-4",
+          text: t("sponsors.attention", { count: item.count, date: formatDay(item.expires, i18n.language) }),
+          href: "/finances?tab=sponsors",
         };
       case "scoutGem":
         return {

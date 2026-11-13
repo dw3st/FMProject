@@ -480,7 +480,8 @@ describe("AI clubs", () => {
     expect(aiBoards(a).map((b) => b.weight)).toEqual([3, 2, 1, 1, 1, 1]);
     const s: ClubSponsors = { contracts: [contract({ id: "b", slot: "board" }), contract()], offers: [] };
     expect(contractBoards(s).map((b) => b.weight)).toEqual([3, 1]);
-    expect(contractMaster(s)).toEqual({ name: "Co g0", sector: "bank", colors: ["#000000", "#ffffff"] });
+    expect(contractBoards(s).map((b) => b.id)).toEqual(["g0", "g0"]);
+    expect(contractMaster(s)).toEqual({ id: "g0", name: "Co g0", sector: "bank", colors: ["#000000", "#ffffff"] });
     expect(contractMaster(emptySponsors())).toBeNull();
   });
 });

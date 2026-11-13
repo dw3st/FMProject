@@ -442,7 +442,7 @@ export function aiSponsorsOf(
   return { master, kit, boards: draw("board", SPONSORS.SLOTS.board.count) };
 }
 
-const boardOf = (b: SponsorBrand, slot: SponsorSlot): SponsorBoard => ({ name: b.name, colors: b.colors, weight: SPONSORS.SLOTS[slot].weight });
+const boardOf = (b: SponsorBrand, slot: SponsorSlot): SponsorBoard => ({ id: b.id, name: b.name, colors: b.colors, weight: SPONSORS.SLOTS[slot].weight });
 
 /** The pitch boards of a human club: its contracts (master 3, kit 2, board 1). */
 export function contractBoards(s: ClubSponsors): SponsorBoard[] {
@@ -458,7 +458,7 @@ export function aiBoards(a: AiSponsors): SponsorBoard[] {
 }
 
 export function masterOf(b: SponsorBrand | null | undefined): MasterSponsor | null {
-  return b ? { name: b.name, sector: b.sector, colors: b.colors } : null;
+  return b ? { id: b.id, name: b.name, sector: b.sector, colors: b.colors } : null;
 }
 
 /** The master sponsor of a human club's record (null = the slot is empty). */
