@@ -13,6 +13,7 @@ import { newVisualOn, paintedNews } from "@/Domain/art/paintedFaces";
 import type { TalkAnswer, TalkReason } from "@/types/moraleTypes";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { summaryTrait } from "@/Domain/personality/personality";
+import { MentoringPanel } from "@/GameInterface/Morale/MentoringPanel";
 
 const SALE_DAYS = [30, 60, 90] as const;
 
@@ -43,7 +44,7 @@ interface Props {
  */
 export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }: Props) {
   const { t } = useTranslation();
-  const { squad } = useGameSave();
+  const { squad, refresh } = useGameSave();
   const answers = answersFor(reason);
   // Personality hint (`personality.md`): how he tends to take the talk (own player: exact).
   const own = player ? squad?.players.find((p) => p.id === player.id) : undefined;
@@ -182,6 +183,12 @@ export function TalkModal({ saveId, player, reason, clubName, onClose, onDone }:
                 </div>
               )}
               {error && <p className="text-sm text-destructive m-0" role="alert">{error}</p>}
+              {/* Tester report: the assistant's mentality work is set here too, not only on the player's page. */}
+              {own && !own.loan && (
+                <div className="border-t border-border pt-4">
+                  <MentoringPanel key={own.id} saveId={saveId} player={own} onChanged={() => void refresh({ background: true })} />
+                </div>
+              )}
               <div className="flex justify-end gap-3 pt-1">
                 <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
                 <Button onClick={submit} disabled={busy}>{t("morale.talk.confirm")}</Button>
