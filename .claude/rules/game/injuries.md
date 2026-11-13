@@ -371,3 +371,5 @@ Report de tester (o jogador saía e a jogada seguia). Depois de uma lesão o ár
 - Evento `injuryStoppage { team, takerId, x, y, minute }`, debug `injury`. `Statistics.ts`: `injuryStoppages` (do time que recomeça).
 - `/test`: o cenário `injury-demo` já começa parado pelo reinício; a linha de lesões do `StatsPanel` mostra os reinícios. `/lab`: `TeamRawStats.injuryStoppages` → `avgInjuryStoppages` → linha "Injury restarts" no `PairDetail`.
 - Teste: `Injury.engine.test.ts` ("play stopped for an injury").
+
+Mundo (`ai-formation-goals.ts --engine 800 --chunks 3 --modes ai --quick 0`, contra a 10.7): Premier 2,116 → 2,174 gols, 5,75 → 5,78 chutes; Championship 1,843 → 1,827, 5,48 → 5,45; somadas +1,1% e 0% (ruído ~±2%), quickSim não recalibrado.
