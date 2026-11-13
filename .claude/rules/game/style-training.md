@@ -152,3 +152,7 @@ Análise do mundo dos testers (`bun scripts/seat-edge-measure.ts <pasta de elenc
 elenco, o entrosamento de ~100 do clube humano contra 75 da IA valia de +0,2 a +0,25 ponto por jogo. Decisão do
 usuário: a IA ganha um pouco, nunca o nível do humano. `AI_OWN_STYLE` 75 → 85 e `SAVED_STYLE_INITIAL` 75 → 85 (largada
 justa). Volume do mundo: os dois lados IA sobem igual (execução × 1,014 em vez de × 1,01).
+
+## A IA estuda o técnico (12.3)
+
+Contra um clube humano que repete o plano, a IA deixa o Equilibrado e joga o estilo da tabela `STUDY.COUNTER` com a familiaridade da regra dela (`aiFamiliarity(estilo do plano)`: 85 no estilo que joga). IA × IA continua no Equilibrado. Ver `.claude/rules/game/study.md`.

@@ -286,3 +286,7 @@ Distância (`marker-distance.ts 60`): 7,12 → 3,46 jardas; a menos de 3 jardas 
 ## Ficar atrás de verdade (8.8.9)
 
 Report de tester (laterais com "Fica" subiam demais). Medido: com a instrução eles ainda passavam de 55 jardas em ~5% do tempo, até 108, por dois caminhos: a corrida sem bola (o limite da vaga era só penalidade na escolha da célula) e o layout das bolas paradas de área (o resto fica a 63 jardas, e o lateral podia ir para a área ou ser a opção curta). Agora uma variante com `bounds` trava a corrida sem bola no limite (só jogador com instrução: a IA e quem não tem instrução não mudam), e as variantes `staysBack` (`fb_hold`, `wb_defend`) nunca sobem para a área, a entrada da área ou a opção curta, e ficam no próprio limite. Depois: acima de 55 jardas 0,1% do tempo, no máximo 59.
+
+## Marcação individual da IA (12.3)
+
+A IA passa a usar a marcação individual num caso só: contra um clube humano que ela leu no nível alto, um meia central (a vaga CDM/CM de maior desarme; sem meia central, o zagueiro) marca o melhor atacante do técnico. É o mesmo `manMarks` (`TeamTactics.manMarks` na simulada, `LiveSideInput.marks` + `study` ao vivo). Variantes de função e pressão individual continuam só do jogador. Ver `.claude/rules/game/study.md`.

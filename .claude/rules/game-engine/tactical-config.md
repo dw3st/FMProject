@@ -244,3 +244,7 @@ Vantagem média contra os outros quatro depois (Premier / Championship): Equilib
 O Contra-ataque perdia da Posse (−23, Premier, 450 jogos, erro ±4) porque os defensores do bloco baixo ficavam longe de quem deveriam marcar (`MARK_LANE_T_*` 0,15 / 0,40, `MARK_PULL_*` 0,50 / 0,80), e o adversário paciente achava os atacantes livres. Medido contra a Posse, uma peça por vez: agressividade igual à do bloco médio −23, linha normal −28, largura normal −17, construção equilibrada −16, marcação do bloco médio −7,6. O `low_block` passou a usar a marcação do `mid_block` (0,30 / 0,65, 0,40 / 0,88); continuam dele a altura, a pressão, a agressividade, o alcance e os pesos de intenção. Vale também para a mentalidade Defensiva, que desce a marcação até o bloco baixo.
 
 Vantagem média contra os outros quatro depois (Premier / Championship): Equilibrado +8,4 / +4,8, Posse +7,5 / +9,5, Contra-ataque −0,4 / −3,2 (antes −8,8 / −3,7), Jogo direto −5,0 / −2,8, Pressão alta −10,5 / −8,3. Posse × Contra-ataque: +10,3 / +20,0 (antes +25 / +23; erro ±4,8 / ±6,8). A pressão alta perde mais do Contra-ataque agora (−16,0 / −16,7). O mundo não muda: a IA joga sempre Equilibrado.
+
+## A IA contra um plano repetido (12.3)
+
+A IA só sai do Equilibrado contra um clube humano que ela estudou: o estilo vem de `STUDY.COUNTER` (tabela tirada da matriz de estilos acima e conferida por `scripts/study-measure.ts`). O estilo do plano passa pelas mesmas `applyTeamTacticsConfig` / `applyTeamAttackConfig`, sem peso novo. Ver `.claude/rules/game/study.md`.
