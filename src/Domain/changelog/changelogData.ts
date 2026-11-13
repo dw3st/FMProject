@@ -31,6 +31,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.0",
+    date: "2026-11-13",
+    time: "14:45",
+    items: [
+      { tab: "finances", pt: "Patrocinadores: o clube tem seis vagas (patrocinador máster, fornecedor de material e quatro placas de publicidade), e a receita comercial da semana passa a vir dos contratos que você assina. Em Finanças, na aba Patrocínios, cada vaga traz propostas de empresas com valor fixo por temporada, bônus por uma meta (posição na liga, copa, vaga continental, acesso, seguidores ou público) e duração de 1 a 3 temporadas. Você aceita, recusa ou negocia uma vez: a empresa pode subir o valor, manter ou retirar a proposta.", en: "Sponsors: the club has six slots (main sponsor, kit supplier and four advertising boards), and the weekly commercial income now comes from the contracts you sign. In Finances, on the Sponsors tab, each slot brings offers from companies with a fixed value per season, a bonus for a goal (league position, cup, continental place, promotion, followers or attendance) and a length of 1 to 3 seasons. You accept, decline or negotiate once: the company may raise the value, keep it or withdraw the offer." },
+      { tab: "finances", pt: "Numa carreira nova o clube começa sem patrocinador: as propostas chegam no primeiro dia e vaga livre não rende. Se passarem 21 dias sem resposta, o diretor fecha a maior proposta de cada vaga livre. No fim da temporada a meta cumprida paga o bônus; quem cumpre recebe proposta de renovação melhor, e um rebaixamento ou uma meta muito longe faz a empresa sair. Em jogos já em andamento os patrocínios começam na próxima virada de temporada.", en: "In a new career the club starts without a sponsor: the offers arrive on the first day and an empty slot earns nothing. After 21 days without an answer, the director signs the highest offer of each empty slot. At the end of the season a met goal pays the bonus; who meets it gets a better renewal offer, and a relegation or a goal missed by far makes the company leave. In careers in progress sponsors start at the next season rollover." },
+      { tab: "finances", pt: "Mais de mil empresas inventadas, de bancos e companhias aéreas a padarias e borracharias do bairro, cada uma com a sua placa pintada. Clubes pequenos recebem propostas de empresas locais do país; os grandes, de marcas nacionais e mundiais. O atrativo do clube (campanha, redes sociais, reputação do técnico e craques no elenco) muda o valor das propostas.", en: "Over a thousand invented companies, from banks and airlines to neighbourhood bakeries and tyre shops, each with its own painted plate. Small clubs get offers from local companies of their country; the big ones, from national and world brands. The club's appeal (league run, social media, the manager's reputation and stars in the squad) changes the value of the offers." },
+      { tab: "match", pt: "As placas de LED do estádio mostram os patrocinadores do mandante, e a prévia da partida mostra o patrocinador máster de cada time.", en: "The stadium's LED boards show the home side's sponsors, and the match preview shows each team's main sponsor." },
+      { tab: "club", pt: "A página de qualquer clube mostra o patrocinador máster dele.", en: "Any club's page shows its main sponsor." },
+      { tab: "general", pt: "A caixa de mensagens da barra de baixo abre numa janela que você arrasta e redimensiona, sem tomar a tela toda.", en: "The inbox of the bottom bar opens in a window you drag and resize, without taking the whole screen." },
+      { tab: "general", pt: "Menu na esquerda com letras menores: as abas principais um pouco maiores que as de dentro dos grupos.", en: "Left menu with smaller letters: the main tabs a little bigger than the ones inside the groups." },
+      { tab: "squad", pt: "A janela de conversa com o jogador também escolhe o trabalho de mentalidade com o auxiliar (profissionalismo ou temperamento), sem precisar abrir a ficha dele.", en: "The talk window with a player also sets the mentality work with the assistant (professionalism or temperament), without opening his page." },
+    ],
+    fixes: [
+      { tab: "match", pt: "Substituições na partida: um jogador na posição dele, ou numa que ele joga bem, não aparece mais como fora de posição.", en: "Substitutions in the match: a player in his position, or in one he plays well, no longer shows as out of position." },
+    ],
+  },
+  {
     version: "11.2.1",
     date: "2026-11-13",
     time: "09:56",
@@ -6099,6 +6117,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Treinador da base: um profissional novo da comissão que convoca para os jogos do sub-21 e sub-19 e cuida do treino da base, se você quiser", en: "Youth coach: a new staff member who picks the players for the under-21 and under-19 games and runs the academy training, if you want" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

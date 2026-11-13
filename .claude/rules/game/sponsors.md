@@ -132,3 +132,7 @@ bun test src/Domain/sponsors src/backend/sponsorCatalog.test.ts src/backend/spon
 - Um contrato assinado perto da virada é avaliado nela como os outros.
 - A fase da copa vem das fases já sorteadas (`cup.stages[].entrants`); uma liga que vira antes do fim da copa do país conta até onde o clube chegou naquele dia.
 - A rota de elenco de outro clube humano (`GET …/squad/…`) continua devolvendo o elenco inteiro, como já fazia com as instalações.
+
+## Fornecedor de material só de material esportivo
+
+A vaga `kit` só recebe propostas de empresas do ramo `sportswear`, de qualquer tamanho e país (`eligibleCompanies`); só com menos empresas que propostas a regra comum completa a lista. O catálogo tem 7 (5 globais, 2 nacionais). Vale também para os nomes derivados da IA.

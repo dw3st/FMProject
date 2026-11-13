@@ -1684,7 +1684,7 @@ export function InboxCategoryTile({ message, large = false }: { message: InboxMe
   const ink = meta.color;
   return (
     <div className={`${large ? "w-11 h-11" : "w-10 h-10"} rounded-lg ${tile} border flex items-center justify-center shrink-0`}>
-      <ArtIcon art={`inbox-${(message.category === "friendly" ? "schedule" : message.category === "bets" ? "achievement" : message.category).replace(/_/g, "-")}`} size={size} className={ink} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
+      <ArtIcon art={`inbox-${(message.category === "friendly" ? "schedule" : message.category === "bets" ? "achievement" : message.category === "sponsor" ? "contract" : message.category).replace(/_/g, "-")}`} size={size} className={ink} fallback={<MetaIcon className={`${large ? "w-6 h-6" : "w-5 h-5"} ${meta.color}`} />} />
     </div>
   );
 }

@@ -79,10 +79,18 @@ export function companyEligible(
 /**
  * The companies that may offer for a slot, in catalog order. With fewer than `need`, the `global` / `national` of any
  * country come in, then anyone: a slot never stays without offers.
+ * The kit supplier is always a sportswear company (of any size and country: kit makers dress clubs of every level);
+ * only with fewer than `need` of them does the usual rule complete the list.
  */
 export function eligibleCompanies(
   catalog: readonly SponsorCompany[], club: { tier: FinancialTier; country: string | null }, slot: SponsorSlot, need = 1,
 ): SponsorCompany[] {
+  if (slot === "kit") {
+    const makers = catalog.filter((c) => c.sector === "sportswear");
+    if (makers.length >= need) return makers;
+    const seenMakers = new Set(makers.map((c) => c.id));
+    return [...makers, ...eligibleCompanies(catalog.filter((c) => !seenMakers.has(c.id)), club, "master", need - makers.length)];
+  }
   const own = catalog.filter((c) => companyEligible(c, club, slot));
   if (own.length >= need) return own;
   const seen = new Set(own.map((c) => c.id));

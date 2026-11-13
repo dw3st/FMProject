@@ -108,6 +108,17 @@ describe("companies", () => {
     const own = eligibleCompanies(CATALOG, { tier: "LOW", country: "England" }, "master", 3);
     expect(own.every((c) => c.size === "local" && c.country === "England")).toBe(true);
   });
+
+  test("the kit supplier is a sportswear company, whatever the club", () => {
+    const makers = [{ ...company("m1", "global"), sector: "sportswear" }, { ...company("m2", "national", "Italy"), sector: "sportswear" }];
+    const all = [...CATALOG.filter((c) => c.sector !== "sportswear"), ...makers];
+    const kit = eligibleCompanies(all, { tier: "LOW", country: "Kenya" }, "kit", 2);
+    expect(kit.map((c) => c.id)).toEqual(["m1", "m2"]);
+    // Fewer makers than offers: the usual rule completes the list, makers first.
+    const three = eligibleCompanies(all, { tier: "HIGH", country: "England" }, "kit", 3);
+    expect(three.slice(0, 2).map((c) => c.id)).toEqual(["m1", "m2"]);
+    expect(three.length).toBeGreaterThanOrEqual(3);
+  });
 });
 
 describe("offers", () => {
