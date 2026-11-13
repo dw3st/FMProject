@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
@@ -13,7 +13,7 @@ import { Icon } from "@/GameInterface/Icons";
 import { formatFee, formatWageFull } from "@/Domain/money";
 import { leagueLabel, nationalityDisplayName } from "@/Domain/world/labels";
 import type { LeagueData } from "@/types/playerTypes";
-import type { ScoutFocus, ScoutTargetKind } from "@/types/scoutingTypes";
+import type { ScoutFocus, ScoutGrade, ScoutTargetKind } from "@/types/scoutingTypes";
 import { scoutingCall, type ScoutingData, type ScoutingScout } from "@/GameInterface/Scouting/scoutingApi";
 import { targetLabel } from "@/GameInterface/Scouting/scoutingText";
 import { StaffStars } from "@/GameInterface/Staff/StaffStars";
@@ -24,6 +24,18 @@ import { countryBand, countryGainMult } from "@/Domain/scouting/countryKnowledge
 import { formatEffect } from "@/GameInterface/Staff/staffApi";
 import countriesRaw from "@/Data/countries.json";
 import { navigate } from "@/GameInterface/router/navigation";
+
+const GRADES: ScoutGrade[] = ["A", "B", "C", "D", "E"];
+
+/** One line of the mission focus: its label on the left, the choices on the right. */
+function FocusRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-1.5 sm:gap-3 sm:items-start">
+      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground sm:pt-2">{label}</span>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}
 
 const CONTINENT_OF = new Map(Object.values(countriesRaw as Record<string, { name: string; continent?: string }>).map((c) => [c.name, c.continent ?? ""]));
 
@@ -196,6 +208,7 @@ function NewMissionModal({
   const [line, setLine] = useState<string>("all");
   const [maxAge, setMaxAge] = useState<string>("any");
   const [improves, setImproves] = useState(false);
+  const [grades, setGrades] = useState<ScoutGrade[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -211,6 +224,7 @@ function NewMissionModal({
       ...(line !== "all" ? { line: line as ScoutFocus["line"] } : {}),
       ...(maxAge !== "any" ? { maxAge: Number(maxAge) } : {}),
       ...(improves ? { improves: true } : {}),
+      ...(grades.length > 0 && grades.length < GRADES.length ? { grades } : {}),
     };
     setBusy(true);
     setError(null);
@@ -232,7 +246,7 @@ function NewMissionModal({
     : kind === "league" ? scout.countries[leagues.find((l) => l.slug === league)?.country ?? ""] ?? 0
     : scout.countries[country] ?? 0;
   return (
-    <Modal open={!!scout} onClose={onClose} size="md">
+    <Modal open={!!scout} onClose={onClose} size="lg">
       <div className="p-6 flex flex-col gap-5">
         <SectionTitle>{t("scouting.newMission")}</SectionTitle>
         {scout && (
@@ -283,21 +297,38 @@ function NewMissionModal({
             options={weekOptions.map((w) => ({ key: String(w), label: t("scouting.weeksN", { n: w }) }))}
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("scouting.focus")}</span>
-          <OptionChips<string>
-            value={line}
-            onChange={setLine}
-            options={["all", "GK", "Defender", "Midfielder", "Forward"].map((l) => ({ key: l, label: t(`scouting.lines.${l}`) }))}
-          />
-          <OptionChips<string>
-            value={maxAge}
-            onChange={setMaxAge}
-            options={["any", "21", "23", "25"].map((a) => ({ key: a, label: a === "any" ? t("scouting.anyAge") : t("scouting.maxAge", { age: a }) }))}
-          />
-          <div>
+        <div className="rounded-md border border-border p-4 flex flex-col gap-3">
+          <span className="font-display font-black uppercase text-base leading-none">{t("scouting.focus")}</span>
+          <FocusRow label={t("scouting.focusLine")}>
+            <OptionChips<string>
+              value={line}
+              onChange={setLine}
+              options={["all", "GK", "Defender", "Midfielder", "Forward"].map((l) => ({ key: l, label: t(`scouting.lines.${l}`) }))}
+            />
+          </FocusRow>
+          <FocusRow label={t("scouting.focusAge")}>
+            <OptionChips<string>
+              value={maxAge}
+              onChange={setMaxAge}
+              options={["any", "21", "23", "25"].map((a) => ({ key: a, label: a === "any" ? t("scouting.anyAge") : t("scouting.maxAge", { age: a }) }))}
+            />
+          </FocusRow>
+          <FocusRow label={t("scouting.focusGrade")}>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Chip selected={grades.length === 0} onClick={() => setGrades([])}>{t("scouting.anyGrade")}</Chip>
+              {GRADES.map((g) => (
+                <Chip
+                  key={g}
+                  selected={grades.includes(g)}
+                  onClick={() => setGrades(grades.includes(g) ? grades.filter((x) => x !== g) : GRADES.filter((x) => x === g || grades.includes(x)))}
+                >{g}</Chip>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground m-0 mt-1.5">{t("scouting.focusGradeHint")}</p>
+          </FocusRow>
+          <FocusRow label={t("scouting.focusSquad")}>
             <Chip selected={improves} onClick={() => setImproves(!improves)}>{t("scouting.improves")}</Chip>
-          </div>
+          </FocusRow>
         </div>
         {targetK !== null && scout && (
           <div className="flex flex-col gap-2">

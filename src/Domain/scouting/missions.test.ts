@@ -86,6 +86,20 @@ describe("missions", () => {
     expect(missionPool("youth", undefined, pool, ctx()).map((e) => e.player.id)).toEqual(["y", "d"]);
     expect(missionPool("country", { line: "Forward", maxAge: 20 }, pool, ctx()).map((e) => e.player.id)).toEqual(["y"]);
   });
+  test("pool: only the grades the manager asked for (tester report)", () => {
+    const pool = [entry(player("weak", 2, 27, "ST")), entry(player("mid", 5, 27, "ST")), entry(player("top", 8, 27, "ST"))];
+    const c = ctx();
+    const all = missionPool("country", undefined, pool, c).map((e) => e.player.id);
+    expect(all).toEqual(["weak", "mid", "top"]);
+    const top = missionPool("country", { grades: ["A"] }, pool, c).map((e) => e.player.id);
+    const low = missionPool("country", { grades: ["E"] }, pool, c).map((e) => e.player.id);
+    expect(top).toContain("top");
+    expect(top).not.toContain("weak");
+    expect(low).toContain("weak");
+    expect(low).not.toContain("top");
+    // Every grade asked = the whole pool.
+    expect(missionPool("country", { grades: ["A", "B", "C", "D", "E"] }, pool, c)).toHaveLength(3);
+  });
   test("a week grows knowledge by the leader's rating, writes reports, ends missions", () => {
     const pool = Array.from({ length: 30 }, (_, i) => entry(player(`p${i}`, 5 + (i % 3))));
     const state = { ...emptyScoutingState(), missions: [mission({ weeks: 1 })] };
