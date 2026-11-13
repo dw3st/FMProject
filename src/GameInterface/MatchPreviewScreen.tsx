@@ -628,6 +628,8 @@ interface MatchSetupData {
   /** Grass and mowing of that pitch (spec 2026-10-16-pitch-types). */
   pitch?: MatchPitch | null;
   weatherEffect?: import("@/Domain/matchday/matchWeatherEffect").WeatherOfMatch | null;
+  /** The AI opponent's plan against this manager (`.claude/rules/game/study.md`); absent = none. */
+  study?: import("@/types/studyTypes").MatchSetupStudy;
   /** Today's crowd — the same number the gate of the day charges (spec 2026-10-08-match-visual §7). */
   crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
   /** Referee of the match (`referees.md`); null = none appointed. */
@@ -1377,6 +1379,32 @@ export function MatchPreviewScreen() {
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2.5">
             <Icon name="alert" size={16} className="text-destructive mt-0.5 shrink-0" />
             <p className="text-sm text-destructive m-0">{t("complaint.previewBanned")}</p>
+          </div>
+        </div>
+      )}
+
+      {/* The AI opponent studied the manager's plan (`.claude/rules/game/study.md`) */}
+      {matchSetup?.study && !matchSetup.seatOpponent && (
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
+          <div className="flex items-start gap-2 rounded-md border border-chart-4/40 bg-chart-4/10 px-4 py-2.5">
+            <Icon name="alert" size={16} className="text-chart-4 mt-0.5 shrink-0" />
+            <div className="text-sm text-foreground m-0 space-y-0.5">
+              <p className="m-0">
+                {t("study.preview", {
+                  club: opponentName,
+                  formation: matchSetup.study.expected.formation === "custom" ? t("study.freeFormation") : matchSetup.study.expected.formation,
+                  style: t(`tactics.styles.${matchSetup.study.expected.style}.label`),
+                  level: t(`study.level.${matchSetup.study.level}`),
+                })}
+              </p>
+              {matchSetup.study.analystHint && (
+                <p className="m-0 text-muted-foreground">
+                  {matchSetup.study.mark
+                    ? t("study.analystMark", { style: t(`tactics.styles.${matchSetup.study.style}.label`), player: matchSetup.study.mark.targetName })
+                    : t("study.analyst", { style: t(`tactics.styles.${matchSetup.study.style}.label`) })}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

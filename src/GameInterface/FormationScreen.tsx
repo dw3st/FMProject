@@ -65,6 +65,7 @@ import { Chip } from "@/GameInterface/ui/Chip";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SetPieceTakersPanel } from "@/GameInterface/Components/SetPieceTakersPanel";
 import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
+import { predictability } from "@/Domain/study/study";
 import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
 import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
@@ -1104,6 +1105,16 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
           </div>
 
           {!national && <FamiliarityBars familiarity={squad?.styleFamiliarity} current={activeStyle} />}
+
+          {/* How predictable the plan is to AI opponents (`.claude/rules/game/study.md`) */}
+          {!national && squad && (
+            <div className="rounded-md border border-border px-5 py-4">
+              <p className="text-sm font-semibold text-foreground m-0">
+                {t("study.predictability", { level: t(`study.level.${predictability(save?.tacticLog, squad)}`) })}
+              </p>
+              <p className="text-sm text-muted-foreground m-0 mt-1">{t("study.predictabilityHelp")}</p>
+            </div>
+          )}
 
           {/* Team instructions (the four axes) */}
           <div className="rounded-md border border-border p-5">

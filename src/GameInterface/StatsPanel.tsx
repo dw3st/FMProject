@@ -190,6 +190,12 @@ function FitnessSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }
           <span className="text-foreground font-bold tabular-nums">{teamA.injuryStoppages} – {teamB.injuryStoppages}</span>
         </span>
       )}
+      {(teamA.studyPlans > 0 || teamB.studyPlans > 0) && (
+        <span>
+          {t("stats.studyPlans", { defaultValue: "Study plan" })}:{" "}
+          <span className="text-foreground font-bold tabular-nums">{teamA.studyPlans} – {teamB.studyPlans}</span>
+        </span>
+      )}
     </div>
   );
 }

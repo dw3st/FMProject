@@ -1206,6 +1206,7 @@
     "fatigueSubs": "Fatigue subs",
     "injuries": "Injuries",
     "injuryStops": "Restarts after a stop",
+    "studyPlans": "Game plan against the opponent",
     "headers": {
       "G": "Goals",
       "SH": "Shots",
@@ -7907,5 +7908,19 @@
         "club_left": "The manager left the club"
       }
     }
+  },
+  "study": {
+    "level": {
+      "low": "low",
+      "medium": "medium",
+      "high": "high"
+    },
+    "freeFormation": "a free formation",
+    "preview": "{{club}} studied your team: they expect {{formation}} with {{style}} ({{level}} read).",
+    "analyst": "Your analyst: they should play {{style}}.",
+    "analystMark": "Your analyst: they should play {{style}} and mark {{player}} closely.",
+    "predictability": "Opponents' read of your team: {{level}}",
+    "predictabilityHelp": "Repeating the formation, the style and the team instructions for several games makes the team predictable.",
+    "result": "{{club}} came prepared: {{style}}."
   }
 }

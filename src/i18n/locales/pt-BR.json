@@ -1206,6 +1206,7 @@
     "fatigueSubs": "Trocas por cansaço",
     "injuries": "Lesões",
     "injuryStops": "Reinícios após a parada",
+    "studyPlans": "Plano de jogo contra o adversário",
     "headers": {
       "G": "Gols",
       "SH": "Finalizações",
@@ -7895,5 +7896,19 @@
         "club_left": "O técnico deixou o clube"
       }
     }
+  },
+  "study": {
+    "level": {
+      "low": "baixa",
+      "medium": "média",
+      "high": "alta"
+    },
+    "freeFormation": "formação livre",
+    "preview": "{{club}} estudou seu time: espera {{formation}} em {{style}} (leitura {{level}}).",
+    "analyst": "Seu analista: devem jogar em {{style}}.",
+    "analystMark": "Seu analista: devem jogar em {{style}} e marcar {{player}} de perto.",
+    "predictability": "Leitura dos adversários: {{level}}",
+    "predictabilityHelp": "Repetir formação, estilo e instruções da equipe por vários jogos deixa o time previsível.",
+    "result": "{{club}} veio preparado: {{style}}."
   }
 }

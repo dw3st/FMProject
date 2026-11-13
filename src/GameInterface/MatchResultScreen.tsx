@@ -862,6 +862,15 @@ export function MatchResultScreen() {
             });
             return key ? <p className="mt-3 text-sm text-muted-foreground">{t(key)}</p> : null;
           })()}
+          {/* The AI side came with a plan against the manager (`study.md`). */}
+          {matchEvent.study && (
+            <p className="text-sm text-muted-foreground m-0 mt-3">
+              {t("study.result", {
+                club: matchEvent.study.side === "home" ? homeName : awayName,
+                style: t(`tactics.styles.${matchEvent.study.style}.label`),
+              })}
+            </p>
+          )}
           {/* VAR checks of the match (`var.md`): how many, how many calls changed. */}
           {matchEvent.var && matchEvent.var.reviews > 0 && (
             <p className="text-sm text-muted-foreground m-0 mt-3">
