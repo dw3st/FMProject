@@ -50,7 +50,7 @@ export interface StaffPoolPage {
 /** Display order of the roles and their groups on the staff screen (spec §7). */
 export const STAFF_GROUPS: { key: "command" | "training" | "health" | "scouting" | "structure"; roles: StaffRole[] }[] = [
   { key: "command", roles: ["assistant"] },
-  { key: "training", roles: ["fitness", "goalkeeping", "coach"] },
+  { key: "training", roles: ["fitness", "goalkeeping", "coach", "youthCoach"] },
   { key: "health", roles: ["medic", "analyst"] },
   { key: "scouting", roles: ["scout", "fieldScout"] },
   { key: "structure", roles: ["groundskeeper"] },

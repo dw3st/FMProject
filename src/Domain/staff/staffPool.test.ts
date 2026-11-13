@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generatePool, refreshPool, returnToPool, searchPool, takeFromPool } from "@/Domain/staff/staffPool";
+import { generatePool, refreshPool, returnToPool, searchPool, takeFromPool, topUpMissingRoles } from "@/Domain/staff/staffPool";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { memberStars } from "@/Domain/staff/staff";
 
@@ -10,7 +10,7 @@ describe("staff pool", () => {
     expect(generatePool("save1", "2027", "2027-02-05")).toEqual(pool);
     expect(pool.members.filter((m) => m.role === "coach").length).toBe(90);
     expect(pool.members.every((m) => !m.contract)).toBe(true);
-    expect(new Set(pool.members.map((m) => m.id)).size).toBe(300);
+    expect(new Set(pool.members.map((m) => m.id)).size).toBe(STAFF.POOL.SIZE);
   });
   test("star bands: some 4.5+, most 2.5-3", () => {
     const top = pool.members.filter((m) => memberStars(m) >= 4.5).length;
@@ -25,13 +25,13 @@ describe("staff pool", () => {
     const cheap = searchPool(pool, { maxWage: 1000 }, 1);
     expect(cheap.items.every((m) => m.askingWage <= 1000)).toBe(true);
     const page2 = searchPool(pool, { offset: 50, limit: 50 }, 1);
-    expect(page2.total).toBe(300);
+    expect(page2.total).toBe(STAFF.POOL.SIZE);
     expect(page2.items.length).toBe(50);
   });
   test("sorts by every column, both directions, ids breaking ties", () => {
     for (const sort of ["name", "role", "age", "stars", "wage"] as const) {
       const asc = searchPool(pool, { sort, dir: "asc", limit: 100 }, 1).items;
-      const desc = searchPool(pool, { sort, dir: "desc", offset: 200, limit: 100 }, 1).items.reverse();
+      const desc = searchPool(pool, { sort, dir: "desc", offset: STAFF.POOL.SIZE - 100, limit: 100 }, 1).items.reverse();
       expect(asc.length).toBe(100);
       // The bottom of the descending list is the top of the ascending one, by the column's value.
       const v = (m: (typeof asc)[number]) => (sort === "name" ? m.name : sort === "role" ? m.role : sort === "age" ? m.age : sort === "stars" ? m.stars : m.askingWage);
@@ -45,21 +45,21 @@ describe("staff pool", () => {
   test("take and return", () => {
     const id = pool.members[0]!.id;
     const t = takeFromPool(pool, id)!;
-    expect(t.pool.members.length).toBe(299);
+    expect(t.pool.members.length).toBe(STAFF.POOL.SIZE - 1);
     expect(takeFromPool(pool, "nope")).toBeNull();
     const back = returnToPool(t.pool, { ...t.member, contract: { until: "x", wage: 1, signed: "y" } }, "2027-06-01");
     expect(back.members.find((m) => m.id === id)!.contract).toBeUndefined();
     expect(back.members.find((m) => m.id === id)!.since).toBe("2027-06-01");
-    expect(returnToPool(back, t.member, "2027-06-02").members.length).toBe(300);
+    expect(returnToPool(back, t.member, "2027-06-02").members.length).toBe(STAFF.POOL.SIZE);
   });
   test("refresh: retires 68+, swaps a third, back to 300, everyone a year older", () => {
     const next = refreshPool(pool, "save1", "2028", "2028-01-10");
-    expect(next.members.length).toBe(300);
+    expect(next.members.length).toBe(STAFF.POOL.SIZE);
     expect(next.members.every((m) => m.age < STAFF.POOL.RETIRE_AGE)).toBe(true);
     const kept = next.members.filter((m) => pool.members.some((o) => o.id === m.id));
-    expect(kept.length).toBeLessThanOrEqual(200);
+    expect(kept.length).toBeLessThanOrEqual(Math.ceil((STAFF.POOL.SIZE * 2) / 3));
     for (const m of kept) expect(m.age).toBe(pool.members.find((o) => o.id === m.id)!.age + 1);
-    expect(new Set(next.members.map((m) => m.id)).size).toBe(300);
+    expect(new Set(next.members.map((m) => m.id)).size).toBe(STAFF.POOL.SIZE);
     for (const [role, n] of Object.entries(STAFF.POOL.BY_ROLE)) {
       expect(next.members.filter((m) => m.role === role).length).toBe(n);
     }
@@ -76,5 +76,20 @@ describe("staff pool", () => {
     // An earlier date (or the generation day) never refreshes again.
     expect(refreshPool(second, "save1", "2029", "2028-05-01")).toBe(second);
     expect(refreshPool(pool, "save1", "2027", "2027-02-05")).toBe(pool);
+  });
+  test("a pool from before the youth coach gets the role's quota once (12.1)", () => {
+    const old = { ...pool, members: pool.members.filter((m) => m.role !== "youthCoach") };
+    const topped = topUpMissingRoles(old, "save1", "2028-03-01");
+    const added = topped.members.filter((m) => m.role === "youthCoach");
+    expect(added).toHaveLength(STAFF.POOL.BY_ROLE.youthCoach);
+    expect(added.every((m) => m.since === "2028-03-01" && !m.contract)).toBe(true);
+    expect(new Set(topped.members.map((m) => m.id)).size).toBe(topped.members.length);
+    // Everybody else is untouched, the draw is deterministic, and a complete pool comes back as it is.
+    expect(topped.members.slice(0, old.members.length)).toEqual(old.members);
+    expect(topUpMissingRoles(old, "save1", "2028-03-01")).toEqual(topped);
+    expect(topUpMissingRoles(topped, "save1", "2028-04-01")).toBe(topped);
+    // One left of the role (the others were hired): no refill here, the rollover refresh does that.
+    const oneLeft = { ...topped, members: topped.members.filter((m) => m.role !== "youthCoach" || m.id === added[0]!.id) };
+    expect(topUpMissingRoles(oneLeft, "save1", "2028-04-01")).toBe(oneLeft);
   });
 });

@@ -8,6 +8,8 @@ import { overallAvg } from "@/Domain/playerRating";
 import { wageFactorOf, playerWeeklyWage } from "@/Domain/finance/wages";
 import { potentialBand } from "@/Domain/youth/youth";
 import { DEFAULT_YOUTH_PLAN, parsePlayerTraining, parseYouthPlan, TRAINING_POSITIONS, youthTrendDelta } from "@/Domain/youth/youthTraining";
+import { managerSavesPlan, youthCoachOnDuty } from "@/Domain/youth/youthCoach";
+import { youthByCoach, type Responsibilities } from "@/Domain/responsibilities/director";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -22,7 +24,7 @@ async function loadHumanSquad(saveId: string, seatId: string) {
   return { meta, ref, squad };
 }
 
-function youthView(squad: Squad) {
+function youthView(squad: Squad, responsibilities: Responsibilities | undefined) {
   const youth = (squad.youth ?? []).map((player) => {
     const [lo, hi] = potentialBand(player);
     return { player, overall: overallAvg(player), potential: { low: lo, high: hi }, trend: youthTrendDelta(player) };
@@ -30,6 +32,8 @@ function youthView(squad: Squad) {
   return {
     youth, squadSize: squad.players.length, squadLimit: HUMAN_MAX_SQUAD,
     training: squad.youthTraining ?? DEFAULT_YOUTH_PLAN, positions: TRAINING_POSITIONS,
+    // The youth coach looks after the academy's training (`youthCoach.ts`): the screen says so.
+    coach: youthByCoach(responsibilities) && youthCoachOnDuty(squad),
   };
 }
 
@@ -45,7 +49,7 @@ export const youthRoutes = {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
     const found = await loadHumanSquad(saveId, auth.seatId);
     if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
-    return Response.json(youthView(found.squad));
+    return Response.json(youthView(found.squad, found.meta.responsibilities));
   },
 
   /**
@@ -63,9 +67,10 @@ export const youthRoutes = {
       if (!found) return Response.json({ error: "noClub" }, { status: 409 });
       const plan = parseYouthPlan(body, new Set((found.squad.youth ?? []).map((p) => p.id)));
       if (!plan) return Response.json({ error: "invalidTraining" }, { status: 400 });
-      const next: Squad = { ...found.squad, youthTraining: plan };
+      // What the manager left as the youth coach wrote it keeps the coach's mark (`managerSavesPlan`).
+      const next: Squad = { ...found.squad, youthTraining: managerSavesPlan(found.squad.youthTraining, plan) };
       await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
-      return Response.json(youthView(next));
+      return Response.json(youthView(next, found.meta.responsibilities));
     });
   },
 
@@ -115,7 +120,7 @@ export const youthRoutes = {
       await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       await saveService.writeFreeAgents(saveId, [...(await saveService.getFreeAgents(saveId)), ...leaving.map((p) => toFreeAgent(p, date))]);
-      return Response.json(youthView(next));
+      return Response.json(youthView(next, found.meta.responsibilities));
     });
   },
 
@@ -147,7 +152,7 @@ export const youthRoutes = {
       await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
       // Achievements (`.claude/rules/game/achievements.md`): an academy player in the first team.
       await saveService.writeAchievements(saveId, recordPromotion(await saveService.getAchievements(saveId, auth.seatId), playerId), auth.seatId);
-      return Response.json(youthView(next));
+      return Response.json(youthView(next, found.meta.responsibilities));
     });
   },
 
@@ -169,7 +174,7 @@ export const youthRoutes = {
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       const pool = await saveService.getFreeAgents(saveId);
       await saveService.writeFreeAgents(saveId, [...pool, toFreeAgent(player, date)]);
-      return Response.json(youthView(next));
+      return Response.json(youthView(next, found.meta.responsibilities));
     });
   },
 };

@@ -118,3 +118,7 @@ Report de tester. `Responsibilities.friendlies` (`none`, padrão, ou `director`;
 ## Imprensa (10.8)
 
 `Responsibilities.press` (`manager`, padrão, ou `director`): quarto bloco da aba. Com o diretor, toda coletiva é respondida por ele em tom neutro, sem efeito. Ver `.claude/rules/game/press.md` → "Atacar a imprensa e o diretor na coletiva".
+
+## Base (12.1)
+
+`Responsibilities.youth` (`manager`, padrão, ou `coach`): quinto bloco da aba. Com o treinador da base (e um contratado, fora de curso), ele convoca os jovens do elenco que jogam pouco no dia de jogo da base e ajusta o treino da base toda segunda, sem mexer no que o técnico configurou à mão. Rota: `GET` devolve `youth`, `PUT { youth }` aceita `manager` ou `coach`. Ver `.claude/rules/game/staff.md` → "Treinador da base (12.1)".

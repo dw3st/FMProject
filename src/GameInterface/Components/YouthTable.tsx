@@ -31,6 +31,8 @@ interface YouthData {
   squadLimit: number;
   training: YouthTrainingPlan;
   positions: string[];
+  /** The youth coach is in charge of the academy's training (responsibility + one at work). */
+  coach?: boolean;
 }
 
 const FOCI: YouthFocus[] = ["balanced", "technical", "physical", "passing", "shooting", "defending", "goalkeeping", "setPieces"];
@@ -177,14 +179,19 @@ export function YouthTable() {
       key: "focus",
       header: t("youth.training.focus"),
       cell: (r) => (
-        <SelectCombobox<string>
-          labelId={`yt-focus-${r.player.id}`}
-          floating
-          className="min-w-36"
-          value={data.training.players?.[r.player.id]?.focus ?? ""}
-          onChange={(v) => setPlayer(r.player.id, { focus: (v || null) as YouthFocus | null })}
-          options={[{ value: "", label: t("youth.training.group") }, ...FOCI.map((f) => ({ value: f, label: t(`youth.training.foci.${f}`) }))]}
-        />
+        <span className="inline-flex flex-col gap-1">
+          <SelectCombobox<string>
+            labelId={`yt-focus-${r.player.id}`}
+            floating
+            className="min-w-36"
+            value={data.training.players?.[r.player.id]?.focus ?? ""}
+            onChange={(v) => setPlayer(r.player.id, { focus: (v || null) as YouthFocus | null })}
+            options={[{ value: "", label: t("youth.training.group") }, ...FOCI.map((f) => ({ value: f, label: t(`youth.training.foci.${f}`) }))]}
+          />
+          {data.training.players?.[r.player.id]?.byCoach && (
+            <span className="text-sm text-muted-foreground">{t("youthCoach.byCoach")}</span>
+          )}
+        </span>
       ),
     },
     {
@@ -248,6 +255,7 @@ export function YouthTable() {
       {error && <Notice kind="error">{error}</Notice>}
       <section className="flex flex-col gap-3">
         <SectionTitle>{t("youth.training.title")}</SectionTitle>
+        {data.coach && <p className="text-sm text-muted-foreground m-0">{t("youthCoach.trainingNote")}</p>}
         <div className="flex flex-wrap gap-6">
           <div className="flex flex-col gap-1.5">
             <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.training.intensity")}</span>
@@ -257,6 +265,7 @@ export function YouthTable() {
               onChange={(v) => void saveTraining({ ...data.training, intensity: v })}
               options={INTENSITIES.map((k) => ({ key: k, label: t(`youth.training.intensities.${k}`) }))}
             />
+            {data.training.intensityByCoach && <span className="text-sm text-muted-foreground">{t("youthCoach.byCoach")}</span>}
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.training.groupFocus")}</span>

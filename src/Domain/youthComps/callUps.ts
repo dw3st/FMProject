@@ -18,6 +18,8 @@ export interface YouthCallUp {
   left?: number;
   /** Consecutive youth games with a good rating (`rhythm`). */
   streak?: number;
+  /** Added by the youth coach on the game day (`src/Domain/youth/youthCoach.ts`); the manager's entries never have it. */
+  byCoach?: true;
 }
 
 export type YouthCallUps = Partial<Record<YouthCompAge, YouthCallUp[]>>;

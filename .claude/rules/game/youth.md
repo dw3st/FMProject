@@ -166,3 +166,8 @@ Nomes (`src/Domain/youth/academyNames.ts`, com teste): `drawAcademyName` sorteia
 ## Ritmo da base (11.2)
 
 A base rende menos: sessão a 80%, bônus do clube pela metade para quem está na base, jogo de base a 70%. Números em `development.md` → "Ritmo da base (11.2)".
+
+
+## Treinador da base (12.1)
+
+Função nova da comissão: as estrelas dele multiplicam a DP de crescimento da base no treino e nos jogos de base (0,92 a 1,08; vago 0,96; inteiro, sem a metade dos bônus do clube). Com a responsabilidade Base nele, toda segunda ele define a intensidade e o foco de cada jovem (`YouthTrainingPlan.intensityByCoach`, `players[id].byCoach`), só onde o técnico não escolheu; `GET /youth` devolve `coach` e a aba Base marca "pelo treinador da base". Ver `.claude/rules/game/staff.md` → "Treinador da base (12.1)".

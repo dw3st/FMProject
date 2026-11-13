@@ -222,3 +222,34 @@ describe("lab fitness coach", () => {
     expect(withFitnessCoach(base, undefined)).toBe(base);
   });
 });
+
+describe("youth coach (12.1)", () => {
+  /** A professional of exactly `stars` (generation lands within half a star of the target). */
+  const exact = (role: StaffMember["role"], stars: number): StaffMember => {
+    for (let i = 0; i < 200; i++) {
+      const m = pro(`exact:${role}:${stars}:${i}`, role, stars);
+      if (memberStars(m) === stars) return m;
+    }
+    throw new Error("no professional of the wanted stars");
+  };
+  test("academy development: 1 star 0.92, 3 stars exactly 1, 5 stars 1.08; vacant and on a course 0.96", () => {
+    expect(staffEffectsOf(human({ members: [exact("youthCoach", 1)] })).academyDevMult).toBeCloseTo(0.92, 9);
+    expect(staffEffectsOf(human({ members: [exact("youthCoach", 3)] })).academyDevMult).toBe(1);
+    expect(staffEffectsOf(human({ members: [exact("youthCoach", 5)] })).academyDevMult).toBeCloseTo(1.08, 9);
+    expect(staffEffectsOf(human({ members: [] })).academyDevMult).toBeCloseTo(0.96, 9);
+    const away = { ...exact("youthCoach", 5), course: { started: "2027-01-01", until: "2027-03-01", specialty: "youth" as const } };
+    expect(staffEffectsOf(human({ members: [away] })).academyDevMult).toBeCloseTo(0.96, 9);
+  });
+  test("clubs without staff (the AI) are never touched", () => {
+    for (const income of [5e6, 20e6, 100e6, 300e6]) expect(staffEffectsOf(aiSquad(income)).academyDevMult).toBe(1);
+  });
+  test("one per club, paid like the goalkeeping coach, part of the starting staff", () => {
+    expect(roleLimit({ finances: fin(300e6) } as unknown as Squad, "youthCoach")).toBe(1);
+    expect(staffWageFor("youthCoach", 4, 1)).toBe(staffWageFor("goalkeeping", 4, 1));
+    const start = initialStaff("k", squad(), { date: "2027-02-05", seasonEnd: "2027-12-01" });
+    const coaches = start.members.filter((m) => m.role === "youthCoach");
+    expect(coaches).toHaveLength(1);
+    expect(coaches[0]!.attributes.knowledge.youth).toBeGreaterThan(0);
+    expect(coaches[0]!.contract).toBeDefined();
+  });
+});

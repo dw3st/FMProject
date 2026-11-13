@@ -95,12 +95,15 @@ export function StaffScreen() {
       case "scout": return t("staff.effects.scout", { uncertainty: pct(e.scoutUncertaintyMult), gain: pct(e.scoutGainMult) });
       case "fieldScout": return t("staff.effects.fieldScout");
       case "groundskeeper": return t("staff.effects.groundskeeper", { value: pct(e.pitchWearMult) });
+      case "youthCoach": return t("staff.effects.youthCoach", { value: pct(e.academyDevMult) });
     }
   };
   const vacantEffect = (role: StaffRole): string | undefined =>
     role === "fitness" || role === "goalkeeping" ? t("staff.vacantArea", { pct: vacantSlowdown })
       // Nobody keeps the pitches: they wear 1.6× faster (`pitchWearMult` already says so).
       : role === "groundskeeper" ? t("staff.effects.groundskeeper", { value: pct(data.effects.pitchWearMult) })
+      // No youth coach: the academy develops a little slower (the vacant stars are already in `academyDevMult`).
+      : role === "youthCoach" ? t("staff.effects.youthCoach", { value: pct(data.effects.academyDevMult) })
       : role === "coach" || role === "fieldScout" ? undefined
         : t("staff.vacantEffect");
 

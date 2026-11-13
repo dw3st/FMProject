@@ -52,13 +52,15 @@ describe("staff routes", () => {
     const view = await (await call("", "GET", session.token)).json() as any;
     const saved = (await saveService.getSquadById(saveId, "33"))!;
     const roles = (view.members as { role: string }[]).map((m) => m.role);
-    for (const r of ["assistant", "fitness", "goalkeeping", "medic", "analyst", "scout", "groundskeeper"]) {
+    for (const r of ["assistant", "fitness", "goalkeeping", "medic", "analyst", "scout", "groundskeeper", "youthCoach"]) {
       expect(roles.filter((x) => x === r)).toHaveLength(1);
     }
     const coachMax = roleLimit(saved, "coach");
     expect(view.limits.coach).toEqual({ used: coachMax, max: coachMax });
     expect(view.limits.fieldScout).toEqual({ used: 0, max: 4 });
-    expect(view.members.length).toBe(7 + coachMax);
+    expect(view.members.length).toBe(8 + coachMax);
+    expect(view.limits.youthCoach).toEqual({ used: 1, max: 1 });
+    expect(typeof view.effects.academyDevMult).toBe("number");
     expect(view.areas).toHaveLength(7);
     expect(view.weeklyTotal).toBe(squadStaffWages(saved.staff));
 

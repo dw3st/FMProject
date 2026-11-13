@@ -3,8 +3,8 @@ import { COACH_AREAS, ROLE_SPECIALTY, STAFF_ROLES, TRAINING_AREAS, isStaffRole }
 import { STAFF } from "@/Domain/staff/staffConfig";
 
 describe("staff types", () => {
-  test("nine roles, seven training areas, five coach areas", () => {
-    expect([...STAFF_ROLES]).toEqual(["assistant", "fitness", "goalkeeping", "coach", "medic", "analyst", "scout", "fieldScout", "groundskeeper"]);
+  test("ten roles, seven training areas, five coach areas", () => {
+    expect([...STAFF_ROLES]).toEqual(["assistant", "fitness", "goalkeeping", "coach", "medic", "analyst", "scout", "fieldScout", "groundskeeper", "youthCoach"]);
     expect([...TRAINING_AREAS].sort()).toEqual(["defending", "goalkeeping", "passing", "physical", "setPieces", "shooting", "technical"]);
     expect([...COACH_AREAS]).toEqual(["defending", "shooting", "technical", "passing", "setPieces"]);
     expect(isStaffRole("coach")).toBe(true);

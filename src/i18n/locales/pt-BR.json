@@ -473,7 +473,8 @@
       "medical": "Médica",
       "analysis": "Análise",
       "scouting": "Observação",
-      "pitch": "Gramado"
+      "pitch": "Gramado",
+      "youth": "Base"
     },
     "roles": {
       "assistant": "Auxiliar técnico",
@@ -484,7 +485,8 @@
       "analyst": "Analista de desempenho",
       "scout": "Olheiro-chefe",
       "fieldScout": "Olheiro de campo",
-      "groundskeeper": "Jardineiro"
+      "groundskeeper": "Jardineiro",
+      "youthCoach": "Treinador da base"
     },
     "effects": {
       "assistant": "Evolução dos jogadores {{value}}",
@@ -496,7 +498,8 @@
       "analyst": "Aprendizado dos estilos de jogo {{value}}",
       "scout": "Incerteza dos relatórios {{uncertainty}} · Conhecimento ganho {{gain}}",
       "fieldScout": "Conduz uma missão de observação",
-      "groundskeeper": "Desgaste do gramado {{value}}"
+      "groundskeeper": "Desgaste do gramado {{value}}",
+      "youthCoach": "Evolução da base {{value}}"
     },
     "errors": {
       "generic": "Não foi possível concluir.",
@@ -1810,8 +1813,19 @@
       "director": "Diretor",
       "manager": "Técnico",
       "chief": "Olheiro-chefe",
+      "youthCoach": "Treinador da base",
       "none": "Ninguém"
+    },
+    "youth": {
+      "label": "Base",
+      "manager": "Técnico: você convoca para os jogos da base e monta o treino da base.",
+      "coach": "Treinador da base: no dia de jogo da base ele convoca os jovens do elenco que jogam pouco, e toda segunda ajusta o treino da base. Só vale com um treinador da base contratado. Você pode mudar à mão."
     }
+  },
+  "youthCoach": {
+    "byCoach": "pelo treinador da base",
+    "callUpsNote": "O treinador da base cuida das convocações. Você pode mudar à mão.",
+    "trainingNote": "O treinador da base cuida do treino. Você pode mudar à mão."
   },
   "awards": {
     "kind": {

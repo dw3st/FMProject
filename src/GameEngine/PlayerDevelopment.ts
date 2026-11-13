@@ -60,7 +60,7 @@ const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
 export const DP_CATEGORIES = ["goalkeeping", "defending", "shooting", "technical", "passing", "physical", "setPieces"] as const;
 export type DPCategory = (typeof DP_CATEGORIES)[number];
 
-const CATEGORY_STATS: Record<DPCategory, (keyof PlayerStatsRecord)[]> = {
+export const CATEGORY_STATS: Record<DPCategory, (keyof PlayerStatsRecord)[]> = {
   goalkeeping: ["reflex", "jump", "pressing"],
   defending:   ["tackling", "pressing"],
   shooting:    ["finishing"],

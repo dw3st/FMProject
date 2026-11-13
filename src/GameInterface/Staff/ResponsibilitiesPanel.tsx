@@ -8,7 +8,10 @@ type ContractsOwner = "director" | "manager";
 type ScoutingOwner = "manager" | "chief";
 type FriendliesOwner = "none" | "director";
 type PressOwner = "manager" | "director";
-interface Owners { contracts: ContractsOwner; scouting: ScoutingOwner; friendlies: FriendliesOwner; press: PressOwner }
+type YouthOwner = "manager" | "coach";
+interface Owners {
+  contracts: ContractsOwner; scouting: ScoutingOwner; friendlies: FriendliesOwner; press: PressOwner; youth: YouthOwner;
+}
 
 /**
  * Responsibilities of the human club (`.claude/rules/game/responsibilities.md`): who handles the
@@ -122,6 +125,23 @@ export function ResponsibilitiesPanel({ saveId }: { saveId: string }) {
             <ul className="m-0 pl-0 list-none flex flex-col gap-1 text-sm">
               <li className={line(owners.press === "manager")}>{t("responsibilities.press.manager")}</li>
               <li className={line(owners.press === "director")}>{t("responsibilities.press.director")}</li>
+            </ul>
+          </div>
+          <div className="rounded-md border border-border p-3 flex flex-col gap-3 max-w-2xl">
+            <Label>{t("responsibilities.youth.label")}</Label>
+            <OptionChips<YouthOwner>
+              aria-label={t("responsibilities.youth.label")}
+              options={[
+                { key: "manager", label: t("responsibilities.owner.manager") },
+                { key: "coach", label: t("responsibilities.owner.youthCoach") },
+              ]}
+              value={owners.youth}
+              onChange={(k) => { if (k !== owners.youth) void choose({ youth: k }); }}
+              disabled={busy}
+            />
+            <ul className="m-0 pl-0 list-none flex flex-col gap-1 text-sm">
+              <li className={line(owners.youth === "manager")}>{t("responsibilities.youth.manager")}</li>
+              <li className={line(owners.youth === "coach")}>{t("responsibilities.youth.coach")}</li>
             </ul>
           </div>
         </>

@@ -164,6 +164,7 @@ import { withRefereeLog, withWeatherLog } from "@/Domain/advanceDay/matches";
 import { matchWeatherOf } from "@/backend/stadiumData";
 import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
 import { advanceCallUps, callUpEligibleIds } from "@/Domain/youthComps/callUps";
+import { coachCallUpsToday, coachMondaySquad } from "@/backend/youthCoachWorld";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -882,10 +883,15 @@ export async function advanceOneDay(
     // ── Youth competitions (under-21 / under-19, `.claude/rules/game/youth-competitions.md`) ──
     // After the first-team matches (the day knows `teamsPlayingToday`) and before training: who
     // played a youth game neither trains nor rests; the games stay out of `dayEvents`.
+    // The youth coach in charge (`staff.md` → "Treinador da base"): his call-ups for today's games first.
+    const coachCallUps = await coachCallUpsToday({
+      service: saveService, saveId, date: currentDate, seats: daySeats, teamsPlayingToday,
+      squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+    });
     const youthDay = await playYouthDay({
       service: saveService, saveId, date: currentDate, index,
       humans: new Map(daySeats.flatMap((ds) => (ds.clubId
-        ? [[ds.clubId, { seatId: ds.seatId, callUps: ds.meta.youthCallUps, tactics: ds.tactics }] as const]
+        ? [[ds.clubId, { seatId: ds.seatId, callUps: coachCallUps.get(ds.seatId) ?? ds.meta.youthCallUps, tactics: ds.tactics }] as const]
         : []))),
       teamsPlayingToday,
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
@@ -896,6 +902,15 @@ export async function advanceOneDay(
     }
     for (const inj of youthDay.injuries) injuryInboxEvents.push({ kind: "injured", ...inj });
     for (const h of youthDay.healed) injuryInboxEvents.push({ kind: "returned", ...h });
+    // Monday: the youth coach in charge sets the academy's training plan, before the day's training reads it.
+    if (new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1) {
+      for (const ds of daySeats) {
+        if (!ds.clubId || !ds.entry) continue;
+        const now = squadWrites.get(ds.clubId)?.squad ?? (await saveService.getSquadById(saveId, ds.clubId));
+        const planned = now ? coachMondaySquad(ds, now) : null;
+        if (planned) squadWrites.set(ds.clubId, { league: ds.entry.leagueSlug, club: ds.entry.stem, squad: planned });
+      }
+    }
 
     // ── National teams (`.claude/rules/game/national-teams.md`): returns, draws, call-ups, today's games ──
     // After the club games (no club plays in a FIFA window) and before training: who is with his national
@@ -3617,8 +3632,14 @@ export async function advanceOneDay(
     // Youth call-ups used today, per seat (`.claude/rules/game/youth-competitions.md` → convocação).
     for (const ds of daySeats) {
       const yd = youthDay.bySeat[ds.seatId];
-      if (!yd || yd.consumedCallUps.length === 0) continue;
-      const callUps = { ...ds.meta.youthCallUps };
+      // The call-ups the day started from: the seat's, with the youth coach's of today when he added any.
+      const coached = coachCallUps.get(ds.seatId);
+      if (!yd || yd.consumedCallUps.length === 0) {
+        // His call-ups of a game that was not played today (postponed) stay for the day it is.
+        if (coached) ds.patch.youthCallUps = coached.u21?.length || coached.u19?.length ? coached : undefined;
+        continue;
+      }
+      const callUps = { ...(coached ?? ds.meta.youthCallUps) };
       const skipped = { ...ds.meta.youthCallUpsSkipped };
       const humanNow = ds.clubId
         ? (squadWrites.get(ds.clubId)?.squad ?? (await saveService.getSquadById(saveId, ds.clubId)))

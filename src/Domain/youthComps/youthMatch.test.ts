@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { applyYouthMatch, postponeDate, updateLeaders, youthCompDpMult, youthDpMult, youthMatchLog } from "@/Domain/youthComps/youthMatch";
-import { areaMultsOf } from "@/Domain/staff/staff";
+import { areaMultsOf, makeProfessional, memberStars } from "@/Domain/staff/staff";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { applyDevelopment } from "@/GameEngine/PlayerDevelopment";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
@@ -191,5 +191,34 @@ describe("settling", () => {
   test("a youth game does not count", () => {
     const out = applyYouthMatch(withNewcomer(), recording(), opts);
     expect(settlingOfA(out.squad)).toEqual({ games: 3, need: 15 });
+  });
+});
+
+describe("youth coach in a youth game (12.1)", () => {
+  const exact = (role: "assistant" | "youthCoach", stars: number) => {
+    for (let i = 0; i < 200; i++) {
+      const m = makeProfessional(`ym:${role}:${stars}:${i}`, role, stars);
+      if (memberStars(m) === stars) return m;
+    }
+    throw new Error("no professional of the wanted stars");
+  };
+  const kid = mk("y", "ST", 17);
+  const grown = mk("a", "ST", 20);
+  const withStaff = (coachStars?: number): Squad => ({
+    ...squad(), staff: { members: [exact("assistant", 3), ...(coachStars ? [exact("youthCoach", coachStars)] : [])] },
+  });
+
+  test("3 stars: an academy player's DP is identical to a club without the role", () => {
+    // No `staff` and no finances: every role neutral, the youth coach nowhere (the multiplier before 12.1).
+    const { finances: _f, ...plain } = squad();
+    const neutral = { ...withStaff(3), finances: undefined } as Squad;
+    expect(youthDpMult(neutral, kid, true)).toBe(youthDpMult(plain as Squad, kid, true));
+  });
+  test("5 stars +8%, nobody -4%, in full; the first team never feels him", () => {
+    const base = youthDpMult(withStaff(3), kid, true);
+    expect(youthDpMult(withStaff(5), kid, true) / base).toBeCloseTo(1.08, 9);
+    expect(youthDpMult(withStaff(), kid, true) / base).toBeCloseTo(0.96, 9);
+    expect(youthDpMult(withStaff(5), grown)).toBe(youthDpMult(withStaff(3), grown));
+    expect(youthDpMult(withStaff(), grown)).toBe(youthDpMult(withStaff(3), grown));
   });
 });

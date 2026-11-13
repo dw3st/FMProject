@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { clubSurnames, drawAcademyName, setAcademyNameBook, surnameOf } from "@/Domain/youth/academyNames";
 import { buildStaffNameBook } from "@/Domain/staff/staffOrigin";
 
 const many = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}${String.fromCharCode(97 + (i % 26))}${String.fromCharCode(97 + Math.floor(i / 26))}son`);
 
+// A day-advance test run earlier in the same process leaves its book set.
+beforeAll(() => setAcademyNameBook(null));
 afterEach(() => setAcademyNameBook(null));
 
 describe("academy names (11.1)", () => {

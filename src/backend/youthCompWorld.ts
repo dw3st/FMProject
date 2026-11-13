@@ -283,7 +283,7 @@ const xiCache = new Map<string, string[]>();
  * each available player's id, positions, natural position, foot and attributes): a pure cache — the
  * same squad gives the same XI — that spares the aptitude work on the days the squad did not change.
  */
-function firstTeamLineup(squad: Squad, formationId: string | undefined, date: string): string[] {
+export function firstTeamLineup(squad: Squad, formationId: string | undefined, date: string): string[] {
   const available = squad.players.filter((p) => !isUnavailable(p, date));
   const key = `${squad.id}#${formationId ?? ""}#${available
     .map((p) => `${p.id}|${p.positions.join(",")}|${p.naturalPosition ?? ""}|${p.preferredFoot}|${STAT_KEYS.map((k) => p.stats[k] ?? "").join(",")}`)

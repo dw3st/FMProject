@@ -20,8 +20,9 @@ function responsibilitiesView(r: Responsibilities | undefined): Required<Respons
  */
 export const responsibilityRoutes = {
   /**
-   * `GET` → `{ contracts, scouting }`; `PUT` with one or both of `{ contracts: "director" | "manager",
-   * scouting: "manager" | "chief" }` (the other keeps its value); anything else → 400.
+   * `GET` → `{ contracts, scouting, friendlies, press, youth }`; `PUT` with any of them (`contracts: "director" |
+   * "manager"`, `scouting: "manager" | "chief"`, `youth: "manager" | "coach"`...; the others keep their value);
+   * anything else → 400.
    */
   "/api/saves/:saveId/responsibilities": async (req: Req) => {
     const saveId = req.params.saveId!;

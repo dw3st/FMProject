@@ -50,6 +50,8 @@ export const STAFF = {
   MEDIC_DURATION: [1.2, 1, 0.8],
   /** Analyst: multiplier on the style-familiarity gain. */
   ANALYST_FAMILIARITY: [0.8, 1, 1.25],
+  /** Youth coach (12.1): multiplier on the growth DP of the academy (training and youth games), in full. */
+  YOUTH_COACH_DEV: [0.92, 1, 1.08],
   /** Weights of the 1..20 attributes in an area's score (sum 1). */
   STAR_WEIGHTS: { knowledge: 0.5, playerReading: 0.2, determination: 0.15, discipline: 0.1, adaptability: 0.05 },
   ATTR_MIN: 1,
@@ -69,7 +71,7 @@ export const STAFF = {
    */
   WAGE_ROLE_SHARE: {
     assistant: 0.18, scout: 0.18, fieldScout: 0.18, fitness: 0.126, goalkeeping: 0.072, coach: 0.072, medic: 0.072,
-    analyst: 0.054, groundskeeper: 0.018,
+    analyst: 0.054, groundskeeper: 0.018, youthCoach: 0.072,
   } satisfies Record<StaffRole, number>,
   /** Starting staff: implied stars of the tier +/- this (halves). */
   START_SPREAD_STARS: 0.5,
@@ -78,9 +80,9 @@ export const STAFF = {
     DIRECTOR_STAR_MARGIN: 0.5, SEVERANCE_SHARE: 0.5,
   },
   POOL: {
-    SIZE: 300,
+    SIZE: 320,
     BY_ROLE: {
-      coach: 90, assistant: 30, fitness: 30, goalkeeping: 30, medic: 25, analyst: 25, scout: 20, fieldScout: 35, groundskeeper: 15,
+      coach: 90, assistant: 30, fitness: 30, goalkeeping: 30, medic: 25, analyst: 25, scout: 20, fieldScout: 35, groundskeeper: 15, youthCoach: 20,
     } satisfies Record<StaffRole, number>,
     /** [stars low, stars high, share] - sampled per member. */
     STAR_BANDS: [[1, 2, 0.3], [2.5, 3, 0.4], [3.5, 4, 0.22], [4.5, 5, 0.08]],

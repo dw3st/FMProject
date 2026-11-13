@@ -198,3 +198,8 @@ Report de tester. O bloco "Jogos da base" da aba Base é uma tabela só (`YouthC
 ## DP do jogo de base (11.2)
 
 `DP_MULT` 1,0 → 0,7 (até 21 anos), e quem está na base sente os bônus do clube pela metade (`youthDpMult(squad, p, academy)`). Ver `development.md` → "Ritmo da base (11.2)".
+
+
+## Treinador da base (12.1)
+
+Com a responsabilidade Base no treinador da base, no dia de jogo do sub-21 ou sub-19 ele acrescenta convocações `next` com `YouthCallUp.byCoach` (jovens do elenco fora do XI, disponíveis, com fôlego ≥ 70 e poucos jogos; até 6 por idade, nunca além de 11), antes de o `playYouthDay` escalar; as do técnico não mudam. `GET /youth-callups` devolve `coach`. A DP de um jogo de base de quem está na base × o multiplicador do treinador (`youthDpMult(squad, p, true)`). Ver `.claude/rules/game/staff.md` → "Treinador da base (12.1)".

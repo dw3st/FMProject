@@ -312,14 +312,16 @@ function trainAcademy(
   skip?: ReadonlySet<string>,
 ): RosterPlayer[] {
   const plan = squad.youthTraining ?? DEFAULT_YOUTH_PLAN;
-  const devMult = staffEffectsOf(squad).devMult;
+  const { devMult, academyDevMult } = staffEffectsOf(squad);
   const resting = new Set<string>();
   const trained = (squad.youth ?? []).map((orig) => {
     if (skip?.has(String(orig.id))) return orig;
     const p = ensureSeasonLog(clearHealed(orig, date));
     if (isInjured(p, date) || (p.seasonLog?.fitness ?? 0) < YOUTH_TRAINING.MIN_FITNESS) { resting.add(String(p.id)); return p; }
-    // The club's bonuses count half in the academy (`YOUTH_TRAINING.CLUB_BONUS_SHARE`); the player's own in full.
-    const mult = academyClubMult(devMult * youthAttributeMult(squad.managerAttributes, p.age)) * rebornDpMult(p) * professionalismDpMult(p);
+    // The club's bonuses count half in the academy (`YOUTH_TRAINING.CLUB_BONUS_SHARE`); the player's own and the
+    // youth coach's (12.1) in full.
+    const mult = academyClubMult(devMult * youthAttributeMult(squad.managerAttributes, p.age)) * rebornDpMult(p) * professionalismDpMult(p)
+      * academyDevMult;
     let next = withYouthTrend(trainYouthSession(p, plan, mult, academyAreas(areas)), date);
     if (plan.intensity === "heavy" && rng() < trainingInjuryChance("heavy", injuryMult)) {
       const severity = rollSeverity(rng);

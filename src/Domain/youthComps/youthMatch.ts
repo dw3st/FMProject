@@ -47,11 +47,13 @@ export function youthCompDpMult(age: number): number {
 
 /** DP multiplier of a youth game: the same factors as a club match × `DP_MULT` (× `DP_MULT_OVERAGE` above 21). */
 export function youthDpMult(squad: Squad, p: RosterPlayer, academy = false): number {
-  const { devMult } = staffEffectsOf(squad);
+  const { devMult, academyDevMult } = staffEffectsOf(squad);
   const { matchDevMult } = trainingGroundEffectsOf(squad);
-  // An academy player feels the club's bonuses by half (`YOUTH_TRAINING.CLUB_BONUS_SHARE`, 11.2).
+  // An academy player feels the club's bonuses by half (`YOUTH_TRAINING.CLUB_BONUS_SHARE`, 11.2) and the youth
+  // coach's in full (12.1); a first-team player in a youth game never feels the youth coach.
   const club = devMult * matchDevMult * youthAttributeMult(squad.managerAttributes, p.age);
-  return (academy ? academyClubMult(club) : club) * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)) * youthCompDpMult(p.age);
+  return (academy ? academyClubMult(club) * academyDevMult : club) * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p))
+    * youthCompDpMult(p.age);
 }
 
 /**

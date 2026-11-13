@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { directorDecisions } from "@/Domain/responsibilities/director";
+import { directorDecisions, parseResponsibilitiesPatch, responsibilitiesOf, youthByCoach } from "@/Domain/responsibilities/director";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 function player(id: string, age: number, level: number, until: string, wage = 1000, pos = "CM"): RosterPlayer {
@@ -93,5 +93,18 @@ describe("directorDecisions", () => {
     // A squad player that far out waits for the 120-day window.
     const fringe = player("fringe", 26, 4, "2027-08-15");
     expect(run(squad([...base, fringe])).outcomes).toEqual([]);
+  });
+});
+
+describe("responsibilities: the academy (12.1)", () => {
+  test("default is the manager; the patch takes manager or coach only", () => {
+    expect(responsibilitiesOf(undefined).youth).toBe("manager");
+    expect(youthByCoach(undefined)).toBe(false);
+    expect(youthByCoach({ contracts: "director" })).toBe(false);
+    expect(youthByCoach({ contracts: "director", youth: "coach" })).toBe(true);
+    expect(parseResponsibilitiesPatch({ youth: "coach" })).toEqual({ youth: "coach" });
+    expect(parseResponsibilitiesPatch({ youth: "manager", contracts: "manager" })).toEqual({ youth: "manager", contracts: "manager" });
+    expect(parseResponsibilitiesPatch({ youth: "director" })).toBeNull();
+    expect(parseResponsibilitiesPatch({ youth: true })).toBeNull();
   });
 });

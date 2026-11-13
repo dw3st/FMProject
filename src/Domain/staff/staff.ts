@@ -188,6 +188,18 @@ export interface StaffEffects {
    * is a formula by tier).
    */
   pitchWearMult: number;
+  /**
+   * Youth coach (12.1): × growth DP of the club's academy (`squad.youth`) in the daily academy training and in
+   * youth-competition games. In full (never halved like the club's other bonuses), never the first team nor
+   * the age decline. Vacant or away on a course = 2★. Clubs without staff (AI, no academy): 1.
+   */
+  academyDevMult: number;
+}
+
+/** The youth coach's multiplier on the academy's growth (see `StaffEffects.academyDevMult`). */
+export function academyDevMultOf(squad: Squad): number {
+  if (!squad.staff) return 1;
+  return starCurve(effectiveStars(squad, "youthCoach"), STAFF.YOUTH_COACH_DEV);
 }
 
 /** Groundskeepers' multiplier on the pitches' wear (see `StaffEffects.pitchWearMult`). */
@@ -213,6 +225,7 @@ export function staffEffectsOf(squad: Squad): StaffEffects {
     scoutUncertaintyMult: scoutUncertaintyMultOf(scout),
     scoutGainMult: scoutGainMultOf(scout),
     pitchWearMult: pitchWearMultOf(squad),
+    academyDevMult: academyDevMultOf(squad),
   };
 }
 

@@ -28,6 +28,8 @@ interface CallUpsData {
   callUps: Partial<Record<YouthCompAge, YouthCallUp[]>>;
   skipped: Partial<Record<YouthCompAge, { date: string; players: { id: string; name: string }[] }>>;
   eligible: Record<YouthCompAge, YouthEligible[]>;
+  /** The youth coach is in charge of the call-ups (responsibility + one at work). */
+  coach?: boolean;
 }
 
 const AGES: YouthCompAge[] = ["u21", "u19"];
@@ -151,6 +153,7 @@ export function YouthCallUpsPanel() {
       <div>
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("youthComps.callUps.title")}</h3>
         <p className="text-sm text-muted-foreground m-0 mt-1">{t("youthComps.callUps.hint", { n: YOUTH_COMP.MAX_CALL_UPS })}</p>
+        {data.coach && <p className="text-sm text-muted-foreground m-0 mt-1">{t("youthCoach.callUpsNote")}</p>}
       </div>
 
       {skippedAges.map((a) => (
@@ -270,6 +273,7 @@ export function YouthCallUpsPanel() {
                                 <span className="inline-block min-w-[4.5rem] text-left text-sm tabular-nums text-muted-foreground" title={durationName}>
                                   {callUp ? callUpLeftLabel(callUp, t) : ""}
                                 </span>
+                                {callUp?.byCoach && <span className="text-sm text-muted-foreground whitespace-nowrap">{t("youthCoach.byCoach")}</span>}
                               </span>
                             </td>
                           );

@@ -14,6 +14,8 @@ import {
   callUpAgeOk, callUpEligibleIds, isCallUpDuration, mergeCallUps, pruneCallUps,
   type CallUpDuration, type YouthCallUps,
 } from "@/Domain/youthComps/callUps";
+import { youthByCoach } from "@/Domain/responsibilities/director";
+import { youthCoachOnDuty } from "@/Domain/youth/youthCoach";
 import { emptySeasonLog, type RosterPlayer, type Squad } from "@/types/playerTypes";
 import type { YouthCompAge } from "@/types/youthCompTypes";
 
@@ -173,6 +175,8 @@ export const youthCompRoutes = {
         })),
         skipped,
         eligible: { u21: eligibleForCallUp(squad, "u21"), u19: eligibleForCallUp(squad, "u19") },
+        // The youth coach adds his own call-ups on the game day (`youthCoach.ts`): the screen says so.
+        coach: youthByCoach(meta.responsibilities) && youthCoachOnDuty(squad),
       });
     }
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });

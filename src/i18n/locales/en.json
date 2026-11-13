@@ -473,7 +473,8 @@
       "medical": "Medical",
       "analysis": "Analysis",
       "scouting": "Scouting",
-      "pitch": "Pitch"
+      "pitch": "Pitch",
+      "youth": "Youth"
     },
     "roles": {
       "assistant": "Assistant coach",
@@ -484,7 +485,8 @@
       "analyst": "Performance analyst",
       "scout": "Chief scout",
       "fieldScout": "Field scout",
-      "groundskeeper": "Groundskeeper"
+      "groundskeeper": "Groundskeeper",
+      "youthCoach": "Youth coach"
     },
     "effects": {
       "assistant": "Player development {{value}}",
@@ -496,7 +498,8 @@
       "analyst": "Learning tactical styles {{value}}",
       "scout": "Report uncertainty {{uncertainty}} · Knowledge gained {{gain}}",
       "fieldScout": "Leads one scouting mission",
-      "groundskeeper": "Pitch wear {{value}}"
+      "groundskeeper": "Pitch wear {{value}}",
+      "youthCoach": "Academy development {{value}}"
     },
     "errors": {
       "generic": "Could not complete the action.",
@@ -1810,8 +1813,19 @@
       "director": "Director",
       "manager": "Manager",
       "chief": "Chief scout",
+      "youthCoach": "Youth coach",
       "none": "Nobody"
+    },
+    "youth": {
+      "label": "Academy",
+      "manager": "Manager: you call players up for the youth games and set the academy's training.",
+      "coach": "Youth coach: on a youth game day he calls up the squad's youngsters who play little, and every Monday he adjusts the academy's training. Only with a youth coach hired. You can change it by hand."
     }
+  },
+  "youthCoach": {
+    "byCoach": "by the youth coach",
+    "callUpsNote": "The youth coach looks after the call-ups. You can change them by hand.",
+    "trainingNote": "The youth coach looks after the training. You can change it by hand."
   },
   "awards": {
     "kind": {

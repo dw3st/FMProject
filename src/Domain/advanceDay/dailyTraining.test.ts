@@ -611,3 +611,58 @@ describe("buildTrainingEvent and the youth competitions", () => {
     expect(rested.seasonLog!.load).toBeCloseTo(decayLoad(90), 5);
   });
 });
+
+import { areaMultsOf, memberStars } from "@/Domain/staff/staff";
+import { youthAttributeMult } from "@/Domain/achievements/managerAttributes";
+import { professionalismDpMult } from "@/Domain/personality/personality";
+import { rebornDpMult } from "@/Domain/retirement/rebornMult";
+import { academyAreas, academyClubMult, DEFAULT_YOUTH_PLAN, trainYouthSession, withYouthTrend } from "@/Domain/youth/youthTraining";
+import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
+
+describe("youth coach on an academy training day (12.1)", () => {
+  const exact = (role: "assistant" | "youthCoach", stars: number) => {
+    for (let i = 0; i < 200; i++) {
+      const m = makeProfessional(`dt:${role}:${stars}:${i}`, role, stars);
+      if (memberStars(m) === stars) return m;
+    }
+    throw new Error("no professional of the wanted stars");
+  };
+  const five5 = {
+    passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5,
+    stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5,
+  };
+  const kid = basePlayer({ id: "y", name: "Y", age: 17, stats: five5, seasonLog: makeSeasonLog({ fitness: 90 }) });
+  const first = basePlayer({ id: "p", name: "P", age: 19, stats: five5, seasonLog: makeSeasonLog({ fitness: 90 }) });
+  const club = (coachStars?: number): Squad => ({
+    id: "s", name: "S", colors: ["#000", "#fff"], money: 0, players: [first], youth: [kid],
+    staff: { members: [exact("assistant", 3), ...(coachStars ? [exact("youthCoach", coachStars)] : [])] },
+  });
+  const policy = { minEnergyToTrain: 0, intensity: "normal" as const };
+  const day = (s: Squad) => buildTrainingEvent("s", s, policy, "2027-02-05", () => 0.99).updatedSquad;
+  // Progress carried plus the steps already turned into attribute (0.1 each, at the cost of a step at 5).
+  const progress = (p: RosterPlayer) => Object.values(p.progress ?? {}).reduce((a, b) => a + b, 0)
+    + Object.values(p.stats).reduce((a, b) => a + (b - 5) * 10 * dpRequired(5), 0);
+
+  test("3 stars: the academy session is the one from before the role existed", () => {
+    const squad = club(3);
+    // The session as it was computed before 12.1 (no youth-coach factor).
+    const mult = academyClubMult(staffEffectsOf(squad).devMult * youthAttributeMult(squad.managerAttributes, kid.age))
+      * rebornDpMult(kid) * professionalismDpMult(kid);
+    const before = withYouthTrend(
+      trainYouthSession(ensureSeasonLog(kid), DEFAULT_YOUTH_PLAN, mult, academyAreas(areaMultsOf(squad))), "2027-02-05",
+    );
+    expect(day(squad).youth![0]).toEqual(before);
+  });
+  test("better coach, faster academy; nothing else of the club changes", () => {
+    const [none, three, five] = [day(club()), day(club(3)), day(club(5))];
+    expect(progress(five.youth![0]!)).toBeGreaterThan(progress(three.youth![0]!));
+    expect(progress(three.youth![0]!)).toBeGreaterThan(progress(none.youth![0]!));
+    // The first team's multipliers do not read him (its session rolls its own dice, so the players are not compared).
+    const { academyDevMult: _a, ...rest5 } = staffEffectsOf(club(5));
+    const { academyDevMult: _b, ...rest3 } = staffEffectsOf(club(3));
+    const { academyDevMult: _c, ...rest0 } = staffEffectsOf(club());
+    expect(rest5).toEqual(rest3);
+    expect(rest0).toEqual(rest3);
+    expect(areaMultsOf(club(5))).toEqual(areaMultsOf(club()));
+  });
+});

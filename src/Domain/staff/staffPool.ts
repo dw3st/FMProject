@@ -57,6 +57,30 @@ export function generatePool(saveId: string, season: string, date: string, book?
 }
 
 /**
+ * A pool written before a role existed (the youth coach, 12.1) has nobody of it: the role's quota is added,
+ * deterministic by save and role, listed since `date`. A pool with at least one professional of every role
+ * comes back unchanged (the same object).
+ */
+export function topUpMissingRoles(pool: StaffPool, saveId: string, date: string, book?: StaffNameBook): StaffPool {
+  const missing = STAFF_ROLES.filter((role) => !pool.members.some((m) => m.role === role));
+  if (missing.length === 0) return pool;
+  const ids = new Set(pool.members.map((m) => m.id));
+  const members = [...pool.members];
+  for (const role of missing) {
+    const rng = mulberry32(seedFrom(`staff-pool-topup:${saveId}:${role}`));
+    let have = 0;
+    for (let i = 0; have < STAFF.POOL.BY_ROLE[role]; i++) {
+      const m = makeProfessional(`${saveId}:pool:topup:${role}:${i}`, role, sampleStars(rng), book ? { book } : undefined);
+      if (ids.has(m.id)) continue;
+      ids.add(m.id);
+      members.push({ ...m, since: date });
+      have++;
+    }
+  }
+  return { ...pool, members };
+}
+
+/**
  * The human club's country rolled on `date`: everyone a year older, the 68+ retire, a third of the
  * longest-listed leave, and each role is filled back to `POOL.BY_ROLE`. Applied once per date: a
  * pool already refreshed on (or generated after) `date` is returned unchanged.

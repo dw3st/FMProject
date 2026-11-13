@@ -14,7 +14,8 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
-import { generatePool, type StaffPool } from "@/Domain/staff/staffPool";
+import { generatePool, topUpMissingRoles, type StaffPool } from "@/Domain/staff/staffPool";
+import { STAFF_ROLES } from "@/Domain/staff/staffTypes";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
 import type { FreeAgent, RetiredPlayer, Squad, StandingRow } from "@/types/playerTypes";
@@ -323,7 +324,14 @@ export class SaveService {
   /** The free coaching-staff pool; generated (season = the year of `date`) and written when missing. */
   async getStaffPool(saveId: string, date: string): Promise<StaffPool> {
     const pool = await this.dal.readStaffPool(saveId);
-    if (pool) return pool;
+    if (pool) {
+      // A pool written before a role existed (the youth coach, 12.1) gets that role's quota once.
+      if (STAFF_ROLES.every((role) => pool.members.some((m) => m.role === role))) return pool;
+      const { getStaffNameBook: book } = await import("@/backend/staffNameBook");
+      const topped = topUpMissingRoles(pool, saveId, date, await book());
+      await this.dal.writeStaffPool(saveId, topped);
+      return topped;
+    }
     const { getStaffNameBook } = await import("@/backend/staffNameBook");
     const fresh = generatePool(saveId, date.slice(0, 4), date, await getStaffNameBook());
     await this.dal.writeStaffPool(saveId, fresh);

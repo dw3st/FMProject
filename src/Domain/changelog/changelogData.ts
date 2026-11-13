@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.1",
+    date: "2026-11-13",
+    time: "17:00",
+    items: [
+      { tab: "staff", pt: "Treinador da base: uma função nova na comissão, um por clube, contratado em Mercado, aba Comissão. Quanto mais estrelas, mais rápido os jovens da base evoluem no treino e nos jogos da base (até 8% a mais com 5 estrelas; sem ninguém na função, 4% a menos).", en: "Youth coach: a new staff role, one per club, hired in Transfers, Staff tab. The more stars, the faster the academy youngsters develop in training and in youth games (up to 8% more with 5 stars; with nobody in the role, 4% less)." },
+      { tab: "staff", pt: "Em Equipe técnica, aba Responsabilidades, o bloco Base deixa o treinador da base cuidar das convocações e do treino da base. O padrão continua sendo você.", en: "In Staff, Responsibilities tab, the Academy block lets the youth coach look after the youth call-ups and the academy's training. The default is still you." },
+      { tab: "squad", pt: "Com o treinador da base no comando: no dia de jogo do sub-21 ou do sub-19 ele convoca os jovens do elenco que jogam pouco, e toda segunda ajusta a intensidade e o foco do treino de cada jovem da base. O que ele faz aparece marcado na aba Base, e o que você escolher à mão ele não muda.", en: "With the youth coach in charge: on an under-21 or under-19 game day he calls up the squad's youngsters who play little, and every Monday he adjusts the intensity and each academy youngster's training focus. What he does is marked in the Academy tab, and what you pick by hand he does not change." },
+    ],
+  },
+  {
     version: "12.0",
     date: "2026-11-13",
     time: "14:50",
@@ -6117,7 +6127,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Treinador da base: um profissional novo da comissão que convoca para os jogos do sub-21 e sub-19 e cuida do treino da base, se você quiser", en: "Youth coach: a new staff member who picks the players for the under-21 and under-19 games and runs the academy training, if you want" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];
