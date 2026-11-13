@@ -14,6 +14,8 @@ export interface MatchTeamStats {
   yellowCards?:    number;
   redCards?:       number;
   offsides?:       number;
+  /** Shots inside the posts (goal or save); absent in quickSim games and in events from before 12.2. */
+  shotsOnTarget?:  number;
   penaltiesAwarded?: number;
   /** Goals scored from in-match penalties (part of the score, never extra). */
   penaltyGoals?:   number;

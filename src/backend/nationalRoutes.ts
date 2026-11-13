@@ -16,7 +16,8 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { NationalCallUp, NationalCompetition, NationalState } from "@/types/nationalTypes";
 import { withSaveLock } from "@/backend/saveLock";
 import {
-  answerNationalOffer, nationalCoachView, resignNationalTeam, saveNationalCallUp, saveNationalTactics,
+  answerNationalOffer, nationalCoachView, nationalTacticsOf, nationalTacticsSquad, resignNationalTeam, saveNationalCallUp,
+  saveNationalTactics,
 } from "@/backend/nationalCoachWorld";
 
 type Req = Request & { params: Record<string, string> };
@@ -251,17 +252,38 @@ export const nationalRoutes = {
     });
   },
 
-  /** `PUT { formation, tactical_style, lineup }`: his national tactics (separate from the club's). */
+  /**
+   * His national tactics (separate from the club's; 12.2: the club's shape). `GET`: the stored tactics. `PUT`: a
+   * partial body merged over them with the club route's checks; answers the stored tactics. 409 `notCoach`.
+   */
   "/api/saves/:saveId/national/coach/tactics": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
+    if (req.method === "GET") {
+      const tactics = await nationalTacticsOf(saveService, saveId, auth.seatId);
+      if (!tactics) return Response.json({ error: "notCoach" }, { status: 409 });
+      return Response.json(tactics);
+    }
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await req.json().catch(() => null);
     return withSaveLock(saveId, async () => {
       const r = await saveNationalTactics(saveService, saveId, auth.seatId, body);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
-      return Response.json({ ok: true });
+      return Response.json(r.tactics);
     });
+  },
+
+  /** The squad his national tactics are set with (call-up in force, else the next one as it stands, else the last). */
+  "/api/saves/:saveId/national/coach/squad": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const r = await nationalTacticsSquad(saveService, saveId, auth.seatId, meta.currentDate ?? "");
+    if (!r) return Response.json({ error: "notCoach" }, { status: 409 });
+    return Response.json(r);
   },
 };

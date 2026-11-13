@@ -159,6 +159,7 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     wins: t.wins,
     avgGoals: r2(t.goals / matches),
     avgShots: r2(t.shots / matches),
+    avgShotsOnTarget: r2(t.shotsOnTarget / matches),
     avgXg: r2(t.xg / matches),
     avgAssists: r2(t.assists / matches),
     shotConversionPct: pct(t.goals, t.shots),
@@ -237,7 +238,7 @@ interface VariantTotals extends TeamRawStats {
 function emptyTotals(): VariantTotals {
   return {
     wins: 0, losses: 0, draws: 0, games: 0,
-    goals: 0, shots: 0, xg: 0, assists: 0,
+    goals: 0, shots: 0, shotsOnTarget: 0, xg: 0, assists: 0,
     passesAttempted: 0, passesCompleted: 0, passesFailed: 0,
     tackles: 0, interceptions: 0, dribblesWon: 0, dribblesLost: 0,
     throughBallsAttempted: 0, throughBallsCompleted: 0,
@@ -261,6 +262,7 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.games           += matches;
   dst.goals           += src.goals;
   dst.shots           += src.shots;
+  dst.shotsOnTarget   += src.shotsOnTarget;
   dst.xg              += src.xg;
   dst.assists         += src.assists;
   dst.passesAttempted += src.passesAttempted;
@@ -344,6 +346,7 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     lossRate: pct(totals.losses, totals.games),
     avgGoals: r2(totals.goals / games),
     avgShots: r2(totals.shots / games),
+    avgShotsOnTarget: r2(totals.shotsOnTarget / games),
     avgXg: r2(totals.xg / games),
     avgAssists: r2(totals.assists / games),
     shotConversionPct: pct(totals.goals, totals.shots),

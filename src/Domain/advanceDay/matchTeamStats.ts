@@ -14,6 +14,7 @@ export function matchVarStats(a: EngineTeamStats, b: EngineTeamStats): MatchVarS
 export function toMatchTeamStats(t: EngineTeamStats): MatchTeamStats {
   return {
     shots: t.shots,
+    shotsOnTarget: t.shotsOnTarget,
     passesCompleted: t.passesCompleted,
     passesAttempted: t.passesAttempted,
     tackles: t.tackles,

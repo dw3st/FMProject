@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
-  asNationalPlayer, callableCandidates, fillerLevel, missingByLine, nationalFillers, nationalLineup, pickCallUp, squadLevel,
+  asNationalPlayer, callableCandidates, coachSide, fillerLevel, missingByLine, nationalFillers, nationalLineup, pickCallUp, squadLevel,
   lineOf,
 } from "@/Domain/national/nationalSquad";
 import { applyNationalMatch, nationalCampDay, updateNationalLeaders } from "@/Domain/national/nationalMatch";
 import { computeTournamentAwards, tournamentValueMult } from "@/Domain/national/nationalAwards";
 import { isUnavailable } from "@/Domain/discipline/discipline";
+import { CUSTOM_PRESETS } from "@/Domain/formation/zones";
+import { formationForTactics } from "@/Domain/matchFormations";
 import { emptySeasonLog, type RosterPlayer } from "@/types/playerTypes";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import type { NationalCompetition } from "@/types/nationalTypes";
@@ -95,5 +97,51 @@ describe("national squads", () => {
     expect(tournamentValueMult({ comp, awards: a, playerId: "p1", teamId: "nat_a", played: true })).toBe(1.15);
     expect(tournamentValueMult({ comp, awards: a, playerId: "p9", teamId: "nat_b", played: true })).toBe(1.08);
     expect(tournamentValueMult({ comp, awards: a, playerId: "p9", teamId: "nat_b", played: false })).toBe(1);
+  });
+});
+
+describe("the human coach's side of a national game (12.2)", () => {
+  const squad = () => [...fillers("GK", 3, 4), ...fillers("Defender", 8), ...fillers("Midfielder", 7), ...fillers("Forward", 5)];
+
+  test("tactics with only formation, style and XI play as before: the style alone", () => {
+    const side = coachSide({ formation: "4-4-2", tactical_style: "counter_attack", lineup: [] }, squad(), "2027-03-25");
+    expect(side.formation.id).toBe("4-4-2");
+    expect(side.tactics).toEqual({ style: "counter_attack" });
+    expect(side.lineup.filter(Boolean)).toHaveLength(11);
+    expect(coachSide(undefined, squad(), "2027-03-25").tactics).toEqual({ style: "balanced" });
+    expect(coachSide(undefined, squad(), "2027-03-25").formation.id).toBe("4-3-3");
+  });
+
+  test("the full tactics reach the engine: free formation, axes, instructions, takers and routines", () => {
+    const custom = CUSTOM_PRESETS["4-1-3-2"]!;
+    const formation = formationForTactics({ formation: "custom", customFormation: custom });
+    const st = formation.attacking.findIndex((s) => s.role === "ST");
+    const players = squad();
+    const side = coachSide({
+      formation: "custom", customFormation: custom, tactical_style: "possession", lineup: [],
+      axesOverride: { width: "wide" },
+      slotInstructions: formation.attacking.map((_, i) => (i === st ? { variant: "st_target" as const, press: "more" as const } : null)),
+      setPieceTakers: { corners: [players[5]!.id], routines: { corners: [{ target: "far_post", attackers: 6 }] } },
+    }, players, "2027-03-25");
+    expect(side.formation.id).toBe("custom");
+    expect(side.formation.attacking.map((s) => s.role)).toEqual(formation.attacking.map((s) => s.role));
+    expect(side.lineup.filter(Boolean)).toHaveLength(11);
+    expect(side.tactics.style).toBe("possession");
+    expect(side.tactics.axesOverride).toEqual({ width: "wide" });
+    expect(side.tactics.slotInstructions?.[st]).toEqual({ variant: "st_target", press: "more" });
+    expect(side.tactics.setPieceTakers?.corners).toEqual([players[5]!.id]);
+    expect(side.tactics.setPieceTakers?.routines?.corners?.[0]).toEqual({ target: "far_post", attackers: 6 });
+  });
+
+  test("an instruction that no longer fits the formation is dropped, never sent to the engine", () => {
+    const f442 = formationForTactics({ formation: "4-4-2" });
+    const st = f442.attacking.findIndex((s) => s.role === "ST");
+    const side = coachSide({
+      formation: "5-4-1", tactical_style: "balanced", lineup: [],
+      slotInstructions: f442.attacking.map((_, i) => (i === st ? { variant: "st_target" as const } : null)),
+    }, squad(), "2027-03-25");
+    for (const [i, ins] of (side.tactics.slotInstructions ?? []).entries()) {
+      if (ins?.variant === "st_target") expect(side.formation.attacking[i]!.role).toBe("ST");
+    }
   });
 });

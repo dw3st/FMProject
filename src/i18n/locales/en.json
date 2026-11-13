@@ -1135,7 +1135,17 @@
     "seasonRating": "Season rating",
     "seasonGames_one": "{{count}} game",
     "seasonGames_other": "{{count}} games",
-    "nationalTactics": "National team tactics"
+    "nationalTactics": "National team tactics",
+    "national": {
+      "switch": "Club or national team",
+      "club": "Club",
+      "team": "National team",
+      "source": {
+        "active": "National team tactics, with the players called up now.",
+        "next": "National team tactics, with the players of the next call-up. The list may change until then.",
+        "last": "National team tactics, with the players of the last call-up."
+      }
+    }
   },
   "roles": {
     "groups": {
@@ -1220,6 +1230,7 @@
       "KM": "Keeper smothers",
       "LB": "Long Balls",
       "TI": "Throw-ins",
+      "SOT": "Shots on Target",
       "CK": "Corners",
       "DFK": "Direct Free Kicks (goals)",
       "SPG": "Set-Piece Goals",
@@ -1247,6 +1258,7 @@
       "subbedOff": "Subbed off"
     },
     "shots": "Shots",
+    "shotsOnTarget": "Shots on target",
     "tackles": "Tackles",
     "interceptions": "Interceptions",
     "noActiveSave": "No active save loaded.",
@@ -1294,6 +1306,7 @@
       "title": "Summary",
       "possession": "Possession",
       "shots": "Shots",
+      "shotsOnTarget": "Shots (on target)",
       "passes": "Passes",
       "fouls": "Fouls",
       "cards": "Cards (Y/R)",
@@ -2662,6 +2675,9 @@
       },
       "viewPreview": "View preview",
       "prepareLineup": "Lineup",
+      "nationalTactics": "National team tactics",
+      "nationalGame": "The national team plays {{opponent}} on {{date}}.",
+      "nationalGameToday": "The national team plays {{opponent}} today.",
       "inDays_one": "In {{count}} day",
       "inDays_other": "In {{count}} days",
       "fullTable": "Full table",
@@ -2721,7 +2737,8 @@
         "talk": "Talk",
         "respond": "Reply",
         "view": "View",
-        "repair": "Repair"
+        "repair": "Repair",
+        "tactics": "Tactics"
       }
     }
   },
@@ -6198,7 +6215,10 @@
       "open": "Open My national team"
     },
     "useClubTactics": "Use the club tactics",
-    "clubTacticsCopied": "Club formation and style copied. Save to keep them.",
+    "clubTacticsCopied": "Club formation, style and instructions copied.",
+    "openTactics": "National team tactics",
+    "xiSummaryAuto": "No starters picked yet: the assistant fields the best ones.",
+    "tacticsHint": "Free formation, instructions, set-piece takers and saved line-ups are on the Formation screen, under the national team tab.",
     "clubTacticsCustom": "Your club uses a free formation: only the style was copied. Save to keep it."
   },
   "press": {

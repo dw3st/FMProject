@@ -27,20 +27,21 @@ function dutyScore(duty: Duty, p: RosterPlayer): number {
  * pitch; none of them playing falls back to automatic. Self-contained — reads and writes
  * `TacticsSave.setPieceTakers` through `/api/saves/:id/tactics`.
  */
-export function SetPieceTakersPanel({ saveId, players }: { saveId: string; players: RosterPlayer[] }) {
+export function SetPieceTakersPanel({ saveId, players, url }: { saveId: string; players: RosterPlayer[]; /** Tactics endpoint (GET + PUT); absent = the club's. The national team passes its own (12.2). */ url?: string }) {
   const { t } = useTranslation();
+  const tacticsUrl = url ?? `/api/saves/${saveId}/tactics`;
   const [takers, setTakers] = useState<SetPieceTakersSave>({});
 
   useEffect(() => {
     let alive = true;
-    fetch(`/api/saves/${saveId}/tactics`)
+    fetch(tacticsUrl)
       .then((r) => (r.ok ? r.json() : null))
       .then((tac: { setPieceTakers?: SetPieceTakersSave } | null) => {
         if (alive && tac) setTakers(tac.setPieceTakers ?? {});
       })
       .catch(() => {});
     return () => { alive = false; };
-  }, [saveId]);
+  }, [tacticsUrl]);
 
   const outfield = useMemo(() => players.filter((p) => getMainRole(p.positions[0] ?? "") !== "GK"), [players]);
 
@@ -48,7 +49,7 @@ export function SetPieceTakersPanel({ saveId, players }: { saveId: string; playe
     const prev = takers;
     setTakers(next);
     try {
-      const res = await fetch(`/api/saves/${saveId}/tactics`, {
+      const res = await fetch(tacticsUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ setPieceTakers: next }),
@@ -81,7 +82,7 @@ export function SetPieceTakersPanel({ saveId, players }: { saveId: string; playe
     else delete next[duty];
     setTakers(next);
     try {
-      const res = await fetch(`/api/saves/${saveId}/tactics`, {
+      const res = await fetch(tacticsUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ setPieceTakers: next }),

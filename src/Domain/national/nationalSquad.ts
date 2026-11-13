@@ -6,7 +6,11 @@ import { getMainRole, type MainRole } from "@/Domain/roles";
 import { academyGauss, academyUnit, makeAcademyPlayer } from "@/Domain/youth/youth";
 import { autoFillLineupWithFitness, autoFillLineup, replaceUnavailableStarters } from "@/Domain/lineupHelpers";
 import { slotsFor } from "@/Domain/advanceDay/matchSimulationLineups";
-import { formationForSimId } from "@/Domain/matchFormations";
+import { formationForSimId, formationForTactics } from "@/Domain/matchFormations";
+import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
+import type { Formation } from "@/GameEngine/types";
+import type { TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
+import type { NationalTactics } from "@/types/nationalTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Confed } from "@/types/registrationTypes";
 
@@ -179,8 +183,8 @@ export function squadLevel(players: RosterPlayer[]): number {
  * the squad (an unavailable starter swapped like a club's saved XI); empty or invalid places from the automatic,
  * fitness-aware fill of the same formation.
  */
-export function coachLineup(players: RosterPlayer[], formationId: string | undefined, saved: string[] | undefined, date: string): string[] {
-  const slots = slotsFor(formationForSimId(formationId));
+export function coachLineup(players: RosterPlayer[], formation: string | Formation | undefined, saved: string[] | undefined, date: string): string[] {
+  const slots = slotsFor(typeof formation === "object" ? formation : formationForSimId(formation));
   const pool = players.map(asNationalPlayer);
   const ids = new Set(pool.map((p) => p.id));
   const seen = new Set<string>();
@@ -199,4 +203,26 @@ export function coachLineup(players: RosterPlayer[], formationId: string | undef
     if (pick) used.add(pick);
     return pick ?? "";
   });
+}
+
+/**
+ * His side of a national game (12.2): the formation his tactics play (a free formation included), the XI and the
+ * engine tactics: style, edited axes, slot instructions (sanitized against the formation) and set-piece takers and
+ * routines. Tactics with only formation, style and XI give exactly `{ style }`, as before 12.2.
+ */
+export function coachSide(tactics: NationalTactics | undefined, players: RosterPlayer[], date: string): {
+  formation: Formation; lineup: string[]; tactics: TeamTactics;
+} {
+  const formation = formationForTactics(tactics);
+  const slotInstructions = sanitizeSlotInstructions(formation, tactics?.slotInstructions);
+  return {
+    formation,
+    lineup: coachLineup(players, formation, tactics?.lineup, date),
+    tactics: {
+      style: tactics?.tactical_style ?? "balanced",
+      ...(tactics?.axesOverride ? { axesOverride: tactics.axesOverride } : {}),
+      ...(tactics?.setPieceTakers ? { setPieceTakers: tactics.setPieceTakers } : {}),
+      ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
+    },
+  };
 }

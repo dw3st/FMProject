@@ -448,23 +448,35 @@ export function NextMatchCard({
         </div>
         {fixture && (
           isToday ? (
-            <a
-              href="/match-preview"
-              className="inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 no-underline"
-            >
-              {t("dashboard.home.viewPreview")}
-              <Icon name="chevron-right" size={16} />
-            </a>
+            <div className="flex items-center gap-3">
+              {/* His national team's game (12.2): the national tactics one click away. */}
+              {fixture.nationalTeam && (
+                <a
+                  href="/formation?team=national"
+                  className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded border border-border text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary no-underline"
+                >
+                  <Icon name="globe" size={16} />
+                  {t("dashboard.home.nationalTactics")}
+                </a>
+              )}
+              <a
+                href="/match-preview"
+                className="inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 no-underline"
+              >
+                {t("dashboard.home.viewPreview")}
+                <Icon name="chevron-right" size={16} />
+              </a>
+            </div>
           ) : (
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground tabular-nums">
                 {t("dashboard.home.inDays", { count: daysAway })}
               </span>
               <a
-                href="/formation"
+                href={fixture.nationalTeam ? "/formation?team=national" : "/formation"}
                 className="inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 no-underline"
               >
-                {t("dashboard.home.prepareLineup")}
+                {fixture.nationalTeam ? t("dashboard.home.nationalTactics") : t("dashboard.home.prepareLineup")}
                 <Icon name="chevron-right" size={16} />
               </a>
             </div>
@@ -617,6 +629,7 @@ export function AttentionCard({
     respond: "dashboard.home.attentionAction.respond",
     view: "dashboard.home.attentionAction.view",
     repair: "dashboard.home.attentionAction.repair",
+    tactics: "dashboard.home.attentionAction.tactics",
   } as const;
   function actionOf(item: AttentionItem, href: string): { label: string; href: string } {
     const to = (key: keyof typeof ACTION_LABEL, h = href) => ({ label: t(ACTION_LABEL[key]), href: h });
@@ -629,6 +642,7 @@ export function AttentionCard({
       case "managerRenewal": return to("respond");
       case "sponsorOffers": return to("respond");
       case "facilityWorn": return to("repair");
+      case "nationalGame": return to("tactics");
       default: return to("view");
     }
   }
@@ -710,6 +724,15 @@ export function AttentionCard({
           tone: "text-chart-4",
           text: t("transferWindows.attention.closing", { count: item.days, date: formatDay(item.until, i18n.language) }),
           href: "/transfers",
+        };
+      case "nationalGame":
+        return {
+          icon: "globe",
+          tone: "text-primary",
+          text: item.days === 0
+            ? t("dashboard.home.nationalGameToday", { opponent: item.opponent })
+            : t("dashboard.home.nationalGame", { opponent: item.opponent, date: formatDay(item.date, i18n.language) }),
+          href: "/formation?team=national",
         };
       case "managerRenewal":
         return {

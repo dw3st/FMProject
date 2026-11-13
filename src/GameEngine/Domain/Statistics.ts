@@ -36,6 +36,8 @@ export interface PlayerStats {
   passesCompleted: number;
   passesFailed:    number;
   shots:           number;
+  /** Shots that ended inside the posts (goal or save), in-match penalty goals included. */
+  shotsOnTarget:   number;
   goals:           number;
   assists:         number;
   interceptions:   number;
@@ -168,6 +170,7 @@ function emptyStats(): PlayerStats {
     passesCompleted: 0,
     passesFailed:    0,
     shots:           0,
+    shotsOnTarget:   0,
     goals:           0,
     assists:         0,
     interceptions:   0,
@@ -285,6 +288,7 @@ gameBus.on('shot',          e => {
   if (markedNow.has(e.player)) s.markedTargetShots++;
   notify();
 });
+gameBus.on('shotResolved',  e => { if (e.inPosts) { get(e.player).shotsOnTarget++; notify(); } });
 gameBus.on('goalScored',    e => {
   get(e.scorerId).goals++;
   if (markedNow.has(e.scorerId)) get(e.scorerId).markedTargetGoals++;
@@ -392,7 +396,7 @@ gameBus.on('penaltyAwarded', e => {
   get(e.offenderId).penaltiesConceded++;
   notify();
 });
-gameBus.on('penaltyResolved', e => { if (e.scored) { get(e.takerId).penaltyGoals++; notify(); } });
+gameBus.on('penaltyResolved', e => { if (e.scored) { const s = get(e.takerId); s.penaltyGoals++; s.shotsOnTarget++; notify(); } });
 gameBus.on('offsideCalled', e => { get(e.receiverId).offsides++; notify(); });
 
 // ── Referee errors and VAR (`.claude/rules/game/var.md`) ──────────────────────
@@ -500,6 +504,7 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.passesCompleted += stats.passesCompleted;
     result.passesFailed    += stats.passesFailed;
     result.shots           += stats.shots;
+    result.shotsOnTarget   += stats.shotsOnTarget;
     result.goals           += stats.goals;
     result.assists         += stats.assists;
     result.interceptions   += stats.interceptions;

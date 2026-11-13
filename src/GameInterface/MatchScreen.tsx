@@ -1917,6 +1917,7 @@ export function MatchScreen() {
     return {
       // Every kind of pass (10.1): short passes alone read 10 x 7 after an hour.
       shots: st.shots,
+      shotsOnTarget: st.shotsOnTarget ?? 0,
       passesCompleted: st.passesCompleted + st.throughBallsCompleted + st.crossesCompleted + st.longBallsCompleted,
       passesAttempted: st.passesAttempted,
       fouls: st.fouls, yellowCards: st.yellowCards, redCards: st.redCards, offsides: st.offsides,

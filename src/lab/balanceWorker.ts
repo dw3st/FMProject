@@ -100,7 +100,7 @@ function buildSquad(spec: SquadSpec, label: string): Squad {
 
 function emptyTeamRaw(): TeamRawStats {
   return {
-    wins: 0, goals: 0, shots: 0, xg: 0, assists: 0,
+    wins: 0, goals: 0, shots: 0, shotsOnTarget: 0, xg: 0, assists: 0,
     passesAttempted: 0, passesCompleted: 0, passesFailed: 0,
     tackles: 0, interceptions: 0, dribblesWon: 0, dribblesLost: 0,
     throughBallsAttempted: 0, throughBallsCompleted: 0,
@@ -121,6 +121,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.wins                        += src.wins;
   dst.goals                       += src.goals;
   dst.shots                       += src.shots;
+  dst.shotsOnTarget               += src.shotsOnTarget;
   dst.xg                          += src.xg;
   dst.assists                     += src.assists;
   dst.passesAttempted             += src.passesAttempted;
@@ -402,6 +403,7 @@ function runOneMatch(
 
   teamA.goals           += r.score.A;          teamB.goals           += r.score.B;
   teamA.shots           += sA.shots;           teamB.shots           += sB.shots;
+  teamA.shotsOnTarget   += sA.shotsOnTarget;   teamB.shotsOnTarget   += sB.shotsOnTarget;
   teamA.xg              += sA.xg;              teamB.xg              += sB.xg;
   teamA.assists         += sA.assists;         teamB.assists         += sB.assists;
   teamA.passesAttempted += sA.passesAttempted; teamB.passesAttempted += sB.passesAttempted;

@@ -89,11 +89,21 @@ export interface NationalCoachOffer {
   wage: number;
 }
 
-/** The human manager's national-team tactics: formation, style and XI (separate from the club's `tactics.json`). */
+/**
+ * The human manager's national-team tactics (separate from the club's `tactics.json`): what the club's `TacticsSave`
+ * carries, without the club-only parts (assistant rotation, familiarity). Since 12.2 everything past the first three
+ * fields is optional: tactics saved before play as they did.
+ */
 export interface NationalTactics {
   formation: string;
   tactical_style: import("@/types/tacticsTypes").TacticalStyle;
   lineup: string[];
+  customFormation?: import("@/types/tacticsTypes").CustomFormation;
+  axesOverride?: Partial<import("@/types/tacticsTypes").TacticalAxes>;
+  slotInstructions?: (import("@/types/tacticsTypes").SlotInstruction | null)[];
+  setPieceTakers?: import("@/types/tacticsTypes").SetPieceTakersSave;
+  /** Saved line-ups of the national team (apart from the club's). */
+  lineupPresets?: import("@/types/tacticsTypes").LineupPresets;
 }
 
 /** The national team the human manager coaches (Etapa 41b). */

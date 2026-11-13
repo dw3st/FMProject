@@ -260,11 +260,22 @@ Smoke: seção "Técnico de seleção" de `scripts/season-rollover-smoke.ts`.
 
 **Limitações:** convites só quando uma vaga abre; desempregado, os jogos da seleção dele são simulados no motor (sem
 clube não há tela de partida); no dia raro de jogo do clube e da seleção (Euro/Copa América com o clube de outra
-confederação) o do clube é o ao vivo e o da seleção é simulado; sem instruções individuais, bola parada nem marcação na
-seleção; nomes das nações nas telas da partida no idioma do carregamento da página.
+confederação) o do clube é o ao vivo e o da seleção é simulado; sem marcação individual na
+seleção (instruções e bola parada desde a 12.2, abaixo); nomes das nações nas telas da partida no idioma do carregamento da página.
 
 ## Assentos (Etapa 43)
 
 `NationalState.human` e `offers` são por assento; a seleção de um humano tem `managerId = "seat:<seatId>"`. Aceitar fecha as ofertas daquela seleção para todos os assentos. Ver `.claude/rules/game/multiplayer.md`.
 
 Tática da seleção (8.8.7, report de tester): atalho "Tática da seleção" na Formação para quem treina uma; "Usar a tática do clube" copia formação e estilo de `tactics.json` (formação livre: só o estilo), sem gravar até Salvar.
+
+## Tática completa da seleção (12.2)
+
+Pedido do usuário. `NationalTactics` (`NationalState.human[seatId].tactics`) leva o que a `TacticsSave` do clube leva: `formation` (pronta ou `custom`), `customFormation`, `tactical_style`, `axesOverride`, `lineup`, `slotInstructions`, `setPieceTakers` (cobradores e jogadas ensaiadas) e `lineupPresets` (escalações salvas da seleção, separadas das do clube). Tudo além de formação, estilo e titulares é opcional: tática gravada antes joga igual (`coachSide` devolve só `{ style }`). Sem familiaridade, rodízio do auxiliar, inscrição nem marcação individual na seleção.
+
+- **Rotas:** `GET /api/saves/:saveId/national/coach/tactics` devolve a tática gravada; `PUT` aceita corpo parcial e passa pela mesma validação do clube (`mergeTacticsBody`, `src/Domain/tactics/tacticsBody.ts`, usada também por `PUT /api/saves/:id/tactics`), devolvendo a tática gravada. 400 `invalidFormation` / `invalidStyle` / `invalidLineup` como antes, mais os textos de erro da rota do clube; 409 `notCoach`. `GET …/national/coach/squad` devolve o elenco da tela (`nationalTacticsSquad`): a convocação em vigor (`active`); entre convocações, a próxima como está hoje (a lista do técnico, senão os 23 sugeridos, sem os gerados, que só existem depois da convocação; `next`); sem convocação à vista, a última (`last`).
+- **Partidas:** `coachSide` (`nationalSquad.ts`) monta formação (`formationForTactics`), XI (`coachLineup`) e `TeamTactics` (estilo, eixos, instruções saneadas pela formação, cobradores e jogadas) para a partida simulada (`nationalWorld.ts`). Ao vivo, `nationalMatchSetup` devolve a formação da tática e o `match-setup` manda a tática inteira em `myTactics`: a partida, o jogo entre dois técnicos de seleção e os atalhos de tática (escalações A, B e C da seleção) usam o mesmo caminho do clube.
+- **Tela:** a Formação (`FormationScreen` → `FormationBoard`) tem o seletor Clube | Seleção no topo para quem treina uma seleção (`/formation?team=national`). No modo seleção a mesma tela lê o elenco e a tática das rotas acima; somem o rodízio do auxiliar, a familiaridade, a inscrição e a marcação do dia. `SetPieceTakersPanel` aceita `url`.
+- **Atalhos:** a prévia do jogo da seleção, o cartão Próximo jogo do Painel, uma linha no cartão Atenção (`nationalGame`, jogo da seleção em até 7 dias) e o resumo de tática em Minha seleção (`NationalCoachView`, com Usar a tática do clube copiando formação, formação livre, estilo, eixos e instruções) levam à tela.
+- Testes: `src/Domain/tactics/tacticsBody.test.ts`, `src/Domain/national/nationalSquad.test.ts` (`coachSide`), `src/backend/national.coach.test.ts`.
+- Limitações: a marcação individual do dia não existe na seleção; num jogo entre dois técnicos, a troca de formação no meio do jogo só aceita as prontas (como no clube); o elenco `next` muda até a convocação, e um titular que não for convocado é trocado no dia.

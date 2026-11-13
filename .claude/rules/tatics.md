@@ -182,3 +182,7 @@ Report de tester. `LineupPreset.name` (até `PRESET_NAME_MAX` 20 letras; `cleanP
 ## Jogadas ensaiadas e escalações de teste (11.2)
 
 `setPieceTakers.routines` guarda até 3 jogadas ensaiadas por escanteio e por falta cruzada (alvo e quantos sobem); ver `.claude/rules/game-engine/set-pieces-play.md` → "Jogadas ensaiadas". As escalações salvas passaram a seis (`LINEUP_PRESET_KEYS` A–F): A, B e C aparecem na partida (`MATCH_PRESET_KEYS`), D, E e F são só para testar. Cada uma pode ser duplicada para a primeira vaga livre (`copyPreset`) e exportada ou importada por um código de texto (`exportPreset` / `importPreset`, prefixo `FMT1:`, sem os jogadores: só formação, instruções, estilo e eixos).
+
+## Tática da seleção (12.2)
+
+A validação do `PUT /tactics` mora em `mergeTacticsBody` (`src/Domain/tactics/tacticsBody.ts`), usada pelo clube e pela seleção. A tela de Formação serve as duas (seletor Clube | Seleção, `?team=national`); a tática da seleção fica em `NationalState.human[seatId].tactics`. Ver `.claude/rules/game/national-teams.md` → "Tática completa da seleção (12.2)".

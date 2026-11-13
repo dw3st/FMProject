@@ -89,7 +89,12 @@ export type AttentionItem =
   | { kind: "shortlistAlert"; name: string; reason: ShortlistReason }
   | { kind: "facilityWorn"; item: FacilityItemId; condemned: boolean; condition: number }
   /** Sponsor offers waiting for an answer (`.claude/rules/game/sponsors.md`): how many, and the first deadline. */
-  | { kind: "sponsorOffers"; count: number; expires: string };
+  | { kind: "sponsorOffers"; count: number; expires: string }
+  /** A game of the national team he coaches in the next days (12.2): the way to the national tactics. */
+  | { kind: "nationalGame"; date: string; opponent: string; days: number };
+
+/** A national-team game this close comes up in the attention card. */
+export const NATIONAL_GAME_ATTENTION_DAYS = 7;
 
 /** More than this many players of the same soft alert (fitness, contracts) collapse into one line. */
 const ATTENTION_GROUP_AFTER = 3;
@@ -112,9 +117,16 @@ export function attentionItems(input: {
   renewalPending?: boolean;
   /** The club's sponsors: offers still on the table come up as one line. */
   sponsors?: ClubSponsors;
+  /** The next game of the national team he coaches (date and the opponent's name), if any. */
+  nationalGame?: { date: string; opponent: string } | null;
 }): AttentionItem[] {
   const { players, today, seasonEnd, inbox } = input;
   const items: AttentionItem[] = [];
+
+  if (input.nationalGame) {
+    const days = daysBetween(today, input.nationalGame.date);
+    if (days >= 0 && days <= NATIONAL_GAME_ATTENTION_DAYS) items.push({ kind: "nationalGame", ...input.nationalGame, days });
+  }
 
   if (input.renewalPending) items.push({ kind: "managerRenewal" });
   const sponsorOffers = (input.sponsors?.offers ?? []).filter((o) => o.expires >= today);

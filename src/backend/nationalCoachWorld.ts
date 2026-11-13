@@ -10,7 +10,9 @@ import { vacancyHireOn } from "@/Domain/managers/aiManagers";
 import { overallAvg } from "@/Domain/playerRating";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { isInjured } from "@/Domain/injury/injury";
-import { FORMATION_IDS, formationForSimId } from "@/Domain/matchFormations";
+import { FORMATION_IDS, formationForSimId, formationForTactics } from "@/Domain/matchFormations";
+import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
+import { mergeTacticsBody } from "@/Domain/tactics/tacticsBody";
 import { slotsFor } from "@/Domain/advanceDay/matchSimulationLineups";
 import { emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { buildNationalCoachMessage } from "@/Domain/inbox/nationalCoachMessage";
@@ -23,11 +25,11 @@ import {
   NATIONAL_SQUAD, asNationalPlayer, callableCandidates, coachLineup, nationalLineup, pickCallUp,
 } from "@/Domain/national/nationalSquad";
 import { callUpSquad, leaveNationalTeam, nationPool, nationalPseudoSquad } from "@/backend/nationalWorld";
-import { STYLE_TO_AXES, type TacticalStyle } from "@/types/tacticsTypes";
+import { STYLE_TO_AXES, type TacticsSave } from "@/types/tacticsTypes";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Formation } from "@/GameEngine/types";
 import type { NationalCoachOffer, NationalCompetition, NationalHumanCoach, NationalState, NationalTactics } from "@/types/nationalTypes";
-import type { Squad } from "@/types/playerTypes";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 type Fail = { ok: false; status: number; error: string; reason?: string };
 
@@ -138,23 +140,79 @@ export async function saveNationalCallUp(service: SaveService, saveId: string, s
   return { ok: true };
 }
 
-/** Saves his national tactics: a ready formation, a style and up to 11 player ids. */
-export async function saveNationalTactics(service: SaveService, saveId: string, seatId: string, body: unknown): Promise<{ ok: true } | Fail> {
+/**
+ * Saves his national tactics (12.2): the same shape and the same checks as the club's `PUT /tactics`
+ * (`mergeTacticsBody`), a partial body merged over the stored ones. Formation: a ready-made id or `custom` with a
+ * valid free formation; up to 11 unique player ids. Returns the stored tactics.
+ */
+export async function saveNationalTactics(service: SaveService, saveId: string, seatId: string, body: unknown): Promise<{ ok: true; tactics: NationalTactics } | Fail> {
   const state = await service.getNationalState(saveId);
   const human = state?.human?.[seatId];
   if (!state || !human) return { ok: false, status: 409, error: "notCoach" };
-  const b = body as Partial<NationalTactics> | null;
-  if (!b || typeof b.formation !== "string" || !FORMATION_IDS.includes(b.formation)) return { ok: false, status: 400, error: "invalidFormation" };
-  if (typeof b.tactical_style !== "string" || !(b.tactical_style in STYLE_TO_AXES)) return { ok: false, status: 400, error: "invalidStyle" };
-  const lineup = b.lineup ?? [];
-  if (!Array.isArray(lineup) || lineup.length > 11 || lineup.some((x) => typeof x !== "string" || x.length > 64)) {
-    return { ok: false, status: 400, error: "invalidLineup" };
+  if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, status: 400, error: "invalidFormation" };
+  const b = body as Partial<NationalTactics>;
+  if (b.formation !== undefined && (typeof b.formation !== "string" || (b.formation !== CUSTOM_FORMATION_ID && !FORMATION_IDS.includes(b.formation)))) {
+    return { ok: false, status: 400, error: "invalidFormation" };
   }
-  const real = (lineup as string[]).filter(Boolean);
-  if (new Set(real).size !== real.length) return { ok: false, status: 400, error: "invalidLineup" };
-  const tactics: NationalTactics = { formation: b.formation, tactical_style: b.tactical_style as TacticalStyle, lineup: lineup as string[] };
+  if (b.tactical_style !== undefined && (typeof b.tactical_style !== "string" || !(b.tactical_style in STYLE_TO_AXES))) {
+    return { ok: false, status: 400, error: "invalidStyle" };
+  }
+  if (b.lineup !== undefined) {
+    const lineup: unknown = b.lineup;
+    if (!Array.isArray(lineup) || lineup.length > 11 || lineup.some((x) => typeof x !== "string" || x.length > 64)) {
+      return { ok: false, status: 400, error: "invalidLineup" };
+    }
+    const real = (lineup as string[]).filter(Boolean);
+    if (new Set(real).size !== real.length) return { ok: false, status: 400, error: "invalidLineup" };
+  }
+  const { assistantRotation: _r, ...rest } = b as Partial<TacticsSave>;
+  const merged = mergeTacticsBody(human.tactics ?? DEFAULT_TACTICS, rest);
+  if (!merged.ok) return { ok: false, status: 400, error: merged.error };
+  const { assistantRotation: _a, ...tactics } = merged.value;
   await service.writeNationalState(saveId, { ...state, human: { ...state.human, [seatId]: { ...human, tactics } } });
-  return { ok: true };
+  return { ok: true, tactics };
+}
+
+/** His stored national tactics (the Formation screen in national mode); null when he coaches no national team. */
+export async function nationalTacticsOf(service: SaveService, saveId: string, seatId: string): Promise<NationalTactics | null> {
+  const h = (await service.getNationalState(saveId))?.human?.[seatId];
+  return h ? h.tactics ?? DEFAULT_TACTICS : null;
+}
+
+/** Where the squad of the national Formation screen comes from. */
+export type NationalSquadSource = "active" | "next" | "last";
+
+/**
+ * The players his national tactics are set with (12.2): the call-up in force; between call-ups, the next one as it
+ * stands today (his own choice for it, else the suggested 23: who will play the next game, without the generated
+ * players, who only exist once the call-up is made); with no call-up ahead, the last one.
+ */
+export async function nationalTacticsSquad(service: SaveService, saveId: string, seatId: string, date: string): Promise<{
+  teamId: string; nation: string; source: NationalSquadSource; squad: Squad;
+} | null> {
+  const state = await service.getNationalState(saveId);
+  const h = state?.human?.[seatId];
+  if (!state || !h) return null;
+  const nation = state.teams[h.teamId]?.nation ?? h.teamId;
+  const squadOf = (id: string) => service.getSquadById(saveId, id);
+  const out = (source: NationalSquadSource, players: RosterPlayer[]) => ({
+    teamId: h.teamId, nation, source, squad: nationalPseudoSquad(state, h.teamId, players.map(asNationalPlayer)),
+  });
+  const active = await callUpSquad(saveId, state, h.teamId, squadOf);
+  if (active) return out("active", active.players);
+  const next = await nextCallUp(service, saveId, state, h, date);
+  if (next) {
+    const byId = new Map(next.all.map((c) => [c.player.id, c.player]));
+    const ids = h.callUp?.date === next.callUp ? h.callUp.players : next.suggestion;
+    const players = ids.map((id) => byId.get(id)).filter((p): p is RosterPlayer => !!p);
+    if (players.length > 0) return out("next", players);
+  }
+  const last = state.lastCallUps?.[h.teamId];
+  if (last) {
+    const sq = await callUpSquad(saveId, { ...state, callUps: { ...state.callUps, [h.teamId]: last } }, h.teamId, squadOf);
+    if (sq) return out("last", sq.players);
+  }
+  return out("next", []);
 }
 
 // ── The "My national team" view ──────────────────────────────────────────────
@@ -318,7 +376,8 @@ export async function nationalMatchSetup(service: SaveService, saveId: string, s
   const opp = await callUpSquad(saveId, state, oppId, squadOf);
   if (!mine || !opp) return null;
   const tactics = h.tactics ?? DEFAULT_TACTICS;
-  const myFormation = formationForSimId(tactics.formation);
+  // The formation his tactics play (12.2: a free formation included).
+  const myFormation = formationForTactics(tactics);
   const oppFormation = formationForSimId(NATIONAL_SQUAD.FORMATION);
   const myPlayers = mine.players.map(asNationalPlayer);
   return {
@@ -326,7 +385,7 @@ export async function nationalMatchSetup(service: SaveService, saveId: string, s
     mySquad: nationalPseudoSquad(state, h.teamId, myPlayers),
     opponentSquad: nationalPseudoSquad(state, oppId, opp.players),
     myFormation, oppFormation,
-    myLineup: padLineup(coachLineup(myPlayers, tactics.formation, tactics.lineup, date), myFormation),
+    myLineup: padLineup(coachLineup(myPlayers, myFormation, tactics.lineup, date), myFormation),
     oppLineup: nationalLineup(opp.players, date),
     tactics,
   };

@@ -713,6 +713,16 @@ export function MatchResultScreen() {
                 homeColor={homeHex}
                 awayColor={awayHex}
               />
+              {/* Only games played in the full engine know it (tester report, 12.2). */}
+              {th.shotsOnTarget != null && ta.shotsOnTarget != null && (
+                <StatsCompareBar
+                  label={t("match.shotsOnTarget")}
+                  home={th.shotsOnTarget}
+                  away={ta.shotsOnTarget}
+                  homeColor={homeHex}
+                  awayColor={awayHex}
+                />
+              )}
               <StatsCompareBar
                 label={t("matchResult.passesCompleted")}
                 home={th.passesCompleted}

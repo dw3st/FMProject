@@ -39,7 +39,7 @@ import {
   aiManagerReputation, chooseHire, hireManager, rolloverSackChance, sackManager, vacancyHireOn,
 } from "@/Domain/managers/aiManagers";
 import { cleanRecord } from "@/Domain/managers/managerRecords";
-import { coachLineup } from "@/Domain/national/nationalSquad";
+import { coachSide } from "@/Domain/national/nationalSquad";
 import {
   leaveNationalJob, nextCallUpDate, objectiveFailedBadly, objectiveMet, qualifierOutcome, rollNationalOffer, tournamentOutcome,
 } from "@/Domain/national/nationalCoach";
@@ -557,18 +557,18 @@ export async function playNationalDay(args: {
           recording = args.playedMatches![live.sid]!;
           seatOut(live.sid).consumedRecording = true;
         } else {
+          // His full tactics (12.2): free formation, axes, slot instructions, takers and routines; the AI side plain.
           const sideOf = (teamId: string, players: RosterPlayer[]) => {
             const sid = coaches.find((c) => c.teamId === teamId)?.sid;
-            const t = sid ? state.human?.[sid]?.tactics : undefined;
             return sid
-              ? { formation: formationForSimId(t?.formation), lineup: coachLineup(players, t?.formation, t?.lineup, date), style: t?.tactical_style ?? ("balanced" as const) }
-              : { formation: formationForSimId(NATIONAL_SQUAD.FORMATION), lineup: nationalLineup(players, date), style: "balanced" as const };
+              ? coachSide(state.human?.[sid]?.tactics, players, date)
+              : { formation: formationForSimId(NATIONAL_SQUAD.FORMATION), lineup: nationalLineup(players, date), tactics: { style: "balanced" as const } };
           };
           const h = sideOf(fx.home, home.players);
           const a = sideOf(fx.away, away.players);
           recording = simulateRecording(fx, pseudo(fx.home, home.players), pseudo(fx.away, away.players), {
             homeFormation: h.formation, homeLineup: h.lineup, awayFormation: a.formation, awayLineup: a.lineup,
-            tactics: { A: { style: h.style }, B: { style: a.style } },
+            tactics: { A: h.tactics, B: a.tactics },
           }).recording;
         }
         const event = nationalMatchEvent(fx, recording, home.players, away.players);

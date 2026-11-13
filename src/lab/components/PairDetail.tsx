@@ -42,6 +42,7 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Avg goals",         key: "avgGoals" },
     { stat: "Avg xG",            key: "avgXg" },
     { stat: "Avg shots",         key: "avgShots" },
+    { stat: "Shots on target",   key: "avgShotsOnTarget" },
     { stat: "Shot conv%",        key: "shotConversionPct" },
     { stat: "Avg assists",       key: "avgAssists" },
     { stat: "Pass attempts",     key: "avgPassesAttempted" },

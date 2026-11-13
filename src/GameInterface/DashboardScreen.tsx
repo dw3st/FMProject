@@ -308,11 +308,19 @@ export function DashboardScreen() {
 
   const players = squad?.players ?? [];
   const inbox = inboxMessages ?? [];
+  // The next game of the national team he coaches (12.2): a line in the attention card when it is close.
+  const natFixture = fixtures
+    .filter((f) => !f.played && !!f.nationalTeam && f.date >= currentDate)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  const nationalGame = natFixture
+    ? { date: natFixture.date, opponent: teamDisplayNameFromLeagues(natFixture.home === mySquadId ? natFixture.away : natFixture.home, leagues) }
+    : null;
   const attention = attentionItems({
     players, today: currentDate, seasonEnd: save?.season?.end ?? null, inbox, morale: squad?.moraleClub,
     window: windowsData?.player ?? null,
     renewalPending: !!save?.managerRenewal && save.managerRenewal.expires >= currentDate,
     ...(squad?.sponsors ? { sponsors: squad.sponsors } : {}),
+    nationalGame,
   });
   const highlights = seasonHighlights(players);
   // Unread first, then the newest read ones (the inbox is newest first).

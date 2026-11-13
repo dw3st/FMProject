@@ -13,6 +13,8 @@ import { readFeedWindow, writeFeedWindow, type FeedWindowState } from "@/GameInt
 /** Live team numbers shown in the "Resumo" panel (both sides). */
 export interface SummaryTeamStats {
   shots: number;
+  /** Shots that ended inside the posts (goal or save). */
+  shotsOnTarget: number;
   passesCompleted: number;
   passesAttempted: number;
   fouls: number;
@@ -60,9 +62,9 @@ const KIND_MARK: Record<MatchFeedItem["kind"], string> = {
 function StatRow({ label, a, b }: { label: string; a: string | number; b: string | number }) {
   return (
     <div className="flex items-center justify-between border-t border-border py-1 text-sm">
-      <span className="w-12 font-display font-bold tabular-nums text-foreground">{a}</span>
+      <span className="min-w-12 whitespace-nowrap font-display font-bold tabular-nums text-foreground">{a}</span>
       <span className="font-display font-bold uppercase tracking-[0.08em] text-sm text-muted-foreground">{label}</span>
-      <span className="w-12 text-right font-display font-bold tabular-nums text-foreground">{b}</span>
+      <span className="min-w-12 whitespace-nowrap text-right font-display font-bold tabular-nums text-foreground">{b}</span>
     </div>
   );
 }
@@ -183,7 +185,8 @@ export function MatchSummaryPanel({
       </div>
       <div className="px-4">
         <StatRow label={t("match.summary.possession")} a={`${pA}%`} b={`${100 - pA}%`} />
-        <StatRow label={t("match.summary.shots")} a={statsA.shots} b={statsB.shots} />
+        {/* Total and, in brackets, on target (tester report, 12.2). */}
+        <StatRow label={t("match.summary.shotsOnTarget")} a={`${statsA.shots} (${statsA.shotsOnTarget})`} b={`${statsB.shots} (${statsB.shotsOnTarget})`} />
         <StatRow label={t("match.summary.passes")} a={statsA.passesCompleted} b={statsB.passesCompleted} />
         <StatRow label={t("match.summary.fouls")} a={statsA.fouls} b={statsB.fouls} />
         <StatRow label={t("match.summary.cards")} a={cards(statsA)} b={cards(statsB)} />

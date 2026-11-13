@@ -1135,7 +1135,17 @@
     "seasonRating": "Nota na temporada",
     "seasonGames_one": "{{count}} jogo",
     "seasonGames_other": "{{count}} jogos",
-    "nationalTactics": "Tática da seleção"
+    "nationalTactics": "Tática da seleção",
+    "national": {
+      "switch": "Clube ou seleção",
+      "club": "Clube",
+      "team": "Seleção",
+      "source": {
+        "active": "Tática da seleção, com os convocados de agora.",
+        "next": "Tática da seleção, com os jogadores da próxima convocação. A lista pode mudar até lá.",
+        "last": "Tática da seleção, com os jogadores da última convocação."
+      }
+    }
   },
   "roles": {
     "groups": {
@@ -1220,6 +1230,7 @@
       "KM": "Abafadas do goleiro",
       "LB": "Lançamentos Longos",
       "TI": "Laterais",
+      "SOT": "Chutes no gol",
       "CK": "Escanteios",
       "DFK": "Faltas Diretas (gols)",
       "SPG": "Gols de Bola Parada",
@@ -1247,6 +1258,7 @@
       "subbedOff": "Substituído"
     },
     "shots": "Finalizações",
+    "shotsOnTarget": "Finalizações no gol",
     "tackles": "Desarmes",
     "interceptions": "Interceptações",
     "noActiveSave": "Nenhum jogo carregado.",
@@ -1294,6 +1306,7 @@
       "title": "Resumo",
       "possession": "Posse",
       "shots": "Chutes",
+      "shotsOnTarget": "Chutes (no gol)",
       "passes": "Passes",
       "fouls": "Faltas",
       "cards": "Cartões (A/V)",
@@ -2662,6 +2675,9 @@
       },
       "viewPreview": "Ver prévia",
       "prepareLineup": "Escalação",
+      "nationalTactics": "Tática da seleção",
+      "nationalGame": "A seleção joga em {{date}} contra {{opponent}}.",
+      "nationalGameToday": "A seleção joga hoje contra {{opponent}}.",
       "inDays_one": "Em {{count}} dia",
       "inDays_other": "Em {{count}} dias",
       "fullTable": "Tabela completa",
@@ -2721,7 +2737,8 @@
         "talk": "Conversar",
         "respond": "Responder",
         "view": "Ver",
-        "repair": "Reformar"
+        "repair": "Reformar",
+        "tactics": "Tática"
       }
     }
   },
@@ -6195,7 +6212,10 @@
       "open": "Abrir Minha seleção"
     },
     "useClubTactics": "Usar a tática do clube",
-    "clubTacticsCopied": "Formação e estilo do clube copiados. Salve para manter.",
+    "clubTacticsCopied": "Formação, estilo e instruções do clube copiados.",
+    "openTactics": "Tática da seleção",
+    "xiSummaryAuto": "Ainda sem titulares escolhidos: o auxiliar escala os melhores.",
+    "tacticsHint": "Formação livre, instruções, cobradores e escalações salvas ficam na tela de Formação, na aba da seleção.",
     "clubTacticsCustom": "Seu clube usa formação livre: só o estilo foi copiado. Salve para manter."
   },
   "press": {

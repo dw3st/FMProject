@@ -36,7 +36,7 @@ import {
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
 import { applyLineupPreset, buildLineupPreset, renamePreset, copyPreset, importPreset } from "@/Domain/tactics/lineupPresets";
 import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
-import type { LeagueData, RosterPlayer } from "@/types/playerTypes";
+import type { LeagueData, RosterPlayer, Squad } from "@/types/playerTypes";
 import { getDetailedPositionColor, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
@@ -68,13 +68,14 @@ import { FamiliarityBars } from "@/GameInterface/Components/FamiliarityBars";
 import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
 import { fetchRegistration } from "@/GameInterface/Squad/registrationApi";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
-import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { nationalityFlagCode, nationalTeamFlagCode } from "@/Domain/world/nationalityFlag";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { energyBarClass } from "@/GameInterface/Components/SubsPitchView";
 import { getEnergyColor, PlayerTipBody, ROW_TIP_H, ROW_TIP_W } from "@/GameInterface/Components/PlayerTipBody";
 import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
-import { navigate } from "@/GameInterface/router/navigation";
+import { navigate, useRoute } from "@/GameInterface/router/navigation";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 
 /** Painted pitch behind the formation board (data_process/assets/formation_art.py, FLUX-refined). */
 const PITCH_BOARD = "formation/pitch-board.webp";
@@ -95,19 +96,67 @@ const FORMATION_BLURBS: Record<string, string> = {
 
 const APT_RANK: Record<Aptitude, number> = { natural: 3, apt: 2, training: 1, unsuitable: 0 };
 
+/** Where the national Formation screen's players come from (`nationalTacticsSquad`). */
+type NationalSquadSource = "active" | "next" | "last";
+
+/**
+ * The Formation screen. A manager who also coaches a national team gets the switch "Clube | Seleção" on top
+ * (`?team=national` opens the national side): the same board over the national squad and the national tactics.
+ */
 export function FormationScreen() {
+  const { save } = useGameSave();
+  const route = useRoute();
+  const nationalTeamId = save?.season?.nationalTeamId ?? null;
+  const national = !!nationalTeamId && new URLSearchParams(route.search).get("team") === "national";
+  // One board per side: every piece of state (XI, draft, selection) starts again on a switch.
+  return <FormationBoard key={national ? "national" : "club"} national={national} nationalTeamId={nationalTeamId} />;
+}
+
+function FormationBoard({ national, nationalTeamId }: { national: boolean; nationalTeamId: string | null }) {
   const { t, i18n } = useTranslation();
-  const { session, squad, save, loading: saveLoading, mergeSession, currentDate, fixtures } = useGameSave();
+  const { session, squad: clubSquad, save, loading: saveLoading, mergeSession, currentDate, fixtures } = useGameSave();
+  // National side (12.2): the squad of the call-up and the stored formation / style come from the national routes;
+  // the club side keeps reading the session, as always.
+  const [natSquad, setNatSquad] = useState<{ squad: Squad; source: NationalSquadSource; nation: string } | null>(null);
+  const [natCurrent, setNatCurrent] = useState<{ formation: string; tactical_style: TacticalStyle } | null>(null);
+  const squad = national ? natSquad?.squad ?? null : clubSquad;
+  const tacticsUrl = session
+    ? national ? `/api/saves/${session.saveId}/national/coach/tactics` : `/api/saves/${session.saveId}/tactics`
+    : "";
+  useEffect(() => {
+    if (!national || !session?.saveId) return;
+    let live = true;
+    fetch(`/api/saves/${session.saveId}/national/coach/squad`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { squad: Squad; source: NationalSquadSource; nation: string }) => { if (live) setNatSquad(d); })
+      // No national team any more (sacked, resigned): back to the club's board.
+      .catch(() => { if (live) navigate("/formation", { replace: true }); });
+    return () => { live = false; };
+  }, [national, session?.saveId]);
+
+  /** PUT to the national tactics; the stored formation and style follow the answer. */
+  async function putNational(body: Partial<TacticsSave>): Promise<TacticsSave> {
+    const res = await fetch(tacticsUrl, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error("Failed to save");
+    const saved = (await res.json()) as TacticsSave;
+    setNatCurrent({ formation: saved.formation, tactical_style: saved.tactical_style });
+    return saved;
+  }
+  /** Formation + style + XI (and what comes with them) to the side on screen. */
+  async function storeTactics(config: Parameters<typeof saveFormationAndTactics>[1]) {
+    if (national) await putNational(config);
+    else mergeSession(await saveFormationAndTactics(session!.saveId, config));
+  }
   // Registration (`.claude/rules/game/registration.md`): a player not registered for the competition of the next
   // match is no option: out of the bench list and the auto-fill. A saved starter stays with a badge (the XI is shared
   // by every competition) and the match-day swap replaces him, with a warning.
   const nextCompetition = useMemo(() => {
-    const clubId = squad?.id;
-    if (!clubId) return null;
+    const clubId = clubSquad?.id;
+    if (!clubId || national) return null;
     return fixtures
       .filter((f) => !f.played && f.date >= (currentDate ?? "") && (f.home === clubId || f.away === clubId))
       .sort((a, b) => a.date.localeCompare(b.date))[0]?.competition ?? null;
-  }, [fixtures, currentDate, squad?.id]);
+  }, [fixtures, currentDate, clubSquad?.id, national]);
   const [unregistered, setUnregistered] = useState<{ competition: string; ids: Set<string> } | null>(null);
   const [regLeagues, setRegLeagues] = useState<LeagueData[]>([]);
   useEffect(() => {
@@ -131,7 +180,7 @@ export function FormationScreen() {
   const registeredOnly = (players: RosterPlayer[]) => (unregistered ? players.filter((p) => !unregistered.ids.has(p.id)) : players);
   // Today's man-marking (chosen in the match preview): the marker slots show a target icon.
   const markedSlots = new Set(
-    save?.matchMarking && save.matchMarking.date === currentDate ? save.matchMarking.marks.map((m) => m.slot) : [],
+    !national && save?.matchMarking && save.matchMarking.date === currentDate ? save.matchMarking.marks.map((m) => m.slot) : [],
   );
   const [formations, setFormations] = useState<FormationOption[]>([]);
   const [baseSlots, setSlots] = useState<FormationSlot[]>([]);
@@ -159,7 +208,7 @@ export function FormationScreen() {
   const [presetError, setPresetError] = useState(false);
   const [presetSwaps, setPresetSwaps] = useState<{ key: LineupPresetKey; lines: PresetSwapLine[] } | null>(null);
 
-  const formationId = session?.formation ?? DEFAULT_FORMATION;
+  const formationId = (national ? natCurrent?.formation : session?.formation) ?? DEFAULT_FORMATION;
 
   // While editing the formation the pitch and the lineup come from the draft.
   const draftSlots = useMemo(
@@ -203,8 +252,7 @@ export function FormationScreen() {
 
   useEffect(() => {
     if (!session) return;
-    const saveId = session.saveId;
-    fetch(`/api/saves/${saveId}/tactics`)
+    fetch(tacticsUrl)
       .then((r) => r.json())
       .then((t: TacticsSave) => {
         if (t.lineup?.length) commitLineup(t.lineup);
@@ -212,25 +260,26 @@ export function FormationScreen() {
         setAxesOverride(t.axesOverride);
         setAssistantRotation(t.assistantRotation === true);
         setLineupPresets(t.lineupPresets ?? {});
-        mergeSession({
+        if (national) setNatCurrent({ formation: t.formation, tactical_style: t.tactical_style });
+        else mergeSession({
           formation: t.formation,
           tactical_style: t.tactical_style,
         });
         setLineupReady(true);
       })
       .catch(() => { setLineupReady(true); });
-  }, [session?.saveId, mergeSession]);
+  }, [session?.saveId, mergeSession, tacticsUrl]);
 
   // Slot instructions follow the formation: the server sanitizes them when the formation changes.
   useEffect(() => {
     if (!session) return;
     let alive = true;
-    fetch(`/api/saves/${session.saveId}/tactics`)
+    fetch(tacticsUrl)
       .then((r) => r.json())
       .then((t: TacticsSave | null) => { if (alive) setSlotInstructions(t?.slotInstructions ?? []); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [session?.saveId, formationId, customFormation]);
+  }, [session?.saveId, formationId, customFormation, tacticsUrl]);
 
   async function handleInstruction(slot: number, next: SlotInstruction | null) {
     if (!session) return;
@@ -241,7 +290,7 @@ export function FormationScreen() {
     setSlotInstructions(list);
     setInstructionError(false);
     try {
-      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+      const res = await fetch(tacticsUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slotInstructions: list }),
@@ -262,7 +311,7 @@ export function FormationScreen() {
     setPresetBusy(true);
     setPresetError(false);
     try {
-      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+      const res = await fetch(tacticsUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lineupPresets: next }),
@@ -318,9 +367,9 @@ export function FormationScreen() {
     setPresetBusy(true);
     setPresetError(false);
     try {
-      const updated = await saveFormationAndTactics(session.saveId, {
+      await storeTactics({
         formation: applied.formation,
-        tactical_style: applied.tacticalStyle ?? session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+        tactical_style: applied.tacticalStyle ?? activeStyle,
         lineup: applied.lineup,
         slotInstructions: applied.slotInstructions,
         // A preset that remembers its style brings its axes too ({} clears the ones on screen).
@@ -336,7 +385,6 @@ export function FormationScreen() {
       commitLineup(applied.lineup);
       setSlotInstructions(applied.slotInstructions);
       setSelectedSlotIdx(null);
-      mergeSession(updated);
       const nameOf = (id: string) => squad.players.find((p) => p.id === id)?.name;
       setPresetSwaps({
         key,
@@ -415,14 +463,15 @@ export function FormationScreen() {
       }
       if (nextSlots && squad && savedLineup.length > 0) {
         const remapped = remapLineupToFormation(savedLineup, nextSlots, squad.players, currentDate);
-        const updated = await saveFormationAndTactics(session.saveId, {
+        await storeTactics({
           formation: id,
-          tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+          tactical_style: activeStyle,
           lineup: remapped,
           ...(id === CUSTOM_FORMATION_ID && customFormation ? { customFormation } : {}),
         });
-        mergeSession(updated);
         commitLineup(remapped);
+      } else if (national) {
+        await putNational({ formation: id });
       } else {
         const updated = await updateSaveFormation(session.saveId, id);
         mergeSession(updated);
@@ -434,12 +483,18 @@ export function FormationScreen() {
 
   async function handleStyleChange(style: TacticalStyle) {
     if (!session || tacticsUpdating) return;
-    if (session.tactical_style === style && !hasAxesOverride(style, axesOverride)) return;
+    if (activeStyle === style && !hasAxesOverride(style, axesOverride)) return;
     setTacticsUpdating(true);
     try {
-      const updated = await updateSaveTacticalStyle(session.saveId, style);
-      setAxesOverride(undefined);
-      mergeSession(updated);
+      if (national) {
+        // Picking a style fills the four axes again, as in the club.
+        await putNational({ tactical_style: style, axesOverride: {} });
+        setAxesOverride(undefined);
+      } else {
+        const updated = await updateSaveTacticalStyle(session.saveId, style);
+        setAxesOverride(undefined);
+        mergeSession(updated);
+      }
     } finally {
       setTacticsUpdating(false);
     }
@@ -448,14 +503,14 @@ export function FormationScreen() {
   /** Edits one axis on top of the style; going back to the style's own value drops the override. */
   async function handleAxis<K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) {
     if (!session) return;
-    const style = session.tactical_style ?? DEFAULT_TACTICAL_STYLE;
+    const style = activeStyle;
     const next: Partial<TacticalAxes> = { ...axesOverride, [key]: value };
     if (axesFor(style)[key] === value) delete next[key];
     const nextOrUndefined = Object.keys(next).length ? next : undefined;
     const prev = axesOverride;
     setAxesOverride(nextOrUndefined);
     try {
-      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+      const res = await fetch(tacticsUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ axesOverride: nextOrUndefined ?? {} }),
@@ -502,13 +557,12 @@ export function FormationScreen() {
     const ids = sorted.map((d) => d.playerId);
     setSaveStatus("saving");
     try {
-      const updated = await saveFormationAndTactics(session.saveId, {
+      await storeTactics({
         formation: CUSTOM_FORMATION_ID,
-        tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+        tactical_style: activeStyle,
         lineup: ids,
         customFormation: custom,
       });
-      mergeSession(updated);
       setCustomFormation(custom);
       commitLineup(ids);
       setEditing(false);
@@ -544,7 +598,7 @@ export function FormationScreen() {
     if (!session) return;
     setAssistantRotation(next);
     try {
-      const res = await fetch(`/api/saves/${session.saveId}/tactics`, {
+      const res = await fetch(tacticsUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assistantRotation: next }),
@@ -570,12 +624,11 @@ export function FormationScreen() {
       const starting11Ids = [...lineup];
       while (starting11Ids.length < 11) starting11Ids.push("");
       const toSave = starting11Ids.slice(0, 11);
-      const updated = await saveFormationAndTactics(session.saveId, {
+      await storeTactics({
         formation:      formationId,
-        tactical_style: session.tactical_style ?? DEFAULT_TACTICAL_STYLE,
+        tactical_style: activeStyle,
         lineup:         toSave,
       });
-      mergeSession(updated);
       commitLineup(toSave);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
@@ -612,7 +665,7 @@ export function FormationScreen() {
     setSelectedSlotIdx(null);
   }
 
-  const activeStyle: TacticalStyle = session?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
+  const activeStyle: TacticalStyle = (national ? natCurrent?.tactical_style : session?.tactical_style) ?? DEFAULT_TACTICAL_STYLE;
 
   const shapeLabel =
     editing && draft
@@ -659,7 +712,7 @@ export function FormationScreen() {
         })
       : bench;
 
-  if (saveLoading || !session) {
+  if (saveLoading || !session || (national && !natSquad)) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
@@ -670,19 +723,21 @@ export function FormationScreen() {
   return (
     <ScreenContainer>
           <ScreenTitle
-            subtitle={t("formations.subtitleHelp")}
+            subtitle={national && natSquad ? t(`formations.national.source.${natSquad.source}` as never) : t("formations.subtitleHelp")}
             accent={t("screenTitles.formation.accent")}
             trailing={
               <div className="flex items-center gap-2">
-                {/* His national team's tactics live in the national team screen (tester report, 8.8.7) */}
-                {save?.season?.nationalTeamId && (
-                  <a
-                    href="/leagues?tab=national&national=coach"
-                    className="flex items-center gap-2 h-10 px-4 rounded-md border border-border text-sm font-semibold text-muted-foreground no-underline hover:text-foreground hover:border-primary"
-                  >
-                    <Icon name="globe" className="w-4 h-4" />
-                    {t("formations.nationalTactics")}
-                  </a>
+                {/* Club | national team (12.2): the same board over the other squad and tactics. */}
+                {nationalTeamId && (
+                  <SegmentedTabs
+                    aria-label={t("formations.national.switch")}
+                    active={national ? "national" : "club"}
+                    onChange={(key) => navigate(key === "national" ? "/formation?team=national" : "/formation", { replace: true })}
+                    tabs={[
+                      { key: "club", label: t("formations.national.club") },
+                      { key: "national", label: <NationalTabLabel teamId={nationalTeamId} name={save?.season?.teamNames?.[nationalTeamId]} /> },
+                    ]}
+                  />
                 )}
                 <button
                   type="button"
@@ -976,8 +1031,8 @@ export function FormationScreen() {
             onImport={handleImportPreset}
           />
 
-          {/* Assistant rotation */}
-          <label className="card-arcade rounded-md p-5 flex items-center justify-between gap-4 cursor-pointer">
+          {/* Assistant rotation (club only) */}
+          {!national && <label className="card-arcade rounded-md p-5 flex items-center justify-between gap-4 cursor-pointer">
             <span>
               <span className="block font-display font-bold text-sm uppercase tracking-[0.08em] text-primary">
                 {t("tactics.assistantRotation")}
@@ -990,9 +1045,9 @@ export function FormationScreen() {
               checked={assistantRotation}
               onChange={(e) => handleAssistantRotation(e.target.checked)}
             />
-          </label>
+          </label>}
 
-          {session && squad && <SetPieceTakersPanel saveId={session.saveId} players={squad.players} />}
+          {session && squad && <SetPieceTakersPanel saveId={session.saveId} players={squad.players} url={tacticsUrl} />}
 
           {/* Tactical Style */}
           <div className="card-arcade rounded-md p-5">
@@ -1048,7 +1103,7 @@ export function FormationScreen() {
             </div>
           </div>
 
-          <FamiliarityBars familiarity={squad?.styleFamiliarity} current={activeStyle} />
+          {!national && <FamiliarityBars familiarity={squad?.styleFamiliarity} current={activeStyle} />}
 
           {/* Team instructions (the four axes) */}
           <div className="rounded-md border border-border p-5">
@@ -1096,6 +1151,18 @@ export function FormationScreen() {
           </div>
         <DragGhost drag={drag} />
     </ScreenContainer>
+  );
+}
+
+/** "Seleção" tab of the switch: the flag and the name of the nation he coaches. */
+function NationalTabLabel({ teamId, name }: { teamId: string; name?: string }) {
+  const { t, i18n } = useTranslation();
+  const code = nationalTeamFlagCode(teamId);
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {code && <Flag code={code} className="w-[18px] h-[13px]" />}
+      {name ? nationalityDisplayName(name, i18n.language, t) : t("formations.national.team")}
+    </span>
   );
 }
 

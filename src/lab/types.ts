@@ -197,6 +197,8 @@ export interface TeamRawStats {
   wins: number;
   goals: number;
   shots: number;
+  /** Shots that ended inside the posts (full engine only). */
+  shotsOnTarget: number;
   xg: number;
   assists: number;
   passesAttempted: number;
@@ -370,6 +372,7 @@ export interface PerMatchView {
   wins: number;
   avgGoals: number;
   avgShots: number;
+  avgShotsOnTarget: number;
   avgXg: number;
   avgAssists: number;
   shotConversionPct: number;
@@ -493,6 +496,7 @@ export interface VariantSummary {
   lossRate: number;
   avgGoals: number;
   avgShots: number;
+  avgShotsOnTarget: number;
   avgXg: number;
   avgAssists: number;
   shotConversionPct: number;

@@ -88,7 +88,8 @@ export async function matchSetupFor(
         if (natVsSeat && opts.live && !opts.h2h) {
           return { ok: false, status: 409, body: { error: "seatOpponent", matchDay: { date: nat.fixture.date, fixtureId: nat.fixture.id } } };
         }
-        const myTactics: TacticsSave = { formation: nat.tactics.formation, tactical_style: nat.tactics.tactical_style, lineup: nat.myLineup };
+        // His full national tactics (12.2): free formation, axes, slot instructions, takers, saved line-ups.
+        const myTactics: TacticsSave = { ...nat.tactics, formation: nat.myFormation.id, lineup: nat.myLineup };
         return { ok: true, body: {
           save: { ...save, clubName: nat.mySquad.name, clubColors: nat.mySquad.colors },
           mySquad: nat.mySquad,

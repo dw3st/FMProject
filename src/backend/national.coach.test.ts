@@ -14,6 +14,8 @@ import { withOffer } from "@/backend/nationalWorld";
 import { nationalMatchSetup, playerNationalCalendar } from "@/backend/nationalCoachWorld";
 import { simulateRecording } from "@/Domain/advanceDay/matches";
 import { currentNationalTeam } from "@/Domain/national/nationalCoach";
+import { formationForSimId } from "@/Domain/matchFormations";
+import { CUSTOM_PRESETS } from "@/Domain/formation/zones";
 import type { NationalCoachInboxMessage } from "@/types/inboxTypes";
 
 const HUMAN = "33";
@@ -95,6 +97,74 @@ describe("the human manager at a national team", () => {
     expect(state.human?.[seatId]?.callUp).toBeUndefined();
   }, 240_000);
 
+  test("the full tactics (12.2): the club's shape and checks, the squad of the Formation screen", async () => {
+    const TAC = "/api/saves/:saveId/national/coach/tactics";
+    const put = (body: unknown) => call(TAC, `/api/saves/${saveId}/national/coach/tactics`, { method: "PUT", body: JSON.stringify(body) });
+    // The old three-field body still saves, and answers the stored tactics.
+    const old = await put({ formation: "4-4-2", tactical_style: "counter_attack", lineup: [] });
+    expect(old.status).toBe(200);
+    expect(await old.json()).toMatchObject({ formation: "4-4-2", tactical_style: "counter_attack", lineup: [] });
+
+    const squadRes = await call("/api/saves/:saveId/national/coach/squad", `/api/saves/${saveId}/national/coach/squad`);
+    expect(squadRes.status).toBe(200);
+    const sq = (await squadRes.json()) as { teamId: string; source: string; squad: { id: string; players: { id: string; nationalDuty?: unknown; suspension?: unknown }[] } };
+    expect(sq.teamId).toBe(TEAM);
+    expect(sq.source).toBe("active");
+    expect(sq.squad.players).toHaveLength(23);
+    expect(sq.squad.players.every((p) => !p.nationalDuty && !p.suspension)).toBe(true);
+
+    const f = formationForSimId("4-4-2");
+    const st = f.attacking.findIndex((x) => x.role === "ST");
+    const lb = f.attacking.findIndex((x) => x.role === "LB");
+    const instr = (slot: number) => f.attacking.map((_, i) => (i === slot ? { variant: "st_target" } : null));
+    const xi = sq.squad.players.slice(0, 11).map((p) => p.id);
+    const full = await put({
+      lineup: xi,
+      axesOverride: { width: "wide", build_up: "direct" },
+      slotInstructions: instr(st),
+      setPieceTakers: { corners: [xi[5]], penalties: [xi[9], xi[8]], routines: { corners: [{ target: "near_post", attackers: 6 }] } },
+      lineupPresets: { A: { name: "Plano B", formation: "5-4-1", lineup: xi, savedOn: "2026-09-01", tacticalStyle: "possession" } },
+    });
+    expect(full.status).toBe(200);
+    const saved = (await full.json()) as any;
+    expect(saved.formation).toBe("4-4-2");
+    expect(saved.tactical_style).toBe("counter_attack");
+    expect(saved.assistantRotation).toBeUndefined();
+    expect(saved.axesOverride).toEqual({ width: "wide", build_up: "direct" });
+    expect(saved.slotInstructions[st]).toEqual({ variant: "st_target" });
+    expect(saved.setPieceTakers.routines.corners).toEqual([{ target: "near_post", attackers: 6 }]);
+    expect(saved.lineupPresets.A.name).toBe("Plano B");
+    const got = await (await call(TAC, `/api/saves/${saveId}/national/coach/tactics`)).json();
+    expect(got).toEqual(saved);
+    // The coach view carries the same tactics.
+    const view = (await (await call("/api/saves/:saveId/national/coach", `/api/saves/${saveId}/national/coach`)).json()) as any;
+    expect(view.tactics).toEqual(saved);
+    // The club's tactics are another file: untouched.
+    expect((await saveService.getTactics(saveId, seatId))?.slotInstructions ?? []).toHaveLength(0);
+
+    // The same refusals as the club route.
+    expect((await put({ slotInstructions: instr(lb) })).status).toBe(400);
+    expect((await put({ slotInstructions: f.attacking.map(() => ({ variant: "nope" })) })).status).toBe(400);
+    expect((await put({ formation: "custom" })).status).toBe(400);
+    expect((await put({ axesOverride: { width: "huge" } })).status).toBe(400);
+    expect((await put({ setPieceTakers: { corners: ["a", "a"] } })).status).toBe(400);
+    expect((await put({ lineupPresets: { A: { formation: "9-9-9", lineup: [], savedOn: "2026-09-01" } } })).status).toBe(400);
+    expect((await put({ lineup: ["a", "a"] })).status).toBe(400);
+    expect((await put({ tactical_style: "tiki" })).status).toBe(400);
+    expect((await put(null)).status).toBe(400);
+    // Nothing of a refused body is stored.
+    expect(await (await call(TAC, `/api/saves/${saveId}/national/coach/tactics`)).json()).toEqual(saved);
+
+    // A free formation, then back: the instruction list follows the formation.
+    const custom = await put({ formation: "custom", customFormation: CUSTOM_PRESETS["4-1-3-2"], lineup: [] });
+    expect(custom.status).toBe(200);
+    const customSetup = (await nationalMatchSetup(saveService, saveId, seatId, "2026-09-03"))!;
+    expect(customSetup.myFormation.id).toBe("custom");
+    expect(customSetup.myLineup.filter(Boolean)).toHaveLength(11);
+    const back = await put({ formation: "4-4-2", lineup: xi, slotInstructions: instr(st) });
+    expect(back.status).toBe(200);
+  }, 240_000);
+
   test("his game: the calendar, match-setup, a live recording, then the engine", async () => {
     await saveService.updateMeta(saveId, { currentDate: "2026-09-03" });
     const cal = await playerNationalCalendar(saveService, saveId, seatId, HUMAN);
@@ -108,6 +178,11 @@ describe("the human manager at a national team", () => {
     expect(setup.mySquad.players).toHaveLength(23);
     expect(setup.myFormation.id).toBe("4-4-2");
     expect(setup.myLineup.filter(Boolean)).toHaveLength(11);
+    // The live match gets the full tactics (12.2), as the club's `myTactics`.
+    expect(setup.tactics.axesOverride).toEqual({ width: "wide", build_up: "direct" });
+    expect(setup.tactics.slotInstructions?.some((x) => x?.variant === "st_target")).toBe(true);
+    expect(setup.tactics.setPieceTakers?.routines?.corners).toHaveLength(1);
+    expect(setup.tactics.lineupPresets?.A?.formation).toBe("5-4-1");
     // A "live" recording of his game (the engine stands in for the screen).
     const homeIsMine = setup.fixture.home === TEAM;
     const { recording } = simulateRecording(setup.fixture, homeIsMine ? setup.mySquad : setup.opponentSquad, homeIsMine ? setup.opponentSquad : setup.mySquad, {

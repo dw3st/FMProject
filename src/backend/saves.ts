@@ -13,10 +13,8 @@ import { isFamiliarityKey } from "@/types/familiarityTypes";
 import { resolveUserLineup } from "@/Domain/advanceDay/matchSimulationLineups";
 import { humanMatchRegistrationToday } from "@/backend/registrationWorld";
 import { formationForTactics } from "@/Domain/matchFormations";
-import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
-import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
-import { parseMatchMarks, parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
-import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
+import { mergeTacticsBody } from "@/Domain/tactics/tacticsBody";
+import { parseMatchMarks } from "@/Domain/tactics/slotInstructions";
 import { withSaveLock } from "@/backend/saveLock";
 import { parseManagerFace } from "@/Domain/faces/managerFace";
 import { requireAuth, requireSeat } from "@/backend/auth/middleware";
@@ -279,56 +277,10 @@ export const saveRoutes = {
           lineup:         [],
         } satisfies TacticsSave;
 
-        let customFormation = existing.customFormation;
-        if (body.customFormation !== undefined) {
-          const parsed = parseCustomFormation(body.customFormation);
-          if (!parsed) return Response.json({ error: "invalid custom formation" }, { status: 400 });
-          customFormation = parsed;
-        }
-        let axesOverride = existing.axesOverride;
-        if (body.axesOverride !== undefined) {
-          const parsed = parseAxesOverride(body.axesOverride);
-          if (!parsed) return Response.json({ error: "invalid axes override" }, { status: 400 });
-          axesOverride = Object.keys(parsed).length ? parsed : undefined;
-        }
-        let setPieceTakers = existing.setPieceTakers;
-        if (body.setPieceTakers !== undefined) {
-          const parsed = parseSetPieceTakers(body.setPieceTakers);
-          if (!parsed) return Response.json({ error: "invalid set-piece takers" }, { status: 400 });
-          setPieceTakers = Object.keys(parsed).length ? parsed : undefined;
-        }
-        const formationId = body.formation ?? existing.formation;
-        if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
-          return Response.json({ error: "custom formation missing" }, { status: 400 });
-        }
-        // Player instructions are per slot of the formation being saved: a body list is validated
-        // against it (400 on an unknown / misfit variant), a kept list is sanitized (formation change).
-        const playFormation = formationForTactics({ formation: formationId, customFormation });
-        let slotInstructions = sanitizeSlotInstructions(playFormation, existing.slotInstructions);
-        if (body.slotInstructions !== undefined) {
-          const parsed = parseSlotInstructions(body.slotInstructions, playFormation);
-          if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
-          slotInstructions = parsed.value;
-        }
-        // Saved lineups (#84): validated whole (each preset against its own formation); never played.
-        let lineupPresets = existing.lineupPresets;
-        if (body.lineupPresets !== undefined) {
-          const parsed = parseLineupPresets(body.lineupPresets);
-          if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
-          lineupPresets = Object.keys(parsed.value).length ? parsed.value : undefined;
-        }
-
-        const updated: TacticsSave = {
-          formation:      formationId,
-          tactical_style: body.tactical_style ?? existing.tactical_style,
-          lineup:         body.lineup         ?? existing.lineup,
-          assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
-          ...(customFormation ? { customFormation } : {}),
-          ...(axesOverride ? { axesOverride } : {}),
-          ...(setPieceTakers ? { setPieceTakers } : {}),
-          ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
-          ...(lineupPresets ? { lineupPresets } : {}),
-        };
+        const merged = mergeTacticsBody(existing, body);
+        if (!merged.ok) return Response.json({ error: merged.error }, { status: 400 });
+        const updated = merged.value;
+        const playFormation = merged.formation;
 
         // Today's man-marking follows the formation: a pair whose marker slot changed role (or became
         // the goalkeeper) is dropped (player instructions).

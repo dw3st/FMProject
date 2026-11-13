@@ -1153,7 +1153,7 @@ export function MatchPreviewScreen() {
             subs and the play buttons in one bar, so nothing needs a scroll. */}
         <div className="flex flex-col items-center gap-3 pt-3">
           <div className="flex items-center gap-3 flex-wrap justify-center">
-            <Button variant="secondary" onClick={() => { navigate(national ? "/leagues?tab=national&national=coach" : "/formation"); }}>
+            <Button variant="secondary" onClick={() => { navigate(national ? "/formation?team=national" : "/formation"); }}>
               <Icon name="settings" size={16} />
               {t("matchPreview.editTactics")}
             </Button>
