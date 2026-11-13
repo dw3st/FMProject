@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "11.2.1",
+    date: "2026-11-13",
+    time: "09:56",
+    items: [
+      { tab: "stats", pt: "Seguidores recalibrados com números reais das redes: Real Madrid e Barcelona no topo, Manchester United, PSG, Juventus e os grandes de cada país no lugar certo; no Brasil, Flamengo e Corinthians na frente. Clubes pequenos que apareciam entre os maiores do mundo voltaram ao tamanho deles. Jogos em andamento foram ajustados mantendo o que cada clube ganhou ou perdeu.", en: "Followers recalibrated with real social media figures: Real Madrid and Barcelona on top, Manchester United, PSG, Juventus and each country's big clubs in the right place; in Brazil, Flamengo and Corinthians lead. Small clubs that showed among the world's biggest are back to their size. Careers in progress were adjusted keeping what each club gained or lost." },
+      { tab: "match", pt: "Substituições na partida: ao escolher um titular, o banco passa a listar primeiro quem é da posição dele, depois quem se adapta, com a nota de cada um naquela vaga, como na tela de Formação.", en: "Substitutions in the match: when you pick a starter, the bench now lists first who plays his position, then who adapts, with each one's level in that slot, as on the Formation screen." },
+    ],
+  },
+  {
     version: "11.2",
     date: "2026-11-13",
     time: "09:31",
