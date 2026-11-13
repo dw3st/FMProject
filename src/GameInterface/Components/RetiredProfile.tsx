@@ -39,6 +39,7 @@ export function RetiredProfile({ saveId, retiredId, leagues }: { saveId: string;
   const asPlayer = {
     id: rec.id, name: rec.name, age: rec.age, positions: rec.positions, preferredFoot: rec.preferredFoot,
     stats: rec.statsAtRetirement, nationality: rec.nationality, profile: rec.profile,
+    ...(rec.naturalPosition ? { naturalPosition: rec.naturalPosition } : {}),
   } as unknown as RosterPlayer;
   const role = preferredRole(asPlayer);
   const overall = attrDisplay(computeOverallAvg(asPlayer));

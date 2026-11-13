@@ -1320,7 +1320,7 @@
       "empty": "Vazio",
       "emptyHint": "Salve uma escalação neste espaço na tela de Formação",
       "use": "Usar {{name}}: formação, instruções e estilo",
-      "heatmap": "Mapa de calor"
+      "heatmap": "Mapa de posse"
     },
     "hud": {
       "overall": "Geral",
@@ -4904,7 +4904,8 @@
       "empty": "Nenhum jovem disponível. Mande um olheiro numa missão de jovens.",
       "fee": "Compensação {{fee}}",
       "until": "Disponível até {{date}}",
-      "sign": "Contratar para a base"
+      "sign": "Contratar para a base",
+      "openAcademy": "Abrir a base para dispensar jogadores"
     },
     "gems": {
       "title": "Joias",

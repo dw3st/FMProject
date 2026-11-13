@@ -1320,7 +1320,7 @@
       "empty": "Empty",
       "emptyHint": "Save a line-up in this slot on the Formation screen",
       "use": "Use {{name}}: formation, instructions and style",
-      "heatmap": "Heat map"
+      "heatmap": "Possession map"
     },
     "hud": {
       "overall": "Overall",
@@ -4907,7 +4907,8 @@
       "empty": "No prospect available. Send a scout on a youth mission.",
       "fee": "Compensation {{fee}}",
       "until": "Available until {{date}}",
-      "sign": "Sign for the academy"
+      "sign": "Sign for the academy",
+      "openAcademy": "Open the academy to release players"
     },
     "gems": {
       "title": "Gems",
