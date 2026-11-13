@@ -1195,6 +1195,7 @@
     "avgEndEnergy": "Fôlego médio final",
     "fatigueSubs": "Trocas por cansaço",
     "injuries": "Lesões",
+    "injuryStops": "Reinícios após a parada",
     "headers": {
       "G": "Gols",
       "SH": "Finalizações",

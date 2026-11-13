@@ -1195,6 +1195,7 @@
     "avgEndEnergy": "Avg end energy",
     "fatigueSubs": "Fatigue subs",
     "injuries": "Injuries",
+    "injuryStops": "Restarts after a stop",
     "headers": {
       "G": "Goals",
       "SH": "Shots",
