@@ -55,7 +55,7 @@ describe("player sprite", () => {
 
 describe("set pieces and keeper extras (art phase 5)", () => {
   const atlas = (n: string) => JSON.parse(require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "example_data", "assets", n), "utf8")) as { frames: Record<string, unknown> };
-  const frames = { ...atlas("player/player-atlas-2.json").frames, ...atlas("keeper/keeper-atlas-2.json").frames };
+  const frames = { ...atlas("player/player-atlas-3.json").frames, ...atlas("keeper/keeper-atlas-3.json").frames };
   test("new chains use existing frames", () => {
     for (const k of ["punch", "throwGo", "kneeSlide"] as const) for (const [base] of actionChain(k)) expect(`${base}-shirt.png` in frames).toBe(true);
     expect(`${THROW_IN_HOLD}-shirt.png` in frames).toBe(true);
@@ -109,8 +109,8 @@ describe("ground ring colour (10.2)", () => {
 
 describe("richer moves of the top-down figures", () => {
   const read = (n: string) => JSON.parse(require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "example_data", "assets", n), "utf8")) as { frames: Record<string, unknown> };
-  const frames = { ...read("player/player-atlas-2.json").frames, ...read("keeper/keeper-atlas-2.json").frames };
-  const real = read("player/player-real-atlas-2.json").frames;
+  const frames = { ...read("player/player-atlas-3.json").frames, ...read("keeper/keeper-atlas-3.json").frames };
+  const real = read("player/player-real-atlas-3.json").frames;
   const KINDS = ["kick", "pass", "throw", "header", "tackle", "tackleStand", "fall", "appeal", "receive", "injured", "celebrate", "dive", "catch",
     "punch", "throwGo", "kneeSlide", "volley", "bicycle", "backheel", "roulette", "stepover", "chest", "armsUp", "smother", "tipOver", "collect", "goalKick"] as const;
 

@@ -2139,8 +2139,8 @@ export function PixiPitch({
       }
       if (newVisualOn()) {
         void Promise.all([
-          Assets.load<Spritesheet>(gameArtUrl(realPlayers ? "player/player-real-atlas-2.json" : "player/player-atlas-2.json")),
-          Assets.load<Spritesheet>(gameArtUrl("keeper/keeper-atlas-2.json")),
+          Assets.load<Spritesheet>(gameArtUrl(realPlayers ? "player/player-real-atlas-3.json" : "player/player-atlas-3.json")),
+          Assets.load<Spritesheet>(gameArtUrl("keeper/keeper-atlas-3.json")),
         ]).then(([player, keeper]) => {
           if (facesDisposed || !player || !keeper) return;
           // The realistic atlas has the same frames named `player-real-…`: read them under the usual names.
