@@ -50,7 +50,8 @@ export function compView(squad: Squad, info: CompInfo, date: string): Registrati
   return {
     slug: info.slug, kind: info.kind, season: info.season, rule: info.rule, status: info.status,
     manual: !!list.manual, exception: !!list.exception,
-    counts: countsOf(list.ids, squad.players, info.rule, info.ctx),
+    // Free players are registered whether the stored list names them or not (a hand-edited one does not).
+    counts: { ...countsOf(list.ids, squad.players, info.rule, info.ctx), free: rows.filter((r) => r.free).length },
     rows,
   };
 }

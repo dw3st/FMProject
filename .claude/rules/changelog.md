@@ -60,3 +60,7 @@ Atualize `changelog.ts` **na mesma branch da etapa, antes do merge** — nunca d
 separada. Se a branch mexeu em algo visível ao jogador (mecânica nova, tela nova, correção
 perceptível), ela precisa de uma entrada nova (ou de mais um item numa entrada já aberta do dia,
 se várias branches pequenas compõem a mesma etapa do roadmap).
+
+## Aba de cada item (11.0)
+
+Report de tester. Todo item novo (`items` e `fixes`) leva `tab`, a aba do jogo onde a mudança está (`ChangelogTab`, `src/Domain/changelog/changelogTabs.ts`): `match`, `squad`, `formation`, `club`, `development`, `finances`, `staff`, `leagues`, `market`, `scout`, `stats`, `manager`, `friends` ou `general`. O modal mostra a aba entre colchetes antes do texto (`changelog.tabs.*`, uma cor por aba em `TAB_TONE`, `ChangelogModal.tsx`) e ordena os itens de cada versão por aba (`sortByTab`: a partida primeiro, depois a ordem da barra de cima, `general` por último; item sem aba fica depois, na ordem escrita). As entradas anteriores à 11.0 não têm aba e aparecem como antes. O teste de dados confere que toda `tab` é conhecida.

@@ -310,3 +310,7 @@ once `marketFrozen` replaced its only caller. The human club is still excluded s
 `Player.valueMillions` multiplica pelo `valueMult` do premiado (`playerValueModel`, `awardBoost`). `scoreImprovement`
 soma `AWARDS.IMPROVEMENT_BONUS` (0,08) para premiado. Medição do mercado (`market-sim --awards`) em
 `.claude/rules/game/awards.md`.
+
+## Teto suave do valor (11.1)
+
+Report de tester (18 anos valendo €1,3 bi). `softCappedValue` (`Player.ts`): acima de `VALUE_SOFT_CAP` (€200M) só `VALUE_OVER_SHARE` (25%) do excedente conta, depois do bônus de prêmio e de prestígio. A curva exponencial foi ajustada em valores reais, cujo topo é perto de €200M. Nota 7,6 aos 19: €1,2 bi → ~€450M. No mundo inicial quase nada muda (o mais caro passa de ~€233M para ~€208M). Multa rescisória, preço pedido e faixas do olheiro seguem o valor.

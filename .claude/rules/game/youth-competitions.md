@@ -190,3 +190,7 @@ Os torneios de base não têm lista de inscritos nem filtro: são automáticos, 
 
 Os dias bloqueados do país (datas FIFA, torneio de seleções) entram no `busyByClub` de todo clube: a base também para
 nas janelas. Ver `.claude/rules/game/national-teams.md`.
+
+## Convocação numa lista (11.0)
+
+Report de tester. O bloco "Jogos da base" da aba Base é uma tabela só (`YouthCallUpsPanel`): posição, jogador (selo Base para quem está na base), nação, idade, OVR, fôlego e uma coluna de caixa de marcar por idade com jogo marcado (sub-21, sub-19; "—" no sub-19 para quem passou de 19). Ao lado da caixa marcada, o que resta da convocação (jogos, ∞, ritmo). A lista abre com quem tem até 21 anos mais os convocados (`callUpRows`; chip "Só até 21 anos" mostra o clube inteiro). Um cartão por idade com o próximo jogo e N/11; um botão salva as duas idades no mesmo `PUT`; "Mudanças não salvas" enquanto o rascunho difere do gravado. A rota `GET /youth-callups` passou a mandar `nationality` em cada elegível. Regras e durações não mudaram.

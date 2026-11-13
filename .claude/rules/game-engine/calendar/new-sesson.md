@@ -266,3 +266,14 @@ rounds are spread over the free days instead: round r targets the free day of in
 nearest free match day (±4), else a free midweek day (Tue–Thu), always ≥ 3 days after the previous round, and the span
 shrinks until the last round fits. Without blocked days the calendar is the same as before. See
 `.claude/rules/game/national-teams.md`.
+
+---
+
+# Fixture order drawn each season (11.0)
+
+User request. `generateLeagueCalendar(..., { shuffleKey })` shuffles the clubs before they go on the rotation board
+(`shuffle` with `seedFrom("calendar:<key>")`); the rounds, the venue rules and the dates are the same as before. The
+rollover passes `<saveId>:<league>:<new year>` (`buildNextSeasonCalendar`), so every new season has another run of
+opponents and a redone day rebuilds the same calendar. Until 10.9.3 the board followed the club list in id order and a
+league with the same clubs repeated the order of opponents every season. The calendar a career starts with (start kits,
+`createSave`) is not drawn; the first rollover is.

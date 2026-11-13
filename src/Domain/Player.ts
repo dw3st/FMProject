@@ -22,6 +22,17 @@ export const AGE_VALUE_FACTORS: readonly (readonly [maxAge: number, factor: numb
 ];
 /** Lowest transfer price (€0.1M): the fitted value of a weak or old player rounds to zero otherwise. */
 export const MIN_PRICE = 100_000;
+/**
+ * Soft ceiling of the market value (11.1, tester reports: an 18-year-old worth over a billion). The curve is
+ * exponential in the rating and was fitted on real values, whose top is about €200M; past it a tenth of a rating
+ * point added tens of millions. Above `VALUE_SOFT_CAP` only `VALUE_OVER_SHARE` of the excess counts.
+ */
+export const VALUE_SOFT_CAP = 200;
+export const VALUE_OVER_SHARE = 0.25;
+
+export function softCappedValue(millions: number): number {
+  return millions <= VALUE_SOFT_CAP ? millions : VALUE_SOFT_CAP + (millions - VALUE_SOFT_CAP) * VALUE_OVER_SHARE;
+}
 
 export function ageValueFactor(age: number): number {
   return AGE_VALUE_FACTORS.find(([max]) => age <= max)![1];
@@ -82,11 +93,12 @@ export class Player {
   }
 
   /**
-   * Estimated value in millions of € (float), before rounding: `VALUE_K × e^(VALUE_EXP × rating) × age factor`.
+   * Estimated value in millions of € (float), before rounding: `VALUE_K × e^(VALUE_EXP × rating) × age factor`,
+   * under the soft ceiling (`softCappedValue`).
    * Constants fitted on the real Transfermarkt value (`VALUE_K` above, `scripts/fitValueFormula.ts`).
    */
   get valueMillions(): number {
-    return VALUE_K * Math.exp(VALUE_EXP * this.overallRating) * ageValueFactor(this.age) * this.valueMult;
+    return softCappedValue(VALUE_K * Math.exp(VALUE_EXP * this.overallRating) * ageValueFactor(this.age) * this.valueMult);
   }
 
   /**

@@ -10,9 +10,13 @@
  * See .claude/rules/changelog.md for the versioning rule and update process.
  */
 
+import type { ChangelogTab } from "@/Domain/changelog/changelogTabs";
+
 export interface ChangelogText {
   pt: string;
   en: string;
+  /** Where in the game it is found; shown in brackets before the text. Every new item has one. */
+  tab?: ChangelogTab;
 }
 
 export interface ChangelogEntry {
@@ -26,6 +30,36 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: "11.1",
+    date: "2026-11-12",
+    time: "21:39",
+    items: [
+      { tab: "development", pt: "Base mais equilibrada: um jovem novo chega no máximo com nota 55 (62 se for um prodígio), em qualquer clube. Antes a nota da safra subia junto com a média do elenco, e num elenco cheio de garotos da base cada safra nascia mais forte que a anterior.", en: "A more balanced academy: a new youngster arrives rated 55 at most (62 for a prodigy), at any club. Before, the intake followed the squad's average, and in a squad full of academy graduates each intake was born stronger than the last." },
+      { tab: "development", pt: "Evolução perto do topo: acima de nota 60 o jogador evolui cada vez mais devagar, até um décimo do ritmo em 72. Abaixo de 60 nada muda. Quem já passou disso não perde nada, só para de subir tão rápido.", en: "Development near the top: above a rating of 60 a player improves more and more slowly, down to a tenth of the pace at 72. Below 60 nothing changes. Players already past that lose nothing, they only stop climbing so fast." },
+      { tab: "market", pt: "Valor de mercado: acima de €200 milhões o valor cresce bem mais devagar. Acabaram os jogadores de 18 anos valendo mais de €1 bilhão; a multa rescisória e o preço pedido acompanham.", en: "Market value: above €200 million the value grows much more slowly. No more 18-year-olds worth over €1 billion; the release clause and the asking price follow." },
+      { tab: "squad", pt: "Nomes da base: um jovem novo não repete o sobrenome de ninguém do clube (elenco e base) nem o de jogadores conhecidos, e os jovens que completam o elenco na virada também ganham nome próprio.", en: "Academy names: a new youngster no longer repeats the surname of anyone at the club (squad and academy) or of well-known players, and the youngsters who fill the squad at the turn of the season get names of their own too." },
+      { tab: "scout", pt: "O potencial mostrado de um jovem passou a seguir a mesma regra da evolução: não aparece mais potencial acima do topo do mundo.", en: "A youngster's displayed potential now follows the same rule as his development: no more potential shown above the top of the world." },
+    ],
+  },
+  {
+    version: "11.0",
+    date: "2026-11-12",
+    time: "21:30",
+    items: [
+      { tab: "squad", pt: "Inscritos: uma lista só de jogadores, com uma coluna por competição e uma caixa para marcar em cada uma. Não é mais preciso trocar de competição para ver quem está inscrito onde.", en: "Registration: one list of players with a column per competition and a box to tick in each. No more switching competitions to see who is registered where." },
+      { tab: "squad", pt: "Base: a convocação para os jogos da base virou uma lista com posição, nacionalidade, idade, OVR e fôlego, e duas colunas de marcar (sub-21 e sub-19). Um botão salva as duas.", en: "Academy: the call-ups for the youth games are now one list with position, nationality, age, OVR and fitness, and two tick columns (under-21 and under-19). One button saves both." },
+      { tab: "formation", pt: "As escalações salvas A, B e C podem ganhar um nome (o lápis ao lado de cada uma). O nome aparece também na troca de formação durante a partida.", en: "The saved line-ups A, B and C can be given a name (the pencil next to each). The name also shows when changing formation during a match." },
+      { tab: "match", pt: "Partida ao vivo: a faixa embaixo do campo virou atalhos de tática. As três escalações salvas (A, B e C) aparecem com o nome; um clique troca formação, instruções e estilo, sem mexer em quem está em campo. Vale uma troca a cada 10 minutos de jogo; no intervalo libera de novo. A ficha do jogador com a bola saiu dali.", en: "Live match: the band under the pitch is now tactic shortcuts. The three saved line-ups (A, B and C) show with their names; one click changes formation, instructions and style, without touching who is on the pitch. One change every 10 game minutes; the break frees it again. The card of the player on the ball is gone from there." },
+      { tab: "match", pt: "Partida ao vivo: botão Mapa de calor na mesma faixa, para abrir e fechar o mapa de posse.", en: "Live match: a Heat map button on the same band opens and closes the possession map." },
+      { tab: "leagues", pt: "A ordem dos jogos de cada liga agora é sorteada a cada temporada. Antes a sequência de adversários se repetia de um ano para o outro. Vale a partir da próxima temporada de cada liga.", en: "The order of each league's fixtures is now drawn every season. Before, the run of opponents repeated from one year to the next. It applies from each league's next season." },
+      { tab: "general", pt: "Novidades: cada item mostra entre colchetes a aba do jogo onde a mudança está, com uma cor por aba, e os itens de uma versão saem agrupados por aba.", en: "What's new: each item shows in brackets the tab of the game where the change is, one colour per tab, and the items of a version are grouped by tab." },
+    ],
+    fixes: [
+      { tab: "match", pt: "Partida ao vivo: as suas formações (a livre e as das escalações salvas) não apareciam na troca de formação. Agora aparecem.", en: "Live match: your own formations (the free one and those of the saved line-ups) did not show when changing formation. They do now." },
+      { tab: "squad", pt: "Inscritos: o contador de livres zerava depois de editar a lista à mão. Os jovens livres continuavam inscritos; só o número estava errado.", en: "Registration: the free-players counter dropped to zero after editing the list by hand. The free young players were still registered; only the number was wrong." },
+    ],
+  },
   {
     version: "10.9.3",
     date: "2026-11-12",
@@ -6034,6 +6068,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Partida em pixel art: jogadores, juiz e bola desenhados em pixel art, com chutes, dribles e defesas novos", en: "Pixel-art match: players, referee and ball drawn in pixel art, with new shots, dribbles and saves" },
+  { pt: "Bonecos novos na partida: jogadores redesenhados, com chutes, dribles, cabeçadas e defesas novos", en: "New figures in the match: redrawn players with new shots, dribbles, headers and saves" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

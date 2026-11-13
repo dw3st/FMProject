@@ -1,3 +1,4 @@
+import { isChangelogTab } from "@/Domain/changelog/changelogTabs";
 import { describe, expect, test } from "bun:test";
 import { changelog, CURRENT_VERSION, upcoming, type ChangelogEntry } from "@/GameInterface/changelog/changelog";
 import PKG from "@/../package.json";
@@ -82,6 +83,14 @@ describe("changelog data", () => {
     for (const item of upcoming) {
       expect(item.pt.trim().length).toBeGreaterThan(0);
       expect(item.en.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  test("every tab of an item or fix is a known one", () => {
+    for (const entry of changelog) {
+      for (const item of [...entry.items, ...(entry.fixes ?? [])]) {
+        if (item.tab !== undefined) expect(isChangelogTab(item.tab)).toBe(true);
+      }
     }
   });
 });

@@ -720,7 +720,23 @@
     "reload": "Recarregar",
     "tabNews": "Novidades",
     "tabUpcoming": "Em breve",
-    "upcomingSubtitle": "No que estamos trabalhando agora"
+    "upcomingSubtitle": "No que estamos trabalhando agora",
+    "tabs": {
+      "match": "Partida",
+      "squad": "Elenco",
+      "formation": "Formação",
+      "club": "Clube",
+      "development": "Evolução",
+      "finances": "Finanças",
+      "staff": "Comissão",
+      "leagues": "Ligas",
+      "market": "Mercado",
+      "scout": "Olheiro",
+      "stats": "Estatísticas",
+      "manager": "Seu técnico",
+      "friends": "Amigos",
+      "general": "Geral"
+    }
   },
   "status": {
     "onlineShort": "{{count}} online",
@@ -959,6 +975,11 @@
       "applied": "Escalação {{key}} em uso.",
       "appliedWithSwaps": "Escalação {{key}} em uso, com trocas:",
       "confirmUse": "Trocar o time não salvo pela escalação {{key}}?",
+      "rename": "Renomear a escalação {{key}}",
+      "nameLabel": "Nome da escalação {{key}}",
+      "namePlaceholder": "Ex.: Ataque total",
+      "nameSave": "Salvar nome",
+      "nameHint": "Até {{n}} letras. Vazio volta para a letra.",
       "noReplacement": {
         "injured": "{{out}} está lesionado: sem reserva para a vaga",
         "suspended": "{{out}} está suspenso: sem reserva para a vaga",
@@ -1279,6 +1300,17 @@
       "inWindow": "Lances abertos numa janela."
     },
     "replay": "Replay",
+    "shortcuts": {
+      "title": "Táticas",
+      "rule": "Uma troca a cada {{n}} minutos de jogo",
+      "wait": "Próxima troca aos {{minute}}'",
+      "none": "Salve escalações na tela de Formação para trocar aqui",
+      "slot": "Escalação {{key}}",
+      "empty": "Vazio",
+      "emptyHint": "Salve uma escalação neste espaço na tela de Formação",
+      "use": "Usar {{name}}: formação, instruções e estilo",
+      "heatmap": "Mapa de calor"
+    },
     "hud": {
       "overall": "Geral",
       "rating": "Nota",
@@ -2881,7 +2913,8 @@
     "myFormations": "Minhas formações",
     "freeFormation": "Formação livre",
     "freeShort": "livre",
-    "presetFormation": "Escalação {{key}} · {{formation}}"
+    "presetFormation": "Escalação {{key}} · {{formation}}",
+    "presetNamed": "{{name}} · {{formation}}"
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -4977,7 +5010,21 @@
         "rhythm": "Até ganhar ritmo"
       },
       "applyAll": "Aplicar a todos os selecionados",
-      "rhythmLeft": "ritmo {{n}}/{{of}}"
+      "rhythmLeft": "ritmo {{n}}/{{of}}",
+      "cols": {
+        "pos": "Pos",
+        "player": "Jogador",
+        "age": "Idade",
+        "nation": "Nação",
+        "ovr": "OVR",
+        "fitness": "Fôlego"
+      },
+      "onlyYoung": "Só até 21 anos",
+      "academy": "Base",
+      "markLabel": "{{age}}: {{player}}",
+      "tooOld": "Acima de 19 anos: não joga o sub-19",
+      "full": "Limite de {{n}} convocados",
+      "unsaved": "Mudanças não salvas"
     }
   },
   "referees": {
@@ -5096,7 +5143,9 @@
       "greenCard": "{{competition}}: conta como doméstico pelo green card."
     },
     "out": "Eliminado desta competição: a lista não vale para mais nenhum jogo.",
-    "outTab": "{{name}} · eliminado"
+    "outTab": "{{name}} · eliminado",
+    "markLabel": "{{competition}}: {{player}}",
+    "legend": "Caixa azul: jovem livre, sempre inscrito, não ocupa vaga. Caixa apagada: prazo fechado ou sem vaga (o motivo aparece ao passar o mouse)."
   },
   "complaint": {
     "manager": "Técnico",

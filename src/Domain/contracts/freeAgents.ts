@@ -11,6 +11,7 @@ import { getMainRole } from "@/Domain/roles";
 import type { MainRole } from "@/Domain/roles";
 import type { FreeAgent, RosterPlayer, Squad } from "@/types/playerTypes";
 import { unitFrom } from "@/Domain/rng";
+import { clubSurnames, drawAcademyName } from "@/Domain/youth/academyNames";
 
 const ROLES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 
@@ -44,7 +45,9 @@ function makeYouthPlayer(squad: Squad, role: MainRole, tag: string): RosterPlaye
   const pick = (salt: string) => squad.players[Math.floor(unit(`${key}:${salt}`) * squad.players.length)];
   const initial = pick("f")?.name.trim()[0] ?? "J";
   const lastParts = pick("l")?.name.trim().split(" ") ?? ["Silva"];
-  const name = `${initial}. ${lastParts[lastParts.length - 1]}`;
+  // The country's name book when the server set it (11.1: these youngsters copied a team-mate's surname).
+  const name = drawAcademyName({ seed: key, slot: "refill", nationality: squad.country, surnames: clubSurnames(squad) })
+    ?? `${initial}. ${lastParts[lastParts.length - 1]}`;
   const stats = template
     ? Object.fromEntries(Object.entries(template.stats).map(([k, v]) => [k, roundAttr((v as number) - 1)]))
     : {

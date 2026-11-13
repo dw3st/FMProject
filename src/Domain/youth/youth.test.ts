@@ -221,3 +221,28 @@ describe("academy and training areas", () => {
     expect(vacant).toBeGreaterThan(0);
   });
 });
+
+describe("intake ceiling (11.1)", () => {
+  test("a squad of world-class players still gets youngsters under the ceiling", async () => {
+    const { YOUTH } = await import("@/Domain/youth/youthConfig");
+    const elite = squad();
+    elite.players = elite.players.map((p, i) => mk(i, p.positions[0]!, 8.5));
+    let seen = 0;
+    for (let year = 2027; year < 2067; year++) {
+      for (const y of generateIntake({ saveId: "save1", squad: elite, year, nextSeasonEnd: "2028-05-31" })) {
+        seen++;
+        const cap = y.profile.archetype === "Wonderkid" ? YOUTH.PROMISE_CAP : YOUTH.LEVEL_CAP;
+        expect(overallAvg(y)).toBeLessThanOrEqual(cap + 0.15);
+      }
+    }
+    expect(seen).toBeGreaterThan(100);
+  });
+
+  test("the potential band of a strong youngster stays under the top of the scale", () => {
+    const y = { ...mk(99, "CM", 6), age: 16 };
+    const [low, high] = potentialBand(y);
+    expect(low).toBeGreaterThan(6);
+    expect(high).toBeGreaterThan(low);
+    expect(high).toBeLessThan(7.6);
+  });
+});

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
-import { LINEUP_PRESET_KEYS } from "@/Domain/tactics/lineupPresets";
+import { LINEUP_PRESET_KEYS, PRESET_NAME_MAX, presetDisplayName } from "@/Domain/tactics/lineupPresets";
 import { CUSTOM_FORMATION_ID, customShape } from "@/Domain/formation/zones";
 import { Button } from "@/GameInterface/ui/Button";
+import { TextField } from "@/GameInterface/ui/TextField";
 import { Icon } from "@/GameInterface/Icons";
 
 /** One swap made when a preset was used, already resolved to names. */
@@ -26,7 +27,7 @@ const CONFIRM_TEXT: Record<PendingAction, string> = {
 /**
  * "Saved lineups" block of the formation screen (#84): three slots (A, B, C). Dumb — the screen
  * owns the presets and the requests; this only renders and asks for confirmation before
- * overwriting or deleting a slot.
+ * overwriting or deleting a slot. A saved slot can be given a name (tester report), shown here and in the match.
  */
 export function LineupPresetsPanel({
   presets,
@@ -38,6 +39,7 @@ export function LineupPresetsPanel({
   onSave,
   onUse,
   onDelete,
+  onRename,
 }: {
   presets: LineupPresets;
   busy: boolean;
@@ -51,9 +53,12 @@ export function LineupPresetsPanel({
   onSave: (key: LineupPresetKey) => void;
   onUse: (key: LineupPresetKey) => void;
   onDelete: (key: LineupPresetKey) => void;
+  /** The typed name of a slot ("" clears it). */
+  onRename: (key: LineupPresetKey, name: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [pending, setPending] = useState<Pending>(null);
+  const [renaming, setRenaming] = useState<{ key: LineupPresetKey; value: string } | null>(null);
   const fmtDate = (iso: string) =>
     new Date(`${iso}T12:00:00`).toLocaleDateString(i18n.language, { day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -79,12 +84,19 @@ export function LineupPresetsPanel({
               : preset.formation
             : "";
           const asking = pending?.key === key;
+          const naming = renaming?.key === key ? renaming : null;
+          const shown = presetDisplayName(key, preset);
           return (
             <div key={key} className="rounded-md border border-border p-4 flex flex-col gap-3">
               <div className="flex items-baseline gap-3">
                 <span className="font-display font-bold text-2xl leading-none text-primary">{key}</span>
                 {preset ? (
                   <div className="min-w-0">
+                    {preset.name && (
+                      <div className="font-display font-bold uppercase tracking-[0.08em] text-sm text-foreground truncate" title={preset.name}>
+                        {preset.name}
+                      </div>
+                    )}
                     <div className="text-sm font-semibold tabular-nums truncate">
                       {preset.fromClub && starters === 0 ? shape : <>{shape} · {t("formations.presets.starters", { count: starters })}</>}
                     </div>
@@ -98,10 +110,35 @@ export function LineupPresetsPanel({
                   <span className="text-sm text-muted-foreground">{t("formations.presets.empty")}</span>
                 )}
               </div>
-              {asking ? (
+              {naming ? (
+                <form
+                  className="flex flex-col gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    onRename(key, naming.value);
+                    setRenaming(null);
+                  }}
+                >
+                  <TextField
+                    id={`preset-name-${key}`}
+                    variant="box"
+                    label={t("formations.presets.nameLabel", { key })}
+                    value={naming.value}
+                    maxLength={PRESET_NAME_MAX}
+                    placeholder={t("formations.presets.namePlaceholder")}
+                    autoFocus
+                    onChange={(e) => setRenaming({ key, value: e.target.value })}
+                  />
+                  <p className="m-0 text-sm text-muted-foreground">{t("formations.presets.nameHint", { n: PRESET_NAME_MAX })}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button type="submit" disabled={busy}>{t("formations.presets.nameSave")}</Button>
+                    <Button variant="secondary" onClick={() => setRenaming(null)}>{t("common.cancel")}</Button>
+                  </div>
+                </form>
+              ) : asking ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    {t(CONFIRM_TEXT[pending!.action], { key })}
+                    {t(CONFIRM_TEXT[pending!.action], { key: shown })}
                   </span>
                   <Button variant={pending!.action === "delete" ? "danger" : "primary"} onClick={confirm} disabled={busy || (pending!.action !== "delete" && disabled)}>
                     {t("formations.presets.confirm")}
@@ -128,12 +165,24 @@ export function LineupPresetsPanel({
                   </Button>
                   {preset && (
                     <Button
+                      variant="secondary"
+                      onClick={() => setRenaming({ key, value: preset.name ?? "" })}
+                      disabled={busy}
+                      aria-label={t("formations.presets.rename", { key: shown })}
+                      title={t("formations.presets.rename", { key: shown })}
+                      className="ml-auto !px-2"
+                    >
+                      <Icon name="pencil" size={16} />
+                    </Button>
+                  )}
+                  {preset && (
+                    <Button
                       variant="danger"
                       onClick={() => setPending({ key, action: "delete" })}
                       disabled={busy}
-                      aria-label={t("formations.presets.delete", { key })}
-                      title={t("formations.presets.delete", { key })}
-                      className="ml-auto"
+                      aria-label={t("formations.presets.delete", { key: shown })}
+                      title={t("formations.presets.delete", { key: shown })}
+                      className="!px-2"
                     >
                       <Icon name="trash2" size={16} />
                     </Button>
@@ -148,10 +197,10 @@ export function LineupPresetsPanel({
       {swaps && (
         <div className="mt-4 text-sm" role="status">
           {swaps.lines.length === 0 ? (
-            <p className="text-muted-foreground">{t("formations.presets.applied", { key: swaps.key })}</p>
+            <p className="text-muted-foreground">{t("formations.presets.applied", { key: presetDisplayName(swaps.key, presets[swaps.key]) })}</p>
           ) : (
             <>
-              <p className="text-chart-4 font-semibold">{t("formations.presets.appliedWithSwaps", { key: swaps.key })}</p>
+              <p className="text-chart-4 font-semibold">{t("formations.presets.appliedWithSwaps", { key: presetDisplayName(swaps.key, presets[swaps.key]) })}</p>
               <ul className="mt-1 space-y-0.5">
                 {swaps.lines.map((s, i) => (
                   <li key={i} className="text-muted-foreground">

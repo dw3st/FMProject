@@ -221,3 +221,38 @@ describe("generateLeagueCalendar season window", () => {
     expect(b).toEqual(a);
   });
 });
+
+describe("generateLeagueCalendar fixture draw (11.0)", () => {
+  const teams = Array.from({ length: 20 }, (_, i) => `t${i + 1}`);
+  const config = { ...LEAGUE_SCHEDULE_CONFIGS[0]!, slug: "prem" };
+  /** The run of opponents of one club, in round order. */
+  const opponents = (key: string | undefined, club: string) =>
+    generateLeagueCalendar(config, teams, 2025, key ? { shuffleKey: key } : {}).rounds
+      .flatMap((r) => r.fixtures)
+      .filter((f) => f.home === club || f.away === club)
+      .map((f) => (f.home === club ? f.away : f.home));
+
+  test("the same key gives the same calendar (a redone day)", () => {
+    expect(opponents("save:prem:2026", "t1")).toEqual(opponents("save:prem:2026", "t1"));
+  });
+
+  test("another season draws another order of opponents", () => {
+    expect(opponents("save:prem:2026", "t1")).not.toEqual(opponents("save:prem:2027", "t1"));
+    expect(opponents("save:prem:2026", "t1")).not.toEqual(opponents(undefined, "t1"));
+  });
+
+  test("a drawn calendar keeps every pairing and the venue rules", () => {
+    const fixtures = generateLeagueCalendar(config, teams, 2025, { shuffleKey: "save:prem:2026" }).rounds.flatMap((r) => r.fixtures);
+    const pairs = new Map<string, number>();
+    for (const f of fixtures) pairs.set(`${f.home}>${f.away}`, (pairs.get(`${f.home}>${f.away}`) ?? 0) + 1);
+    for (const a of teams) for (const b of teams) if (a !== b) expect(pairs.get(`${a}>${b}`)).toBe(1);
+    for (const t of teams) {
+      const seq = [...fixtures].sort((a, b) => a.round - b.round).filter((f) => f.home === t || f.away === t).map((f) => f.home === t);
+      let run = 1;
+      for (let i = 1; i < seq.length; i++) {
+        run = seq[i] === seq[i - 1] ? run + 1 : 1;
+        expect(run).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+});

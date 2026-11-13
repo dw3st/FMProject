@@ -2,6 +2,10 @@ import { readdir } from "fs/promises";
 import { fileURLToPath } from "url";
 import { buildStaffNameBook, type StaffNameBook } from "@/Domain/staff/staffOrigin";
 import type { Squad } from "@/types/playerTypes";
+import { computeOverallAvg } from "@/Domain/playerRating";
+
+/** Overall from which a player of the starting world counts as well known (his surname stays out of the academies). */
+const KNOWN_OVERALL = 4.8;
 
 /**
  * The coaching staff's name book (`@/Domain/staff/staffOrigin`), built once per process from the
@@ -33,6 +37,7 @@ async function load(): Promise<StaffNameBook> {
       squads.push({ country, players: sq.players.map((p) => ({
         // The world data carries `fullName` (not part of `RosterPlayer`).
         name: p.name, fullName: (p as { fullName?: string }).fullName, nationality: p.nationality ?? undefined,
+        known: computeOverallAvg(p) >= KNOWN_OVERALL,
       })) });
     }
   }

@@ -24,6 +24,28 @@ export const LINEUP_PRESET_KEYS: readonly LineupPresetKey[] = ["A", "B", "C"];
 
 const TACTICAL_STYLES: readonly TacticalStyle[] = ["counter_attack", "high_press", "possession", "balanced", "direct_play"];
 const MAX_CLUB_NAME = 80;
+/** Longest name a saved line-up takes. */
+export const PRESET_NAME_MAX = 20;
+
+/** A typed name made safe to store: control characters out, spaces collapsed, cut to the limit; "" = no name. */
+export function cleanPresetName(raw: string): string {
+  // eslint-disable-next-line no-control-regex
+  return raw.replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim().slice(0, PRESET_NAME_MAX).trim();
+}
+
+/** What a slot is called on screen: the manager's name for it, else its letter. */
+export function presetDisplayName(key: LineupPresetKey, preset: Pick<LineupPreset, "name"> | undefined): string {
+  return preset?.name || key;
+}
+
+/** The presets with one slot renamed ("" clears the name); an empty slot is left alone. */
+export function renamePreset(presets: LineupPresets, key: LineupPresetKey, rawName: string): LineupPresets {
+  const preset = presets[key];
+  if (!preset) return presets;
+  const name = cleanPresetName(rawName);
+  const { name: _old, ...rest } = preset;
+  return { ...presets, [key]: name ? { name, ...rest } : rest };
+}
 
 /**
  * The manager's saved tactics follow him to a new club (tester report): formation, instructions, style and axes stay,
@@ -45,6 +67,8 @@ export interface LineupPresetSource {
   slotInstructions?: (SlotInstruction | null)[];
   tacticalStyle?: TacticalStyle;
   axesOverride?: Partial<TacticalAxes>;
+  /** The name the slot already had: saving over it keeps the name. */
+  name?: string;
 }
 
 /**
@@ -57,7 +81,9 @@ export function buildLineupPreset(source: LineupPresetSource, savedOn: string): 
   const lineup = source.lineup.slice(0, 11).map((id) => id ?? "");
   while (lineup.length < 11) lineup.push("");
   const slotInstructions = sanitizeSlotInstructions(formation, source.slotInstructions);
+  const name = source.name ? cleanPresetName(source.name) : "";
   return {
+    ...(name ? { name } : {}),
     formation: source.formation,
     ...(custom ? { customFormation: custom } : {}),
     lineup,
@@ -92,7 +118,7 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, error: "invalid lineup preset" };
   const src = raw as Record<string, unknown>;
   for (const key of Object.keys(src)) {
-    if (!["formation", "customFormation", "lineup", "slotInstructions", "savedOn", "tacticalStyle", "axesOverride", "fromClub"].includes(key)) {
+    if (!["formation", "customFormation", "lineup", "slotInstructions", "savedOn", "tacticalStyle", "axesOverride", "fromClub", "name"].includes(key)) {
       return { ok: false, error: "invalid lineup preset" };
     }
   }
@@ -120,6 +146,9 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
   if (src.fromClub !== undefined && (typeof src.fromClub !== "string" || src.fromClub.length > MAX_CLUB_NAME)) {
     return { ok: false, error: "invalid preset club" };
   }
+  if (src.name !== undefined && (typeof src.name !== "string" || src.name.length > PRESET_NAME_MAX || cleanPresetName(src.name) !== src.name || src.name === "")) {
+    return { ok: false, error: "invalid preset name" };
+  }
   const playFormation = formationForTactics({ formation, customFormation });
   let slotInstructions: (SlotInstruction | null)[] = [];
   if (src.slotInstructions !== undefined) {
@@ -130,6 +159,7 @@ function parsePreset(raw: unknown): { ok: true; value: LineupPreset } | { ok: fa
   return {
     ok: true,
     value: {
+      ...(src.name !== undefined ? { name: src.name as string } : {}),
       formation,
       ...(customFormation ? { customFormation } : {}),
       lineup: [...(lineup as string[])],

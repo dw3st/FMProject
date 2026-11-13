@@ -5,6 +5,7 @@ import { Modal } from "@/GameInterface/Components/Modal";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { Icon } from "@/GameInterface/Icons";
 import { groupByMonth } from "@/Domain/changelog/changelogMonths";
+import { sortByTab, type ChangelogTab } from "@/Domain/changelog/changelogTabs";
 import type { ChangelogEntry, ChangelogText } from "@/Domain/changelog/changelogData";
 
 interface Props {
@@ -22,6 +23,39 @@ function monthLabel(month: string, locale: string): string {
   const d = new Date(month + "-15T12:00:00");
   if (Number.isNaN(d.getTime())) return month;
   return d.toLocaleDateString(locale, { month: "long", year: "numeric" });
+}
+
+/** One colour per tab, so a release reads at a glance (tester report). */
+const TAB_TONE: Record<ChangelogTab, string> = {
+  match: "text-emerald-400",
+  squad: "text-chart-2",
+  formation: "text-sky-400",
+  club: "text-chart-3",
+  development: "text-primary",
+  finances: "text-chart-4",
+  staff: "text-violet-400",
+  leagues: "text-amber-400",
+  market: "text-chart-5",
+  scout: "text-teal-300",
+  stats: "text-indigo-300",
+  manager: "text-rose-300",
+  friends: "text-fuchsia-300",
+  general: "text-muted-foreground",
+};
+
+/** An item's text with its tab in brackets before it. */
+function ItemText({ item, lang }: { item: ChangelogText; lang: "pt" | "en" }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {item.tab && (
+        <span className={`mr-1.5 font-display font-bold uppercase tracking-[0.08em] text-[13px] whitespace-nowrap ${TAB_TONE[item.tab]}`}>
+          [{t(`changelog.tabs.${item.tab}`)}]
+        </span>
+      )}
+      {item[lang]}
+    </>
+  );
 }
 
 /** "Novidades" / "What's new" — see .claude/rules/changelog.md. */
@@ -109,8 +143,8 @@ export function ChangelogModal({ open, onClose }: Props) {
                       </div>
 
                       <ul className="list-disc pl-5 space-y-1 text-sm text-foreground/90">
-                        {entry.items.map((item, i) => (
-                          <li key={i}>{item[lang]}</li>
+                        {sortByTab(entry.items).map((item, i) => (
+                          <li key={i}><ItemText item={item} lang={lang} /></li>
                         ))}
                       </ul>
 
@@ -120,8 +154,8 @@ export function ChangelogModal({ open, onClose }: Props) {
                             {t("changelog.fixes")}
                           </span>
                           <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                            {entry.fixes.map((fix, i) => (
-                              <li key={i}>{fix[lang]}</li>
+                            {sortByTab(entry.fixes).map((fix, i) => (
+                              <li key={i}><ItemText item={fix} lang={lang} /></li>
                             ))}
                           </ul>
                         </div>

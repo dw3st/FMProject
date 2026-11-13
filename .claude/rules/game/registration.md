@@ -228,3 +228,7 @@ da lista (`unregistered`).
 ## Eliminado da competição (8.7.19)
 
 Report do usuário. `outOfCompetition` (`src/Domain/registration/eliminated.ts`, com teste): sem jogo a disputar e com mata-mata perdido (jogo único ou ida e volta), fora do mata-mata já sorteado (fase de grupos) ou com campeão definido. `GET /registration` marca `out` na copa ou continental; a aba mostra "<competição> · eliminado", a linha "Eliminado desta competição" no lugar do prazo e desliga a edição.
+
+## Uma lista só, coluna por competição (11.0)
+
+Report de tester. A aba Inscritos lista o elenco uma vez (`registrationTableRows`, `Squad/registrationTable.ts`, com teste), com uma coluna por competição e uma caixa de marcar em cada (`ui/TickBox.tsx`): marcada = inscrito; azul e fixa = livre (jovem, sempre inscrito); apagada = prazo fechado ou sem vaga, com o motivo no `title`. Clicar grava a lista daquela competição pela mesma rota `PUT` (`toggledIds`). Acima da tabela, um cartão por competição com prazo, regra, contadores e o botão Automático. Os selos (Estrangeiro, Green card, Formado) valem quando alguma competição os dá; os de Inscrito / Não inscrito e as abas por competição saíram. Clicar no nome da competição no cabeçalho ordena os inscritos primeiro.

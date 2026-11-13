@@ -16,6 +16,7 @@ import type { MainRole } from "@/Domain/roles";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
 import { unitFrom } from "@/Domain/rng";
+import { clubSurnames, drawAcademyName } from "@/Domain/youth/academyNames";
 
 /** Pure youth-academy model (`.claude/rules/game/youth.md`). No I/O. */
 
@@ -117,16 +118,7 @@ function pickRoles(squad: Squad, count: number, key: string): MainRole[] {
 /** Draws for a name not already in the club before keeping a repeated one. */
 const ACADEMY_NAME_TRIES = 12;
 
-/**
- * First names and surnames per country (the staff's name book, `staffNameBook.ts`), set by the server once a process
- * (8.9.27, tester report: academy players took the surnames of the first team and were confused with them). Without it
- * (tests, scripts) a name is drawn from the club's own players, as before.
- */
-let academyNameBook: Readonly<Record<string, { first: readonly string[]; last: readonly string[] }>> | null = null;
-export function setAcademyNameBook(book: Readonly<Record<string, { first: readonly string[]; last: readonly string[] }>> | null): void {
-  academyNameBook = book;
-}
-const surnameOf = (name: string) => name.trim().split(/\s+/).at(-1)?.toLowerCase() ?? "";
+export { setAcademyNameBook } from "@/Domain/youth/academyNames";
 
 export function makeAcademyPlayer(args: {
   id: string;
@@ -142,24 +134,21 @@ export function makeAcademyPlayer(args: {
   taken?: Set<string>;
 }): RosterPlayer {
   const { id, seed, i, squad, specific, level, ageRange, nationality, promise, taken } = args;
-  const book = nationality ? academyNameBook?.[nationality] : undefined;
-  const firstTeam = new Set(squad.players.map((p) => surnameOf(p.name)));
-  const nameAt = (salt: string): string => {
-    if (book && book.first.length > 0 && book.last.length > 0) {
-      const first = book.first[Math.floor(unit(`${seed}:first:${i}${salt}`) * book.first.length)]!;
-      const last = book.last[Math.floor(unit(`${seed}:last:${i}${salt}`) * book.last.length)]!;
-      return `${first[0]}. ${last}`;
-    }
-    const donor = squad.players[Math.floor(unit(`${seed}:donor:${i}${salt}`) * squad.players.length)];
-    const parts = donor?.name.trim().split(" ") ?? ["Silva"];
-    const initial = squad.players[Math.floor(unit(`${seed}:ini:${i}${salt}`) * squad.players.length)]?.name.trim()[0] ?? "J";
-    return `${initial}. ${parts[parts.length - 1]}`;
+  // The country's name book first (never a surname already at the club); without it, a team-mate's name as before.
+  const fromBook = drawAcademyName({ seed, slot: i, nationality, surnames: clubSurnames(squad), taken });
+  const fallback = (): string => {
+    const nameAt = (salt: string): string => {
+      const donor = squad.players[Math.floor(unit(`${seed}:donor:${i}${salt}`) * squad.players.length)];
+      const parts = donor?.name.trim().split(" ") ?? ["Silva"];
+      const initial = squad.players[Math.floor(unit(`${seed}:ini:${i}${salt}`) * squad.players.length)]?.name.trim()[0] ?? "J";
+      return `${initial}. ${parts[parts.length - 1]}`;
+    };
+    let n = nameAt("");
+    for (let k = 1; taken?.has(n) && k <= ACADEMY_NAME_TRIES; k++) n = nameAt(`:n${k}`);
+    taken?.add(n);
+    return n;
   };
-  // A clash: the name already in the club, or (with the book) a first-team player's surname.
-  const clash = (n: string) => !!taken?.has(n) || (!!book && firstTeam.has(surnameOf(n)));
-  let name = nameAt("");
-  for (let k = 1; clash(name) && k <= ACADEMY_NAME_TRIES; k++) name = nameAt(`:n${k}`);
-  taken?.add(name);
+  const name = fromBook ?? fallback();
   return {
     id,
     name,
@@ -220,7 +209,7 @@ export function generateIntake(args: {
     const level = clamp(
       lineAverage(squad, role) - Y.LEVEL_OFFSET + tier + assistant + academy.qualityBonus + Y.LEVEL_SIGMA * gauss(`${seed}:lvl:${i}`)
         + (promise ? Y.PROMISE_BONUS : 0),
-      Y.LEVEL_MIN, Y.LEVEL_MAX,
+      Y.LEVEL_MIN, promise ? Y.PROMISE_CAP : Y.LEVEL_CAP,
     );
     const player = makeAcademyPlayer({
       id, seed, i, squad, specific, level, promise, taken,

@@ -52,7 +52,7 @@ export function createdPlayer(args: {
   const role = getMainRole(input.position);
   const level = clamp(
     lineAverage(squad, role) - YOUTH.LEVEL_OFFSET + YOUTH.PROMISE_BONUS + A.CREATED_EXTRA_LEVEL,
-    YOUTH.LEVEL_MIN, YOUTH.LEVEL_MAX,
+    YOUTH.LEVEL_MIN, YOUTH.PROMISE_CAP,
   );
   const id = `created_${squad.id}_${date.replaceAll("-", "")}`;
   const player: RosterPlayer = {

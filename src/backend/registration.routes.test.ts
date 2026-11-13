@@ -67,6 +67,10 @@ describe("registration routes", () => {
     const view = (await ok.json()) as RegistrationCompView;
     expect(view.manual).toBe(true);
     expect(view.rows.find((r) => r.id === removed)!.registered).toBe(false);
+    // The free players stay registered and counted, though a hand-edited list does not name them.
+    expect(pl.rows.some((r) => r.free)).toBe(true);
+    expect(view.counts.free).toBe(view.rows.filter((r) => r.free).length);
+    expect(view.counts.free).toBe(pl.counts.free);
     const squad = (await saveService.getSquadById(saveId, HUMAN))!;
     expect(squad.registrations!.premier_league!.out).toEqual([removed]);
 
