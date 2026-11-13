@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { CHIEF_PLAN, neediestLine, onHold, planChiefMissions, type ChiefPlanInput } from "@/Domain/scouting/chiefPlanner";
+import { CHIEF_PLAN, lineOrder, neediestLine, onHold, planChiefMissions, type ChiefPlanInput } from "@/Domain/scouting/chiefPlanner";
 import { allowedWeeks } from "@/Domain/scouting/missions";
 
 const CONTINENT: Record<string, string> = {
@@ -48,6 +48,19 @@ describe("planChiefMissions", () => {
     expect(region.weeks).toBe(CHIEF_PLAN.REGION_WEEKS);
     expect(region.focus).toEqual({ line: "Midfielder", improves: true });
     expect(plan.some((p) => p.target.kind === "player")).toBe(false);
+  });
+
+  test("each region mission looks for a different line; a goalkeeper shortfall takes one mission only", () => {
+    const scouts = ["a", "b", "c", "d", "e"].map((id) => ({ scoutId: id, name: id, member: { nationality: "England" } }));
+    const short = { ...counts, GK: 1 };
+    expect(lineOrder(avgs, short)).toEqual(["GK", "Midfielder", "Defender", "Forward"]);
+    const lines = planChiefMissions(input({ scouts, lineCounts: short })).filter((p) => p.target.kind !== "youth").map((p) => p.focus?.line);
+    expect(lines).toEqual(["GK", "Midfielder", "Defender", "Forward"]);
+    // Lines the active missions already cover come last.
+    const next = planChiefMissions(input({ scouts: [scouts[0]!], lineCounts: short, activeLines: ["GK", "Midfielder"] }));
+    expect(next[0]!.focus).toEqual({ line: "Defender", improves: true });
+    // Without a shortfall the goalkeeper line is never picked.
+    expect(lineOrder(avgs, counts)).toEqual(["Midfielder", "Defender", "Forward"]);
   });
 
   test("deterministic", () => {

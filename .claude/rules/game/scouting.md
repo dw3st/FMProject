@@ -387,3 +387,7 @@ Reports do usuário. Os filtros da busca ficam em três linhas alinhadas: nome, 
 ## Ficha ao passar o mouse nos Relatórios e Observados (10.4.2)
 
 Report do usuário. Parar o mouse no nome de um jogador nas tabelas de Relatórios, Joias e Observados abre a mesma ficha flutuante da busca (`ScoutHoverCard`). Essas tabelas só têm o id, então `useScoutHoverCard` (`Scout/useScoutHoverCard.tsx`) busca a linha na primeira vez em `GET /api/saves/:id/scout-rows?ids=a,b` (`scoutRows`, do índice da busca, já borrada pelo conhecimento do assento; até 50 ids, `parseScoutRowIds`) e guarda enquanto a tabela está na tela. Jovem sem clube não tem ficha (não está no índice).
+
+## Uma linha por missão do olheiro-chefe (12.1)
+
+Report do usuário (60 relatórios, todos de goleiro). O plano do chefe dava a todas as missões de região a mesma linha (`neediestLine`): um elenco com menos de 3 goleiros fazia todo olheiro procurar goleiro. Agora cada missão de região leva uma linha diferente (`lineOrder`, `chiefPlanner.ts`): primeiro as linhas abaixo do mínimo do elenco (a maior falta primeiro), depois as de campo, dos titulares mais fracos para os mais fortes; o goleiro só entra por falta de profundidade. As linhas das missões ativas (`ChiefPlanInput.activeLines`) ficam para o fim, então missões criadas em segundas diferentes também não repetem. Com mais missões que linhas, a ordem recomeça. Missões já em andamento não mudam.

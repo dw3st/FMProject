@@ -13,7 +13,8 @@ import type { ScoutFocus, ScoutTarget } from "@/types/scoutingTypes";
  * scout gets one mission. With 2+ free scouts the best (scout, country) pair by country knowledge
  * goes on a youth mission (4 weeks); the others go on a country mission (8 weeks) in their best
  * country not already targeted, or, when none is known at least "moderate", on their nationality's
- * continent (8 weeks). Region missions focus on the neediest line, "only who improves the squad".
+ * continent (8 weeks). Region missions look for "only who improves the squad", each on a different line: the
+ * neediest first, then the next ones (`lineOrder`), skipping the lines the active missions already cover.
  * Never a player mission.
  */
 
@@ -56,6 +57,8 @@ export interface ChiefPlanInput {
   lineAverages: Record<MainRole, number>;
   /** Players per line in the squad. */
   lineCounts: Record<MainRole, number>;
+  /** Lines the active region missions already look for (not repeated while another line is free). */
+  activeLines?: MainRole[];
 }
 
 const LINES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
@@ -75,6 +78,18 @@ export function neediestLine(lineAverages: Record<MainRole, number>, lineCounts:
   }
   if (best) return best;
   return OUTFIELD.reduce((a, b) => ((lineAverages[b] ?? 99) < (lineAverages[a] ?? 99) ? b : a));
+}
+
+/**
+ * The lines in the order the chief covers them: the lines short of the squad minimum (biggest shortfall first),
+ * then the outfield lines from the weakest starters to the strongest. The goalkeeper line only enters through a
+ * depth shortfall. The first is `neediestLine`.
+ */
+export function lineOrder(lineAverages: Record<MainRole, number>, lineCounts: Record<MainRole, number>): MainRole[] {
+  const deficit = (l: MainRole) => MIN_BY_ROLE[l] - (lineCounts[l] ?? 0);
+  const short = LINES.filter((l) => deficit(l) > 0).sort((a, b) => deficit(b) - deficit(a));
+  const rest = OUTFIELD.filter((l) => !short.includes(l)).sort((a, b) => (lineAverages[a] ?? 99) - (lineAverages[b] ?? 99));
+  return [...short, ...rest];
 }
 
 /** Whether a scout whose mission the manager cancelled on `cancelledOn` is still out of the plan on `date`. */
@@ -106,8 +121,15 @@ export function planChiefMissions(input: ChiefPlanInput): PlannedMission[] {
       .map((c) => ({ c, k: kOf(s, c), h: tie(c) }))
       .sort((a, b) => b.k - a.k || a.h - b.h || (a.c < b.c ? -1 : 1));
 
-  const line = neediestLine(input.lineAverages, input.lineCounts);
-  const focus: ScoutFocus = { line, improves: true };
+  // One line per region mission: a squad short of goalkeepers must not turn every report into a goalkeeper.
+  const order = lineOrder(input.lineAverages, input.lineCounts);
+  const taken = [...(input.activeLines ?? [])];
+  const nextFocus = (): ScoutFocus => {
+    const count = (l: MainRole) => taken.filter((t) => t === l).length;
+    const line = order.reduce((a, b) => (count(b) < count(a) ? b : a));
+    taken.push(line);
+    return { line, improves: true };
+  };
   const out: PlannedMission[] = [];
   let free = [...scouts];
 
@@ -130,18 +152,18 @@ export function planChiefMissions(input: ChiefPlanInput): PlannedMission[] {
     const top = options[0];
     if (top && top.k >= S.COUNTRY.BANDS.moderate) {
       used.add(keyOf("country", top.c));
-      out.push({ scoutId: s.scoutId, scoutName: s.name, target: { kind: "country", country: top.c }, focus, weeks: CHIEF_PLAN.REGION_WEEKS });
+      out.push({ scoutId: s.scoutId, scoutName: s.name, target: { kind: "country", country: top.c }, focus: nextFocus(), weeks: CHIEF_PLAN.REGION_WEEKS });
       continue;
     }
     const continent = input.continentOf(s.member.nationality) ?? (top ? input.continentOf(top.c) : undefined);
     if (continent && !used.has(keyOf("continent", continent))) {
       used.add(keyOf("continent", continent));
-      out.push({ scoutId: s.scoutId, scoutName: s.name, target: { kind: "continent", continent }, focus, weeks: CHIEF_PLAN.CONTINENT_WEEKS });
+      out.push({ scoutId: s.scoutId, scoutName: s.name, target: { kind: "continent", continent }, focus: nextFocus(), weeks: CHIEF_PLAN.CONTINENT_WEEKS });
       continue;
     }
     if (top) {
       used.add(keyOf("country", top.c));
-      out.push({ scoutId: s.scoutId, scoutName: s.name, target: { kind: "country", country: top.c }, focus, weeks: CHIEF_PLAN.REGION_WEEKS });
+      out.push({ scoutId: s.scoutId, scoutName: s.name, target: { kind: "country", country: top.c }, focus: nextFocus(), weeks: CHIEF_PLAN.REGION_WEEKS });
     }
   }
   return out;

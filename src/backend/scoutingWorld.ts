@@ -293,6 +293,7 @@ async function planForChief(
     countryOfLeague: (l) => countryOf.get(l),
     lineAverages: starterLineAverages(own),
     lineCounts,
+    activeLines: state.missions.flatMap((m) => (m.target.kind !== "player" && m.target.kind !== "youth" && m.focus?.line ? [m.focus.line as MainRole] : [])),
   });
   const added: PlannedMission[] = [];
   const missions = [...state.missions];
