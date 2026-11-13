@@ -11,7 +11,7 @@
  * No state mutation, no randomness of its own (the layout jitter takes an injected rng).
  * Execution lives in `gameState.ts`.
  */
-import type { GamePlayer, PlayerRole } from '@/GameEngine/types';
+import type { GamePlayer, PlayerRole, SetPieceRoutine } from '@/GameEngine/types';
 import type { BuildUpStyle } from '@/types/tacticsTypes';
 import { SET_PIECE_CONFIG as C } from '@/GameEngine/Configs/SetPieceConfig';
 import { aerialAbility, crossTargetPoints, isInSmallBox, keeperComesFor, type CrossTargetKind } from '@/GameEngine/Domain/Aerial';
@@ -33,6 +33,26 @@ const FORWARD_ROLES = new Set<PlayerRole>(['ST', 'LW', 'RW']);
 const MIDFIELD_ROLES = new Set<PlayerRole>(['CDM', 'CM', 'CAM', 'LM', 'RM']);
 
 // ── Takers ────────────────────────────────────────────────────────────────────
+
+/** Limits of a rehearsed routine (`set-pieces-play.md` → "Jogadas ensaiadas"). */
+export const ROUTINE_LIMITS = { MAX: 3, MIN_ATTACKERS: 3, MAX_ATTACKERS: 7 } as const;
+
+/** The routine of this restart: one of the manager's list, drawn; none without a list. */
+export function pickRoutine(list: readonly SetPieceRoutine[] | undefined, rng: () => number): SetPieceRoutine | undefined {
+  if (!list || list.length === 0) return undefined;
+  return list[Math.min(list.length - 1, Math.floor(rng() * list.length))];
+}
+
+/**
+ * The option a routine asks for among the taker's options (best first): the named zone or the short pass when it
+ * can be played (a delivery needs somebody to attack it), else the taker's own best.
+ */
+export function routineOption(options: readonly SetPieceOption[], routine: SetPieceRoutine | undefined): SetPieceOption | undefined {
+  if (!routine || routine.target === 'auto') return options[0];
+  const asked = options.find(o => o.kind === routine.target);
+  if (!asked) return options[0];
+  return asked.kind === 'short' ? (asked.targetId !== null ? asked : options[0]) : asked.raw > 0 ? asked : options[0];
+}
 
 /** The three set-piece duties a manager can assign (`TacticsSave.setPieceTakers`). */
 export type SetPieceDuty = 'corners' | 'freeKicks' | 'penalties';
@@ -180,6 +200,8 @@ export function attackingBoxPositions(
   attackDir: 1 | -1,
   kind: BoxSetPieceKind,
   rng: () => number,
+  /** Players in the box (a routine's choice); absent = BOX_ATTACKERS. */
+  boxCount: number = C.BOX_ATTACKERS,
 ): AttackingBoxLayout {
   const goalX = goalXFor(attackDir);
   const ownGoalX = attackDir === 1 ? 0 : PITCH_LENGTH;
@@ -203,9 +225,9 @@ export function attackingBoxPositions(
   for (const d of outfield.filter(p => DEFENDER_ROLES.has(p.role)).sort(byAerial).slice(0, C.BOX_DEFENDERS_UP)) box.push(take(d)!);
   const forwards = outfield.filter(p => FORWARD_ROLES.has(p.role) && !used.has(p.id));
   const cf = forwards.find(p => p.role === 'ST') ?? forwards.sort(byAerial)[0];
-  if (cf && box.length < C.BOX_ATTACKERS) box.push(take(cf)!);
+  if (cf && box.length < boxCount) box.push(take(cf)!);
   for (const p of outfield.filter(p => !used.has(p.id) && !DEFENDER_ROLES.has(p.role)).sort(byAerial)) {
-    if (box.length >= C.BOX_ATTACKERS) break;
+    if (box.length >= boxCount) break;
     box.push(take(p)!);
   }
   box.sort(byAerial);
@@ -222,6 +244,7 @@ export function attackingBoxPositions(
       { x: fromLine(8.5), y: CENTRE_Y + side * 2 },
       { x: fromLine(12.5), y: CENTRE_Y + side * 9 },
       { x: fromLine(14), y: CENTRE_Y - side * 4 },
+      { x: fromLine(10), y: CENTRE_Y - side * 8 },
     ];
     box.forEach((p, i) => {
       const s = spots[i % spots.length]!;
@@ -230,7 +253,7 @@ export function attackingBoxPositions(
   } else {
     // Crossed free kick: level with the defensive line (just onside), spread across the box.
     const L = freeKickLineDepth(ball, goalX);
-    const offsets = [0, 5, -5, 10, -10, 14];
+    const offsets = [0, 5, -5, 10, -10, 14, -14];
     box.forEach((p, i) => {
       positions.set(p.id, clampPos({ x: fromLine(L + 1.5), y: CENTRE_Y + offsets[i % offsets.length]! + jit() }));
     });

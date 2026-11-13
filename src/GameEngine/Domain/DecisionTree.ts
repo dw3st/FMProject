@@ -16,7 +16,7 @@
  *   4. Document it in game-engine.md
  */
 
-import type { GamePlayer, SetPiece, TeamIntent } from '@/GameEngine/types';
+import type { GamePlayer, SetPiece, SetPieceRoutine, TeamIntent } from '@/GameEngine/types';
 
 const PITCH_CENTER_Y = PITCH_WIDTH / 2;
 
@@ -49,7 +49,7 @@ import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
-import { evaluateBoxSetPiece } from '@/GameEngine/Domain/SetPieces';
+import { evaluateBoxSetPiece, routineOption } from '@/GameEngine/Domain/SetPieces';
 
 export type PlayerDecision =
   | { type: 'carry'; dx: number; dy: number }          // withBall  → advancing with the ball
@@ -872,9 +872,10 @@ function decideBallHolder(
  * — a cross to the near post / penalty spot / far post, or the short pass (`pass`, which
  * `startPass` sends to the nearest teammate).
  */
-function decideBoxSetPiece(player: GamePlayer, allPlayers: GamePlayer[], kind: 'corner' | 'free_kick'): PlayerDecision {
+function decideBoxSetPiece(player: GamePlayer, allPlayers: GamePlayer[], kind: 'corner' | 'free_kick', routine?: SetPieceRoutine): PlayerDecision {
   const options = evaluateBoxSetPiece(player, allPlayers, getTeamBuildUp(player.team), kind);
-  const best = options[0];
+  // A rehearsed routine names the delivery; without one the taker plays his best option.
+  const best = routineOption(options, routine);
   if (isDebugEnabled() && best) {
     gameBus.emit('setPieceScores', {
       playerId: player.id, playerName: player.name, kind, chosen: best.kind,
@@ -924,7 +925,7 @@ export function decide(
       // Set-piece play (`set-pieces-play.md`): a direct free kick is shot at goal; a corner or a
       // crossed free kick is delivered to the best zone in the box, or played short.
       if (setPiece.variant === 'direct') return { type: 'shoot' };
-      if (setPiece.variant === 'box') return decideBoxSetPiece(player, allPlayers, setPiece.type === 'corner' ? 'corner' : 'free_kick');
+      if (setPiece.variant === 'box') return decideBoxSetPiece(player, allPlayers, setPiece.type === 'corner' ? 'corner' : 'free_kick', setPiece.routine);
       if (setPiece.type === 'free_kick' || setPiece.type === 'goal_kick') {
         const d = decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells);
         if (setPiece.type === 'free_kick' && (d.type === 'shoot' || d.type === 'through_ball' || d.type === 'cross')) return d;

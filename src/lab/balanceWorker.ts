@@ -111,7 +111,7 @@ function emptyTeamRaw(): TeamRawStats {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0,
-    corners: 0, throwIns: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
+    corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
 }
@@ -177,6 +177,7 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.keeperSmothers              += src.keeperSmothers;
   dst.corners                     += src.corners;
   dst.throwIns                    += src.throwIns;
+  dst.setPieceRoutines                    += src.setPieceRoutines;
   dst.freeKicks                   += src.freeKicks;
   dst.directFreeKickShots         += src.directFreeKickShots;
   dst.directFreeKickGoals         += src.directFreeKickGoals;
@@ -248,6 +249,7 @@ let matchRefQuality: number | undefined;
 let matchVar = false;
 /** Player instructions of each side (set per worker message): full engine only. */
 let sideInstructions: { A?: TeamInstructions; B?: TeamInstructions } = {};
+let sideRoutines: { A?: import("@/types/tacticsTypes").SetPieceRoutines; B?: import("@/types/tacticsTypes").SetPieceRoutines } = {};
 
 function variantFamiliarity(v: Variant): FamiliarityLevels | undefined {
   return v.familiarity === undefined ? undefined : { [v.tacticalStyle]: v.familiarity };
@@ -379,6 +381,7 @@ function runOneMatch(
     temperament: sideTemperament,
     managerDiscipline: sideMgrDiscipline,
     instructions: sideInstructions,
+    setPieceRoutines: sideRoutines,
     ...(matchPitch !== undefined ? { pitchCondition: matchPitch } : {}),
     ...(matchTurf ? { turf: matchTurf } : {}),
       ...(matchWeather ? { weather: matchWeather } : {}),
@@ -448,6 +451,7 @@ function runOneMatch(
   teamA.keeperSmothers     += sA.keeperSmothers;     teamB.keeperSmothers     += sB.keeperSmothers;
   teamA.corners             += sA.corners;             teamB.corners             += sB.corners;
   teamA.throwIns            += sA.throwIns ?? 0;       teamB.throwIns            += sB.throwIns ?? 0;
+  teamA.setPieceRoutines            += sA.setPieceRoutines ?? 0;       teamB.setPieceRoutines            += sB.setPieceRoutines ?? 0;
   teamA.freeKicks           += sA.freeKicks;           teamB.freeKicks           += sB.freeKicks;
   teamA.directFreeKickShots += sA.directFreeKickShots; teamB.directFreeKickShots += sB.directFreeKickShots;
   teamA.directFreeKickGoals += sA.directFreeKickGoals; teamB.directFreeKickGoals += sB.directFreeKickGoals;
@@ -503,6 +507,8 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       A: { slotInstructions: variantA.slotInstructions, manMarks: variantA.manMarks },
       B: { slotInstructions: variantB.slotInstructions, manMarks: variantB.manMarks },
     };
+    const routinesOf = (r: typeof variantA.setPieceRoutine) => (r ? { corners: [r], freeKicks: [r] } : undefined);
+    sideRoutines = { A: routinesOf(variantA.setPieceRoutine), B: routinesOf(variantB.setPieceRoutine) };
 
     // quickSim: each side plays its own formation — slot-ordered lineup + slot roles.
     // Computed once from the base (full-fitness) squad: the lineup ORDER doesn't depend on

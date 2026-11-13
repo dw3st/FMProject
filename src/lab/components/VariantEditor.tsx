@@ -317,6 +317,38 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
       </div>
 
       <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="Rehearsed corners and crossed free kicks of this side: the delivery and how many attack the box. Off = the taker's choice, five in the box">Set piece</span>
+        <select
+          className="flex-1 bg-black/40 border border-white/10 rounded px-1 py-0.5"
+          value={variant.setPieceRoutine?.target ?? ""}
+          onChange={(e) => {
+            const target = e.target.value as "" | "auto" | "near_post" | "penalty_spot" | "far_post" | "short";
+            patch({ setPieceRoutine: target === "" ? undefined : { target, attackers: variant.setPieceRoutine?.attackers ?? 5 } });
+          }}
+        >
+          <option value="">Off</option>
+          <option value="auto">Taker's choice</option>
+          <option value="near_post">Near post</option>
+          <option value="penalty_spot">Penalty spot</option>
+          <option value="far_post">Far post</option>
+          <option value="short">Short</option>
+        </select>
+        <input
+          type="number"
+          min={3}
+          max={7}
+          className="w-12 bg-black/40 border border-white/10 rounded px-1 py-0.5"
+          title="Players attacking the box (3 to 7)"
+          disabled={!variant.setPieceRoutine}
+          value={variant.setPieceRoutine?.attackers ?? 5}
+          onChange={(e) => {
+            const n = Math.max(3, Math.min(7, Math.round(Number(e.target.value) || 5)));
+            if (variant.setPieceRoutine) patch({ setPieceRoutine: { ...variant.setPieceRoutine, attackers: n } });
+          }}
+        />
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20" title="Referee rigor of the match (variant A sets it): fouls x(1 + 0.08 s), yellows x(1 + 0.15 s); 0 = no referee">Referee</span>
         <input
           type="range"

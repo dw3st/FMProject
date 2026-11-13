@@ -1,3 +1,5 @@
+import type { SetPieceRoutine, SetPieceRoutines, SetPieceTarget } from '@/types/tacticsTypes';
+export type { SetPieceRoutine, SetPieceRoutines, SetPieceTarget };
 export type TeamId = 'A' | 'B';
 export type PlayerRole = 'GK' | 'LB' | 'CB' | 'RB' | 'LWB' | 'RWB' | 'CDM' | 'CM' | 'CAM' | 'LM' | 'RM' | 'LW' | 'RW' | 'ST';
 export type Phase = 'attacking' | 'defending';
@@ -158,7 +160,10 @@ export interface SetPiece {
   variant?: 'box' | 'direct';
   /** Direct free kick: engine ids of the defenders in the wall. */
   wallIds?: number[];
+  /** The manager's routine drawn for this corner / crossed free kick (`set-pieces-play.md` → "Jogadas ensaiadas"). */
+  routine?: SetPieceRoutine;
 }
+
 
 /** What a set-piece goal came from (`GameState.setPiecePhase`, `goalScored.setPiece`). */
 export type SetPieceGoalKind = 'corner' | 'free_kick' | 'direct_free_kick' | 'penalty';
@@ -167,7 +172,7 @@ export type SetPieceGoalKind = 'corner' | 'free_kick' | 'direct_free_kick' | 'pe
  * Manager's set-piece takers: up to 3 roster ids per duty in order of preference; the first one on
  * the pitch takes it, none / absent = automatic (`Domain/SetPieces.pickSetPieceTaker`).
  */
-export interface SetPieceTakers { corners?: string[]; freeKicks?: string[]; penalties?: string[] }
+export interface SetPieceTakers { corners?: string[]; freeKicks?: string[]; penalties?: string[]; routines?: SetPieceRoutines }
 
 // ── Player stats ────────────────────────────────────────────────────────────
 

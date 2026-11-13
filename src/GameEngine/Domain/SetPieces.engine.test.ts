@@ -201,6 +201,50 @@ describe("corners", () => {
   });
 });
 
+describe("rehearsed routines", () => {
+  const inBox = (st: GameState) => st.players.filter(p => p.team === "A" && PITCH_LENGTH - p.x <= 16 && p.y > 15 && p.y < 59).length;
+  const corner = (routine?: { target: "auto" | "near_post" | "penalty_spot" | "far_post" | "short"; attackers: number }) => {
+    const s = buildState();
+    const st = routine ? { ...s, setPieceTakers: { A: { routines: { corners: [routine] } } } } : s;
+    return awardCorner(st, "A", { x: PITCH_LENGTH, y: 0 }, -1, "clearance", "save").state;
+  };
+
+  test("no routine: nothing on the set piece, no event, the usual five in the box", () => {
+    const events: unknown[] = [];
+    const unsub = gameBus.on("setPieceRoutine", e => events.push(e));
+    const out = corner();
+    unsub();
+    expect(out.setPiece?.routine).toBeUndefined();
+    expect(events).toHaveLength(0);
+  });
+
+  test("the number of attackers changes who goes into the box", () => {
+    const few = corner({ target: "auto", attackers: 3 });
+    const many = corner({ target: "auto", attackers: 7 });
+    expect(many.setPiece?.routine).toEqual({ target: "auto", attackers: 7 });
+    expect(inBox(many)).toBeGreaterThan(inBox(few));
+    expect(inBox(many) - inBox(few)).toBeGreaterThanOrEqual(3);
+  });
+
+  test("the named delivery is played: far post crosses there, short is a pass; the event and the stat are recorded", () => {
+    initStats(buildState().players);
+    const events: { target: string; attackers: number }[] = [];
+    const unsub = gameBus.on("setPieceRoutine", e => events.push(e));
+    const far = corner({ target: "far_post", attackers: 5 });
+    const t = holder(far);
+    const d = decide(t, t, true, false, far.players, null, 0, far.setPiece);
+    expect(d.type).toBe("cross");
+    // Taken from y = 0: the far post is the high-y one.
+    if (d.type === "cross") expect(d.toY).toBeGreaterThan(PITCH_WIDTH / 2);
+    const short = corner({ target: "short", attackers: 5 });
+    const ts = holder(short);
+    expect(decide(ts, ts, true, false, short.players, null, 0, short.setPiece).type).toBe("pass");
+    unsub();
+    expect(events.map(e => e.target)).toEqual(["far_post", "short"]);
+    expect(getTeamStats("A").setPieceRoutines).toBe(2);
+  });
+});
+
 describe("blocked crosses", () => {
   /** Team A LW crossing from `x` yards out on the left, a Team B RB right on him (always blocks). */
   function blocked(distToLine: number): GameState {

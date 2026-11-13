@@ -127,6 +127,8 @@ export interface Variant {
    * sets it for the match (like the pitch). Absent = no referee (neutral).
    */
   refereeStrictness?: number;
+  /** A rehearsed routine for this side's corners and crossed free kicks (`set-pieces-play.md`). Absent = the taker's choice, five in the box. */
+  setPieceRoutine?: import("@/types/tacticsTypes").SetPieceRoutine;
   /**
    * Referee quality 0..100 (`.claude/rules/game/var.md`): his errors (variant A sets it). Absent = no errors.
    */
@@ -281,6 +283,7 @@ export interface TeamRawStats {
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
+  setPieceRoutines: number;
   freeKicks: number;
   directFreeKickShots: number;
   directFreeKickGoals: number;
@@ -444,6 +447,7 @@ export interface PerMatchView {
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
+  avgSetPieceRoutines: number;
   avgFreeKicks: number;
   avgDirectFreeKickShots: number;
   avgDirectFreeKickGoals: number;
@@ -565,6 +569,7 @@ export interface VariantSummary {
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
+  avgSetPieceRoutines: number;
   avgFreeKicks: number;
   avgDirectFreeKickShots: number;
   avgDirectFreeKickGoals: number;

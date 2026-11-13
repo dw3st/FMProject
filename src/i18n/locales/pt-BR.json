@@ -963,6 +963,29 @@
       "corners": "Escanteios",
       "freeKicks": "Faltas",
       "penalties": "Pênaltis"
+    },
+    "routines": {
+      "title": "Jogadas ensaiadas",
+      "hint": "Até 3 jogadas por bola parada. A cada cobrança o time usa uma delas, sorteada. Sem jogada, o cobrador decide na hora.",
+      "corners": "Escanteios",
+      "freeKicks": "Faltas cruzadas",
+      "none": "Nenhuma jogada: o cobrador decide.",
+      "routine": "Jogada {{n}}",
+      "add": "Nova jogada",
+      "remove": "Tirar",
+      "target": "Onde a bola vai",
+      "attackers": "Sobem para a área",
+      "fewer": "Um a menos na área",
+      "more": "Um a mais na área",
+      "stayBack_one": "{{count}} fica fora da área",
+      "stayBack_other": "{{count}} ficam fora da área",
+      "targets": {
+        "auto": "Cobrador decide",
+        "near_post": "Primeiro pau",
+        "penalty_spot": "Marca do pênalti",
+        "far_post": "Segundo pau",
+        "short": "Curto"
+      }
     }
   },
   "formations": {

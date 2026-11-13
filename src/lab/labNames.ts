@@ -42,7 +42,8 @@ export function variantAutoLabel(v: Variant): string {
   const withMor = v.pitchCondition === undefined || v.pitchCondition === 90 ? withMor2 : `${withMor2} · pitch ${v.pitchCondition}%`;
   const withTurf = !v.turf || v.turf === "natural" ? withMor : `${withMor} · turf ${v.turf}`;
   const withWeather = !v.weather ? withTurf : `${withTurf} · ${v.weather}`;
-  const withRef = v.refereeStrictness === undefined ? withWeather : `${withWeather} · ref ${v.refereeStrictness > 0 ? "+" : ""}${v.refereeStrictness}`;
+  const withRef0 = v.refereeStrictness === undefined ? withWeather : `${withWeather} · ref ${v.refereeStrictness > 0 ? "+" : ""}${v.refereeStrictness}`;
+  const withRef = v.setPieceRoutine ? `${withRef0} · sp ${v.setPieceRoutine.target}/${v.setPieceRoutine.attackers}` : withRef0;
   const withQ = v.refereeQuality === undefined ? withRef : `${withRef} · refq ${v.refereeQuality}${v.var ? " · VAR" : ""}`;
   const instr = (v.slotInstructions ?? []).filter((i) => i && (i.variant || (i.press && i.press !== "normal"))).length;
   const withInstr = instr > 0 ? `${withQ} · instr ${instr}` : withQ;
