@@ -37,7 +37,7 @@ export function buildSponsorMessage(args: SponsorMessageArgs): SponsorInboxMessa
     return {
       ...base, kind: "auto_signed", subject: "The director signed sponsors",
       preview: first ? `${first.company.name}: ${formatEurosText(first.annual)} a season${args.signed.length > 1 ? ` (+${args.signed.length - 1})` : ""}` : "",
-      signed: args.signed.map((c) => ({ slot: c.slot, company: c.company.name, annual: c.annual, years: c.seasonsLeft })),
+      signed: args.signed.map((c) => ({ slot: c.slot, company: c.company.name, annual: c.annual, years: c.seasonsLeft, companyId: c.company.id })),
     };
   }
   const { bonuses, renewals, left } = args.review;
@@ -45,8 +45,8 @@ export function buildSponsorMessage(args: SponsorMessageArgs): SponsorInboxMessa
   return {
     ...base, kind: "season_review", subject: "Sponsors: season review",
     preview: `Bonuses ${formatEurosText(paid)} · ${renewals.length} renewal offer${renewals.length === 1 ? "" : "s"} · ${left.length} left`,
-    bonuses: bonuses.map((b) => ({ slot: b.slot, company: b.company.name, amount: b.amount })),
-    renewals: renewals.map((r) => ({ slot: r.slot, company: r.company.name, annual: r.annual })),
-    left: left.map((l) => ({ slot: l.slot, company: l.company.name, reason: l.reason })),
+    bonuses: bonuses.map((b) => ({ slot: b.slot, company: b.company.name, amount: b.amount, companyId: b.company.id })),
+    renewals: renewals.map((r) => ({ slot: r.slot, company: r.company.name, annual: r.annual, companyId: r.company.id })),
+    left: left.map((l) => ({ slot: l.slot, company: l.company.name, reason: l.reason, companyId: l.company.id })),
   };
 }

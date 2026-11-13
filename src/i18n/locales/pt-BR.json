@@ -3971,6 +3971,10 @@
     "world": {
       "main": "SUA",
       "accent": "LIGA"
+    },
+    "sponsor": {
+      "main": "Patrocinador",
+      "accent": "Empresa"
     }
   },
   "jobs": {
@@ -7760,6 +7764,115 @@
       "attendance": "Média de {{avg}} até aqui"
     },
     "attention_one": "{{count}} proposta de patrocínio esperando, responda até {{date}}",
-    "attention_other": "{{count}} propostas de patrocínio esperando, responda até {{date}}"
+    "attention_other": "{{count}} propostas de patrocínio esperando, responda até {{date}}",
+    "trait": {
+      "generous": {
+        "name": "Mão aberta",
+        "hint": "Paga um pouco mais de fixo que as outras."
+      },
+      "stingy": {
+        "name": "Pão-dura",
+        "hint": "Paga menos de fixo e promete um bônus maior."
+      },
+      "impatient": {
+        "name": "Sem paciência",
+        "hint": "Rompe o contrato se a meta de posição ficar 3 lugares ou mais longe."
+      },
+      "loyal": {
+        "name": "Fiel",
+        "hint": "Não rompe por meta perdida e sempre propõe renovar."
+      },
+      "haggler": {
+        "name": "Pechincheira",
+        "hint": "Negociar com ela costuma dar certo."
+      },
+      "proud": {
+        "name": "Orgulhosa",
+        "hint": "Pode retirar a proposta se você pedir mais."
+      },
+      "longterm": {
+        "name": "Longo prazo",
+        "hint": "Só assina por três temporadas."
+      },
+      "shortterm": {
+        "name": "Curto prazo",
+        "hint": "Só assina por uma temporada."
+      }
+    },
+    "strip": {
+      "title": "Patrocinadores",
+      "open": "Ver patrocínios",
+      "free": "Vaga livre",
+      "slot": {
+        "master": "Máster",
+        "kit": "Material",
+        "board": "Placa"
+      }
+    },
+    "page": {
+      "notFound": "Empresa não encontrada.",
+      "loadFailed": "Não foi possível carregar a página da empresa.",
+      "trait": "Perfil:",
+      "yourClub": "Seu clube",
+      "place_ordinal_other": "{{count}}º",
+      "size": {
+        "local": "Empresa local",
+        "national": "Empresa nacional",
+        "global": "Marca mundial"
+      },
+      "mine": {
+        "title": "Com o seu clube",
+        "open": "Ir para Patrocínios",
+        "left": "restantes",
+        "paid": "Já recebido",
+        "bonusPaid": "Bônus: {{value}} (vale {{bonus}} por meta)",
+        "goals": "Metas",
+        "goalsMet": "{{met}} de {{total}} cumpridas",
+        "offer": "Proposta na mesa",
+        "renewal": "Proposta de renovação",
+        "past": "Contratos encerrados",
+        "pastPaid": "fixo {{fixed}}, bônus {{bonus}}"
+      },
+      "current": {
+        "title": "Patrocina hoje",
+        "none": "Não patrocina nenhum clube deste jogo no momento.",
+        "place": "{{place}} de {{size}}"
+      },
+      "results": {
+        "title": "Resultados com ela no peito",
+        "none": "Nenhuma temporada encerrada como patrocinadora máster ainda.",
+        "seasons": "Temporadas",
+        "titles": "Títulos",
+        "promotions": "Acessos",
+        "relegations": "Rebaixamentos"
+      },
+      "result": {
+        "title": "Campeão: {{competition}}",
+        "promoted": "Subiu de divisão",
+        "relegated": "Rebaixado"
+      },
+      "history": {
+        "title": "Quem já patrocinou",
+        "none": "Nenhum contrato encerrado com clubes de técnicos do jogo."
+      },
+      "col": {
+        "season": "Temporada",
+        "club": "Clube",
+        "league": "Liga",
+        "position": "Posição",
+        "result": "Resultado",
+        "slot": "Vaga",
+        "period": "Período",
+        "seasons": "Temporadas",
+        "end": "Como terminou"
+      },
+      "end": {
+        "expired": "Contrato chegou ao fim",
+        "renewed": "Renovado",
+        "left_early": "A empresa rompeu",
+        "relegated": "Saiu com o rebaixamento",
+        "club_left": "O técnico deixou o clube"
+      }
+    }
   }
 }

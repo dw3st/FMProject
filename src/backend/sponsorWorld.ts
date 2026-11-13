@@ -15,8 +15,8 @@ import { licenceReputation } from "@/Domain/managers/courses";
 import { SPONSORS } from "@/Domain/sponsors/sponsorConfig";
 import {
   SPONSOR_SLOTS, aiBoards, aiSponsorsOf, campaignOf, contractBoards, contractMaster, evaluateSponsorSeason, generateOffers,
-  goalProgress, initialSponsors, masterOf, slotFilled, sponsorAppeal, weeklySponsorIncome,
-  type SponsorClubContext, type SponsorSeasonNow, type SponsorSeasonOutcome, type SponsorSeasonReview,
+  goalProgress, initialSponsors, masterOf, seasonBooks, slotFilled, sponsorAppeal, weeklySponsorIncome,
+  type AiSponsors, type SponsorClubContext, type SponsorSeasonNow, type SponsorSeasonOutcome, type SponsorSeasonReview,
 } from "@/Domain/sponsors/sponsors";
 import { topPlayerCount, worldTopIds } from "@/Domain/squad/starLimit";
 import type { LeagueSeasonState } from "@/types/calendarTypes";
@@ -202,7 +202,10 @@ export async function sponsorRollover(
   };
   const review = evaluateSponsorSeason(squad.sponsors, outcome, ctx);
   const offers = generateOffers(catalog, ctx, review.sponsors);
-  const sponsors: ClubSponsors = { ...review.sponsors, offers: [...review.sponsors.offers, ...offers] };
+  // The books (12.1): what each contract paid and how its goal went; the contracts that ended go to the history.
+  const sponsors: ClubSponsors = seasonBooks(
+    squad.sponsors, review, { ...review.sponsors, offers: [...review.sponsors.offers, ...offers] }, outcome, args.date,
+  );
   await service.saveSquad(saveId, entry.leagueSlug, entry.stem, { ...squad, sponsors });
   // Bonuses: one ledger line each, in the new season (`recordMoney`: squad + ledger together).
   for (const b of review.bonuses) {
@@ -220,12 +223,21 @@ function seasonOf(activeLeagues: readonly LeagueSeasonState[] | undefined, leagu
   return activeLeagues?.find((l) => l.leagueSlug === leagueSlug)?.year ?? yearOf(date);
 }
 
-async function derived(service: SaveService, saveId: string, squad: Squad, activeLeagues: readonly LeagueSeasonState[] | undefined, date: string) {
-  const league = await leagueOf(service, saveId, squad);
+/**
+ * The names an AI club's sponsors are today, given its league and that league's country. The one place the screens'
+ * derivation is made: the club page, the match preview, the pitch boards and the sponsor page all go through here.
+ */
+export function derivedSponsorsOf(
+  squad: Squad, league: { leagueSlug: string; country: string | null }, activeLeagues: readonly LeagueSeasonState[] | undefined, date: string,
+): AiSponsors {
   return aiSponsorsOf(sponsorCatalog(), {
     clubId: String(squad.id), season: seasonOf(activeLeagues, league.leagueSlug, date), country: league.country,
     tier: naturalFinancialTier(squad.finances),
   });
+}
+
+async function derived(service: SaveService, saveId: string, squad: Squad, activeLeagues: readonly LeagueSeasonState[] | undefined, date: string) {
+  return derivedSponsorsOf(squad, await leagueOf(service, saveId, squad), activeLeagues, date);
 }
 
 /**

@@ -76,6 +76,11 @@ describe("sponsors in advanceOneDay", () => {
       return;
     }
     expect(after.contracts.map((c) => [c.id, c.seasonsLeft])).toEqual([["m", 1], ["b2", 1]]);
+    // The books (12.1): the goal and the bonus counted on the contracts that go on, the ended ones in the history.
+    expect(after.contracts.map((c) => [c.id, c.paid?.met, c.paid?.missed, c.paid?.bonus])).toEqual([["m", 1, 0, 1_000_000], ["b2", 0, 1, 0]]);
+    expect((after.history ?? []).map((h) => [h.companyId, h.slot, h.end, h.seasons, h.goalsMet, h.bonusPaid, h.from, h.to])).toEqual([
+      ["k", "kit", "expired", 1, 1, 300_000, "2026-08-15", today], ["b1", "board", "expired", 1, 0, 0, "2026-08-15", today],
+    ]);
 
     // Bonuses: one line each in the new season's ledger; the ledger still sums to the balance.
     const bonusLines = (await saveService.getLedger(meta.id, newYear, meta.seatId)).filter((e) => e.kind === "commercial" && e.ref?.stage === "sponsor_bonus");

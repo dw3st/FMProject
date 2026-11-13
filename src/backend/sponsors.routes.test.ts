@@ -88,10 +88,10 @@ describe("sponsors routes", () => {
 
     // Negotiate once (an offer the company does not walk away from).
     const kit = start.offers.filter((o) => o.slot === "kit");
-    const talk = kit.find((o) => negotiationOutcome(o.id) !== "withdrawn") ?? start.offers.find((o) => o.slot === "board" && negotiationOutcome(o.id) !== "withdrawn")!;
+    const talk = kit.find((o) => negotiationOutcome(o.id, o.company.id) !== "withdrawn") ?? start.offers.find((o) => o.slot === "board" && negotiationOutcome(o.id, o.company.id) !== "withdrawn")!;
     const talked = await answer(talk.id, "negotiate");
     expect(talked.status).toBe(200);
-    expect(talked.json.negotiation).toBe(negotiationOutcome(talk.id));
+    expect(talked.json.negotiation).toBe(negotiationOutcome(talk.id, talk.company.id));
     const after = (talked.json.view as SponsorsView).offers.find((o) => o.id === talk.id)!;
     expect(after.negotiated).toBe(true);
     expect(after.annual).toBe(talked.json.negotiation === "raised" ? Math.round((talk.annual * 1.08) / 1000) * 1000 : talk.annual);
@@ -170,6 +170,9 @@ describe("sponsors routes", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({ date: monday, amount: weekly, ref: { stage: "sponsors" } });
     expect(describeLedgerEntry(lines[0]!)).toEqual({ key: "sponsors" });
+    // The contracts' books (12.1): that Monday counted on each contract.
+    expect((await saveService.getSquadById(saveId, "33"))!.sponsors!.contracts.map((c) => c.paid))
+      .toEqual(contracts.contracts.map((c) => ({ fixed: Math.round(c.annual / 52), bonus: 0, met: 0, missed: 0 })));
     const balance = (await saveService.getSquadById(saveId, "33"))!.finances!.budget;
     expect(Math.abs(ledger.reduce((s, e) => s + e.amount, 0) - balance)).toBeLessThan(1);
 

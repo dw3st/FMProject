@@ -3974,6 +3974,10 @@
     "world": {
       "main": "YOUR",
       "accent": "LEAGUE"
+    },
+    "sponsor": {
+      "main": "Sponsor",
+      "accent": "Company"
     }
   },
   "jobs": {
@@ -7769,6 +7773,118 @@
       "attendance": "Average of {{avg}} so far"
     },
     "attention_one": "{{count}} sponsor offer waiting, answer by {{date}}",
-    "attention_other": "{{count}} sponsor offers waiting, answer by {{date}}"
+    "attention_other": "{{count}} sponsor offers waiting, answer by {{date}}",
+    "trait": {
+      "generous": {
+        "name": "Open-handed",
+        "hint": "Pays a little more fixed money than the others."
+      },
+      "stingy": {
+        "name": "Tight-fisted",
+        "hint": "Pays less fixed money and promises a bigger bonus."
+      },
+      "impatient": {
+        "name": "Impatient",
+        "hint": "Breaks the contract if the position goal is missed by 3 places or more."
+      },
+      "loyal": {
+        "name": "Loyal",
+        "hint": "Never breaks the contract over a missed goal and always offers to renew."
+      },
+      "haggler": {
+        "name": "Haggler",
+        "hint": "Negotiating with it usually works."
+      },
+      "proud": {
+        "name": "Proud",
+        "hint": "May withdraw the offer if you ask for more."
+      },
+      "longterm": {
+        "name": "Long term",
+        "hint": "Only signs for three seasons."
+      },
+      "shortterm": {
+        "name": "Short term",
+        "hint": "Only signs for one season."
+      }
+    },
+    "strip": {
+      "title": "Sponsors",
+      "open": "See sponsors",
+      "free": "Free place",
+      "slot": {
+        "master": "Main",
+        "kit": "Kit",
+        "board": "Board"
+      }
+    },
+    "page": {
+      "notFound": "Company not found.",
+      "loadFailed": "Could not load the company's page.",
+      "trait": "Profile:",
+      "yourClub": "Your club",
+      "place_ordinal_one": "{{count}}st",
+      "place_ordinal_two": "{{count}}nd",
+      "place_ordinal_few": "{{count}}rd",
+      "place_ordinal_other": "{{count}}th",
+      "size": {
+        "local": "Local company",
+        "national": "National company",
+        "global": "World brand"
+      },
+      "mine": {
+        "title": "With your club",
+        "open": "Go to Sponsors",
+        "left": "left",
+        "paid": "Received so far",
+        "bonusPaid": "Bonuses: {{value}} ({{bonus}} per goal met)",
+        "goals": "Goals",
+        "goalsMet": "{{met}} of {{total}} met",
+        "offer": "Offer on the table",
+        "renewal": "Renewal offer",
+        "past": "Finished contracts",
+        "pastPaid": "fixed {{fixed}}, bonuses {{bonus}}"
+      },
+      "current": {
+        "title": "Sponsors today",
+        "none": "It sponsors no club of this game at the moment.",
+        "place": "{{place}} of {{size}}"
+      },
+      "results": {
+        "title": "Results with it on the shirt",
+        "none": "No finished season as a main sponsor yet.",
+        "seasons": "Seasons",
+        "titles": "Titles",
+        "promotions": "Promotions",
+        "relegations": "Relegations"
+      },
+      "result": {
+        "title": "Champions: {{competition}}",
+        "promoted": "Promoted",
+        "relegated": "Relegated"
+      },
+      "history": {
+        "title": "Past deals",
+        "none": "No finished contract with clubs run by the game's managers."
+      },
+      "col": {
+        "season": "Season",
+        "club": "Club",
+        "league": "League",
+        "position": "Position",
+        "result": "Result",
+        "slot": "Slot",
+        "period": "Period",
+        "seasons": "Seasons",
+        "end": "How it ended"
+      },
+      "end": {
+        "expired": "The contract ran out",
+        "renewed": "Renewed",
+        "left_early": "The company broke it",
+        "relegated": "Left with the relegation",
+        "club_left": "The manager left the club"
+      }
+    }
   }
 }

@@ -161,7 +161,7 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
         {data.masterSponsor && (
           <Card>
             <SectionTitle>{t("sponsors.master.title")}</SectionTitle>
-            <SponsorPlate company={data.masterSponsor} size="lg" className="max-w-full" />
+            <SponsorPlate company={data.masterSponsor} size="lg" className="max-w-full" linked />
             <span className="text-sm text-muted-foreground">{t(`sponsors.sector.${data.masterSponsor.sector}`, { defaultValue: "" })}</span>
           </Card>
         )}

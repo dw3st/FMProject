@@ -1,6 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
+import { sponsorCompanyView } from "@/backend/sponsorCompanyWorld";
 import { sponsorsView } from "@/backend/sponsorWorld";
 import { topIdsOf } from "@/backend/starLimitWorld";
 import { acceptOffer, declineOffer, negotiateOffer, type SponsorActionResult } from "@/Domain/sponsors/sponsors";
@@ -35,6 +36,24 @@ export const sponsorRoutes = {
     const club = await loadClub(saveId, auth.seatId);
     if (club instanceof Response) return club;
     return Response.json(await sponsorsView(saveService, saveId, club.meta, club.squad, await topIdsOf(saveId)));
+  },
+
+  /**
+   * The sponsor page (12.1): the company, who it sponsors in the save, results, past deals and the seat's own dealings.
+   * Any member of the world (a seat without a club too); `?lang=pt-BR|en` picks the bio's language. 404 unknown company.
+   */
+  "/api/saves/:saveId/sponsors/company/:companyId": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const seat = await saveService.getSeatMeta(saveId, auth.seatId);
+    if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
+    const view = await sponsorCompanyView(
+      saveService, saveId, req.params.companyId ?? "", new URL(req.url).searchParams.get("lang"), seat, () => topIdsOf(saveId),
+    );
+    if (!view) return Response.json({ error: "notFound" }, { status: 404 });
+    return Response.json(view);
   },
 
   /** `POST { action: "accept" | "decline" | "negotiate" }`. */

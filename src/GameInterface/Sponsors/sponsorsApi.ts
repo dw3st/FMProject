@@ -1,4 +1,4 @@
-import type { SponsorContract, SponsorNegotiation, SponsorOfferAction, SponsorsView } from "@/types/sponsorTypes";
+import type { SponsorCompanyView, SponsorContract, SponsorNegotiation, SponsorOfferAction, SponsorsView } from "@/types/sponsorTypes";
 
 /** Refusals of the sponsor routes that have their own text (`sponsors.error.*`). */
 const KNOWN_ERRORS = ["notFound", "slotTaken", "alreadyNegotiated", "noClub", "lobby", "invalidAction"] as const;
@@ -27,6 +27,19 @@ export async function fetchSponsors(saveId: string): Promise<SponsorsLoad> {
     const res = await fetch(`/api/saves/${saveId}/sponsors`);
     if (!res.ok) return { ok: false, error: await errorOf(res) };
     return { ok: true, view: (await res.json()) as SponsorsView };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export type SponsorCompanyLoad = { ok: true; view: SponsorCompanyView } | { ok: false; status?: number };
+
+/** `GET /api/saves/:id/sponsors/company/:companyId?lang=` (the sponsor page). */
+export async function fetchSponsorCompany(saveId: string, companyId: string, lang: string): Promise<SponsorCompanyLoad> {
+  try {
+    const res = await fetch(`/api/saves/${saveId}/sponsors/company/${encodeURIComponent(companyId)}?lang=${encodeURIComponent(lang)}`);
+    if (!res.ok) return { ok: false, status: res.status };
+    return { ok: true, view: (await res.json()) as SponsorCompanyView };
   } catch {
     return { ok: false };
   }

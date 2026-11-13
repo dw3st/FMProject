@@ -3,7 +3,7 @@
 // of its own and is reached by a normal page load.
 
 export type AppScreen =
-  | "dashboard" | "squad" | "player" | "manager" | "formation" | "club" | "development" | "finances" | "staff"
+  | "dashboard" | "squad" | "player" | "manager" | "sponsor" | "formation" | "club" | "development" | "finances" | "staff"
   | "leagues" | "transfers" | "scout" | "stats" | "inbox" | "achievements" | "news" | "world"
   | "seasonEnd" | "matchRoom" | "comingSoon" | "matchPreview" | "matchResult" | "match";
 
@@ -27,6 +27,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { pattern: "/squad/:league/:club", screen: "squad", title: "FMProject — Squad" },
   { pattern: "/player/:league/:club/:id", screen: "player", title: "FMProject — Player" },
   { pattern: "/manager/:id", screen: "manager", title: "FMProject — Manager" },
+  { pattern: "/sponsor/:companyId", screen: "sponsor", title: "FMProject — Sponsor" },
   { pattern: "/formation", screen: "formation", title: "FMProject - Formation" },
   { pattern: "/club", screen: "club", title: "FMProject - Club" },
   { pattern: "/development", screen: "development", title: "FMProject - Player Development" },

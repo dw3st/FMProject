@@ -358,13 +358,14 @@ export interface SponsorInboxMessage extends InboxMessageBase {
   offers?: { slot: SponsorSlot; count: number }[];
   expires?: string;
   /** auto_signed: what the director closed. */
-  signed?: { slot: SponsorSlot; company: string; annual: number; years: number }[];
+  signed?: { slot: SponsorSlot; company: string; annual: number; years: number; companyId?: string }[];
   /** season_review: bonuses paid for goals met. */
-  bonuses?: { slot: SponsorSlot; company: string; amount: number }[];
+  bonuses?: { slot: SponsorSlot; company: string; amount: number; companyId?: string }[];
   /** season_review: companies whose contract ended and offer to stay (the offer is on the table). */
-  renewals?: { slot: SponsorSlot; company: string; annual: number }[];
+  renewals?: { slot: SponsorSlot; company: string; annual: number; companyId?: string }[];
   /** season_review: companies that left (the club went down, or the goal was missed). */
-  left?: { slot: SponsorSlot; company: string; reason: "relegated" | "missed" }[];
+  /** `companyId` (12.1, absent in older messages): the name links to the company's page. */
+  left?: { slot: SponsorSlot; company: string; reason: "relegated" | "missed"; companyId?: string }[];
 }
 
 /**

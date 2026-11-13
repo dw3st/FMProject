@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 import { formatEuros } from "@/Domain/money";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { Button } from "@/GameInterface/ui/Button";
-import { navigate } from "@/GameInterface/router/navigation";
+import { followLinkOnly, navigate } from "@/GameInterface/router/navigation";
+import { sponsorHref } from "@/GameInterface/Sponsors/sponsorLinks";
 import type { InboxMessage } from "@/types/inboxTypes";
 
 type SponsorMessage = Extract<InboxMessage, { category: "sponsor" }>;
@@ -34,7 +35,7 @@ export function sponsorInboxTexts(message: SponsorMessage, t: T, lang: string): 
   };
 }
 
-function Lines({ title, lines }: { title: string; lines: { key: string; name: string; detail: string }[] }) {
+function Lines({ title, lines }: { title: string; lines: { key: string; name: string; detail: string; companyId?: string }[] }) {
   if (lines.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
@@ -42,7 +43,9 @@ function Lines({ title, lines }: { title: string; lines: { key: string; name: st
       <ul className="m-0 p-0 list-none flex flex-col gap-0.5">
         {lines.map((l) => (
           <li key={l.key} className="text-sm text-foreground tabular-nums">
-            <span className="font-semibold">{l.name}</span>
+            {l.companyId
+              ? <a href={sponsorHref(l.companyId)} onClick={followLinkOnly} className="font-semibold text-primary no-underline hover:underline">{l.name}</a>
+              : <span className="font-semibold">{l.name}</span>}
             <span className="text-muted-foreground">{` · ${l.detail}`}</span>
           </li>
         ))}
@@ -71,7 +74,7 @@ export function SponsorInboxBody({ message }: { message: SponsorMessage }) {
           <Lines
             title={t("inbox.sponsor.signed")}
             lines={(message.signed ?? []).map((s, i) => ({
-              key: `${s.company}${i}`, name: s.company,
+              key: `${s.company}${i}`, name: s.company, companyId: s.companyId,
               detail: t("inbox.sponsor.signedLine", { slot: slot(s.slot), value: formatEuros(s.annual), count: s.years }),
             }))}
           />
@@ -84,18 +87,18 @@ export function SponsorInboxBody({ message }: { message: SponsorMessage }) {
           </p>
           <Lines
             title={t("inbox.sponsor.bonuses")}
-            lines={bonuses.map((b, i) => ({ key: `${b.company}${i}`, name: b.company, detail: `${slot(b.slot)} · +${formatEuros(b.amount)}` }))}
+            lines={bonuses.map((b, i) => ({ key: `${b.company}${i}`, name: b.company, companyId: b.companyId, detail: `${slot(b.slot)} · +${formatEuros(b.amount)}` }))}
           />
           <Lines
             title={t("inbox.sponsor.renewals")}
             lines={renewals.map((r, i) => ({
-              key: `${r.company}${i}`, name: r.company,
+              key: `${r.company}${i}`, name: r.company, companyId: r.companyId,
               detail: `${slot(r.slot)} · ${t("sponsors.perSeason", { value: formatEuros(r.annual) })}`,
             }))}
           />
           <Lines
             title={t("inbox.sponsor.left")}
-            lines={left.map((l, i) => ({ key: `${l.company}${i}`, name: l.company, detail: `${slot(l.slot)} · ${t(`inbox.sponsor.leftReason.${l.reason}`)}` }))}
+            lines={left.map((l, i) => ({ key: `${l.company}${i}`, name: l.company, companyId: l.companyId, detail: `${slot(l.slot)} · ${t(`inbox.sponsor.leftReason.${l.reason}`)}` }))}
           />
         </>
       )}

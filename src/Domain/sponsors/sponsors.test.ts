@@ -8,6 +8,7 @@ import {
   type SponsorClubContext, type SponsorSeasonOutcome,
 } from "@/Domain/sponsors/sponsors";
 import { buildSponsorMessage, offersBySlot } from "@/Domain/sponsors/sponsorMessages";
+import { SPONSOR_TRAIT_EFFECTS, sponsorTraitOf } from "@/Domain/sponsors/sponsorTraits";
 import type { ClubSponsors, SponsorCompany, SponsorContract, SponsorOffer } from "@/types/sponsorTypes";
 
 const company = (id: string, size: SponsorCompany["size"], country?: string): SponsorCompany => ({
@@ -161,9 +162,13 @@ describe("offers", () => {
     for (let i = 0; i < 50; i++) {
       for (const o of generateOffers(CATALOG, ctx({ clubId: `v${i}`, tier: "HIGH" }), emptySponsors())) {
         const unit = 10_400_000 * SPONSORS.SLOTS[o.slot].share;
-        const ratio = o.annual / (unit * SPONSORS.PROFILE[o.profile].fixed * SPONSORS.SIZE_MULT[o.company.size]);
+        // The company's trait (12.1) moves the fixed value and the years: taken out here, tested in `sponsorTraits.test.ts`.
+        const trait = sponsorTraitOf(o.company.id);
+        const fixed = trait === "generous" ? SPONSOR_TRAIT_EFFECTS.GENEROUS_FIXED : trait === "stingy" ? SPONSOR_TRAIT_EFFECTS.STINGY_FIXED : 1;
+        const ratio = o.annual / (unit * SPONSORS.PROFILE[o.profile].fixed * SPONSORS.SIZE_MULT[o.company.size] * fixed);
         expect(ratio).toBeGreaterThan(0.94);
         expect(ratio).toBeLessThan(1.06);
+        if (trait === "longterm" || trait === "shortterm") continue;
         expect(o.years).toBeGreaterThanOrEqual(o.profile === "demanding" ? 2 : 1);
         expect(o.years).toBeLessThanOrEqual(3);
       }
@@ -267,7 +272,7 @@ describe("answering", () => {
     for (let i = 0; i < 80; i++) {
       const s = initialSponsors(CATALOG, ctx({ clubId: `n${i}` }));
       for (const o of s.offers) {
-        const expected = negotiationOutcome(o.id);
+        const expected = negotiationOutcome(o.id, o.company.id);
         const r = negotiateOffer(s, o.id, "2026-08-20");
         if (!r.ok) throw new Error("refused");
         expect(r.negotiation).toBe(expected);
@@ -519,11 +524,11 @@ describe("progress and messages", () => {
     const signed = expireOffers({ contracts: [], offers }, addDays(offers[0]!.expires, 1)).signed;
     const a = buildSponsorMessage({ date: "2026-09-06", kind: "auto_signed", signed });
     expect(a.signed).toHaveLength(6);
-    expect(a.signed![0]).toEqual({ slot: signed[0]!.slot, company: signed[0]!.company.name, annual: signed[0]!.annual, years: signed[0]!.seasonsLeft });
+    expect(a.signed![0]).toEqual({ slot: signed[0]!.slot, company: signed[0]!.company.name, annual: signed[0]!.annual, years: signed[0]!.seasonsLeft, companyId: signed[0]!.company.id });
     const review = evaluateSponsorSeason({ contracts: [contract({ seasonsLeft: 1 }), contract({ id: "c2", slot: "kit", seasonsLeft: 2, goal: { kind: "league_position", max: 2 } })], offers: [] }, outcome({ position: 9 }), ctx({ season: 2027, date: "2027-05-30" }));
     const r = buildSponsorMessage({ date: "2027-05-30", kind: "season_review", review });
-    expect(r.bonuses).toEqual([{ slot: "master", company: "Co g0", amount: 800_000 }]);
-    expect(r.renewals).toEqual([{ slot: "master", company: "Co g0", annual: 5_720_000 }]);
-    expect(r.left).toEqual([{ slot: "kit", company: "Co g0", reason: "missed" }]);
+    expect(r.bonuses).toEqual([{ slot: "master", company: "Co g0", amount: 800_000, companyId: "g0" }]);
+    expect(r.renewals).toEqual([{ slot: "master", company: "Co g0", annual: 5_720_000, companyId: "g0" }]);
+    expect(r.left).toEqual([{ slot: "kit", company: "Co g0", reason: "missed", companyId: "g0" }]);
   });
 });

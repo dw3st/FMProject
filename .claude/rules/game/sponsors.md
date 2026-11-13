@@ -136,3 +136,57 @@ bun test src/Domain/sponsors src/backend/sponsorCatalog.test.ts src/backend/spon
 ## Fornecedor de material só de material esportivo
 
 A vaga `kit` só recebe propostas de empresas do ramo `sportswear`, de qualquer tamanho e país (`eligibleCompanies`); só com menos empresas que propostas a regra comum completa a lista. O catálogo tem 7 (5 globais, 2 nacionais). Vale também para os nomes derivados da IA.
+
+## Perfil da empresa (12.1)
+
+Pedido do usuário, números aprovados por ele. `src/Domain/sponsors/sponsorTraits.ts`: `sponsorTraitOf(id)` sorteia do id da empresa (`sponsor-trait:<id>`, nada gravado; a mesma empresa se comporta igual em toda carreira) um de 9 perfis: `none` 36% e os outros 8% cada. A bio da empresa (`sponsorBios.json`) foi escrita para dar a pista. Vale também para as 16 empresas embutidas. Os nomes derivados da IA não têm efeito nenhum.
+
+| Perfil | Efeito | Onde |
+|---|---|---|
+| `generous` | fixo das propostas × 1,06 | `offerValue` |
+| `stingy` | fixo × 0,94 e bônus × 1,3 | `offerValue` |
+| `impatient` | sai antes com a meta de posição falhada por 3 ou mais (padrão 6) | `evaluateSponsorSeason` |
+| `loyal` | nunca sai por meta perdida (o rebaixamento ainda encerra) e no fim do contrato sempre propõe renovar: cumprida × 1,10, perdida (por quanto for) × 0,90 | `evaluateSponsorSeason` |
+| `haggler` | negociação: sobe 65% / mantém 25% / retira 10% (padrão 45 / 35 / 20) | `negotiationChances` |
+| `proud` | sobe 25% / mantém 30% / retira 45% | `negotiationChances` |
+| `longterm` | toda proposta e renovação por 3 temporadas | `traitYears` |
+| `shortterm` | toda proposta e renovação por 1 temporada (um perfil `demanding` também) | `traitYears` |
+
+- O sorteio dos anos continua sendo feito para toda empresa (o perfil troca o resultado depois): as outras propostas da vaga não mudam de número. `negotiationOutcome(id, companyId)`: o mesmo sorteio pelo id da proposta, com as chances do perfil.
+- `none` é exatamente o comportamento da 12.0: `sponsorTraits.test.ts` compara propostas, negociação e avaliação da virada, byte a byte, com a cópia congelada `sponsors.v12_0.fixture.ts` (só referência de teste).
+- Tela: a linha "Perfil: <nome>" com uma frase na página da empresa (`sponsors.trait.<perfil>.name` / `.hint`; nada para `none`). As propostas não mostram o perfil: a pista é a bio.
+
+## Livros dos contratos (12.1)
+
+- `SponsorContract.paid { fixed, bonus, met, missed }` (opcional): toda segunda, depois do vencimento das propostas, cada contrato soma `round(annual / 52)` (`creditWeeklyPaid`, no avanço do dia); na virada soma o bônus e a meta cumprida ou perdida (`seasonBooks`, depois de `evaluateSponsorSeason`). Contrato de antes da 12.1 conta a partir de agora.
+- `ClubSponsors.history` (opcional, até `SPONSOR_HISTORY_MAX` 60): uma entrada por contrato encerrado na virada, `{ companyId, companyName, slot, from, to, seasons, fixedPaid, bonusPaid, goalsMet, goalsMissed, end }`. `end`: `relegated`; `left_early` (a empresa rompeu com temporadas por cumprir); `expired` (chegou ao fim); `renewed` (a entrada `expired` vira `renewed` quando a proposta de renovação é aceita, `sign`). `seasons` = viradas que o contrato viu.
+- `club_left` existe no tipo mas não é gravado: `releaseHumanClub` apaga `Squad.sponsors` inteiro, então o histórico de um clube que voltou para a IA se perde.
+
+## Página do patrocinador (12.1)
+
+Tela `/sponsor/:companyId` (`SponsorScreen.tsx`, rota da moldura; abre também sem clube). Toda placa (`SponsorPlate linked`) leva a ela: Finanças → Patrocínios, prévia da partida, página de outro clube, faixa da aba Clube; na caixa de entrada o nome da empresa é o link (`companyId` nas partes da mensagem; mensagens antigas ficam sem link). As placas de LED do campo não são clicáveis.
+
+`GET /api/saves/:saveId/sponsors/company/:companyId?lang=pt-BR|en` (`requireSeat`: qualquer membro do mundo; 404 empresa fora do catálogo), `SponsorCompanyView`:
+
+| Campo | Fonte |
+|---|---|
+| `company` | catálogo + `trait` (`sponsorTraitOf`) + `bio` |
+| `bio` | `src/backend/sponsorBios.ts`: `src/Data/sponsorBios.json`, senão `src/example_data/sponsorBios.json`, `{ "<id>": { "pt", "en" } }`, lido uma vez por processo; `lang` começando com `pt` = português, o resto inglês; sem arquivo ou sem a empresa = `null` (a tela não mostra bio) |
+| `current` | por vaga, os clubes do save que ela patrocina hoje: clube com `Squad.sponsors` = os contratos; os demais = `derivedSponsorsOf` (a mesma derivação da página do clube e da prévia, `sponsorWorld.ts`) |
+| `history` | entradas de `history` de todos os clubes humanos com a empresa, sem dinheiro (clube, vaga, período, temporadas, como terminou) |
+| `results` | temporadas encerradas (`clubHistory`) de clubes com ela de máster: contadores (temporadas, títulos sem acessos, acessos, rebaixamentos), as 10 mais notáveis (título primeiro: continental, liga, copa; depois acesso, posição) e `now` (os clubes de máster hoje com a posição na tabela) |
+| `mine` | só com clube: propostas dela na mesa e contrato ativo (com `progress`, de `sponsorsView`), e as entradas de histórico do próprio clube, com os valores |
+
+- **Resultados, clube da IA:** o máster de cada temporada do histórico é recalculado (`aiMasterSponsorOf`: o primeiro sorteio de `aiSponsorsOf`, pelo id + ano da temporada), com o país da liga daquela temporada e o tier de **hoje**. **Clube humano:** os livros dos contratos dizem quais temporadas cada máster viu (`humanMasterSeasons`: as últimas `seasons` linhas até o ano em que o contrato acabou; o contrato em curso, as viradas contadas nele).
+- **Cache** (`sponsorCompanyWorld.ts`): uma varredura do mundo (todos os elencos) serve todas as empresas, por save, dia e versão de dados; as temporadas dos clubes da IA ficam num segundo cache por save, dia e conjunto de clubes com patrocínio (não refaz a cada gravação de elenco). Medido (1273 clubes, save local sem histórico): primeira leitura do processo 2,8 s (a leitura dos elencos do disco), varredura com os elencos já lidos ~0,5 s, página em cache 1 a 4 ms. Dez temporadas de histórico em todo clube somam ~0,3 s à varredura fria (0,22 s de sorteios + a leitura dos arquivos).
+- Teste: `src/backend/sponsorCompany.routes.test.ts`.
+
+Limitações:
+- O histórico de contratos some quando o clube volta para a IA; um clube humano hoje não tem resultados de antes de o técnico chegar (nem o período em que foi da IA).
+- O máster passado de um clube da IA usa o tier de hoje: um clube que mudou de faixa de receita pode aparecer com outra empresa da que as telas mostraram na época. Um clube que foi humano e voltou para a IA aparece com o nome derivado.
+- `seasons` e os resultados de um contrato humano só contam viradas a partir da 12.1.
+- A página não foi vista num navegador nesta etapa.
+
+## Patrocinadores na aba Clube (12.1)
+
+`ClubSponsorsStrip.tsx`, no topo de `/club`, acima das instalações: uma faixa com o máster, o material e as quatro placas (`stripPlaces`), cada placa (`sm`) um link para a página da empresa, vaga livre como placa tracejada "Vaga livre" (link para Patrocínios) e o link "Ver patrocínios" (`/finances?tab=sponsors`). Dados de `GET …/sponsors`. `active: false` (save antigo antes da virada): a linha do texto `sponsors.inactive`. Sem clube ou enquanto carrega: nada.

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Icon } from "@/GameInterface/Icons";
 import { colorWithAlpha, isDarkPlate, sponsorPlateUrl } from "@/Domain/sponsors/sponsorPlate";
 import { PLATE_BOX, plateNameClass, sectorIcon, type SponsorPlateSize } from "@/GameInterface/Sponsors/sponsorPlateStyle";
+import { sponsorHref } from "@/GameInterface/Sponsors/sponsorLinks";
+import { followLinkOnly } from "@/GameInterface/router/navigation";
 
 /** What the plate needs of a company (`SponsorBrand` and `MasterSponsor` both have it). */
 export interface SponsorPlateCompany {
@@ -19,8 +21,26 @@ const missingPlates = new Set<string>();
  * A company's logo (`.claude/rules/game/sponsors.md`): a plate in the brand's background colour with a symbol on the
  * left and the name in the brand's text colour. The symbol is the painted plate's left third when the image exists,
  * else the sector's icon. The colours are the company's own (the one use of inline style here).
+ * `linked`: the plate is a link to the company's page (`/sponsor/<id>`, 12.1); it keeps the click from a clickable
+ * parent (a table row).
  */
-export function SponsorPlate({ company, size = "md", className = "" }: { company: SponsorPlateCompany; size?: SponsorPlateSize; className?: string }) {
+export function SponsorPlate({ company, size = "md", className = "", linked = false }: {
+  company: SponsorPlateCompany; size?: SponsorPlateSize; className?: string; linked?: boolean;
+}) {
+  const plate = <SponsorPlateBox company={company} size={size} className={linked ? "" : className} />;
+  if (!linked) return plate;
+  return (
+    <a
+      href={sponsorHref(company.id)}
+      onClick={followLinkOnly}
+      className={`inline-flex max-w-full rounded no-underline transition-opacity hover:opacity-85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${className}`}
+    >
+      {plate}
+    </a>
+  );
+}
+
+function SponsorPlateBox({ company, size, className }: { company: SponsorPlateCompany; size: SponsorPlateSize; className: string }) {
   const url = sponsorPlateUrl(company.id);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const [bg, fg] = company.colors;

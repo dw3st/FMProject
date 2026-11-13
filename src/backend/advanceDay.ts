@@ -100,7 +100,7 @@ import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/d
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
-import { expireOffers as expireSponsorOffers } from "@/Domain/sponsors/sponsors";
+import { creditWeeklyPaid as creditSponsorWeek, expireOffers as expireSponsorOffers } from "@/Domain/sponsors/sponsors";
 import { buildSponsorMessage } from "@/Domain/sponsors/sponsorMessages";
 import { sponsorRollover } from "@/backend/sponsorWorld";
 import { withBankLoanPayment } from "@/Domain/finance/bankLoan";
@@ -2057,6 +2057,11 @@ export async function advanceOneDay(
           await saveService.saveSquad(saveId, seatEntry.leagueSlug, seatEntry.stem, playerSquad);
           if (expired.signed.length > 0) ds.deferred.sponsor.push({ date: currentDate, kind: "auto_signed", signed: expired.signed });
         }
+      }
+      // The contracts' books (12.1): the Monday income counted on each contract (the sponsor page shows the totals).
+      if (isWeeklyTick && playerSquad?.sponsors && playerSquad.sponsors.contracts.length > 0) {
+        playerSquad = { ...playerSquad, sponsors: creditSponsorWeek(playerSquad.sponsors) };
+        await saveService.saveSquad(saveId, seatEntry.leagueSlug, seatEntry.stem, playerSquad);
       }
       const scoutingEntries = ds.scouting?.entries ?? [];
       if (playerSquad && (isWeeklyTick || ds.homeFixtures.length > 0 || facilityEntries.length > 0 || scoutingEntries.length > 0)) {

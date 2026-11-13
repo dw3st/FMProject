@@ -8,10 +8,11 @@ import { addDays } from "@/Domain/dates";
 import type { FanbaseHeat } from "@/Domain/fanbase/fanbase";
 import { mulberry32, seedFrom, shuffle, unitFrom } from "@/Domain/rng";
 import { SPONSORS } from "@/Domain/sponsors/sponsorConfig";
+import { SPONSOR_TRAIT_EFFECTS, sponsorTraitOf, type SponsorTrait } from "@/Domain/sponsors/sponsorTraits";
 import type { FinancialTier } from "@/types/playerTypes";
 import type {
-  ClubSponsors, MasterSponsor, SponsorBoard, SponsorBrand, SponsorCompany, SponsorContract, SponsorGoal, SponsorGoalProgress,
-  SponsorNegotiation, SponsorOffer, SponsorProfile, SponsorSlot,
+  ClubSponsors, MasterSponsor, SponsorBoard, SponsorBrand, SponsorCompany, SponsorContract, SponsorContractEnd, SponsorGoal,
+  SponsorGoalProgress, SponsorHistoryEntry, SponsorNegotiation, SponsorOffer, SponsorPaid, SponsorProfile, SponsorSlot,
 } from "@/types/sponsorTypes";
 
 export const SPONSOR_SLOTS: readonly SponsorSlot[] = ["master", "kit", "board"];
@@ -187,13 +188,25 @@ function offerId(ctx: Pick<SponsorClubContext, "clubId" | "season">, slot: Spons
   return `so_${slot}_${seedFrom(`${ctx.clubId}:${ctx.season}:${slot}:${companyId}:${tag}`).toString(36)}`;
 }
 
-/** Fixed value and bonus of an offer. */
+/**
+ * Fixed value and bonus of an offer. The company's trait (12.1): `generous` pays more fixed, `stingy` less fixed and
+ * a bigger bonus; any other trait (or none) leaves the numbers as they are.
+ */
 export function offerValue(args: {
   base: number; slot: SponsorSlot; appeal: number; profile: SponsorProfile; size: SponsorCompany["size"]; noise: number;
+  trait?: SponsorTrait;
 }): { annual: number; bonus: number } {
   const unit = Math.max(0, args.base) * SPONSORS.SLOTS[args.slot].share * args.appeal * args.noise * SPONSORS.SIZE_MULT[args.size];
   const p = SPONSORS.PROFILE[args.profile];
+  const E = SPONSOR_TRAIT_EFFECTS;
+  if (args.trait === "generous") return { annual: roundSponsorMoney(unit * p.fixed * E.GENEROUS_FIXED), bonus: roundSponsorMoney(unit * p.bonus) };
+  if (args.trait === "stingy") return { annual: roundSponsorMoney(unit * p.fixed * E.STINGY_FIXED), bonus: roundSponsorMoney(unit * p.bonus * E.STINGY_BONUS) };
   return { annual: roundSponsorMoney(unit * p.fixed), bonus: roundSponsorMoney(unit * p.bonus) };
+}
+
+/** Seasons a company with this trait signs for: `longterm` always 3, `shortterm` always 1, the others `fallback`. */
+export function traitYears(trait: SponsorTrait, fallback: number): number {
+  return trait === "longterm" ? SPONSOR_TRAIT_EFFECTS.LONGTERM_YEARS : trait === "shortterm" ? SPONSOR_TRAIT_EFFECTS.SHORTTERM_YEARS : fallback;
 }
 
 /**
@@ -225,12 +238,14 @@ export function generateOffers(
       const goal = options[Math.floor(rng() * options.length)]!;
       const noise = SPONSORS.NOISE.MIN + rng() * (SPONSORS.NOISE.MAX - SPONSORS.NOISE.MIN);
       const minYears = profile === "demanding" ? SPONSORS.YEARS.DEMANDING_MIN : SPONSORS.YEARS.MIN;
-      const years = minYears + Math.floor(rng() * (SPONSORS.YEARS.MAX - minYears + 1));
+      // The draw is always made (the other offers of the slot keep their numbers); the trait then decides.
+      const trait = sponsorTraitOf(company.id);
+      const years = traitYears(trait, minYears + Math.floor(rng() * (SPONSORS.YEARS.MAX - minYears + 1)));
       used.add(company.id);
       out.push({
         id: offerId(ctx, slot, company.id),
         slot, company: brandOf(company), profile,
-        ...offerValue({ base: ctx.base, slot, appeal: ctx.appeal, profile, size: company.size, noise }),
+        ...offerValue({ base: ctx.base, slot, appeal: ctx.appeal, profile, size: company.size, noise, trait }),
         goal, years, expires: addDays(ctx.date, SPONSORS.OFFER_DAYS),
       });
     });
@@ -262,10 +277,13 @@ function sign(s: ClubSponsors, offer: SponsorOffer, date: string, auto: boolean)
     ...(auto ? { auto: true as const } : {}),
   };
   const contracts = [...s.contracts, contract];
+  // A renewal taken: the company's last contract (closed at the rollover) ended by being renewed.
+  const closed = offer.renewal ? (s.history ?? []).findLastIndex((h) => h.companyId === offer.company.id && h.slot === offer.slot && h.end === "expired") : -1;
+  const history = closed >= 0 ? s.history!.map((h, i) => (i === closed ? { ...h, end: "renewed" as const } : h)) : s.history;
   const full = contracts.filter((c) => c.slot === offer.slot).length >= SPONSORS.SLOTS[offer.slot].count;
   // The other offers of the slot drop once it is full (master, kit: at once; boards: when the four are taken).
   const offers = s.offers.filter((o) => o.id !== offer.id && !(full && o.slot === offer.slot));
-  return { sponsors: { ...s, contracts, offers }, contract };
+  return { sponsors: { ...s, contracts, offers, ...(history ? { history } : {}) }, contract };
 }
 
 /** The offer becomes a contract (the slot must have a free place). */
@@ -281,11 +299,21 @@ export function declineOffer(s: ClubSponsors, id: string, date: string): Sponsor
   return { ok: true, sponsors: { ...s, offers: s.offers.filter((o) => o.id !== id) } };
 }
 
-/** What the company answers when asked for more (drawn once from the offer's id). */
-export function negotiationOutcome(id: string): SponsorNegotiation {
+/** Chances [raise, keep] of a negotiation (the rest withdraws): a `haggler` gives in more, a `proud` company walks away more. */
+export function negotiationChances(trait: SponsorTrait): readonly [number, number] {
+  if (trait === "haggler") return SPONSOR_TRAIT_EFFECTS.HAGGLER_NEGOTIATE;
+  if (trait === "proud") return SPONSOR_TRAIT_EFFECTS.PROUD_NEGOTIATE;
+  return [SPONSORS.NEGOTIATE.RAISE_CHANCE, SPONSORS.NEGOTIATE.KEEP_CHANCE];
+}
+
+/**
+ * What the company answers when asked for more (drawn once from the offer's id). `companyId` brings the company's
+ * trait (12.1); without it, the default chances.
+ */
+export function negotiationOutcome(id: string, companyId?: string): SponsorNegotiation {
   const r = unitFrom(`sponsors:negotiate:${id}`);
-  const N = SPONSORS.NEGOTIATE;
-  return r < N.RAISE_CHANCE ? "raised" : r < N.RAISE_CHANCE + N.KEEP_CHANCE ? "kept" : "withdrawn";
+  const [raise, keep] = negotiationChances(companyId ? sponsorTraitOf(companyId) : "none");
+  return r < raise ? "raised" : r < raise + keep ? "kept" : "withdrawn";
 }
 
 /** Once per offer: 45% the fixed value goes up 8%, 35% it stays, 20% the company walks away. */
@@ -293,7 +321,7 @@ export function negotiateOffer(s: ClubSponsors, id: string, date: string): Spons
   const offer = liveOffer(s, id, date);
   if (!offer) return { ok: false, error: "notFound" };
   if (offer.negotiated) return { ok: false, error: "alreadyNegotiated" };
-  const negotiation = negotiationOutcome(id);
+  const negotiation = negotiationOutcome(id, offer.company.id);
   if (negotiation === "withdrawn") return { ok: true, negotiation, sponsors: { ...s, offers: s.offers.filter((o) => o.id !== id) } };
   const next: SponsorOffer = {
     ...offer, negotiated: true,
@@ -394,17 +422,20 @@ export function evaluateSponsorSeason(s: ClubSponsors, o: SponsorSeasonOutcome, 
     if (met && c.bonus > 0) bonuses.push({ contractId: c.id, slot: c.slot, company: c.company, amount: c.bonus });
     const seasonsLeft = c.seasonsLeft - 1;
     const miss = positionMiss(c.goal, o);
+    // The company's trait (12.1): `impatient` leaves on a smaller miss, `loyal` never leaves for a missed goal.
+    const trait = sponsorTraitOf(c.company.id);
+    const exitMiss = trait === "impatient" ? SPONSOR_TRAIT_EFFECTS.IMPATIENT_MISS : R.EXIT_MISS;
     if (o.relegated) { left.push({ slot: c.slot, company: c.company, reason: "relegated" }); continue; }
-    if (!met && miss >= R.EXIT_MISS) { left.push({ slot: c.slot, company: c.company, reason: "missed" }); continue; }
+    if (!met && trait !== "loyal" && miss >= exitMiss) { left.push({ slot: c.slot, company: c.company, reason: "missed" }); continue; }
     if (seasonsLeft > 0) { contracts.push({ ...c, seasonsLeft }); continue; }
-    const near = !met && (c.goal.kind !== "league_position" || miss <= R.NEAR_MISS);
+    const near = !met && (trait === "loyal" || c.goal.kind !== "league_position" || miss <= R.NEAR_MISS);
     if (!met && !near) { left.push({ slot: c.slot, company: c.company, reason: "missed" }); continue; }
     const factor = met ? R.RENEW_MET : R.RENEW_MISSED;
     const offer: SponsorOffer = {
       id: offerId(next, c.slot, c.company.id, "renewal"),
       slot: c.slot, company: c.company, profile: c.profile,
       annual: roundSponsorMoney(c.annual * factor), bonus: roundSponsorMoney(c.bonus * factor),
-      goal: refreshGoal(c.goal, c.profile, next), years: SPONSORS.YEARS.RENEWAL,
+      goal: refreshGoal(c.goal, c.profile, next), years: traitYears(trait, SPONSORS.YEARS.RENEWAL),
       expires: addDays(next.date, SPONSORS.OFFER_DAYS), renewal: true,
     };
     renewals.push(offer);
@@ -413,6 +444,50 @@ export function evaluateSponsorSeason(s: ClubSponsors, o: SponsorSeasonOutcome, 
   const renewing = new Set(renewals.map((r) => r.company.id));
   const offers = [...s.offers.filter((x) => !renewing.has(x.company.id)), ...renewals];
   return { sponsors: { ...s, contracts, offers }, bonuses, renewals, left };
+}
+
+// ── Books (12.1): what each contract paid, and the finished contracts ─────────
+
+/** Finished contracts kept per club (the oldest leave). */
+export const SPONSOR_HISTORY_MAX = 60;
+
+const paidOf = (c: SponsorContract): SponsorPaid => c.paid ?? { fixed: 0, bonus: 0, met: 0, missed: 0 };
+
+/** Monday: each contract's week added to its running total (the same `annual / 52` the ledger line is made of). */
+export function creditWeeklyPaid(s: ClubSponsors): ClubSponsors {
+  if (s.contracts.length === 0) return s;
+  return { ...s, contracts: s.contracts.map((c) => ({ ...c, paid: { ...paidOf(c), fixed: paidOf(c).fixed + Math.round(c.annual / 52) } })) };
+}
+
+/**
+ * The books of a season review: every contract of `before` counts its goal (met: the bonus too); the ones that went
+ * on keep the totals, the ones that ended become history entries. `sponsors` is the record after the review (with
+ * the new offers); `date` the day of the rollover.
+ */
+export function seasonBooks(
+  before: ClubSponsors, review: Pick<SponsorSeasonReview, "left">, sponsors: ClubSponsors, o: SponsorSeasonOutcome, date: string,
+): ClubSponsors {
+  const paid = new Map<string, SponsorPaid>();
+  const ended: SponsorHistoryEntry[] = [];
+  const alive = new Set(sponsors.contracts.map((c) => c.id));
+  for (const c of before.contracts) {
+    const met = goalMet(c.goal, o);
+    const p = paidOf(c);
+    const next: SponsorPaid = { fixed: p.fixed, bonus: p.bonus + (met ? c.bonus : 0), met: p.met + (met ? 1 : 0), missed: p.missed + (met ? 0 : 1) };
+    if (alive.has(c.id)) { paid.set(c.id, next); continue; }
+    const reason = review.left.find((l) => l.slot === c.slot && l.company.id === c.company.id)?.reason;
+    const end: SponsorContractEnd = reason === "relegated" ? "relegated" : reason === "missed" && c.seasonsLeft > 1 ? "left_early" : "expired";
+    ended.push({
+      companyId: c.company.id, companyName: c.company.name, slot: c.slot, from: c.signedOn, to: date,
+      seasons: next.met + next.missed, fixedPaid: next.fixed, bonusPaid: next.bonus, goalsMet: next.met, goalsMissed: next.missed, end,
+    });
+  }
+  const history = [...(sponsors.history ?? []), ...ended].slice(-SPONSOR_HISTORY_MAX);
+  return {
+    ...sponsors,
+    contracts: sponsors.contracts.map((c) => (paid.has(c.id) ? { ...c, paid: paid.get(c.id)! } : c)),
+    ...(history.length > 0 ? { history } : {}),
+  };
 }
 
 // ── Income, boards, AI ────────────────────────────────────────────────────────
@@ -448,6 +523,15 @@ export function aiSponsorsOf(
   const master = draw("master", 1)[0] ?? null;
   const kit = draw("kit", 1)[0] ?? null;
   return { master, kit, boards: draw("board", SPONSORS.SLOTS.board.count) };
+}
+
+/** Only the master sponsor of `aiSponsorsOf` (its first draw): the same company, without drawing the other slots. */
+export function aiMasterSponsorOf(
+  catalog: readonly SponsorCompany[], club: { clubId: string; season: number | string; country: string | null; tier: FinancialTier },
+): SponsorBrand | null {
+  const rng = mulberry32(seedFrom(`sponsors:ai:${club.clubId}:${club.season}`));
+  const picked = shuffle(eligibleCompanies(catalog, club, "master", 1), rng)[0];
+  return picked ? brandOf(picked) : null;
 }
 
 const boardOf = (b: SponsorBrand, slot: SponsorSlot): SponsorBoard => ({ id: b.id, name: b.name, colors: b.colors, weight: SPONSORS.SLOTS[slot].weight });

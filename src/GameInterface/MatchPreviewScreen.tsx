@@ -289,7 +289,7 @@ function TeamCard({
 
       {sponsor && (
         <div className={`flex items-center gap-2 ${isHome ? "" : "flex-row-reverse"}`}>
-          <SponsorPlate company={sponsor} size="sm" />
+          <SponsorPlate company={sponsor} size="sm" linked />
           <span className="text-sm text-muted-foreground">{t("sponsors.master.label")}</span>
         </div>
       )}

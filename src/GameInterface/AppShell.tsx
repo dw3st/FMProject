@@ -8,6 +8,7 @@ import { DashboardScreen } from "@/GameInterface/DashboardScreen";
 import { SquadScreen } from "@/GameInterface/SquadScreen";
 import { PlayerScreen } from "@/GameInterface/PlayerScreen";
 import { ManagerScreen } from "@/GameInterface/ManagerScreen";
+import { SponsorScreen } from "@/GameInterface/Sponsors/SponsorScreen";
 import { FormationScreen } from "@/GameInterface/FormationScreen";
 import { ClubScreen } from "@/GameInterface/ClubScreen";
 import { DevelopmentScreen } from "@/GameInterface/DevelopmentScreen";
@@ -38,6 +39,7 @@ function screenFor({ route, params }: RouteMatch, search: string): ReactNode {
     case "squad": return <SquadScreen league={params.league!} club={params.club!} />;
     case "player": return <PlayerScreen league={params.league!} club={params.club!} playerId={params.id!} />;
     case "manager": return <ManagerScreen managerId={params.id!} />;
+    case "sponsor": return <SponsorScreen companyId={params.companyId!} />;
     case "formation": return <FormationScreen />;
     case "club": return <ClubScreen />;
     case "development": return <DevelopmentScreen />;

@@ -53,7 +53,7 @@ function ContractCard({ contract }: { contract: Contract }) {
   return (
     <div className="rounded-md border border-border bg-card p-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <SponsorPlate company={contract.company} size="md" />
+        <SponsorPlate company={contract.company} size="md" linked />
         <div className="flex flex-wrap gap-1.5">
           <span className={BADGE}>{t(`sponsors.profile.${contract.profile}`)}</span>
           {contract.auto && <span className={BADGE}>{t("sponsors.badge.auto")}</span>}
@@ -79,7 +79,7 @@ function OfferCard({ offer, busy, onAction }: {
   return (
     <div className="rounded-md border border-border bg-card p-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <SponsorPlate company={offer.company} size="md" />
+        <SponsorPlate company={offer.company} size="md" linked />
         <div className="flex flex-wrap gap-1.5">
           <span className={BADGE} title={t(`sponsors.profileHint.${offer.profile}`)}>{t(`sponsors.profile.${offer.profile}`)}</span>
           {offer.renewal && <span className={`${BADGE} text-primary`}>{t("sponsors.badge.renewal")}</span>}

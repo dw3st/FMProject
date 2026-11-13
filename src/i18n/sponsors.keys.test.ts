@@ -3,6 +3,7 @@ import en from "@/i18n/locales/en.json";
 import pt from "@/i18n/locales/pt-BR.json";
 import catalog from "@/example_data/sponsors.json";
 import { SECTOR_ICON } from "@/GameInterface/Sponsors/sponsorPlateStyle";
+import { SPONSOR_TRAITS } from "@/Domain/sponsors/sponsorTraits";
 
 type Tree = { [key: string]: string | Tree };
 
@@ -37,6 +38,15 @@ describe("sponsors keys", () => {
       ...["offers", "auto_signed", "season_review"].map((k) => `inbox.sponsor.subject.${k}`),
       ...["relegated", "missed"].map((r) => `inbox.sponsor.leftReason.${r}`),
       "sponsors.attention_one", "sponsors.attention_other", "sponsors.master.title", "sponsors.tab", "inbox.sponsor.open",
+      // 12.1: the company's behaviour, the sponsor page and the strip of the Club tab.
+      ...SPONSOR_TRAITS.filter((k) => k !== "none").flatMap((k) => [`sponsors.trait.${k}.name`, `sponsors.trait.${k}.hint`]),
+      ...["expired", "renewed", "left_early", "relegated", "club_left"].map((e) => `sponsors.page.end.${e}`),
+      ...["local", "national", "global"].map((s) => `sponsors.page.size.${s}`),
+      ...["master", "kit", "board"].map((s) => `sponsors.strip.slot.${s}`),
+      ...["title", "promoted", "relegated"].map((r) => `sponsors.page.result.${r}`),
+      "sponsors.page.place_ordinal_other", "sponsors.page.mine.title", "sponsors.page.current.title", "sponsors.page.results.title",
+      "sponsors.page.history.title", "sponsors.strip.title", "sponsors.strip.open", "sponsors.strip.free",
+      "screenTitles.sponsor.main", "screenTitles.sponsor.accent",
     ];
     for (const key of need) {
       expect(typeof at(en, key)).toBe("string");

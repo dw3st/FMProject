@@ -4,6 +4,7 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { FacilitiesView } from "@/GameInterface/Facilities/FacilitiesView";
+import { ClubSponsorsStrip } from "@/GameInterface/Sponsors/ClubSponsorsStrip";
 import type { LeagueData } from "@/types/playerTypes";
 import { navigate } from "@/GameInterface/router/navigation";
 
@@ -30,6 +31,8 @@ export function ClubScreen() {
   return (
     <ScreenContainer>
       <ScreenTitle accent={t("screenTitles.club.accent")}>{t("screenTitles.club.main")}</ScreenTitle>
+      {/* The club's own sponsors (12.1): plates that open each company's page. */}
+      {session && <ClubSponsorsStrip saveId={session.saveId} />}
       {session ? (
         <FacilitiesView
           saveId={session.saveId}

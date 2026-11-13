@@ -78,12 +78,48 @@ export interface SponsorContract {
   signedOn: string;
   /** Signed by the director when the offers expired unanswered. */
   auto?: true;
+  /** What the contract has paid and how its goals went so far (12.1; a contract from before counts from then on). */
+  paid?: SponsorPaid;
+}
+
+/** Running totals of a contract: money credited (EUR) and season goals met / missed. */
+export interface SponsorPaid {
+  fixed: number;
+  bonus: number;
+  met: number;
+  missed: number;
+}
+
+/**
+ * How a contract ended: at its last season (`expired`; `renewed` once the company's renewal offer is accepted), the
+ * company breaking it for a missed goal (`left_early`) or a relegation. `club_left` (the manager left the club) is
+ * reserved: today the club's whole record is dropped when it returns to the AI.
+ */
+export type SponsorContractEnd = "expired" | "renewed" | "left_early" | "relegated" | "club_left";
+
+/** One finished contract of a human club (`ClubSponsors.history`, 12.1). */
+export interface SponsorHistoryEntry {
+  companyId: string;
+  companyName: string;
+  slot: SponsorSlot;
+  /** Day it was signed and day it ended ("YYYY-MM-DD"). */
+  from: string;
+  to: string;
+  /** Season reviews it went through. */
+  seasons: number;
+  fixedPaid: number;
+  bonusPaid: number;
+  goalsMet: number;
+  goalsMissed: number;
+  end: SponsorContractEnd;
 }
 
 /** `Squad.sponsors`: human club only. */
 export interface ClubSponsors {
   contracts: SponsorContract[];
   offers: SponsorOffer[];
+  /** Finished contracts, oldest first (12.1; absent = none yet). Dropped with the record when the club returns to the AI. */
+  history?: SponsorHistoryEntry[];
 }
 
 /** Where a goal stands today; `met` null = cannot be told yet. */
@@ -130,4 +166,69 @@ export interface MasterSponsor {
   name: string;
   sector: string;
   colors: [string, string];
+}
+
+/** How a company behaves (`sponsorTraitOf`, `.claude/rules/game/sponsors.md` -> "Perfil da empresa"). */
+export type SponsorTraitKey = "none" | "generous" | "stingy" | "impatient" | "loyal" | "haggler" | "proud" | "longterm" | "shortterm";
+
+/** A club on the sponsor page. */
+export interface SponsorClubRef {
+  squadId: string;
+  name: string;
+  leagueSlug: string;
+  /** A club with a human manager. */
+  human: boolean;
+}
+
+/** A finished contract of a human club as anyone in the save may see it. */
+export type SponsorPastDeal = Pick<SponsorHistoryEntry, "companyId" | "slot" | "from" | "to" | "seasons" | "end"> & SponsorClubRef;
+
+/** A season a club finished with the company as its master sponsor. */
+export interface SponsorResultRow extends SponsorClubRef {
+  /** Season label of the club's history ("2026-27" / "2027"). */
+  season: string;
+  /** League of that season. */
+  league: string;
+  position: number | null;
+  /** Titles of the season ("league:<slug>", "cup:<slug>", "continental:<slug>"); promotions apart. */
+  titles: string[];
+  move: "promoted" | "relegated" | null;
+}
+
+/** `GET /api/saves/:id/sponsors/company/:companyId` (12.1). */
+export interface SponsorCompanyView {
+  company: {
+    id: string;
+    name: string;
+    sector: string;
+    size: SponsorSize;
+    country: string | null;
+    colors: [string, string];
+    trait: SponsorTraitKey;
+    /** The company's short text in the asked language; null when it has none. */
+    bio: string | null;
+  };
+  /** The clubs of the save it sponsors today, by slot. */
+  current: Record<SponsorSlot, SponsorClubRef[]>;
+  /** Finished contracts with the human clubs of the save, newest first (no money: another club's values stay private). */
+  history: SponsorPastDeal[];
+  /** What clubs did with it as master sponsor (finished seasons of the clubs' histories). */
+  results: {
+    seasons: number;
+    titles: number;
+    promotions: number;
+    relegations: number;
+    /** The most notable seasons (titles first), up to 10. */
+    rows: SponsorResultRow[];
+    /** The clubs it is the master sponsor of today, with their place in the table (null before any game). */
+    now: (SponsorClubRef & { position: number | null; size: number })[];
+  };
+  /** The asking seat's own dealings with the company; null without a club. */
+  mine: {
+    /** false: the club is still on the old commercial income (no sponsors yet). */
+    active: boolean;
+    offers: SponsorsView["offers"];
+    contract: SponsorsView["contracts"][number] | null;
+    history: SponsorHistoryEntry[];
+  } | null;
 }
