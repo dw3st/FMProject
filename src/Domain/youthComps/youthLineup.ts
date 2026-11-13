@@ -84,7 +84,7 @@ export function youthFillers(
     const seed = `${key.saveId}:${squad.id}:${key.slug}:${key.year}:${lk}`;
     const level = clamp(
       avg - YOUTH.LEVEL_OFFSET + tier + YOUTH.LEVEL_SIGMA * academyGauss(`${seed}:lvl:${i}`),
-      YOUTH.LEVEL_MIN, YOUTH.LEVEL_MAX,
+      YOUTH.LEVEL_MIN, YOUTH.LEVEL_CAP,
     );
     const specific = specifics[Math.floor(academyUnit(`${seed}:pos:${i}`) * specifics.length)]!;
     out.push(makeAcademyPlayer({

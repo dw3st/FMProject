@@ -37,3 +37,19 @@ describe("Player.computeOverallAvg with a curated natural position", () => {
     expect(Player.computeOverallAvg({ ...base, naturalPosition: "ST" })).toBe(Player.computeOverallAvg(base));
   });
 });
+
+describe("value soft ceiling (11.1)", () => {
+  test("below the ceiling the value is the curve; above it only a share of the excess counts", async () => {
+    const { Player, softCappedValue, VALUE_SOFT_CAP, VALUE_OVER_SHARE, VALUE_K, VALUE_EXP } = await import("@/Domain/Player");
+    expect(softCappedValue(50)).toBe(50);
+    expect(softCappedValue(VALUE_SOFT_CAP)).toBe(VALUE_SOFT_CAP);
+    expect(softCappedValue(1000)).toBe(VALUE_SOFT_CAP + (1000 - VALUE_SOFT_CAP) * VALUE_OVER_SHARE);
+    // A common player is untouched; a 19-year-old rated 7.6 is no longer worth a billion.
+    expect(new Player(5, 27).valueMillions).toBeCloseTo(VALUE_K * Math.exp(VALUE_EXP * 5), 6);
+    const star = new Player(7.6, 19).valueMillions;
+    expect(star).toBeGreaterThan(VALUE_SOFT_CAP);
+    expect(star).toBeLessThan(500);
+    // Still monotonic in the rating.
+    expect(new Player(7.7, 19).valueMillions).toBeGreaterThan(star);
+  });
+});

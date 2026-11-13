@@ -16,7 +16,8 @@ export const RETIREMENT = {
   REBORN_AGE: 17,
   REBORN_LEVEL_OFFSET: 0.8,
   REBORN_LEVEL_MIN: 1.5,
-  REBORN_LEVEL_MAX: 8,
+  /** The prodigy ceiling of the academy (`YOUTH.PROMISE_CAP`, 11.1). */
+  REBORN_LEVEL_MAX: 6.2,
   /** Reborn grows faster (DP multiplier) until this age. */
   REBORN_DP_MULT: 1.3,
   REBORN_UNTIL_AGE: 23,

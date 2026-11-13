@@ -220,7 +220,7 @@ export function generateIntake(args: {
     const level = clamp(
       lineAverage(squad, role) - Y.LEVEL_OFFSET + tier + assistant + academy.qualityBonus + Y.LEVEL_SIGMA * gauss(`${seed}:lvl:${i}`)
         + (promise ? Y.PROMISE_BONUS : 0),
-      Y.LEVEL_MIN, Y.LEVEL_MAX,
+      Y.LEVEL_MIN, promise ? Y.PROMISE_CAP : Y.LEVEL_CAP,
     );
     const player = makeAcademyPlayer({
       id, seed, i, squad, specific, level, promise, taken,

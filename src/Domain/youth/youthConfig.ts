@@ -10,6 +10,13 @@ export const YOUTH = {
   LEVEL_SIGMA: 0.5,
   LEVEL_MIN: 1.5,
   LEVEL_MAX: 8,
+  /**
+   * Ceiling of a new academy player (11.1): the intake follows the club's own line average, so a squad full of
+   * academy graduates raised every next intake (a human club's 2036 intake arrived at 60–70 at 16). A common
+   * youngster never arrives above `LEVEL_CAP`, a prodigy (and a created or reborn player) above `PROMISE_CAP`.
+   */
+  LEVEL_CAP: 5.5,
+  PROMISE_CAP: 6.2,
   /** Rare prospect: chance at a level-3 academy (the actual chance is `FACILITIES.ACADEMY_PROMISE`) and level bonus. */
   PROMISE_CHANCE: 0.05,
   PROMISE_BONUS: 1.0,

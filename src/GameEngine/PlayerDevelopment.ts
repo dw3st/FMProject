@@ -15,6 +15,7 @@ import { emptyDevelopmentProgress } from "@/types/playerTypes";
 import type { PlayerDevelopmentChange, StatLevelChange } from "@/types/dayLogTypes";
 import { Player } from "@/Domain/Player";
 import { roundAttr } from "@/Domain/attributes";
+import { computeOverallAvg } from "@/Domain/playerRating";
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -129,6 +130,22 @@ function SEED_DP(value: number): number {
   return dpRequired(value) * 0.5;
 }
 
+/**
+ * Elite brake (11.1, tester reports: academy players of 18 rated 76 and worth over a billion). With the best staff,
+ * training ground and heavy training a human club earns close to three times the development of a common club, and
+ * the soft cap alone let any academy player pass the best players of the starting world by 19. Growth is scaled by
+ * the player's overall: full up to `FROM`, down to `MIN` at `TO` and above. Decline is never braked, and a player
+ * below `FROM` (nearly everyone) develops exactly as before. `scripts/youth-balance-measure.ts`.
+ */
+export const ELITE_BRAKE = { FROM: 6.0, TO: 7.2, MIN: 0.1 };
+
+export function eliteBrake(overall: number): number {
+  const { FROM, TO, MIN } = ELITE_BRAKE;
+  if (overall <= FROM) return 1;
+  if (overall >= TO) return MIN;
+  return 1 - (1 - MIN) * (overall - FROM) / (TO - FROM);
+}
+
 function softCapFactor(value: number): number {
   return 1 - (value / 10) ** 2;
 }
@@ -238,6 +255,8 @@ function distributeAndResolve(
 
   const stats: PlayerStatsRecord = { ...player.stats };
   const statChanges: StatLevelChange[] = [];
+  // Only growth is braked, and only when there is some: a pure decline never reads the overall.
+  const brake = growth > 0 ? eliteBrake(computeOverallAvg(player)) : 1;
 
   for (const [category, weight] of Object.entries(weights) as [DPCategory, number][]) {
     const statsInCategory = CATEGORY_STATS[category];
@@ -250,7 +269,7 @@ function distributeAndResolve(
 
       // Soft cap — high values grow slower (or decline faster when negative)
       const effective = dpPerStat >= 0
-        ? dpPerStat * softCapFactor(currentValue)
+        ? dpPerStat * softCapFactor(currentValue) * brake
         : dpPerStat; // decay is not soft-capped
 
       progress[stat] += effective;
