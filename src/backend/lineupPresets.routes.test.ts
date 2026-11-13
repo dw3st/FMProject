@@ -65,7 +65,7 @@ describe("lineup presets route", () => {
     // Invalid bodies are refused and leave the stored presets alone.
     const bad = [
       { lineupPresets: [] },
-      { lineupPresets: { D: presetA } },
+      { lineupPresets: { G: presetA } },
       { lineupPresets: { A: { ...presetA, formation: "1-1-8" } } },
       { lineupPresets: { A: { ...presetA, lineup: [...ids, "x"] } } },
       { lineupPresets: { A: { ...presetA, lineup: [7] } } },

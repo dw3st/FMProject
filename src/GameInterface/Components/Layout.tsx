@@ -6,8 +6,7 @@ import { SideNavigation } from "@/GameInterface/Components/SideNavigation";
 import { useNavMenu } from "@/GameInterface/Components/useNavEntries";
 import { StatusBar } from "@/GameInterface/Components/StatusBar";
 import { FastForwardModal, SeasonNoticeModal } from "@/GameInterface/Components/SeasonNoticeModal";
-import { Modal } from "@/GameInterface/Components/Modal";
-import { InboxScreen } from "@/GameInterface/InboxScreen";
+import { InboxWindow } from "@/GameInterface/Components/InboxWindow";
 import { SettingsOverlay } from "@/GameInterface/SettingsScreen";
 import { ChangelogModal } from "@/GameInterface/Components/ChangelogModal";
 import { useAdvanceDay } from "@/GameInterface/useAdvanceDay";
@@ -105,7 +104,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
         {/* Always mounted: the radio lives in it, so it plays from screen to screen and through the match (8.8.10, 8.8.23). */}
         <StatusBar
           matchMode={chrome === "match"}
-          onOpenInbox={() => setIsInboxOpen(true)}
+          onOpenInbox={() => setIsInboxOpen((v) => !v)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenChangelog={openChangelog}
           changelogNotice={
@@ -131,14 +130,7 @@ export function Layout({ children, chrome = "full" }: { children: ReactNode; chr
           </>
         )}
 
-        <Modal
-          open={isInboxOpen}
-          onClose={() => setIsInboxOpen(false)}
-          size="xl"
-          panelClassName="h-[80vh] flex flex-col overflow-hidden"
-        >
-          <InboxScreen onClose={() => setIsInboxOpen(false)} />
-        </Modal>
+        {isInboxOpen && <InboxWindow onClose={() => setIsInboxOpen(false)} />}
 
         <SettingsOverlay
           open={isSettingsOpen}

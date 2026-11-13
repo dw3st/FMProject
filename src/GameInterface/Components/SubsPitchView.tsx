@@ -216,6 +216,13 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   const tipPlayer = tip ? onPitch.find((p) => p.id === tip.id) ?? bench.find((p) => p.id === tip.id) : undefined;
   const tipRoster = tipPlayer ? roster?.find((p) => p.id === tipPlayer.rosterId) : undefined;
   const tipRole = tipPlayer ? (onPitch.includes(tipPlayer) ? tipPlayer.role : gamePlayerNaturalRole(tipPlayer)) : "";
+  // Out of position = a slot he is not suited to (needs training or worse), as on the Formation screen: a left
+  // wing-back at left-back is fine. Without the roster record, the old test (slot differs from his natural role).
+  const poorFit = (p: GamePlayer, role: string): boolean => {
+    const r = roster?.find((x) => x.id === p.rosterId);
+    return r ? APT_RANK[aptitudeFor(r, role)] < APT_RANK.apt : role !== gamePlayerNaturalRole(p);
+  };
+  const tipPoorFit = tipPlayer ? poorFit(tipPlayer, tipRole) : false;
   const tipMatchRating = tipPlayer ? ratings?.[tipPlayer.id] : undefined;
   // A substitute with no minutes has no match rating: his level at his position (the number of his card).
   const benchRole = selectedStarter?.role;
@@ -247,10 +254,10 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
       <DragGhost drag={drag} />
       {tip && tipPlayer && tipRoster && createPortal(
         <div
-          className={`fixed z-[100] w-60 p-3 rounded-md bg-card border pointer-events-none ${tipRole !== gamePlayerNaturalRole(tipPlayer) ? "border-chart-4/40" : "border-border"}`}
+          className={`fixed z-[100] w-60 p-3 rounded-md bg-card border pointer-events-none ${tipPoorFit ? "border-chart-4/40" : "border-border"}`}
           style={{ left: tip.left, top: tip.top }}
         >
-          <PlayerTipBody player={tipRoster} role={tipRole} avg={slotValue(tipRoster, tipRole)} energy={tipPlayer.energy} oop={tipRole !== gamePlayerNaturalRole(tipPlayer)} {...(tipMatchRating !== undefined && !Number.isNaN(tipMatchRating) ? { matchRating: tipMatchRating } : {})} />
+          <PlayerTipBody player={tipRoster} role={tipRole} avg={slotValue(tipRoster, tipRole)} energy={tipPlayer.energy} oop={tipPoorFit} {...(tipMatchRating !== undefined && !Number.isNaN(tipMatchRating) ? { matchRating: tipMatchRating } : {})} />
         </div>,
         document.body,
       )}
@@ -305,8 +312,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
               const isSelected = selection?.kind === "starter" && selection.id === p.id;
               const over = drag?.over === `slot:${p.id}`;
               const r10 = displayRating10(p, ratings);
-              const natural = gamePlayerNaturalRole(p);
-              const outOfPosition = natural !== p.role;
+              const outOfPosition = poorFit(p, p.role);
               const roleClass = outOfPosition ? "text-chart-4" : getDetailedPositionColor(p.role);
               const booked = yellowIds.has(p.id);
               const banRisk = isOneYellowFromBan(p.seasonYellows, { goals: 0, assists: 0, yellows: yellowCount.get(p.id) ?? 0, red: false });
@@ -343,7 +349,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                     )}
                     <span
                       className={`absolute -top-2 -left-3 min-w-7 rounded border border-current bg-background/95 px-1 text-center font-display font-bold uppercase text-[13px] leading-tight ${roleClass}`}
-                      title={outOfPosition ? t("substitutionPanel.naturalRole", { role: roleAbbr(natural) }) : undefined}
+                      title={outOfPosition ? t("substitutionPanel.naturalRole", { role: roleAbbr(gamePlayerNaturalRole(p)) }) : undefined}
                     >
                       {roleAbbr(p.role)}
                     </span>
