@@ -1,4 +1,5 @@
 import type { FinancialTier } from "@/types/playerTypes";
+import type { MasterSponsor } from "@/types/sponsorTypes";
 
 /** 1 very secure … 5 under heavy threat (`Domain/jobs/application.ts`). */
 type SecurityLevel = 1 | 2 | 3 | 4 | 5;
@@ -30,4 +31,9 @@ export interface ClubOverview {
   season: { position: number; size: number; played: number; points: number; form: ("W" | "D" | "L")[] } | null;
   titles: { title: string; count: number }[];
   legends: { playerId: string; name: string; tier: "legend" | "idol" }[];
+  /**
+   * Master (shirt) sponsor (`.claude/rules/game/sponsors.md`): a human club's contract (null while the slot is
+   * empty), an AI club's name derived from its id and season.
+   */
+  masterSponsor: MasterSponsor | null;
 }

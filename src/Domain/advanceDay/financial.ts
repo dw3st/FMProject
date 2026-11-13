@@ -4,6 +4,7 @@ import { bankLoanPaymentDue } from "@/Domain/finance/bankLoan";
 import type { LedgerEntry } from "@/Domain/finance/ledger";
 import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { squadStaffWages } from "@/Domain/staff/staff";
+import { weeklySponsorIncome } from "@/Domain/sponsors/sponsors";
 import type { Squad } from "@/types/playerTypes";
 
 /** Operational cost, as a share of annual revenue, charged weekly (`OPERATIONAL_COST_SHARE × wageRevenueBasisOf(squad) / 52`). */
@@ -62,10 +63,17 @@ export function computeAdvanceDayMoney(args: {
 
   const dayOfWeek = new Date(currentDate + "T12:00:00").getDay();
   if (dayOfWeek === 1) {
-    const weeklyCommercial = Math.round((playerSquad.finances?.commercial ?? 0) / 52);
+    // Sponsors (`.claude/rules/game/sponsors.md`): with contracts the weekly commercial income is theirs (an empty
+    // slot earns nothing); a club without the record (a save from before 12.0) keeps the old `commercial / 52`.
+    const sponsors = playerSquad.sponsors;
+    const weeklyCommercial = sponsors ? weeklySponsorIncome(sponsors) : Math.round((playerSquad.finances?.commercial ?? 0) / 52);
     const weeklyWages = squadWeeklyWages(playerSquad.players, wageFactorOf(playerSquad)) + Math.max(0, args.loanedOutWages ?? 0);
     const weeklyOperational = weeklyOperationalCost(playerSquad);
-    entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
+    if (!sponsors) {
+      entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Weekly commercial revenue" });
+    } else if (weeklyCommercial > 0) {
+      entries.push({ date: currentDate, kind: "commercial", amount: weeklyCommercial, label: "Sponsors", ref: { stage: "sponsors" } });
+    }
     entries.push({ date: currentDate, kind: "wages", amount: -weeklyWages, label: "Weekly wages" });
     entries.push({ date: currentDate, kind: "operational", amount: -weeklyOperational, label: "Operational costs" });
     const weeklyStaff = squadStaffWages(playerSquad.staff, currentDate);

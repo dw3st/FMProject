@@ -361,6 +361,11 @@ export interface Squad {
    * Human club only; AI clubs use the implied level of their financial tier.
    */
   facilities?: ClubFacilities;
+  /**
+   * Sponsor contracts and offers (`src/Domain/sponsors`, `.claude/rules/game/sponsors.md`). Human club only; absent
+   * on a human club = a save from before 12.0, still on the old weekly commercial income.
+   */
+  sponsors?: import("@/types/sponsorTypes").ClubSponsors;
   /** The club's bank loan (`src/Domain/finance/bankLoan.ts`). Human club only; the debt never follows the manager. */
   bankLoan?: import("@/types/bankLoanTypes").BankLoan;
   /**

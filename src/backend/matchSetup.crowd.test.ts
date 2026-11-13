@@ -54,7 +54,7 @@ describe("match crowd", () => {
       followers: 2_000_000, tier: await leagueTierOf("premier_league"), fans: 60,
       fraction: seasonFraction("2026-11-01", "2026-08-15", "2027-05-20"), date: "2026-11-01",
     });
-    expect(c).toEqual({ attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: 1, known: true, ...stadiumLookOf(me), light: homeLight(me, false) });
+    expect(c).toEqual({ attendance: Math.round(a.attendance), capacity: a.capacity, neutral: false, importance: 1, known: true, ...stadiumLookOf(me), light: homeLight(me, false), sponsors: expect.any(Array) });
     expect(c.attendance).toBeLessThanOrEqual(c.capacity);
   });
 
@@ -87,7 +87,7 @@ describe("match crowd", () => {
     const me = squad("me", "Town", 40000);
     const opp = squad("opp", "Elsewhere", 30000);
     expect(await matchCrowd(fakeService([me, opp]), meta, fixture({ home: "opp", away: "me" }), me, opp))
-      .toEqual({ attendance: Math.round(30000 * GATE.FILL_RATE), capacity: 30000, neutral: false, importance: 1, known: true, ...stadiumLookOf(opp), light: homeLight(opp, false) });
+      .toEqual({ attendance: Math.round(30000 * GATE.FILL_RATE), capacity: 30000, neutral: false, importance: 1, known: true, ...stadiumLookOf(opp), light: homeLight(opp, false), sponsors: expect.any(Array) });
     const n = await matchCrowd(fakeService([me, opp]), meta, fixture({ neutral: true }), me, opp);
     expect(n.known).toBe(false);
     expect(n.neutral).toBe(true);

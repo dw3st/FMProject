@@ -161,6 +161,13 @@ const CATEGORY_META: Record<
     border: "border-chart-4/30",
     Icon: BoardIcon,
   },
+  sponsor: {
+    labelKey: "inbox.categories.sponsor",
+    color: "text-chart-4",
+    bg: "bg-chart-4/15",
+    border: "border-chart-4/30",
+    Icon: BoardIcon,
+  },
   board: {
     labelKey: "inbox.categories.board",
     color: "text-primary",

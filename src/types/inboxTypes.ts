@@ -7,6 +7,7 @@ import type { BoardRefusal, FacilityItemId, FacilityKind, StandId, TurfType } fr
 import type { ScoutGrade, ScoutTarget, ShortlistReason } from "@/types/scoutingTypes";
 import type { LeagueSeasonAwards, WorldAwards } from "@/types/awardTypes";
 import type { RegCounts, RegistrationNotice } from "@/types/registrationTypes";
+import type { SponsorSlot } from "@/types/sponsorTypes";
 
 export type InboxCategory =
   | "bets"
@@ -37,6 +38,7 @@ export type InboxCategory =
   | "national_coach"
   | "achievement"
   | "press"
+  | "sponsor"
   | "world";
 
 interface InboxMessageBase {
@@ -345,6 +347,27 @@ export interface PlayerInboxMessage extends InboxMessageBase {
 }
 
 /**
+ * Sponsors (`.claude/rules/game/sponsors.md`): new offers on the table (`offers`), contracts the director signed when
+ * the offers expired unanswered (`auto_signed`), and the season's review at the rollover (`season_review`: bonuses
+ * paid, companies offering to renew, companies that left). The screen translates; subject and preview are fallbacks.
+ */
+export interface SponsorInboxMessage extends InboxMessageBase {
+  category: "sponsor";
+  kind: "offers" | "auto_signed" | "season_review";
+  /** offers: how many came for each slot, and the last day to answer. */
+  offers?: { slot: SponsorSlot; count: number }[];
+  expires?: string;
+  /** auto_signed: what the director closed. */
+  signed?: { slot: SponsorSlot; company: string; annual: number; years: number }[];
+  /** season_review: bonuses paid for goals met. */
+  bonuses?: { slot: SponsorSlot; company: string; amount: number }[];
+  /** season_review: companies whose contract ended and offer to stay (the offer is on the table). */
+  renewals?: { slot: SponsorSlot; company: string; annual: number }[];
+  /** season_review: companies that left (the club went down, or the goal was missed). */
+  left?: { slot: SponsorSlot; company: string; reason: "relegated" | "missed" }[];
+}
+
+/**
  * Facilities news (`.claude/rules/game/facilities.md`): the board's answer to a project request
  * (`approved` / `refused`), a project finished (`completed`), a new home attendance record.
  */
@@ -503,6 +526,7 @@ export type InboxMessage =
   | TransferInboxMessage
   | PlayerInboxMessage
   | FacilityInboxMessage
+  | SponsorInboxMessage
   | ManagerNewsInboxMessage
   | ScoutingInboxMessage
   | AwardsInboxMessage

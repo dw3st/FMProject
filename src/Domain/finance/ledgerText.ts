@@ -30,8 +30,11 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
     case "wages":
       // A friendly termination of a player's contract (tester suggestion).
       return { key: ref?.stage === "termination" ? "playerTermination" : ref?.stage === "bonus" ? "playerBonus" : "wages" };
-    case "broadcasting":
     case "commercial":
+      // Sponsors (`.claude/rules/game/sponsors.md`): the weekly income of the contracts, or a bonus at the rollover.
+      if (ref?.stage === "sponsor_bonus") return { key: "sponsorBonus", club: ref.clubName ?? "" };
+      return { key: ref?.stage === "sponsors" ? "sponsors" : "commercial" };
+    case "broadcasting":
     case "operational":
       return { key: entry.kind };
     case "staff":

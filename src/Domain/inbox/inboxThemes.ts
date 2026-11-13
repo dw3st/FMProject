@@ -28,6 +28,7 @@ const THEME_OF: Record<InboxCategory, InboxTheme> = {
   contract: "contracts",
   board: "club",
   facilities: "club",
+  sponsor: "club",
   retirement: "club",
   player: "club",
   club_record: "club",

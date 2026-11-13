@@ -30,3 +30,7 @@ Report de tester. Versão **11.2**. Lógica pura em `src/Domain/fanbase/fanbase.
 
 - A tendência olha só a liga (copa e continental entram na virada, como sempre).
 - Nenhum nome de rede real; não há publicações nem eventos.
+
+## Patrocinadores (12.0)
+
+O momento nas redes (`heatOf`) entra no atrativo do clube para os patrocinadores, e `finances.commercial` (que continua seguindo os seguidores na virada) é a base das propostas. Ver `.claude/rules/game/sponsors.md`.

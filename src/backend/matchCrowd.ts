@@ -20,6 +20,8 @@ import type { ManagerRecord } from "@/types/managerTypes";
 import type { SeatState } from "@/types/seatTypes";
 import { seatManagerId } from "@/Domain/seats/seats";
 import type { Squad } from "@/types/playerTypes";
+import type { SponsorBoard } from "@/types/sponsorTypes";
+import { sponsorBoardsOf } from "@/backend/sponsorWorld";
 
 /** Crowd of the live match (spec 2026-10-08-match-visual §7). */
 export interface MatchCrowd {
@@ -43,6 +45,11 @@ export interface MatchCrowd {
   shape: StadiumShape;
   /** The home ground's floodlights (Structure and lighting item, or the tier for an AI club): drawing only. */
   light: StadiumLight;
+  /**
+   * The home club's sponsors for the pitch boards (`.claude/rules/game/sponsors.md`): master weight 3, kit supplier
+   * 2, boards 1 (a human club's contracts, an AI club's derived names). Absent at a neutral venue. Drawing only.
+   */
+  sponsors?: SponsorBoard[];
 }
 
 /** The home club's floodlights: its Structure and lighting item, else the level of its tier; neutral = a good ground. */
@@ -85,7 +92,11 @@ export async function matchCrowd(
 ): Promise<MatchCrowd> {
   const home = fixture.home === mySquad.id ? mySquad : opponentSquad;
   const homeCapacity = home.venue?.capacity ?? 0;
-  const look = { ...stadiumLookOf(home, fixture.neutral ? fixture.id : undefined), light: homeLight(home, !!fixture.neutral) };
+  const sponsors = fixture.neutral ? [] : await sponsorBoardsOf(service, meta.id, home, meta.activeLeagues, fixture.date);
+  const look = {
+    ...stadiumLookOf(home, fixture.neutral ? fixture.id : undefined), light: homeLight(home, !!fixture.neutral),
+    ...(sponsors.length > 0 ? { sponsors } : {}),
+  };
   if (fixture.neutral) {
     return { attendance: 0, capacity: homeCapacity, neutral: true, importance: 1, known: false, ...look };
   }

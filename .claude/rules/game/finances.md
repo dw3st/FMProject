@@ -391,3 +391,7 @@ Quitar (8.4.4): `POST /bank-loan/payoff` paga de uma vez o que falta, com todos 
 ## Tela contábil (8.8.20)
 
 Report do usuário, opção A do mock. `buildStatement` (`src/Domain/finance/statement.ts`, com teste) monta o demonstrativo de uma temporada ou de um mês (`Finances/FinanceStatement.tsx`): receitas, pessoal, operação, resultado operacional, mercado, banco e clube, com o peso de cada conta na receita. Ao lado o extrato com débito, crédito e saldo (`journalRows`). As setas andam por temporada ou por mês e atravessam a temporada; a rota `GET /ledger` passou a devolver `opening`, o saldo com que a temporada começou (saldo atual menos esta temporada e as seguintes). Embaixo, a semana normal e o empréstimo do banco. As linhas das tabelas ficam em `font-sans` sem negrito (o negrito condensado só nos títulos, rótulos, números do topo e linhas grandes de resultado; pedido do usuário, 8.8.22). Saíram os cartões grandes, o gráfico semanal e a lista de próximos jogos em casa (no lugar, a bilheteria média). Numa temporada com troca de clube o demonstrativo mostra a temporada inteira, com a linha "Troca de clube".
+
+## Patrocinadores (12.0)
+
+A linha semanal `commercial` do clube humano passa a ser a soma dos contratos de patrocínio (`ref.stage = "sponsors"`), e o bônus de uma meta cumprida entra na virada (`ref.stage = "sponsor_bonus"`); sem `Squad.sponsors`, a regra antiga. Ver `.claude/rules/game/sponsors.md`.

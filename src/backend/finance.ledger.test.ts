@@ -49,7 +49,7 @@ describe("finance ledger — weekly tick", () => {
     if (saveId) await saveService.deleteSave(saveId);
   });
 
-  test("advancing to a Monday posts 3 weekly entries (commercial, wages, operational); budget == sum(ledger)", async () => {
+  test("advancing to a Monday posts the weekly entries (wages, operational; commercial only with a sponsor); budget == sum(ledger)", async () => {
     let meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
@@ -78,7 +78,8 @@ describe("finance ledger — weekly tick", () => {
     const mondayWeeklyKinds = ledger
       .filter((e) => e.date === mondayDate && (e.kind === "commercial" || e.kind === "wages" || e.kind === "operational"))
       .map((e) => e.kind);
-    expect(mondayWeeklyKinds.sort()).toEqual(["commercial", "operational", "wages"]);
+    // A new career starts with sponsor offers and no contract: no commercial line until one is signed (sponsors.md).
+    expect(mondayWeeklyKinds.sort()).toEqual(["operational", "wages"]);
 
     const squad = await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId);
     const sum = ledger.reduce((s, e) => s + e.amount, 0);

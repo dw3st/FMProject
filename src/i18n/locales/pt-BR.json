@@ -1966,6 +1966,7 @@
       "transfer": "Negociação",
       "player": "Jogador",
       "facilities": "Instalações",
+      "sponsor": "Patrocínios",
       "manager_news": "Técnicos",
       "scouting": "Olheiros",
       "awards": "Prêmios",
@@ -3110,6 +3111,8 @@
     "ledgerText": {
       "broadcasting": "Receita de TV",
       "commercial": "Receita comercial semanal",
+      "sponsors": "Patrocínios",
+      "sponsorBonus": "Bônus de patrocínio: {{club}}",
       "wages": "Salários da semana",
       "staff": "Equipe técnica",
       "operational": "Custos operacionais",

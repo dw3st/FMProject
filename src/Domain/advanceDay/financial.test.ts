@@ -129,4 +129,23 @@ describe("computeAdvanceDayMoney", () => {
     });
     expect(entries).toHaveLength(2);
   });
+
+  test("sponsors: the Monday commercial line is the contracts' sum over 52; no contract, no line", () => {
+    const company = { id: "x", name: "X", sector: "bank", size: "national" as const, colors: ["#000000", "#ffffff"] as [string, string] };
+    const contract = (id: string, annual: number) => ({
+      id, slot: "board" as const, company, profile: "safe" as const, annual, bonus: 0,
+      goal: { kind: "league_position" as const, max: 10 }, seasonsLeft: 1, signedOn: "2027-01-01",
+    });
+    const signed = computeAdvanceDayMoney({
+      currentDate: "2027-03-08",
+      playerSquad: squad({ sponsors: { contracts: [contract("a", 5_200_000), contract("b", 520_000)], offers: [] } }),
+      homeFixturesToday: [],
+    });
+    expect(signed[0]).toEqual({ date: "2027-03-08", kind: "commercial", amount: 110_000, label: "Sponsors", ref: { stage: "sponsors" } });
+    expect(signed.map((e) => e.kind)).toEqual(["commercial", "wages", "operational"]);
+    const empty = computeAdvanceDayMoney({
+      currentDate: "2027-03-08", playerSquad: squad({ sponsors: { contracts: [], offers: [] } }), homeFixturesToday: [],
+    });
+    expect(empty.map((e) => e.kind)).toEqual(["wages", "operational"]);
+  });
 });

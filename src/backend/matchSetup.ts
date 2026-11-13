@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { aiFormMorale } from "@/Domain/morale/morale";
 import { nationalMatchSetup } from "@/backend/nationalCoachWorld";
 import { publicSeatSquad } from "@/Domain/seats/publicSquad";
+import { masterSponsorOf } from "@/backend/sponsorWorld";
 import { clubCountryResolver, matchCrowd, matchManagers } from "@/backend/matchCrowd";
 import { matchIsBig } from "@/backend/matchImportance";
 import { matchSetupReferee } from "@/backend/refereeRoutes";
@@ -106,6 +107,7 @@ export async function matchSetupFor(
           matchMarking: null,
           pitchCondition: null,
           crowd: null,
+          sponsors: null,
           managers: null,
           referee: null,
           managerBanned: false,
@@ -273,6 +275,13 @@ export async function matchSetupFor(
     && await matchIsBig(saveService, save.id, matchFixture, mySquad, opponentSquad)
     ? { ...baseCrowd, bigMatch: true as const }
     : baseCrowd;
+  // Master sponsor of both clubs (`.claude/rules/game/sponsors.md`), for the preview.
+  const sponsors = !legacy && opponentSquad
+    ? {
+      mine: await masterSponsorOf(saveService, save.id, mySquad, save.activeLeagues, matchDate ?? save.currentDate ?? ""),
+      opponent: await masterSponsorOf(saveService, save.id, opponentSquad, save.activeLeagues, matchDate ?? save.currentDate ?? ""),
+    }
+    : null;
   const managers = !legacy && opponentSquad
     ? matchManagers(save, await saveService.getManagers(save.id), opponentSquad.id, await clubCountryResolver(saveService, save.id), await saveService.listSeats(save.id))
     : null;
@@ -312,6 +321,7 @@ export async function matchSetupFor(
     weatherEffect,
     sunSide,
     crowd,
+    sponsors,
     managers,
     referee,
     // The manager serves a touchline ban in this match (`.claude/rules/game/var.md` §4).

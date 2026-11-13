@@ -24,6 +24,7 @@ import type { PlayerNews } from "@/Domain/morale/morale";
 import type { StaffContractNews } from "@/Domain/staff/staffContracts";
 import type { ManagerBan } from "@/Domain/referees/managerBan";
 import type { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
+import type { buildSponsorMessage } from "@/Domain/sponsors/sponsorMessages";
 import type {
   buildBoardMessage, buildContinentalMessage, buildContractMessage, buildFriendlyMessage, buildInjuryMessage, buildRetirementMessage,
   buildSeasonMessage, buildTransferNegotiationMessage, buildYouthMessage,
@@ -68,6 +69,7 @@ export interface DaySeat {
     contract: Msg<typeof buildContractMessage>[];
     youth: Msg<typeof buildYouthMessage>[];
     facility: Msg<typeof buildFacilityMessage>[];
+    sponsor: Msg<typeof buildSponsorMessage>[];
     retirement: Msg<typeof buildRetirementMessage>[];
     clubRecords: ClubRecordBroken[];
     awards: AwardsInboxMessage[];
@@ -147,7 +149,7 @@ export function newDaySeat(args: {
     ledgerSeason: null,
     scouting: null,
     deferred: {
-      injury: [], friendly: [], mentality: [], contract: [], youth: [], facility: [], retirement: [], clubRecords: [], awards: [],
+      injury: [], friendly: [], mentality: [], contract: [], youth: [], facility: [], sponsor: [], retirement: [], clubRecords: [], awards: [],
       negotiation: [], continental: [], season: [], negativeBalance: null,
     },
     managerEarned: 0,

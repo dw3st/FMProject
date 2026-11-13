@@ -26,6 +26,9 @@ import { countryOfferWeight, idolClubs, licenceReputation, spokenLanguages, type
 import { JOBS } from "@/Domain/jobs/jobsConfig";
 import { clubHappyWithManager } from "@/backend/jobSecurityWorld";
 import { initialStaff } from "@/Domain/staff/staff";
+import { createClubSponsors } from "@/backend/sponsorWorld";
+import { buildSponsorMessage } from "@/Domain/sponsors/sponsorMessages";
+import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import { joinNewClub, leavingTrusted } from "@/Domain/staff/trustedStaff";
 import { getStaffNameBook, leagueCountryMap } from "@/backend/staffNameBook";
 import { startingFacilities } from "@/backend/facilityWorld";
@@ -333,10 +336,12 @@ export async function releaseHumanClub(
   // Morale, talks and promises end with the club (`.claude/rules/game/morale.md`).
   // Facilities too (`.claude/rules/game/facilities.md`): the AI club uses its tier's implied level;
   // the stadium it has built stays (venue capacity), works in progress are dropped.
+  // Sponsors (`.claude/rules/game/sponsors.md`): the contracts end with the human club; as an AI club its sponsors
+  // are names derived from its id.
   // His trusted professionals go with the manager (10.7): they wait on the seat for his next club.
   const following = leavingTrusted(academy.squad.staff);
   if (following.length > 0) await service.updateSeat(saveId, seatId, { trustedStaff: following });
-  const { staff: _s, styleFamiliarity: _f, facilities: _fac, managerAttributes: _a, youthTraining: _yt, playerTraining: _pt, bankLoan: _loan, ...rest } = stripClubMorale(academy.squad);
+  const { staff: _s, styleFamiliarity: _f, facilities: _fac, sponsors: _sp, managerAttributes: _a, youthTraining: _yt, playerTraining: _pt, bankLoan: _loan, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
   const grant = seasonalTransferBudgetFor(tier, popularityOf(rest));
   // D3: the compensation the manager's new club pays goes half into the AI budget (prize cap).
@@ -488,6 +493,16 @@ export async function takeOverClub(
     season: state ? seasonLabel(state.year, state.start, state.end) : "",
     ...(rank !== null ? { rank } : {}),
   });
+  // Sponsors (`.claude/rules/game/sponsors.md`): the club's contracts start over with the new manager — offers for
+  // every slot, on the squad as it is now (after the arriving balance).
+  try {
+    const offers = await createClubSponsors(service, saveId, seatId, args.squadId, {
+      date: args.date, target: objective?.target ?? null, board: BOARD_FANS.START, ...(state ? { season: state.year } : {}),
+    });
+    if (offers.length > 0) await service.appendInbox(saveId, buildSponsorMessage({ date: args.date, kind: "offers", offers }), seatId);
+  } catch (e) {
+    logError("sponsors", `save ${saveId}: failed to set up the sponsors of ${args.squadId}`, e);
+  }
   const inWarning = args.date >= addDays(seasonEnd, -CONTRACT_CONFIG.WARNING_DAYS_BEFORE);
   return {
     board: initialBoardState(args.date, objective),

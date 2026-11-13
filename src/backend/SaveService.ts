@@ -1344,6 +1344,23 @@ export class SaveService {
       logError("youthComps", `save ${id}: failed to generate the youth competitions`, e);
     }
 
+    // Sponsors (`.claude/rules/game/sponsors.md`): human club only — no contract yet, offers for every slot
+    // (after the cups: a cup goal is only asked where the country has one). A failure leaves the club on the old
+    // weekly commercial income until its first rollover.
+    if (human && playerSquadId) {
+      try {
+        const { createClubSponsors } = await import("@/backend/sponsorWorld");
+        const { worldTopIds } = await import("@/Domain/squad/starLimit");
+        await createClubSponsors(this, id, seatId, playerSquadId, {
+          date: meta.currentDate ?? playerLeagueStart ?? now.slice(0, 10),
+          target: seat.board?.objective?.target ?? null, campaign: 0, heat: null,
+          top: worldTopIds([...squadCache.values()]), meta: null,
+        });
+      } catch (e) {
+        logError("sponsors", `save ${id}: failed to set up the sponsors`, e);
+      }
+    }
+
     return meta;
   }
 }

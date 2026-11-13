@@ -1966,6 +1966,7 @@
       "transfer": "Negotiation",
       "player": "Player",
       "facilities": "Facilities",
+      "sponsor": "Sponsors",
       "manager_news": "Managers",
       "scouting": "Scouting",
       "awards": "Awards",
@@ -3110,6 +3111,8 @@
     "ledgerText": {
       "broadcasting": "Broadcasting revenue",
       "commercial": "Weekly commercial revenue",
+      "sponsors": "Sponsors",
+      "sponsorBonus": "Sponsor bonus: {{club}}",
       "wages": "Weekly wages",
       "staff": "Technical staff",
       "operational": "Operational costs",

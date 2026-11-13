@@ -100,6 +100,9 @@ import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/d
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
+import { expireOffers as expireSponsorOffers } from "@/Domain/sponsors/sponsors";
+import { buildSponsorMessage } from "@/Domain/sponsors/sponsorMessages";
+import { sponsorRollover } from "@/backend/sponsorWorld";
 import { withBankLoanPayment } from "@/Domain/finance/bankLoan";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
 import { wearDay } from "@/Domain/facilities/facilityItems";
@@ -2030,6 +2033,16 @@ export async function advanceOneDay(
           await saveService.saveSquad(saveId, seatEntry.leagueSlug, seatEntry.stem, playerSquad);
         }
       }
+      // Sponsors (`.claude/rules/game/sponsors.md`): offers past their last day leave the table; where the slot is
+      // still empty the director signs the best one (no draw). Before the Monday income, so they already pay.
+      if (playerSquad?.sponsors) {
+        const expired = expireSponsorOffers(playerSquad.sponsors, currentDate);
+        if (expired.changed) {
+          playerSquad = { ...playerSquad, sponsors: expired.sponsors };
+          await saveService.saveSquad(saveId, seatEntry.leagueSlug, seatEntry.stem, playerSquad);
+          if (expired.signed.length > 0) ds.deferred.sponsor.push({ date: currentDate, kind: "auto_signed", signed: expired.signed });
+        }
+      }
       const scoutingEntries = ds.scouting?.entries ?? [];
       if (playerSquad && (isWeeklyTick || ds.homeFixtures.length > 0 || facilityEntries.length > 0 || scoutingEntries.length > 0)) {
         const catalogForFinance = await getLeagueData();
@@ -2723,6 +2736,29 @@ export async function advanceOneDay(
           ds.patch.lastSeason = { year: archiveYear, clubId: ds.clubId, target: ds.rollover.objectiveTarget, met: ds.rollover.objectiveMet };
         }
         ds.rollover.moves = plan.moves;
+        // Sponsors (`.claude/rules/game/sponsors.md`): bonuses, companies leaving or renewing, offers for the empty
+        // slots; a club still without the record (a save from before 12.0) gets it here. A sacking today skips it
+        // (the club turns AI below).
+        if (ds.clubId && !ds.sackedReason) {
+          const closedState = activeLeagues.find((l) => l.leagueSlug === ds.meta.leagueSlug);
+          const sponsored = await sponsorRollover(saveService, saveId, {
+            seatId: ds.seatId, clubId: ds.clubId, date: currentDate, meta: ds.meta,
+            closed: {
+              leagueSlug: ds.meta.leagueSlug, table: standings[ds.meta.leagueSlug] ?? [],
+              start: closedState?.start ?? currentDate, end: closedState?.end ?? currentDate,
+            },
+            move: ds.rollover.move?.kind ?? null,
+            followers: ds.rollover.followersChange,
+            season: archiveYear + 1,
+            target: ds.board?.objective?.target ?? null,
+            ...(ds.board ? { board: ds.board.board } : {}),
+          });
+          if (sponsored.review && (sponsored.review.bonuses.length > 0 || sponsored.review.renewals.length > 0 || sponsored.review.left.length > 0)) {
+            ds.deferred.sponsor.push({ date: currentDate, kind: "season_review", review: sponsored.review });
+          }
+          const tabled = [...(sponsored.review?.renewals ?? []), ...sponsored.offers];
+          if (tabled.length > 0) ds.deferred.sponsor.push({ date: currentDate, kind: "offers", offers: tabled });
+        }
         const nameOf = await leagueNameResolver(activeLeagues);
         const { move, championOf, followersChange, leaguePrize: prizeNow } = ds.rollover;
         if (championOf) {
@@ -3397,6 +3433,10 @@ export async function advanceOneDay(
     }
     for (const ds of daySeats) {
       for (const msg of ds.deferred.facility) await emitInboxMessage(saveId, buildFacilityMessage(msg), saveService, ds.seatId);
+      // Sponsors: only while the seat still has the club (a sacking today ended its contracts).
+      if (!ds.sackedReason && !ds.job.ended) {
+        for (const msg of ds.deferred.sponsor) await emitInboxMessage(saveId, buildSponsorMessage(msg), saveService, ds.seatId);
+      }
     }
     for (const ds of daySeats) {
       for (const msg of ds.deferred.retirement) await emitInboxMessage(saveId, buildRetirementMessage(msg), saveService, ds.seatId);
@@ -3753,6 +3793,13 @@ export async function presimulateWorld(
       date: owner.currentDate, kind: "objective", objective: owner.board.objective,
       leagueName: competitionName(owner.board.objective.leagueSlug, catalog as unknown as LeagueData[], "en"),
     }), saveService, ownerSeatId!);
+  }
+  // The owner's first sponsorship offers (`.claude/rules/game/sponsors.md`; members get theirs from `addSeat`).
+  if (owner?.currentDate && owner.clubId && !owner.unemployed) {
+    const offers = (await saveService.getSquadById(saveId, owner.clubId))?.sponsors?.offers ?? [];
+    if (offers.length > 0) {
+      await emitInboxMessage(saveId, buildSponsorMessage({ date: owner.currentDate, kind: "offers", offers }), saveService, ownerSeatId!);
+    }
   }
 
   // Friends' league standings (part 5a): every seat with a club opens its passage now, after the kit (it may move the

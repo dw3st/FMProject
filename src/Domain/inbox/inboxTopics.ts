@@ -47,6 +47,8 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
   discipline: "injuries",
   achievement: "achievements",
   bets: "bets",
+  // Sponsor offers and the season review ask for a decision (`.claude/rules/game/sponsors.md`): never dropped.
+  sponsor: "actions",
   // A press conference invite asks for an answer: never dropped.
   press: "actions",
   // Board (objective, warnings, manager contract offer...), job offers and player talks ask for an answer.

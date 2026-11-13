@@ -1,6 +1,7 @@
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import { startingFacilities } from "@/backend/facilityWorld";
 import { jobPosts } from "@/backend/jobPostsWorld";
+import { masterSponsorOf } from "@/backend/sponsorWorld";
 import { clubCountryResolver } from "@/backend/matchCrowd";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 import { clubLegends, emptyClubHistory, titleGallery } from "@/Domain/clubHistory/clubHistory";
@@ -71,5 +72,7 @@ export async function clubOverview(service: SaveService, saveId: string, meta: S
     season: st ? { position: at + 1, size: table.length, played: st.mp, points: st.pts, form: st.form.slice(-5) } : null,
     titles: titleGallery(history.seasons).map((g) => ({ title: g.title, count: g.seasons.length })),
     legends: clubLegends(history.scorers).slice(0, 3).map((l) => ({ playerId: l.playerId, name: l.name, tier: l.tier })),
+    // Only the name: another human club's contract values stay private.
+    masterSponsor: await masterSponsorOf(service, saveId, squad, meta.activeLeagues, date),
   };
 }

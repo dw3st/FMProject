@@ -6,7 +6,7 @@ export type PublicSeatSquad = Omit<Squad, "finances" | "players" | PrivateClubKe
   players: Omit<RosterPlayer, PrivatePlayerKey>[];
 };
 
-type PrivateClubKey = "moraleClub" | "staff" | "facilities" | "managerAttributes" | "styleFamiliarity" | "registrations";
+type PrivateClubKey = "moraleClub" | "staff" | "facilities" | "sponsors" | "managerAttributes" | "styleFamiliarity" | "registrations";
 type PrivatePlayerKey = "morale" | "moraleLog" | "squadStatus";
 
 /**
@@ -16,7 +16,7 @@ type PrivatePlayerKey = "morale" | "moraleLog" | "squadStatus";
  */
 export function publicSeatSquad(squad: Squad): PublicSeatSquad {
   const {
-    moraleClub: _mc, staff: _s, facilities: _f, managerAttributes: _ma, styleFamiliarity: _sf, registrations: _r, bankLoan: _bl,
+    moraleClub: _mc, staff: _s, facilities: _f, sponsors: _sp, managerAttributes: _ma, styleFamiliarity: _sf, registrations: _r, bankLoan: _bl,
     finances, players, ...rest
   } = squad;
   const pub: PublicSeatSquad = {
