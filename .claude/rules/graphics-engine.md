@@ -597,3 +597,13 @@ do `PixiPitch` (`figures` | `pixel` | `discs`; botão Bonecos da partida alterna
 ## Vendedores fora do mosaico (10.7)
 
 Report de tester. `mosaicSides` (`stadiumDecor.ts`): o fundo da casa com mosaico (os dois com o item das duas pontas) fica fechado para os vendedores, como um setor em obra (`refreshWalkways`, `PixiPitch`); nunca em campo neutro. Só desenho.
+
+## Movimentos novos dos bonecos de cima (11.2, em branch)
+
+Pedido do usuário depois de recusar os bonecos de lado (cartoon): os bonecos de cima ficam, com mais movimentos. Só desenho.
+
+- **Poses** (`data_process/assets/people.py`: `move_poses`, `sprint_cycle`, `jockey_cycle`, `keeper_move_poses`; `legs_over` desenha a perna por cima do tronco e `face_up` a cabeça de quem está deitado de costas). Atlas com nome novo, porque a URL de arte tem cache para sempre: `player-atlas-2`, `player-real-atlas-2`, `keeper-atlas-2` (`data_process/assets/build_moves_atlas.py`; copiar para `src/Data/assets`).
+- **Código** (`playerSprite.ts`): ações `volley`, `bicycle` (quadros desenhados virados meia volta, `SpritePose.turned`), `backheel`, `roulette`, `stepover` (o lado da ação decide a ordem), `chest`, `armsUp`, e do goleiro `smother`, `tipOver`, `collect`, `goalKick`; `catch` termina com a bola no peito. Arrancada: `SpriteMotion.sprint` acima de `SPRINT_UP` (5,6 jardas por segundo desenhadas) até abaixo de `SPRINT_DOWN` (4,8). Marcação: defensor andando a até `JOCKEY_YDS` (9) da bola fica de lado, braços abertos.
+- **Quando** (`PixiPitch`, só com Bonecos): chute = voleio em 12% e letra em 4% (`finishKind`); cabeçada ao gol = bicicleta em 12%; drible ganho = roleta ou pedalada; bola alta dominada = peito; gol = braços para cima em 40% das comemorações em pé; defesa de chute no corpo = espalmada por cima; abafada, bola recebida e tiro de meta do goleiro com os quadros dele.
+- Testes: `bun test src/GraficsEngine/playerSprite.test.ts` (todo passo de toda ação existe nos três atlas).
+- A opção de bonecos de lado continua no código, sem atlas publicado (não aparece).
