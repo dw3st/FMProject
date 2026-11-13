@@ -632,7 +632,14 @@
     "changelog": "What's new",
     "dashboard": "Dashboard",
     "club": "Club",
-    "national": "National teams"
+    "national": "National teams",
+    "group": {
+      "team": "Team",
+      "management": "Management",
+      "market": "Market",
+      "competitions": "Competitions"
+    },
+    "transfersFull": "Transfers"
   },
   "settings": {
     "app": {
@@ -678,7 +685,11 @@
     "playerLookReal": "More realistic",
     "playerLookDescription": "Proportions of the players in the match: the current ones or more realistic (smaller head, narrower shoulders). Applies from the next match.",
     "chatSound": "Chat message sound",
-    "chatSoundDescription": "A short tone when a message from a friend or the league arrives in a conversation that is not open."
+    "chatSoundDescription": "A short tone when a message from a friend or the league arrives in a conversation that is not open.",
+    "navLayout": "Top menu",
+    "navLayoutTabs": "Tabs",
+    "navLayoutGroups": "Groups",
+    "navLayoutDescription": "Tabs: one tab per screen. Groups: the Dashboard and four groups (Team, Management, Market, Competitions) that open their screens."
   },
   "reports": {
     "title": "Send a report",

@@ -632,7 +632,14 @@
     "changelog": "Novidades",
     "dashboard": "Painel",
     "club": "Clube",
-    "national": "Seleções"
+    "national": "Seleções",
+    "group": {
+      "team": "Time",
+      "management": "Gestão",
+      "market": "Mercado",
+      "competitions": "Competições"
+    },
+    "transfersFull": "Transferências"
   },
   "settings": {
     "app": {
@@ -678,7 +685,11 @@
     "playerLookReal": "Mais realista",
     "playerLookDescription": "Proporção dos jogadores na partida: a atual ou mais realista (cabeça menor, ombros mais estreitos). Vale na próxima partida.",
     "chatSound": "Som de mensagem no chat",
-    "chatSoundDescription": "Um toque curto quando chega uma mensagem de um amigo ou da liga numa conversa que não está aberta."
+    "chatSoundDescription": "Um toque curto quando chega uma mensagem de um amigo ou da liga numa conversa que não está aberta.",
+    "navLayout": "Menu de cima",
+    "navLayoutTabs": "Abas",
+    "navLayoutGroups": "Grupos",
+    "navLayoutDescription": "Abas: uma aba para cada tela. Grupos: Painel e quatro grupos (Time, Gestão, Mercado, Competições) que abrem as telas de cada um."
   },
   "reports": {
     "title": "Enviar um relatório",

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { readNavLayout, writeNavLayout, type NavLayout } from "@/GameInterface/Components/navGroups";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n/i18n";
@@ -30,6 +31,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
   const [matchSound, setMatchSound] = useState(readMatchSound);
   const [readySound, setReadySound] = useState(readReadySound);
   const [chatSound, setChatSound] = useState(readChatSound);
+  const [navLayout, setNavLayout] = useState<NavLayout>(readNavLayout);
   const [turnNotification, setTurnNotification] = useState(readTurnNotification);
   const [turnBlocked, setTurnBlocked] = useState(false);
   const [matchVolume, setMatchVolume] = useState(readMatchVolume);
@@ -160,6 +162,16 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             options={[{ key: "on", label: t("settings.newVisualOn") }, { key: "off", label: t("settings.newVisualOff") }]}
           />
           <p className="m-0 text-sm text-muted-foreground">{t("settings.readySoundDescription")}</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("settings.navLayout")}</div>
+          <OptionChips
+            value={navLayout}
+            onChange={(k) => { setNavLayout(k); writeNavLayout(k); }}
+            options={[{ key: "tabs" as const, label: t("settings.navLayoutTabs") }, { key: "groups" as const, label: t("settings.navLayoutGroups") }]}
+          />
+          <p className="m-0 text-sm text-muted-foreground">{t("settings.navLayoutDescription")}</p>
         </div>
 
         <div className="mt-6 flex flex-col gap-2">
