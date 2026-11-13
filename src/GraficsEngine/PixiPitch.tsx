@@ -26,7 +26,7 @@ import { PIXEL_FIGURE, hairLayers, hasPixelOfficial, isPixelOfficial, officialPi
 import { prefersReducedMotion, type PitchQuality } from "@/GraficsEngine/motionPrefs";
 import { bounceHeight } from "@/GraficsEngine/ballHeight";
 import { jostleOffsets } from "@/GraficsEngine/setPieceJostle";
-import { easeOffsets, spreadOffsets } from "@/GraficsEngine/markerSpread";
+import { crowdScales, easeOffsets, easeScales, spreadOffsets } from "@/GraficsEngine/markerSpread";
 import { arrivedMates, celebrationPositions, planCelebration, walkBackPositions, type CelebrationPlan } from "@/GraficsEngine/goalCelebration";
 import { CAMERA, recordFrame, REPLAY, replayAt, replayClip, stepCamera, type CameraView, type ReplayFrame } from "@/GraficsEngine/matchCamera";
 import { assistantSideStep, OFFICIAL_SPRITE, officialPose, officialTints, type OfficialKind, type OfficialPoseState } from "@/GraficsEngine/officialSprite";
@@ -1510,6 +1510,7 @@ export function PixiPitch({
       let setPieceStartPending = false;
       let lastDrawnPos: Map<number, Pos> | null = null;
       let spreadOffs = new Map<number, Pos>();
+      let crowdScale = new Map<number, number>();
       /** Bounce of a loose high ball: which landing it is (its start time) and when it was first drawn. */
       let bounceKey: number | null = null;
       /** Box jostling of this frame (engine yards per player), drawn on the marker. */
@@ -4478,13 +4479,17 @@ export function PixiPitch({
           if (!stp.pass && !stp.shot && !stp.looseBall) fixedIds.add(stp.ballHolderId);
           if (stp.pass?.toId != null) fixedIds.add(stp.pass.toId);
           const pts = stp.players.map((p) => { const a = drawnPos.get(p.id) ?? p; return { id: p.id, x: a.x, y: a.y }; });
-          const target = spreadOffsets(pts, rYd * S.MIN_DIST, rYd * S.MAX_SHIFT, fixedIds);
+          const target = spreadOffsets(pts, rYd * S.MIN_DIST, rYd * S.MAX_SHIFT, fixedIds, S.ITERATIONS);
           spreadOffs = easeOffsets(spreadOffs, target, app.ticker.deltaMS / 1000, S.RATE);
           if (spreadOffs.size) {
             const next = new Map(drawnPos);
             for (const [id, o] of spreadOffs) { const p = next.get(id); if (p) next.set(id, { x: p.x + o.x, y: p.y + o.y }); }
             drawnPos = next;
           }
+          // Markers in a group are drawn a little smaller (corners, a pack leaving the box).
+          const C = MATCH_LOOK.CROWD;
+          const after = stp.players.filter((p) => p.role !== "GK").map((p) => { const a = drawnPos.get(p.id) ?? p; return { id: p.id, x: a.x, y: a.y }; });
+          crowdScale = easeScales(crowdScale, crowdScales(after, rYd * C.RADIUS, C.STEP, C.MIN), app.ticker.deltaMS / 1000, C.RATE);
         }
         syncStandingGoals();
         if (standingGoalOn) {
@@ -4574,8 +4579,9 @@ export function PixiPitch({
           // The discs are drawn bigger than the figures; what sits around the marker follows `drawnR`.
           // A figure is drawn bigger inside its marker (only the body, 10.2); a disc scales the whole marker.
           const isFig = figureShown(g);
-          const drawnR = markerR * (isFig ? MATCH_LOOK.FIGURE_SCALE : MATCH_LOOK.DISC_SCALE);
-          g.scale.set((off ? off.scale : 1) * (isFig ? 1 : MATCH_LOOK.DISC_SCALE));
+          const crowdK = crowdScale.get(player.id) ?? 1;
+          const drawnR = markerR * (isFig ? MATCH_LOOK.FIGURE_SCALE : MATCH_LOOK.DISC_SCALE) * crowdK;
+          g.scale.set((off ? off.scale : 1) * (isFig ? 1 : MATCH_LOOK.DISC_SCALE) * crowdK);
           // The mirror is a 180° turn (#142): the offset flips on both axes, an angle stays as is.
           g.rotation = off ? off.rotation : 0;
           const markerShadow = g.children[0];

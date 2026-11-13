@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.3.1",
+    date: "2026-11-13",
+    time: "20:12",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Os bonecos da partida não ficam mais empilhados uns sobre os outros em escanteios, faltas e disputas: eles se afastam mais e ficam um pouco menores enquanto estão em grupo, voltando ao tamanho normal quando o grupo se desfaz. Só o desenho muda; o resultado do jogo é o mesmo.", en: "The match figures no longer pile on top of each other at corners, free kicks and scrambles: they move further apart and are drawn a little smaller while in a group, back to normal size when the group breaks up. Only the drawing changes; the result of the game is the same." },
+    ],
+  },
+  {
     version: "12.3",
     date: "2026-11-13",
     time: "19:30",

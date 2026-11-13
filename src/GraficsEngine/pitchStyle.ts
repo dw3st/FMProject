@@ -31,7 +31,12 @@ export const MATCH_LOOK = {
    * Markers closer than `MIN_DIST` marker radii are drawn pushed apart, each at most `MAX_SHIFT` radii from its real
    * position, easing at `RATE` per second (10.4, option D of the user's choice; `markerSpread.ts`). Drawing only.
    */
-  SPREAD: { MIN_DIST: 2.1, MAX_SHIFT: 1, RATE: 10 },
+  SPREAD: { MIN_DIST: 2.1, MAX_SHIFT: 2, ITERATIONS: 8, RATE: 10 },
+  /**
+   * A marker in a group is drawn smaller: `STEP` less for every other marker within `RADIUS` marker radii (after the
+   * spread), never below `MIN`, easing at `RATE` per second. Drawing only.
+   */
+  CROWD: { RADIUS: 3, STEP: 0.07, MIN: 0.68, RATE: 6 },
   LINE_W: 1.8, LINE_GLOW_W: 5, LINE_GLOW_ALPHA: 0.16,
   GOAL: { POST_W: 3, MESH_ROWS: 6, MESH_COLS: 4, MESH_ALPHA: 0.3, NET_FILL: 0.06 },
   FLAG: { POLE: 11, W: 7, H: 6, COLOR: 0xf2c230 },

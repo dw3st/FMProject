@@ -607,3 +607,16 @@ Pedido do usuário depois de recusar os bonecos de lado (cartoon): os bonecos de
 - **Quando** (`PixiPitch`, só com Bonecos): chute = voleio em 12% e letra em 4% (`finishKind`); cabeçada ao gol = bicicleta em 12%; drible ganho = roleta ou pedalada; bola alta dominada = peito; gol = braços para cima em 40% das comemorações em pé; defesa de chute no corpo = espalmada por cima; abafada, bola recebida e tiro de meta do goleiro com os quadros dele.
 - Testes: `bun test src/GraficsEngine/playerSprite.test.ts` (todo passo de toda ação existe nos três atlas).
 - A opção de bonecos de lado continua no código, sem atlas publicado (não aparece).
+
+## Bonecos em grupo: mais separados e menores (12.3.1)
+
+Report do usuário (amontoado feio em alguns jogos), opção C de três renderizações reais de um escanteio. Só desenho.
+
+- **Medição** (`bun scripts/crowd-probe.ts`, 60 partidas da Premier): grupos de 5 ou mais jogadores a até 4 jardas em 10,9% dos ticks (30 s por partida), quase todos de escanteio e falta cruzada: a área cheia, a bola no ar e o grupo saindo da área. O boneco é desenhado com ~4,4 jardas de largura (× 1,35 no modo bonecos), então todo grupo se cobre.
+- **Tentativa no motor, descartada:** separar companheiros em movimento e parar os perseguidores antes do ponto da bola baixou o amontoado de 10,9% para 9,8% e tirou gols (2,48 → 1,93 em 60 jogos, cabeçadas 0,42 → 0,30).
+- **Separação** (`MATCH_LOOK.SPREAD`): `MAX_SHIFT` 1 → 2 raios e `ITERATIONS` 3 → 8. `bun scripts/spread-probe.ts 30` (pares com os centros a menos de 1,3 raio; tick "feio" = 3 ou mais pares): hoje 12,8 s por partida, depois 0,9 s; 3,5% dos jogadores-tick desenhados a mais de 3 jardas do lugar real, no máximo 4,4.
+- **Tamanho em grupo** (`MATCH_LOOK.CROWD`, `crowdScales` / `easeScales` em `markerSpread.ts`): cada marcador é desenhado `STEP` (7%) menor por outro marcador a até `RADIUS` (3) raios, depois da separação, nunca abaixo de `MIN` (0,68), com transição suave (`RATE` 6 por segundo). Goleiros não contam nem encolhem. O que fica em volta do marcador (barra de fôlego, anel do portador) segue o tamanho.
+- Quem tem a bola, quem vai receber o passe, os goleiros e a barreira continuam no lugar real.
+- Testes: `bun test src/GraficsEngine/markerSpread.test.ts`.
+- Limitações: conferido em renderização real só no modo bonecos e parado no escanteio; no pixel art o encolhimento escala o boneco fora do zoom inteiro.
+

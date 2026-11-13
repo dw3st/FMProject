@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { easeOffsets, spreadOffsets } from "@/GraficsEngine/markerSpread";
+import { easeOffsets, spreadOffsets, crowdScales, easeScales } from "@/GraficsEngine/markerSpread";
 
 const at = (id: number, x: number, y: number) => ({ id, x, y });
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -56,5 +56,24 @@ describe("easeOffsets", () => {
     const prev = new Map([[1, { x: 1, y: 0 }]]);
     expect(easeOffsets(prev, new Map(), 0.05, 10).get(1)!.x).toBeCloseTo(0.5, 5);
     expect(easeOffsets(prev, new Map(), 1, 10).size).toBe(0);
+  });
+});
+
+describe("crowdScales", () => {
+  const pts = [{ id: 1, x: 0, y: 0 }, { id: 2, x: 1, y: 0 }, { id: 3, x: 0, y: 1 }, { id: 4, x: 50, y: 50 }];
+  test("a marker alone keeps its size; one in a group shrinks by a step per neighbour", () => {
+    const s = crowdScales(pts, 3, 0.07, 0.68);
+    expect(s.has(4)).toBe(false);
+    expect(s.get(1)).toBeCloseTo(0.86);
+  });
+  test("never below the minimum, and nothing with the step at zero", () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ id: i, x: i * 0.1, y: 0 }));
+    expect(Math.min(...crowdScales(many, 3, 0.07, 0.68).values())).toBe(0.68);
+    expect(crowdScales(pts, 3, 0, 0.68).size).toBe(0);
+  });
+  test("sizes ease towards the target and drop back to nothing at 1", () => {
+    const half = easeScales(new Map(), new Map([[1, 0.8]]), 0.1, 5);
+    expect(half.get(1)).toBeCloseTo(0.9);
+    expect(easeScales(new Map([[1, 0.9995]]), new Map(), 1, 10).size).toBe(0);
   });
 });

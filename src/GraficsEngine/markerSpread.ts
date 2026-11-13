@@ -63,6 +63,38 @@ export function spreadOffsets(
 }
 
 /**
+ * Drawn size of each marker in a crowd: 1 alone, `step` smaller for every other marker within `radius`, never below
+ * `min`. A group in the box at a corner is drawn a little smaller, so the figures stop covering each other.
+ */
+export function crowdScales(points: readonly SpreadPoint[], radius: number, step: number, min: number): Map<number, number> {
+  const out = new Map<number, number>();
+  if (radius <= 0 || step <= 0) return out;
+  const r2 = radius * radius;
+  for (const a of points) {
+    let n = 0;
+    for (const b of points) {
+      if (b.id === a.id) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      if (dx * dx + dy * dy < r2) n++;
+    }
+    if (n > 0) out.set(a.id, Math.max(min, 1 - step * n));
+  }
+  return out;
+}
+
+/** Sizes eased from `prev` towards `target` (absent = 1) at `rate` per second; a size back at 1 is dropped. */
+export function easeScales(prev: ReadonlyMap<number, number>, target: ReadonlyMap<number, number>, dt: number, rate: number): Map<number, number> {
+  const k = Math.min(1, Math.max(0, dt * rate));
+  const out = new Map<number, number>();
+  for (const id of new Set<number>([...prev.keys(), ...target.keys()])) {
+    const p = prev.get(id) ?? 1;
+    const v = p + ((target.get(id) ?? 1) - p) * k;
+    if (Math.abs(v - 1) > 1e-3) out.set(id, v);
+  }
+  return out;
+}
+
+/**
  * Offsets eased from `prev` towards `target` over `dt` seconds at `rate` per second (1 = there at once). An offset that
  * has faded to nothing is dropped.
  */
