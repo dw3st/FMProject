@@ -3,6 +3,7 @@ import type { LeagueCalendarResult, LeagueDateIndex, LeagueSeasonMeta, RoundFixt
 import type { LeagueScheduleConfig } from "@/Domain/season/leagueScheduleConfig";
 import { leagueSeasonEnd, leagueSeasonStart } from "@/Domain/season/leagueScheduleConfig";
 import { generateRestDays } from "@/Domain/season/generateRestDays";
+import { mulberry32, seedFrom, shuffle } from "@/Domain/rng";
 
 /**
  * Circle-method rotation: fix index 0, rotate the rest.
@@ -180,8 +181,16 @@ export function generateLeagueCalendar(
   config: LeagueScheduleConfig,
   teamIds: string[],
   year: number,
-  opts: { blocked?: ReadonlySet<string> } = {},
+  opts: {
+    blocked?: ReadonlySet<string>;
+    /**
+     * Draws the order of the clubs on the rotation board (11.0, user request): without it the board follows the list
+     * as given and every season repeated the same run of opponents. Same key = same calendar (a redone day).
+     */
+    shuffleKey?: string;
+  } = {},
 ): LeagueCalendarResult {
+  if (opts.shuffleKey) teamIds = shuffle(teamIds, mulberry32(seedFrom(`calendar:${opts.shuffleKey}`)));
   const seasonStart = leagueSeasonStart(config, year);
   const seasonEnd   = leagueSeasonEnd(config, year);
 

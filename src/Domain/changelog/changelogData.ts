@@ -33,13 +33,14 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "11.0",
     date: "2026-11-12",
-    time: "21:00",
+    time: "21:30",
     items: [
       { tab: "squad", pt: "Inscritos: uma lista só de jogadores, com uma coluna por competição e uma caixa para marcar em cada uma. Não é mais preciso trocar de competição para ver quem está inscrito onde.", en: "Registration: one list of players with a column per competition and a box to tick in each. No more switching competitions to see who is registered where." },
       { tab: "squad", pt: "Base: a convocação para os jogos da base virou uma lista com posição, nacionalidade, idade, OVR e fôlego, e duas colunas de marcar (sub-21 e sub-19). Um botão salva as duas.", en: "Academy: the call-ups for the youth games are now one list with position, nationality, age, OVR and fitness, and two tick columns (under-21 and under-19). One button saves both." },
       { tab: "formation", pt: "As escalações salvas A, B e C podem ganhar um nome (o lápis ao lado de cada uma). O nome aparece também na troca de formação durante a partida.", en: "The saved line-ups A, B and C can be given a name (the pencil next to each). The name also shows when changing formation during a match." },
       { tab: "match", pt: "Partida ao vivo: a faixa embaixo do campo virou atalhos de tática. As três escalações salvas (A, B e C) aparecem com o nome; um clique troca formação, instruções e estilo, sem mexer em quem está em campo. Vale uma troca a cada 10 minutos de jogo; no intervalo libera de novo. A ficha do jogador com a bola saiu dali.", en: "Live match: the band under the pitch is now tactic shortcuts. The three saved line-ups (A, B and C) show with their names; one click changes formation, instructions and style, without touching who is on the pitch. One change every 10 game minutes; the break frees it again. The card of the player on the ball is gone from there." },
       { tab: "match", pt: "Partida ao vivo: botão Mapa de calor na mesma faixa, para abrir e fechar o mapa de posse.", en: "Live match: a Heat map button on the same band opens and closes the possession map." },
+      { tab: "leagues", pt: "A ordem dos jogos de cada liga agora é sorteada a cada temporada. Antes a sequência de adversários se repetia de um ano para o outro. Vale a partir da próxima temporada de cada liga.", en: "The order of each league's fixtures is now drawn every season. Before, the run of opponents repeated from one year to the next. It applies from each league's next season." },
       { tab: "general", pt: "Novidades: cada item mostra entre colchetes a aba do jogo onde a mudança está, com uma cor por aba, e os itens de uma versão saem agrupados por aba.", en: "What's new: each item shows in brackets the tab of the game where the change is, one colour per tab, and the items of a version are grouped by tab." },
     ],
     fixes: [
@@ -6055,6 +6056,8 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Partida em pixel art: jogadores, juiz e bola desenhados em pixel art, com chutes, dribles e defesas novos", en: "Pixel-art match: players, referee and ball drawn in pixel art, with new shots, dribbles and saves" },
+  { pt: "Bonecos novos na partida: jogadores redesenhados, com chutes, dribles, cabeçadas e defesas novos", en: "New figures in the match: redrawn players with new shots, dribbles, headers and saves" },
+  { pt: "Base mais equilibrada: jovens chegando com notas menores e valores de mercado mais realistas", en: "A more balanced academy: youngsters arriving with lower ratings and more realistic market values" },
+  { pt: "Mais variedade nos nomes dos jogadores da base", en: "More variety in the names of academy players" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

@@ -136,6 +136,8 @@ export function buildNextSeasonCalendar(args: {
   leagueConfig?: LeagueScheduleConfig;
   /** League country (catalog name): the league stops in the FIFA windows and its confederation's tournament. */
   country?: string | null;
+  /** Draws the order of the fixtures for this season (`generateLeagueCalendar` `shuffleKey`). */
+  shuffleKey?: string;
 }): LeagueCalendarResult {
   const { leagueSlug, teamIds, year, leagueConfig } = args;
   const config: LeagueScheduleConfig = leagueConfig ?? {
@@ -147,7 +149,7 @@ export function buildNextSeasonCalendar(args: {
     baseWeekOffset: 0,
   };
   const blocked = countryBlockedDays(args.country ?? null, `${year}-01-01`, `${year + 1}-12-31`);
-  return generateLeagueCalendar(config, teamIds, year, { blocked });
+  return generateLeagueCalendar(config, teamIds, year, { blocked, shuffleKey: args.shuffleKey });
 }
 
 /**
