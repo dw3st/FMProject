@@ -21,6 +21,17 @@ export const YOUTH_TRAINING = {
   SESSIONS_PER_YEAR: 200,
   /** Many small sessions lose a little to the 0.1 step against one big block: measured 7%, given back here. */
   PACE_CORRECTION: 1.08,
+  /**
+   * Pace of the academy against the old one (11.2, user request after 11.1: with everything maxed a youngster
+   * still went from 45 to 60 in his first academy year). `scripts/youth-balance-measure.ts`.
+   */
+  ACADEMY_PACE: 0.8,
+  /**
+   * Share of the club's bonuses (staff, training ground, manager, training areas) that counts in the academy: the
+   * stacked bonuses gave an academy with everything maxed over twice the development of a plain one. Penalties
+   * (a vacant area, worn facilities) are halved the same way.
+   */
+  CLUB_BONUS_SHARE: 0.5,
   /** DP of a session by intensity (× the normal one). */
   INTENSITY_DP: { light: 0.7, normal: 1, heavy: 1.3 } as Record<TrainingIntensity, number>,
   /** Fitness a session costs, scaled by the player's own fitness (like the first team). */
@@ -86,7 +97,20 @@ export function parsePlayerTraining(body: unknown): { focus?: YouthFocus; positi
  * `GROWTH_DP_SCALE` divided back out because academy progress is never reset) spread over a year of training days.
  */
 export function academySessionMult(): number {
-  return (YOUTH.SESSIONS_PER_SEASON / YOUTH_TRAINING.SESSIONS_PER_YEAR) * YOUTH_TRAINING.PACE_CORRECTION / GROWTH_DP_SCALE;
+  return (YOUTH.SESSIONS_PER_SEASON / YOUTH_TRAINING.SESSIONS_PER_YEAR) * YOUTH_TRAINING.PACE_CORRECTION / GROWTH_DP_SCALE
+    * YOUTH_TRAINING.ACADEMY_PACE;
+}
+
+/** A club multiplier as the academy feels it: only `CLUB_BONUS_SHARE` of its distance from 1. */
+export function academyClubMult(mult: number): number {
+  return 1 + (mult - 1) * YOUTH_TRAINING.CLUB_BONUS_SHARE;
+}
+
+/** The training areas as the academy feels them (`academyClubMult` on each). */
+export function academyAreas(areas: AreaMults): AreaMults {
+  const out: AreaMults = {};
+  for (const [k, v] of Object.entries(areas) as [keyof AreaMults, number | undefined][]) if (v !== undefined) out[k] = academyClubMult(v);
+  return out;
 }
 
 /** One academy session: development (the multipliers of `developYouthSeason`), fitness cost. */

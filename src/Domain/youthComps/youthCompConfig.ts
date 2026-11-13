@@ -27,7 +27,7 @@ export const YOUTH_COMP = {
    * Growth multiplier of a youth match, players up to 21 (measured, `scripts/youth-comp-measure.ts`: an
    * academy 17-year-old with 38 games gains +0.12 on the mean of the 13 attributes, +0.21 with 76).
    */
-  DP_MULT: 1.0,
+  DP_MULT: 0.7,
   /** Over-21 reserves: 38 youth games ≈ the DP of 7 first-team matches (13 instead of 6 = 1/3 of a season). */
   DP_MULT_OVERAGE: 0.18,
   MORALE_YOUTH_WEIGHT: 0.5,

@@ -5,7 +5,7 @@ import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { AreaMults } from "@/GameEngine/PlayerDevelopment";
 import { professionalismDpMult } from "@/Domain/personality/personality";
-import { DEFAULT_YOUTH_PLAN, planDpWeights, trainYouthSession, withYouthTrend, YOUTH_TRAINING } from "@/Domain/youth/youthTraining";
+import { academyAreas, academyClubMult, DEFAULT_YOUTH_PLAN, planDpWeights, trainYouthSession, withYouthTrend, YOUTH_TRAINING } from "@/Domain/youth/youthTraining";
 import type { TrainingEffect, TrainingEvent } from "@/types/dayLogTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import {
@@ -318,8 +318,9 @@ function trainAcademy(
     if (skip?.has(String(orig.id))) return orig;
     const p = ensureSeasonLog(clearHealed(orig, date));
     if (isInjured(p, date) || (p.seasonLog?.fitness ?? 0) < YOUTH_TRAINING.MIN_FITNESS) { resting.add(String(p.id)); return p; }
-    const mult = devMult * youthAttributeMult(squad.managerAttributes, p.age) * rebornDpMult(p) * professionalismDpMult(p);
-    let next = withYouthTrend(trainYouthSession(p, plan, mult, areas), date);
+    // The club's bonuses count half in the academy (`YOUTH_TRAINING.CLUB_BONUS_SHARE`); the player's own in full.
+    const mult = academyClubMult(devMult * youthAttributeMult(squad.managerAttributes, p.age)) * rebornDpMult(p) * professionalismDpMult(p);
+    let next = withYouthTrend(trainYouthSession(p, plan, mult, academyAreas(areas)), date);
     if (plan.intensity === "heavy" && rng() < trainingInjuryChance("heavy", injuryMult)) {
       const severity = rollSeverity(rng);
       next = { ...next, injury: { severity, returnDate: injuryReturnDate(date, severity, rng, injuryDurationMult) } };

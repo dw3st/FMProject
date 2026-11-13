@@ -10,7 +10,8 @@
 import { applyDevelopment, applyTrainingDevelopment, ELITE_BRAKE } from "@/GameEngine/PlayerDevelopment";
 import { dpWeightsFor } from "@/Domain/development/dpWeights";
 import { statsFor } from "@/Domain/youth/youth";
-import { DEFAULT_YOUTH_PLAN, trainYouthSession, YOUTH_TRAINING } from "@/Domain/youth/youthTraining";
+import { academyAreas, academyClubMult, DEFAULT_YOUTH_PLAN, trainYouthSession, YOUTH_TRAINING } from "@/Domain/youth/youthTraining";
+import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { computeOverallAvg } from "@/Domain/playerRating";
 import { Player } from "@/Domain/Player";
 import { mulberry32 } from "@/Domain/rng";
@@ -65,15 +66,15 @@ function career(setup: Setup, role: string, level: number, startAge: number, see
     if (age < setup.promoteAt) {
       // Academy: its progress is never reset; daily sessions and the youth games.
       for (let i = 0; i < YOUTH_TRAINING.SESSIONS_PER_YEAR; i++) {
-        p = trainYouthSession(p, { ...DEFAULT_YOUTH_PLAN, intensity: setup.academyIntensity }, setup.dpMult, setup.areas);
+        p = trainYouthSession(p, { ...DEFAULT_YOUTH_PLAN, intensity: setup.academyIntensity }, academyClubMult(setup.dpMult), academyAreas(setup.areas));
       }
-      for (let i = 0; i < setup.youthGames; i++) p = applyDevelopment(p, rating(), weights, setup.dpMult, 0, setup.areas).updatedPlayer;
+      for (let i = 0; i < setup.youthGames; i++) p = applyDevelopment(p, rating(), weights, academyClubMult(setup.dpMult) * YOUTH_COMP.DP_MULT, 0, academyAreas(setup.areas)).updatedPlayer;
     } else {
       // First team: the rollover resets the progress.
       p = { ...p, progress: undefined };
       for (let i = 0; i < setup.matches; i++) p = applyDevelopment(p, rating(), weights, setup.dpMult, 1, setup.areas).updatedPlayer;
       for (let i = 0; i < setup.sessions; i++) p = applyTrainingDevelopment(p, setup.training, weights, setup.dpMult, setup.areas).updatedPlayer;
-      if (age <= 21) for (let i = 0; i < Math.round(setup.youthGames / 2); i++) p = applyDevelopment(p, rating(), weights, setup.dpMult, 0, setup.areas).updatedPlayer;
+      if (age <= 21) for (let i = 0; i < Math.round(setup.youthGames / 2); i++) p = applyDevelopment(p, rating(), weights, setup.dpMult * YOUTH_COMP.DP_MULT, 0, setup.areas).updatedPlayer;
     }
   }
   return out;

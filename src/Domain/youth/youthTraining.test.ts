@@ -22,10 +22,12 @@ const year = (plan: YouthTrainingPlan) => {
 };
 
 describe("youth training", () => {
-  test("a year of normal sessions keeps the old rollover pace (±5%)", () => {
+  test("a year of normal sessions is slower than the old rollover block (11.2: the academy pace was cut)", () => {
     const old = mean(developYouthSeason(youngster(), 1)) - mean(youngster());
     const daily = mean(year(DEFAULT_YOUTH_PLAN)) - mean(youngster());
-    expect(Math.abs(daily / old - 1)).toBeLessThan(0.05);
+    // ACADEMY_PACE 0.8 on the DP; the attributes move a little less than in proportion.
+    expect(daily / old).toBeGreaterThan(0.78);
+    expect(daily / old).toBeLessThan(0.95);
   });
 
   test("light and heavy move the pace", () => {
@@ -69,5 +71,16 @@ describe("youth training", () => {
     expect(parseYouthPlan({ intensity: "light", focus: "balanced", players: { y1: { position: "ZZ" } } }, ids)).toBeNull();
     expect(parseYouthPlan({ intensity: "light", focus: "balanced", players: { y1: { position: "CB" }, gone: { focus: "technical" } } }, ids))
       .toEqual({ intensity: "light", focus: "balanced", players: { y1: { position: "CB" } } });
+  });
+});
+
+describe("club bonuses in the academy (11.2)", () => {
+  test("only half of a club multiplier's distance from 1 counts, bonus or penalty", async () => {
+    const { academyAreas, academyClubMult, YOUTH_TRAINING } = await import("@/Domain/youth/youthTraining");
+    expect(academyClubMult(1)).toBe(1);
+    expect(academyClubMult(1.4)).toBeCloseTo(1 + 0.4 * YOUTH_TRAINING.CLUB_BONUS_SHARE, 6);
+    expect(academyClubMult(0.6)).toBeCloseTo(1 - 0.4 * YOUTH_TRAINING.CLUB_BONUS_SHARE, 6);
+    expect(academyAreas({ technical: 1.25, physical: 0.4 })).toEqual({ technical: 1.125, physical: 0.7 });
+    expect(academyAreas({})).toEqual({});
   });
 });

@@ -162,3 +162,7 @@ Report de tester (jovens com o sobrenome de profissionais). `makeAcademyPlayer` 
 Reports de tester. A nota da safra parte da média da linha do próprio clube, então um elenco cheio de garotos da base subia cada safra seguinte (Arsenal dos testers, safra de 2036: 60 a 70 aos 16). `YOUTH.LEVEL_CAP` 5,5 para o jovem comum e `PROMISE_CAP` 6,2 para o prodígio, em qualquer clube; valem também para o jogador criado da loja, a lenda renascida (`REBORN_LEVEL_MAX` 6,2) e os jovens gerados dos jogos de base. No mundo inicial o teto nunca encosta (safra de um clube ELITE: ~3,9, prodígio ~4,9). Freio da evolução: `development.md` → "Freio de elite".
 
 Nomes (`src/Domain/youth/academyNames.ts`, com teste): `drawAcademyName` sorteia do livro do país e nunca repete um sobrenome que já está no clube (elenco, base, a própria safra). O livro ganhou `lastYouth`: os sobrenomes que nenhum jogador conhecido do mundo inicial carrega (nota 4,8 ou mais, `KNOWN_OVERALL` em `staffNameBook.ts`; Inglaterra 344 de 542, Brasil 911 de 1109; com menos de 15 vale a lista inteira). Os jovens de reposição da virada (`makeYouthPlayer`) usam o mesmo sorteio; antes copiavam o sobrenome de um colega. Jovens já existentes não mudam de nome.
+
+## Ritmo da base (11.2)
+
+A base rende menos: sessão a 80%, bônus do clube pela metade para quem está na base, jogo de base a 70%. Números em `development.md` → "Ritmo da base (11.2)".

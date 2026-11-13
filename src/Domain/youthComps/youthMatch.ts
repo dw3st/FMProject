@@ -9,6 +9,7 @@ import { personalDpMult } from "@/Domain/personality/personality";
 import { rebornDpMult } from "@/Domain/retirement/rebornMult";
 import { afterClubGame } from "@/Domain/settling/settling";
 import { areaMultsOf, staffEffectsOf } from "@/Domain/staff/staff";
+import { academyAreas, academyClubMult } from "@/Domain/youth/youthTraining";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { FRIENDLY } from "@/Domain/friendlies/friendlyConfig";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
@@ -45,11 +46,12 @@ export function youthCompDpMult(age: number): number {
 }
 
 /** DP multiplier of a youth game: the same factors as a club match × `DP_MULT` (× `DP_MULT_OVERAGE` above 21). */
-export function youthDpMult(squad: Squad, p: RosterPlayer): number {
+export function youthDpMult(squad: Squad, p: RosterPlayer, academy = false): number {
   const { devMult } = staffEffectsOf(squad);
   const { matchDevMult } = trainingGroundEffectsOf(squad);
-  return devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)) * youthCompDpMult(p.age)
-    * youthAttributeMult(squad.managerAttributes, p.age);
+  // An academy player feels the club's bonuses by half (`YOUTH_TRAINING.CLUB_BONUS_SHARE`, 11.2).
+  const club = devMult * matchDevMult * youthAttributeMult(squad.managerAttributes, p.age);
+  return (academy ? academyClubMult(club) : club) * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p)) * youthCompDpMult(p.age);
 }
 
 /**
@@ -115,7 +117,13 @@ export function applyYouthMatch(
     }
     if (friendly) out = afterClubGame(out);
     // Growth only: decayMult 0 (the age decline is charged by the club's own matches, not again here).
-    return applyDevelopment(out, rating, dpWeightsFor(out), friendly ? (youthDpMult(squad, out) / youthCompDpMult(out.age)) * FRIENDLY.DP_MULT * (friendly.subs.has(p0.id) ? FRIENDLY.SUB_DP : 1) : youthDpMult(squad, out), 0, areas).updatedPlayer;
+    const academy = !isSquadPlayer;
+    const dp = youthDpMult(squad, out, academy);
+    return applyDevelopment(
+      out, rating, dpWeightsFor(out),
+      friendly ? (dp / youthCompDpMult(out.age)) * FRIENDLY.DP_MULT * (friendly.subs.has(p0.id) ? FRIENDLY.SUB_DP : 1) : dp,
+      0, academy ? academyAreas(areas) : areas,
+    ).updatedPlayer;
   };
 
   const next: Squad = {
