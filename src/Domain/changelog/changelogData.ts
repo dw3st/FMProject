@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.3",
+    date: "2026-11-13",
+    time: "19:30",
+    items: [
+      { tab: "match", pt: "Os clubes controlados pelo jogo agora estudam o seu time. Eles olham o plano com que você começou os últimos 5 jogos oficiais (formação, estilo e instruções da equipe): quanto mais você repete, mais previsível fica.", en: "Clubs run by the game now study your team. They look at the plan you started your last 5 official games with (formation, style and team instructions): the more you repeat it, the more predictable you are." },
+      { tab: "match", pt: "Um adversário que leu o seu plano vem preparado: muda o estilo de jogo para o que funciona melhor contra o seu e, com leitura alta, marca de perto o seu melhor atacante. Clubes grandes estudam mais que os pequenos. Não vale contra outros técnicos.", en: "An opponent that has read your plan comes prepared: it switches to the style that works best against yours and, with a high read, marks your best attacker closely. Big clubs study more than small ones. It does not apply against other managers." },
+      { tab: "match", pt: "A prévia avisa quando o adversário estudou o seu time e o que ele espera. Com um analista de desempenho de 4 estrelas ou mais, ela também diz como o adversário deve jogar. O resultado mostra quando ele veio preparado.", en: "The preview tells you when the opponent has studied your team and what it expects. With a performance analyst of 4 stars or more, it also says how the opponent should play. The result shows when it came prepared." },
+      { tab: "formation", pt: "A Formação mostra a leitura dos adversários (baixa, média ou alta). Mudar a formação, o estilo ou uma instrução da equipe de um jogo para outro baixa a leitura.", en: "Formation shows the opponents' read (low, medium or high). Changing the formation, the style or a team instruction from one game to the next lowers the read." },
+      { tab: "staff", pt: "O analista de desempenho ganhou mais uma função: quanto melhor ele é, menos os adversários conseguem ler o seu plano.", en: "The performance analyst has one more job: the better he is, the less opponents can read your plan." },
+    ],
+  },
+  {
     version: "12.2",
     date: "2026-11-13",
     time: "16:56",
