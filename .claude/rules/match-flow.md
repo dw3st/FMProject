@@ -566,3 +566,20 @@ rejected the result in the real game: the cropped stadium (10.9.1), then the rai
 screen is back to the layout of 10.8: team list on the left, summary on the right, the 124:80 canvas between them.
 Lesson: a change to the match layout goes to the user as a real render of the dev build before it is published; a
 painted mock is not enough.
+
+# Tactic shortcuts under the pitch (11.0)
+
+Tester reports. The band under the pitch no longer shows the player on the ball (unreadable at 4x): `MatchTacticsBar`
+lists the manager's three saved line-ups (A, B, C, by their names) as one-click tactic changes, and a button that opens
+or closes the heat map (`PossessionHeatmap` `open` / `onToggle`, the same `fm.match.heatmapOpen`). The band keeps its
+92 px, so the pitch does not move. Using a shortcut (`handleTacticShortcut`, `MatchScreen`): the line-up's formation
+(`changeFormation`, reorganised as always), its eleven slot instructions (the others cleared, `shortcutInstructions`),
+and its style and axes when it has them (`setMyLiveTactics`); the players on the pitch stay and nothing is saved. One
+change every `TACTIC_SHORTCUTS.COOLDOWN_MIN` (10) game minutes in the same period, a new period frees it
+(`shortcutReadyMinute`, `src/Domain/match/tacticShortcuts.ts`, tested); the band shows the minute of the next change. A
+change made by hand in the substitutions panel is never limited and clears the "in use" mark. Manager sent off or
+suspended: no shortcut. Between two managers the formation goes only when it is a ready-made one, the wait is kept by the
+browser (the server does not enforce it). `MatchHud.tsx` was removed; `hudAttributes` stays for the player tooltip.
+
+The same change fixed the manager's own formations in the solo match ("Minhas formações", 8.9.37): they were loaded
+only in the two-manager branch, where they are not offered, so the list was always empty.

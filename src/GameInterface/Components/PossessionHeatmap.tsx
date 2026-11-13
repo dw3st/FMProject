@@ -16,7 +16,7 @@ const CELL_H = PITCH_WIDTH / HEATMAP_ROWS;
 /** Per-viewer convenience: whether the card is expanded (#127). Never required: absent = open. */
 const OPEN_KEY = "fm.match.heatmapOpen";
 
-function readOpen(): boolean {
+export function readHeatmapOpen(): boolean {
   try {
     return globalThis.localStorage?.getItem(OPEN_KEY) !== "0";
   } catch {
@@ -24,7 +24,7 @@ function readOpen(): boolean {
   }
 }
 
-function writeOpen(open: boolean): void {
+export function writeHeatmapOpen(open: boolean): void {
   try {
     globalThis.localStorage?.setItem(OPEN_KEY, open ? "1" : "0");
   } catch {
@@ -42,22 +42,29 @@ export function PossessionHeatmap({
   heatmap,
   mirror,
   teams = { A: "A", B: "B" },
+  open: openProp,
+  onToggle,
 }: {
   heatmap: RefObject<HeatmapAcc | null>;
   mirror: boolean;
   /** Which engine team is "mine" / "opponent" (the live match: A / B). */
   teams?: { A: TeamId; B: TeamId };
+  /** Open state owned by the screen (the match's shortcut bar toggles it too); absent = the card keeps its own. */
+  open?: boolean;
+  onToggle?: () => void;
 }) {
   const { t } = useTranslation();
   const [side, setSide] = useState<"mine" | "opponent">("mine");
   const [period, setPeriod] = useState<HeatmapWindow>("recent");
   const team = side === "mine" ? teams.A : teams.B;
   const [cells, setCells] = useState<Float64Array>(() => new Float64Array(HEATMAP_CELLS));
-  const [open, setOpen] = useState<boolean>(readOpen);
+  const [ownOpen, setOwnOpen] = useState<boolean>(readHeatmapOpen);
+  const open = openProp ?? ownOpen;
   const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    writeOpen(next);
+    if (onToggle) { onToggle(); return; }
+    const next = !ownOpen;
+    setOwnOpen(next);
+    writeHeatmapOpen(next);
   };
 
   useEffect(() => {

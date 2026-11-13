@@ -1300,6 +1300,17 @@
       "inWindow": "Events open in a window."
     },
     "replay": "Replay",
+    "shortcuts": {
+      "title": "Tactics",
+      "rule": "One change every {{n}} game minutes",
+      "wait": "Next change at {{minute}}'",
+      "none": "Save line-ups on the Formation screen to switch here",
+      "slot": "Line-up {{key}}",
+      "empty": "Empty",
+      "emptyHint": "Save a line-up in this slot on the Formation screen",
+      "use": "Use {{name}}: formation, instructions and style",
+      "heatmap": "Heat map"
+    },
     "hud": {
       "overall": "Overall",
       "rating": "Rating",

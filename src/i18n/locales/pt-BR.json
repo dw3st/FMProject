@@ -1300,6 +1300,17 @@
       "inWindow": "Lances abertos numa janela."
     },
     "replay": "Replay",
+    "shortcuts": {
+      "title": "Táticas",
+      "rule": "Uma troca a cada {{n}} minutos de jogo",
+      "wait": "Próxima troca aos {{minute}}'",
+      "none": "Salve escalações na tela de Formação para trocar aqui",
+      "slot": "Escalação {{key}}",
+      "empty": "Vazio",
+      "emptyHint": "Salve uma escalação neste espaço na tela de Formação",
+      "use": "Usar {{name}}: formação, instruções e estilo",
+      "heatmap": "Mapa de calor"
+    },
     "hud": {
       "overall": "Geral",
       "rating": "Nota",

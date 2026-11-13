@@ -39,7 +39,7 @@ import "@/GameEngine/Support/DebugSubscriber";
 import { setBroadcastTeamNames } from "@/GameInterface/Broadcast/BroadcastSubscriber";
 import "@/GameEngine/Domain/Statistics";
 import type { GameState, GamePlayer, TeamId, Formation, PendingSub } from "@/GameEngine/types";
-import type { TacticsSave, TacticalStyle, Mentality, SlotInstruction } from "@/types/tacticsTypes";
+import type { TacticsSave, TacticalStyle, Mentality, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
 import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
@@ -129,7 +129,9 @@ import { playerMatchEvents } from "@/GameInterface/matchPlayerEvents";
 import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/BroadcastLog";
 import { Icon } from "@/GameInterface/Icons";
 import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
-import { MatchHud } from "@/GameInterface/MatchHud";
+import { MatchTacticsBar } from "@/GameInterface/MatchTacticsBar";
+import { shortcutInstructions, shortcutLocked, type ShortcutUse } from "@/Domain/match/tacticShortcuts";
+import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -138,7 +140,7 @@ import {
   createPossessionHeatmap, exportPossessionHeatmap, importPossessionHeatmap, samplePossessionHeatmap,
   type PossessionHeatmap as HeatmapAcc,
 } from "@/Domain/match/possessionHeatmap";
-import { PossessionHeatmap } from "@/GameInterface/Components/PossessionHeatmap";
+import { PossessionHeatmap, readHeatmapOpen, writeHeatmapOpen } from "@/GameInterface/Components/PossessionHeatmap";
 import { applyLiveTactics, withLiveAxis, withLiveStyle, type LiveTactics } from "@/Domain/tactics/liveTactics";
 import type { TacticalAxes } from "@/types/tacticsTypes";
 import { PenaltyOverlay } from "@/GameInterface/Penalty/PenaltyOverlay";
@@ -328,6 +330,11 @@ export function MatchScreen() {
   const savedTacticsRef = useRef<LiveTactics>({ style: DEFAULT_TACTICAL_STYLE });
   // The manager's own formations, offered in the live Formation tab (solo only: the H2H server only knows the ready ones).
   const [userFormations, setUserFormations] = useState<UserFormation[]>([]);
+  /** Tactic shortcuts (11.0): the saved line-ups, the last use (the wait between two changes) and the one in use. */
+  const [presets, setPresets] = useState<LineupPresets | undefined>(undefined);
+  const [shortcutUse, setShortcutUse] = useState<ShortcutUse | null>(null);
+  const [activeShortcut, setActiveShortcut] = useState<LineupPresetKey | null>(null);
+  const [heatmapOpen, setHeatmapOpen] = useState<boolean>(readHeatmapOpen);
   /** Possession heat map, filled on every emitted state (drawing only). */
   const heatmapRef = useRef<HeatmapAcc | null>(createPossessionHeatmap());
   const [showSubPanel, setShowSubPanel] = useState(false);
@@ -585,7 +592,7 @@ export function MatchScreen() {
           myTacticalStyleRef.current = style;
           myAxesOverrideRef.current = data.myTactics?.axesOverride;
           savedTacticsRef.current = { style, axesOverride: data.myTactics?.axesOverride };
-          setUserFormations(userFormationsOf(data.myTactics, t));
+          setPresets(data.myTactics?.lineupPresets);
           setLiveTactics({ style, axesOverride: data.myTactics?.axesOverride });
           initRatings([]);
           initStats([]);
@@ -606,6 +613,8 @@ export function MatchScreen() {
         }
 
         const tactics = data.myTactics;
+        setUserFormations(userFormationsOf(tactics, t));
+        setPresets(tactics.lineupPresets);
         // A snapshot of this very match (same save, day and fixture) means the page was reloaded
         // mid-match (#64): rebuild from it instead of kicking off again. Any other snapshot is
         // stale and gets dropped by `loadMatchSnapshot`.
@@ -1620,6 +1629,44 @@ export function MatchScreen() {
     setGameState((prev) => (prev ? setManMarks(prev, "A", marks) : prev));
   }
 
+  /**
+   * A tactic shortcut (11.0): the saved line-up's formation, instructions, style and axes for this match. The players
+   * on the pitch stay. One change every few game minutes (`shortcutLocked`); never saved.
+   */
+  function handleTacticShortcut(key: LineupPresetKey) {
+    const gs = gameStateRef.current;
+    const preset = presets?.[key];
+    if (!gs || !preset || managerOut) return;
+    const minute = matchMinute(gs);
+    if (shortcutLocked(shortcutUse, minute, gs.matchPhase)) return;
+    const instructions = shortcutInstructions(preset);
+    if (h2hMode) {
+      // The server only knows the ready-made formations: a free one keeps the shape on the pitch.
+      if (preset.formation !== CUSTOM_FORMATION_ID) sendH2H({ kind: "formation", formation: preset.formation });
+      instructions.forEach((instruction, slot) => sendH2H({ kind: "instruction", slot, instruction }));
+    } else {
+      const formation = userFormations.find((u) => u.id === `user:${key}`)?.formation ?? formationForSimId(preset.formation);
+      setGameState((prev) => {
+        if (!prev) return prev;
+        let next = changeFormation(prev, "A", formation);
+        instructions.forEach((instruction, slot) => { next = applyPlayerInstruction(next, "A", slot, instruction); });
+        return next;
+      });
+    }
+    if (preset.tacticalStyle) {
+      setMyLiveTactics({ style: preset.tacticalStyle, ...(preset.axesOverride ? { axesOverride: preset.axesOverride } : {}) });
+    }
+    setShortcutUse({ minute, phase: gs.matchPhase });
+    setActiveShortcut(key);
+  }
+
+  function toggleHeatmap() {
+    setHeatmapOpen((open) => {
+      writeHeatmapOpen(!open);
+      return !open;
+    });
+  }
+
   function handleChangeFormation(formationId: string) {
     if (h2hMode) { sendH2H({ kind: "formation", formation: formationId }); return; }
     setGameState((prev) => {
@@ -1687,20 +1734,6 @@ export function MatchScreen() {
     };
     return { A: side("A", matchKitColors.teamA), B: side("B", matchKitColors.teamB) };
   }, [faceRoster, matchKitColors]);
-
-  // HUD (FIFA style): the user's roster by id and a shirt number per player (starters by slot, then 12, 13... as
-  // substitutes come on), kept for the whole match.
-  const hudRoster = useMemo(
-    () => new Map(((faceRoster?.[mySide].players ?? []) as RosterPlayer[]).map((p) => [p.id, p] as const)),
-    [faceRoster, mySide],
-  );
-  const shirtNumbersRef = useRef<Map<number, number>>(new Map());
-  if (gameState) {
-    const nums = shirtNumbersRef.current;
-    const mine = gameState.players.filter((p) => p.team === mySide);
-    if (nums.size === 0 && mine.length > 0) for (const p of [...mine].sort((a, b) => a.slotIndex - b.slotIndex)) nums.set(p.id, nums.size + 1);
-    for (const p of mine) if (!nums.has(p.id)) nums.set(p.id, Math.max(11, ...nums.values()) + 1);
-  }
 
   // Stadium: the crowd of the match (the number the gate charges) or the default fill; the home
   // club's fans fill most of the stand. Engine team A is the human club.
@@ -2333,15 +2366,16 @@ export function MatchScreen() {
           </div>
           {gameState && (
             <div className="contents phone:hidden">
-            <MatchHud
-              players={gameState.players}
-              mySide={mySide}
-              holderId={gameState.ballHolderId}
-              roster={hudRoster}
-              faces={faceUrls?.[mySide]}
-              numbers={shirtNumbersRef.current}
-              ratings={ratings}
-              color={mySide === "A" ? matchKitColors.teamA : matchKitColors.teamB}
+            <MatchTacticsBar
+              presets={presets}
+              active={activeShortcut}
+              lastUse={shortcutUse}
+              minute={matchMinute(gameState)}
+              phase={gameState.matchPhase}
+              blocked={managerOut ? t(managerOut === "banned" ? "complaint.banned" : "complaint.sentOff") : null}
+              heatmapOpen={heatmapOpen}
+              onUse={handleTacticShortcut}
+              onToggleHeatmap={toggleHeatmap}
             />
             </div>
           )}
@@ -2387,7 +2421,7 @@ export function MatchScreen() {
           statsB={summaryStats(sides.right)}
           possessionA={awayView ? 1 - possessionA : possessionA}
           feed={feed}
-          extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} />}
+          extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} open={heatmapOpen} onToggle={toggleHeatmap} />}
           referee={touchline?.referee ?? null}
         />
           </div>
@@ -2407,16 +2441,16 @@ export function MatchScreen() {
             onSwapPositions: handleSwapPositions,
             onMoveToSlot: handleMoveToSlot,
             onFillVacancy: handleFillVacancy,
-            onChangeFormation: handleChangeFormation,
+            onChangeFormation: (id: string) => { setActiveShortcut(null); handleChangeFormation(id); },
             ...(h2hMode ? {} : { userFormations }),
             onInstruction: handleInstruction,
             onManMarks: handleManMarks,
             liveTactics: {
               live: liveTactics,
               saved: savedTacticsRef.current,
-              onStyle: (style: TacticalStyle) => setMyLiveTactics(withLiveStyle(style)),
+              onStyle: (style: TacticalStyle) => { setActiveShortcut(null); setMyLiveTactics(withLiveStyle(style)); },
               onAxis: handleLiveAxis,
-              onReset: () => setMyLiveTactics({ ...savedTacticsRef.current }),
+              onReset: () => { setActiveShortcut(null); setMyLiveTactics({ ...savedTacticsRef.current }); },
             },
           })}
           onClose={handleCloseSubPanel}
