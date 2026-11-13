@@ -31,6 +31,8 @@ export interface ScoutFocus {
   maxAge?: number;
   /** Only players who would improve the squad (seen overall >= own line average − 0.3). */
   improves?: boolean;
+  /** Only players the scout grades with one of these (the grade he sees today); absent = every grade. */
+  grades?: ScoutGrade[];
 }
 
 export interface ScoutAssignment {

@@ -4971,7 +4971,13 @@
       "prospectNoStar": "A youngster without a club: he cannot go on the watch list. Sign him for the academy in the Gems tab.",
       "onMission": "Scouts on mission",
       "missionChip": "{{scout}} · {{target}} · {{done}}/{{total}} wk"
-    }
+    },
+    "focusLine": "Position",
+    "focusAge": "Age",
+    "focusGrade": "Scout grade",
+    "focusSquad": "Squad",
+    "anyGrade": "All",
+    "focusGradeHint": "The grade compares the player with your starters. Tick the ones you want; with none ticked, the scout brings them all."
   },
   "scoutCountries": {
     "title": "Knowledge by country",

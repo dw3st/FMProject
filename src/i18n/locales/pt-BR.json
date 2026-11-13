@@ -4968,7 +4968,13 @@
       "prospectNoStar": "Jovem sem clube: não entra na lista de observados. Contrate para a base na aba Joias.",
       "onMission": "Olheiros em missão",
       "missionChip": "{{scout}} · {{target}} · {{done}}/{{total}} sem."
-    }
+    },
+    "focusLine": "Posição",
+    "focusAge": "Idade",
+    "focusGrade": "Nota do olheiro",
+    "focusSquad": "Elenco",
+    "anyGrade": "Todas",
+    "focusGradeHint": "A nota compara o jogador com os seus titulares. Marque as que interessam; sem marcar, o olheiro traz todas."
   },
   "scoutCountries": {
     "title": "Conhecimento por país",

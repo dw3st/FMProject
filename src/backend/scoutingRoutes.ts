@@ -29,6 +29,7 @@ import type { StaffMember } from "@/types/staffTypes";
 import type {
   ScoutAssignment, ScoutFocus, ScoutProspect, ScoutReport, ScoutTarget, ScoutTargetKind, ScoutingState, ShortlistEntry,
 } from "@/types/scoutingTypes";
+import type { ScoutGrade } from "@/types/scoutingTypes";
 import countriesRaw from "@/Data/countries.json";
 
 type Req = Request & { params: Record<string, string> };
@@ -122,6 +123,8 @@ async function validTarget(saveId: string, raw: unknown, ownClubId: string): Pro
   };
 }
 
+const GRADES: ScoutGrade[] = ["A", "B", "C", "D", "E"];
+
 function validFocus(raw: unknown): ScoutFocus | undefined | null {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== "object") return null;
@@ -136,6 +139,12 @@ function validFocus(raw: unknown): ScoutFocus | undefined | null {
     out.maxAge = Math.round(f.maxAge);
   }
   if (f.improves !== undefined) out.improves = f.improves === true;
+  if (f.grades !== undefined) {
+    if (!Array.isArray(f.grades) || f.grades.some((g) => !GRADES.includes(g as ScoutGrade))) return null;
+    const grades = GRADES.filter((g) => (f.grades as unknown[]).includes(g));
+    // Every grade (or none) is no filter.
+    if (grades.length > 0 && grades.length < GRADES.length) out.grades = grades;
+  }
   return Object.keys(out).length > 0 ? out : undefined;
 }
 

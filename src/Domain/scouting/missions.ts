@@ -172,9 +172,12 @@ export function missionPool(kind: ScoutTargetKind, focus: ScoutFocus | undefined
     if (p.loan) return false;
     if (focus?.line && lineOf(p) !== focus.line) return false;
     if (focus?.maxAge !== undefined && p.age > focus.maxAge) return false;
-    if (focus?.improves) {
+    const byGrade = focus?.grades && focus.grades.length > 0 ? focus.grades : null;
+    if (focus?.improves || byGrade) {
       const seen = seenProfile(p, ctx.knowledgeOf(p.id), ctx);
-      if (seen.seenOverall < (ctx.lineAverages[lineOf(p)] ?? 5) - S.IMPROVES_MARGIN) return false;
+      const lineAvg = ctx.lineAverages[lineOf(p)] ?? 5;
+      if (focus?.improves && seen.seenOverall < lineAvg - S.IMPROVES_MARGIN) return false;
+      if (byGrade && !byGrade.includes(gradeOf(relativeNote(seen.seenOverall, seen.potentialSeenHigh, p.age, lineAvg)))) return false;
     }
     return true;
   });
