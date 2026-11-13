@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer } from "@/types/playerTypes";
+import { LINEUP_PRESET_KEYS, MATCH_PRESET_KEYS, copyPreset, exportPreset, firstFreeSlot, importPreset, isMatchPreset } from "@/Domain/tactics/lineupPresets";
+import type { LineupPreset } from "@/types/tacticsTypes";
 import {
   applyLineupPreset, buildLineupPreset, cleanPresetName, parseLineupPresets, PRESET_NAME_MAX, presetDisplayName, type PresetReplacement,
   presetsForNewClub, renamePreset,
@@ -91,7 +93,7 @@ describe("parseLineupPresets", () => {
 
   test("rejects bad shapes", () => {
     expect(parseLineupPresets([]).ok).toBe(false);
-    expect(parseLineupPresets({ D: good }).ok).toBe(false);
+    expect(parseLineupPresets({ G: good }).ok).toBe(false);
     expect(parseLineupPresets({ A: { ...good, formation: "9-0-1" } }).ok).toBe(false);
     expect(parseLineupPresets({ A: { ...good, lineup: [...xi, "extra"] } }).ok).toBe(false);
     expect(parseLineupPresets({ A: { ...good, lineup: [1, 2] } }).ok).toBe(false);
@@ -220,5 +222,37 @@ describe("preset names", () => {
   });
   test("the name follows the manager to a new club", () => {
     expect(presetsForNewClub({ A: { ...base, name: "Posse" } }, "Arsenal")!.A!.name).toBe("Posse");
+  });
+});
+
+describe("spare slots, copies and codes (11.2)", () => {
+  const base: LineupPreset = { formation: "4-4-2", lineup: ["p1", "p2"], savedOn: "2027-03-01", name: "Ataque total", tacticalStyle: "possession" };
+
+  test("six slots, three of them offered in a match; the first free one", () => {
+    expect(LINEUP_PRESET_KEYS).toEqual(["A", "B", "C", "D", "E", "F"]);
+    expect(MATCH_PRESET_KEYS).toEqual(["A", "B", "C"]);
+    expect(isMatchPreset("C")).toBe(true);
+    expect(isMatchPreset("D")).toBe(false);
+    expect(firstFreeSlot({ A: base, B: base })).toBe("C");
+    expect(firstFreeSlot({ A: base, B: base, C: base, D: base, E: base, F: base })).toBeNull();
+    expect(parseLineupPresets({ F: base }).ok).toBe(true);
+    expect(parseLineupPresets({ G: base }).ok).toBe(false);
+  });
+
+  test("a copy is a separate line-up in the other slot", () => {
+    const next = copyPreset({ A: base }, "A", "D");
+    expect(next.D).toEqual(base);
+    expect(next.D).not.toBe(base);
+    expect(copyPreset({ A: base }, "B", "D")).toEqual({ A: base });
+  });
+
+  test("a code carries the tactic without the XI and comes back valid; junk is refused", () => {
+    const code = exportPreset(base);
+    expect(code.startsWith("FMT1:")).toBe(true);
+    expect(importPreset(code, "2030-01-05")).toEqual({ formation: "4-4-2", lineup: [], savedOn: "2030-01-05", name: "Ataque total", tacticalStyle: "possession" });
+    expect(importPreset("hello", "2030-01-05")).toBeNull();
+    expect(importPreset("FMT1:!!!", "2030-01-05")).toBeNull();
+    expect(importPreset("FMT1:" + btoa(JSON.stringify({ formation: "9-9-9" })), "2030-01-05")).toBeNull();
+    expect(importPreset("FMT1:" + btoa(JSON.stringify({ formation: "4-4-2", evil: 1 })), "2030-01-05")).toBeNull();
   });
 });

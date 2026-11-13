@@ -257,7 +257,8 @@ export interface TacticsSave {
 
 // ── Saved lineups (#84) ──────────────────────────────────────────────────────
 
-export type LineupPresetKey = "A" | "B" | "C";
+/** A, B and C can be used during a match; D, E and F are spare slots to try things out (tester report, 11.2). */
+export type LineupPresetKey = "A" | "B" | "C" | "D" | "E" | "F";
 
 /** One saved lineup: formation (free formation included), XI in slot order and slot instructions. */
 export interface LineupPreset {

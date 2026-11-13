@@ -34,7 +34,7 @@ import {
   hasAxesOverride,
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
-import { applyLineupPreset, buildLineupPreset, renamePreset } from "@/Domain/tactics/lineupPresets";
+import { applyLineupPreset, buildLineupPreset, renamePreset, copyPreset, importPreset } from "@/Domain/tactics/lineupPresets";
 import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
 import type { LeagueData, RosterPlayer } from "@/types/playerTypes";
 import { getDetailedPositionColor, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -289,6 +289,19 @@ export function FormationScreen() {
   function handleRenamePreset(key: LineupPresetKey, name: string) {
     const next = renamePreset(lineupPresets, key, name);
     if (next !== lineupPresets) void putPresets(next);
+  }
+
+  function handleCopyPreset(from: LineupPresetKey, to: LineupPresetKey) {
+    const next = copyPreset(lineupPresets, from, to);
+    if (next !== lineupPresets) void putPresets(next);
+  }
+
+  /** A pasted code into a slot; false when the code is not a saved line-up. */
+  function handleImportPreset(key: LineupPresetKey, code: string): boolean {
+    const preset = importPreset(code, currentDate);
+    if (!preset) return false;
+    void putPresets({ ...lineupPresets, [key]: preset });
+    return true;
   }
 
   function handleDeletePreset(key: LineupPresetKey) {
@@ -959,6 +972,8 @@ export function FormationScreen() {
             onUse={handleUsePreset}
             onDelete={handleDeletePreset}
             onRename={handleRenamePreset}
+            onCopy={handleCopyPreset}
+            onImport={handleImportPreset}
           />
 
           {/* Assistant rotation */}
