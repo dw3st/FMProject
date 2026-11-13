@@ -637,7 +637,8 @@
       "team": "Time",
       "management": "Gestão",
       "market": "Mercado",
-      "competitions": "Competições"
+      "competitions": "Competições",
+      "unnamed": "Grupo"
     },
     "transfersFull": "Transferências"
   },
@@ -686,10 +687,28 @@
     "playerLookDescription": "Proporção dos jogadores na partida: a atual ou mais realista (cabeça menor, ombros mais estreitos). Vale na próxima partida.",
     "chatSound": "Som de mensagem no chat",
     "chatSoundDescription": "Um toque curto quando chega uma mensagem de um amigo ou da liga numa conversa que não está aberta.",
-    "navLayout": "Menu de cima",
-    "navLayoutTabs": "Abas",
-    "navLayoutGroups": "Grupos",
-    "navLayoutDescription": "Abas: uma aba para cada tela. Grupos: Painel e quatro grupos (Time, Gestão, Mercado, Competições) que abrem as telas de cada um."
+    "menu": {
+      "title": "Menu",
+      "position": "Posição do menu",
+      "top": "Em cima",
+      "left": "Na esquerda",
+      "positionHint": "Na esquerda, o menu vira uma coluna com o nome de cada tela. No celular ele fica sempre em cima.",
+      "presetFlat": "Padrão",
+      "presetGroups": "Em grupos",
+      "help": "Arraste para mudar a ordem. Solte uma aba sobre um grupo para colocá-la dentro.",
+      "newGroup": "Novo grupo",
+      "groupName": "Nome do grupo",
+      "deleteGroup": "Excluir grupo",
+      "leaveGroup": "Tirar do grupo",
+      "moveToGroup": "Mover para o grupo",
+      "up": "Subir",
+      "down": "Descer",
+      "drag": "Arrastar",
+      "reset": "Restaurar padrão",
+      "emptyGroup": "Solte uma aba aqui.",
+      "groupLimit": "No máximo 8 grupos.",
+      "worldOnly": "só em ligas com amigos"
+    }
   },
   "reports": {
     "title": "Enviar um relatório",

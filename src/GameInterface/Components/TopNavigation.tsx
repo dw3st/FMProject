@@ -1,30 +1,20 @@
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import { seatManagerId } from "@/Domain/seats/seats";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { GroupedTabs } from "@/GameInterface/Components/GroupedTabs";
-import { NAV_LAYOUT_EVENT, readNavLayout, type NavLayout } from "@/GameInterface/Components/navGroups";
+import { NavTabIcon, useNavEntries } from "@/GameInterface/Components/useNavEntries";
 import { useTranslation } from "react-i18next";
 import { useRoute } from "@/GameInterface/router/navigation";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { useGroupAdvance } from "@/GameInterface/World/GroupAdvanceProvider";
-import { Icon, type IconName, ArtIcon } from "@/GameInterface/Icons";
+import { Icon, type IconName } from "@/GameInterface/Icons";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
 import { TesterReportButton } from "@/GameInterface/Components/ReportButton";
 import type { LeagueData } from "@/types/playerTypes";
 import { SCREEN_MAX_WIDTH } from "@/GameInterface/ui/ScreenContainer";
 import { compactTabsFor, type TabsMode } from "@/GameInterface/Components/compactTabs";
 import { fallbackTeamNameFromSquadId, teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
-
-interface NavItem {
-  icon: IconName;
-  /** Icon colour of the section (theme tokens only, #133). */
-  tone: string;
-  labelKey: string;
-  href: string;
-  /** Art icon file when it is not `tab-<href>` (the league tab: a cached 404 of the first name, 8.9.17). */
-  art?: string;
-}
 
 /** Top-bar icon size (#133). */
 const NAV_ICON = 18;
@@ -34,24 +24,6 @@ const NAV_ICON = 18;
  */
 const TAB_GAP = 14;
 const TAB_GAP_TIGHT = 8;
-
-const navItems: NavItem[] = [
-  { icon: "dashboard", tone: "text-primary", labelKey: "nav.dashboard", href: "/dashboard" },
-  // `/squad` is a prefix: the real link is the player's own club.
-  { icon: "squad", tone: "text-chart-2", labelKey: "nav.squad", href: "/squad" },
-  { icon: "tactics", tone: "text-chart-2", labelKey: "nav.formation", href: "/formation" },
-  { icon: "stadium", tone: "text-chart-3", labelKey: "nav.club", href: "/club" },
-  { icon: "trend-up", tone: "text-primary", labelKey: "nav.development", href: "/development" },
-  { icon: "wallet", tone: "text-chart-4", labelKey: "nav.finances", href: "/finances" },
-  { icon: "staff-coach", tone: "text-chart-3", labelKey: "nav.staff", href: "/staff" },
-  { icon: "trophy", tone: "text-chart-4", labelKey: "nav.leagues", href: "/leagues" },
-  { icon: "arrow-right-left", tone: "text-chart-5", labelKey: "nav.transfers", href: "/transfers" },
-  { icon: "binoculars", tone: "text-chart-3", labelKey: "nav.scout", href: "/scout" },
-  { icon: "stats", tone: "text-primary", labelKey: "nav.stats", href: "/stats" },
-];
-
-/** The friends' world as a tab, after Stats (tester report, 8.9.14 / 8.9.16; before, an icon in the day block). */
-const WORLD_ITEM: NavItem = { icon: "users", tone: "text-chart-2", labelKey: "nav.worldTab", href: "/world", art: "tab-league" };
 
 interface Props {
   onAdvanceDay?: () => void;
@@ -161,24 +133,13 @@ export function TopNavigation({
 
   // The day block has its real width once the save is in (or there is no save to wait for).
   const settled = !session || !!currentDate || unemployed;
-  const items = useMemo(() => (save?.mode === "multi" ? [...navItems, WORLD_ITEM] : navItems), [save?.mode]);
-  const { outerRef, measureRef, mode } = useCompactTabs(items.length, settled);
+  // The player's own menu (`navMenu.ts`): order, groups and where it sits. In the left column (`SideNavigation`) the
+  // bar keeps the tabs only on a phone lying down, where there is no column.
+  const { position, entries, flat } = useNavEntries();
+  const side = position === "left";
+  const { outerRef, measureRef, mode } = useCompactTabs(entries.length, settled);
   // Not enough room even with the tight gaps: the labels stay, each tab an equal share of the bar, cut with an ellipsis (title = full name).
   const narrow = mode === "icons";
-  // Tabs or groups (`navGroups.ts`): the viewer's choice, changed live from Settings.
-  const [layout, setLayout] = useState<NavLayout>(readNavLayout);
-  useEffect(() => {
-    const onLayout = () => setLayout(readNavLayout());
-    window.addEventListener(NAV_LAYOUT_EVENT, onLayout);
-    return () => window.removeEventListener(NAV_LAYOUT_EVENT, onLayout);
-  }, []);
-  const hrefOf = (item: NavItem) =>
-    item.href === "/squad"
-      ? session && !unemployed
-        ? `/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}`
-        : "/dashboard"
-      : item.href;
-
   const todayFixture = currentDate && mySquadId
     ? fixtures.find(
         (f) =>
@@ -229,7 +190,7 @@ export function TopNavigation({
         <nav
           ref={outerRef}
           aria-label={t("nav.main")}
-          className="relative flex-1 min-w-0 self-stretch flex justify-center overflow-hidden"
+          className={`relative flex-1 min-w-0 self-stretch justify-center overflow-hidden ${side ? "hidden phone:flex" : "flex"}`}
         >
           {/* Invisible labelled copy: its width decides labels vs icons (#138). */}
           <div
@@ -237,40 +198,39 @@ export function TopNavigation({
             aria-hidden="true"
             className="invisible pointer-events-none absolute left-0 top-0 h-full flex w-max items-stretch gap-3.5"
           >
-            {items.map((item) => (
-              <span key={item.labelKey} className={tabClass(false)}>
-                <ArtIcon art={item.art ?? `tab-${item.href.slice(1)}`} size={NAV_ICON} className="shrink-0" fallback={<Icon name={item.icon} size={NAV_ICON} className="shrink-0" />} />
-                <span>{t(item.labelKey)}</span>
-              </span>
-            ))}
+            {entries.map((entry) =>
+              entry.kind === "tab" ? (
+                <span key={entry.tab.item.labelKey} className={tabClass(false)}>
+                  <NavTabIcon item={entry.tab.item} size={NAV_ICON} toned={false} />
+                  <span>{entry.tab.label}</span>
+                </span>
+              ) : (
+                <span key={`group:${entry.id}`} className={tabClass(false)}>
+                  <Icon name={entry.icon} size={NAV_ICON} className="shrink-0" />
+                  <span className="flex items-center gap-0.5">
+                    {entry.label}
+                    <Icon name="chevron-down" size={16} className="shrink-0" />
+                  </span>
+                </span>
+              ),
+            )}
           </div>
-          {layout === "groups" ? (
-            <GroupedTabs
-              tabClass={tabClass}
-              items={items.map((item) => ({
-                href: item.href,
-                to: hrefOf(item),
-                // Inside the Market group the transfers screen takes its full name.
-                label: t(item.href === "/transfers" ? "nav.transfersFull" : item.labelKey),
-                active: pathname.startsWith(item.href),
-                icon: <ArtIcon art={item.art ?? `tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />,
-              }))}
-            />
+          {!flat ? (
+            <GroupedTabs entries={entries} tabClass={tabClass} mode={mode} iconSize={NAV_ICON} />
           ) : (
           <div className={`flex items-stretch w-full ${narrow ? "gap-1.5" : `justify-between ${mode === "tight" ? "gap-2" : "gap-3.5"}`}`}>
-            {items.map((item) => {
-              const label = t(item.labelKey);
-              const active = pathname.startsWith(item.href);
-              const href = hrefOf(item);
+            {entries.map((entry) => {
+              if (entry.kind !== "tab") return null;
+              const { item, label, active, to } = entry.tab;
               return (
                 <a
                   key={item.labelKey}
-                  href={href}
+                  href={to}
                   className={`${tabClass(active)} ${narrow ? "flex-1 basis-0" : ""}`}
                   title={label}
                   aria-current={active ? "page" : undefined}
                 >
-                  <ArtIcon art={item.art ?? `tab-${item.href.slice(1)}`} size={NAV_ICON} className={`shrink-0 ${item.tone}`} fallback={<Icon name={item.icon} size={NAV_ICON} className={`shrink-0 ${item.tone}`} />} />
+                  <NavTabIcon item={item} size={NAV_ICON} />
                   <span className={narrow ? "block w-full truncate text-center tracking-normal phone:hidden" : "phone:hidden"}>{label}</span>
                 </a>
               );
@@ -278,6 +238,8 @@ export function TopNavigation({
           </div>
           )}
         </nav>
+        {/* Left column: the day block still sits at the right edge. */}
+        {side && <div className="flex-1 phone:hidden" />}
 
         {/* Day block: the tester's report button (#133, #138; inside the block since #139, so it
             costs no divider of its own), today's date and type, then the day controls (#65). */}
