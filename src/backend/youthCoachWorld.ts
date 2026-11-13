@@ -20,10 +20,13 @@ const sameList = (a: YouthCallUps[YouthCompAge], b: YouthCallUps[YouthCompAge]):
   JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 
 /**
- * Before the day's youth games: the call-ups of each seat whose youth coach added (or rebuilt) his own for a game
- * of today, keyed by seat. A club that plays for the first team today is skipped (its youth game is postponed and
- * the youngsters are needed). The under-19 game is handled first, and who is called up for it is left out of the
- * under-21 list of the same day (nobody plays twice).
+ * The call-ups of each seat whose youth coach added (or rebuilt) his own for a youth game of `date`, keyed by seat.
+ * Called twice a day: before the day's youth games, for today (a list he already made the day before, marked by
+ * `youthCoachPlanned`, is left as the manager has it), and at the end of the day for tomorrow's games
+ * (`currentOf` = the call-ups after today's games), so the manager sees the list a day ahead.
+ * A club that plays for the first team on the day is skipped (its youth game is postponed and the youngsters are
+ * needed). The under-19 game is handled first, and who is called up for it is left out of the under-21 list of the
+ * same day (nobody plays twice).
  */
 export async function coachCallUpsToday(args: {
   service: SaveService;
@@ -32,9 +35,12 @@ export async function coachCallUpsToday(args: {
   seats: readonly Seat[];
   teamsPlayingToday: ReadonlySet<string>;
   squadOf: (id: string) => Promise<Squad | null>;
+  /** The call-ups to start from (default: the seat's saved ones). */
+  currentOf?: (seat: Seat) => YouthCallUps | undefined;
 }): Promise<Map<string, YouthCallUps>> {
   const out = new Map<string, YouthCallUps>();
-  const seats = args.seats.filter((s) => s.clubId && youthByCoach(s.meta.responsibilities) && !args.teamsPlayingToday.has(s.clubId));
+  const seats = args.seats.filter((s) => s.clubId && youthByCoach(s.meta.responsibilities) && !args.teamsPlayingToday.has(s.clubId)
+    && s.meta.youthCoachPlanned !== args.date);
   if (seats.length === 0) return out;
   const fixtures = await args.service.getYouthFixturesForDate(args.saveId, args.date);
   for (const seat of seats) {
@@ -46,7 +52,7 @@ export async function coachCallUpsToday(args: {
     if (!squad || !youthCoachOnDuty(squad)) continue;
     const saved = (seat.tactics?.lineup ?? []).filter((id) => id);
     const xi = new Set(saved.length > 0 ? saved : firstTeamLineup(squad, seat.tactics?.formation, args.date));
-    const next: YouthCallUps = { ...seat.meta.youthCallUps };
+    const next: YouthCallUps = { ...(args.currentOf ? args.currentOf(seat) : seat.meta.youthCallUps) };
     let changed = false;
     const calledToday = new Set<string>();
     for (const age of ages) {

@@ -28,6 +28,7 @@ import { clubHappyWithManager } from "@/backend/jobSecurityWorld";
 import { initialStaff } from "@/Domain/staff/staff";
 import { createClubSponsors } from "@/backend/sponsorWorld";
 import { buildSponsorMessage } from "@/Domain/sponsors/sponsorMessages";
+import { historyOnClubLeft } from "@/Domain/sponsors/sponsors";
 import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import { joinNewClub, leavingTrusted } from "@/Domain/staff/trustedStaff";
 import { getStaffNameBook, leagueCountryMap } from "@/backend/staffNameBook";
@@ -352,9 +353,12 @@ export async function releaseHumanClub(
         return [slug, list];
       }))
     : undefined;
+  // The sponsor contracts end here; what they were stays with the club for the companies' pages.
+  const sponsorHistory = historyOnClubLeft(academy.squad.sponsors, args.date);
   const ai: Squad = {
     ...rest, financialTier: tier, aiTransferBudget: aiBudgetWithPrize(grant, args.compensation ?? 0, grant),
     ...(registrations ? { registrations } : {}),
+    ...(sponsorHistory.length > 0 ? { sponsorHistory } : {}),
   };
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, ai);
   const leaving = [...trimmed.released, ...academy.released];

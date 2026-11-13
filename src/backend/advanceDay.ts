@@ -3664,6 +3664,23 @@ export async function advanceOneDay(
       ds.patch.youthCallUps = callUps.u21?.length || callUps.u19?.length ? callUps : undefined;
       ds.patch.youthCallUpsSkipped = skipped.u21 || skipped.u19 ? skipped : undefined;
     }
+    // The youth coach in charge makes tomorrow's call-ups today, so the manager sees them a day ahead.
+    {
+      const tomorrow = addDays(currentDate, 1);
+      const afterToday = (ds: (typeof daySeats)[number]) =>
+        ("youthCallUps" in ds.patch ? ds.patch.youthCallUps : ds.meta.youthCallUps);
+      const bySeat = new Map(daySeats.map((ds) => [ds.seatId, ds] as const));
+      const planned = await coachCallUpsToday({
+        service: saveService, saveId, date: tomorrow, seats: daySeats, teamsPlayingToday: new Set(),
+        squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
+        currentOf: (seat) => afterToday(bySeat.get(seat.seatId)!),
+      });
+      for (const [seatId, callUps] of planned) {
+        const ds = bySeat.get(seatId)!;
+        ds.patch.youthCallUps = callUps.u21?.length || callUps.u19?.length ? callUps : undefined;
+        ds.patch.youthCoachPlanned = tomorrow;
+      }
+    }
     // The job of each seat: offers, mid-season window, unemployment, the contract; a sacking clears the club's keys.
     for (const ds of daySeats) {
       const job = ds.job;

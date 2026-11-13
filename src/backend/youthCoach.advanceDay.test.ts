@@ -92,6 +92,16 @@ describe("the youth coach in advanceOneDay", () => {
       squadOf: (id) => saveService.getSquadById(saveId, id),
     })).size).toBe(0);
 
+    // The day before the game he already makes the list, so the manager sees it a day ahead.
+    await updateSolo(saveId, { currentDate: addDays(day, -1) });
+    expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
+    const ahead = (await soloMeta(saveId))!;
+    expect(ahead.currentDate).toBe(day);
+    expect(ahead.youthCoachPlanned).toBe(day);
+    expect(ahead.youthCallUps?.u19).toContainEqual({ id: target.id, duration: "next", left: 1, byCoach: true });
+    // On the game day the list he made yesterday is left as the manager has it.
+    expect((await ask()).size).toBe(0);
+
     expect((await advanceOneDay(saveService, saveId)).ok).toBe(true);
     const log = (await saveService.getDayLog(saveId, day))!;
     const played = (log.youthMatches ?? []).find((m) => m.fixtureId === game.id);

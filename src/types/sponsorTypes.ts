@@ -92,8 +92,8 @@ export interface SponsorPaid {
 
 /**
  * How a contract ended: at its last season (`expired`; `renewed` once the company's renewal offer is accepted), the
- * company breaking it for a missed goal (`left_early`) or a relegation. `club_left` (the manager left the club) is
- * reserved: today the club's whole record is dropped when it returns to the AI.
+ * company breaking it for a missed goal (`left_early`) or a relegation, or the manager leaving the club with it in
+ * force (`club_left`, `historyOnClubLeft`).
  */
 export type SponsorContractEnd = "expired" | "renewed" | "left_early" | "relegated" | "club_left";
 
@@ -118,7 +118,7 @@ export interface SponsorHistoryEntry {
 export interface ClubSponsors {
   contracts: SponsorContract[];
   offers: SponsorOffer[];
-  /** Finished contracts, oldest first (12.1; absent = none yet). Dropped with the record when the club returns to the AI. */
+  /** Finished contracts, oldest first (12.1; absent = none yet). Moves to `Squad.sponsorHistory` while the club is with the AI. */
   history?: SponsorHistoryEntry[];
 }
 

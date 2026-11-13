@@ -137,8 +137,11 @@ export async function createClubSponsors(
 ): Promise<SponsorOffer[]> {
   const squad = await service.getSquadById(saveId, squadId);
   if (!squad) return [];
-  const sponsors = initialSponsors(sponsorCatalog(), await sponsorContext(service, saveId, seatId, squad, opts));
-  await service.saveSquadById(saveId, { ...squad, sponsors });
+  const fresh = initialSponsors(sponsorCatalog(), await sponsorContext(service, saveId, seatId, squad, opts));
+  // A club that already had a human manager keeps the finished contracts of that time.
+  const { sponsorHistory, ...rest } = squad;
+  const sponsors = sponsorHistory?.length ? { ...fresh, history: sponsorHistory } : fresh;
+  await service.saveSquadById(saveId, { ...rest, sponsors });
   return sponsors.offers;
 }
 

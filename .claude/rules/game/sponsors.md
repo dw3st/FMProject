@@ -190,3 +190,7 @@ Limitações:
 ## Patrocinadores na aba Clube (12.1)
 
 `ClubSponsorsStrip.tsx`, no topo de `/club`, acima das instalações: uma faixa com o máster, o material e as quatro placas (`stripPlaces`), cada placa (`sm`) um link para a página da empresa, vaga livre como placa tracejada "Vaga livre" (link para Patrocínios) e o link "Ver patrocínios" (`/finances?tab=sponsors`). Dados de `GET …/sponsors`. `active: false` (save antigo antes da virada): a linha do texto `sponsors.inactive`. Sem clube ou enquanto carrega: nada.
+
+## Histórico na troca de clube (12.1.1)
+
+Pedido do usuário. Quando o técnico sai do clube (troca, demissão, fim de contrato, saída do mundo), `releaseHumanClub` grava `Squad.sponsorHistory` = os contratos já encerrados mais os que estavam em vigor, fechados como `club_left` na data (`historyOnClubLeft`, `sponsors.ts`). O clube da IA não usa o campo; a página da empresa lê dele ("Quem já patrocinou"). Quando um técnico assume o clube, `createClubSponsors` leva a lista para `sponsors.history` do registro novo e apaga o campo. Saídas anteriores à 12.1.1 não deixaram registro.

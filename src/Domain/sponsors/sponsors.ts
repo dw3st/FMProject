@@ -490,6 +490,22 @@ export function seasonBooks(
   };
 }
 
+/**
+ * The manager leaves the club: the finished contracts plus the ones in force, closed as `club_left` on `date`. Kept on
+ * the squad as `Squad.sponsorHistory` while the club is with the AI and given back to the next manager's record.
+ */
+export function historyOnClubLeft(sponsors: ClubSponsors | undefined, date: string): SponsorHistoryEntry[] {
+  if (!sponsors) return [];
+  const open: SponsorHistoryEntry[] = sponsors.contracts.map((c) => {
+    const p = paidOf(c);
+    return {
+      companyId: c.company.id, companyName: c.company.name, slot: c.slot, from: c.signedOn, to: date,
+      seasons: p.met + p.missed, fixedPaid: p.fixed, bonusPaid: p.bonus, goalsMet: p.met, goalsMissed: p.missed, end: "club_left",
+    };
+  });
+  return [...(sponsors.history ?? []), ...open].slice(-SPONSOR_HISTORY_MAX);
+}
+
 // ── Income, boards, AI ────────────────────────────────────────────────────────
 
 /** Monday income of the contracts in force (an empty slot earns nothing). */

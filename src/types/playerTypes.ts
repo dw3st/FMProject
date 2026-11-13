@@ -366,6 +366,8 @@ export interface Squad {
    * on a human club = a save from before 12.0, still on the old weekly commercial income.
    */
   sponsors?: import("@/types/sponsorTypes").ClubSponsors;
+  /** AI club that had a human manager: the finished sponsor contracts of that time (`historyOnClubLeft`). */
+  sponsorHistory?: import("@/types/sponsorTypes").SponsorHistoryEntry[];
   /** The club's bank loan (`src/Domain/finance/bankLoan.ts`). Human club only; the debt never follows the manager. */
   bankLoan?: import("@/types/bankLoanTypes").BankLoan;
   /**

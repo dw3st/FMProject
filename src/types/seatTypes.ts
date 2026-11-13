@@ -71,6 +71,8 @@ export interface SeatState {
   matchMarking?: MatchMarking;
   youthCallUps?: YouthCallUps;
   youthCallUpsSkipped?: YouthCallUpsSkipped;
+  /** Game date the youth coach already made his call-ups for, the day before (`staff.md` → "Treinador da base"). */
+  youthCoachPlanned?: string;
   board?: BoardState;
   press?: PressState;
   managerBan?: ManagerBan;
@@ -120,7 +122,7 @@ export interface SeatState {
 export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
-  "matchMarking", "youthCallUps", "youthCallUpsSkipped", "board", "press", "managerBan", "sackingEnabled",
+  "matchMarking", "youthCallUps", "youthCallUpsSkipped", "youthCoachPlanned", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerStudies", "trustedStaff", "betNet", "betExact", "betLongshot", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites",

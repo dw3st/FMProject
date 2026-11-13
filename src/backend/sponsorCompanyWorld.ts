@@ -137,6 +137,10 @@ export async function companyWorld(service: SaveService, saveId: string): Promis
           .push({ companyId: h.companyId, slot: h.slot, from: h.from, to: h.to, seasons: h.seasons, end: h.end, ...ref });
       }
     } else {
+      for (const h of squad.sponsorHistory ?? []) {
+        (history.get(h.companyId) ?? history.set(h.companyId, []).get(h.companyId)!)
+          .push({ companyId: h.companyId, slot: h.slot, from: h.from, to: h.to, seasons: h.seasons, end: h.end, ...ref });
+      }
       const ai = derivedSponsorsOf(squad, { leagueSlug, country: countryOf.get(leagueSlug) ?? null }, meta.activeLeagues, date);
       if (ai.master) slotsOf(ai.master.id).master.push(ref);
       if (ai.kit) slotsOf(ai.kit.id).kit.push(ref);

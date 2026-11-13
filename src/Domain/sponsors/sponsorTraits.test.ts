@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { SPONSORS } from "@/Domain/sponsors/sponsorConfig";
 import {
-  SPONSOR_HISTORY_MAX, acceptOffer, aiMasterSponsorOf, aiSponsorsOf, creditWeeklyPaid, emptySponsors, evaluateSponsorSeason,
+  SPONSOR_HISTORY_MAX, acceptOffer, historyOnClubLeft, aiMasterSponsorOf, aiSponsorsOf, creditWeeklyPaid, emptySponsors, evaluateSponsorSeason,
   generateOffers, initialSponsors, negotiateOffer, negotiationChances, negotiationOutcome, offerValue, seasonBooks, traitYears,
   weeklySponsorIncome, type SponsorClubContext, type SponsorSeasonOutcome,
 } from "@/Domain/sponsors/sponsors";
@@ -335,6 +335,18 @@ describe("the contracts' books", () => {
     expect(kept).toHaveLength(SPONSOR_HISTORY_MAX);
     expect(kept.at(-1)!.companyId).toBe("z");
     expect(kept[0]!.companyId).toBe("old1");
+  });
+
+  test("the manager leaves: the contracts in force close as club_left after the finished ones", () => {
+    const old: SponsorHistoryEntry = {
+      companyId: "old", companyName: "Old", slot: "board", from: "2020-01-01", to: "2021-01-01", seasons: 1, fixedPaid: 5, bonusPaid: 0, goalsMet: 0, goalsMissed: 1, end: "expired",
+    };
+    const c = creditWeeklyPaid(of(contractOf("a", { seasonsLeft: 2 }))).contracts[0]!;
+    const out = historyOnClubLeft({ contracts: [c], offers: [], history: [old] }, "2027-03-01");
+    expect(out).toHaveLength(2);
+    expect(out[0]).toEqual(old);
+    expect(out[1]).toMatchObject({ companyId: "a", slot: c.slot, from: c.signedOn, to: "2027-03-01", end: "club_left", fixedPaid: Math.round(c.annual / 52), seasons: 0 });
+    expect(historyOnClubLeft(undefined, "2027-03-01")).toEqual([]);
   });
 });
 
