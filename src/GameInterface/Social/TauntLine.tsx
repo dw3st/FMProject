@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Icon } from "@/GameInterface/Icons";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
-import { REACTION_COLOR, REACTION_ICON, TONE_COLOR } from "@/GameInterface/World/reactionIcons";
+import { REACTION_COLOR, TONE_COLOR } from "@/GameInterface/World/reactionIcons";
+import { ReactionIcon } from "@/GameInterface/World/ReactionIcon";
 import { tauntTone } from "@/Domain/rivals/taunts";
 import { scoreLineOf } from "@/Domain/rivals/results";
 import type { ReactionId, TauntMeta } from "@/types/rivalsTypes";
@@ -30,7 +30,7 @@ export function TauntLine({ taunt }: { taunt: TauntMeta }) {
       </span>
       {taunt.kind === "reaction" ? (
         <span className={`flex items-center gap-1.5 ${REACTION_COLOR[taunt.id as ReactionId]}`}>
-          <Icon name={REACTION_ICON[taunt.id as ReactionId]} size={18} />
+          <ReactionIcon id={taunt.id as ReactionId} size={22} />
           <span>{t(`rivals.reactions.${taunt.id}`)}</span>
         </span>
       ) : (

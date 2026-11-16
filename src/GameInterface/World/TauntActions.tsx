@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
-import { REACTION_COLOR, REACTION_ICON, TONE_COLOR } from "@/GameInterface/World/reactionIcons";
+import { REACTION_COLOR, TONE_COLOR } from "@/GameInterface/World/reactionIcons";
+import { ReactionIcon } from "@/GameInterface/World/ReactionIcon";
+import { playReactionSound } from "@/GameInterface/World/reactionSounds";
+import type { ReactionId } from "@/types/rivalsTypes";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { WorldApiError } from "@/GameInterface/World/worldApi";
 import { REACTIONS, tauntTone, tauntsFor } from "@/Domain/rivals/taunts";
@@ -44,11 +46,11 @@ export function TauntActions({ saveId, target, groups }: { saveId: string; targe
             type="button"
             className={`${ICON_BUTTON} ${REACTION_COLOR[id]}`}
             disabled={busy}
-            onClick={() => void send("reaction", id)}
+            onClick={() => { playReactionSound(id as ReactionId); void send("reaction", id); }}
             aria-label={t(`rivals.reactions.${id}`)}
             title={t(`rivals.reactions.${id}`)}
           >
-            <Icon name={REACTION_ICON[id]} size={20} />
+            <ReactionIcon id={id} size={28} />
           </button>
         ))}
         {phrases.length > 0 && (

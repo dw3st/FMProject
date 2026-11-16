@@ -41,6 +41,8 @@ import type {
 } from "@/types/socialTypes";
 import { navigate } from "@/GameInterface/router/navigation";
 import { armReadySound, playChatSound } from "@/GameInterface/readySound";
+import { playReactionSound } from "@/GameInterface/World/reactionSounds";
+import { isReaction } from "@/Domain/rivals/taunts";
 
 /** Close code the server uses when the session logged out: never reconnect. */
 const LOGOUT_CLOSE_CODE = 4001;
@@ -272,11 +274,14 @@ export function SocialProvider({
             return next;
           });
           if (event.message.mine) break;
+          // A taunt reaction plays its own sound, wherever the chat is (2026-11-16).
+          const reaction = event.message.taunt?.kind === "reaction" && isReaction(event.message.taunt.id) ? event.message.taunt.id : null;
+          if (reaction) playReactionSound(reaction);
           if (isRoomVisible(dockRef.current, event.room) && !document.hidden) {
             void socialApi.read(event.room, event.message.id);
           } else {
             setUnread((prev) => ({ ...prev, [event.room]: (prev[event.room] ?? 0) + 1 }));
-            playChatSound();
+            if (!reaction) playChatSound();
             showPopup({
               room: event.room, messageId: event.message.id, from: event.message.from, body: event.message.body,
               taunt: event.message.taunt,
