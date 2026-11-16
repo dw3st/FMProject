@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.5",
+    date: "2026-11-16",
+    time: "16:10",
+    items: [
+      { tab: "development", pt: "Os jogadores evoluem mais devagar em partidas e treinos, e os veteranos perdem nível um pouco mais rápido. As notas do mundo não sobem mais ano a ano. A base do clube segue no mesmo ritmo.", en: "Players develop more slowly through matches and training, and veterans lose level a little faster. Ratings across the world no longer climb year after year. The academy keeps the same pace." },
+    ],
+  },
+  {
     version: "12.4",
     date: "2026-11-16",
     time: "14:43",

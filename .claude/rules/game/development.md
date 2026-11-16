@@ -428,3 +428,16 @@ Base sem bônus nenhum (treino normal, 30 jogos de base): 45 → 50,7 aos 17 (an
 ## Adaptar jogando fora de posição (report de tester, 2026-11-16)
 
 Um jogador que joga numa vaga diferente da posição natural recebe a DP da partida `POSITION_ADAPT.MATCH_SHARE` (25%) pelos pesos da vaga e o resto pelos próprios (`matchDpWeights`, `src/Domain/development/dpWeights.ts`): a DP total não muda, só para onde vai, e a aptidão para a vaga sobe aos poucos porque sai dos atributos. Bem mais devagar que o treino individual naquela posição (toda a DP do treino vai para ela, com o foco por cima). A vaga: no motor, a escalação e a formação do jogo (`playedRoles`: o reserva herda a vaga de quem substituiu); na partida ao vivo, a vaga em que ele terminou (`PlayedMatchRecording.playerRoles`; papel desconhecido é ignorado). O quickSim não passa vagas (a partida do clube humano é sempre no motor). Quem não jogou fica com os pesos naturais (só o declínio).
+
+## Inflação das notas (12.5)
+
+Report do usuário (soak de 4 temporadas: a mediana do mundo subia de 33,8 a ~37 em 2029). `GROWTH_DP_SCALE` 0,43 → **0,22** (DP de partida e treino pela metade) e `decayDpScale`: até 29 anos 1,0 → **1,3**, 30–34 0,39 → **1,0**, 35+ 0,7 igual. A base divide pela `GROWTH_DP_SCALE`, então o ritmo da base não muda. As medições das seções acima são de antes.
+
+Soak (`debug/soak-dev2.log`, mundo inteiro, mediana do OVR × 10):
+
+| | 2026 | 2027 | 2028 | 2029 | 60+ em 2029 |
+|---|---|---|---|---|---|
+| Antes | 34,2 | 35,3 | 36,4 | ~37 | — |
+| Depois | 33,8 | 34,0 | 34,2 | 34,4 | 103 (87 no início) |
+
+Limitação: a faixa de 33–34 anos sobe em 2028 (31,2 → 34,7), provável efeito de quem se aposenta (os fracos param primeiro).

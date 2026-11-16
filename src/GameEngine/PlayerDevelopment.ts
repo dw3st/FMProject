@@ -32,7 +32,7 @@ const SCALE      = 0.10; // how steeply cost grows with value
  */
 
 /** Scale on the growth DP (match and training). */
-export const GROWTH_DP_SCALE = 0.43;
+export const GROWTH_DP_SCALE = 0.22;
 
 /**
  * Scale on the age decay per match, by age band. 28–29 decays more than before because the old dead zone also
@@ -42,8 +42,8 @@ export const GROWTH_DP_SCALE = 0.43;
  * change — 28–29 1.5 → 1.0 and 30–34 0.35 → 0.39 bring the 27/31/33 ages back within ±10% of the old pace.
  */
 export function decayDpScale(age: number): number {
-  if (age <= 29) return 1.0;
-  if (age <= 34) return 0.39;
+  if (age <= 29) return 1.3;
+  if (age <= 34) return 1.0;
   return 0.7;
 }
 

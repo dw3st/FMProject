@@ -14,7 +14,7 @@ test("a step costs a tenth of the old level cost", () => {
 test("changes are 0.1 steps and values keep one decimal", () => {
   const p = {
     id: "x", name: "x", age: 18, positions: ["CM"], stats,
-    progress: { passing: 3.0, vision: 0.1, finishing: 0.1, dribbling: 0.1, speed: 0.1, acceleration: 0.1,
+    progress: { passing: 3.3, vision: 0.1, finishing: 0.1, dribbling: 0.1, speed: 0.1, acceleration: 0.1,
       tackling: 0.1, pressing: 0.1, stamina: 0.1, heading: 0.1, strength: 0.1, reflex: 0.1, jump: 0.1 },
   } as unknown as RosterPlayer;
   const r = applyDevelopment(p, 8.6, DEFAULT_DP_WEIGHTS);
@@ -62,9 +62,9 @@ test("decline steps down by 0.1 and keeps one decimal", () => {
 });
 
 test("age decay scale by band (pace calibration)", () => {
-  expect(decayDpScale(28)).toBe(1.0);
-  expect(decayDpScale(30)).toBe(0.39);
-  expect(decayDpScale(34)).toBe(0.39);
+  expect(decayDpScale(28)).toBe(1.3);
+  expect(decayDpScale(30)).toBe(1.0);
+  expect(decayDpScale(34)).toBe(1.0);
   expect(decayDpScale(35)).toBe(0.7);
 });
 
