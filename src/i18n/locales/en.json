@@ -1045,8 +1045,8 @@
       "nameSave": "Save name",
       "nameHint": "Up to {{n}} letters. Empty goes back to the letter.",
       "noReplacement": {
-        "injured": "{{out}} is injured: he stays, the match day swaps him",
-        "suspended": "{{out}} is suspended: he stays, the match day swaps him",
+        "injured": "{{out}} is injured: the slot is empty",
+        "suspended": "{{out}} is suspended: the slot is empty",
         "left": "{{out}} left the squad: the slot is empty"
       },
       "swap": {
@@ -5087,7 +5087,8 @@
       "fee": "Compensation {{fee}}",
       "until": "Available until {{date}}",
       "sign": "Sign for the academy",
-      "openAcademy": "Open the academy to release players"
+      "openAcademy": "Open the academy to release players",
+      "decline": "Turn down"
     },
     "gems": {
       "title": "Gems",

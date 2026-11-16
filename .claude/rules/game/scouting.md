@@ -391,3 +391,7 @@ Report do usuário. Parar o mouse no nome de um jogador nas tabelas de Relatóri
 ## Uma linha por missão do olheiro-chefe (12.1)
 
 Report do usuário (60 relatórios, todos de goleiro). O plano do chefe dava a todas as missões de região a mesma linha (`neediestLine`): um elenco com menos de 3 goleiros fazia todo olheiro procurar goleiro. Agora cada missão de região leva uma linha diferente (`lineOrder`, `chiefPlanner.ts`): primeiro as linhas abaixo do mínimo do elenco (a maior falta primeiro), depois as de campo, dos titulares mais fracos para os mais fortes; o goleiro só entra por falta de profundidade. As linhas das missões ativas (`ChiefPlanInput.activeLines`) ficam para o fim, então missões criadas em segundas diferentes também não repetem. Com mais missões que linhas, a ordem recomeça. Missões já em andamento não mudam.
+
+## Recusar um jovem sem clube (12.6.1)
+
+Report do usuário. Aba Joias: botão Recusar em cada prospecto (`DELETE /api/saves/:id/scouting/prospects/:prospectId`, 404 `notFound`): ele sai da lista. `GET /scouting` não mostra prospecto vencido (antes ficava até a poda da segunda, com o botão de contratar desligado).

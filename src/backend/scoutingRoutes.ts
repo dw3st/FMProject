@@ -270,7 +270,8 @@ async function scoutingView(saveId: string, seatId: string, state: ScoutingState
     shortlist,
     // Only what the card shows: the exact attributes stay on the server (the report carries the
     // seen ranges); the player is exact once he is in the academy.
-    prospects: state.prospects.map(prospectView),
+    // A prospect past his date is gone (report 2026-11-16: an expired one stayed on the screen until Monday).
+    prospects: state.prospects.filter((p) => p.expires >= date).map(prospectView),
   };
 }
 
@@ -436,6 +437,21 @@ export const scoutingRoutes = {
       const next = { ...state, shortlist: state.shortlist.filter((e) => e.playerId !== req.params.playerId) };
       await saveService.writeScouting(saveId, next, auth.seatId);
       return Response.json({ shortlist: next.shortlist });
+    });
+  },
+
+  /** `DELETE` - turns a prospect down (report 2026-11-16): he leaves the list. 404 `notFound`. */
+  "/api/saves/:saveId/scouting/prospects/:prospectId": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "DELETE") return Response.json({ error: "method not allowed" }, { status: 405 });
+    return withSaveLock(saveId, async () => {
+      const state = await saveService.getScouting(saveId, auth.seatId);
+      if (!state.prospects.some((p) => p.player.id === req.params.prospectId)) return Response.json({ error: "notFound" }, { status: 404 });
+      const next: ScoutingState = { ...state, prospects: state.prospects.filter((p) => p.player.id !== req.params.prospectId) };
+      await saveService.writeScouting(saveId, next, auth.seatId);
+      return Response.json(await scoutingView(saveId, auth.seatId, next));
     });
   },
 

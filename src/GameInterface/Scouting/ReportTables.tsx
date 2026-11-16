@@ -386,6 +386,12 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
     else setAcademyFull(r.json?.error === "youthFull");
     if (!r.ok) setError(t(`scouting.errors.${r.json?.error ?? "generic"}`, { defaultValue: t("scouting.errors.generic") }));
   }
+  async function decline(id: string) {
+    setError(null);
+    const r = await scoutingCall(`/api/saves/${saveId}/scouting/prospects/${encodeURIComponent(id)}`, "DELETE");
+    if (r.ok) onChanged(r.json as ScoutingData);
+    else setError(t("scouting.errors.generic"));
+  }
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3">
@@ -422,9 +428,12 @@ export function GemsTab({ saveId, data, onChanged }: { saveId: string; data: Sco
                   <p className="text-sm text-muted-foreground m-0 tabular-nums">
                     {t("scouting.prospects.fee", { fee: formatFee(p.fee) })} · {t("scouting.prospects.until", { date: p.expires })}
                   </p>
-                  <Button onClick={() => void sign(p.player.id)} disabled={!data.employed || p.expires < data.date} className="self-start">
-                    {t("scouting.prospects.sign")}
-                  </Button>
+                  <span className="inline-flex flex-wrap items-center gap-4">
+                    <Button onClick={() => void sign(p.player.id)} disabled={!data.employed || p.expires < data.date}>
+                      {t("scouting.prospects.sign")}
+                    </Button>
+                    <Button variant="secondary" flush onClick={() => void decline(p.player.id)}>{t("scouting.prospects.decline")}</Button>
+                  </span>
                 </div>
               );
             })}

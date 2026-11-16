@@ -173,6 +173,16 @@ describe("scouting routes and the weekly step", () => {
     expect(seenView.prospects[0].player.stats).toBeUndefined();
     expect((await call(SIGN, "POST", session.token, undefined, { prospectId: "pr_two" })).status).toBe(400);
 
+    // Turning a prospect down (report 2026-11-16) takes him off the list; an expired one never shows.
+    const st2 = await saveService.getScouting(saveId, meta.seatId);
+    await saveService.writeScouting(saveId, { ...st2, prospects: [mk("pr_two", "2099-01-01"), mk("pr_gone", "2000-01-01")] }, meta.seatId);
+    const shown = await (await call("/api/saves/:saveId/scouting", "GET", session.token)).json() as any;
+    expect(shown.prospects.map((p: any) => p.player.id)).toEqual(["pr_two"]);
+    const DECLINE = "/api/saves/:saveId/scouting/prospects/:prospectId";
+    expect((await call(DECLINE, "DELETE", session.token, undefined, { prospectId: "nobody" })).status).toBe(404);
+    expect((await call(DECLINE, "DELETE", session.token, undefined, { prospectId: "pr_two" })).status).toBe(200);
+    expect((await saveService.getScouting(saveId, meta.seatId)).prospects.some((p) => p.player.id === "pr_two")).toBe(false);
+
     // Firing the field scout cancels his mission.
     expect((await call("/api/saves/:saveId/staff/fire", "POST", session.token, { memberId: field.id })).status).toBe(200);
     expect((await saveService.getScouting(saveId, meta.seatId)).missions.some((m) => m.scoutId === field.id)).toBe(false);

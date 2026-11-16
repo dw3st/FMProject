@@ -13,10 +13,9 @@ import type { FormationShape } from "@/types/formationSlots";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { FORMATION_IDS, formationForTactics } from "@/Domain/matchFormations";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
-import { fitnessAdjustedValue } from "@/Domain/lineupHelpers";
+import { remapLineupToFormation } from "@/Domain/lineupHelpers";
 import { isInjured } from "@/Domain/injury/injury";
 import { isUnavailable } from "@/Domain/discipline/discipline";
-import { getMainRole } from "@/Domain/roles";
 import { isRealIsoDate } from "@/Domain/dates";
 
 /** The saved-lineup slots of the formation screen (#84). */
@@ -243,44 +242,31 @@ export interface AppliedLineupPreset {
 }
 
 /**
- * Applies a preset to today's squad, keeping the saved starters in their slots (report 2026-11-16): a saved
- * player who left the squad (sold, loaned out, released) leaves the slot empty, an injured or suspended one stays
- * (both reported with `in: ""`; match day swaps the unavailable). Only a slot the preset never filled is filled by
- * the best available player of the slot's line, ranked by `fitnessAdjustedValue`.
+ * Applies a preset to today's squad, keeping exactly the saved starters in their slots (reports 2026-11-16): a saved
+ * player who left the squad (sold, loaned out, released), is injured or is suspended leaves his slot empty (reported
+ * with `in: ""`; the match day fills an empty slot). A preset with no starters at all (brought from another club)
+ * takes `current` (the XI on screen) into its formation, each player in his best-fit slot, nobody swapped.
  */
-export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[], date: string): AppliedLineupPreset {
+export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[], date: string, current: string[] = []): AppliedLineupPreset {
   const formation = formationForTactics(preset);
   const slots = getFormationSlots(formation as unknown as FormationShape);
   const byId = new Map(players.map((p) => [p.id, p]));
-  const lineup = slots.map((_, i) => preset.lineup[i] ?? "");
   const replaced: PresetReplacement[] = [];
+  const saved = preset.lineup.some(Boolean);
+  const lineup = saved
+    ? slots.map((_, i) => preset.lineup[i] ?? "")
+    : remapLineupToFormation(current, slots, players, date).slice(0, slots.length);
+  while (lineup.length < slots.length) lineup.push("");
 
-  // The saved starters stay exactly where they were (report 2026-11-16): one who left the squad leaves his slot
-  // empty, an injured or suspended one stays (the match day swaps him). Only a slot the preset never filled (a
-  // preset brought from another club has no starters) is filled with the best available player.
-  const used = new Set(lineup.filter((id) => id && byId.has(id)));
-  for (let i = 0; i < slots.length; i++) {
-    const id = lineup[i]!;
-    if (id && byId.has(id)) continue;
-    if (id) {
-      lineup[i] = "";
-      replaced.push({ out: id, in: "", slot: i, reason: "left" });
-      continue;
-    }
-    const role = slots[i]!.role;
-    const available = players.filter((p) => !used.has(p.id) && !isUnavailable(p, date));
-    const sameLine = available.filter((p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === getMainRole(role));
-    const pool = sameLine.length > 0 ? sameLine : available;
-    const pick = [...pool].sort((a, b) => fitnessAdjustedValue(b, role) - fitnessAdjustedValue(a, role))[0];
-    lineup[i] = pick?.id ?? "";
-    if (pick) used.add(pick.id);
+  for (let slot = 0; slot < slots.length; slot++) {
+    const id = lineup[slot]!;
+    if (!id) continue;
+    const p = byId.get(id);
+    if (p && !isUnavailable(p, date)) continue;
+    lineup[slot] = "";
+    if (!saved) continue;
+    replaced.push({ out: id, in: "", slot, reason: !p ? "left" : isInjured(p, date) ? "injured" : "suspended" });
   }
-  lineup.forEach((id, slot) => {
-    const p = id ? byId.get(id) : undefined;
-    if (p && isUnavailable(p, date)) {
-      replaced.push({ out: id, in: "", slot, reason: isInjured(p, date) ? "injured" : "suspended" });
-    }
-  });
   replaced.sort((a, b) => a.slot - b.slot);
 
   return {

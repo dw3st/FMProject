@@ -1045,8 +1045,8 @@
       "nameSave": "Salvar nome",
       "nameHint": "Até {{n}} letras. Vazio volta para a letra.",
       "noReplacement": {
-        "injured": "{{out}} está lesionado: fica na escalação, o jogo troca no dia",
-        "suspended": "{{out}} está suspenso: fica na escalação, o jogo troca no dia",
+        "injured": "{{out}} está lesionado: a vaga ficou vazia",
+        "suspended": "{{out}} está suspenso: a vaga ficou vazia",
         "left": "{{out}} saiu do elenco: a vaga ficou vazia"
       },
       "swap": {
@@ -5084,7 +5084,8 @@
       "fee": "Compensação {{fee}}",
       "until": "Disponível até {{date}}",
       "sign": "Contratar para a base",
-      "openAcademy": "Abrir a base para dispensar jogadores"
+      "openAcademy": "Abrir a base para dispensar jogadores",
+      "decline": "Recusar"
     },
     "gems": {
       "title": "Joias",

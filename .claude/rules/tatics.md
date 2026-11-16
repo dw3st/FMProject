@@ -187,6 +187,6 @@ Report de tester. `LineupPreset.name` (até `PRESET_NAME_MAX` 20 letras; `cleanP
 
 A validação do `PUT /tactics` mora em `mergeTacticsBody` (`src/Domain/tactics/tacticsBody.ts`), usada pelo clube e pela seleção. A tela de Formação serve as duas (seletor Clube | Seleção, `?team=national`); a tática da seleção fica em `NationalState.human[seatId].tactics`. Ver `.claude/rules/game/national-teams.md` → "Tática completa da seleção (12.2)".
 
-## Escalação salva fica como foi salva (12.6)
+## Escalação salva fica como foi salva (12.6.1)
 
-Report do usuário. `applyLineupPreset` mantém os titulares salvos nas vagas: quem saiu do elenco deixa a vaga vazia (motivo `left`, `in: ""`), lesionado ou suspenso fica (o dia do jogo troca). Só uma vaga que a escalação nunca preencheu (escalação trazida de outro clube) é completada pelo melhor disponível. Até a 12.5 os que saíram, os lesionados e os suspensos eram trocados na hora.
+Reports do usuário. `applyLineupPreset(preset, players, date, current)` mantém exatamente os titulares salvos nas vagas: quem saiu do elenco, está lesionado ou suspenso deixa a vaga vazia (aviso com `in: ""`; o dia do jogo completa a vaga vazia), e uma vaga salva vazia fica vazia. Uma escalação sem nenhum titular salvo (trazida de outro clube) leva o XI da tela para a formação dela (`remapLineupToFormation`), sem trocar ninguém. "Salvar" grava o XI montado (`savedLineup`), não o exibido com os não inscritos trocados. Até a 12.5 os que saíram, os lesionados e os suspensos eram trocados na hora, e a escalação sem titulares montava um time novo.

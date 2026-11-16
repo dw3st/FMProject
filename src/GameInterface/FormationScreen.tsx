@@ -330,7 +330,7 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
   function handleSavePreset(key: LineupPresetKey) {
     if (editing) return;
     const preset = buildLineupPreset(
-      { formation: formationId, customFormation, lineup, slotInstructions, tacticalStyle: activeStyle, axesOverride, name: lineupPresets[key]?.name },
+      { formation: formationId, customFormation, lineup: editing && draft ? lineup : savedLineup, slotInstructions, tacticalStyle: activeStyle, axesOverride, name: lineupPresets[key]?.name },
       currentDate,
     );
     void putPresets({ ...lineupPresets, [key]: preset });
@@ -360,11 +360,11 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
     void putPresets(next);
   }
 
-  /** Uses a preset: formation, XI and instructions are saved at once; unavailable starters swapped. */
+  /** Uses a preset: formation, XI and instructions are saved at once; a saved starter who cannot play leaves his slot empty. */
   async function handleUsePreset(key: LineupPresetKey) {
     const preset = lineupPresets[key];
     if (!session || !squad || !preset || editing || updating || saveStatus === "saving") return;
-    const applied = applyLineupPreset(preset, squad.players, currentDate);
+    const applied = applyLineupPreset(preset, squad.players, currentDate, savedLineup);
     setPresetBusy(true);
     setPresetError(false);
     try {

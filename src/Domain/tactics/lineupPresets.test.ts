@@ -125,7 +125,7 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual([]);
   });
 
-  test("saved starters stay: a departed one leaves the slot empty, injured and suspended stay flagged", () => {
+  test("saved starters stay: departed, injured and suspended ones leave their slots empty", () => {
     const st = roles.indexOf("ST");
     const cb = roles.indexOf("CB");
     const gk = roles.indexOf("GK");
@@ -137,8 +137,10 @@ describe("applyLineupPreset", () => {
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: xi }, DATE), today, DATE);
 
     expect(applied.lineup[gk]).toBe("");
-    expect(applied.lineup[st]).toBe(injured.id);
-    expect(applied.lineup[cb]).toBe(suspended.id);
+    expect(applied.lineup[st]).toBe("");
+    expect(applied.lineup[cb]).toBe("");
+    // Nobody else came in.
+    expect(applied.lineup.filter(Boolean).every((id) => xi.includes(id))).toBe(true);
     const expected: PresetReplacement[] = [
       { out: `s${gk}`, in: "", slot: gk, reason: "left" },
       { out: `s${cb}`, in: "", slot: cb, reason: "suspended" },
@@ -147,9 +149,9 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual(expected.sort((a, b) => a.slot - b.slot));
   });
 
-  test("a preset with no starters (brought from another club) is filled from the squad", () => {
-    const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: [] }, DATE), squad, DATE);
-    expect(applied.lineup.filter(Boolean)).toHaveLength(11);
+  test("a preset with no starters (brought from another club) keeps the XI on screen", () => {
+    const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: [] }, DATE), squad, DATE, xi);
+    expect([...applied.lineup].sort()).toEqual([...xi].sort());
     expect(applied.replaced).toEqual([]);
   });
 
@@ -165,12 +167,12 @@ describe("applyLineupPreset", () => {
     expect(applied.slotInstructions.filter(Boolean)).toEqual([{ press: "more" }]);
   });
 
-  test("an empty slot of the preset is filled without a notice", () => {
+  test("an empty slot of the preset stays empty, without a notice", () => {
     const st = roles.indexOf("ST");
     const lineup = [...xi];
     lineup[st] = "";
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup }, DATE), squad, DATE);
-    expect(applied.lineup[st]).toBe(`s${st}`); // the best available striker (benched in the preset)
+    expect(applied.lineup[st]).toBe("");
     expect(applied.replaced).toEqual([]);
   });
 
@@ -182,13 +184,12 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual([{ out: `s${lb}`, in: "", slot: lb, reason: "left" }]);
   });
 
-  test("an injured starter with nobody to replace him stays and is reported with no replacement", () => {
+  test("an injured starter leaves his slot empty even with nobody on the bench", () => {
     const gk = roles.indexOf("GK");
     const injuredGk = { ...starters[gk]!, injury: { severity: "medium" as const, returnDate: "2027-04-01" } };
-    // Only the starting XI: no bench at all.
     const today = starters.map((p) => (p.id === injuredGk.id ? injuredGk : p));
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: xi }, DATE), today, DATE);
-    expect(applied.lineup[gk]).toBe(injuredGk.id);
+    expect(applied.lineup[gk]).toBe("");
     expect(applied.replaced).toEqual([{ out: injuredGk.id, in: "", slot: gk, reason: "injured" }]);
   });
 });

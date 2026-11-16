@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.6.1",
+    date: "2026-11-16",
+    time: "21:07",
+    items: [],
+    fixes: [
+      { tab: "formation", pt: "Escalações salvas: usar uma mantém exatamente os jogadores que você salvou. Quem saiu do clube, está lesionado ou suspenso deixa a vaga vazia. Uma escalação sem jogadores salvos usa o seu time atual na formação dela, sem trocar ninguém.", en: "Saved line-ups: using one keeps exactly the players you saved. Anyone who left the club, is injured or suspended leaves the slot empty. A line-up with no saved players uses your current team in its formation, without swapping anyone." },
+      { tab: "scout", pt: "Jovens sem clube encontrados pelos olheiros podem ser recusados, e os que passaram do prazo saem da lista.", en: "Club-less youngsters found by the scouts can be turned down, and those past their date leave the list." },
+    ],
+  },
+  {
     version: "12.6",
     date: "2026-11-16",
     time: "20:55",
