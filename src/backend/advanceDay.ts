@@ -39,7 +39,7 @@ import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover, setAcademyNameBook } from "@/Domain/youth/youth";
 import { getStaffNameBook } from "@/backend/staffNameBook";
-import { buildWorldLevels, expireOffers, processRetirements } from "@/Domain/retirement/retirement";
+import { buildWorldLevels, expireOffers, processRetirements, retireFreeAgents } from "@/Domain/retirement/retirement";
 import { overallAvg } from "@/Domain/playerRating";
 import type { Pyramids } from "@/types/pyramidTypes";
 import type { MatchEvent, StoredDayLog, TrainingEvent, RestEvent } from "@/types/dayLogTypes";
@@ -127,7 +127,7 @@ import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, sett
 import { liveBids } from "@/Domain/negotiation/bids";
 import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { signingBonusAsk } from "@/Domain/negotiation/freeSigning";
-import { dropNeverPlayed, freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
+import { dropNeverPlayed, freeAgentTick, idleVeterans, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
 import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
@@ -1920,7 +1920,12 @@ export async function advanceOneDay(
       // Free agents: a few AI clubs hire from the free pool (fee 0, wage-gated). Squads that
       // just traded today are skipped so their freshly saved rosters are never overwritten.
       const rawFreeAgents = await saveService.getFreeAgents(saveId);
-      const freeAgentPool = pruneFreeAgents(rawFreeAgents, currentDate);
+      // 35+ unsigned for 60 days retire (no AI club signs them); 30–34 leave after 180 days, the rest after a year.
+      const veterans = idleVeterans(rawFreeAgents, currentDate);
+      const freeAgentPool = pruneFreeAgents(veterans.kept, currentDate);
+      if (veterans.retiring.length > 0) {
+        await saveService.writeRetired(saveId, [...(await saveService.getRetired(saveId)), ...retireFreeAgents(veterans.retiring, currentDate)]);
+      }
       if (freeAgentPool.length !== rawFreeAgents.length) await saveService.writeFreeAgents(saveId, freeAgentPool);
       if (freeAgentPool.length > 0) {
         const tradedToday = new Set([...completedTransfers.flatMap((tx) => [tx.buyerSquad.id, tx.sellerSquad.id]), ...sellOnPaidTo]);

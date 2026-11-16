@@ -137,6 +137,26 @@ describe("pool helpers and off-season dates", () => {
     ];
     expect(pruneFreeAgents(pool, "2027-06-01").map((f) => f.player.id)).toEqual(["b"]);
   });
+  test("pruneFreeAgents drops players of 30 to 34 after 180 days", async () => {
+    const { pruneFreeAgents } = await import("@/Domain/contracts/freeAgents");
+    const at = (id: string, age: number, since: string): FreeAgent => {
+      const f = agent(id, "ST", 5);
+      return { player: { ...f.player, age }, since };
+    };
+    const pool = [at("y", 29, "2026-10-01"), at("s", 31, "2026-10-01"), at("r", 33, "2027-03-01")];
+    expect(pruneFreeAgents(pool, "2027-06-01").map((f) => f.player.id)).toEqual(["y", "r"]);
+  });
+  test("idleVeterans retires 35+ unsigned for 60 days, nobody younger", async () => {
+    const { idleVeterans } = await import("@/Domain/contracts/freeAgents");
+    const at = (id: string, age: number, since: string): FreeAgent => {
+      const f = agent(id, "ST", 5);
+      return { player: { ...f.player, age }, since };
+    };
+    const pool = [at("old", 36, "2027-03-01"), at("new", 36, "2027-05-01"), at("young", 34, "2026-12-01")];
+    const { kept, retiring } = idleVeterans(pool, "2027-06-01");
+    expect(retiring.map((f) => f.player.id)).toEqual(["old"]);
+    expect(kept.map((f) => f.player.id)).toEqual(["new", "young"]);
+  });
   test("dropNeverPlayed removes only today's releases without an official game", async () => {
     const { dropNeverPlayed } = await import("@/Domain/contracts/freeAgents");
     const played = { ...agent("p", "ST", 5) };

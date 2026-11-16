@@ -43,6 +43,11 @@ export const CONTRACT_CONFIG = {
   YOUTH_CONTRACT_YEARS: 3,
   /** AI clubs that try the free pool each day. */
   FREE_AGENT_CLUBS_PER_DAY: 10,
+  /** A free agent this old or older (no AI club signs him) retires after this many days unsigned. */
+  FREE_VETERAN_RETIRE_DAYS: 60,
+  /** A free agent from this age up to the veteran age leaves the pool after this many days (others: a year). */
+  FREE_SENIOR_AGE: 30,
+  FREE_SENIOR_DAYS: 180,
 } as const;
 
 /**

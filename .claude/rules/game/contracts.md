@@ -109,6 +109,7 @@ clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum
 - **Loans (Etapa 21):** a borrowed player keeps the parent club's contract; renewing him is 400 `onLoan`, and a loan
   never runs past the contract. Loans held by a rolling club go back before the expiries (`.claude/rules/game/negotiation.md`).
 - **Never played (2026-11-16):** at the rollover, a player released that day with no official game in his career (no history row with games, none this season) leaves the world at once (`dropNeverPlayed`, after the refill had its chance). These were mostly filler youngsters whose 3-year contract ran out: a 20-season soak had ~1,300 of the ~2,900 free agents with zero games. Earlier pool entries and releases by other routes keep the one-year rule.
+- **Free pool (12.5.1):** a free agent of 35+ (no AI club signs him) unsigned for `FREE_VETERAN_RETIRE_DAYS` (60) retires every day (`idleVeterans` → `retireFreeAgents`, `freeAgent: true` in `retired.json`); one of 30–34 leaves after `FREE_SENIOR_DAYS` (180), the rest after a year. Measured on the pool of a 4-season soak (1221 free on 2030-06-20, one year of releases): 927 left that day, 652 at the end of August, 135 from December on (signings and new releases not counted).
 - **Free pool:** `pruneFreeAgents` runs every day; `toFreeAgent` clears `injury`, `contract` and club on release. Released human players are also removed from `tactics.lineup` and `market.playerSellList`.
 
 ## Etapa 25 (4.0): janelas e pré-contrato

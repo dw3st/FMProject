@@ -5,6 +5,7 @@ import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
 import { AI_SIGN_MAX_AGE, CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { addYearsIso, aiRenewalYears, contractEndFor, renewalContract } from "@/Domain/contracts/contracts";
 import { roundAttr } from "@/Domain/attributes";
+import { addDays } from "@/Domain/dates";
 import { overallAvg } from "@/Domain/playerRating";
 import { generateTransferNeeds, scoreCandidate, teamAvgRating } from "@/Domain/transfer/transferNeeds";
 import { getMainRole } from "@/Domain/roles";
@@ -207,10 +208,23 @@ export function freeAgentTick(args: {
   return { squads, changedIds, signedIds };
 }
 
-/** Drops free agents released more than a year before `date`. */
+/**
+ * Drops free agents nobody will sign: a year after the release, 180 days for players of 30 to 34
+ * and, for 35+ (no AI club signs them), see `idleVeterans` (they retire after 60 days).
+ */
 export function pruneFreeAgents(pool: FreeAgent[], date: string): FreeAgent[] {
   const keepSince = addYearsIso(date, -1);
-  return pool.filter((f) => f.since > keepSince);
+  const seniorSince = addDays(date, -C.FREE_SENIOR_DAYS);
+  return pool.filter((f) => f.since > keepSince && (f.player.age < C.FREE_SENIOR_AGE || f.since > seniorSince));
+}
+
+/** Free agents of 35+ unsigned for `FREE_VETERAN_RETIRE_DAYS`: they retire (the caller writes the records). */
+export function idleVeterans(pool: FreeAgent[], date: string): { kept: FreeAgent[]; retiring: FreeAgent[] } {
+  const cutoff = addDays(date, -C.FREE_VETERAN_RETIRE_DAYS);
+  const kept: FreeAgent[] = [];
+  const retiring: FreeAgent[] = [];
+  for (const f of pool) (f.player.age >= AI_SIGN_MAX_AGE && f.since <= cutoff ? retiring : kept).push(f);
+  return { kept, retiring };
 }
 
 /** At least one official game for a club: a history row with games, or games this season. */

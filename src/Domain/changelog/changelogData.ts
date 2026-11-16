@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.5.1",
+    date: "2026-11-16",
+    time: "20:25",
+    items: [],
+    fixes: [
+      { tab: "market", pt: "A lista de jogadores livres ficou mais enxuta: quem tem 35 anos ou mais e passa 60 dias sem clube se aposenta, e quem tem de 30 a 34 sai da lista depois de 180 dias.", en: "The free agent list is leaner: players aged 35 or over who spend 60 days without a club retire, and players aged 30 to 34 leave the list after 180 days." },
+    ],
+  },
+  {
     version: "12.5",
     date: "2026-11-16",
     time: "16:10",
