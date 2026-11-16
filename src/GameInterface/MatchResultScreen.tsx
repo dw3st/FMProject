@@ -81,6 +81,7 @@ function orderResultPlayers(
   ids: string[],
   event: MatchEvent,
   byId: Map<string, RosterPlayer>,
+  roles: Record<string, string> = {},
 ): { starters: string[]; subs: string[] } {
   const entered = new Map<string, number>();
   event.substitutions.forEach((s, i) => {
@@ -88,6 +89,7 @@ function orderResultPlayers(
   });
   const sortable = (id: string) => {
     const p = byId.get(id);
+    if (!p && roles[id]) return { pos: roles[id], natural: roles[id] as never, name: "" };
     return { pos: p?.positions[0] ?? "", natural: p ? preferredRole(p) : undefined, name: "" };
   };
   const rating = (id: string) => event.playerRatings[id] ?? 0;
@@ -122,17 +124,20 @@ function ResultPlayerRow({
   playerId,
   event,
   roster,
+  fallbackRole,
   align,
 }: {
   playerId: string;
   event: MatchEvent;
   roster: RosterPlayer | undefined;
+  /** A national side has no club roster: the role from the call-up (`/national/teams/:id`). */
+  fallbackRole?: string;
   align: "left" | "right";
 }) {
   const name = event.playerNames[playerId] ?? roster?.name ?? playerId;
   const lastName = name.split(" ").pop() ?? name;
-  // A national side has no roster here: no position is better than a wrong one (tester report).
-  const role = roster ? preferredRole(roster) : "";
+  // A national side has no club roster: the call-up's role, else no position (never a wrong one).
+  const role = roster ? preferredRole(roster) : fallbackRole ?? "";
   const rating = event.playerRatings[playerId];
   const goals = event.playerStats[playerId]?.goals ?? 0;
   const assists = event.playerStats[playerId]?.assists ?? 0;
@@ -234,6 +239,7 @@ function ResultTeamCard({
   teamSide,
   logoUrl,
   accentHex,
+  roles,
 }: {
   side: "home" | "away";
   squadName: string;
@@ -242,16 +248,18 @@ function ResultTeamCard({
   teamSide: "home" | "away";
   logoUrl?: string;
   accentHex: string;
+  roles?: Record<string, string>;
 }) {
   const { t } = useTranslation();
   const byId = rosterById(squad);
-  const { starters, subs } = orderResultPlayers(playerIdsForTeam(event, teamSide), event, byId);
+  const { starters, subs } = orderResultPlayers(playerIdsForTeam(event, teamSide), event, byId, roles);
   const renderRow = (id: string) => (
     <ResultPlayerRow
       key={id}
       playerId={id}
       event={event}
       roster={byId.get(id)}
+      fallbackRole={roles?.[id]}
       align={side === "home" ? "left" : "right"}
     />
   );
@@ -318,6 +326,8 @@ export function MatchResultScreen() {
   const [matchEvent, setMatchEvent] = useState<MatchEvent | null>(null);
   const [homeSquad, setHomeSquad] = useState<Squad | null>(null);
   const [awaySquad, setAwaySquad] = useState<Squad | null>(null);
+  /** Roles of the players of a national side (no club roster), by player id. */
+  const [nationalRoles, setNationalRoles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const shownRef = useRef(false);
   const [redirectingToDashboard, setRedirectingToDashboard] = useState(false);
@@ -441,12 +451,23 @@ export function MatchResultScreen() {
           ),
         ]);
 
+        // A national side: the roles from the call-up (the squad route knows only clubs).
+        const roles: Record<string, string> = {};
+        for (const id of [ev.home, ev.away]) {
+          if (!id.startsWith("nat_")) continue;
+          const r = await fetch(`/api/saves/${encodeURIComponent(session.saveId)}/national/teams/${encodeURIComponent(id)}`);
+          if (!r.ok) continue;
+          const team = (await r.json()) as { callUp?: { players: { id: string; role: string | null }[] } | null };
+          for (const p of team.callUp?.players ?? []) if (p.role) roles[p.id] = p.role;
+        }
+
         if (cancelled) return;
         shownRef.current = true;
         setMatchEvent(ev);
         setResolvedDate(date);
         setHomeSquad(hs);
         setAwaySquad(as);
+        setNationalRoles(roles);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : t("common.loading"));
       } finally {
@@ -672,6 +693,7 @@ export function MatchResultScreen() {
           side="home"
           squadName={homeName}
           squad={homeSquad}
+          roles={nationalRoles}
           event={matchEvent}
           teamSide="home"
           logoUrl={homeLogoUrl}
@@ -688,6 +710,7 @@ export function MatchResultScreen() {
           side="away"
           squadName={awayName}
           squad={awaySquad}
+          roles={nationalRoles}
           event={matchEvent}
           teamSide="away"
           logoUrl={awayLogoUrl}

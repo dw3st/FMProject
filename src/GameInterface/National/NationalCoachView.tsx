@@ -137,7 +137,7 @@ function TeamBlock({ saveId, data, onChanged }: { saveId: string; data: CoachDat
   );
 }
 
-function objectiveText(o: NationalObjective, t: (k: string, p?: Record<string, unknown>) => string): string {
+export function objectiveText(o: NationalObjective, t: (k: string, p?: Record<string, unknown>) => string): string {
   if (o.kind === "qualifier") return t(o.mustQualify ? "nationalCoach.objective.qualifierMust" : "nationalCoach.objective.qualifier", { group: o.group, target: o.target });
   return t(`nationalCoach.objective.${o.stage}`);
 }

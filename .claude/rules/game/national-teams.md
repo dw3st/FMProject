@@ -279,3 +279,9 @@ Pedido do usuário. `NationalTactics` (`NationalState.human[seatId].tactics`) le
 - **Atalhos:** a prévia do jogo da seleção, o cartão Próximo jogo do Painel, uma linha no cartão Atenção (`nationalGame`, jogo da seleção em até 7 dias) e o resumo de tática em Minha seleção (`NationalCoachView`, com Usar a tática do clube copiando formação, formação livre, estilo, eixos e instruções) levam à tela.
 - Testes: `src/Domain/tactics/tacticsBody.test.ts`, `src/Domain/national/nationalSquad.test.ts` (`coachSide`), `src/backend/national.coach.test.ts`.
 - Limitações: a marcação individual do dia não existe na seleção; num jogo entre dois técnicos, a troca de formação no meio do jogo só aceita as prontas (como no clube); o elenco `next` muda até a convocação, e um titular que não for convocado é trocado no dia.
+
+## Seleção no Painel e pedir outra seleção (report do usuário, 2026-11-16)
+
+- **Painel:** quem treina uma seleção tem acima do cartão do clube a troca "Clube / <seleção>" (`CoachCardSwitch`, escolha em `localStorage` `fm.dashboard.coachView`); a seleção mostra `NationalCoachCard` (`Dashboard/NationalCoachCard.tsx`, da rota `GET /national/coach`): bandeira, ranking, salário, metas, próximo jogo, atalhos para Minha seleção e a tática, a chave "Aberto a outras seleções" e "Deixar a seleção" (com confirmação, a rota de sempre).
+- **Pedir outra seleção:** `PUT /api/saves/:id/national/coach/seeking { on }` (409 `notCoach`) grava `NationalHumanCoach.seeking`. Com ele, uma vaga que abre também sorteia proposta para quem já treina (`offerToHuman`), e no dia 1 de cada mês as vagas abertas sorteiam de novo para quem pede. Aceitar uma proposta assim deixa a seleção atual antes (`leaveNationalTeam`, `left: "moved"`, interino e vaga da IA, mensagem `resigned`) e a chave volta a desligada. Sem a chave, aceitar enquanto treina continua 409 `offerClosed`.
+- Teste: `src/backend/national.coach.test.ts` ("asking for another national team").

@@ -36,9 +36,11 @@ export const managerAssetRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const body = await req.json().catch(() => null) as { kind?: unknown; language?: unknown } | null;
+    const body = await req.json().catch(() => null) as { kind?: unknown; language?: unknown; replace?: unknown } | null;
     const kind = body?.kind;
     const language = typeof body?.language === "string" ? body.language : undefined;
+    if (body?.replace !== undefined && (typeof body.replace !== "string" || body.replace.length > 60)) return Response.json({ error: "invalidCourse" }, { status: 400 });
+    const replace = kind === "language" && typeof body?.replace === "string" ? body.replace : undefined;
     if (kind !== "language" && !(LICENCE_KINDS as unknown[]).includes(kind)) return Response.json({ error: "invalidCourse" }, { status: 400 });
     if (kind === "language" && (!language || language.length > 60 || !isCourseLanguage(language))) {
       return Response.json({ error: "invalidCourse" }, { status: 400 });
@@ -52,11 +54,11 @@ export const managerAssetRoutes = {
       const wallet = managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets));
       const courseKind = kind as CourseKind;
       const refusal = courseRefusal({
-        kind: courseKind, ...(language ? { language } : {}), studies: seat.managerStudies,
+        kind: courseKind, ...(language ? { language } : {}), ...(replace ? { replace } : {}), studies: seat.managerStudies,
         spoken: spokenLanguages(seat.manager?.nationalityIso, seat.managerStudies, date), date, wallet,
       });
       if (refusal) return Response.json({ error: refusal }, { status: refusal === "invalidCourse" ? 400 : 409 });
-      const managerStudies = startCourse(seat.managerStudies, courseKind, date, language);
+      const managerStudies = startCourse(seat.managerStudies, courseKind, date, language, replace);
       const managerSpent = (seat.managerSpent ?? 0) + coursePrice(courseKind);
       await saveService.updateSeat(saveId, auth.seatId, { managerStudies, managerSpent });
       return Response.json({ managerStudies, managerSpent });

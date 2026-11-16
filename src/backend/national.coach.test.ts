@@ -207,6 +207,37 @@ describe("the human manager at a national team", () => {
     if (cal.fixtures.some((f) => f.date === "2026-09-07")) expect(log2.nationalMatches?.[seatId]).toBeDefined();
   }, 240_000);
 
+  test("asking for another national team: an offer while coaching, accepting it leaves the old one", async () => {
+    const OTHER = "nat_scotland";
+    const seek = (on: boolean) => call("/api/saves/:saveId/national/coach/seeking", `/api/saves/${saveId}/national/coach/seeking`, { method: "PUT", body: JSON.stringify({ on }) });
+    const meta = (await saveService.getMeta(saveId))!;
+    const date = meta.currentDate!;
+    let state = (await saveService.getNationalState(saveId))!;
+    state = { ...state, vacancies: { ...state.vacancies, [OTHER]: { since: date, hireOn: date } } };
+    state = withOffer(state, seatId, { id: "natjob_other", teamId: OTHER, nation: "Scotland", date, expires: "2099-01-01", prestige: 0.5, rank: 30, wage: 40_000 });
+    await saveService.writeNationalState(saveId, state);
+    const accept = () => call("/api/saves/:saveId/national/coach/offers/:offerId", `/api/saves/${saveId}/national/coach/offers/natjob_other`, { method: "POST", body: JSON.stringify({ accept: true }) }, { offerId: "natjob_other" });
+    // Not asking: an offer can't take him away from the team he coaches.
+    expect((await accept()).status).toBe(409);
+    expect((await seek(true)).status).toBe(200);
+    expect((await saveService.getNationalState(saveId))!.human?.[seatId]?.seeking).toBe(true);
+    expect((await accept()).status).toBe(200);
+    state = (await saveService.getNationalState(saveId))!;
+    expect(state.human?.[seatId]).toMatchObject({ teamId: OTHER, wage: 40_000 });
+    expect(state.human?.[seatId]?.seeking).toBeUndefined();
+    expect(state.vacancies[TEAM]).toBeDefined();
+    expect(state.teams[TEAM]!.managerId).not.toBe(`seat:${seatId}`);
+    const me = (await saveService.getManagers(saveId)).find((m) => m.seatId === seatId)!;
+    expect(currentNationalTeam(me)).toBe(OTHER);
+    expect(me.squadId).toBe(HUMAN);
+    // Back to the first team so the resignation test below reads as before.
+    state = { ...state, vacancies: { ...state.vacancies, [TEAM]: { since: date, hireOn: "2099-01-01" } } };
+    state = withOffer({ ...state, human: { ...state.human, [seatId]: { ...state.human![seatId]!, seeking: true } } }, seatId, { id: "natjob_back", teamId: TEAM, nation: "Wales", date, expires: "2099-01-01", prestige: 0.5, rank: 40, wage: 30_000 });
+    await saveService.writeNationalState(saveId, state);
+    expect((await call("/api/saves/:saveId/national/coach/offers/:offerId", `/api/saves/${saveId}/national/coach/offers/natjob_back`, { method: "POST", body: JSON.stringify({ accept: true }) }, { offerId: "natjob_back" })).status).toBe(200);
+    expect((await seek(false)).status).toBe(200);
+  });
+
   test("resigning: an interim and an AI vacancy, the club untouched", async () => {
     const res = await call("/api/saves/:saveId/national/coach/resign", `/api/saves/${saveId}/national/coach/resign`, { method: "POST" });
     expect(res.status).toBe(200);

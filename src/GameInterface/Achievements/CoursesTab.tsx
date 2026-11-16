@@ -38,6 +38,8 @@ export function CoursesTab() {
   const spoken = spokenLanguages(save?.manager?.nationalityIso, studies, date);
   const [betWallet, setBetWallet] = useState<number | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  /** The learned language he lets go, when he is at the limit. */
+  const [replace, setReplace] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -60,18 +62,22 @@ export function CoursesTab() {
     ? Math.max(0, Math.min(100, Math.round((daysBetween(course.started, date) / Math.max(1, daysBetween(course.started, course.until))) * 100)))
     : 0;
 
-  async function buy(kind: CourseKind, language?: string) {
+  const learned = settled.languages ?? [];
+  const full = learned.length >= COURSES.MAX_LEARNED;
+
+  async function buy(kind: CourseKind, language?: string, letGo?: string) {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch(`/api/saves/${session?.saveId}/manager-course`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, ...(language ? { language } : {}) }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, ...(language ? { language } : {}), ...(letGo ? { replace: letGo } : {}) }),
       });
       if (!res.ok) {
         const code = ((await res.json().catch(() => ({}))) as { error?: string }).error;
         setError(t(`courses.errors.${code}`, { defaultValue: t("courses.errors.generic") }));
       }
       setPicked(null);
+      setReplace(null);
       await refresh({ background: true });
     } catch {
       setError(t("courses.errors.generic"));
@@ -119,6 +125,9 @@ export function CoursesTab() {
         <p className="text-sm text-muted-foreground tabular-nums m-0">
           {t("courses.languagesNote", { price: formatFee(COURSES.LANGUAGE.price), months: Math.round(COURSES.LANGUAGE.days / 30) })}
         </p>
+        <p className="text-sm text-muted-foreground tabular-nums m-0">
+          {t("courses.learnedCount", { n: learned.length, max: COURSES.MAX_LEARNED })}
+        </p>
         {course && (
           <p className="text-sm text-chart-4 tabular-nums m-0">
             {t("courses.oneAtATime", { course: courseLabel(course.kind, course.language), date: formatGameDate(course.until, i18n.language) })}
@@ -133,12 +142,29 @@ export function CoursesTab() {
             </Chip>
           ))}
         </div>
+        {picked && full && (
+          <div className="flex flex-col gap-2">
+            <p className={LABEL}>{t("courses.replaceLabel")}</p>
+            <div className="flex flex-wrap gap-2">
+              {learned.map((k) => (
+                <Chip key={k} selected={replace === k} onClick={() => setReplace(replace === k ? null : k)} disabled={busy}>
+                  {languageName(k, i18n.language, t)}
+                </Chip>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground m-0">{t("courses.replaceHint", { max: COURSES.MAX_LEARNED })}</p>
+          </div>
+        )}
         {picked && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button className="tabular-nums" disabled={busy || !!course || wallet < COURSES.LANGUAGE.price} onClick={() => void buy("language", picked)}>
+            <Button
+              className="tabular-nums"
+              disabled={busy || !!course || wallet < COURSES.LANGUAGE.price || (full && !replace)}
+              onClick={() => void buy("language", picked, full ? replace ?? undefined : undefined)}
+            >
               {t("courses.start", { course: courseLabel("language", picked), price: formatFee(COURSES.LANGUAGE.price) })}
             </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => setPicked(null)}>{t("courses.cancel")}</Button>
+            <Button variant="secondary" disabled={busy} onClick={() => { setPicked(null); setReplace(null); }}>{t("courses.cancel")}</Button>
           </div>
         )}
       </section>

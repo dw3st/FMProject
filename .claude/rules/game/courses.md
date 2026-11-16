@@ -13,6 +13,10 @@ Desenho aprovado pelo usuário (reports de tester). Versão **9.3**. Lógica pur
 - **Propostas** (`pickOfferingClubs({ countryWeight })`, `offerCountryWeight` em `jobWorld.ts`): clube de um país cuja língua ele não fala × 0,5; país de um clube onde ele foi ídolo × 1,5. Ídolo (`idolClubs`): 4 temporadas (1460 dias) numa passagem, ou um título (fora acesso) creditado durante ela. As duas regras multiplicam.
 - `POST /api/saves/:id/manager-course { kind: "language" | "a" | "pro", language? }`: 400 `invalidCourse`, 409 `busy` / `known` / `needsA` / `noMoney`; guarda de lobby.
 
+## Limite de idiomas (report de tester, 2026-11-16)
+
+No máximo `COURSES.MAX_LEARNED` (2) idiomas aprendidos em curso, além da língua nativa. Com o limite cheio, um curso novo de idioma precisa de `replace` (um idioma aprendido, nunca o nativo; 409 `languagesFull` sem ele, 400 `invalidCourse` com um que ele não aprendeu): o escolhido é esquecido quando o curso termina (`ManagerCourse.replaces`, aplicado em `settledStudies`). Quem já tinha mais de 2 de antes fica com eles; só o próximo curso pede a troca. Tela: "Idiomas aprendidos: N de 2" e, com o limite cheio, a escolha do idioma para esquecer antes de começar.
+
 ## Tela
 
 "Seu técnico" → aba **Cursos** (`CoursesTab`): carteira, línguas que fala, curso em andamento; chips das línguas (nomes por `Intl.DisplayNames`, `LANGUAGE_CODE`) e as duas licenças. i18n `courses.*`.

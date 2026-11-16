@@ -54,4 +54,17 @@ describe("manager courses (9.3)", () => {
     expect(countryOfferWeight("Spain", spoken, new Set(["Spain"]))).toBe(0.75);
     expect(countryOfferWeight("Portugal", spoken, new Set(["Portugal"]))).toBe(1.5);
   });
+
+  test("a third learned language replaces one he knows (tester report)", () => {
+    const studies = { languages: ["spanish", "german"] };
+    const spoken = new Set(["portuguese", "spanish", "german"]);
+    const base = { kind: "language" as const, studies, spoken, date: "2027-01-01", wallet: 1e9 };
+    expect(courseRefusal({ ...base, language: "french" })).toBe("languagesFull");
+    expect(courseRefusal({ ...base, language: "french", replace: "portuguese" })).toBe("invalidCourse");
+    expect(courseRefusal({ ...base, language: "french", replace: "german" })).toBeNull();
+    const s = startCourse(studies, "language", "2027-01-01", "french", "german");
+    expect(settledStudies(s, "2027-02-01").languages).toEqual(["spanish", "german"]);
+    expect(settledStudies(s, "2027-12-01").languages).toEqual(["spanish", "french"]);
+    expect(courseRefusal({ ...base, studies: { languages: ["spanish"] }, language: "french" })).toBeNull();
+  });
 });

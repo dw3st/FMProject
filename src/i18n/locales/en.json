@@ -2741,6 +2741,19 @@
         "repair": "Repair",
         "tactics": "Tactics"
       }
+    },
+    "coachSwitch": {
+      "label": "Club or national team",
+      "club": "Club",
+      "national": "National team",
+      "open": "My national team",
+      "next": "Next game",
+      "career": "Career",
+      "seeking": "Open to other national teams",
+      "seekingOn": "Vacancies at other national teams can offer you their job; accepting one leaves this team.",
+      "seekingOff": "Only this national team. Turn it on to hear from vacancies at others.",
+      "offers_one": "{{count}} offer",
+      "offers_other": "{{count}} offers"
     }
   },
   "squadScreen": {
@@ -7586,10 +7599,14 @@
       "needsA": "The Pro Licence needs the A Licence.",
       "noMoney": "Not enough money in the wallet.",
       "invalidCourse": "Invalid course.",
-      "generic": "The course could not start."
+      "generic": "The course could not start.",
+      "languagesFull": "He already knows the most languages he can learn: pick one to let go."
     },
     "oneAtATime": "One course at a time: {{course}} ends on {{date}}.",
-    "progress": "{{pct}}% done"
+    "progress": "{{pct}}% done",
+    "learnedCount": "Languages learned: {{n}} of {{max}}",
+    "replaceLabel": "Language to let go",
+    "replaceHint": "He can learn at most {{max}} languages besides his own: the one you pick is forgotten when the course ends."
   },
   "seatFriendly": {
     "invite": "Set up a friendly",

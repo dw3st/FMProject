@@ -24,7 +24,7 @@ import type {
   PlayerDevelopmentChange,
 } from "@/types/dayLogTypes";
 import { applyDevelopment } from "@/GameEngine/PlayerDevelopment";
-import { dpWeightsFor } from "@/Domain/development/dpWeights";
+import { matchDpWeights, playedRoles } from "@/Domain/development/dpWeights";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -174,6 +174,8 @@ export interface PlayedMatchRecording {
   awayManagerCards?: ManagerCardRecord[];
   /** The user's manager complained at least once without a card (squad morale +1, `var.md` §4). */
   complaintMorale?: true;
+  /** Roster id → slot role each player ended the live match in (position adaptation; unknown roles are ignored). */
+  playerRoles?: Record<string, string>;
 }
 
 /** A card shown to the human club's manager after a complaint (live match only). */
@@ -212,6 +214,8 @@ function finalizeSquadsAfterMatch(
    * suspensions (Etapa 12 part 2) are derived from this list too.
    */
   cards: MatchCard[] = [],
+  /** Roster id → slot role played (out of position adapts slowly, `matchDpWeights`); absent = natural. */
+  roles: Record<string, string> = {},
 ): {
   updatedHome: Squad;
   updatedAway: Squad;
@@ -357,7 +361,7 @@ function finalizeSquadsAfterMatch(
     const updatedPlayers = squad.players.map((p) => {
       const rating = playerRatings[p.id] ?? 0;
       const { updatedPlayer, levelChanges } = applyDevelopment(
-        p, rating, dpWeightsFor(p),
+        p, rating, rating > 0 ? matchDpWeights(p, roles[p.id]) : matchDpWeights(p),
         devMult * matchDevMult * rebornDpMult(p) * personalDpMult(p, moraleDpMult(p))
           * youthAttributeMult(squad.managerAttributes, p.age),
         professionalismDecayMult(p),
@@ -456,6 +460,7 @@ export function buildMatchEventFromRecording(
     rng,
     fullMinutesForInjured,
     recording.cards ?? [],
+    recording.playerRoles ?? {},
   );
 
   const event: MatchEvent = {
@@ -792,6 +797,10 @@ export function buildMatchEvent(
       substitutions, totalMatchMinutes(result.decider),
       isCupSlug(fixture.competition), isContinentalSlug(fixture.competition),
       fixture.date, injuries, rng, false, cards,
+      {
+        ...playedRoles(sim.homeLineup, slotRoles(sim.homeFormation), substitutions),
+        ...playedRoles(sim.awayLineup, slotRoles(sim.awayFormation), substitutions),
+      },
     );
 
   const event: MatchEvent = {

@@ -58,6 +58,7 @@ import { managerFaceCountry } from "@/Domain/faces/managerFace";
 import { seatManagerId } from "@/Domain/seats/seats";
 import { rankOf } from "@/Domain/multiplayer/standings";
 import { navigate } from "@/GameInterface/router/navigation";
+import { CoachCardSwitch, NationalCoachCard, useCoachCardView } from "@/GameInterface/Dashboard/NationalCoachCard";
 
 interface LedgerApiResponse {
   entries: LedgerEntry[];
@@ -106,6 +107,10 @@ export function DashboardScreen() {
   }, []);
 
   const saveId = session?.saveId;
+  // A manager who also coaches a national team switches the club card to his national team (report, 2026-11-16).
+  const nationalTeamId = save?.season?.nationalTeamId ?? null;
+  const [coachView, setCoachView] = useCoachCardView();
+  const [coachNation, setCoachNation] = useState<string | null>(null);
   const leagueSlug = session?.leagueSlug;
   const stars = useStarPlayers(saveId, currentDate);
 
@@ -348,7 +353,8 @@ export function DashboardScreen() {
 
       {rivals && rivals.length >= 2 && <RivalsCard rows={rivals} />}
 
-      <ClubCard
+      {nationalTeamId && <CoachCardSwitch view={coachView} onChange={setCoachView} nation={coachNation} />}
+      {nationalTeamId && coachView === "national" && saveId ? <NationalCoachCard saveId={saveId} onNation={setCoachNation} /> : <ClubCard
         club={myClub}
         leagueName={competitionName(session.leagueSlug, leagues, i18n.language) || session.leagueName}
         managerName={session.manager?.name ?? null}
@@ -370,7 +376,7 @@ export function DashboardScreen() {
         budget={balance}
         squadSize={players.length}
         squadHref={squadHref}
-      />
+      />}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <NextMatchCard

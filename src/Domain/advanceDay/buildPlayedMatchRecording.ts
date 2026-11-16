@@ -63,11 +63,13 @@ export function buildPlayedMatchRecording(
   const playerStats: PlayedMatchRecording["playerStats"] = {};
   const playerRatings: Record<string, number> = {};
   const playerEnergy: Record<string, number> = {};
+  const playerRoles: Record<string, string> = {};
 
   // Players still on the pitch at full time
   for (const gp of gameState.players) {
     const rid = nameToRoster.get(gp.name);
     if (!rid) continue;
+    playerRoles[rid] = gp.role;
     playerEnergy[rid] = Math.max(0, Math.min(100, gp.energy));
     const ps = getPlayerStats(gp.id);
     playerStats[rid] = {
@@ -228,5 +230,6 @@ export function buildPlayedMatchRecording(
     ...(decider ? { decider } : {}),
     ...(typeof gameState.referee?.quality === "number" ? { var: matchVarStats(th, ta) } : {}),
     ...(managerCards.length > 0 ? { managerCards } : {}),
+    playerRoles,
   };
 }

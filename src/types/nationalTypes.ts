@@ -117,6 +117,8 @@ export interface NationalHumanCoach {
   callUp?: { date: string; players: string[] };
   /** Call-up dates whose 7-day notice was sent. */
   notified?: string[];
+  /** He asks for another national team (report, 2026-11-16): vacancies offer him their job while he coaches this one. */
+  seeking?: true;
 }
 
 export interface NationalStage {

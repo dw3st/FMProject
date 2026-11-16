@@ -16,7 +16,7 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { NationalCallUp, NationalCompetition, NationalState } from "@/types/nationalTypes";
 import { withSaveLock } from "@/backend/saveLock";
 import {
-  answerNationalOffer, nationalCoachView, nationalTacticsOf, nationalTacticsSquad, resignNationalTeam, saveNationalCallUp,
+  answerNationalOffer, nationalCoachView, nationalTacticsOf, nationalTacticsSquad, resignNationalTeam, setNationalSeeking, saveNationalCallUp,
   saveNationalTactics,
 } from "@/backend/nationalCoachWorld";
 
@@ -230,6 +230,21 @@ export const nationalRoutes = {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
       if (!meta?.currentDate) return Response.json({ error: "save not found" }, { status: 404 });
       const r = await resignNationalTeam(saveService, saveId, auth.seatId, meta.currentDate);
+      if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
+      return Response.json({ ok: true });
+    });
+  },
+
+  /** `PUT { on }`: he asks (or stops asking) for another national team. 409 `notCoach`. */
+  "/api/saves/:saveId/national/coach/seeking": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = (await req.json().catch(() => null)) as { on?: unknown } | null;
+    if (!body || typeof body.on !== "boolean") return Response.json({ error: "on required" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const r = await setNationalSeeking(saveService, saveId, auth.seatId, body.on as boolean);
       if (!r.ok) return Response.json({ error: r.error }, { status: r.status });
       return Response.json({ ok: true });
     });

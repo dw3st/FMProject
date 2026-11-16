@@ -2741,6 +2741,19 @@
         "repair": "Reformar",
         "tactics": "Tática"
       }
+    },
+    "coachSwitch": {
+      "label": "Clube ou seleção",
+      "club": "Clube",
+      "national": "Seleção",
+      "open": "Minha seleção",
+      "next": "Próximo jogo",
+      "career": "Carreira",
+      "seeking": "Aberto a outras seleções",
+      "seekingOn": "Seleções com vaga podem te fazer proposta; aceitar uma deixa esta seleção.",
+      "seekingOff": "Só esta seleção. Ligue para receber propostas de seleções com vaga.",
+      "offers_one": "{{count}} proposta",
+      "offers_other": "{{count}} propostas"
     }
   },
   "squadScreen": {
@@ -7583,10 +7596,14 @@
       "needsA": "A Licença Pro exige a Licença A.",
       "noMoney": "Dinheiro insuficiente na carteira.",
       "invalidCourse": "Curso inválido.",
-      "generic": "Não foi possível começar o curso."
+      "generic": "Não foi possível começar o curso.",
+      "languagesFull": "Ele já sabe o máximo de idiomas que pode aprender: escolha um para esquecer."
     },
     "oneAtATime": "Um curso por vez: {{course}} termina em {{date}}.",
-    "progress": "{{pct}}% concluído"
+    "progress": "{{pct}}% concluído",
+    "learnedCount": "Idiomas aprendidos: {{n}} de {{max}}",
+    "replaceLabel": "Idioma para esquecer",
+    "replaceHint": "Ele aprende no máximo {{max}} idiomas além do próprio: o escolhido é esquecido quando o curso termina."
   },
   "seatFriendly": {
     "invite": "Marcar amistoso",

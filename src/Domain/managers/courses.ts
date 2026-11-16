@@ -11,6 +11,8 @@ import type { ManagerRecord } from "@/types/managerTypes";
  */
 export const COURSES = {
   LANGUAGE: { price: 150_000, days: 90 },
+  /** Languages learned on courses at most (tester report, 2026-11-16): a new one past this replaces one he knows. */
+  MAX_LEARNED: 2,
   LICENCE: {
     a:   { price: 100_000, days: 60, reputation: 1 },
     pro: { price: 400_000, days: 120, reputation: 2 },
@@ -32,6 +34,8 @@ export interface ManagerCourse {
   kind: CourseKind;
   /** Language key (`languageOf`) for a language course. */
   language?: string;
+  /** A learned language he lets go when the course ends (he was at `MAX_LEARNED`). */
+  replaces?: string;
   started: string;
   until: string;
 }
@@ -82,6 +86,7 @@ export function settledStudies(s: ManagerStudies | undefined, date: string): Man
   const c = s?.course;
   if (!c) return out;
   if (c.until > date) return { ...out, course: c };
+  if (c.kind === "language" && c.replaces) out.languages = out.languages!.filter((k) => k !== c.replaces);
   if (c.kind === "language" && c.language && !out.languages!.includes(c.language)) out.languages!.push(c.language);
   if (c.kind !== "language" && !out.licences!.includes(c.kind)) out.licences!.push(c.kind);
   return out;
@@ -102,17 +107,21 @@ export function coursePrice(kind: CourseKind): number {
   return kind === "language" ? COURSES.LANGUAGE.price : COURSES.LICENCE[kind].price;
 }
 
-export type CourseRefusal = "busy" | "known" | "needsA" | "noMoney" | "invalidCourse";
+export type CourseRefusal = "busy" | "known" | "needsA" | "noMoney" | "invalidCourse" | "languagesFull";
 
 /** Why a course cannot start today, or null. */
 export function courseRefusal(args: {
-  kind: CourseKind; language?: string; studies: ManagerStudies | undefined; spoken: Set<string>; date: string; wallet: number;
+  kind: CourseKind; language?: string; replace?: string; studies: ManagerStudies | undefined; spoken: Set<string>; date: string; wallet: number;
 }): CourseRefusal | null {
   const s = settledStudies(args.studies, args.date);
   if (s.course) return "busy";
   if (args.kind === "language") {
     if (!args.language) return "invalidCourse";
     if (args.spoken.has(args.language)) return "known";
+    const learned = s.languages ?? [];
+    // Only a language learned on a course can be let go (never his own), and only when he is at the limit.
+    if (args.replace !== undefined && !learned.includes(args.replace)) return "invalidCourse";
+    if (learned.length >= COURSES.MAX_LEARNED && args.replace === undefined) return "languagesFull";
   } else {
     if (s.licences!.includes(args.kind)) return "known";
     if (args.kind === "pro" && !s.licences!.includes("a")) return "needsA";
@@ -121,10 +130,11 @@ export function courseRefusal(args: {
 }
 
 /** The studies with the course started today. */
-export function startCourse(studies: ManagerStudies | undefined, kind: CourseKind, date: string, language?: string): ManagerStudies {
+export function startCourse(studies: ManagerStudies | undefined, kind: CourseKind, date: string, language?: string, replace?: string): ManagerStudies {
   const days = kind === "language" ? COURSES.LANGUAGE.days : COURSES.LICENCE[kind].days;
   const s = settledStudies(studies, date);
-  return { ...s, course: { kind, ...(kind === "language" && language ? { language } : {}), started: date, until: addDays(date, days) } };
+  const lang = kind === "language" && language ? { language, ...(replace ? { replaces: replace } : {}) } : {};
+  return { ...s, course: { kind, ...lang, started: date, until: addDays(date, days) } };
 }
 
 /** Clubs where the manager was an idol: `IDOL_DAYS` there, or a title credited during the passage. */

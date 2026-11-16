@@ -424,3 +424,7 @@ Pedido do usuário depois da 11.1 (o primeiro ano de base ainda levava um jovem 
 | 62 | 67,5 → 66,0 | 71,0 → 69,8 | 72,0 → 71,5 |
 
 Base sem bônus nenhum (treino normal, 30 jogos de base): 45 → 50,7 aos 17 (antes 52,0). `bun scripts/youth-training-pace.ts`: um ano de sessões, média dos 13 atributos: leve +0,40, normal +0,55, pesado +0,66 (antes +0,46 / +0,63 / +0,80). `bun scripts/youth-comp-measure.ts`: 38 jogos de base dão +0,068 na média de um jovem de 17 (antes +0,115; a meta antiga de +0,10 não vale mais).
+
+## Adaptar jogando fora de posição (report de tester, 2026-11-16)
+
+Um jogador que joga numa vaga diferente da posição natural recebe a DP da partida `POSITION_ADAPT.MATCH_SHARE` (25%) pelos pesos da vaga e o resto pelos próprios (`matchDpWeights`, `src/Domain/development/dpWeights.ts`): a DP total não muda, só para onde vai, e a aptidão para a vaga sobe aos poucos porque sai dos atributos. Bem mais devagar que o treino individual naquela posição (toda a DP do treino vai para ela, com o foco por cima). A vaga: no motor, a escalação e a formação do jogo (`playedRoles`: o reserva herda a vaga de quem substituiu); na partida ao vivo, a vaga em que ele terminou (`PlayedMatchRecording.playerRoles`; papel desconhecido é ignorado). O quickSim não passa vagas (a partida do clube humano é sempre no motor). Quem não jogou fica com os pesos naturais (só o declínio).

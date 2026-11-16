@@ -360,6 +360,10 @@ export async function playNationalDay(args: {
     for (const [sid, h] of Object.entries(state.human ?? {})) seatOut(sid).earned = h.wage;
   }
   const hc: HumanCtx = { saveId, date, humans: args.humans ?? {}, seatOut };
+  // A manager asking for another national team: on the 1st of the month the open vacancies roll for him too.
+  if (date.endsWith("-01") && Object.values(state.human ?? {}).some((h) => h.seeking)) {
+    for (const id of Object.keys(state.vacancies)) state = offerToHuman(state, id, hc, true);
+  }
   /** The seat coaching a team today, or null. */
   const coachOf = (teamId: string): string | null => {
     for (const [sid, h] of Object.entries(state.human ?? {})) if (h.teamId === teamId) return sid;
@@ -872,11 +876,15 @@ interface HumanCtx {
  * A vacancy that just opened may offer its job to each seat's manager without a national team and without an offer
  * of that team; the AI hire waits for the answers.
  */
-function offerToHuman(state0: NationalState, teamId: string, hc: HumanCtx): NationalState {
+function offerToHuman(state0: NationalState, teamId: string, hc: HumanCtx, seekingOnly = false): NationalState {
   let state = state0;
-  const team = state.teams[teamId]!;
+  const team = state.teams[teamId];
+  if (!team) return state;
   for (const [sid, human] of Object.entries(hc.humans)) {
-    if (state.human?.[sid] || state.offers?.[sid]?.some((o) => o.teamId === teamId)) continue;
+    const h = state.human?.[sid];
+    // A seat coaching a team only hears from others when he asked for another one (`seeking`).
+    if (h ? !h.seeking || h.teamId === teamId : seekingOnly) continue;
+    if (state.offers?.[sid]?.some((o) => o.teamId === teamId)) continue;
     const offer = rollNationalOffer({
       saveId: hc.saveId, teamId, nation: team.nation, date: hc.date, reputation: human.reputation,
       ownNation: normalizeNation(human.nationality ?? "") === team.nation, teams: Object.values(state.teams),

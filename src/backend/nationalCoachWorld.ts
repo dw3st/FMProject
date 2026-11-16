@@ -54,26 +54,49 @@ export async function answerNationalOffer(
     await service.writeNationalState(saveId, { ...state, offers: { ...state.offers, [seatId]: mine }, vacancies });
     return { ok: true, teamId: offer.teamId };
   }
-  // A seat coaches one national team at most; the team must still be vacant.
-  if (state.human?.[seatId] || !team || !state.vacancies[team.id]) return { ok: false, status: 409, error: "offerClosed" };
-  await service.writeManagers(saveId, takeNationalJob(await service.getManagers(saveId), { seatId, teamId: team.id, date }));
-  const { [team.id]: _v, ...vacancies } = state.vacancies;
+  // A seat coaches one national team at most; the team must still be vacant. One that asked for another team leaves
+  // his current one first (interim and AI vacancy there, `left: "moved"`).
+  const current = state.human?.[seatId];
+  if ((current && (!current.seeking || current.teamId === offer.teamId)) || !team || !state.vacancies[team.id]) {
+    return { ok: false, status: 409, error: "offerClosed" };
+  }
+  let base = state;
+  let managers = await service.getManagers(saveId);
+  if (current) {
+    const old = state.teams[current.teamId]!;
+    const r = await leaveNationalTeam(service, saveId, seatId, state, date, "moved", managers);
+    base = r.state;
+    managers = r.managers;
+    await emitInboxMessage(saveId, buildNationalCoachMessage({ kind: "resigned", date, teamId: old.id, nation: old.nation }), service, seatId);
+  }
+  await service.writeManagers(saveId, takeNationalJob(managers, { seatId, teamId: team.id, date }));
+  const { [team.id]: _v, ...vacancies } = base.vacancies;
   // The team is taken: its offers close for every seat.
   const offers = Object.fromEntries(
-    Object.entries(state.offers ?? {}).map(([sid, list]) => [sid, list.filter((o) => o.teamId !== team.id)]),
+    Object.entries(base.offers ?? {}).map(([sid, list]) => [sid, list.filter((o) => o.teamId !== team.id)]),
   );
   await service.writeNationalState(saveId, {
-    ...state,
+    ...base,
     offers,
     vacancies,
-    teams: { ...state.teams, [team.id]: { ...team, managerId: seatManagerId(seatId) } },
-    human: { ...state.human, [seatId]: { teamId: team.id, since: date, wage: offer.wage, tactics: DEFAULT_TACTICS } },
+    teams: { ...base.teams, [team.id]: { ...team, managerId: seatManagerId(seatId) } },
+    human: { ...base.human, [seatId]: { teamId: team.id, since: date, wage: offer.wage, tactics: DEFAULT_TACTICS } },
   });
   await emitInboxMessage(saveId, buildNationalCoachMessage({ kind: "hired", date, teamId: team.id, nation: team.nation }), service, seatId);
   return { ok: true, teamId: team.id };
 }
 
 const maxDate = (a: string, b: string) => (a > b ? a : b);
+
+/** He asks (or stops asking) for another national team: vacancies offer him their job while he coaches. */
+export async function setNationalSeeking(service: SaveService, saveId: string, seatId: string, on: boolean): Promise<{ ok: true } | Fail> {
+  const state = await service.getNationalState(saveId);
+  const h = state?.human?.[seatId];
+  if (!state || !h) return { ok: false, status: 409, error: "notCoach" };
+  const { seeking: _s, ...rest } = h;
+  await service.writeNationalState(saveId, { ...state, human: { ...state.human, [seatId]: on ? { ...rest, seeking: true } : rest } });
+  return { ok: true };
+}
 
 /** He leaves his national team on his own (`left: "moved"`): interim + AI vacancy, his club untouched. */
 export async function resignNationalTeam(service: SaveService, saveId: string, seatId: string, date: string): Promise<{ ok: true } | Fail> {
@@ -224,7 +247,7 @@ export interface CoachCandidate {
 
 export interface NationalCoachView {
   offers: NationalCoachOffer[];
-  team: { id: string; nation: string; confed: string; elo: number; rank: number; since: string; wage: number } | null;
+  team: { id: string; nation: string; confed: string; elo: number; rank: number; since: string; wage: number; seeking?: true } | null;
   objectives: NationalObjective[];
   callUp: {
     date: string; firstGame: string; chosen: string[] | null; suggestion: string[]; candidates: CoachCandidate[];
@@ -249,7 +272,7 @@ export async function nationalCoachView(service: SaveService, saveId: string, se
   const team = state.teams[h.teamId]!;
   const all = Object.values(state.teams);
   const rank = rankTeams(all).findIndex((t) => t.id === team.id) + 1;
-  view.team = { id: team.id, nation: team.nation, confed: team.confed, elo: Math.round(team.elo), rank, since: h.since, wage: h.wage };
+  view.team = { id: team.id, nation: team.nation, confed: team.confed, elo: Math.round(team.elo), rank, since: h.since, wage: h.wage, ...(h.seeking ? { seeking: true } : {}) };
   view.tactics = h.tactics ?? DEFAULT_TACTICS;
   const games: (Fixture & { competition: string })[] = [];
   for (const slug of state.competitions) {
