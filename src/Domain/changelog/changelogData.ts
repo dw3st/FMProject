@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.8.2",
+    date: "2026-11-16",
+    time: "20:46",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Na partida, trocar de escalação salva também coloca cada jogador na posição que ela define, mesmo com a mesma formação.", en: "In a match, switching saved line-ups also puts each player in the position it sets, even with the same formation." },
+    ],
+  },
+  {
     version: "12.8.1",
     date: "2026-11-16",
     time: "20:39",

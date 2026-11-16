@@ -131,7 +131,7 @@ import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/Bro
 import { Icon } from "@/GameInterface/Icons";
 import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
 import { MatchTacticsBar } from "@/GameInterface/MatchTacticsBar";
-import { shortcutInstructions, shortcutLocked, type ShortcutUse } from "@/Domain/match/tacticShortcuts";
+import { savedSlotMoves, shortcutInstructions, shortcutLocked, type ShortcutUse } from "@/Domain/match/tacticShortcuts";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
@@ -1653,12 +1653,22 @@ export function MatchScreen() {
       // The server only knows the ready-made formations: a free one keeps the shape on the pitch.
       if (preset.formation !== CUSTOM_FORMATION_ID) sendH2H({ kind: "formation", formation: preset.formation });
       instructions.forEach((instruction, slot) => sendH2H({ kind: "instruction", slot, instruction }));
+      // Same shape on the pitch: put each starter in his saved slot too (another shape is reorganised by the server).
+      const sameShape = preset.formation === (mySide === "A" ? gs.formationA : gs.formationB).id;
+      if (sameShape) {
+        const mine = gs.players.filter((p) => p.team === mySide);
+        for (const m of savedSlotMoves(mine, preset.lineup, 11)) sendH2H(m);
+      }
     } else {
       const formation = userFormations.find((u) => u.id === `user:${key}`)?.formation ?? formationForSimId(preset.formation);
       setGameState((prev) => {
         if (!prev) return prev;
         let next = changeFormation(prev, "A", formation);
         instructions.forEach((instruction, slot) => { next = applyPlayerInstruction(next, "A", slot, instruction); });
+        // Each starter to the slot the saved line-up gives him (report 2026-11-16).
+        for (const m of savedSlotMoves(next.players.filter((p) => p.team === "A"), preset.lineup, 11)) {
+          next = m.kind === "swap" ? swapPlayerPositions(next, "A", m.aId, m.bId) : moveToEmptySlot(next, "A", m.id, m.slot);
+        }
         return next;
       });
     }

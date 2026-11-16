@@ -38,3 +38,43 @@ export function tacticShortcutSlots(presets: LineupPresets | undefined): { key: 
 export function shortcutInstructions(preset: Pick<LineupPreset, "slotInstructions">): (NonNullable<LineupPreset["slotInstructions"]>[number])[] {
   return Array.from({ length: 11 }, (_, i) => preset.slotInstructions?.[i] ?? null);
 }
+
+/** A starter as the slot plan sees him. */
+export interface SlotPlayer {
+  id: number;
+  rosterId: string;
+  slotIndex: number;
+  role: string;
+}
+
+export type SlotMove = { kind: "swap"; aId: number; bId: number } | { kind: "move"; id: number; slot: number };
+
+/**
+ * The moves that put each starter in the slot the saved line-up gives him (report 2026-11-16: two line-ups of the
+ * same formation with the full-backs swapped changed nothing on the pitch). Only players on the pitch move, never a
+ * keeper, never a substitution; a slot whose saved player is not on the pitch keeps whoever holds it.
+ */
+export function savedSlotMoves(players: readonly SlotPlayer[], lineup: readonly string[], slots: number): SlotMove[] {
+  const at = new Map<number, SlotPlayer>();
+  const pitch = players.filter((p) => p.slotIndex >= 0).map((p) => ({ ...p }));
+  for (const p of pitch) at.set(p.slotIndex, p);
+  const moves: SlotMove[] = [];
+  for (let slot = 0; slot < Math.min(slots, lineup.length); slot++) {
+    const want = pitch.find((p) => p.rosterId === lineup[slot]);
+    if (!want || want.slotIndex === slot || want.role === "GK") continue;
+    const holder = at.get(slot);
+    if (holder?.role === "GK") continue;
+    const from = want.slotIndex;
+    if (holder) {
+      moves.push({ kind: "swap", aId: want.id, bId: holder.id });
+      holder.slotIndex = from;
+      at.set(from, holder);
+    } else {
+      moves.push({ kind: "move", id: want.id, slot });
+      at.delete(from);
+    }
+    want.slotIndex = slot;
+    at.set(slot, want);
+  }
+  return moves;
+}

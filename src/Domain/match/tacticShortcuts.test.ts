@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   TACTIC_SHORTCUTS, shortcutInstructions, shortcutLocked, shortcutReadyMinute, tacticShortcutSlots,
+  savedSlotMoves,
 } from "@/Domain/match/tacticShortcuts";
 
 const base = { formation: "4-3-3", lineup: [], savedOn: "2027-03-01" };
@@ -41,5 +42,38 @@ describe("shortcutInstructions", () => {
     expect(list[1]).toEqual({ press: "more" });
     expect(list.filter(Boolean)).toHaveLength(1);
     expect(shortcutInstructions({}).every((x) => x === null)).toBe(true);
+  });
+});
+
+describe("savedSlotMoves", () => {
+  const p = (id: number, rosterId: string, slotIndex: number, role = "CB") => ({ id, rosterId, slotIndex, role });
+
+  test("full-backs swapped in the saved line-up swap on the pitch", () => {
+    const players = [p(1, "gk", 0, "GK"), p(2, "gavi", 1, "LB"), p(3, "juk", 4, "RB"), p(4, "sub", -1)];
+    expect(savedSlotMoves(players, ["gk", "juk", "", "", "gavi"], 11)).toEqual([{ kind: "swap", aId: 3, bId: 2 }]);
+  });
+
+  test("same slots: nothing", () => {
+    expect(savedSlotMoves([p(1, "a", 1), p(2, "b", 2)], ["", "a", "b"], 11)).toEqual([]);
+  });
+
+  test("a saved player off the pitch or a keeper never moves", () => {
+    const players = [p(1, "gk", 0, "GK"), p(2, "a", 1)];
+    expect(savedSlotMoves(players, ["a", "x"], 11)).toEqual([]);
+  });
+
+  test("an empty slot is filled by a move", () => {
+    expect(savedSlotMoves([p(2, "a", 1)], ["", "", "a"], 11)).toEqual([{ kind: "move", id: 2, slot: 2 }]);
+  });
+
+  test("a three-way rotation ends with everyone in place", () => {
+    const players = [p(1, "a", 1), p(2, "b", 2), p(3, "c", 3)];
+    const moves = savedSlotMoves(players, ["", "c", "a", "b"], 11);
+    const slot = new Map(players.map((x) => [x.id, x.slotIndex]));
+    for (const m of moves) {
+      if (m.kind === "swap") { const a = slot.get(m.aId)!; slot.set(m.aId, slot.get(m.bId)!); slot.set(m.bId, a); }
+      else slot.set(m.id, m.slot);
+    }
+    expect([slot.get(1), slot.get(2), slot.get(3)]).toEqual([2, 3, 1]);
   });
 });

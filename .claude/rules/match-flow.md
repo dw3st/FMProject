@@ -583,3 +583,5 @@ browser (the server does not enforce it). `MatchHud.tsx` was removed; `hudAttrib
 
 The same change fixed the manager's own formations in the solo match ("Minhas formações", 8.9.37): they were loaded
 only in the two-manager branch, where they are not offered, so the list was always empty.
+
+The shortcut also puts each starter in his saved slot (12.8.2, user report: line-ups A and B, both 4-2-3-1 with the full-backs swapped, changed nothing on the pitch). `savedSlotMoves` (`tacticShortcuts.ts`, tested) plans swaps and moves for the players on the pitch who are in the saved XI, never a keeper, never a substitution; solo they run through `swapPlayerPositions` / `moveToEmptySlot` after the formation change, between two managers they go as `swap` / `move` commands when the shape stays the same (another shape is reorganised by the server).
