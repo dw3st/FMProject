@@ -107,17 +107,17 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects
       <table className="w-full text-sm border-collapse tabular-nums">
         <thead className={TABLE_STYLE.head}>
           <tr>
-            <th className={th}>{t("scout.table.columns.pos")}</th>
-            <th className={th}>{t("scouting.col.player")}</th>
+            {head("pos", t("scout.table.columns.pos"))}
+            {head("player", t("scouting.col.player"))}
             {head("age", t("scouting.col.age"))}
-            <th className={th}>{t("scouting.col.club")}</th>
+            {head("club", t("scouting.col.club"))}
             {head("grade", t("scouting.col.grade"))}
             {head("overall", t("scouting.col.overall"))}
             {head("potential", t("scouting.col.potential"))}
             {head("knowledge", t("scouting.knowledge"))}
             {head("wage", t("scouting.col.wage"))}
             {head("value", t("scouting.col.value"))}
-            <th className={th}>{t("scouting.col.verdict")}</th>
+            {head("verdict", t("scouting.col.verdict"))}
           </tr>
         </thead>
         <tbody className={TABLE_STYLE.body}>

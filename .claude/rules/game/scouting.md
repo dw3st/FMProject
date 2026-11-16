@@ -395,3 +395,7 @@ Report do usuário (60 relatórios, todos de goleiro). O plano do chefe dava a t
 ## Recusar um jovem sem clube (12.6.1)
 
 Report do usuário. Aba Joias: botão Recusar em cada prospecto (`DELETE /api/saves/:id/scouting/prospects/:prospectId`, 404 `notFound`): ele sai da lista. `GET /scouting` não mostra prospecto vencido (antes ficava até a poda da segunda, com o botão de contratar desligado).
+
+## Ordenar Relatórios e Joias por toda coluna (12.7.1)
+
+Report do usuário. `ReportSortKey` ganhou `pos` (ordem das posições, `positionIndex`), `player`, `club` e `verdict` (pronto, futuro, elenco, não melhora); o primeiro clique nessas quatro ordena crescente (`defaultDir`).

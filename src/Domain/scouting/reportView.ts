@@ -1,11 +1,12 @@
 // The scout reports tab (report): filter by mission, scout and grade, one row per player (the newest report), and
 // sort by any column. Pure: the screen passes the reports and the missions it already has.
+import { positionIndex } from "@/Domain/positions/positionSort";
 import { RECOMMENDATION_ORIGIN, type ScoutGrade, type ScoutReport } from "@/types/scoutingTypes";
 
 export const REPORT_GRADES: readonly ScoutGrade[] = ["A", "B", "C", "D", "E"];
 const GRADE_RANK: Record<ScoutGrade, number> = { A: 0, B: 1, C: 2, D: 3, E: 4 };
 
-export type ReportSortKey = "grade" | "age" | "overall" | "potential" | "value" | "wage" | "knowledge" | "date";
+export type ReportSortKey = "grade" | "age" | "overall" | "potential" | "value" | "wage" | "knowledge" | "date" | "pos" | "player" | "club" | "verdict";
 export type SortDir = "asc" | "desc";
 
 export interface ReportFilter {
@@ -54,12 +55,20 @@ function sortValue(r: ScoutReport, key: ReportSortKey): number | string {
     case "wage": return r.wageDemand;
     case "knowledge": return r.k;
     case "date": return r.date;
+    case "pos": return positionIndex(r.position);
+    case "player": return r.name.toLocaleLowerCase();
+    case "club": return r.club.toLocaleLowerCase();
+    case "verdict": return VERDICT_RANK[r.text];
   }
 }
 
-/** First click on a column: the grade and the age go up (A first, youngest first), the rest down (best first). */
+/** Best verdict first: ready for the side, then for the future, then squad cover, then no upgrade. */
+const VERDICT_RANK: Record<ScoutReport["text"], number> = { ready: 0, future: 1, squad: 2, no_upgrade: 3 };
+
+/** First click on a column: grade, age, position, name, club and verdict go up (A first, youngest first, goalkeeper
+ * first, A to Z, best verdict first), the rest down (best first). */
 export function defaultDir(key: ReportSortKey): SortDir {
-  return key === "grade" || key === "age" ? "asc" : "desc";
+  return key === "grade" || key === "age" || key === "pos" || key === "player" || key === "club" || key === "verdict" ? "asc" : "desc";
 }
 
 /** Sorted copy; ties by grade, then the seen level, then the name. */

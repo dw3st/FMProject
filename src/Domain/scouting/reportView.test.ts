@@ -34,4 +34,15 @@ describe("scout report view", () => {
     expect(sortReports(rows, "grade", "asc").map((r) => r.id)).toEqual(["y", "x"]);
     expect(sortReports(rows, "value", "desc").map((r) => r.id)).toEqual(["x", "y"]);
   });
+
+  test("sort by position, name, club and verdict", () => {
+    const rows = [
+      rep({ id: "x", position: "ST", name: "Zé", club: "Benfica", text: "no_upgrade" }),
+      rep({ id: "y", position: "GK", name: "Ana", club: "Arsenal", text: "ready" }),
+    ];
+    expect(sortReports(rows, "pos", "asc").map((r) => r.id)).toEqual(["y", "x"]);
+    expect(sortReports(rows, "player", "asc").map((r) => r.id)).toEqual(["y", "x"]);
+    expect(sortReports(rows, "club", "desc").map((r) => r.id)).toEqual(["x", "y"]);
+    expect(sortReports(rows, "verdict", "asc").map((r) => r.id)).toEqual(["y", "x"]);
+  });
 });

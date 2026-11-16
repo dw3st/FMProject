@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.7.1",
+    date: "2026-11-16",
+    time: "18:49",
+    items: [],
+    fixes: [
+      { tab: "scout", pt: "Relatórios e Joias: ordene também por posição, jogador, clube e veredito, clicando no título da coluna.", en: "Reports and Gems: sort by position, player, club and verdict too, by clicking the column title." },
+    ],
+  },
+  {
     version: "12.7",
     date: "2026-11-16",
     time: "21:40",
