@@ -585,3 +585,7 @@ The same change fixed the manager's own formations in the solo match ("Minhas fo
 only in the two-manager branch, where they are not offered, so the list was always empty.
 
 The shortcut also puts each starter in his saved slot (12.8.2, user report: line-ups A and B, both 4-2-3-1 with the full-backs swapped, changed nothing on the pitch). `savedSlotMoves` (`tacticShortcuts.ts`, tested) plans swaps and moves for the players on the pitch who are in the saved XI, never a keeper, never a substitution; solo they run through `swapPlayerPositions` / `moveToEmptySlot` after the formation change, between two managers they go as `swap` / `move` commands when the shape stays the same (another shape is reorganised by the server).
+
+# Substitutions panel layout (12.8.2)
+
+User report, option A of the mock (`data_process/assets/subs_panel_mock.py`). Every tab of the panel puts the mini pitch on the left and its controls on the right (`PanelColumns`, `SubstitutionPanel.tsx`; stacked below `md`): Player swap keeps its pitch with the bench beside it, Formation shows the preview (`FormationPreview`, height `PANEL_PITCH_HEIGHT`) with "my formations" and the ready ones in a grid of 6, Tactics shows the current XI beside the style and axes, Instructions picks the player by clicking him on the pitch (`FormationPreview` `onPick` / `selectedSlot`) instead of the chip grid. `/test` now also opens the Formation and Instructions tabs (test commands `changeFormation`, `setInstruction`).

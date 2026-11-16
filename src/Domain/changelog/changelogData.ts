@@ -34,7 +34,9 @@ export const changelog: ChangelogEntry[] = [
     version: "12.8.2",
     date: "2026-11-16",
     time: "20:46",
-    items: [],
+    items: [
+      { tab: "match", pt: "Tela de substituições reorganizada: o campo fica sempre à esquerda e os controles de cada aba à direita; nas instruções, você escolhe o jogador clicando nele no campo.", en: "Substitutions screen reorganised: the pitch is always on the left and each tab's controls on the right; in instructions you pick the player by clicking him on the pitch." },
+    ],
     fixes: [
       { tab: "match", pt: "Na partida, trocar de escalação salva também coloca cada jogador na posição que ela define, mesmo com a mesma formação.", en: "In a match, switching saved line-ups also puts each player in the position it sets, even with the same formation." },
     ],

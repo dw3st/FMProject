@@ -38,7 +38,7 @@ export function LiveTacticsPanel({
     && (Object.keys(axes) as (keyof TacticalAxes)[]).every((k) => axes[k] === effectiveAxes(saved.style, saved.axesOverride)[k]);
   const styleLabel = getTacticalStyleMeta(live.style, t as never).label;
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+    <div className="space-y-4">
       <p className="text-sm text-muted-foreground m-0">{t("match.liveTactics.hint")}</p>
       <div>
         <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">

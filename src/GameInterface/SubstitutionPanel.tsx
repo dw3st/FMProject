@@ -17,7 +17,7 @@ import { FormationPreview } from "@/GameInterface/Components/FormationPreview";
 import { Button } from "@/GameInterface/ui/Button";
 import { LiveTacticsPanel } from "@/GameInterface/Components/LiveTacticsPanel";
 import { InjuryVacancyPanel } from "@/GameInterface/Components/InjuryVacancyPanel";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -100,6 +100,16 @@ export function SubstitutionPanel({
   const shownFormation = previewFormation ?? currentFormationId;
   const userFormation = (id: string) => userFormations.find((u) => u.id === id);
   const formationLabel = (id: string) => userFormation(id)?.label ?? id;
+  const currentFormation = playerTeam === "A" ? gameState.formationA : gameState.formationB;
+  // The same mini pitch on every tab (report 2026-11-16, option A): the XI where it plays now.
+  const currentPreviewProps = {
+    players: gameState.players.filter((p) => p.team === playerTeam).sort((x, y) => x.slotIndex - y.slotIndex),
+    formation: currentFormation,
+    current: currentFormation,
+    blocked: (gameState.injuryVacancies?.[playerTeam] ?? []).map((v) => v.slotIndex),
+    ...(faceUrls ? { faceUrls } : {}),
+  };
+  const currentPitch = <FormationPreview {...currentPreviewProps} />;
 
   const queuedInIds = new Set(pendingQueue.map((s) => s.inId));
   const availableBench = bench.filter((p) => !queuedInIds.has(p.id));
@@ -216,36 +226,31 @@ export function SubstitutionPanel({
             />
           )}
 
-          {activeTab === "tactics" && liveTactics && <LiveTacticsPanel {...liveTactics} />}
+          {activeTab === "tactics" && liveTactics && (
+            <PanelColumns pitch={currentPitch}>
+              <LiveTacticsPanel {...liveTactics} />
+            </PanelColumns>
+          )}
 
           {activeTab === "instructions" && onInstruction && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-              <p className="text-sm text-muted-foreground m-0">{t("instructions.liveOnly")}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {onPitch.map((p) => {
-                  const instr = p.instruction;
-                  const tag = instructionShort(instr);
-                  return (
-                    <Chip
-                      key={p.id}
-                      selected={instrSlot === p.slotIndex}
-                      onClick={() => setInstrSlot(p.slotIndex)}
-                      className="py-2"
-                    >
-                      {p.role} · {shirtName(p.name)}{tag ? ` · ${tag}` : ""}{instr?.press && instr.press !== "normal" ? ` · ${t(`instructions.press.${instr.press}`)}` : ""}
-                    </Chip>
-                  );
-                })}
-              </div>
+            <PanelColumns pitch={<FormationPreview {...currentPreviewProps} onPick={setInstrSlot} selectedSlot={instrSlot} />}>
+              <p className="text-sm text-muted-foreground m-0">{t("instructions.liveOnly")} {t("substitutionPanel.pickOnPitch")}</p>
               {instrSlot !== null && (() => {
                 const p = onPitch.find((q) => q.slotIndex === instrSlot);
                 if (!p) return null;
+                const tag = instructionShort(p.instruction);
                 return (
+                  <>
+                  <p className="font-display font-black uppercase text-xl leading-none m-0">
+                    {p.role} · {shirtName(p.name)}
+                    {tag && <span className="text-primary"> · {tag}</span>}
+                  </p>
                   <SlotInstructionChips
                     role={p.role}
                     instruction={p.instruction}
                     onChange={(next) => onInstruction(instrSlot, next)}
                   />
+                  </>
                 );
               })()}
               {onManMarks && (
@@ -258,55 +263,52 @@ export function SubstitutionPanel({
                   onChange={(next) => onManMarks(next.map((m) => ({ markerSlot: m.slot, targetId: Number(m.targetId) })))}
                 />
               )}
-            </div>
+            </PanelColumns>
           )}
 
           {activeTab === "formation" && onChangeFormation && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
-              <p className="text-sm text-muted-foreground m-0">
-                {t("substitutionPanel.changeFormationHint")}
-              </p>
-              <div className="flex flex-col md:flex-row gap-5 items-start justify-center">
-                <div className="flex flex-col gap-3 w-full md:w-72 shrink-0">
-                  {userFormations.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("substitutionPanel.myFormations")}</span>
-                      <div className="flex flex-wrap gap-2">
-                        {userFormations.map((u) => (
-                          <Chip key={u.id} selected={u.id === shownFormation} onClick={() => setPreviewFormation(u.id)} className="py-2.5">
-                            {u.label}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-2">
-                    {FORMATION_LIST.map((fid) => (
-                      <Chip key={fid} selected={fid === shownFormation} onClick={() => setPreviewFormation(fid)} className="py-2.5 tabular-nums">
-                        {fid}
+            <PanelColumns
+              pitch={
+                <FormationPreview
+                  {...currentPreviewProps}
+                  formation={shownFormation === currentFormationId
+                    ? currentFormation
+                    : userFormation(shownFormation)?.formation ?? formationForSimId(shownFormation)}
+                />
+              }
+            >
+              <p className="text-sm text-muted-foreground m-0">{t("substitutionPanel.changeFormationHint")}</p>
+              {userFormations.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("substitutionPanel.myFormations")}</span>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                    {userFormations.map((u) => (
+                      <Chip key={u.id} selected={u.id === shownFormation} onClick={() => setPreviewFormation(u.id)} className="py-2.5 truncate">
+                        {u.label}
                       </Chip>
                     ))}
                   </div>
-                  <Button
-                    disabled={shownFormation === currentFormationId}
-                    onClick={() => { onChangeFormation(shownFormation); setPreviewFormation(null); }}
-                  >
-                    {shownFormation === currentFormationId
-                      ? t("substitutionPanel.currentFormation")
-                      : t("substitutionPanel.useFormation", { formation: formationLabel(shownFormation) })}
-                  </Button>
                 </div>
-                <FormationPreview
-                  players={gameState.players.filter((p) => p.team === playerTeam).sort((x, y) => x.slotIndex - y.slotIndex)}
-                  formation={shownFormation === currentFormationId
-                    ? (playerTeam === "A" ? gameState.formationA : gameState.formationB)
-                    : userFormation(shownFormation)?.formation ?? formationForSimId(shownFormation)}
-                  current={playerTeam === "A" ? gameState.formationA : gameState.formationB}
-                  blocked={(gameState.injuryVacancies?.[playerTeam] ?? []).map((v) => v.slotIndex)}
-                  {...(faceUrls ? { faceUrls } : {})}
-                />
+              )}
+              <div className="flex flex-col gap-2">
+                <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("substitutionPanel.readyFormations")}</span>
+                <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
+                  {FORMATION_LIST.map((fid) => (
+                    <Chip key={fid} selected={fid === shownFormation} onClick={() => setPreviewFormation(fid)} className="py-2.5 tabular-nums">
+                      {fid}
+                    </Chip>
+                  ))}
+                </div>
               </div>
-            </div>
+              <Button
+                disabled={shownFormation === currentFormationId}
+                onClick={() => { onChangeFormation(shownFormation); setPreviewFormation(null); }}
+              >
+                {shownFormation === currentFormationId
+                  ? t("substitutionPanel.currentFormation")
+                  : t("substitutionPanel.useFormation", { formation: formationLabel(shownFormation) })}
+              </Button>
+            </PanelColumns>
           )}
         </div>
 
@@ -320,6 +322,16 @@ export function SubstitutionPanel({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The panel's tabs: the mini pitch on the left, the tab's controls on the right (stacked on narrow screens). */
+function PanelColumns({ pitch, children }: { pitch: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col md:flex-row gap-6 items-start">
+      <div className="shrink-0 w-full md:w-auto flex justify-center">{pitch}</div>
+      <div className="flex-1 min-w-0 w-full flex flex-col gap-4">{children}</div>
     </div>
   );
 }

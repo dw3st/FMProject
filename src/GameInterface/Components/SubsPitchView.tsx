@@ -270,7 +270,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
         )}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 flex flex-col md:flex-row md:justify-center gap-6">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 flex flex-col md:flex-row gap-6">
         {/* The XI on the formation pitch (attacking up, as in Formation): face, role, rating, name and fitness. */}
         <div className="min-w-0 flex justify-center md:h-full">
           <div className="relative w-full md:w-auto md:h-full max-h-[calc(100vh-14rem)] aspect-[3/4] rounded-md border border-chart-2/50 self-start [container-type:inline-size]">
@@ -396,7 +396,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
         </div>
 
         {/* Bench, by position. */}
-        <div className="md:w-80 shrink-0 flex flex-col border border-border/50 rounded-md overflow-hidden bg-secondary/10 md:min-h-0">
+        <div className="md:flex-1 md:max-w-[36rem] min-w-0 flex flex-col border border-border/50 rounded-md overflow-hidden bg-secondary/10 md:min-h-0">
           <div className="shrink-0 px-3 py-2 border-b border-border/50">
             <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-muted-foreground font-display">
               {t("substitutionPanel.bench")}

@@ -33,8 +33,14 @@ export function formationPreview(players: GamePlayer[], formation: Formation, cu
   return { rows, outOfPosition: rows.filter((r) => r.outOfPosition).length };
 }
 
-/** Mini pitch of a formation with the current XI (attacking up), as in the substitutions tab. */
-export function FormationPreview({ players, formation, current, blocked, faceUrls }: {
+/** Height of the mini pitch, the same on every tab of the substitutions panel. */
+export const PANEL_PITCH_HEIGHT = "h-[min(34rem,calc(100vh-18rem))]";
+
+/**
+ * Mini pitch of a formation with the current XI (attacking up), as in the substitutions tab. With `onPick` the players
+ * are buttons (the instructions tab picks a slot on the pitch).
+ */
+export function FormationPreview({ players, formation, current, blocked, faceUrls, onPick, selectedSlot }: {
   players: GamePlayer[];
   formation: Formation;
   /** The formation in use (the players' slots belong to it). */
@@ -42,6 +48,8 @@ export function FormationPreview({ players, formation, current, blocked, faceUrl
   /** Slots waiting for an injured player's replacement. */
   blocked?: readonly number[];
   faceUrls?: Record<string, string>;
+  onPick?: (slot: number) => void;
+  selectedSlot?: number | null;
 }) {
   const { t } = useTranslation();
   const slotPos = useMemo(() => spreadSubsMarkers(getFormationSlots(formation)), [formation]);
@@ -50,7 +58,7 @@ export function FormationPreview({ players, formation, current, blocked, faceUrl
 
   return (
     <div className="flex flex-col items-center gap-2 min-w-0">
-      <div className="relative h-[min(26rem,calc(100vh-20rem))] aspect-[3/4] rounded-md border border-chart-2/50">
+      <div className={`relative ${PANEL_PITCH_HEIGHT} aspect-[3/4] rounded-md border border-chart-2/50`}>
         <div className="absolute inset-0 rounded-md overflow-hidden">
           {newVisualOn() && <img src={gameArtUrl(PITCH_BOARD)} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" />}
           <PitchLinesVertical grass={!newVisualOn()} />
@@ -59,10 +67,13 @@ export function FormationPreview({ players, formation, current, blocked, faceUrl
           const pos = slotPos[slot] ?? { x: 50, y: 50 };
           const roleClass = off ? "text-chart-4" : getDetailedPositionColor(role);
           const face = faceUrls?.[player.rosterId];
+          const picked = onPick !== undefined && selectedSlot === slot;
+          const Tag = onPick ? "button" : "div";
           return (
-            <div
+            <Tag
               key={player.id}
-              className="absolute -translate-x-1/2 -translate-y-[35%] flex flex-col items-center gap-0.5 pointer-events-none"
+              {...(onPick ? { type: "button" as const, onClick: () => onPick(slot), "aria-pressed": picked } : {})}
+              className={`absolute -translate-x-1/2 -translate-y-[35%] flex flex-col items-center gap-0.5 ${onPick ? "cursor-pointer rounded-md p-0.5 hover:bg-background/40" : "pointer-events-none"} ${picked ? "ring-2 ring-primary bg-background/50" : ""}`}
               style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
               title={off ? t("substitutionPanel.naturalRole", { role: abbr(natural) }) : undefined}
             >
@@ -79,7 +90,7 @@ export function FormationPreview({ players, formation, current, blocked, faceUrl
                 </span>
               </span>
               <span className="max-w-24 truncate rounded bg-background/85 px-1.5 text-sm leading-tight text-foreground">{shirtName(player.name)}</span>
-            </div>
+            </Tag>
           );
         })}
       </div>

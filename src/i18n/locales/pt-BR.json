@@ -3137,7 +3137,9 @@
     "freeFormation": "Formação livre",
     "freeShort": "livre",
     "presetFormation": "Escalação {{key}} · {{formation}}",
-    "presetNamed": "{{name}} · {{formation}}"
+    "presetNamed": "{{name}} · {{formation}}",
+    "pickOnPitch": "Clique num jogador no campo.",
+    "readyFormations": "Formações prontas"
   },
   "scoreBar": {},
   "matchOverlay": {

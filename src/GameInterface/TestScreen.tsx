@@ -2147,6 +2147,8 @@ export function TestScreen() {
           onSwapPositions={(aId, bId) => gameBus.emit('testCommand', { type: 'swapPositions', team: 'A', aId, bId })}
           onMoveToSlot={(id, slot) => gameBus.emit('testCommand', { type: 'moveToSlot', team: 'A', id, slot })}
           onFillVacancy={(injuredId, inId) => gameBus.emit('testCommand', { type: 'fillVacancy', team: 'A', injuredId, inId })}
+          onChangeFormation={(formation) => gameBus.emit('testCommand', { type: 'changeFormation', team: 'A', formation })}
+          onInstruction={(slot, instruction) => gameBus.emit('testCommand', { type: 'setInstruction', team: 'A', slot, instruction })}
           onClose={() => setShowSubs(false)}
         />
       )}

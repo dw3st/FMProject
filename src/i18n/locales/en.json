@@ -3137,7 +3137,9 @@
     "freeFormation": "Free formation",
     "freeShort": "free",
     "presetFormation": "Lineup {{key}} · {{formation}}",
-    "presetNamed": "{{name}} · {{formation}}"
+    "presetNamed": "{{name}} · {{formation}}",
+    "pickOnPitch": "Click a player on the pitch.",
+    "readyFormations": "Ready formations"
   },
   "scoreBar": {},
   "matchOverlay": {

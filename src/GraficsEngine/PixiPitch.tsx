@@ -55,7 +55,8 @@ import {
   type PitchEffect, type TrailPoint,
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
-import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute } from "@/GameEngine/Domain/gameState";
+import { formationForSimId } from "@/Domain/matchFormations";
+import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -5528,6 +5529,10 @@ export function PixiPitch({
           stateRef.current = { ...stateRef.current, ...cmd.patch };
         } else if (cmd.type === 'setInstruction') {
           stateRef.current = applyPlayerInstruction(stateRef.current, cmd.team, cmd.slot, cmd.instruction);
+          gameBus.emit('stateChanged', stateRef.current);
+        } else if (cmd.type === 'changeFormation') {
+          stateRef.current = changeFormation(stateRef.current, cmd.team, formationForSimId(cmd.formation));
+          gameBus.emit('stateChanged', stateRef.current);
         } else if (cmd.type === 'swapPositions') {
           stateRef.current = swapPlayerPositions(stateRef.current, cmd.team, cmd.aId, cmd.bId);
           gameBus.emit('stateChanged', stateRef.current); // the paused panel shows the new slots

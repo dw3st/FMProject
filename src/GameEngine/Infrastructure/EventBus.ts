@@ -341,6 +341,8 @@ export interface GameEvents {
     | { type: 'setTeamIntent'; team: import('@/GameEngine/types').TeamId; intent: import('@/GameEngine/types').TeamIntent }
     /** Player instructions (`/test`): one slot's role variant / pressing, live. */
     | { type: 'setInstruction'; team: import('@/GameEngine/types').TeamId; slot: number; instruction: import('@/types/tacticsTypes').SlotInstruction | null }
+    /** Substitution panel (`/test`): change the team's formation live (ready-made id). */
+    | { type: 'changeFormation'; team: import('@/GameEngine/types').TeamId; formation: string }
     /** Man-marking (`/test`): the team's slots mark the opponent slots (replaces the pairs). */
     | { type: 'setManMarks'; team: import('@/GameEngine/types').TeamId; marks: { slot: number; targetSlot: number }[] }
     /** Substitution panel (`/test`): queue a substitution (engine ids, flushed at the next stoppage). */
