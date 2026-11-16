@@ -6,6 +6,7 @@ export const REACTION_ICON: Record<ReactionId, IconName> = {
   fire: "react-fire",
   laugh: "react-laugh",
   sorry: "react-sorry",
+  horn: "react-horn",
 };
 
 /** Colour of each reaction (report: plain grey icons were hard to tell apart). */
@@ -14,6 +15,7 @@ export const REACTION_COLOR: Record<ReactionId, string> = {
   fire: "text-chart-5",
   laugh: "text-chart-4",
   sorry: "text-destructive",
+  horn: "text-chart-4",
 };
 
 /** Colour of a phrase by its tone: cheering a friend, teasing him, or neutral. */

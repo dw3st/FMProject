@@ -7261,7 +7261,8 @@
       "applause": "Applause",
       "fire": "On fire",
       "laugh": "Laugh",
-      "sorry": "Commiserations"
+      "sorry": "Commiserations",
+      "horn": "Honk"
     },
     "taunts": {
       "live_goal_for_1": "There it is.",

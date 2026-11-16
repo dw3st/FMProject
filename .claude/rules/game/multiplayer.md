@@ -1015,3 +1015,5 @@ Reports de tester. O placar ao vivo de um jogo da seleção que o técnico trein
 ### Reações pintadas e com som (12.8)
 
 Pedido do usuário. As 4 reações de resenha (aplauso, fogo, risada, sinto muito) têm medalha pintada no FLUX (opção A do mock, `taunts/reaction-<id>.png`, layout em `data_process/assets/taunt_icons_mock.py`) e som de gravação real do Freesound (CC0, escolhidas pelo usuário: aplauso 2, fogo 1, risada 2, sinto muito 2 versões; `audio/taunt-*.mp3`, `taunt_real.py`). `ReactionIcon` desenha a medalha com o visual novo, senão o ícone de antes. `playReactionSound` (`World/reactionSounds.ts`) sorteia uma das versões e toca ao clicar e ao receber a reação no chat (no lugar do "uh-oh"), no volume da partida; desligado junto com o som do chat.
+
+Buzina (12.8.1, pedido do usuário): quinta reação, `horn`, para zoar o amigo. Medalha pintada no mesmo estilo (`taunts/reaction-horn.png`), sons das buzinas de bicicleta 8 e 9 da busca (Freesound 700130 e 700137, CC0, `audio/taunt-horn-*.mp3`, `horn_real.py`), sorteados. Sem o visual novo, o ícone de megafone.

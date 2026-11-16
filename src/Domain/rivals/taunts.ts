@@ -3,7 +3,7 @@ import { scoreLineOf } from "@/Domain/rivals/results";
 import type { Bet, BetPick } from "@/types/betTypes";
 import type { LiveScoreView, LiveSituation, ReactionId, SeatResult, TauntBet, TauntGroup, TauntKind, TauntMeta } from "@/types/rivalsTypes";
 
-export const REACTIONS: readonly ReactionId[] = ["applause", "fire", "laugh", "sorry"];
+export const REACTIONS: readonly ReactionId[] = ["applause", "fire", "laugh", "sorry", "horn"];
 
 /** Specific situations first: the menu shows them before win / draw / loss. */
 export const TAUNT_GROUPS: readonly TauntGroup[] = [
@@ -33,7 +33,7 @@ export const ALL_TAUNT_IDS: readonly string[] = TAUNT_GROUPS.flatMap((g) => TAUN
 
 /** English fallback of a reaction in the stored `body`. */
 const REACTION_FALLBACK: Record<ReactionId, string> = {
-  applause: "applause", fire: "on fire", laugh: "laughs", sorry: "commiserations",
+  applause: "applause", fire: "on fire", laugh: "laughs", sorry: "commiserations", horn: "honks",
 };
 
 export function isReaction(id: string): id is ReactionId {

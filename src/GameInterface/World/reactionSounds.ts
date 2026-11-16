@@ -11,6 +11,7 @@ export const REACTION_SOUNDS: Record<ReactionId, readonly string[]> = {
   fire: ["audio/taunt-fire-1.mp3"],
   laugh: ["audio/taunt-laugh-1.mp3", "audio/taunt-laugh-2.mp3"],
   sorry: ["audio/taunt-sorry-1.mp3", "audio/taunt-sorry-2.mp3"],
+  horn: ["audio/taunt-horn-1.mp3", "audio/taunt-horn-2.mp3"],
 };
 
 /** Painted medal of each reaction (FLUX, option A). */
@@ -19,6 +20,7 @@ export const REACTION_ART: Record<ReactionId, string> = {
   fire: "taunts/reaction-fire.png",
   laugh: "taunts/reaction-laugh.png",
   sorry: "taunts/reaction-sorry.png",
+  horn: "taunts/reaction-horn.png",
 };
 
 /** One of the reaction's recordings, `roll` in [0, 1). */

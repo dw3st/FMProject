@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.8.1",
+    date: "2026-11-16",
+    time: "20:39",
+    items: [
+      { tab: "friends", pt: "Nova reação na resenha: a buzina, para zoar o amigo.", en: "New banter reaction: the horn, to tease a friend." },
+    ],
+  },
+  {
     version: "12.8",
     date: "2026-11-16",
     time: "20:14",

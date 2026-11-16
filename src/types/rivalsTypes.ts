@@ -113,7 +113,7 @@ export interface LiveScoreView extends LiveBase {
   updatedAt: number;
 }
 
-export type ReactionId = "applause" | "fire" | "laugh" | "sorry";
+export type ReactionId = "applause" | "fire" | "laugh" | "sorry" | "horn";
 export type TauntKind = "reaction" | "phrase";
 /** `bet` = `<seatId>:<betId>` of a settled bet. */
 export type TauntTarget = { result: string } | { live: string } | { bet: string };

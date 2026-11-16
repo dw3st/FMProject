@@ -210,6 +210,9 @@ export const GAME_ART_FILES: Record<string, string> = {
   "taunts/reaction-fire.png": "image/png",
   "taunts/reaction-laugh.png": "image/png",
   "taunts/reaction-sorry.png": "image/png",
+  "taunts/reaction-horn.png": "image/png",
+  "audio/taunt-horn-1.mp3": "audio/mpeg",
+  "audio/taunt-horn-2.mp3": "audio/mpeg",
   "audio/net.mp3": "audio/mpeg",
   "audio/whistle-short.mp3": "audio/mpeg",
   // Live substitution panel: the same painted board, landscape (attack to the right).

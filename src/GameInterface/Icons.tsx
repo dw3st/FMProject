@@ -125,6 +125,7 @@ import {
   Ban,
   Ellipsis,
   HeartCrack,
+  Megaphone,
   Radio,
   ShieldCheck,
   Beer,
@@ -304,6 +305,7 @@ export type IconName =
   | "react-fire"
   | "react-laugh"
   | "react-sorry"
+  | "react-horn"
   | "radio"
   | "ban"
   | "more"
@@ -483,6 +485,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "react-fire":     Flame,
   "react-laugh":    Laugh,
   "react-sorry":    HeartCrack,
+  "react-horn":     Megaphone,
   "radio":          Radio,
   "ban": Ban,
   "more": Ellipsis,

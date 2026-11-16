@@ -22,7 +22,7 @@ describe("taunt catalog", () => {
     expect(isTauntFor("nope", ["loss"])).toBe(false);
   });
   test("reactions", () => {
-    expect(REACTIONS).toEqual(["applause", "fire", "laugh", "sorry"]);
+    expect(REACTIONS).toEqual(["applause", "fire", "laugh", "sorry", "horn"]);
     expect(isReaction("fire")).toBe(true);
     expect(isReaction("heart")).toBe(false);
   });
