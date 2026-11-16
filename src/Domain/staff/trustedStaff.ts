@@ -64,7 +64,8 @@ export type CourseRefusal = "notTrusted" | "onCourse" | "courseBusy" | "atBest" 
 /** Why `m` cannot start a course today; null = he can. `leading`: he leads a scouting mission now. */
 export function courseRefusal(a: { staff: StaffRecord; member: StaffMember; date: string; wallet: number; leading?: boolean }): CourseRefusal | null {
   const m = a.member;
-  if (!m.trusted) return "notTrusted";
+  // The youth coach takes courses without being trusted (report 2026-11-16): forming players is his whole job.
+  if (!m.trusted && m.role !== "youthCoach") return "notTrusted";
   if (m.course) return "onCourse";
   if (a.staff.members.some((x) => x.course)) return "courseBusy";
   const price = coursePriceOf(m);

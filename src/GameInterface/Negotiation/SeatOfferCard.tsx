@@ -97,7 +97,7 @@ export function SeatOfferCard({ saveId, offer, onChanged }: {
 
   return (
     <div className="space-y-4">
-      <PlayerSituationLine saveId={saveId} playerId={o.playerId} squadId={o.seller.clubId} />
+      <PlayerSituationLine withCard saveId={saveId} playerId={o.playerId} squadId={o.seller.clubId} />
       <p className="text-sm text-foreground m-0">
         {t(o.kind === "transfer" ? "seatOffers.transfer" : "seatOffers.loan")} · {o.playerName} · {t("seatOffers.withClub", { club: otherClub, manager: o.otherManager })}
       </p>

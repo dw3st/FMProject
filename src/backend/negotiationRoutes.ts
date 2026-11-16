@@ -1,7 +1,8 @@
 import { loanAvailability } from "@/Domain/negotiation/loans";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { negotiationSummary } from "@/Domain/negotiation/summary";
-import { paidFor, playerSituation } from "@/Domain/negotiation/situation";
+import { paidFor, playerSituation, type PlayerCardInfo } from "@/Domain/negotiation/situation";
+import { overallAvg } from "@/Domain/playerRating";
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { starLimitResponse } from "@/backend/starLimitWorld";
 import { saveService } from "@/backend/SaveService";
@@ -51,22 +52,28 @@ export const negotiationRoutes = {
     if (!squad || !player) return Response.json({ error: "notFound" }, { status: 404 });
     const seat = await saveService.seatOfClub(saveId, squad.id);
     const own = squad.id === meta?.clubId;
+    // Who he is, for the card on top of an offer; the exact level only for the manager's own player (scouting).
+    const card: PlayerCardInfo = {
+      name: player.name, age: player.age, position: preferredRole(player), clubId: squad.id, league: squad.leagueSlug ?? "",
+      colors: [...(squad.colors ?? [])], ...(player.nationality ? { nationality: player.nationality } : {}),
+      ...(own ? { overall: overallAvg(player) } : {}),
+    };
     if (seat) {
       const market = await saveService.getMarket(saveId, seat);
       const listed = market?.playerSellList?.find((c) => c.playerId === playerId);
-      return Response.json(playerSituation(player, squad, {
+      return Response.json({ card, ...playerSituation(player, squad, {
         forSale: !!listed,
         loanable: (market?.playerLoanList ?? []).includes(playerId),
         // His morale and the role he was given stay with his own manager.
         ...(own ? { requested: !!listed?.requested, ...(player.squadStatus ? { ownRole: player.squadStatus } : {}), thinAfter: thinAfterSale(player, squad), paid: paidFor(player, squad.id), value: playerMarketValue(player) } : {}),
-      }));
+      }) });
     }
     const sellList = (await saveService.getWorldMarket(saveId))?.profiles?.[squad.id]?.sellList ?? [];
     const forSale = sellList.some((c) => c.playerId === playerId);
-    return Response.json(playerSituation(player, squad, {
+    return Response.json({ card, ...playerSituation(player, squad, {
       forSale,
       loanable: loanAvailability(player, squad, { starterIds: new Set(autoLineupDefaultFormation(squad)), listed: forSale }) === null,
-    }));
+    }) });
   },
 
   /** `GET` - pending AI bids, active loans, the loan list and the sell-on clauses held. */

@@ -52,6 +52,14 @@ describe("trusted staff", () => {
     expect(memberStars(members[0]!)).toBe(memberStars(fit) + TRUSTED.STAR_GAIN);
   });
 
+  test("the youth coach takes a course without being trusted", () => {
+    const yc = pro("yc", "youthCoach", 3);
+    const other = pro("as", "assistant", 3);
+    const staff: StaffRecord = { members: [yc, other] };
+    expect(courseRefusal({ staff, member: yc, date: AT.date, wallet: 1e9 })).toBeNull();
+    expect(courseRefusal({ staff, member: other, date: AT.date, wallet: 1e9 })).toBe("notTrusted");
+  });
+
   test("the gain stops at five stars; a coach's course raises his best area", () => {
     const near = { ...pro("near", "medic", 4.5, { trusted: true }) };
     expect(memberStars(finishCourse(startStaffCourse(near, AT.date)))).toBe(5);

@@ -342,7 +342,7 @@ export async function releaseHumanClub(
   // His trusted professionals go with the manager (10.7): they wait on the seat for his next club.
   const following = leavingTrusted(academy.squad.staff);
   if (following.length > 0) await service.updateSeat(saveId, seatId, { trustedStaff: following });
-  const { staff: _s, styleFamiliarity: _f, facilities: _fac, sponsors: _sp, managerAttributes: _a, youthTraining: _yt, playerTraining: _pt, bankLoan: _loan, ...rest } = stripClubMorale(academy.squad);
+  const { staff: _s, styleFamiliarity: _f, facilities: _fac, sponsors: _sp, managerAttributes: _a, youthTraining: _yt, youthGoals: _yg, playerTraining: _pt, bankLoan: _loan, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
   const grant = seasonalTransferBudgetFor(tier, popularityOf(rest));
   // D3: the compensation the manager's new club pays goes half into the AI budget (prize cap).

@@ -1,5 +1,5 @@
 import { positionIndex } from "@/Domain/positions/positionSort";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -16,6 +16,8 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
+import { YouthCoachCard, type YouthCoachCardData } from "@/GameInterface/Squad/YouthCoachCard";
+import { YouthGoalCell, type YouthGoalView } from "@/GameInterface/Squad/YouthGoalCell";
 
 interface YouthRow {
   player: RosterPlayer;
@@ -23,6 +25,8 @@ interface YouthRow {
   potential: { low: number; high: number };
   /** Overall gained over the last 4 weeks (null without a snapshot that old). */
   trend: number | null;
+  /** Development goal and where it stands (`youthGoals.ts`). */
+  goal?: YouthGoalView;
 }
 
 interface YouthData {
@@ -33,13 +37,15 @@ interface YouthData {
   positions: string[];
   /** The youth coach is in charge of the academy's training (responsibility + one at work). */
   coach?: boolean;
+  /** The youth coach card (null: no youth coach at the club). */
+  coachCard?: YouthCoachCardData | null;
 }
 
 const FOCI: YouthFocus[] = ["balanced", "technical", "physical", "passing", "shooting", "defending", "goalkeeping", "setPieces"];
 const INTENSITIES: TrainingIntensity[] = ["light", "normal", "heavy"];
 
 /** Academy list of the player's club: promote to the squad or release (`/api/saves/:id/youth`). */
-export function YouthTable() {
+export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubColors?: readonly string[] } = {}) {
   const { t } = useTranslation();
   const { session, refresh } = useGameSave();
   const [data, setData] = useState<YouthData | null>(null);
@@ -117,9 +123,25 @@ export function YouthTable() {
     void saveTraining({ ...data.training, players });
   }
 
-  if (!data) {
-    return <p className="text-sm text-muted-foreground">{error ?? t("youth.loading")}</p>;
+  async function saveGoal(playerId: string, goal: { level: number; months: number } | null) {
+    if (!saveId) return false;
+    const res = await fetch(`/api/saves/${saveId}/youth/${encodeURIComponent(playerId)}/goal`, {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(goal),
+    }).catch(() => null);
+    if (!res?.ok) return false;
+    setData((await res.json()) as YouthData);
+    return true;
   }
+
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        {callUps}
+        <p className="text-sm text-muted-foreground">{error ?? t("youth.loading")}</p>
+      </div>
+    );
+  }
+  const picks = new Map((data.coachCard?.picks ?? []).map((p) => [p.id, p.reason]));
 
   const full = data.squadSize >= data.squadLimit;
   const cut = Number(minPotential.replace(",", "."));
@@ -135,6 +157,11 @@ export function YouthTable() {
           {r.player.reborn && <LegendLaurel />}
           {isCreatedPlayer(r.player.id) && <CreatedStar />}
           {r.player.reborn && <RebornBadge />}
+          {picks.has(r.player.id) && (
+            <span className="rounded border border-primary/50 bg-primary/10 px-2 py-0.5 text-sm text-primary font-semibold whitespace-nowrap" title={t(`youthCoach.card.pick.${picks.get(r.player.id)}`)}>
+              {t("youthCoach.card.picked")}
+            </span>
+          )}
         </span>
       ),
     },
@@ -174,6 +201,12 @@ export function YouthTable() {
         : <span className={`tabular-nums font-semibold ${r.trend > 0 ? "text-chart-2" : r.trend < 0 ? "text-destructive" : "text-muted-foreground"}`}>
             {r.trend > 0 ? "+" : ""}{(r.trend * 10).toFixed(0)}
           </span>,
+    },
+    {
+      key: "goal",
+      header: t("youthGoal.header"),
+      sortValue: (r) => r.goal?.level ?? null,
+      cell: (r) => <YouthGoalCell overall={r.overall} goal={r.goal} onSave={(g) => saveGoal(r.player.id, g)} />,
     },
     {
       key: "focus",
@@ -248,6 +281,17 @@ export function YouthTable() {
   ];
 
   return (
+    <div className="space-y-6">
+    {saveId && (
+      <YouthCoachCard
+        saveId={saveId}
+        card={data.coachCard ?? null}
+        names={Object.fromEntries(data.youth.map((r) => [r.player.id, r.player.name]))}
+        clubColors={clubColors}
+        onChanged={load}
+      />
+    )}
+    {callUps}
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         {t("youth.subtitle", { size: data.squadSize, limit: data.squadLimit })}
@@ -310,6 +354,7 @@ export function YouthTable() {
           </section>
         </>
       )}
+    </div>
     </div>
   );
 }

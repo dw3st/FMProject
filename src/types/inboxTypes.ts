@@ -201,7 +201,9 @@ export interface ContractInboxMessage extends InboxMessageBase {
  */
 export interface YouthInboxMessage extends InboxMessageBase {
   category: "youth";
-  kind:     "intake" | "released";
+  kind:     "intake" | "released" | "goal";
+  /** Goal only: development goals that ended this week (`src/Domain/youth/youthGoals.ts`). */
+  goals?:   { id: string; name: string; level: number; outcome: "reached" | "missed" }[];
   /** Intake only. */
   year?:    number;
   count?:   number;

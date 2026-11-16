@@ -1045,9 +1045,9 @@
       "nameSave": "Save name",
       "nameHint": "Up to {{n}} letters. Empty goes back to the letter.",
       "noReplacement": {
-        "injured": "{{out}} is injured: no replacement for the slot",
-        "suspended": "{{out}} is suspended: no replacement for the slot",
-        "left": "{{out}} left the squad: no replacement for the slot"
+        "injured": "{{out}} is injured: he stays, the match day swaps him",
+        "suspended": "{{out}} is suspended: he stays, the match day swaps him",
+        "left": "{{out}} left the squad: the slot is empty"
       },
       "swap": {
         "injured": "{{out}} is injured: {{in}} comes in",
@@ -1840,7 +1840,30 @@
   "youthCoach": {
     "byCoach": "by the youth coach",
     "callUpsNote": "The youth coach looks after the call-ups. You can change them by hand.",
-    "trainingNote": "The youth coach looks after the training. You can change it by hand."
+    "trainingNote": "The youth coach looks after the training. You can change it by hand.",
+    "card": {
+      "title": "Youth coach",
+      "none": "No youth coach. He calls players up for the youth games, sets the training and says who to promote.",
+      "find": "Find a coach",
+      "until": "contract until {{until}}",
+      "inCharge": "Runs the academy: youth game call-ups and training.",
+      "manager": "You run the academy; he only speeds up the youngsters.",
+      "handOver": "Hand the academy to him",
+      "onCourse": "On a course until {{until}}: meanwhile the academy is yours.",
+      "week": "This week",
+      "calls": "called up {{u21}} for the under-21s and {{u19}} for the under-19s",
+      "intensity": "{{intensity}} training",
+      "focused_one": "individual focus for {{count}} youngster",
+      "focused_other": "individual focus for {{count}} youngsters",
+      "picks": "Recommends for the first team",
+      "noPicks": "Nobody ready for the first team yet.",
+      "picked": "Recommended",
+      "pick": {
+        "ready": "ready for the team",
+        "lastYear": "last academy year, has potential"
+      },
+      "course": "{{days}}-day course: +0.5 star, {{price}}"
+    }
   },
   "awards": {
     "kind": {
@@ -2076,7 +2099,11 @@
     },
     "youth": {
       "intake": "The {{year}} academy class has arrived: {{count}} youngsters. Standout: {{best}}.",
-      "released": "Reached 19 without a promotion and left the academy: {{players}}"
+      "released": "Reached 19 without a promotion and left the academy: {{players}}",
+      "goal": {
+        "reached": "{{player}} reached his goal: OVR {{ovr}}.",
+        "missed": "{{player}} did not reach his OVR {{ovr}} goal in time."
+      }
     },
     "retirement": {
       "retired": "{{player}} ({{age}}) has retired from football. Last season: {{games}} games, {{goals}} goals.",
@@ -2289,7 +2316,8 @@
       "youth": {
         "intake": "Academy intake {{year}}: {{count}} youngsters",
         "released": "Academy players released",
-        "standout": "Standout: {{player}}"
+        "standout": "Standout: {{player}}",
+        "goal": "Academy goals"
       },
       "retirement": {
         "retired": "{{player}} retires",
@@ -4332,6 +4360,10 @@
       "counterReceive": "The club accepts the player and pays you {{fee}}.",
       "counterNone": "The club accepts the swap only.",
       "acceptCounter": "Accept: player + {{fee}}"
+    },
+    "card": {
+      "age": "{{age}} yrs",
+      "ovr": "OVR"
     }
   },
   "morale": {
@@ -7939,5 +7971,24 @@
     "predictability": "Opponents' read of your team: {{level}}",
     "predictabilityHelp": "Repeating the formation, the style and the team instructions for several games makes the team predictable.",
     "result": "{{club}} came prepared: {{style}}."
+  },
+  "youthGoal": {
+    "header": "Goal",
+    "set": "Set goal",
+    "target": "Target OVR",
+    "range": "now {{now}}, up to {{max}}",
+    "months": "Deadline",
+    "monthsN_one": "{{count}} month",
+    "monthsN_other": "{{count}} months",
+    "save": "Save goal",
+    "remove": "Remove goal",
+    "failed": "Could not save the goal.",
+    "line": "OVR {{ovr}} by {{by}}",
+    "status": {
+      "onTrack": "on track",
+      "behind": "behind",
+      "reached": "reached",
+      "missed": "missed"
+    }
   }
 }

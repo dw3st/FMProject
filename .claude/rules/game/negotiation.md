@@ -273,3 +273,7 @@ Report do usuário. Um jogador emprestado ao clube do jogador por um clube da IA
 ## Quanto o clube pagou, na proposta (10.7)
 
 Report do usuário. A linha de situação de uma proposta por um jogador do próprio técnico (`PlayerSituationLine` com `listing`: proposta da IA e proposta entre técnicos) ganhou uma segunda linha: quanto o clube pagou por ele e quando (`paidFor`, `situation.ts`, do `RosterPlayer.arrival` neste clube: taxa, multa, livre, pré-contrato, base) e o valor de mercado de hoje (`playerMarketValue`). A rota `situation` só devolve `paid` e `value` para o jogador do próprio assento. Quem chegou antes da 8.4.4 não tem o registro: só o valor de mercado.
+
+## Quem é o jogador, na proposta (12.6)
+
+Report do usuário. A proposta da IA e a proposta entre técnicos mostram no topo um cartão do jogador (`PlayerSituationLine withCard`): rosto, nome com link para a ficha, posição, bandeira, idade e, só para o próprio jogador, o OVR. Vem de `card` na rota `situation`.

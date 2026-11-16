@@ -186,3 +186,7 @@ Report de tester. `LineupPreset.name` (até `PRESET_NAME_MAX` 20 letras; `cleanP
 ## Tática da seleção (12.2)
 
 A validação do `PUT /tactics` mora em `mergeTacticsBody` (`src/Domain/tactics/tacticsBody.ts`), usada pelo clube e pela seleção. A tela de Formação serve as duas (seletor Clube | Seleção, `?team=national`); a tática da seleção fica em `NationalState.human[seatId].tactics`. Ver `.claude/rules/game/national-teams.md` → "Tática completa da seleção (12.2)".
+
+## Escalação salva fica como foi salva (12.6)
+
+Report do usuário. `applyLineupPreset` mantém os titulares salvos nas vagas: quem saiu do elenco deixa a vaga vazia (motivo `left`, `in: ""`), lesionado ou suspenso fica (o dia do jogo troca). Só uma vaga que a escalação nunca preencheu (escalação trazida de outro clube) é completada pelo melhor disponível. Até a 12.5 os que saíram, os lesionados e os suspensos eram trocados na hora.

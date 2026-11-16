@@ -31,6 +31,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.6",
+    date: "2026-11-16",
+    time: "20:55",
+    items: [
+      { tab: "squad", pt: "A aba Base mostra o treinador da base: quem é, o que fez na semana e quem ele indica para o time principal. Ele também pode fazer cursos para ganhar estrelas.", en: "The Academy tab shows the youth coach: who he is, what he did this week and who he recommends for the first team. He can also take courses to gain stars." },
+      { tab: "squad", pt: "Metas para os jovens da base: escolha o OVR que ele deve alcançar em 3, 6 ou 12 meses e acompanhe se está no ritmo. A caixa de entrada avisa quando ele chega lá ou quando o prazo acaba.", en: "Goals for academy players: pick the OVR he should reach in 3, 6 or 12 months and follow whether he is on track. The inbox tells you when he gets there or when time runs out." },
+      { tab: "market", pt: "Propostas pelos seus jogadores e propostas entre técnicos mostram quem é o jogador: rosto, posição, idade e, nos seus, o OVR.", en: "Offers for your players and offers between managers show who the player is: face, position, age and, for your own, the OVR." },
+    ],
+    fixes: [
+      { tab: "formation", pt: "Usar uma escalação salva mantém exatamente os jogadores salvos. Quem saiu do clube deixa a vaga vazia, em vez de ser trocado sozinho.", en: "Using a saved line-up keeps exactly the saved players. Anyone who left the club leaves the slot empty instead of being swapped automatically." },
+    ],
+  },
+  {
     version: "12.5.1",
     date: "2026-11-16",
     time: "20:25",

@@ -400,8 +400,15 @@ export function buildYouthMessage(args: {
   count?:   number;
   best?:    YouthInboxMessage["best"];
   players?: { id: string; name: string }[];
+  goals?:   YouthInboxMessage["goals"];
 }): YouthInboxMessage {
-  const { date, kind, year, count, best, players } = args;
+  const { date, kind, year, count, best, players, goals } = args;
+  if (kind === "goal") {
+    return {
+      id: `youth-${date}-goal-${randomUUID()}`, date, createdAt: date, read: false, category: "youth",
+      subject: "Academy development goals", preview: (goals ?? []).map((g) => g.name).join(", ").slice(0, 120), kind, goals: goals ?? [],
+    };
+  }
   const subject = kind === "intake" ? `Academy intake ${year}: ${count} youngsters` : "Academy players released";
   const preview = kind === "intake" ? (best ? `Standout: ${best.name}` : "") : (players ?? []).map((p) => p.name).join(", ");
   return {

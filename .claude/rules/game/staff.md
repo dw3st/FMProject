@@ -242,3 +242,7 @@ Desenho aprovado pelo usuário. Só o clube do jogador; a IA não tem base nem a
 ## Lista do treinador da base um dia antes (12.1.1)
 
 Pedido do usuário. No fim de cada dia, o treinador da base no comando já monta as convocações dos jogos de base de amanhã (`coachCallUpsToday` com a data de amanhã, `advanceDay.ts`), gravadas em `youthCallUps` com a marca `byCoach` e `SeatState.youthCoachPlanned` = a data do jogo: o técnico vê a lista na véspera e pode mudar. No dia do jogo, uma lista feita na véspera fica como o técnico deixou (sem refazer); sem lista da véspera (o treinador assumiu no próprio dia), ele convoca no dia, como antes. Quem se lesionou entre um dia e outro fica de fora pelo filtro de sempre do jogo de base.
+
+## Curso do treinador da base (12.6)
+
+O treinador da base pode fazer o curso sem estar na comissão de confiança (`courseRefusal`, `courseOffer` em `GET /staff`); as demais regras do curso valem. Ver `youth.md` → "Treinador da base na aba, metas e indicações".

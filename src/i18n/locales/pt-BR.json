@@ -1045,9 +1045,9 @@
       "nameSave": "Salvar nome",
       "nameHint": "Até {{n}} letras. Vazio volta para a letra.",
       "noReplacement": {
-        "injured": "{{out}} está lesionado: sem reserva para a vaga",
-        "suspended": "{{out}} está suspenso: sem reserva para a vaga",
-        "left": "{{out}} saiu do elenco: sem reserva para a vaga"
+        "injured": "{{out}} está lesionado: fica na escalação, o jogo troca no dia",
+        "suspended": "{{out}} está suspenso: fica na escalação, o jogo troca no dia",
+        "left": "{{out}} saiu do elenco: a vaga ficou vazia"
       },
       "swap": {
         "injured": "{{out}} está lesionado: entra {{in}}",
@@ -1840,7 +1840,30 @@
   "youthCoach": {
     "byCoach": "pelo treinador da base",
     "callUpsNote": "O treinador da base cuida das convocações. Você pode mudar à mão.",
-    "trainingNote": "O treinador da base cuida do treino. Você pode mudar à mão."
+    "trainingNote": "O treinador da base cuida do treino. Você pode mudar à mão.",
+    "card": {
+      "title": "Treinador da base",
+      "none": "Sem treinador da base. Ele convoca para os jogos da base, monta o treino e indica quem promover.",
+      "find": "Buscar treinador",
+      "until": "contrato até {{until}}",
+      "inCharge": "Cuida da base: convocações dos jogos de base e treino.",
+      "manager": "Você cuida da base; ele só melhora a evolução dos jovens.",
+      "handOver": "Passar a base para ele",
+      "onCourse": "Em curso até {{until}}: enquanto isso a base fica com você.",
+      "week": "Nesta semana",
+      "calls": "convocou {{u21}} para o sub-21 e {{u19}} para o sub-19",
+      "intensity": "treino {{intensity}}",
+      "focused_one": "foco individual em {{count}} jovem",
+      "focused_other": "foco individual em {{count}} jovens",
+      "picks": "Indica para o time principal",
+      "noPicks": "Ninguém pronto para o time principal por enquanto.",
+      "picked": "Indicado",
+      "pick": {
+        "ready": "pronto para o time",
+        "lastYear": "último ano na base, tem potencial"
+      },
+      "course": "Curso de {{days}} dias: +0,5 estrela, {{price}}"
+    }
   },
   "awards": {
     "kind": {
@@ -2076,7 +2099,11 @@
     },
     "youth": {
       "intake": "A safra {{year}} da base chegou: {{count}} jovens. Destaque: {{best}}.",
-      "released": "Chegou aos 19 anos sem ser promovido e saiu da base: {{players}}"
+      "released": "Chegou aos 19 anos sem ser promovido e saiu da base: {{players}}",
+      "goal": {
+        "reached": "{{player}} chegou à meta: OVR {{ovr}}.",
+        "missed": "{{player}} não chegou à meta de OVR {{ovr}} no prazo."
+      }
     },
     "retirement": {
       "retired": "{{player}} ({{age}}) se aposentou do futebol. Na última temporada: {{games}} jogos, {{goals}} gols.",
@@ -2289,7 +2316,8 @@
       "youth": {
         "intake": "Safra {{year}} da base: {{count}} jovens",
         "released": "Jogadores dispensados da base",
-        "standout": "Destaque: {{player}}"
+        "standout": "Destaque: {{player}}",
+        "goal": "Metas da base"
       },
       "retirement": {
         "retired": "{{player}} se aposenta",
@@ -4329,6 +4357,10 @@
       "counterReceive": "O clube aceita com o jogador e paga {{fee}} a você.",
       "counterNone": "O clube aceita só a troca.",
       "acceptCounter": "Aceitar: jogador + {{fee}}"
+    },
+    "card": {
+      "age": "{{age}} anos",
+      "ovr": "OVR"
     }
   },
   "morale": {
@@ -7927,5 +7959,24 @@
     "predictability": "Leitura dos adversários: {{level}}",
     "predictabilityHelp": "Repetir formação, estilo e instruções da equipe por vários jogos deixa o time previsível.",
     "result": "{{club}} veio preparado: {{style}}."
+  },
+  "youthGoal": {
+    "header": "Meta",
+    "set": "Definir meta",
+    "target": "OVR alvo",
+    "range": "hoje {{now}}, até {{max}}",
+    "months": "Prazo",
+    "monthsN_one": "{{count}} mês",
+    "monthsN_other": "{{count}} meses",
+    "save": "Salvar meta",
+    "remove": "Tirar meta",
+    "failed": "Não deu para salvar a meta.",
+    "line": "OVR {{ovr}} até {{by}}",
+    "status": {
+      "onTrack": "no ritmo",
+      "behind": "atrasado",
+      "reached": "alcançada",
+      "missed": "não alcançada"
+    }
   }
 }

@@ -98,7 +98,7 @@ export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string;
       ...(m.role === "coach" ? { starsByArea: Object.fromEntries(COACH_AREAS.map((a) => [a, starsIn(m, a)])) } : {}),
       ...(ctx && isScoutRole(m.role) ? { strongCountry: strongCountry(m, ctx.date) } : {}),
       ...(ctx ? memberOffer(squad, m, ctx) : {}),
-      ...(ctx && m.trusted && !m.course ? { courseOffer: courseOfferOf(staff, m, ctx) } : {}),
+      ...(ctx && (m.trusted || m.role === "youthCoach") && !m.course ? { courseOffer: courseOfferOf(staff, m, ctx) } : {}),
     })),
     trusted: { used: trustedOf(staff).length, max: TRUSTED.MAX },
     ...(ctx?.wallet !== undefined ? { wallet: ctx.wallet } : {}),

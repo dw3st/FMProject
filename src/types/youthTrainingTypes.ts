@@ -4,6 +4,17 @@ import type { TrainingIntensity } from "@/types/developmentTypes";
 export type YouthFocus =
   | "balanced" | "goalkeeping" | "defending" | "shooting" | "technical" | "passing" | "physical" | "setPieces";
 
+/** Development goal of an academy player (`src/Domain/youth/youthGoals.ts`). */
+export interface YouthGoal {
+  /** Target level (0-10). */
+  level: number;
+  /** Level when the goal was set, and the date. */
+  from: number;
+  set: string;
+  /** Deadline. */
+  by: string;
+}
+
 /** Academy training plan of the human club (`src/Domain/youth/youthTraining.ts`). */
 export interface YouthTrainingPlan {
   intensity: TrainingIntensity;

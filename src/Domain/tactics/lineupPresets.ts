@@ -13,7 +13,7 @@ import type { FormationShape } from "@/types/formationSlots";
 import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { FORMATION_IDS, formationForTactics } from "@/Domain/matchFormations";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
-import { fitnessAdjustedValue, replaceUnavailableStarters } from "@/Domain/lineupHelpers";
+import { fitnessAdjustedValue } from "@/Domain/lineupHelpers";
 import { isInjured } from "@/Domain/injury/injury";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { getMainRole } from "@/Domain/roles";
@@ -243,11 +243,10 @@ export interface AppliedLineupPreset {
 }
 
 /**
- * Applies a preset to today's squad: a saved player who left the squad (sold, loaned out, released)
- * or an empty slot is filled by the best available player of the slot's line (any available player
- * as a fallback), ranked by `fitnessAdjustedValue`; an injured or suspended one goes through
- * `replaceUnavailableStarters` (the same rule the saved lineup follows on match day). A starter
- * nobody can replace is reported with `in: ""`.
+ * Applies a preset to today's squad, keeping the saved starters in their slots (report 2026-11-16): a saved
+ * player who left the squad (sold, loaned out, released) leaves the slot empty, an injured or suspended one stays
+ * (both reported with `in: ""`; match day swaps the unavailable). Only a slot the preset never filled is filled by
+ * the best available player of the slot's line, ranked by `fitnessAdjustedValue`.
  */
 export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[], date: string): AppliedLineupPreset {
   const formation = formationForTactics(preset);
@@ -256,11 +255,18 @@ export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[],
   const lineup = slots.map((_, i) => preset.lineup[i] ?? "");
   const replaced: PresetReplacement[] = [];
 
-  // 1. Players who left the squad (or empty slots of the preset).
+  // The saved starters stay exactly where they were (report 2026-11-16): one who left the squad leaves his slot
+  // empty, an injured or suspended one stays (the match day swaps him). Only a slot the preset never filled (a
+  // preset brought from another club has no starters) is filled with the best available player.
   const used = new Set(lineup.filter((id) => id && byId.has(id)));
   for (let i = 0; i < slots.length; i++) {
     const id = lineup[i]!;
     if (id && byId.has(id)) continue;
+    if (id) {
+      lineup[i] = "";
+      replaced.push({ out: id, in: "", slot: i, reason: "left" });
+      continue;
+    }
     const role = slots[i]!.role;
     const available = players.filter((p) => !used.has(p.id) && !isUnavailable(p, date));
     const sameLine = available.filter((p) => p.positions.includes(role) || getMainRole(p.positions[0] ?? "CM") === getMainRole(role));
@@ -268,17 +274,8 @@ export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[],
     const pick = [...pool].sort((a, b) => fitnessAdjustedValue(b, role) - fitnessAdjustedValue(a, role))[0];
     lineup[i] = pick?.id ?? "";
     if (pick) used.add(pick.id);
-    if (id) replaced.push({ out: id, in: pick?.id ?? "", slot: i, reason: "left" });
   }
-
-  // 2. Injured or suspended starters.
-  const swapped = replaceUnavailableStarters(slots, lineup, players, date);
-  for (const r of swapped.replaced) {
-    // Presets never pass a registered set: only injured or suspended swaps come back here.
-    replaced.push({ out: r.out, in: r.in, slot: lineup.indexOf(r.out), reason: r.reason === "injured" ? "injured" : "suspended" });
-  }
-  // 3. Unavailable starters nobody could replace (squad too thin): they stay, flagged.
-  swapped.lineup.forEach((id, slot) => {
+  lineup.forEach((id, slot) => {
     const p = id ? byId.get(id) : undefined;
     if (p && isUnavailable(p, date)) {
       replaced.push({ out: id, in: "", slot, reason: isInjured(p, date) ? "injured" : "suspended" });
@@ -289,7 +286,7 @@ export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[],
   return {
     formation: preset.formation,
     ...(preset.customFormation ? { customFormation: preset.customFormation } : {}),
-    lineup: swapped.lineup,
+    lineup,
     slotInstructions: sanitizeSlotInstructions(formation, preset.slotInstructions),
     ...(preset.tacticalStyle ? { tacticalStyle: preset.tacticalStyle } : {}),
     ...(preset.axesOverride ? { axesOverride: preset.axesOverride } : {}),

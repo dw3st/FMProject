@@ -633,6 +633,7 @@ function newsTexts(
       if (message.kind !== "expiring" && message.kind !== "renewed" && message.kind !== "released") return null;
       return { subject: t(`inbox.subjects.contract.${message.kind}`), preview: message.players.map((p) => p.name).join(", ") };
     case "youth":
+      if (message.kind === "goal") return { subject: t("inbox.subjects.youth.goal"), preview: (message.goals ?? []).map((g) => g.name).join(", ") };
       return message.kind === "intake"
         ? {
             subject: t("inbox.subjects.youth.intake", { year: message.year ?? "", count: message.count ?? 0 }),
@@ -950,7 +951,16 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
       const x = clubRecordTexts(message.record, t, (slug) => competitionName(slug, leagues, i18n.language));
       return <p className="text-sm text-foreground m-0">{t("clubHistory.inboxBody", { record: x.label, value: x.value, detail: x.detail })}</p>;
     })()}
-    {message.category === "youth" && (
+    {message.category === "youth" && message.kind === "goal" && (
+      <ul className="m-0 pl-0 list-none flex flex-col gap-1">
+        {(message.goals ?? []).map((g) => (
+          <li key={g.id} className="text-sm text-foreground">
+            <PlayerNameText text={t(`inbox.youth.goal.${g.outcome}`, { player: g.name, ovr: Math.round(g.level * 10) })} players={[{ id: g.id, name: g.name }]} />
+          </li>
+        ))}
+      </ul>
+    )}
+    {message.category === "youth" && message.kind !== "goal" && (
       <p className="text-sm text-foreground m-0">
         {message.kind === "intake"
           ? t("inbox.youth.intake", {

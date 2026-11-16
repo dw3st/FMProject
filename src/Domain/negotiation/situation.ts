@@ -18,6 +18,19 @@ export interface PlayerSituation {
   paid?: { kind: PlayerArrival["kind"]; fee: number; on: string };
   /** His own manager's player: the market value today (EUR). */
   value?: number;
+  /** Who he is, for the card at the top of an offer (report 2026-11-16). `overall` only for the manager's own player. */
+  card?: PlayerCardInfo;
+}
+
+export interface PlayerCardInfo {
+  name: string;
+  age: number;
+  position: string;
+  nationality?: string;
+  overall?: number;
+  clubId: string;
+  league: string;
+  colors: string[];
 }
 
 /** How a player came to `squadId` and the fee paid, from his arrival record; null when it is of another club or absent. */

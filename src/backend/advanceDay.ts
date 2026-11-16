@@ -168,6 +168,7 @@ import { matchWeatherOf } from "@/backend/stadiumData";
 import { ensureYouthCompetitions, playYouthDay, regenerateYouthComps } from "@/backend/youthCompWorld";
 import { advanceCallUps, callUpEligibleIds } from "@/Domain/youthComps/callUps";
 import { coachCallUpsToday, coachMondaySquad } from "@/backend/youthCoachWorld";
+import { settleGoals } from "@/Domain/youth/youthGoals";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
@@ -931,7 +932,16 @@ export async function advanceOneDay(
         if (!ds.clubId || !ds.entry) continue;
         const now = squadWrites.get(ds.clubId)?.squad ?? (await saveService.getSquadById(saveId, ds.clubId));
         const planned = now ? coachMondaySquad(ds, now) : null;
-        if (planned) squadWrites.set(ds.clubId, { league: ds.entry.leagueSlug, club: ds.entry.stem, squad: planned });
+        // Development goals that end this week (reached or past the deadline) become news (`youthGoals.ts`).
+        const base = planned ?? now;
+        const settled = base ? settleGoals(base.youthGoals, base.youth ?? [], currentDate) : null;
+        const withGoals = base && settled && settled.goals !== base.youthGoals
+          ? (({ youthGoals: _g, ...rest }) => (settled.goals ? { ...rest, youthGoals: settled.goals } : rest))(base) as Squad
+          : planned;
+        if (settled && settled.outcomes.length > 0) {
+          ds.deferred.youth.push({ date: currentDate, kind: "goal", goals: settled.outcomes });
+        }
+        if (withGoals) squadWrites.set(ds.clubId, { league: ds.entry.leagueSlug, club: ds.entry.stem, squad: withGoals });
       }
     }
 

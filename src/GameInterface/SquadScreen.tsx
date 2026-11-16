@@ -185,10 +185,7 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         ) : activeTab === "registration" && squad.id === mySquadId ? (
           <RegistrationView />
         ) : activeTab === "youth" && squad.id === mySquadId ? (
-          <div className="space-y-6">
-            <YouthCallUpsPanel />
-            <YouthTable />
-          </div>
+          <YouthTable clubColors={squad.colors} callUps={<YouthCallUpsPanel />} />
         ) : activeTab === "loans" && squad.id === mySquadId && session ? (
           <NegotiationOverview saveId={session.saveId} sections={["out", "in"]} />
         ) : (

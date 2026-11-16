@@ -125,7 +125,7 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual([]);
   });
 
-  test("injured, suspended and departed starters are replaced from the same line", () => {
+  test("saved starters stay: a departed one leaves the slot empty, injured and suspended stay flagged", () => {
     const st = roles.indexOf("ST");
     const cb = roles.indexOf("CB");
     const gk = roles.indexOf("GK");
@@ -136,16 +136,21 @@ describe("applyLineupPreset", () => {
       .map((p) => (p.id === injured.id ? injured : p.id === suspended.id ? suspended : p));
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: xi }, DATE), today, DATE);
 
-    expect(applied.lineup[gk]).toBe("bGK");
-    expect(applied.lineup[st]).toBe("bST");
-    expect(applied.lineup[cb]).toBe("bCB");
+    expect(applied.lineup[gk]).toBe("");
+    expect(applied.lineup[st]).toBe(injured.id);
+    expect(applied.lineup[cb]).toBe(suspended.id);
     const expected: PresetReplacement[] = [
-      { out: `s${gk}`, in: "bGK", slot: gk, reason: "left" },
-      { out: `s${cb}`, in: "bCB", slot: cb, reason: "suspended" },
-      { out: `s${st}`, in: "bST", slot: st, reason: "injured" },
+      { out: `s${gk}`, in: "", slot: gk, reason: "left" },
+      { out: `s${cb}`, in: "", slot: cb, reason: "suspended" },
+      { out: `s${st}`, in: "", slot: st, reason: "injured" },
     ];
     expect(applied.replaced).toEqual(expected.sort((a, b) => a.slot - b.slot));
-    expect(new Set(applied.lineup).size).toBe(11);
+  });
+
+  test("a preset with no starters (brought from another club) is filled from the squad", () => {
+    const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: [] }, DATE), squad, DATE);
+    expect(applied.lineup.filter(Boolean)).toHaveLength(11);
+    expect(applied.replaced).toEqual([]);
   });
 
   test("brings back formation, free formation and instructions", () => {
@@ -169,13 +174,12 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual([]);
   });
 
-  test("a starter loaned out (no longer in the squad) is replaced as having left", () => {
+  test("a starter loaned out (no longer in the squad) leaves his slot empty", () => {
     const lb = roles.indexOf("LB");
-    // Uniform test stats make every defender's natural slot CB, so keep the bench CB out of it.
-    const today = squad.filter((p) => p.id !== `s${lb}` && p.id !== "bCB");
+    const today = squad.filter((p) => p.id !== `s${lb}`);
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: xi }, DATE), today, DATE);
-    expect(applied.lineup[lb]).toBe("bLB");
-    expect(applied.replaced).toEqual([{ out: `s${lb}`, in: "bLB", slot: lb, reason: "left" }]);
+    expect(applied.lineup[lb]).toBe("");
+    expect(applied.replaced).toEqual([{ out: `s${lb}`, in: "", slot: lb, reason: "left" }]);
   });
 
   test("an injured starter with nobody to replace him stays and is reported with no replacement", () => {

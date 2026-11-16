@@ -48,6 +48,24 @@ describe("youth routes", () => {
 
     expect((await call(promoteKey, `/api/saves/${saveId}/youth/nope/promote`, "POST", session.token)).status).toBe(404);
 
+    // Development goal (report 2026-11-16): above today's level, 3/6/12 months; null removes it.
+    const goalKey = "/api/saves/:saveId/youth/:playerId/goal";
+    const putGoal = (id: string, body: unknown) => {
+      const handler = apiRoutes[goalKey as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+      return handler(Object.assign(
+        new Request(`http://localhost/api/saves/${saveId}/youth/${id}/goal`, { method: "PUT", headers: { cookie: `fs_session=${session.token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+        { params: { saveId, playerId: id } },
+      ));
+    };
+    const gId = intake[2]!.id;
+    const now = list.youth.find((r: any) => r.player.id === gId).overall as number;
+    expect((await putGoal(gId, { level: now - 0.5, months: 6 })).status).toBe(400);
+    expect((await putGoal(gId, { level: now + 0.5, months: 7 })).status).toBe(400);
+    const withGoal = await (await putGoal(gId, { level: now + 0.5, months: 6 })).json() as any;
+    expect(withGoal.youth.find((r: any) => r.player.id === gId).goal.status).toBe("onTrack");
+    const cleared = await (await putGoal(gId, null)).json() as any;
+    expect(cleared.youth.find((r: any) => r.player.id === gId).goal).toBeUndefined();
+
     // Release: leaves the academy and enters the free-agent pool.
     expect((await call(releaseKey, `/api/saves/${saveId}/youth/${rId}/release`, "POST", session.token)).status).toBe(200);
     expect((await saveService.getFreeAgents(saveId)).some((f) => f.player.id === rId)).toBe(true);
