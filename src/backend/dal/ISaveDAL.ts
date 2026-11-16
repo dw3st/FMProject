@@ -130,8 +130,6 @@ export interface ISaveDAL {
 
   readLeagueSeasonArchive(saveId: string, leagueSlug: string, year: number): Promise<SeasonArchive | null>;
   writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void>;
-  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null>;
-  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void>;
 
   // ── Season awards (`.claude/rules/game/awards.md`) ───────────────────────────
   /** `awards/{year}.json`: league seasons closed in `year` (+ the world awards for it). */

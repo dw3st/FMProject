@@ -88,10 +88,10 @@ export interface SaveMeta {
   activeLeagues?: LeagueSeasonState[];
   /** World year whose free-agent retirement draw already ran. */
   freeAgentsRetiredYear?: number;
-  /** Day logs up to this date are compacted (`compactDayLog`): the next day continues after it. */
+  /** Day logs up to this date are slimmed (`slimDayLog`, past `DAY_LOG_KEEP_FULL_DAYS`): the next day continues after it. */
   dayLogsCompactedTo?: string;
-  /** Day logs up to this date are slimmed (`slimDayLog`, past `DAY_LOG_KEEP_COMPACT_DAYS`). */
-  dayLogsSlimmedTo?: string;
+  /** Day logs up to this date are pruned to the human clubs' games (`pruneDayLog`, past `DAY_LOG_KEEP_DAYS`). */
+  dayLogsPrunedTo?: string;
   /** The world's start (start kit + safety nets, `/presimulate`) already ran: once per world. */
   presimulated?: true;
   /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */
@@ -872,10 +872,6 @@ export class SaveService {
 
   readLeagueSeasonArchive(saveId: string, leagueSlug: string, year: number): Promise<SeasonArchive | null> {
     return this.dal.readLeagueSeasonArchive(saveId, leagueSlug, year);
-  }
-
-  writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
-    return this.dal.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers);
   }
 
   /** Every competition folder under leagues/ (leagues and cups). */

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { compactDayLog, slimDayLog } from "@/Domain/advanceDay/dayLogCompaction";
+import { pruneDayLog, slimDayLog } from "@/Domain/advanceDay/dayLogCompaction";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 
 function match(home: string, away: string): StoredDayLog["events"][number] {
@@ -11,7 +11,7 @@ function match(home: string, away: string): StoredDayLog["events"][number] {
   };
 }
 
-describe("compactDayLog", () => {
+describe("day log compaction", () => {
   test("drops training and rest, compacts AI matches, keeps human matches whole", () => {
     const log: StoredDayLog = {
       saveId: "s", date: "2027-01-01",
@@ -20,11 +20,12 @@ describe("compactDayLog", () => {
         match("ai1", "ai2"), match("human", "ai3"),
       ],
     };
-    const out = compactDayLog(log, new Set(["human"]))!;
+    const out = slimDayLog(log, new Set(["human"]))!;
     expect(out.events.map((e) => e.kind)).toEqual(["match", "match"]);
     type M = Extract<StoredDayLog["events"][number], { kind: "match" }>;
     const ai = out.events[0] as M, human = out.events[1] as M;
     expect(ai.compact).toBe(true);
+    expect(ai.slim).toBe(true);
     expect(ai.playerStats).toEqual({});
     expect(ai.score).toEqual({ home: 1, away: 0 });
     expect(human.compact).toBeUndefined();
@@ -55,7 +56,25 @@ describe("compactDayLog", () => {
   });
 
   test("null when there is nothing to compact", () => {
-    expect(compactDayLog({ saveId: "s", date: "d", events: [match("human", "x")] }, new Set(["human"]))).toBeNull();
-    expect(compactDayLog({ saveId: "s", date: "d", events: [] }, new Set())).toBeNull();
+    expect(slimDayLog({ saveId: "s", date: "d", events: [match("human", "x")] }, new Set(["human"]))).toBeNull();
+    expect(slimDayLog({ saveId: "s", date: "d", events: [] }, new Set())).toBeNull();
+  });
+
+  test("pruneDayLog keeps only the human clubs' games and the national games", () => {
+    const log: StoredDayLog = {
+      saveId: "s", date: "2027-01-01", events: [match("ai1", "ai2"), match("human", "ai3")],
+      transfers: [{} as never], registrationViolations: 0, nationalMatches: { seat1: match("nat_a", "nat_b") as never },
+      youthMatches: [
+        { competition: "u21_x", fixtureId: "y1", home: "ai1", away: "ai2", score: null, scorers: [], best: null, players: { home: [], away: [] } },
+        { competition: "u21_x", fixtureId: "y2", home: "human", away: "ai2", score: null, scorers: [], best: null, players: { home: [], away: [] } },
+      ],
+    };
+    const out = pruneDayLog(log, new Set(["human"]))!;
+    expect(out.events.map((e) => (e as { home: string }).home)).toEqual(["human"]);
+    expect(out.youthMatches!.map((y) => y.fixtureId)).toEqual(["y2"]);
+    expect(out.transfers).toBeUndefined();
+    expect(out.registrationViolations).toBeUndefined();
+    expect(Object.keys(out.nationalMatches!)).toEqual(["seat1"]);
+    expect(pruneDayLog(out, new Set(["human"]))).toBeNull();
   });
 });

@@ -123,16 +123,18 @@ format changed without a new version: saves from before have no members and leav
 ## Group advance (multiplayer part 3)
 In a `running` multi world only `src/backend/groupAdvance.ts` advances the day (in the background, one run per world, a deadline clock started by `startWorldClock()` in `src/index.ts`); `/advance-day` and `/advance-until` answer 409 `groupAdvance`. Pure rules in `src/Domain/groupAdvance/`, routes in `src/backend/groupAdvanceRoutes.ts`, push as the `world_progress` `ServerEvent`. See `.claude/rules/game/multiplayer.md`.
 
-## Day log compaction (7.9)
-Day logs older than `DAY_LOG_KEEP_FULL_DAYS` (60) are compacted by the day advance (`compactDayLog`,
-`src/Domain/advanceDay/dayLogCompaction.ts`): training/rest lines dropped (they never stored effects), matches of
-clubs without a seat reduced to the `compact` form (no player stats, ratings or development). At most 40 logs a day,
-from `SaveMeta.dayLogsCompactedTo` on. A two-season friends world had 170 MB of day logs (~130 MB a season).
-Past `DAY_LOG_KEEP_COMPACT_DAYS` (400) a second pass (`slimDayLog`, cursor `SaveMeta.dayLogsSlimmedTo`) leaves AI
-matches with the result, scorers and the five required team numbers, and AI youth games with the result only; human
-matches stay whole. Day logs are written without indentation. A league's season archive keeps `playerLogs` only for
-the newest season (read on the rollover day only). Measured on a 20-season soak (2026-11-16): a past year of day logs
-113 MB → 22.5 MB; the save grew ~150 MB a season before.
+## Day log compaction (7.9; save size, 2026-11-16)
+Old day logs are rewritten by the day advance (`src/Domain/advanceDay/dayLogCompaction.ts`), at most 40 logs a day
+per pass:
+- past `DAY_LOG_KEEP_FULL_DAYS` (60, cursor `SaveMeta.dayLogsCompactedTo`, `slimDayLog`): training/rest lines dropped,
+  AI matches keep the result, decider, scorers and the five required team numbers (the Leagues screen still opens a
+  current-season AI match), AI youth games the result only;
+- past `DAY_LOG_KEEP_DAYS` (400, cursor `SaveMeta.dayLogsPrunedTo`, `pruneDayLog`): only the human clubs' games
+  (first team, youth) and the seats' national games stay; AI games, the day's transfers and counters go.
+Human matches always stay whole. Every save file but the meta is written without indentation. A league's season
+archive keeps `playerLogs` only for the newest season (read on the rollover day only); the per-league season
+transfer archives (a copy of every transfer of the world per league, never read) are no longer written.
+Measured on a 20-season soak (2026-11-16): the save grew ~150 MB a season (3.1 GB in 2046), 2.1 GB of it day logs.
 
 ## Fixed frame (8.8)
 One page serves every in-game screen (`src/pages/app/` → `GameInterface/AppShell.tsx`, routes in

@@ -124,9 +124,6 @@ function dateIndexPath(saveId: string, leagueSlug: string) {
 function leagueSeasonArchivePath2(saveId: string, leagueSlug: string, year: number) {
   return `${SAVES_DIR}/${saveId}/seasons/${year}/${leagueSlug}/season.json`;
 }
-function leagueTransfersArchivePath2(saveId: string, leagueSlug: string, year: number) {
-  return `${SAVES_DIR}/${saveId}/seasons/${year}/${leagueSlug}/transfers.json`;
-}
 
 export class FileSystemDAL implements ISaveDAL {
 
@@ -174,7 +171,7 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${archive.year}`;
     await mkdir(dir, { recursive: true });
-    await Bun.write(seasonArchivePath(saveId, archive.year), JSON.stringify(archive, null, 2));
+    await Bun.write(seasonArchivePath(saveId, archive.year), JSON.stringify(archive));
   }
 
   // ── Transfers ─────────────────────────────────────────────────────────────
@@ -343,7 +340,7 @@ export class FileSystemDAL implements ISaveDAL {
 
   async writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(transfersPath(saveId), JSON.stringify(transfers, null, 2));
+    await Bun.write(transfersPath(saveId), JSON.stringify(transfers));
   }
 
   async readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null> {
@@ -355,7 +352,7 @@ export class FileSystemDAL implements ISaveDAL {
   async writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${year}`;
     await mkdir(dir, { recursive: true });
-    await Bun.write(transfersArchivePath(saveId, year), JSON.stringify(transfers, null, 2));
+    await Bun.write(transfersArchivePath(saveId, year), JSON.stringify(transfers));
   }
 
   // ── Squads ────────────────────────────────────────────────────────────────
@@ -372,7 +369,7 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/squads/${leagueSlug}`;
     await mkdir(dir, { recursive: true });
-    // Compact: squads are the bulk of per-day writes; other (small) files stay pretty-printed.
+    // Compact like every save file but the meta: nothing reads them by hand.
     await Bun.write(squadPath(saveId, leagueSlug, clubSlug), JSON.stringify(squad));
     bumpSaveDataVersion(saveId);
   }
@@ -460,7 +457,7 @@ export class FileSystemDAL implements ISaveDAL {
 
   async writeMarket(saveId: string, market: WorldMarketState): Promise<void> {
     await mkdir(`${SAVES_DIR}/${saveId}`, { recursive: true });
-    await Bun.write(marketPath(saveId), JSON.stringify(market, null, 2));
+    await Bun.write(marketPath(saveId), JSON.stringify(market));
     bumpSaveDataVersion(saveId);
   }
 
@@ -489,7 +486,7 @@ export class FileSystemDAL implements ISaveDAL {
 
   async writeLeagueMeta(saveId: string, meta: LeagueSeasonMeta): Promise<void> {
     await mkdir(leagueDir(saveId, meta.leagueSlug), { recursive: true });
-    await Bun.write(leagueMetaPath(saveId, meta.leagueSlug), JSON.stringify(meta, null, 2));
+    await Bun.write(leagueMetaPath(saveId, meta.leagueSlug), JSON.stringify(meta));
   }
 
   async readLeagueStandings(saveId: string, leagueSlug: string): Promise<StandingRow[] | null> {
@@ -500,7 +497,7 @@ export class FileSystemDAL implements ISaveDAL {
 
   async writeLeagueStandings(saveId: string, leagueSlug: string, rows: StandingRow[]): Promise<void> {
     await mkdir(leagueDir(saveId, leagueSlug), { recursive: true });
-    await Bun.write(leagueStandingsPath(saveId, leagueSlug), JSON.stringify(rows, null, 2));
+    await Bun.write(leagueStandingsPath(saveId, leagueSlug), JSON.stringify(rows));
   }
 
   async readRound(saveId: string, leagueSlug: string, round: number): Promise<RoundFixtures | null> {
@@ -511,7 +508,7 @@ export class FileSystemDAL implements ISaveDAL {
 
   async writeRound(saveId: string, leagueSlug: string, round: number, data: RoundFixtures): Promise<void> {
     await mkdir(`${leagueDir(saveId, leagueSlug)}/rounds`, { recursive: true });
-    await Bun.write(roundPath(saveId, leagueSlug, round), JSON.stringify(data, null, 2));
+    await Bun.write(roundPath(saveId, leagueSlug, round), JSON.stringify(data));
   }
 
   async readDateIndex(saveId: string, leagueSlug: string): Promise<LeagueDateIndex | null> {
@@ -522,7 +519,7 @@ export class FileSystemDAL implements ISaveDAL {
 
   async writeDateIndex(saveId: string, leagueSlug: string, index: LeagueDateIndex): Promise<void> {
     await mkdir(leagueDir(saveId, leagueSlug), { recursive: true });
-    await Bun.write(dateIndexPath(saveId, leagueSlug), JSON.stringify(index, null, 2));
+    await Bun.write(dateIndexPath(saveId, leagueSlug), JSON.stringify(index));
   }
 
   async listActiveLeaguesSlugs(saveId: string): Promise<string[]> {
@@ -544,20 +541,9 @@ export class FileSystemDAL implements ISaveDAL {
   async writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void> {
     const dir = `${SAVES_DIR}/${saveId}/seasons/${archive.year}/${archive.leagueSlug}`;
     await mkdir(dir, { recursive: true });
-    await Bun.write(leagueSeasonArchivePath2(saveId, archive.leagueSlug, archive.year), JSON.stringify(archive, null, 2));
+    await Bun.write(leagueSeasonArchivePath2(saveId, archive.leagueSlug, archive.year), JSON.stringify(archive));
   }
 
-  async readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null> {
-    const file = Bun.file(leagueTransfersArchivePath2(saveId, leagueSlug, year));
-    if (!(await file.exists())) return null;
-    return file.json() as Promise<StoredTransferRecord[]>;
-  }
-
-  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
-    const dir = `${SAVES_DIR}/${saveId}/seasons/${year}/${leagueSlug}`;
-    await mkdir(dir, { recursive: true });
-    await Bun.write(leagueTransfersArchivePath2(saveId, leagueSlug, year), JSON.stringify(transfers, null, 2));
-  }
 
   // ── Season awards ─────────────────────────────────────────────────────────────
 

@@ -434,12 +434,6 @@ export class BufferingSaveDAL implements ISaveDAL {
   async writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void> {
     this.buffer(`leagueSeasonArchive:${saveId}:${archive.leagueSlug}:${archive.year}`, archive, () => this.inner.writeLeagueSeasonArchive(saveId, archive));
   }
-  readLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number): Promise<StoredTransferRecord[] | null> {
-    return this.readThrough(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, () => this.inner.readLeagueTransfersArchive(saveId, leagueSlug, year));
-  }
-  async writeLeagueTransfersArchive(saveId: string, leagueSlug: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
-    this.buffer(`leagueTransfersArchive:${saveId}:${leagueSlug}:${year}`, transfers, () => this.inner.writeLeagueTransfersArchive(saveId, leagueSlug, year, transfers));
-  }
 
   // ── Season awards ─────────────────────────────────────────────────────────────
   //

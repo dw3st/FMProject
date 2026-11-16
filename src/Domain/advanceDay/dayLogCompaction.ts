@@ -1,48 +1,27 @@
 import type { MatchTeamStats, StoredDayLog } from "@/types/dayLogTypes";
 
 /**
- * Day logs older than this many days are compacted (tester-report save analysis, 4.39): a two-season world had
- * 170 MB of day logs, ~130 MB per season, almost all of it the full player stats of every engine match and one
- * training/rest line per club per day.
+ * Day logs older than this many days are slimmed (tester-report save analysis, 4.39; 2026-11-16 soak: a 20-season
+ * world reached 3 GB, 2 GB of it day logs). Within the current season the Leagues screen still opens an AI match
+ * (result and scorers); its cards, players and referee are not needed any more.
  */
 export const DAY_LOG_KEEP_FULL_DAYS = 60;
-/** Logs compacted per day at most, so a world with a long backlog catches up over a few days. */
+/**
+ * Past this, an AI game leaves the log altogether: no screen reads an AI match of a past season (the Leagues
+ * fixtures are the current season's only, the calendar is rebuilt at the rollover). A human club's games stay.
+ */
+export const DAY_LOG_KEEP_DAYS = 400;
+/** Logs rewritten per day at most (per pass), so a world with a long backlog catches up over a few days. */
 export const DAY_LOG_COMPACT_PER_DAY = 40;
 /** Oldest date looked at when a world has never compacted (no cursor yet). */
 export const DAY_LOG_COMPACT_LOOKBACK_DAYS = 900;
 
-/**
- * The compacted log: training and rest lines dropped (they never stored their effects), and the matches of clubs
- * without a human seat reduced to the result, scorers, cards, injuries, substitutions, goals and referee (the
- * `compact` form the quickSim already writes). A human club's matches stay whole (its match pages).
- * `null` when there was nothing to compact.
- */
-export function compactDayLog(log: StoredDayLog, humanClubs: ReadonlySet<string>): StoredDayLog | null {
-  let changed = false;
-  const events: StoredDayLog["events"] = [];
-  for (const e of log.events) {
-    if (e.kind === "training" || e.kind === "rest") { changed = true; continue; }
-    if (e.kind === "match" && !e.compact && !humanClubs.has(e.home) && !humanClubs.has(e.away)) {
-      changed = true;
-      events.push({ ...e, playerStats: {}, playerRatings: {}, developmentChanges: [], compact: true });
-      continue;
-    }
-    events.push(e);
-  }
-  return changed ? { ...log, events } : null;
-}
+const humanGame = (humanClubs: ReadonlySet<string>, home: string, away: string) => humanClubs.has(home) || humanClubs.has(away);
 
 /**
- * Day logs older than this are slimmed a second time (2026-11-16 soak: compacted logs still grew ~105 MB a
- * season). No screen reads an AI match of a past season: the league fixtures of the Leagues screen are the
- * current season's only (the calendar is rebuilt at the rollover) and the match pages are the human's.
- */
-export const DAY_LOG_KEEP_COMPACT_DAYS = 400;
-
-/**
- * The slim log: a match of clubs without a human seat keeps only the result, the knockout decider, the scorers
- * (with their names) and the five required team numbers; cards, substitutions, injuries, referee, VAR, weather
- * and pitch go. Youth games keep the result only (nothing reads past ones). A human club's games stay whole.
+ * The slim log: training and rest lines dropped (they never stored their effects); a match of clubs without a
+ * human seat keeps only the result, the knockout decider, the scorers (with their names) and the five required
+ * team numbers; AI youth games keep the result only. A human club's games stay whole (its match pages).
  * `null` when there was nothing to slim.
  */
 export function slimDayLog(log: StoredDayLog, humanClubs: ReadonlySet<string>): StoredDayLog | null {
@@ -50,7 +29,7 @@ export function slimDayLog(log: StoredDayLog, humanClubs: ReadonlySet<string>): 
   const events: StoredDayLog["events"] = [];
   for (const e of log.events) {
     if (e.kind === "training" || e.kind === "rest") { changed = true; continue; }
-    if (e.kind !== "match" || e.slim || humanClubs.has(e.home) || humanClubs.has(e.away)) { events.push(e); continue; }
+    if (e.kind !== "match" || e.slim || humanGame(humanClubs, e.home, e.away)) { events.push(e); continue; }
     changed = true;
     const names: Record<string, string> = {};
     for (const s of e.scorers) names[s.playerId] = s.playerName;
@@ -68,10 +47,28 @@ export function slimDayLog(log: StoredDayLog, humanClubs: ReadonlySet<string>): 
   }
   let youthMatches = log.youthMatches;
   const fullYouth = (y: NonNullable<StoredDayLog["youthMatches"]>[number]) =>
-    !humanClubs.has(y.home) && !humanClubs.has(y.away) && (y.best !== null || y.scorers.length > 0 || y.players.home.length + y.players.away.length > 0);
+    !humanGame(humanClubs, y.home, y.away) && (y.best !== null || y.scorers.length > 0 || y.players.home.length + y.players.away.length > 0);
   if (youthMatches?.some(fullYouth)) {
     changed = true;
     youthMatches = youthMatches.map((y) => fullYouth(y) ? { ...y, scorers: [], best: null, players: { home: [], away: [] } } : y);
   }
   return changed ? { ...log, events, ...(youthMatches ? { youthMatches } : {}) } : null;
+}
+
+/**
+ * The pruned log, past `DAY_LOG_KEEP_DAYS`: only a human club's games (first team, youth) and the seats' national
+ * games stay; AI games, the day's transfers and the counters go. `null` when there was nothing to prune.
+ */
+export function pruneDayLog(log: StoredDayLog, humanClubs: ReadonlySet<string>): StoredDayLog | null {
+  const events = log.events.filter((e) => e.kind === "match" && humanGame(humanClubs, e.home, e.away));
+  const youthMatches = (log.youthMatches ?? []).filter((y) => humanGame(humanClubs, y.home, y.away));
+  const changed = events.length !== log.events.length
+    || youthMatches.length !== (log.youthMatches?.length ?? 0)
+    || log.transfers !== undefined || log.registrationViolations !== undefined;
+  if (!changed) return null;
+  return {
+    saveId: log.saveId, date: log.date, events,
+    ...(youthMatches.length > 0 ? { youthMatches } : {}),
+    ...(log.nationalMatches ? { nationalMatches: log.nationalMatches } : {}),
+  };
 }
