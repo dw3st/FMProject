@@ -31,6 +31,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.4",
+    date: "2026-11-16",
+    time: "14:43",
+    items: [
+      { tab: "manager", pt: "Quem treina uma seleção agora troca o cartão do Painel entre o clube e a seleção: ranking, metas, próximo jogo e atalhos para a seleção e a tática.", en: "A manager who coaches a national team can now switch the Dashboard card between his club and his national team: ranking, objectives, next game and shortcuts to the team and its tactics." },
+      { tab: "manager", pt: "Na seleção, a opção \"Aberto a outras seleções\" deixa seleções com vaga fazerem proposta; aceitar uma troca de seleção. Dá para deixar a seleção pelo Painel também.", en: "On the national team, \"Open to other national teams\" lets teams with a vacancy make you an offer; accepting one switches team. You can also leave the national team from the Dashboard." },
+      { tab: "manager", pt: "Cursos de idioma: o técnico aprende no máximo 2 idiomas além do dele. Para aprender um terceiro, escolha qual esquecer; ele é esquecido quando o curso termina.", en: "Language courses: the manager learns at most 2 languages besides his own. To learn a third, pick one to let go; it is forgotten when the course ends." },
+      { tab: "development", pt: "Jogar fora de posição agora adapta o jogador aos poucos: parte da evolução das partidas vai para o que a vaga pede. É bem mais lento que treinar naquela posição.", en: "Playing out of position now slowly adapts a player: part of what he gains from matches goes to what that slot asks for. It is much slower than training at that position." },
+      { tab: "general", pt: "Os saves ficaram bem mais leves: jogos antigos dos clubes do jogo guardam só o resultado e somem depois de um ano.", en: "Saves are much lighter: old games of the clubs run by the game keep only the result and are dropped after a year." },
+    ],
+    fixes: [
+      { tab: "match", pt: "O resultado de um jogo de seleção mostra a posição certa de cada jogador.", en: "The result of a national team game shows each player's real position." },
+      { tab: "stats", pt: "Aposentados antigos voltaram a mostrar a posição natural certa.", en: "Older retired players show their real natural position again." },
+      { tab: "market", pt: "Jogadores livres que nunca jogaram uma partida oficial saem do mundo na virada, e a lista de livres não cresce mais sem parar.", en: "Free agents who never played an official game leave the world at the season change, so the free agent list no longer keeps growing." },
+    ],
+  },
+  {
     version: "12.3.1",
     date: "2026-11-13",
     time: "20:15",
