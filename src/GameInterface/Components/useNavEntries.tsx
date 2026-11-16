@@ -52,6 +52,8 @@ export interface NavTabView {
   active: boolean;
   /** Problems and unseen news of the tab (report 2026-11-16). */
   badge: number;
+  /** Why it is lit, one reason a line (empty without a badge). */
+  badgeTitle: string;
 }
 
 export type NavEntryView =
@@ -84,7 +86,8 @@ export function useNavEntries(): { position: NavMenu["position"]; entries: NavEn
         label: t(item.labelKey),
         fullLabel: t(fullLabelKey(item)),
         active: pathname.startsWith(item.href),
-        badge: badgeOf(item.href),
+        badge: badgeOf(item.href).count,
+        badgeTitle: badgeOf(item.href).title,
       };
     };
     const entries: NavEntryView[] = [];

@@ -19,7 +19,8 @@ function TabLink({ tab, inGroup }: { tab: NavTabView; inGroup?: boolean }) {
   return (
     <a
       href={tab.to}
-      title={tab.fullLabel}
+      title={tab.badgeTitle ? `${tab.fullLabel}
+${tab.badgeTitle}` : tab.fullLabel}
       aria-current={tab.active ? "page" : undefined}
       className={`flex shrink-0 items-center gap-2.5 border-l-2 pr-3 no-underline font-display font-bold uppercase tracking-[0.08em] transition-colors ${inGroup ? "h-8 pl-7 text-[13px]" : "h-9 pl-4 text-sm"} ${
         tab.active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-secondary/30 hover:text-foreground"

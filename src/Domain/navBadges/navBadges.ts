@@ -28,10 +28,18 @@ export const NAV_BADGES = {
 const CORE_STAFF: readonly StaffRole[] = ["assistant", "fitness", "goalkeeping", "coach", "medic", "analyst", "scout"];
 
 export type BadgeTab = "/squad" | "/formation" | "/club" | "/finances" | "/staff" | "/transfers" | "/scout";
+/** Why a tab is lit (report 2026-11-16: a bare number did not say what to look for). `names`: players, items, staff. */
+export interface BadgeReason {
+  kind: string;
+  count: number;
+  names?: string[];
+}
 export interface TabBadge {
   /** Problems: shown until they are solved. */
   alerts: number;
-  /** News: stable ids, hidden by the client once the tab was opened. */
+  /** The problems, by kind. */
+  why: BadgeReason[];
+  /** News: stable ids (`<kind>:<id>`), hidden by the client once the tab was opened. */
   news: string[];
 }
 export type NavBadges = Partial<Record<BadgeTab, TabBadge>>;
@@ -56,58 +64,77 @@ export interface NavBadgeInput {
   prospects: string[];
 }
 
-const put = (out: NavBadges, tab: BadgeTab, alerts: number, news: string[] = []) => {
-  if (alerts > 0 || news.length > 0) out[tab] = { alerts, news };
+const named = (kind: string, names: string[]): BadgeReason => ({ kind, count: names.length, names });
+const counted = (kind: string, count: number): BadgeReason => ({ kind, count });
+
+const put = (out: NavBadges, tab: BadgeTab, reasons: BadgeReason[], news: string[] = []) => {
+  const why = reasons.filter((r) => r.count > 0);
+  const alerts = why.reduce((n, r) => n + r.count, 0);
+  if (alerts > 0 || news.length > 0) out[tab] = { alerts, why, news };
 };
 
 export function navBadges(input: NavBadgeInput): NavBadges {
   const { date, squad } = input;
   const players = squad.players;
   const out: NavBadges = {};
+  const nameOf = (p: { name: string }) => p.name;
 
   // Squad: injured, suspended, contracts ending, talks asked, promises close to their deadline.
   const morale = squad.moraleClub ? moraleAttention(squad, date) : { talks: [], promisesDue: [] };
-  const squadAlerts =
-    players.filter((p) => p.injury && isInjured(p, date)).length
-    + players.filter((p) => isSuspended(p)).length
-    + (input.seasonEnd ? players.filter((p) => !p.loan && isExpired(p.contract, input.seasonEnd!, CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS)).length : 0)
-    + morale.talks.length + morale.promisesDue.length;
-  put(out, "/squad", squadAlerts);
+  put(out, "/squad", [
+    named("injured", players.filter((p) => p.injury && isInjured(p, date)).map(nameOf)),
+    named("suspended", players.filter((p) => isSuspended(p)).map(nameOf)),
+    named("contract", input.seasonEnd
+      ? players.filter((p) => !p.loan && isExpired(p.contract, input.seasonEnd!, CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS)).map(nameOf)
+      : []),
+    named("talk", morale.talks.map((x) => x.playerName)),
+    named("promise", morale.promisesDue.map((x) => x.playerName)),
+  ]);
 
-  // Formation: a starter who cannot play (injured, suspended, away with his country, not registered today, gone) or an
-  // empty slot.
+  // Formation: a starter who cannot play (injured, suspended, away with his country, gone), one not registered for
+  // today's match, or an empty slot.
   const byId = new Map(players.map((p) => [p.id, p]));
-  let formation = 0;
+  const unavailable: string[] = [];
+  const unregistered: string[] = [];
+  let empty = 0;
   for (let i = 0; i < input.slots; i++) {
     const id = input.lineup[i] ?? "";
     const p = id ? byId.get(id) : undefined;
-    if (!p || isUnavailable(p, date) || (input.registeredToday && !input.registeredToday.has(p.id))) formation++;
+    if (!p) empty++;
+    else if (isUnavailable(p, date)) unavailable.push(p.name);
+    else if (input.registeredToday && !input.registeredToday.has(p.id)) unregistered.push(p.name);
   }
-  put(out, "/formation", formation);
+  put(out, "/formation", [named("starterOut", unavailable), named("unregistered", unregistered), counted("emptySlot", empty)]);
 
-  // Club: facility items below 50% or condemned.
-  const items = Object.values(squad.facilities?.items ?? {}) as FacilityItem[];
-  put(out, "/club", items.filter((it) => it.condemned || conditionOf(it) < NAV_BADGES.FACILITY_BELOW).length);
+  // Club: facility items below 50% or condemned (names = item ids, translated by the client).
+  const items = Object.entries(squad.facilities?.items ?? {}) as [string, FacilityItem][];
+  put(out, "/club", [
+    named("condemned", items.filter(([, it]) => it.condemned).map(([k]) => k)),
+    named("facility", items.filter(([, it]) => !it.condemned && conditionOf(it) < NAV_BADGES.FACILITY_BELOW).map(([k]) => k)),
+  ]);
 
   // Finances: a negative balance, sponsor offers waiting.
-  const sponsorOffers = (squad.sponsors?.offers ?? []).filter((o) => o.expires >= date).length;
-  put(out, "/finances", ((squad.finances?.budget ?? 0) < 0 ? 1 : 0) + sponsorOffers);
+  put(out, "/finances", [
+    counted("negative", (squad.finances?.budget ?? 0) < 0 ? 1 : 0),
+    counted("sponsor", (squad.sponsors?.offers ?? []).filter((o) => o.expires >= date).length),
+  ]);
 
-  // Staff: contracts ending soon, an empty core role.
+  // Staff: contracts ending soon, an empty core role (names = role ids).
   const members = squad.staff?.members ?? [];
   const limit = addDays(date, NAV_BADGES.STAFF_CONTRACT_DAYS);
-  const ending = members.filter((m) => m.contract && m.contract.until >= date && m.contract.until <= limit).length;
-  const vacant = squad.staff ? CORE_STAFF.filter((r) => !members.some((m) => m.role === r)).length : 0;
-  put(out, "/staff", ending + vacant);
+  put(out, "/staff", [
+    named("staffContract", members.filter((m) => m.contract && m.contract.until >= date && m.contract.until <= limit).map(nameOf)),
+    named("staffVacant", squad.staff ? CORE_STAFF.filter((r) => !members.some((m) => m.role === r)) : []),
+  ]);
 
   // Market: the window closing soon (problem), offers for his players (news).
   const closing = input.window?.open && input.window.until && daysBetween(date, input.window.until) <= NAV_BADGES.WINDOW_DAYS ? 1 : 0;
-  put(out, "/transfers", closing, input.offers.map((id) => `offer:${id}`));
+  put(out, "/transfers", [counted("windowClosing", closing)], input.offers.map((id) => `offer:${id}`));
 
   // Scouting: gems and shortlist alerts of the last week, youngsters on offer (news).
   const since = addDays(date, -NAV_BADGES.SCOUT_NEWS_DAYS);
-  put(out, "/scout", 0, [
-    ...input.scoutNews.filter((m) => m.date >= since).map((m) => `msg:${m.id}`),
+  put(out, "/scout", [], [
+    ...input.scoutNews.filter((m) => m.date >= since).map((m) => `scoutNews:${m.id}`),
     ...input.prospects.map((id) => `prospect:${id}`),
   ]);
   return out;
@@ -117,4 +144,16 @@ export function navBadges(input: NavBadgeInput): NavBadges {
 export function badgeCount(badge: TabBadge | undefined, seen: ReadonlySet<string>): number {
   if (!badge) return 0;
   return badge.alerts + badge.news.filter((id) => !seen.has(id)).length;
+}
+
+/** The reasons behind a tab's number: its problems, then the unseen news counted by kind (the id's prefix). */
+export function badgeReasons(badge: TabBadge | undefined, seen: ReadonlySet<string>): BadgeReason[] {
+  if (!badge) return [];
+  const news = new Map<string, number>();
+  for (const id of badge.news) {
+    if (seen.has(id)) continue;
+    const kind = id.slice(0, id.indexOf(":"));
+    news.set(kind, (news.get(kind) ?? 0) + 1);
+  }
+  return [...badge.why, ...[...news].map(([kind, count]) => ({ kind, count }))];
 }

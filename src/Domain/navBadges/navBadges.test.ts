@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { badgeCount, navBadges, type NavBadgeInput } from "@/Domain/navBadges/navBadges";
+import { badgeCount, badgeReasons, navBadges, type NavBadgeInput } from "@/Domain/navBadges/navBadges";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const DATE = "2038-02-28";
@@ -24,7 +24,8 @@ describe("navBadges", () => {
       player("b", { suspension: { matches: 1 } }),
       player("c", { contract: { until: "2038-05-20", wage: 1 } }),
     ]);
-    expect(navBadges(input(s))["/squad"]).toEqual({ alerts: 3, news: [] });
+    expect(navBadges(input(s))["/squad"]!.alerts).toBe(3);
+    expect(navBadges(input(s))["/squad"]!.why.map((r) => r.kind)).toEqual(["injured", "suspended", "contract"]);
   });
 
   test("formation: an unavailable starter, one not registered today and an empty slot", () => {
@@ -48,9 +49,9 @@ describe("navBadges", () => {
       scoutNews: [{ id: "m1", date: "2038-02-27" }, { id: "m0", date: "2038-01-01" }],
       prospects: ["p1"],
     }));
-    expect(b["/transfers"]).toEqual({ alerts: 1, news: ["offer:bid1"] });
-    expect(b["/scout"]).toEqual({ alerts: 0, news: ["msg:m1", "prospect:p1"] });
-    expect(badgeCount(b["/scout"], new Set(["msg:m1"]))).toBe(1);
+    expect(b["/transfers"]).toEqual({ alerts: 1, why: [{ kind: "windowClosing", count: 1 }], news: ["offer:bid1"] });
+    expect(b["/scout"]).toEqual({ alerts: 0, why: [], news: ["scoutNews:m1", "prospect:p1"] });
+    expect(badgeCount(b["/scout"], new Set(["scoutNews:m1"]))).toBe(1);
     expect(badgeCount(b["/transfers"], new Set(["offer:bid1"]))).toBe(1);
     expect(badgeCount(undefined, new Set())).toBe(0);
   });
@@ -58,5 +59,12 @@ describe("navBadges", () => {
   test("finances: negative balance and sponsor offers waiting", () => {
     const s = squad([player("a")], { finances: { budget: -5 }, sponsors: { contracts: [], offers: [{ expires: "2038-03-05" }, { expires: "2038-01-01" }] } } as never);
     expect(navBadges(input(s))["/finances"]!.alerts).toBe(2);
+  });
+
+  test("reasons: the problems by name, then the unseen news by kind", () => {
+    const s = squad([player("Muniz", { injury: { severity: "severe", returnDate: "2038-04-30" } })]);
+    const b = navBadges(input(s, { offers: ["x", "y"] }));
+    expect(badgeReasons(b["/squad"], new Set())).toEqual([{ kind: "injured", count: 1, names: ["Muniz"] }]);
+    expect(badgeReasons(b["/transfers"], new Set(["offer:x"]))).toEqual([{ kind: "offer", count: 1 }]);
   });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { badgeCount, type BadgeTab, type NavBadges } from "@/Domain/navBadges/navBadges";
+import { useTranslation } from "react-i18next";
+import { badgeCount, badgeReasons, type BadgeReason, type BadgeTab, type NavBadges } from "@/Domain/navBadges/navBadges";
 
 const SEEN_MAX = 400;
 const POLL_MS = 60_000;
@@ -22,7 +23,17 @@ function writeSeen(saveId: string, ids: string[]) {
  * The number on each menu tab (report 2026-11-16): problems plus news not seen yet. Reloaded on every day, every route
  * change and once a minute; opening a tab marks its news as seen.
  */
-export function useNavBadges(saveId: string | undefined, currentDate: string, pathname: string): (tab: string) => number {
+export interface TabBadgeView {
+  count: number;
+  /** One line per reason ("1 lesionado: B. Muniz"), for the tab's tooltip. */
+  title: string;
+}
+
+const NAMED_ITEMS = new Set(["condemned", "facility"]);
+const NAMED_ROLES = new Set(["staffVacant"]);
+
+export function useNavBadges(saveId: string | undefined, currentDate: string, pathname: string): (tab: string) => TabBadgeView {
+  const { t } = useTranslation();
   const [badges, setBadges] = useState<NavBadges>({});
   const [seen, setSeen] = useState<string[]>([]);
 
@@ -57,6 +68,15 @@ export function useNavBadges(saveId: string | undefined, currentDate: string, pa
 
   return useMemo(() => {
     const set = new Set(seen);
-    return (tab: string) => badgeCount(badges[tab as BadgeTab], set);
-  }, [badges, seen]);
+    const line = (r: BadgeReason) => {
+      const names = (r.names ?? []).map((n) => NAMED_ITEMS.has(r.kind) ? t(`facilities.item.${n}`) : NAMED_ROLES.has(r.kind) ? t(`staff.roles.${n}`) : n);
+      const shown = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : "");
+      const head = t(`nav.badge.${r.kind}`, { count: r.count });
+      return shown ? `${head}: ${shown}` : head;
+    };
+    return (tab: string) => {
+      const badge = badges[tab as BadgeTab];
+      return { count: badgeCount(badge, set), title: badgeReasons(badge, set).map(line).join("\n") };
+    };
+  }, [badges, seen, t]);
 }

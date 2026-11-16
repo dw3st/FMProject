@@ -37,6 +37,7 @@ export const changelog: ChangelogEntry[] = [
     items: [],
     fixes: [
       { tab: "scout", pt: "Relatórios e Joias: ordene também por posição, jogador, clube e veredito, clicando no título da coluna.", en: "Reports and Gems: sort by position, player, club and verdict too, by clicking the column title." },
+      { tab: "general", pt: "O número numa aba do menu agora diz o motivo: passe o mouse para ver, por exemplo, \"1 lesionado: B. Muniz\".", en: "The number on a menu tab now says why: hover it to see, for example, \"1 injured: B. Muniz\"." },
     ],
   },
   {

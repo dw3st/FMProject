@@ -221,13 +221,14 @@ export function TopNavigation({
           <div className={`flex items-stretch w-full ${narrow ? "gap-1.5" : `justify-between ${mode === "tight" ? "gap-2" : "gap-3.5"}`}`}>
             {entries.map((entry) => {
               if (entry.kind !== "tab") return null;
-              const { item, label, active, to, badge } = entry.tab;
+              const { item, label, active, to, badge, badgeTitle } = entry.tab;
               return (
                 <a
                   key={item.labelKey}
                   href={to}
                   className={`${tabClass(active)} ${narrow ? "flex-1 basis-0" : ""}`}
-                  title={label}
+                  title={badgeTitle ? `${label}
+${badgeTitle}` : label}
                   aria-current={active ? "page" : undefined}
                 >
                   <NavTabIcon item={item} size={NAV_ICON} badge={badge} />

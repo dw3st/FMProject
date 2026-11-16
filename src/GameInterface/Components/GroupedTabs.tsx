@@ -42,7 +42,8 @@ export function GroupedTabs({ entries, tabClass, mode, iconSize }: { entries: Na
         if (entry.kind === "tab") {
           const it = entry.tab;
           return (
-            <a key={it.item.href} href={it.to} className={`${tabClass(it.active)} ${share}`} title={it.label} aria-current={it.active ? "page" : undefined}>
+            <a key={it.item.href} href={it.to} className={`${tabClass(it.active)} ${share}`} title={it.badgeTitle ? `${it.label}
+${it.badgeTitle}` : it.label} aria-current={it.active ? "page" : undefined}>
               <NavTabIcon item={it.item} size={iconSize} badge={it.badge} />
               <span className={labelClass}>{it.label}</span>
             </a>
@@ -84,6 +85,7 @@ export function GroupedTabs({ entries, tabClass, mode, iconSize }: { entries: Na
                     key={it.item.href}
                     href={it.to}
                     role="menuitem"
+                    title={it.badgeTitle || undefined}
                     aria-current={it.active ? "page" : undefined}
                     onClick={() => setOpen(null)}
                     className={`flex h-10 items-center gap-3 px-4 no-underline font-display font-bold uppercase tracking-[0.08em] text-sm whitespace-nowrap ${
