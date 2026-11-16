@@ -1,6 +1,8 @@
 /**
- * Counts on the menu tabs (report 2026-11-16): problems (stay until solved) and news (gone once the tab is opened).
- * Pure: the route gathers the inputs, the client hides the news already seen.
+ * Counts on the menu tabs (report 2026-11-16). Every problem and every piece of news is one item with a stable id;
+ * opening the tab marks its items as seen, so the number goes away. It comes back only for something new: another
+ * player, another item, or the same problem back after it was solved (the client forgets ids no longer listed).
+ * Pure: the route gathers the inputs, the client keeps the seen ids.
  */
 import type { Squad } from "@/types/playerTypes";
 import type { FacilityItem } from "@/types/facilityTypes";
@@ -28,21 +30,25 @@ export const NAV_BADGES = {
 const CORE_STAFF: readonly StaffRole[] = ["assistant", "fitness", "goalkeeping", "coach", "medic", "analyst", "scout"];
 
 export type BadgeTab = "/squad" | "/formation" | "/club" | "/finances" | "/staff" | "/transfers" | "/scout";
-/** Why a tab is lit (report 2026-11-16: a bare number did not say what to look for). `names`: players, items, staff. */
+
+/** One thing behind a tab's number. `name`: a player, a staff member, a facility item id or a staff role id. */
+export interface BadgeItem {
+  kind: string;
+  /** Stable while the thing lasts (`<kind>:<key>`). */
+  id: string;
+  name?: string;
+}
+export interface TabBadge {
+  items: BadgeItem[];
+}
+export type NavBadges = Partial<Record<BadgeTab, TabBadge>>;
+
+/** The reasons of a tab, grouped by kind for its tooltip ("1 lesionado: B. Muniz"). */
 export interface BadgeReason {
   kind: string;
   count: number;
   names?: string[];
 }
-export interface TabBadge {
-  /** Problems: shown until they are solved. */
-  alerts: number;
-  /** The problems, by kind. */
-  why: BadgeReason[];
-  /** News: stable ids (`<kind>:<id>`), hidden by the client once the tab was opened. */
-  news: string[];
-}
-export type NavBadges = Partial<Record<BadgeTab, TabBadge>>;
 
 export interface NavBadgeInput {
   date: string;
@@ -64,96 +70,101 @@ export interface NavBadgeInput {
   prospects: string[];
 }
 
-const named = (kind: string, names: string[]): BadgeReason => ({ kind, count: names.length, names });
-const counted = (kind: string, count: number): BadgeReason => ({ kind, count });
+const item = (kind: string, key: string, name?: string): BadgeItem => ({ kind, id: `${kind}:${key}`, ...(name !== undefined ? { name } : {}) });
 
-const put = (out: NavBadges, tab: BadgeTab, reasons: BadgeReason[], news: string[] = []) => {
-  const why = reasons.filter((r) => r.count > 0);
-  const alerts = why.reduce((n, r) => n + r.count, 0);
-  if (alerts > 0 || news.length > 0) out[tab] = { alerts, why, news };
+const put = (out: NavBadges, tab: BadgeTab, items: BadgeItem[]) => {
+  if (items.length > 0) out[tab] = { items };
 };
 
 export function navBadges(input: NavBadgeInput): NavBadges {
   const { date, squad } = input;
   const players = squad.players;
   const out: NavBadges = {};
-  const nameOf = (p: { name: string }) => p.name;
 
-  // Squad: injured, suspended, contracts ending, talks asked, promises close to their deadline.
+  // Squad: injured (each injury), suspended, contracts ending, talks asked, promises close to their deadline.
   const morale = squad.moraleClub ? moraleAttention(squad, date) : { talks: [], promisesDue: [] };
   put(out, "/squad", [
-    named("injured", players.filter((p) => p.injury && isInjured(p, date)).map(nameOf)),
-    named("suspended", players.filter((p) => isSuspended(p)).map(nameOf)),
-    named("contract", input.seasonEnd
-      ? players.filter((p) => !p.loan && isExpired(p.contract, input.seasonEnd!, CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS)).map(nameOf)
+    ...players.filter((p) => p.injury && isInjured(p, date)).map((p) => item("injured", `${p.id}:${p.injury!.returnDate}`, p.name)),
+    ...players.filter((p) => isSuspended(p)).map((p) => item("suspended", p.id, p.name)),
+    ...(input.seasonEnd
+      ? players.filter((p) => !p.loan && isExpired(p.contract, input.seasonEnd!, CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS))
+        .map((p) => item("contract", `${p.id}:${p.contract?.until ?? ""}`, p.name))
       : []),
-    named("talk", morale.talks.map((x) => x.playerName)),
-    named("promise", morale.promisesDue.map((x) => x.playerName)),
+    ...morale.talks.map((x) => item("talk", x.id, x.playerName)),
+    ...morale.promisesDue.map((x) => item("promise", x.id, x.playerName)),
   ]);
 
   // Formation: a starter who cannot play (injured, suspended, away with his country, gone), one not registered for
   // today's match, or an empty slot.
   const byId = new Map(players.map((p) => [p.id, p]));
-  const unavailable: string[] = [];
-  const unregistered: string[] = [];
-  let empty = 0;
+  const formation: BadgeItem[] = [];
   for (let i = 0; i < input.slots; i++) {
     const id = input.lineup[i] ?? "";
     const p = id ? byId.get(id) : undefined;
-    if (!p) empty++;
-    else if (isUnavailable(p, date)) unavailable.push(p.name);
-    else if (input.registeredToday && !input.registeredToday.has(p.id)) unregistered.push(p.name);
+    if (!p) formation.push(item("emptySlot", `${i}:${id}`));
+    else if (isUnavailable(p, date)) formation.push(item("starterOut", `${p.id}:${p.injury?.returnDate ?? ""}`, p.name));
+    else if (input.registeredToday && !input.registeredToday.has(p.id)) formation.push(item("unregistered", `${p.id}:${date}`, p.name));
   }
-  put(out, "/formation", [named("starterOut", unavailable), named("unregistered", unregistered), counted("emptySlot", empty)]);
+  put(out, "/formation", formation);
 
-  // Club: facility items below 50% or condemned (names = item ids, translated by the client).
+  // Club: facility items below 50% or condemned.
   const items = Object.entries(squad.facilities?.items ?? {}) as [string, FacilityItem][];
   put(out, "/club", [
-    named("condemned", items.filter(([, it]) => it.condemned).map(([k]) => k)),
-    named("facility", items.filter(([, it]) => !it.condemned && conditionOf(it) < NAV_BADGES.FACILITY_BELOW).map(([k]) => k)),
+    ...items.filter(([, it]) => it.condemned).map(([k]) => item("condemned", k, k)),
+    ...items.filter(([, it]) => !it.condemned && conditionOf(it) < NAV_BADGES.FACILITY_BELOW).map(([k]) => item("facility", k, k)),
   ]);
 
   // Finances: a negative balance, sponsor offers waiting.
   put(out, "/finances", [
-    counted("negative", (squad.finances?.budget ?? 0) < 0 ? 1 : 0),
-    counted("sponsor", (squad.sponsors?.offers ?? []).filter((o) => o.expires >= date).length),
+    ...((squad.finances?.budget ?? 0) < 0 ? [item("negative", "balance")] : []),
+    ...(squad.sponsors?.offers ?? []).filter((o) => o.expires >= date).map((o) => item("sponsor", o.id)),
   ]);
 
-  // Staff: contracts ending soon, an empty core role (names = role ids).
+  // Staff: contracts ending soon, an empty core role.
   const members = squad.staff?.members ?? [];
   const limit = addDays(date, NAV_BADGES.STAFF_CONTRACT_DAYS);
   put(out, "/staff", [
-    named("staffContract", members.filter((m) => m.contract && m.contract.until >= date && m.contract.until <= limit).map(nameOf)),
-    named("staffVacant", squad.staff ? CORE_STAFF.filter((r) => !members.some((m) => m.role === r)) : []),
+    ...members.filter((m) => m.contract && m.contract.until >= date && m.contract.until <= limit)
+      .map((m) => item("staffContract", `${m.id}:${m.contract!.until}`, m.name)),
+    ...(squad.staff ? CORE_STAFF.filter((r) => !members.some((m) => m.role === r)).map((r) => item("staffVacant", r, r)) : []),
   ]);
 
-  // Market: the window closing soon (problem), offers for his players (news).
-  const closing = input.window?.open && input.window.until && daysBetween(date, input.window.until) <= NAV_BADGES.WINDOW_DAYS ? 1 : 0;
-  put(out, "/transfers", [counted("windowClosing", closing)], input.offers.map((id) => `offer:${id}`));
+  // Market: the window closing soon, offers for his players.
+  const closing = input.window?.open && input.window.until && daysBetween(date, input.window.until) <= NAV_BADGES.WINDOW_DAYS;
+  put(out, "/transfers", [
+    ...(closing ? [item("windowClosing", input.window!.until!)] : []),
+    ...input.offers.map((id) => item("offer", id)),
+  ]);
 
-  // Scouting: gems and shortlist alerts of the last week, youngsters on offer (news).
+  // Scouting: gems and shortlist alerts of the last week, youngsters on offer.
   const since = addDays(date, -NAV_BADGES.SCOUT_NEWS_DAYS);
-  put(out, "/scout", [], [
-    ...input.scoutNews.filter((m) => m.date >= since).map((m) => `scoutNews:${m.id}`),
-    ...input.prospects.map((id) => `prospect:${id}`),
+  put(out, "/scout", [
+    ...input.scoutNews.filter((m) => m.date >= since).map((m) => item("scoutNews", m.id)),
+    ...input.prospects.map((id) => item("prospect", id)),
   ]);
   return out;
 }
 
-/** The number on a tab: its problems plus the news not seen yet. */
+const unseen = (badge: TabBadge | undefined, seen: ReadonlySet<string>) => (badge?.items ?? []).filter((i) => !seen.has(i.id));
+
+/** The number on a tab: the items not seen yet. */
 export function badgeCount(badge: TabBadge | undefined, seen: ReadonlySet<string>): number {
-  if (!badge) return 0;
-  return badge.alerts + badge.news.filter((id) => !seen.has(id)).length;
+  return unseen(badge, seen).length;
 }
 
-/** The reasons behind a tab's number: its problems, then the unseen news counted by kind (the id's prefix). */
+/** The unseen items of a tab grouped by kind, in order, with their names. */
 export function badgeReasons(badge: TabBadge | undefined, seen: ReadonlySet<string>): BadgeReason[] {
-  if (!badge) return [];
-  const news = new Map<string, number>();
-  for (const id of badge.news) {
-    if (seen.has(id)) continue;
-    const kind = id.slice(0, id.indexOf(":"));
-    news.set(kind, (news.get(kind) ?? 0) + 1);
+  const out: BadgeReason[] = [];
+  for (const i of unseen(badge, seen)) {
+    let r = out.find((x) => x.kind === i.kind);
+    if (!r) out.push((r = { kind: i.kind, count: 0 }));
+    r.count++;
+    if (i.name !== undefined) (r.names ??= []).push(i.name);
   }
-  return [...badge.why, ...[...news].map(([kind, count]) => ({ kind, count }))];
+  return out;
+}
+
+/** Every id listed now, on every tab: the client forgets seen ids outside it (a solved problem can come back). */
+export function badgeIds(badges: NavBadges): Set<string> {
+  return new Set(Object.values(badges).flatMap((b) => (b?.items ?? []).map((i) => i.id)));
 }

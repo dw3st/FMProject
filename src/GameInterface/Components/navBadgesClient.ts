@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { badgeCount, badgeReasons, type BadgeReason, type BadgeTab, type NavBadges } from "@/Domain/navBadges/navBadges";
+import { badgeCount, badgeIds, badgeReasons, type BadgeReason, type BadgeTab, type NavBadges } from "@/Domain/navBadges/navBadges";
 
 const SEEN_MAX = 400;
 const POLL_MS = 60_000;
@@ -20,8 +20,8 @@ function writeSeen(saveId: string, ids: string[]) {
 }
 
 /**
- * The number on each menu tab (report 2026-11-16): problems plus news not seen yet. Reloaded on every day, every route
- * change and once a minute; opening a tab marks its news as seen.
+ * The number on each menu tab (report 2026-11-16): the items not seen yet. Reloaded on every day, every route
+ * change and once a minute; opening a tab marks everything on it as seen.
  */
 export interface TabBadgeView {
   count: number;
@@ -35,19 +35,21 @@ const NAMED_ROLES = new Set(["staffVacant"]);
 export function useNavBadges(saveId: string | undefined, currentDate: string, pathname: string): (tab: string) => TabBadgeView {
   const { t } = useTranslation();
   const [badges, setBadges] = useState<NavBadges>({});
+  /** A real answer arrived (the seen list is only pruned against real badges, never the empty start). */
+  const [loaded, setLoaded] = useState(false);
   const [seen, setSeen] = useState<string[]>([]);
 
   useEffect(() => { setSeen(saveId ? readSeen(saveId) : []); }, [saveId]);
 
   useEffect(() => {
-    if (!saveId) { setBadges({}); return; }
+    if (!saveId) { setBadges({}); setLoaded(false); return; }
     let alive = true;
     const load = async () => {
       try {
         const r = await fetch(`/api/saves/${saveId}/nav-badges`);
         if (!r.ok) return;
         const body = (await r.json()) as { badges?: NavBadges };
-        if (alive) setBadges(body.badges ?? {});
+        if (alive) { setBadges(body.badges ?? {}); setLoaded(true); }
       } catch { /* offline: keep the last numbers */ }
     };
     void load();
@@ -55,16 +57,19 @@ export function useNavBadges(saveId: string | undefined, currentDate: string, pa
     return () => { alive = false; clearInterval(timer); };
   }, [saveId, currentDate, pathname]);
 
-  // The tab on screen: its news are seen.
+  // The tab on screen: everything on it is seen. Ids no longer listed are forgotten, so a solved problem that comes
+  // back lights the tab again.
   useEffect(() => {
-    if (!saveId) return;
+    if (!saveId || !loaded) return;
+    const listed = badgeIds(badges);
     const tab = (Object.keys(badges) as BadgeTab[]).find((k) => pathname.startsWith(k));
-    const fresh = tab ? badges[tab]!.news.filter((id) => !seen.includes(id)) : [];
-    if (fresh.length === 0) return;
-    const next = [...seen, ...fresh];
+    const kept = seen.filter((id) => listed.has(id));
+    const fresh = tab ? badges[tab]!.items.map((i) => i.id).filter((id) => !kept.includes(id)) : [];
+    if (fresh.length === 0 && kept.length === seen.length) return;
+    const next = [...kept, ...fresh];
     setSeen(next);
     writeSeen(saveId, next);
-  }, [saveId, pathname, badges, seen]);
+  }, [saveId, loaded, pathname, badges, seen]);
 
   return useMemo(() => {
     const set = new Set(seen);

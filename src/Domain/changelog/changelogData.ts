@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.7.2",
+    date: "2026-11-16",
+    time: "19:04",
+    items: [],
+    fixes: [
+      { tab: "general", pt: "O número numa aba do menu some quando você abre a aba e só volta se aparecer algo novo.", en: "The number on a menu tab goes away once you open the tab and only comes back for something new." },
+    ],
+  },
+  {
     version: "12.7.1",
     date: "2026-11-16",
     time: "18:49",
