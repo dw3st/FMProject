@@ -1589,7 +1589,9 @@ try {
         const boardBonusToday = dayLedger.filter((e) => e.ref?.stage === "board_bonus").reduce((s, e) => s + e.amount, 0);
         // Facilities instalments / board funding of the day (`.claude/rules/game/facilities.md`).
         const facilitiesToday = dayLedger.filter((e) => e.kind === "facilities" || e.kind === "board_funding").reduce((s, e) => s + e.amount, 0);
-        const delta = entries.reduce((s, e) => s + e.amount, 0) + gateToday + boardBonusToday + facilitiesToday;
+        // Sponsor bonuses for the season's goals are paid at the rollover (commercial, stage sponsor_bonus).
+        const sponsorBonusToday = dayLedger.filter((e) => e.ref?.stage === "sponsor_bonus").reduce((s, e) => s + e.amount, 0);
+        const delta = entries.reduce((s, e) => s + e.amount, 0) + gateToday + boardBonusToday + facilitiesToday + sponsorBonusToday;
         const closedTable = archive?.standings ?? [];
         const playerTablePos = closedTable.findIndex((r) => r.squadId === playerSquadId);
         leaguePrizeAmount = playerTablePos >= 0 ? leaguePrize(tv, playerTablePos + 1, closedTable.length) : 0;
@@ -1602,6 +1604,10 @@ try {
         } else {
           check(Math.abs(b1 - expected) < 1,
             `budget ${b0} + day ${delta} + TV ${tv} + league prize ${leaguePrizeAmount} = ${expected} (got ${b1})`);
+          if (Math.abs(b1 - expected) >= 1) {
+            // Which ledger lines of the day the formula did not count.
+            for (const e of dayLedger) console.log(`    day line ${e.kind.padEnd(14)} ${String(e.amount).padStart(12)} ${JSON.stringify(e.ref ?? {})} ${e.label}`);
+          }
         }
       } else {
         check(false, "player squad readable before and after the rollover");

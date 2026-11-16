@@ -19,6 +19,7 @@ import { aiMatchFormation, autoLineupForFormation, slotRoles } from "@/Domain/ad
 import { formationForSimId } from "@/Domain/matchFormations";
 import { aiFamiliarity } from "@/Domain/familiarity/familiarity";
 import { counterStyle, pickMarkTarget, pickMarkerSlot } from "@/Domain/study/study";
+import { STUDY } from "@/Domain/study/studyConfig";
 import { emptySeasonLog, type Squad } from "@/types/playerTypes";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { DEFAULT_TACTICAL_STYLE, type TacticalStyle } from "@/types/tacticsTypes";
@@ -88,6 +89,8 @@ const override = new Map((flag("--counter") ?? "").split(",").filter(Boolean).ma
 const counterOf = (s: TacticalStyle) => override.get(s) ?? counterStyle(s);
 /** `--salt x`: another set of seeds (more matches of the same cells; sum the files). */
 const salt = flag("--salt") ?? "";
+/** `--marker cb`: the AI marks with a centre-back first (default: a central midfielder first). */
+if (flag("--marker") === "cb") (STUDY as { MARKER_ROLES: unknown }).MARKER_ROLES = [["CB"], ["CDM", "CM"]];
 
 const dir = fileURLToPath(new URL(`../src/Data/squads/${league}/`, import.meta.url));
 const squads = readdirSync(dir).filter((f) => f.endsWith(".json")).sort().map((f) => {

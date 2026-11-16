@@ -108,6 +108,7 @@ clubes que viraram, houve renovações e saídas livres, no dia da virada nenhum
 - **Role minimums on sale:** `evaluateTransferOffer` refuses (`squadDepth`) an AI seller's sale that would leave its main role below `MIN_BY_ROLE`. The smoke checks the minimums at the end of the run for the rolled clubs.
 - **Loans (Etapa 21):** a borrowed player keeps the parent club's contract; renewing him is 400 `onLoan`, and a loan
   never runs past the contract. Loans held by a rolling club go back before the expiries (`.claude/rules/game/negotiation.md`).
+- **Never played (2026-11-16):** at the rollover, a player released that day with no official game in his career (no history row with games, none this season) leaves the world at once (`dropNeverPlayed`, after the refill had its chance). These were mostly filler youngsters whose 3-year contract ran out: a 20-season soak had ~1,300 of the ~2,900 free agents with zero games. Earlier pool entries and releases by other routes keep the one-year rule.
 - **Free pool:** `pruneFreeAgents` runs every day; `toFreeAgent` clears `injury`, `contract` and club on release. Released human players are also removed from `tactics.lineup` and `market.playerSellList`.
 
 ## Etapa 25 (4.0): janelas e pré-contrato

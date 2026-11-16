@@ -213,6 +213,21 @@ export function pruneFreeAgents(pool: FreeAgent[], date: string): FreeAgent[] {
   return pool.filter((f) => f.since > keepSince);
 }
 
+/** At least one official game for a club: a history row with games, or games this season. */
+export function hasPlayedOfficial(p: RosterPlayer): boolean {
+  if ((p.seasonLog?.appearances ?? 0) > 0) return true;
+  return (p.history ?? []).some((r) => r.apps > 0);
+}
+
+/**
+ * The rollover's releases that never played an official game (mostly filler youngsters whose
+ * 3-year contract ran out) leave the world at once instead of filling the free pool for a year.
+ * Only entries in `newIds` (released today) are checked; older pool entries stay.
+ */
+export function dropNeverPlayed(pool: FreeAgent[], newIds: Set<string>): FreeAgent[] {
+  return pool.filter((f) => !newIds.has(f.player.id) || hasPlayedOfficial(f.player));
+}
+
 /** A released player enters the pool healthy and with no club/contract. */
 /**
  * A squad above `cap` (a human club handed to the AI: the human cap is 36, the AI's 30) keeps the

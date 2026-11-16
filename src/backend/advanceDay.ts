@@ -127,7 +127,7 @@ import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, sett
 import { liveBids } from "@/Domain/negotiation/bids";
 import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { signingBonusAsk } from "@/Domain/negotiation/freeSigning";
-import { freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
+import { dropNeverPlayed, freeAgentTick, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
 import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
@@ -2705,7 +2705,10 @@ export async function advanceOneDay(
           pool = [...pool, ...trimmed.released.map((p) => toFreeAgent(p, currentDate))];
           trimmedIds.push(...trimmed.released.map((p) => p.id));
         }
-        await saveService.writeFreeAgents(saveId, pool);
+        // Released today and never played an official game: out of the world, not a year in the pool
+        // (refill had its chance at them above).
+        const releasedToday = new Set([...releasedNow.map((f) => f.player.id), ...trimmedIds]);
+        await saveService.writeFreeAgents(saveId, dropNeverPlayed(pool, releasedToday));
         for (const ds of daySeats) await pruneSellOnHeld(saveService, saveId, ds.seatId, trimmedIds);
       }
 

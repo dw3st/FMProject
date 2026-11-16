@@ -137,6 +137,17 @@ describe("pool helpers and off-season dates", () => {
     ];
     expect(pruneFreeAgents(pool, "2027-06-01").map((f) => f.player.id)).toEqual(["b"]);
   });
+  test("dropNeverPlayed removes only today's releases without an official game", async () => {
+    const { dropNeverPlayed } = await import("@/Domain/contracts/freeAgents");
+    const played = { ...agent("p", "ST", 5) };
+    played.player = { ...played.player, history: [{ apps: 3 } as never] };
+    const thisSeason = { ...agent("s", "ST", 5) };
+    thisSeason.player = { ...thisSeason.player, seasonLog: { appearances: 1 } as never };
+    const never = agent("n", "ST", 5);
+    const old = agent("o", "ST", 5);
+    const out = dropNeverPlayed([played, thisSeason, never, old], new Set(["p", "s", "n"]));
+    expect(out.map((f) => f.player.id)).toEqual(["p", "s", "o"]);
+  });
   test("toFreeAgent clears injury, contract and club", async () => {
     const { toFreeAgent } = await import("@/Domain/contracts/freeAgents");
     const hurt = { ...player("h", "CB", 5), injury: { severity: "light", returnDate: "2027-07-01" }, awardBoost: { season: "2026-27", league: "pl", mult: 1.1 } } as RosterPlayer;
