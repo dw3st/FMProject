@@ -36,6 +36,7 @@ export const changelog: ChangelogEntry[] = [
     time: "20:14",
     items: [
       { tab: "friends", pt: "Reações da resenha com ícones novos e som: palmas, labareda, risada e trombone triste, cada uma com o seu, para quem manda e para quem recebe.", en: "Banter reactions with new icons and sound: clapping, a flame, a laugh and a sad trombone, each its own, for whoever sends and receives it." },
+      { tab: "friends", pt: "Som novo de mensagem no chat.", en: "New chat message sound." },
     ],
   },
   {

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { REACTION_ART, REACTION_SOUNDS, pickReactionSound } from "@/GameInterface/World/reactionSounds";
 import { GAME_ART_FILES } from "@/backend/staticAssets";
 import { REACTIONS } from "@/Domain/rivals/taunts";
+import { CHAT_SOUND } from "@/GameInterface/readySound";
 
 describe("reaction sounds and art", () => {
   test("every reaction has sounds and a medal, all served", () => {
@@ -9,6 +10,10 @@ describe("reaction sounds and art", () => {
       expect(REACTION_SOUNDS[id].length).toBeGreaterThan(0);
       for (const p of [...REACTION_SOUNDS[id], REACTION_ART[id]]) expect(GAME_ART_FILES[p]).toBeDefined();
     }
+  });
+
+  test("the chat message sound is served", () => {
+    expect(GAME_ART_FILES[CHAT_SOUND]).toBe("audio/mpeg");
   });
 
   test("a random roll picks among the takes", () => {

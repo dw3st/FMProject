@@ -149,3 +149,5 @@ Cliente → servidor: `watch_join { saveId, seatId }`, `watch_leave`; de quem jo
 ## Som de mensagem (8.9.20)
 
 Pedido do usuário. Uma mensagem de outro numa sala que não está aberta na tela (ou com a aba escondida) toca um "uh-oh" sintetizado (duas notas descendo, onda serra por dois formantes de vogal; não é a gravação do ICQ, que tem direito autoral) (`playChatSound`, `readySound.ts`, volume da partida), salvo desligado: botão de som no cabeçalho do painel de Amigos e bloco em Configurações (`fm.chat.sound`, `readChatSound`/`writeChatSound` em `artPrefs.ts`, ligado por padrão). O navegador só toca depois de um clique no site.
+
+Som gravado (12.8): o "uh-oh" sintetizado saiu; a mensagem nova toca um "pop" de gravação real (Freesound 879790, CC0, escolhido pelo usuário; `audio/chat-message.mp3`, `CHAT_SOUND`, `data_process/assets/audio/chat_real.py`). Uma reação de resenha toca o som dela no lugar (`playReactionSound`, `multiplayer.md` → "Reações pintadas e com som").

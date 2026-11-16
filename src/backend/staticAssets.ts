@@ -198,6 +198,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "audio/goal-roar.mp3": "audio/mpeg",
   "audio/near-miss.mp3": "audio/mpeg",
   "audio/ball-strike.mp3": "audio/mpeg",
+  "audio/chat-message.mp3": "audio/mpeg",
   "audio/taunt-applause-1.mp3": "audio/mpeg",
   "audio/taunt-applause-2.mp3": "audio/mpeg",
   "audio/taunt-fire-1.mp3": "audio/mpeg",
