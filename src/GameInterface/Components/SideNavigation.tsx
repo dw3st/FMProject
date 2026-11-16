@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
-import { NavTabIcon, useNavEntries, type NavTabView } from "@/GameInterface/Components/useNavEntries";
+import { NavBadge, NavTabIcon, useNavEntries, type NavTabView } from "@/GameInterface/Components/useNavEntries";
 
 const NAV_ICON = 18;
 const CLOSED_KEY = "fm.nav.side.closed";
@@ -25,7 +25,7 @@ function TabLink({ tab, inGroup }: { tab: NavTabView; inGroup?: boolean }) {
         tab.active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:bg-secondary/30 hover:text-foreground"
       }`}
     >
-      <NavTabIcon item={tab.item} size={NAV_ICON} />
+      <NavTabIcon item={tab.item} size={NAV_ICON} badge={tab.badge} />
       <span className="min-w-0 truncate">{tab.fullLabel}</span>
     </a>
   );
@@ -65,7 +65,7 @@ export function SideNavigation() {
                 !open && entry.active ? "border-primary text-foreground" : "border-transparent text-muted-foreground"
               }`}
             >
-              <Icon name={entry.icon} size={16} className={`shrink-0 ${entry.tone}`} />
+              <span className="relative inline-flex shrink-0"><Icon name={entry.icon} size={16} className={`shrink-0 ${entry.tone}`} /><NavBadge count={open ? 0 : entry.badge} /></span>
               <span className="min-w-0 flex-1 truncate">{entry.label}</span>
               <Icon name={open ? "chevron-up" : "chevron-down"} size={16} className="shrink-0" />
             </button>

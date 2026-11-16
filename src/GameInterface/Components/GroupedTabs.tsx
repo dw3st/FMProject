@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/GameInterface/Icons";
 import type { TabsMode } from "@/GameInterface/Components/compactTabs";
-import { NavTabIcon, type NavEntryView } from "@/GameInterface/Components/useNavEntries";
+import { NavBadge, NavTabIcon, type NavEntryView } from "@/GameInterface/Components/useNavEntries";
 
 const CLOSE_MS = 180;
 /** Up to this many entries the bar is a centred row with wide gaps (the ready-made groups); above, it spreads like the tabs. */
@@ -43,7 +43,7 @@ export function GroupedTabs({ entries, tabClass, mode, iconSize }: { entries: Na
           const it = entry.tab;
           return (
             <a key={it.item.href} href={it.to} className={`${tabClass(it.active)} ${share}`} title={it.label} aria-current={it.active ? "page" : undefined}>
-              <NavTabIcon item={it.item} size={iconSize} />
+              <NavTabIcon item={it.item} size={iconSize} badge={it.badge} />
               <span className={labelClass}>{it.label}</span>
             </a>
           );
@@ -61,7 +61,7 @@ export function GroupedTabs({ entries, tabClass, mode, iconSize }: { entries: Na
               onFocus={(e) => show(entry.id, e.currentTarget)}
               onClick={(e) => (isOpen ? setOpen(null) : show(entry.id, e.currentTarget))}
             >
-              <Icon name={entry.icon} size={iconSize} className={`shrink-0 ${entry.tone}`} />
+              <span className="relative inline-flex shrink-0"><Icon name={entry.icon} size={iconSize} className={`shrink-0 ${entry.tone}`} /><NavBadge count={entry.badge} /></span>
               {narrow ? (
                 <span className={labelClass}>{entry.label}</span>
               ) : (
@@ -90,7 +90,7 @@ export function GroupedTabs({ entries, tabClass, mode, iconSize }: { entries: Na
                       it.active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
                     }`}
                   >
-                    <NavTabIcon item={it.item} size={iconSize} />
+                    <NavTabIcon item={it.item} size={iconSize} badge={it.badge} />
                     {it.fullLabel}
                   </a>
                 ))}

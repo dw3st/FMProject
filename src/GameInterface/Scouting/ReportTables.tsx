@@ -33,6 +33,7 @@ import {
 import type { ScoutGrade } from "@/types/scoutingTypes";
 import { SortButton } from "@/GameInterface/ui/SortButton";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
+import { positionIndex } from "@/Domain/positions/positionSort";
 
 function SortHead({ col, label, sort, dir, onSort }: {
   col: ReportSortKey; label: string; sort: ReportSortKey; dir: SortDir; onSort: (col: ReportSortKey) => void;
@@ -265,6 +266,8 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
   const midOf = (r?: [number, number]) => (r ? (r[0] + r[1]) / 2 : null);
   // The order the list came in until a header is clicked.
   const { sorted, head } = useTableSort<Row>(data.shortlist, {
+    pos: (e) => (e.position ? positionIndex(e.natural ?? e.position) : null),
+    status: (e) => (e.free ? 0 : e.contractEnding ? 1 : e.injured ? 2 : null),
     player: (e) => e.name,
     age: (e) => e.age,
     club: (e) => e.club,
@@ -292,14 +295,14 @@ export function ShortlistTab({ saveId, data, onChanged }: { saveId: string; data
         <table className="w-full text-sm border-collapse tabular-nums">
           <thead className={TABLE_STYLE.head}>
             <tr>
-              <th className={th}>{t("scout.table.columns.pos")}</th>
+              {sortTh("pos", t("scout.table.columns.pos"))}
               {sortTh("player", t("scouting.col.player"))}
               {sortTh("age", t("scouting.col.age"))}
               {sortTh("club", t("scouting.col.club"))}
               {sortTh("overall", t("scouting.col.overall"))}
               {sortTh("knowledge", t("scouting.knowledge"))}
               {sortTh("value", t("scouting.col.value"))}
-              <th className={th}>{t("scouting.col.status")}</th>
+              {sortTh("status", t("scouting.col.status"))}
               <th className={th}>{t("scouting.col.note")}</th>
             </tr>
           </thead>

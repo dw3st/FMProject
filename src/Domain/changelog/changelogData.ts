@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.7",
+    date: "2026-11-16",
+    time: "21:40",
+    items: [
+      { tab: "general", pt: "As abas do menu mostram um número quando algo pede sua atenção: lesionados e contratos no Elenco, titular que não pode jogar na Formação, instalações abaixo de 50% no Clube, contratos da comissão, saldo negativo, janela fechando, propostas pelos seus jogadores e joias dos olheiros.", en: "The menu tabs show a number when something needs you: injuries and contracts in Squad, a starter who cannot play in Formation, facilities below 50% in Club, staff contracts, a negative balance, the window closing, offers for your players and the scouts' gems." },
+      { tab: "scout", pt: "Lista de observados: ordene também por posição e situação.", en: "Shortlist: sort by position and status too." },
+    ],
+  },
+  {
     version: "12.6.2",
     date: "2026-11-16",
     time: "21:23",
@@ -475,7 +484,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "9.7",
     date: "2026-11-11",
-    time: "21:50",
+    time: "21:40",
     items: [
       { pt: "Jogo ao vivo entre dois técnicos: agora dá para reclamar com o árbitro, e o cartão de um aparece para o outro (expulso, o auxiliar assume).", en: "Live match between two managers: you can now complain to the referee, and one manager's card shows to the other (sent off, the assistant takes over)." },
       { pt: "Faixa de amigos na partida: acende em vermelho quando um amigo é expulso no jogo dele.", en: "Friends' strip in the match: it lights up red when a friend is sent off in his game." },
