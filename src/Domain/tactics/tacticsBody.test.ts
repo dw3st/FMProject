@@ -14,6 +14,14 @@ describe("mergeTacticsBody (club and national tactics PUT)", () => {
     if (r.ok) expect(r.value).toEqual({ ...base, assistantRotation: false });
   });
 
+  test("the XI of each formation is remembered; the client cannot write the map", () => {
+    const a = mergeTacticsBody(base, { lineup: ["p1", "p2"] });
+    expect(a.ok && a.value.lastLineups).toEqual({ "4-4-2": ["p1", "p2"] });
+    if (!a.ok) return;
+    const b = mergeTacticsBody(a.value, { formation: "4-3-3", lineup: ["p3"], lastLineups: { x: ["y"] } });
+    expect(b.ok && b.value.lastLineups).toEqual({ "4-4-2": ["p1", "p2"], "4-3-3": ["p3"] });
+  });
+
   test("every part is merged: axes, takers, instructions, free formation", () => {
     const st = slotOf("4-4-2", "ST");
     const instr = Array.from({ length: st + 1 }, (_, i) => (i === st ? { variant: "st_target" as const } : null));

@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.6.2",
+    date: "2026-11-16",
+    time: "21:23",
+    items: [],
+    fixes: [
+      { tab: "formation", pt: "O jogo lembra o último time que você usou em cada formação. Uma escalação salva sem jogadores volta com esse time, cada um na posição em que estava.", en: "The game remembers the last team you used in each formation. A saved line-up with no players comes back with that team, everyone in the position he had." },
+      { tab: "squad", pt: "Na base, marque vários jovens e dispense todos de uma vez.", en: "In the academy, tick several youngsters and release them all at once." },
+    ],
+  },
+  {
     version: "12.6.1",
     date: "2026-11-16",
     time: "21:07",

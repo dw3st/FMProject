@@ -15,6 +15,7 @@ import type { YouthFocus, YouthTrainingPlan } from "@/types/youthTrainingTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { TickBox } from "@/GameInterface/ui/TickBox";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { YouthCoachCard, type YouthCoachCardData } from "@/GameInterface/Squad/YouthCoachCard";
 import { YouthGoalCell, type YouthGoalView } from "@/GameInterface/Squad/YouthGoalCell";
@@ -55,6 +56,9 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
   /** Release by a criterion: the top of the potential range, on the 0-10 scale the table shows. */
   const [minPotential, setMinPotential] = useState("7.0");
   const [confirmMany, setConfirmMany] = useState(false);
+  /** Players ticked for a release together (report 2026-11-16). */
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [confirmPicked, setConfirmPicked] = useState(false);
 
   const saveId = session?.saveId;
 
@@ -95,10 +99,11 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
       const res = await fetch(`/api/saves/${saveId}/youth/release-many`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }),
       });
-      if (res.ok) { setData((await res.json()) as YouthData); void refresh(); } else setError(t("youth.actionFailed"));
+      if (res.ok) { setData((await res.json()) as YouthData); void refresh(); setPicked(new Set()); } else setError(t("youth.actionFailed"));
     } finally {
       setBusy(null);
       setConfirmMany(false);
+      setConfirmPicked(false);
     }
   }
 
@@ -146,7 +151,20 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
   const full = data.squadSize >= data.squadLimit;
   const cut = Number(minPotential.replace(",", "."));
   const below = Number.isFinite(cut) ? data.youth.filter((r) => r.potential.high < cut) : [];
+  const inAcademy = new Set(data.youth.map((r) => r.player.id));
+  const pickedIds = [...picked].filter((id) => inAcademy.has(id));
+  const toggle = (id: string, on: boolean) => {
+    setConfirmPicked(false);
+    setPicked((cur) => { const next = new Set(cur); if (on) next.add(id); else next.delete(id); return next; });
+  };
   const columns: DataTableColumn<YouthRow>[] = [
+    {
+      key: "pick",
+      header: "",
+      cell: (r) => (
+        <TickBox checked={picked.has(r.player.id)} label={t("youth.pick.one", { player: r.player.name })} onChange={(on) => toggle(r.player.id, on)} />
+      ),
+    },
     {
       key: "name",
       header: t("youth.player"),
@@ -328,6 +346,21 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
         <p className="text-sm text-muted-foreground">{t("youth.empty")}</p>
       ) : (
         <>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="secondary" flush onClick={() => { setConfirmPicked(false); setPicked(pickedIds.length === data.youth.length ? new Set() : new Set(data.youth.map((r) => r.player.id))); }}>
+              {pickedIds.length === data.youth.length ? t("youth.pick.none") : t("youth.pick.all")}
+            </Button>
+            {confirmPicked ? (
+              <>
+                <Button variant="danger" disabled={busy !== null} onClick={() => void releaseMany(pickedIds)}>{t("youth.pick.confirm", { count: pickedIds.length })}</Button>
+                <Button variant="secondary" onClick={() => setConfirmPicked(false)}>{t("youth.cancel")}</Button>
+              </>
+            ) : (
+              <Button variant="danger" disabled={busy !== null || pickedIds.length === 0} onClick={() => setConfirmPicked(true)}>
+                {t("youth.pick.release", { count: pickedIds.length })}
+              </Button>
+            )}
+          </div>
           <DataTable columns={columns} rows={data.youth} rowKey={(r) => r.player.id} />
           <section className="flex flex-col gap-2">
             <label htmlFor="youth-min-potential" className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.bulk.label")}</label>

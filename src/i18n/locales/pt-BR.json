@@ -2967,7 +2967,16 @@
       "release_one": "Dispensar {{count}} jogador",
       "release_other": "Dispensar {{count}} jogadores"
     },
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "pick": {
+      "one": "Selecionar {{player}}",
+      "all": "Selecionar todos",
+      "none": "Limpar seleção",
+      "release_one": "Dispensar {{count}} selecionado",
+      "release_other": "Dispensar {{count}} selecionados",
+      "confirm_one": "Confirmar a dispensa de {{count}} jovem",
+      "confirm_other": "Confirmar a dispensa de {{count}} jovens"
+    }
   },
   "matchPreview": {
     "venue": "Local",

@@ -245,16 +245,22 @@ export interface AppliedLineupPreset {
  * Applies a preset to today's squad, keeping exactly the saved starters in their slots (reports 2026-11-16): a saved
  * player who left the squad (sold, loaned out, released), is injured or is suspended leaves his slot empty (reported
  * with `in: ""`; the match day fills an empty slot). A preset with no starters at all (brought from another club)
- * takes `current` (the XI on screen) into its formation, each player in his best-fit slot, nobody swapped.
+ * comes back with `remembered`, the last XI used in its formation, as it was; without one it takes `current` (the
+ * XI on screen) into its formation, each player in his best-fit slot, nobody swapped.
  */
-export function applyLineupPreset(preset: LineupPreset, players: RosterPlayer[], date: string, current: string[] = []): AppliedLineupPreset {
+export function applyLineupPreset(
+  preset: LineupPreset, players: RosterPlayer[], date: string, current: string[] = [], remembered?: string[],
+): AppliedLineupPreset {
   const formation = formationForTactics(preset);
   const slots = getFormationSlots(formation as unknown as FormationShape);
   const byId = new Map(players.map((p) => [p.id, p]));
   const replaced: PresetReplacement[] = [];
   const saved = preset.lineup.some(Boolean);
-  const lineup = saved
-    ? slots.map((_, i) => preset.lineup[i] ?? "")
+  // No starters saved: the last XI used in this formation, as it was (`TacticsSave.lastLineups`); without one, the XI
+  // on screen in this formation.
+  const fromMemory = !saved && !!remembered?.some(Boolean);
+  const lineup = saved || fromMemory
+    ? slots.map((_, i) => (saved ? preset.lineup[i] : remembered![i]) ?? "")
     : remapLineupToFormation(current, slots, players, date).slice(0, slots.length);
   while (lineup.length < slots.length) lineup.push("");
 

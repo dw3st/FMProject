@@ -253,6 +253,11 @@ export interface TacticsSave {
    * a match never reads them — "Usar" copies one into `formation` / `lineup` / `slotInstructions`.
    */
   lineupPresets?: LineupPresets;
+  /**
+   * The last XI used in each formation (key: the formation id, "custom" for the free one), kept by the server on
+   * every save (report 2026-11-16): a saved line-up with no starters comes back with it.
+   */
+  lastLineups?: Record<string, string[]>;
 }
 
 // ── Saved lineups (#84) ──────────────────────────────────────────────────────

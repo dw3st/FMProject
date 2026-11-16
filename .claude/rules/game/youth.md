@@ -181,3 +181,7 @@ Report do usuário. Lógica pura em `src/Domain/youth/youthGoals.ts` (`YOUTH_GOA
 - **Indicações** (`promotionPicks`, só com ele no comando): jovens com nível ≥ titulares da linha − 0,3 ("pronto para o time"), depois os de 18+ cujo potencial alcança os titulares ("último ano na base"); até 3, os melhores primeiro. Selo "Indicado" na tabela.
 - **Metas por jovem** (`Squad.youthGoals`, `PUT /api/saves/:id/youth/:playerId/goal { level, months }`, `null` tira; 400 `invalidGoal`, 404 `notYourPlayer`): OVR alvo acima do atual (no máximo +20 na tela) em 3, 6 ou 12 meses. A tabela mostra "OVR 55 até 05/2038" e o andamento (`goalStatus`: no ritmo se está a até 0,05 da reta entre o nível do dia em que foi definida e o alvo, senão atrasado). Toda segunda, metas alcançadas ou vencidas saem do registro e viram a mensagem `youth` / `goal` (`settleGoals`, `advanceDay.ts`). Some com os kits e na troca de clube, como o plano de treino.
 - O foco individual por jovem já existia (coluna Foco).
+
+## Dispensar vários (12.6.2)
+
+Report do usuário. A tabela da base tem uma caixa de marcar por jovem, "Selecionar todos" e "Dispensar N selecionados" (com confirmação), pela rota `POST /youth/release-many`.

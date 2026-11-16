@@ -2967,7 +2967,16 @@
       "release_one": "Release {{count}} player",
       "release_other": "Release {{count}} players"
     },
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "pick": {
+      "one": "Select {{player}}",
+      "all": "Select all",
+      "none": "Clear selection",
+      "release_one": "Release {{count}} selected",
+      "release_other": "Release {{count}} selected",
+      "confirm_one": "Confirm releasing {{count}} youngster",
+      "confirm_other": "Confirm releasing {{count}} youngsters"
+    }
   },
   "matchPreview": {
     "venue": "Venue",

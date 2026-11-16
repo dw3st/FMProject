@@ -176,6 +176,16 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual([]);
   });
 
+  test("a preset with no starters comes back with the last XI of its formation, as it was", () => {
+    const swapped = [...xi];
+    const st = roles.indexOf("ST");
+    const gk = roles.indexOf("GK");
+    [swapped[st], swapped[gk]] = [swapped[gk]!, swapped[st]!]; // an odd but chosen arrangement
+    const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: [] }, DATE), squad, DATE, [], swapped);
+    expect(applied.lineup).toEqual(swapped);
+    expect(applied.replaced).toEqual([]);
+  });
+
   test("a starter loaned out (no longer in the squad) leaves his slot empty", () => {
     const lb = roles.indexOf("LB");
     const today = squad.filter((p) => p.id !== `s${lb}`);

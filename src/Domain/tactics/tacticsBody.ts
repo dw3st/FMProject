@@ -56,16 +56,20 @@ export function mergeTacticsBody(existing: TacticsSave, body: Partial<TacticsSav
     lineupPresets = Object.keys(parsed.value).length ? parsed.value : undefined;
   }
 
+  const lineup = body.lineup ?? existing.lineup;
+  // The XI of each formation is remembered (report 2026-11-16); the client never writes this map.
+  const lastLineups = lineup.some(Boolean) ? { ...(existing.lastLineups ?? {}), [formationId]: lineup } : existing.lastLineups;
   const value: TacticsSave = {
     formation:      formationId,
     tactical_style: body.tactical_style ?? existing.tactical_style,
-    lineup:         body.lineup         ?? existing.lineup,
+    lineup,
     assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
     ...(customFormation ? { customFormation } : {}),
     ...(axesOverride ? { axesOverride } : {}),
     ...(setPieceTakers ? { setPieceTakers } : {}),
     ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
     ...(lineupPresets ? { lineupPresets } : {}),
+    ...(lastLineups ? { lastLineups } : {}),
   };
   return { ok: true, value, formation };
 }

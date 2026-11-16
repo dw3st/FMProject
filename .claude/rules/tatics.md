@@ -190,3 +190,7 @@ A validação do `PUT /tactics` mora em `mergeTacticsBody` (`src/Domain/tactics/
 ## Escalação salva fica como foi salva (12.6.1)
 
 Reports do usuário. `applyLineupPreset(preset, players, date, current)` mantém exatamente os titulares salvos nas vagas: quem saiu do elenco, está lesionado ou suspenso deixa a vaga vazia (aviso com `in: ""`; o dia do jogo completa a vaga vazia), e uma vaga salva vazia fica vazia. Uma escalação sem nenhum titular salvo (trazida de outro clube) leva o XI da tela para a formação dela (`remapLineupToFormation`), sem trocar ninguém. "Salvar" grava o XI montado (`savedLineup`), não o exibido com os não inscritos trocados. Até a 12.5 os que saíram, os lesionados e os suspensos eram trocados na hora, e a escalação sem titulares montava um time novo.
+
+## Último time de cada formação (12.6.2)
+
+Report do usuário (ao ir para uma escalação salva e voltar, o centroavante virou ponta). `TacticsSave.lastLineups` (formação → XI; "custom" para a livre) é gravado pelo servidor a cada `PUT /tactics` com titulares (`mergeTacticsBody`; o cliente não escreve o mapa). Uma escalação salva sem titulares volta com o último XI usado na formação dela, exatamente como estava (`applyLineupPreset(..., remembered)`, quem não pode jogar deixa a vaga vazia); sem memória, o XI da tela reorganizado na formação.

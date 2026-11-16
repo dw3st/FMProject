@@ -364,10 +364,12 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
   async function handleUsePreset(key: LineupPresetKey) {
     const preset = lineupPresets[key];
     if (!session || !squad || !preset || editing || updating || saveStatus === "saving") return;
-    const applied = applyLineupPreset(preset, squad.players, currentDate, savedLineup);
     setPresetBusy(true);
     setPresetError(false);
     try {
+      // A preset with no starters comes back with the last XI used in its formation (report 2026-11-16).
+      const stored = preset.lineup.some(Boolean) ? null : ((await (await fetch(tacticsUrl)).json()) as TacticsSave | null);
+      const applied = applyLineupPreset(preset, squad.players, currentDate, savedLineup, stored?.lastLineups?.[preset.formation]);
       await storeTactics({
         formation: applied.formation,
         tactical_style: applied.tacticalStyle ?? activeStyle,
