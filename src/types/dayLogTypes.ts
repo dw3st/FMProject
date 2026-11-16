@@ -165,6 +165,8 @@ export interface MatchEvent {
    * developmentChanges are empty to keep the day log small. UI must not expect player rows.
    */
   compact?: true;
+  /** Slimmed a second time after `DAY_LOG_KEEP_COMPACT_DAYS`: result, scorers and the required team numbers only. */
+  slim?: true;
   /** Condition 0..100 of the pitch the match was played on (`matchPitchCondition`). Absent: not tracked. */
   pitchCondition?: number;
   /** Weather drawn for the match (`matchConditions`, `.claude/rules/game/weather.md`). Absent: none (youth, national). */

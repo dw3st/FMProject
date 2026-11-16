@@ -161,6 +161,13 @@ async function summary(saveId: string, year: string, y: Year, squads: Squad[]): 
     + `goals/match ${(y.goals / Math.max(1, y.matches)).toFixed(2)} shots ${(y.shots / Math.max(1, y.matches)).toFixed(2)} (${y.matches} matches), transfers ${y.transfers} | `
     + `day ${(y.dayMs / Math.max(1, y.days) / 1000).toFixed(2)}s (max ${(y.maxDayMs / 1000).toFixed(1)}s) | save ${mb.toFixed(0)} MB`,
   );
+  // Mean OVR by age band: a world that keeps its shape holds this curve season after season.
+  const bands: [string, number, number][] = [["17-18", 17, 18], ["19-20", 19, 20], ["21-22", 21, 22], ["23-24", 23, 24], ["25-26", 25, 26], ["27-28", 27, 28], ["29-30", 29, 30], ["31-32", 31, 32], ["33-34", 33, 34]];
+  const curve = bands.map(([label, lo, hi]) => {
+    const xs = squads.flatMap((s) => s.players.filter((p) => p.age >= lo && p.age <= hi).map((p) => computeOverallAvg(p) * 10));
+    return `${label} ${xs.length ? (xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(1) : "-"}`;
+  });
+  console.log(`AGES ${year}: ${curve.join(" · ")}`);
 }
 
 const saveId = arg("--save") ?? (await createSave());

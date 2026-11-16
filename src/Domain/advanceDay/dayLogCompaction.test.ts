@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { compactDayLog } from "@/Domain/advanceDay/dayLogCompaction";
+import { compactDayLog, slimDayLog } from "@/Domain/advanceDay/dayLogCompaction";
 import type { StoredDayLog } from "@/types/dayLogTypes";
 
 function match(home: string, away: string): StoredDayLog["events"][number] {
@@ -29,6 +29,29 @@ describe("compactDayLog", () => {
     expect(ai.score).toEqual({ home: 1, away: 0 });
     expect(human.compact).toBeUndefined();
     expect(Object.keys(human.playerStats)).toEqual(["p1"]);
+  });
+
+  test("slimDayLog keeps result, scorers and the required team numbers of AI matches", () => {
+    const ts = { shots: 5, passesCompleted: 40, passesAttempted: 44, tackles: 3, interceptions: 2, fouls: 9, crosses: 7 };
+    const ai = { ...match("ai1", "ai2"), teamStats: { home: ts, away: ts }, cards: [{} as never], referee: {} as never,
+      scorers: [{ playerId: "p9", playerName: "Gol", team: "home" as const, goals: 1 }] };
+    const log: StoredDayLog = {
+      saveId: "s", date: "2027-01-01", events: [ai as never, match("human", "ai3")],
+      youthMatches: [{ competition: "u21_x", fixtureId: "y", home: "ai1", away: "ai2", score: { home: 1, away: 1 }, scorers: [], best: null, players: { home: ["a"], away: ["b"] } }],
+    };
+    const out = slimDayLog(log, new Set(["human"]))!;
+    type M = Extract<StoredDayLog["events"][number], { kind: "match" }>;
+    const slim = out.events[0] as M, human = out.events[1] as M;
+    expect(slim.slim).toBe(true);
+    expect(slim.score).toEqual({ home: 1, away: 0 });
+    expect(slim.scorers.map((s) => s.playerId)).toEqual(["p9"]);
+    expect(slim.playerNames).toEqual({ p9: "Gol" });
+    expect(slim.teamStats.home).toEqual({ shots: 5, passesCompleted: 40, passesAttempted: 44, tackles: 3, interceptions: 2 });
+    expect(slim.cards).toBeUndefined();
+    expect(slim.referee).toBeUndefined();
+    expect(human.slim).toBeUndefined();
+    expect(out.youthMatches![0]!.players).toEqual({ home: [], away: [] });
+    expect(slimDayLog(out, new Set(["human"]))).toBeNull();
   });
 
   test("null when there is nothing to compact", () => {

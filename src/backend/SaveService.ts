@@ -90,6 +90,8 @@ export interface SaveMeta {
   freeAgentsRetiredYear?: number;
   /** Day logs up to this date are compacted (`compactDayLog`): the next day continues after it. */
   dayLogsCompactedTo?: string;
+  /** Day logs up to this date are slimmed (`slimDayLog`, past `DAY_LOG_KEEP_COMPACT_DAYS`). */
+  dayLogsSlimmedTo?: string;
   /** The world's start (start kit + safety nets, `/presimulate`) already ran: once per world. */
   presimulated?: true;
   /** Cup/continental titles won but not yet written to a history row: squadId -> titles. */

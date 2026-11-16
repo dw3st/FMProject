@@ -475,7 +475,8 @@ export class FileSystemDAL implements ISaveDAL {
   async writeDayLog(saveId: string, date: string, log: StoredDayLog): Promise<void> {
     const [yyyy, mm] = date.split("-");
     await mkdir(`${SAVES_DIR}/${saveId}/days/${yyyy}/${mm}`, { recursive: true });
-    await Bun.write(dayLogPath(saveId, date), JSON.stringify(log, null, 2));
+    // No indentation: always parsed, never read by hand, and ~40% of the file was whitespace.
+    await Bun.write(dayLogPath(saveId, date), JSON.stringify(log));
   }
 
   // ── Per-league season data ─────────────────────────────────────────────────

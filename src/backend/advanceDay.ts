@@ -87,7 +87,7 @@ import { generateJobOffers, releaseHumanClub, seasonEndExpiry } from "@/backend/
 import { cancelScoutMissions, rememberPlayers, scoutingDay } from "@/backend/scoutingWorld";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { addDays, addOneDay } from "@/Domain/dates";
-import { compactDayLog, DAY_LOG_COMPACT_LOOKBACK_DAYS, DAY_LOG_COMPACT_PER_DAY, DAY_LOG_KEEP_FULL_DAYS } from "@/Domain/advanceDay/dayLogCompaction";
+import { compactDayLog, DAY_LOG_COMPACT_LOOKBACK_DAYS, DAY_LOG_COMPACT_PER_DAY, DAY_LOG_KEEP_COMPACT_DAYS, DAY_LOG_KEEP_FULL_DAYS, slimDayLog } from "@/Domain/advanceDay/dayLogCompaction";
 import { isGroupWorld } from "@/Domain/groupAdvance/groupAdvance";
 import {
   buildMatchEvent,
@@ -2271,6 +2271,14 @@ export async function advanceOneDay(
           humanClubIds: humanClubs,
         });
         await saveService.writeLeagueSeasonArchive(saveId, transition.archive);
+        // Only the newest archive keeps the per-player season logs (read on the rollover day only):
+        // the older one drops them (~20 MB a season over the world, 2026-11-16 soak).
+        {
+          const prev = await saveService.readLeagueSeasonArchive(saveId, slug, state.year - 1);
+          if (prev && Object.keys(prev.playerLogs).length > 0) {
+            await saveService.writeLeagueSeasonArchive(saveId, { ...prev, playerLogs: {} });
+          }
+        }
         // History rows of the closed season (the squads are already reset: logs come from the archive).
         {
           const season = seasonLabel(state.year, state.start, state.end);
@@ -3642,6 +3650,20 @@ export async function advanceOneDay(
         d = addDays(d, 1);
       }
       if (last) metaPatch.dayLogsCompactedTo = last;
+      // Second pass, past a season: AI matches keep only the result and scorers.
+      const slimTarget = addDays(currentDate, -DAY_LOG_KEEP_COMPACT_DAYS);
+      let s = world.dayLogsSlimmedTo ? addDays(world.dayLogsSlimmedTo, 1) : addDays(currentDate, -DAY_LOG_COMPACT_LOOKBACK_DAYS);
+      let slimmed = 0, slimLast: string | undefined;
+      while (s <= slimTarget && slimmed < DAY_LOG_COMPACT_PER_DAY) {
+        const log = await saveService.getDayLog(saveId, s);
+        if (log) {
+          const slim = slimDayLog(log, humans);
+          if (slim) { await saveService.writeDayLog(saveId, s, slim); slimmed += 1; }
+        }
+        slimLast = s;
+        s = addDays(s, 1);
+      }
+      if (slimLast) metaPatch.dayLogsSlimmedTo = slimLast;
     }
     if (pendingTitlesChanged) metaPatch.pendingTitles = pendingTitles;
     if (managerTracker.weightsChanged()) metaPatch.managerWeights = managerTracker.weights();
