@@ -39,6 +39,7 @@ import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Compone
 import type { LeagueData, RosterPlayer, Squad } from "@/types/playerTypes";
 import { getDetailedPositionColor, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
 import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { aptitudeFor, preferredRole, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 import { sortBenchByPosition } from "@/Domain/positions/positionLineup";
 
@@ -748,7 +749,7 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
                     active={national ? "national" : "club"}
                     onChange={(key) => navigate(key === "national" ? "/formation?team=national" : "/formation", { replace: true })}
                     tabs={[
-                      { key: "club", label: t("formations.national.club") },
+                      { key: "club", label: <ClubTabLabel clubId={session?.clubId} name={session?.clubName} colors={squad?.colors} /> },
                       { key: "national", label: <NationalTabLabel teamId={nationalTeamId} name={save?.season?.teamNames?.[nationalTeamId]} /> },
                     ]}
                   />
@@ -1178,13 +1179,32 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
   );
 }
 
+/** "Clube" tab of the switch (report 2026-11-17): the crest and the name of his club. */
+function ClubTabLabel({ clubId, name, colors }: { clubId?: string; name?: string; colors?: readonly string[] }) {
+  const { t } = useTranslation();
+  return (
+    <span className="inline-flex items-center gap-2">
+      {clubId && (
+        <ClubLogo
+          logoUrl={squadLogoUrl(clubId)}
+          primaryColor={colors?.[0]}
+          secondaryColor={colors?.[1]}
+          className="w-5 h-5 shrink-0"
+          imgClassName="w-full h-full object-contain"
+        />
+      )}
+      <span className="max-w-[10rem] truncate">{name ?? t("formations.national.club")}</span>
+    </span>
+  );
+}
+
 /** "Seleção" tab of the switch: the flag and the name of the nation he coaches. */
 function NationalTabLabel({ teamId, name }: { teamId: string; name?: string }) {
   const { t, i18n } = useTranslation();
   const code = nationalTeamFlagCode(teamId);
   return (
-    <span className="inline-flex items-center gap-1.5">
-      {code && <Flag code={code} className="w-[18px] h-[13px]" />}
+    <span className="inline-flex items-center gap-2">
+      {code && <Flag code={code} className="w-5 h-[15px] shrink-0 rounded-[2px]" />}
       {name ? nationalityDisplayName(name, i18n.language, t) : t("formations.national.team")}
     </span>
   );

@@ -36,6 +36,7 @@ export const changelog: ChangelogEntry[] = [
     time: "11:30",
     items: [
       { tab: "squad", pt: "Histórico do clube: nas tabelas de artilheiros e de mais jogos, as colunas ficam na ordem jogos, gols e assistências, com o nome inteiro.", en: "Club history: the top scorers and most appearances tables show appearances, goals and assists in that order, with full names." },
+      { tab: "formation", pt: "Formação de quem treina uma seleção: o seletor mostra o escudo e o nome do clube de um lado e a bandeira e o país do outro.", en: "Formation of a national team coach: the switch shows the club crest and name on one side and the flag and country on the other." },
     ],
     fixes: [
       { tab: "formation", pt: "Escalação salva e troca de formação mantêm exatamente os seus jogadores: um convocado pela seleção, lesionado ou suspenso fica na vaga (o jogo troca só no dia, se ele ainda não puder jogar), e voltar a uma formação traz a escalação que ela tinha.", en: "Saved line-ups and formation changes keep exactly your players: a player on national duty, injured or suspended keeps his slot (the match day swaps him only if he still cannot play), and going back to a formation brings back the line-up it had." },
