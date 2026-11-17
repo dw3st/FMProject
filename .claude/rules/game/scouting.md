@@ -399,3 +399,7 @@ Report do usuário. Aba Joias: botão Recusar em cada prospecto (`DELETE /api/sa
 ## Ordenar Relatórios e Joias por toda coluna (12.7.1)
 
 Report do usuário. `ReportSortKey` ganhou `pos` (ordem das posições, `positionIndex`), `player`, `club` e `verdict` (pronto, futuro, elenco, não melhora); o primeiro clique nessas quatro ordena crescente (`defaultDir`).
+
+## Nota dos jovens pelo potencial (12.8.4)
+
+Report do usuário (todo prospecto de 16 anos vinha E). Até `PROSPECT_GRADE_AGE` (19) a nota relativa é a maior entre a de sempre e o meio da faixa de potencial vista menos a média dos titulares da linha (`relativeNote(..., potentialSeenMid)`). Relatórios antigos não mudam.

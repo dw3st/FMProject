@@ -122,3 +122,7 @@ Report de tester. `Responsibilities.friendlies` (`none`, padrão, ou `director`;
 ## Base (12.1)
 
 `Responsibilities.youth` (`manager`, padrão, ou `coach`): quinto bloco da aba. Com o treinador da base (e um contratado, fora de curso), ele convoca os jovens do elenco que jogam pouco no dia de jogo da base e ajusta o treino da base toda segunda, sem mexer no que o técnico configurou à mão. Rota: `GET` devolve `youth`, `PUT { youth }` aceita `manager` ou `coach`. Ver `.claude/rules/game/staff.md` → "Treinador da base (12.1)".
+
+## Recém-chegados no amistoso (12.8.4)
+
+Report do usuário (três contratações não jogaram nenhum dos quatro amistosos da pré-temporada e seguiram em adaptação). As 5 trocas do intervalo (`friendlySubs`, `src/Domain/friendlies/friendlies.ts`) chamam primeiro quem ainda está em adaptação (menos jogos primeiro), depois o sorteio de sempre.
