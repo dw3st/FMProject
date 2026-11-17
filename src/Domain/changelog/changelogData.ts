@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.12",
     date: "2026-11-17",
-    time: "21:00",
+    time: "18:22",
     items: [
       { tab: "market", pt: "Compra fora da janela: com a janela fechada você ainda fecha a compra de um jogador de clube da IA. A taxa é paga na hora e ele chega quando a sua janela abrir (até 5 por vez). Os acertos aparecem em Transferências, em \"Chegam na janela\".", en: "Buying outside the window: with your window closed you can still agree a deal for a player at an AI club. The fee is paid now and he joins when your window opens (up to 5 at a time). The deals are listed in Transfers under \"Joining when the window opens\"." },
       { tab: "match", pt: "Tela de substituições refeita: um campinho em pé à esquerda e o que cada aba faz à direita (troca de jogador, formação, tática e instruções), numa janela maior.", en: "The substitutions screen redone: an upright pitch on the left and each tab's controls on the right (player change, formation, tactics and instructions), in a larger window." },
