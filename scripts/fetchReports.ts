@@ -21,6 +21,10 @@
  *   --user <substring>             only reports whose email contains this (case-insensitive)
  *   --json                         print the filtered array as JSON instead of the text view
  *   --download-attachments <dir>   copy the attachments of the (filtered) reports into <dir>
+ *   --all                          also list reports marked done (hidden by default)
+ *   --mark <id,id> --as done|wait|open [--note <text>]
+ *                                  record the triage status in docs/reports-status.json and exit
+ *                                  (ids only, never the report text: the repo is public)
  *
  * Usage:
  *   bun scripts/fetchReports.ts
@@ -211,9 +215,50 @@ function parseJsonl(contents: string): ReportRecord[] {
   return records;
 }
 
-function formatReport(r: ReportRecord, attachmentFilename: string | undefined): string {
+/** Triage status of each report, kept in the repo so a fixed report is never worked on twice. */
+type ReportStatus = { status: "done" | "wait"; note?: string; on: string };
+const STATUS_FILE = "docs/reports-status.json";
+
+function readStatuses(): Record<string, ReportStatus> {
+  try {
+    return JSON.parse(readFileSync(STATUS_FILE, "utf8")) as Record<string, ReportStatus>;
+  } catch {
+    return {};
+  }
+}
+
+function markReports(args: string[]): void {
+  const ids = (argValue(args, "--mark") ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const as = argValue(args, "--as");
+  const note = argValue(args, "--note");
+  if (ids.length === 0 || !as || !["done", "wait", "open"].includes(as)) {
+    console.error("usage: --mark <id,id> --as done|wait|open [--note <text>]");
+    process.exit(1);
+  }
+  if (ids.some((id) => !/^[0-9a-f]{8}(-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$/.test(id))) {
+    console.error("ids must be report ids (full uuid or its first 8 hex digits)");
+    process.exit(1);
+  }
+  const statuses = readStatuses();
+  const on = new Date().toISOString().slice(0, 10);
+  for (const id of ids) {
+    const key = id.slice(0, 8);
+    if (as === "open") delete statuses[key];
+    else statuses[key] = { status: as as "done" | "wait", ...(note ? { note } : {}), on };
+  }
+  const sorted = Object.fromEntries(Object.entries(statuses).sort(([a], [b]) => a.localeCompare(b)));
+  writeFileSync(STATUS_FILE, JSON.stringify(sorted, null, 2) + "\n");
+  console.log(`${ids.length} report(s) marked ${as}.`);
+}
+
+/** The status of a report, keyed by the first 8 digits of its id. */
+function statusOf(statuses: Record<string, ReportStatus>, id: string): ReportStatus | undefined {
+  return statuses[id.toLowerCase().slice(0, 8)];
+}
+
+function formatReport(r: ReportRecord, attachmentFilename: string | undefined, status?: ReportStatus): string {
   const lines = [
-    `${r.createdAt}  [${r.type}]  ${r.email}`,
+    `${r.createdAt}  [${r.type}]${status ? `  [${status.status}${status.note ? `: ${sanitize(status.note)}` : ""}]` : ""}  ${r.email}`,
     `  id: ${r.id}`,
     `  page: ${r.page}${r.gameDate ? `  game date: ${r.gameDate}` : ""}${r.saveId ? `  save: ${r.saveId}` : ""}`,
     `  ${r.description.replace(/\n/g, "\n  ")}`,
@@ -226,6 +271,9 @@ function formatReport(r: ReportRecord, attachmentFilename: string | undefined): 
 
 function main() {
   const args = process.argv.slice(2);
+  if (hasFlag(args, "--mark")) return markReports(args);
+  const showAll = hasFlag(args, "--all");
+  const statuses = readStatuses();
 
   const localPath = argValue(args, "--local");
   const typeFilter = argValue(args, "--type") as ReportRecord["type"] | undefined;
@@ -255,6 +303,8 @@ function main() {
     records = records.filter((r) => Date.parse(r.createdAt) >= sinceMs);
   }
   if (userFilter) records = records.filter((r) => r.email.toLowerCase().includes(userFilter));
+  const hidden = showAll ? 0 : records.filter((r) => statusOf(statuses, r.id)?.status === "done").length;
+  if (!showAll) records = records.filter((r) => statusOf(statuses, r.id)?.status !== "done");
 
   records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   records = records.map(sanitizeRecord);
@@ -268,6 +318,7 @@ function main() {
     const withAttachment = records.map((r) => ({
       ...r,
       attachment: attachments.get(r.id.toLowerCase()) ?? null,
+      status: statusOf(statuses, r.id) ?? null,
     }));
     console.log(JSON.stringify(withAttachment, null, 2));
     return;
@@ -278,9 +329,9 @@ function main() {
     return;
   }
 
-  console.log(`${records.length} report(s):\n`);
+  console.log(`${records.length} report(s)${hidden > 0 ? ` (${hidden} marked done hidden; --all shows them)` : ""}:\n`);
   for (const r of records) {
-    console.log(formatReport(r, attachments.get(r.id.toLowerCase())));
+    console.log(formatReport(r, attachments.get(r.id.toLowerCase()), statusOf(statuses, r.id)));
     console.log("");
   }
 }

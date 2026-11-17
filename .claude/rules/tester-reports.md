@@ -228,3 +228,16 @@ that test are seeded straight into `reports.jsonl` rather than filed through the
    never the tester's e-mail or name.
 3. Discard noise/duplicates. Record the triage date in the roadmap's "Bugs, correções e
    apontamentos" section when useful. See `docs/ROADMAP.md`.
+
+## Status de cada report (12.11)
+
+Pedido do usuário: report resolvido fica marcado, para nunca ser refeito. `docs/reports-status.json` (no repositório, só
+os 8 primeiros dígitos do id, status e uma nota curta; nunca o texto do report nem e-mail: o repositório é público):
+
+- `bun scripts/fetchReports.ts` lista só os que **não** estão `done` (diz quantos escondeu); `--all` mostra todos, com o
+  status entre colchetes; `--json` traz `status`.
+- `bun scripts/fetchReports.ts --mark <id,id> --as done|wait|open [--note "12.12"]` grava e sai. `wait` = falta
+  informação do tester (fica na lista com o motivo); `open` tira a marca.
+- Toda versão que resolve um report marca o id como `done` com a versão na nota, no mesmo commit.
+- Os 626 reports de antes de 2026-11-16 foram marcados `done` em bloco ("triado antes de 16/11"): já tinham passado
+  pela triagem diária, sem nova conferência um a um.
