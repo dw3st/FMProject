@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.12.1",
     date: "2026-11-17",
-    time: "18:40",
+    time: "19:05",
     items: [],
     fixes: [
       { tab: "market", pt: "Contraproposta: botões Mín e Máx ao lado do valor, na proposta da IA e na de outro técnico.", en: "Counter-offer: Min and Max buttons next to the fee, on AI bids and on offers from another manager." },
