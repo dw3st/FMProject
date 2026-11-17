@@ -40,7 +40,7 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
-import { ballMeetsKeeper, defenderCovers, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
+import { ballMeetsKeeper, defenderCovers, saveOutcomeChances, shotStoppingSkill, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import type { RosterPlayer } from '@/types/playerTypes';
@@ -4420,7 +4420,26 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         // deflected by a defender close to the shooter.
         let cornerSource: CornerSource | null = null;
         if (inPosts && defendingGK) {
-          if (Math.random() < SET_PIECE_CONFIG.SAVE_CORNER_CHANCE) cornerSource = 'save';
+          // Held, spilled loose or parried behind, by his skill and how hard the shot was (12.10).
+          const odds = saveOutcomeChances(shotStoppingSkill(defendingGK), goalChance);
+          const roll = Math.random();
+          const kind = roll < odds.parry ? 'parry' : roll < odds.parry + odds.spill ? 'spill' : 'hold';
+          gameBus.emit('keeperSave', { keeperId: defendingGK.id, kind });
+          debugLog('keeper', `${defendingGK.name} ${kind === 'hold' ? 'holds' : kind === 'spill' ? 'spills' : 'parries'} the shot (hold ${(odds.hold * 100).toFixed(0)}%, spill ${(odds.spill * 100).toFixed(0)}%)`, {
+            playerId: defendingGK.id, data: { ...odds, goalChance },
+          });
+          if (kind === 'parry') cornerSource = 'save';
+          if (kind === 'spill') {
+            const point = {
+              x: Math.max(0, Math.min(PITCH_LENGTH, endAt.x - shooter.attackDir * KEEPER_CONFIG.SAVE.SPILL_DIST)),
+              y: Math.max(0, Math.min(PITCH_WIDTH, endAt.y)),
+            };
+            const players = applyStaminaCost(s.players, defendingGK.id, 'gkSave');
+            return {
+              state: dropLooseAt({ ...s, shot: null, players }, defendingGK, point),
+              passCompleted: false, tackled: false, goalScored: null,
+            };
+          }
         } else if (!inPosts) {
           const deflector = s.players.some(p => p.team !== shooter.team && p.role !== 'GK'
             && Math.hypot(p.x - flying.fromX, p.y - flying.fromY) <= SET_PIECE_CONFIG.SHOT_DEFLECT_RADIUS);

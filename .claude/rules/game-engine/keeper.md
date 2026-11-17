@@ -99,3 +99,9 @@ Report de tester: bolas que caíam na área à frente do goleiro, com ele mais p
 - **Desenho** (`playerAnims.ts`, `claim`; `gkClaim` leva `x`/`y`): quando ele sai, o boneco vai até a bola (até 7 jardas), sobe e volta. O resultado não muda.
 
 Mundo (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, contra a 8.6.1): Premier 2,156 → 2,074 gols, 5,57 → 5,58 chutes; Championship 1,806 → 1,792, 5,29 → 5,40; somadas −2,4% e +1,0%, quickSim não recalibrado.
+
+## Segurar, espalmar ou soltar (12.10)
+
+Pedido do usuário (o goleiro espalmava demais, sem critério: até a 12.9 toda defesa era 50/50 entre segurar e escanteio, `SET_PIECE_CONFIG.SAVE_CORNER_CHANCE`, removido). `saveOutcomeChances(skill, goalChance)` (`Keeper.ts`, `KEEPER_CONFIG.SAVE`): habilidade = média de reflexo, salto e posicionamento (`shotStoppingSkill`); segurar = 0,6 + 0,5 × (habilidade − 0,5) − 0,5 × (chance de gol − 0,3), entre 0,15 e 0,9; do que não segura, uma parte solta (0,09 − 0,4 × (habilidade − 0,5) + 0,2 × (chance − 0,3), entre 0,02 e 0,4) e o resto vai para escanteio. A bola solta cai `SPILL_DIST` (4) jardas à frente de onde ele a encontrou (`dropLooseAt`, o time dele tocou por último). Evento `keeperSave { kind }`, debug `keeper`, `Statistics.keeperHolds/keeperSpills`, linhas "Saves held" / "Saves spilled" no `PairDetail` do `/lab`.
+
+Medido (`bun scripts/keeper-measure.ts 400 all <liga> 5000`, 4-3-3, `Math.random` semeado por jogo, contra a regra antiga com `KEEPER_OVERRIDES`): Premier 1,837 → 1,923 gols (+4,7%), escanteios 4,26 → 4,01, seguradas 0,84 → 0,87, soltas 0 → 0,14 por jogo; Championship 1,475 → 1,540 (+4,4%), escanteios 3,82 → 3,66, soltas 0,15. quickSim não recalibrado (dentro de ±5%).

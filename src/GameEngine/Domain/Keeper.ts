@@ -190,6 +190,22 @@ export function wideClaimFactor(depth: number): number {
 }
 
 /** Base chance of a keeper smothering the ball at a holder's feet (replaces the outfield tackle chance). */
+/** Chances that a save is held, spilled loose or parried behind (they add to 1). */
+export function saveOutcomeChances(skill: number, goalChance: number): { hold: number; spill: number; parry: number } {
+  const S = K.SAVE;
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+  const hold = clamp(S.HOLD_BASE + S.HOLD_SKILL * (skill - 0.5) - S.HOLD_DIFFICULTY * (goalChance - 0.3), S.HOLD_MIN, S.HOLD_MAX);
+  const spillShare = clamp(S.SPILL_BASE - S.SPILL_SKILL * (skill - 0.5) + S.SPILL_DIFFICULTY * (goalChance - 0.3), S.SPILL_MIN, S.SPILL_MAX);
+  const spill = (1 - hold) * spillShare;
+  return { hold, spill, parry: 1 - hold - spill };
+}
+
+/** The keeper's shot-stopping skill, 0..1: mean of reflex, diving and positioning. */
+export function shotStoppingSkill(gk: Pick<GamePlayer, 'runtimeStats'>): number {
+  const w = gk.runtimeStats.withoutBall;
+  return (w.gkReflex + w.gkDiving + w.gkPositioning) / 3;
+}
+
 export function smotherBase(gk: Pick<GamePlayer, 'runtimeStats'>): number {
   const { gkPositioning, gkReflex } = gk.runtimeStats.withoutBall;
   return K.SMOTHER_BASE + K.SMOTHER_SKILL * (gkPositioning + gkReflex) / 2;

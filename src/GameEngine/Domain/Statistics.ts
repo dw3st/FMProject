@@ -102,6 +102,10 @@ export interface PlayerStats {
   keeperSweeps:             number;
   /** Balls won by the keeper at a holder's feet. */
   keeperSmothers:           number;
+  /** Saves held (12.10). */
+  keeperHolds:              number;
+  /** Saves spilled loose in front of goal (12.10). */
+  keeperSpills:             number;
   // ── Set pieces (`.claude/rules/game-engine/set-pieces-play.md`) ──────────────
   /** Corners won by the team, credited to the taker. */
   corners:                  number;
@@ -207,6 +211,8 @@ function emptyStats(): PlayerStats {
     keeperSorties:            0,
     keeperSweeps:             0,
     keeperSmothers:           0,
+    keeperHolds:              0,
+    keeperSpills:             0,
     corners:                  0,
     throwIns:                 0,
     setPieceRoutines:                 0,
@@ -456,6 +462,11 @@ gameBus.on('header', e => { get(e.player).headers++; notify(); });
 gameBus.on('keeperSortie',  e => { get(e.keeperId).keeperSorties++; notify(); });
 gameBus.on('keeperSweep',   e => { get(e.keeperId).keeperSweeps++; notify(); });
 gameBus.on('keeperSmother', e => { get(e.keeperId).keeperSmothers++; notify(); });
+gameBus.on('keeperSave', e => {
+  if (e.kind === 'hold') get(e.keeperId).keeperHolds++;
+  if (e.kind === 'spill') get(e.keeperId).keeperSpills++;
+  notify();
+});
 
 // ── Set-piece stats ───────────────────────────────────────────────────────────
 gameBus.on('cornerAwarded',   e => { get(e.takerId).corners++; notify(); });
@@ -548,6 +559,8 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.keeperSorties            += stats.keeperSorties;
     result.keeperSweeps             += stats.keeperSweeps;
     result.keeperSmothers           += stats.keeperSmothers;
+    result.keeperHolds              += stats.keeperHolds;
+    result.keeperSpills             += stats.keeperSpills;
     result.corners                  += stats.corners;
     result.throwIns                 += stats.throwIns;
     result.setPieceRoutines                 += stats.setPieceRoutines;

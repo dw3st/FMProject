@@ -77,6 +77,8 @@ export interface GameEvents {
   keeperSweep: { keeperId: number };
   /** A keeper's challenge won the ball at a holder's feet. */
   keeperSmother: { keeperId: number };
+  /** What a save did (12.10): held, spilled loose in front of goal, or parried behind for a corner. */
+  keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry" };
   /** A rehearsed routine was called for a corner / crossed free kick (`set-pieces-play.md`). */
   setPieceRoutine: { team: 'A' | 'B'; takerId: number; kind: 'corner' | 'free_kick'; target: string; attackers: number };
   /** A header at goal (also emitted as a `shot`). */

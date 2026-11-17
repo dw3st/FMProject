@@ -25,7 +25,7 @@ const dir = fileURLToPath(new URL(`../src/Data/squads/${league}/`, import.meta.u
 const squads: Squad[] = readdirSync(dir).filter(f => f.endsWith(".json")).map(f => JSON.parse(readFileSync(dir + f, "utf8")));
 const f = formationForSimId("4-3-3");
 const lineups = squads.map(s => autoLineupForFormation(s, f, "2026-08-15"));
-let goals = 0, sq = 0, shots = 0, sorties = 0, sweeps = 0, smothers = 0, pens = 0;
+let goals = 0, sq = 0, shots = 0, sorties = 0, sweeps = 0, smothers = 0, pens = 0, corners = 0, holds = 0, spills = 0;
 const realRandom = Math.random;
 for (let i = 0; i < n; i++) {
   const a = i % squads.length, b = (i * 7 + 3) % squads.length === a ? (a + 1) % squads.length : (i * 7 + 3) % squads.length;
@@ -37,7 +37,8 @@ for (let i = 0; i < n; i++) {
   for (const t of [r.teamStats.A, r.teamStats.B]) {
     shots += t.shots ?? 0; sorties += t.keeperSorties ?? 0; sweeps += t.keeperSweeps ?? 0;
     smothers += t.keeperSmothers ?? 0; pens += t.penaltiesAwarded ?? 0;
+    corners += t.corners ?? 0; holds += t.keeperHolds ?? 0; spills += t.keeperSpills ?? 0;
   }
 }
 const m = goals / n, se = Math.sqrt((sq / n - m * m) / n);
-console.log(`${league} ${variant}${process.env.KEEPER_OVERRIDES ? " " + process.env.KEEPER_OVERRIDES : ""}: n ${n}  goals ${m.toFixed(3)} ± ${se.toFixed(3)}  shots ${(shots / n).toFixed(2)}  sorties ${(sorties / n).toFixed(2)}  sweeps ${(sweeps / n).toFixed(2)}  smothers ${(smothers / n).toFixed(2)}  pens ${(pens / n).toFixed(3)}`);
+console.log(`${league} ${variant}${process.env.KEEPER_OVERRIDES ? " " + process.env.KEEPER_OVERRIDES : ""}: n ${n}  goals ${m.toFixed(3)} ± ${se.toFixed(3)}  shots ${(shots / n).toFixed(2)}  sorties ${(sorties / n).toFixed(2)}  sweeps ${(sweeps / n).toFixed(2)}  smothers ${(smothers / n).toFixed(2)}  pens ${(pens / n).toFixed(3)}  corners ${(corners / n).toFixed(2)}  holds ${(holds / n).toFixed(2)}  spills ${(spills / n).toFixed(2)}`);

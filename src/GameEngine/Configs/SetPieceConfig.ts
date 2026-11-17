@@ -99,8 +99,6 @@ export const SET_PIECE_CONFIG = {
   THROW_IN_RANGE: 20,
 
   // ── Corner sources ─────────────────────────────────────────────────────────
-  /** A keeper's save is parried behind for a corner. */
-  SAVE_CORNER_CHANCE: 0.5,
   /** An off-target shot was deflected behind by a defender (needs one within SHOT_DEFLECT_RADIUS of the shooter). */
   OFF_TARGET_CORNER_CHANCE: 0.8,
   SHOT_DEFLECT_RADIUS: 6,

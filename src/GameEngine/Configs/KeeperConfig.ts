@@ -74,4 +74,18 @@ export const KEEPER_CONFIG = {
   HIGH_FLAP_SHARE: 0.5,
   /** Yards from the ball's path he can still get a hand to it. Further than that, a shot on target beats him. */
   SHOT_REACH: 4,
+
+  // ── What a save does (user request, 12.10) ────────────────────────────────
+  /**
+   * A save is held, parried behind for a corner, or spilled loose in front of goal (`saveOutcome`, `Keeper.ts`). A good
+   * keeper (skill = mean of reflex, diving and positioning, 0..1) holds more and spills less; a hard shot (its goal
+   * chance) is held less and spilled more. Until 12.9 every save was a coin flip between held and corner.
+   */
+  SAVE: {
+    HOLD_BASE: 0.6, HOLD_SKILL: 0.5, HOLD_DIFFICULTY: 0.5, HOLD_MIN: 0.15, HOLD_MAX: 0.9,
+    /** Share of the saves not held that drop loose (the rest go behind). */
+    SPILL_BASE: 0.09, SPILL_SKILL: 0.4, SPILL_DIFFICULTY: 0.2, SPILL_MIN: 0.02, SPILL_MAX: 0.4,
+    /** Where a spill drops: this many yards in front of where he met the ball. */
+    SPILL_DIST: 4,
+  },
 };

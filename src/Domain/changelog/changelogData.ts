@@ -36,6 +36,7 @@ export const changelog: ChangelogEntry[] = [
     time: "17:30",
     items: [
       { tab: "club", pt: "Cinco cortes novos para o gramado do estádio: losango, listras largas, listras estreitas, listras no comprimento e xadrez diagonal.", en: "Five new mowing patterns for the stadium pitch: diamond, wide stripes, narrow stripes, lengthwise stripes and diagonal checker." },
+      { tab: "match", pt: "Goleiro: uma defesa agora pode ser segura, espalmada para escanteio ou soltar a bola na área. Goleiro bom segura mais, e chute difícil é segurado menos.", en: "Keepers: a save can now be held, parried behind for a corner or spilled in the box. A good keeper holds more, and a hard shot is held less." },
     ],
   },
   {

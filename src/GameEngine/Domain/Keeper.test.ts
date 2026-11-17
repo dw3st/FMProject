@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { TEST_SCENARIOS } from '@/GameEngine/Support/TestCases';
 import {
   arcComeOut, attackingAdvance, defenderCovers, isOneOnOne, isWideClaimZone, keeperAttackingTarget, keeperComesWide,
-  keeperDefendingTarget, keeperTakesLoose, keeperPositionDeviation, rushComeOut, smotherBase, sweeperChases, wideClaimFactor,
+  keeperDefendingTarget, keeperTakesLoose, keeperPositionDeviation, rushComeOut, saveOutcomeChances, smotherBase, sweeperChases, wideClaimFactor,
 } from '@/GameEngine/Domain/Keeper';
 import { resolveAerialLanding, startThroughBall } from '@/GameEngine/Domain/gameState';
 import { computeGKPositionQuality } from '@/GameEngine/Infrastructure/ActionOutcomes';
@@ -157,5 +157,24 @@ describe('high balls beyond the small box', () => {
     resolveAerialLanding(st, () => 0.99);
     off();
     expect(sorties).toEqual(['high']);
+  });
+});
+
+describe("what a save does (12.10)", () => {
+  test("the three chances add to 1", () => {
+    for (const [skill, gc] of [[0, 0], [0.5, 0.3], [1, 0.9], [0.2, 0.7]] as const) {
+      const o = saveOutcomeChances(skill, gc);
+      expect(o.hold + o.spill + o.parry).toBeCloseTo(1, 9);
+      for (const v of [o.hold, o.spill, o.parry]) expect(v).toBeGreaterThanOrEqual(0);
+    }
+  });
+  test("a better keeper holds more and spills less", () => {
+    const good = saveOutcomeChances(0.9, 0.3);
+    const poor = saveOutcomeChances(0.2, 0.3);
+    expect(good.hold).toBeGreaterThan(poor.hold);
+    expect(good.spill).toBeLessThan(poor.spill);
+  });
+  test("a harder shot is held less", () => {
+    expect(saveOutcomeChances(0.5, 0.8).hold).toBeLessThan(saveOutcomeChances(0.5, 0.1).hold);
   });
 });
