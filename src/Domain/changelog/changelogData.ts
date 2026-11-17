@@ -36,6 +36,8 @@ export const changelog: ChangelogEntry[] = [
     time: "17:00",
     items: [
       { tab: "match", pt: "Jogo ao vivo entre técnicos: suas formações livres e as das escalações salvas aparecem na troca de formação e nos atalhos de tática.", en: "Live match between managers: your free formations and those of your saved line-ups show up in the formation change and the tactic shortcuts." },
+      { tab: "friends", pt: "A reação Fogo virou Fogos, com um ícone novo e seis sons de fogos de artifício. A Risada ganhou mais três sons.", en: "The Fire reaction is now Fireworks, with a new icon and six firework sounds. The Laugh got three more sounds." },
+      { tab: "friends", pt: "Sons das reações sem spam: um por vez, com 3 segundos entre eles, e depois de 5 sons em 30 segundos ficam mudos por 1 minuto.", en: "Reaction sounds without spam: one at a time, 3 seconds apart, and after 5 sounds in 30 seconds they go quiet for a minute." },
     ],
   },
   {

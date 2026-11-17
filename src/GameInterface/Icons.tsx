@@ -482,7 +482,7 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "talk": MessagesSquare,
   "users": Users,
   "react-applause": PartyPopper,
-  "react-fire":     Flame,
+  "react-fire":     Sparkles,
   "react-laugh":    Laugh,
   "react-sorry":    HeartCrack,
   "react-horn":     Megaphone,
