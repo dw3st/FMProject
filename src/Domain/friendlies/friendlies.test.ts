@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { friendlyDue, friendlyPool, isFriendlyDay, pickOpponent } from "@/Domain/friendlies/friendlies";
+import { friendlyDue, friendlyPool, friendlySubs, isFriendlyDay, pickOpponent } from "@/Domain/friendlies/friendlies";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 const SAT = "2026-08-01";
@@ -55,5 +55,22 @@ describe("pickOpponent", () => {
   test("never himself nor a human club", () => {
     expect(pickOpponent(["a", "b", "c"], "a", new Set(["b"]), 0.5)).toBe("c");
     expect(pickOpponent(["a"], "a", new Set(), 0)).toBeNull();
+  });
+});
+
+describe("friendlySubs", () => {
+  test("players still settling in come on first, fewest games first", () => {
+    const bench = ["a", "b", "c", "d", "e", "f", "g"].map((id) => player(id));
+    bench[5] = { ...bench[5]!, settling: { games: 4, need: 10 } };
+    bench[6] = { ...bench[6]!, settling: { games: 0, need: 10 } };
+    const subs = friendlySubs(bench, 3, () => 0.5);
+    expect(subs.slice(0, 2).map((p) => p.id)).toEqual(["g", "f"]);
+    expect(subs).toHaveLength(3);
+  });
+  test("without newcomers the draw decides", () => {
+    const bench = ["a", "b", "c"].map((id) => player(id));
+    let k = 0;
+    const draws = [0.9, 0.1, 0.5];
+    expect(friendlySubs(bench, 2, () => draws[k++]!).map((p) => p.id)).toEqual(["b", "c"]);
   });
 });

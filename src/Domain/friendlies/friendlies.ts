@@ -48,3 +48,16 @@ export function pickOpponent(clubs: string[], own: string, excluded: ReadonlySet
   const options = clubs.filter((c) => c !== own && !excluded.has(c));
   return options.length ? options[Math.floor(roll * options.length)]! : null;
 }
+
+/**
+ * The second-half substitutes of a friendly: players still settling in first (fewest games first), then the rest
+ * drawn. Each draw is taken for every bench player, so the order of the others is the same as before.
+ */
+export function friendlySubs(bench: RosterPlayer[], count: number, rng: () => number): RosterPlayer[] {
+  const drawn = bench.map((p) => ({ p, k: rng() }));
+  const settling = (p: RosterPlayer) => (p.settling ? 0 : 1);
+  return drawn
+    .sort((a, b) => settling(a.p) - settling(b.p) || (a.p.settling?.games ?? 0) - (b.p.settling?.games ?? 0) || a.k - b.k)
+    .slice(0, count)
+    .map((x) => x.p);
+}

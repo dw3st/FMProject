@@ -48,6 +48,9 @@ describe("grades and gems", () => {
     expect(gradeOf(-0.71)).toBe("E");
     expect(relativeNote(6, 7, 20, 6)).toBeCloseTo(0.5);
     expect(relativeNote(6, 7, 30, 6)).toBeCloseTo(0);
+    // A 16-year-old prospect: graded on the middle of his potential when it is better.
+    expect(relativeNote(2.5, 7, 16, 6, 5.8)).toBeCloseTo(-0.2);
+    expect(relativeNote(2.5, 7, 22, 6, 5.8)).toBeCloseTo(-1.25);
   });
   test("gem: young, potential above the line, from any country (8.9.27)", () => {
     const base = { age: 18, country: "Spain", ownCountry: "England", potentialHigh: 6.5, lineAverage: 6 };

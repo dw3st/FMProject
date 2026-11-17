@@ -72,6 +72,8 @@ export interface SeenProfile {
   potential: [number, number];
   /** High end of the potential band of the blurred player, before widening (grades and gems use it). */
   potentialSeenHigh: number;
+  /** Middle of the same band (an academy-age youngster's grade uses it). */
+  potentialSeenMid: number;
   value: [number, number];
   wageDemand: number;
 }
@@ -96,15 +98,21 @@ export function seenProfile(
     overall: [r1(lo), r1(hi)],
     potential: [r1(clamp(pot[0] - noise, 0, 10)), r1(clamp(pot[1] + noise, 0, 10))],
     potentialSeenHigh: r1(pot[1]),
+    potentialSeenMid: r1((pot[0] + pot[1]) / 2),
     value: [value(lo), value(hi)],
     wageDemand: Math.round(weeklyWage(ov) * ctx.ownWageFactor),
   };
 }
 
 /** Relative note of a report: seen overall vs the own starters of the line, + half the seen growth (≤ 23). */
-export function relativeNote(seenOverall: number, potentialHigh: number, age: number, lineAverage: number): number {
+export function relativeNote(
+  seenOverall: number, potentialHigh: number, age: number, lineAverage: number, potentialMid?: number,
+): number {
   const growth = age <= S.GROWTH_AGE ? Math.max(0, potentialHigh - seenOverall) : 0;
-  return seenOverall - lineAverage + 0.5 * growth;
+  const now = seenOverall - lineAverage + 0.5 * growth;
+  // An academy-age youngster is graded on where he can get to (report 2026-11-17: every 16-year-old prospect was an E
+  // against the first team): the middle of his seen potential band against the starters.
+  return age <= S.PROSPECT_GRADE_AGE && potentialMid !== undefined ? Math.max(now, potentialMid - lineAverage) : now;
 }
 
 export function gradeOf(note: number): ScoutGrade {
@@ -136,7 +144,7 @@ export function buildReport(
   const line = lineOf(p);
   const seen = seenProfile(p, k, ctx, args.noiseMult ?? 1);
   const lineAvg = ctx.lineAverages[line] ?? 5;
-  const grade = gradeOf(relativeNote(seen.seenOverall, seen.potentialSeenHigh, p.age, lineAvg));
+  const grade = gradeOf(relativeNote(seen.seenOverall, seen.potentialSeenHigh, p.age, lineAvg, seen.potentialSeenMid));
   return {
     id: `rep_${seedFrom(`${ctx.saveId}:${args.missionId ?? "x"}:${p.id}:${ctx.date}`).toString(36)}`,
     date: ctx.date,
@@ -177,7 +185,7 @@ export function missionPool(kind: ScoutTargetKind, focus: ScoutFocus | undefined
       const seen = seenProfile(p, ctx.knowledgeOf(p.id), ctx);
       const lineAvg = ctx.lineAverages[lineOf(p)] ?? 5;
       if (focus?.improves && seen.seenOverall < lineAvg - S.IMPROVES_MARGIN) return false;
-      if (byGrade && !byGrade.includes(gradeOf(relativeNote(seen.seenOverall, seen.potentialSeenHigh, p.age, lineAvg)))) return false;
+      if (byGrade && !byGrade.includes(gradeOf(relativeNote(seen.seenOverall, seen.potentialSeenHigh, p.age, lineAvg, seen.potentialSeenMid)))) return false;
     }
     return true;
   });

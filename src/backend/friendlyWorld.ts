@@ -4,7 +4,7 @@ import type { SquadIndex } from "@/backend/squadIndex";
 import { autoLineupForFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { quickSimMatch } from "@/Domain/advanceDay/quickSim";
 import { addDays } from "@/Domain/dates";
-import { friendlyDue, friendlyPool, pickOpponent } from "@/Domain/friendlies/friendlies";
+import { friendlyDue, friendlyPool, friendlySubs, pickOpponent } from "@/Domain/friendlies/friendlies";
 import { FRIENDLY } from "@/Domain/friendlies/friendlyConfig";
 import { formationForSimId, formationForTactics } from "@/Domain/matchFormations";
 import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
@@ -109,10 +109,10 @@ export async function playFriendlyDay(args: {
 
 /** One side of a friendly applied: subs for the second half, fitness, DP, injuries; the players' lines for the message. */
 function applyFriendlySide(squad: Squad, pool: RosterPlayer[], recording: PlayedMatchRecording, date: string, rng: () => number) {
-  // Every substitution used: reserves of the pool, drawn, come on for the second half.
+  // Every substitution used: reserves of the pool come on for the second half, a new signing still settling in first
+  // (fewest games first; report 2026-11-17: the signings never came on and stayed unsettled), the rest drawn.
   const onPitch = new Set(Object.keys(recording.playerStats));
-  const subs = pool.filter((p) => !onPitch.has(p.id))
-    .map((p) => ({ p, k: rng() })).sort((a, b) => a.k - b.k).slice(0, FRIENDLY.SUBS).map((x) => x.p);
+  const subs = friendlySubs(pool.filter((p) => !onPitch.has(p.id)), FRIENDLY.SUBS, rng);
   const subIds = new Set(subs.map((p) => p.id));
   for (const p of subs) {
     recording.playerStats[p.id] = { goals: 0, assists: 0 } as (typeof recording.playerStats)[string];

@@ -55,6 +55,8 @@ export const SCOUTING = {
   /** Grade from the relative note (seen overall − own line starter average + 0.5 × seen growth if ≤ 23). */
   GRADE_THRESHOLDS: { A: 0.8, B: 0.3, C: -0.2, D: -0.7 } as const,
   GROWTH_AGE: 23,
+  /** Up to this age a report grades the middle of the potential band too (the best of the two). */
+  PROSPECT_GRADE_AGE: 19,
   GEM_MAX_AGE: 20,
   GEM_MARGIN: 0.3,
   GEMS_PER_WEEK: 2,

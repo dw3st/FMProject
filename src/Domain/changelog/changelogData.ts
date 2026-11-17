@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.8.4",
+    date: "2026-11-17",
+    time: "12:00",
+    items: [],
+    fixes: [
+      { tab: "development", pt: "Amistosos: quem ainda está em adaptação entra primeiro nas trocas do intervalo, e o jogo conta para a adaptação dele.", en: "Friendlies: players still settling in are the first to come on at half time, and the game counts for their settling." },
+      { tab: "scout", pt: "Jovens de até 19 anos encontrados pelo olheiro recebem nota pelo potencial também, não só pelo nível de hoje contra os titulares.", en: "Youngsters up to 19 found by the scouts are graded on their potential too, not only on today's level against the starters." },
+    ],
+  },
+  {
     version: "12.8.3",
     date: "2026-11-17",
     time: "11:30",
