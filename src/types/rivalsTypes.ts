@@ -113,7 +113,9 @@ export interface LiveScoreView extends LiveBase {
   updatedAt: number;
 }
 
-export type ReactionId = "applause" | "fire" | "laugh" | "sorry" | "horn";
+export type ReactionId = "applause" | "fire" | "laugh" | "sorry" | "horn"
+  // The reactions shop (`reactionShop.ts`): bought or unlocked by an achievement.
+  | "popcorn" | "dryer" | "cry" | "chicken" | "redcard" | "vuvuzela" | "drum" | "trophy" | "crown" | "wall" | "safe" | "dice";
 export type TauntKind = "reaction" | "phrase";
 /** `bet` = `<seatId>:<betId>` of a settled bet. */
 export type TauntTarget = { result: string } | { live: string } | { bet: string };

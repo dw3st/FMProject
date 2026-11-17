@@ -5621,6 +5621,7 @@
       "legends": "Lendas do clube",
       "belongings": "Bens",
       "stadium": "Estádio",
+      "reactions": "Reações",
       "courses": "Cursos"
     },
     "loading": "Carregando conquistas…",
@@ -7162,6 +7163,7 @@
       "generic": "Algo deu errado. Tente de novo.",
       "self": "Não dá para provocar a si mesmo.",
       "invalidTaunt": "Essa frase não combina com este jogo.",
+      "notOwned": "Você ainda não tem essa reação.",
       "rateLimited": "Calma, espere um pouco."
     }
   },
@@ -7286,7 +7288,19 @@
       "fire": "Fogos",
       "laugh": "Risada",
       "sorry": "Lamento",
-      "horn": "Buzina"
+      "horn": "Buzina",
+      "popcorn": "Pipoca",
+      "dryer": "Secador",
+      "cry": "Choro",
+      "chicken": "Galinha",
+      "redcard": "Cartão vermelho",
+      "vuvuzela": "Vuvuzela",
+      "drum": "Bumbo",
+      "trophy": "Taça",
+      "crown": "Coroa",
+      "wall": "Muralha",
+      "safe": "Cofre",
+      "dice": "Dado"
     },
     "taunts": {
       "live_goal_for_1": "Saiu o gol.",
@@ -8053,6 +8067,28 @@
       "behind": "atrasado",
       "reached": "alcançada",
       "missed": "não alcançada"
+    }
+  },
+  "reactionShop": {
+    "tab": "Reações",
+    "loading": "Carregando…",
+    "wallet": "Sua carteira",
+    "hint": "Reações para a resenha com os amigos. As compradas e as liberadas por conquistas ficam com você em qualquer clube.",
+    "forSale": "À venda",
+    "byAchievement": "Por conquista",
+    "owned": "Sua",
+    "listen": "Ouvir",
+    "buy": "Comprar",
+    "confirm": "Confirmar compra",
+    "cancel": "Cancelar",
+    "noMoney": "Sem dinheiro",
+    "unlockGold": "Ouro em {{name}}",
+    "unlockSecret": "Uma conquista secreta",
+    "errors": {
+      "owned": "Você já tem essa reação.",
+      "notForSale": "Essa reação só sai por conquista.",
+      "noMoney": "Dinheiro insuficiente na carteira.",
+      "generic": "Não foi possível comprar."
     }
   }
 }

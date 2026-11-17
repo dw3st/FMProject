@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.11",
+    date: "2026-11-17",
+    time: "20:30",
+    items: [
+      { tab: "manager", pt: "Loja de reações em Seu técnico: 12 reações novas para a resenha com os amigos, cada uma com som. Oito se compram com o dinheiro do técnico (pipoca, secador, choro, galinha, cartão vermelho, vuvuzela, bumbo e taça) e quatro saem por conquista (coroa, muralha, cofre e dado).", en: "Reactions shop in Your manager: 12 new reactions with sounds for teasing your friends. Eight are bought with the manager's money (popcorn, hair dryer, crying, chicken, red card, vuvuzela, bass drum and trophy) and four come from achievements (crown, wall, safe and dice)." },
+    ],
+  },
+  {
     version: "12.10.1",
     date: "2026-11-17",
     time: "19:30",
@@ -6358,6 +6366,8 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Champions e Liga Europa no formato novo: 36 clubes numa tabela única", en: "Champions League and Europa League in the new format: 36 clubs in one table" },
+  { pt: "Copa Intercontinental entre os campeões continentais", en: "Intercontinental Cup between the continental champions" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

@@ -126,6 +126,12 @@ import {
   Ellipsis,
   HeartCrack,
   Megaphone,
+  Popcorn,
+  Bird,
+  RectangleVertical,
+  Drum,
+  BrickWall,
+  Vault,
   Radio,
   ShieldCheck,
   Beer,
@@ -306,6 +312,18 @@ export type IconName =
   | "react-laugh"
   | "react-sorry"
   | "react-horn"
+  | "react-popcorn"
+  | "react-dryer"
+  | "react-cry"
+  | "react-chicken"
+  | "react-redcard"
+  | "react-vuvuzela"
+  | "react-drum"
+  | "react-trophy"
+  | "react-crown"
+  | "react-wall"
+  | "react-safe"
+  | "react-dice"
   | "radio"
   | "ban"
   | "more"
@@ -486,6 +504,18 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "react-laugh":    Laugh,
   "react-sorry":    HeartCrack,
   "react-horn":     Megaphone,
+  "react-popcorn": Popcorn,
+  "react-dryer": Wind,
+  "react-cry": Frown,
+  "react-chicken": Bird,
+  "react-redcard": RectangleVertical,
+  "react-vuvuzela": Volume2,
+  "react-drum": Drum,
+  "react-trophy": Trophy,
+  "react-crown": Crown,
+  "react-wall": BrickWall,
+  "react-safe": Vault,
+  "react-dice": Dices,
   "radio":          Radio,
   "ban": Ban,
   "more": Ellipsis,

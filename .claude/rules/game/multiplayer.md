@@ -1021,3 +1021,8 @@ Buzina (12.8.1, pedido do usuário): quinta reação, `horn`, para zoar o amigo.
 ### Reações: fogos e limite de som (12.9)
 
 Pedido do usuário. A reação `fire` aparece como Fogos: medalha pintada de fogos (`taunts/reaction-fireworks.png`), ícone desenhado `Sparkles` e seis gravações de fogos (Freesound, CC0, escolhidas pelo usuário); a Risada tem cinco. Sons de reação (enviados e recebidos juntos): um por vez, no mínimo 3 s entre eles, e depois de 5 em 30 s ficam mudos por 1 min (`REACTION_SOUND_LIMIT`, `allowReactionSound`, `reactionSounds.ts`). A reação continua indo para o chat; só o som é cortado.
+
+### Loja de reações (12.11)
+
+Ideia de tester, aprovada pelo usuário. `src/Domain/rivals/reactionShop.ts` (com teste): as 5 reações de antes são grátis (`FREE_REACTIONS`); 12 novas (`SHOP_REACTIONS`): 8 compradas com a carteira do técnico (pipoca €200 mil, secador e choro €300 mil, galinha e cartão vermelho €500 mil, vuvuzela €1M, bumbo €2M, taça €5M; `SeatState.managerReactions`, `managerSpent`) e 4 liberadas por conquista (coroa `league_titles:gold`, muralha `unbeaten_run:gold`, cofre `career_earnings:gold`, dado `secret:bet_longshot`, lidas do `achievements.json` na hora). `GET/POST /api/saves/:id/manager-reactions` (409 `owned` / `notForSale` / `noMoney`, 400 `invalidReaction`); a rota de provocação recusa uma reação que o técnico não tem (403 `notOwned`). Tela: aba Reações em "Seu técnico" (`ReactionsTab`, ouvir antes de comprar); `TauntActions` mostra só as que ele tem (`useOwnedReactions`). Ícones pintados no FLUX (`data_process/assets/reaction_shop_icons.py`), sons CC0 do Freesound escolhidos pelo usuário (`data_process/assets/audio/shop_sounds.py`).
+

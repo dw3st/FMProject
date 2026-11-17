@@ -96,7 +96,7 @@ export interface WorldInviteView {
 export type WorldErrorCode =
   | "notFound" | "full" | "alreadyMember" | "clubTaken" | "invalidManager" | "invalidClub" | "invalidBody"
   | "ownerOnly" | "transferFirst" | "alreadyStarted" | "notMulti" | "inviteLimit" | "noNickname" | "useLeave"
-  | "notMember" | "tooLarge" | "ownerLimit" | "generic" | "lobby" | "self" | "invalidTaunt" | "rateLimited" | "publicWorld";
+  | "notMember" | "tooLarge" | "ownerLimit" | "generic" | "lobby" | "self" | "invalidTaunt" | "notOwned" | "rateLimited" | "publicWorld";
 
 /** `GET /api/worlds/public`: the public world for the lobby screens. */
 export interface PublicWorldInfo {

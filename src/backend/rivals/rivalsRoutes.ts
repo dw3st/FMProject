@@ -5,6 +5,7 @@ import { fail, multiWorld, readBody } from "@/backend/worlds/worldRoutes";
 import { getSocialUser, chatMessageView, insertMessage, markRead } from "@/backend/social/socialStore";
 import { deliverMessage } from "@/backend/social/realtime";
 import { allowChatSend } from "@/backend/social/socialRoutes";
+import { FREE_REACTIONS, ownedReactions } from "@/Domain/rivals/reactionShop";
 import { betGroups, betTauntMeta, isReaction, isTauntFor, liveGroups, tauntFallbackBody, tauntMeta } from "@/Domain/rivals/taunts";
 import { standingsView } from "@/backend/standingsWorld";
 import { worldRoomId } from "@/Domain/social/rooms";
@@ -125,6 +126,8 @@ export const rivalsRoutes = {
       const kind = body.kind as TauntKind;
       const id = body.id;
       const target = body.target as Record<string, unknown> | null | undefined;
+      // A shop reaction only from a manager who bought or unlocked it (`reactionShop.ts`).
+      if (kind === "reaction" && typeof id === "string" && isReaction(id) && !(await ownsReaction(m.saveId, m.seatId, id))) return fail("notOwned", 403);
       const resultId = typeof target?.result === "string" ? target.result : null;
       const liveSeat = typeof target?.live === "string" ? target.live : null;
       const betKey = typeof target?.bet === "string" && target.bet.length <= 120 ? target.bet : null;
@@ -162,6 +165,13 @@ export const rivalsRoutes = {
     },
   },
 };
+
+async function ownsReaction(saveId: string, seatId: string, id: string): Promise<boolean> {
+  if ((FREE_REACTIONS as readonly string[]).includes(id)) return true;
+  const seat = await saveService.getSeat(saveId, seatId);
+  const achievements = await saveService.getAchievements(saveId, seatId);
+  return (ownedReactions(seat?.managerReactions, achievements.unlocked) as string[]).includes(id);
+}
 
 /** Writes the taunt into the league's chat and delivers it. */
 function sendTaunt(m: { saveId: string; userId: string }, id: string, taunt: TauntMeta, now = Date.now()): Response {

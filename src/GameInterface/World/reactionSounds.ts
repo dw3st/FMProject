@@ -12,6 +12,18 @@ export const REACTION_SOUNDS: Record<ReactionId, readonly string[]> = {
   laugh: ["audio/taunt-laugh-1.mp3", "audio/taunt-laugh-2.mp3", "audio/taunt-laugh-3.mp3", "audio/taunt-laugh-4.mp3", "audio/taunt-laugh-5.mp3"],
   sorry: ["audio/taunt-sorry-1.mp3", "audio/taunt-sorry-2.mp3"],
   horn: ["audio/taunt-horn-1.mp3", "audio/taunt-horn-2.mp3"],
+  popcorn: ["audio/taunt-popcorn-1.mp3", "audio/taunt-popcorn-2.mp3"],
+  dryer: ["audio/taunt-dryer-1.mp3", "audio/taunt-dryer-2.mp3", "audio/taunt-dryer-3.mp3"],
+  cry: ["audio/taunt-cry-1.mp3", "audio/taunt-cry-2.mp3"],
+  chicken: ["audio/taunt-chicken-1.mp3", "audio/taunt-chicken-2.mp3", "audio/taunt-chicken-3.mp3"],
+  redcard: ["audio/taunt-redcard-1.mp3"],
+  vuvuzela: ["audio/taunt-vuvuzela-1.mp3"],
+  drum: ["audio/taunt-drum-1.mp3"],
+  trophy: ["audio/taunt-trophy-1.mp3", "audio/taunt-trophy-2.mp3", "audio/taunt-trophy-3.mp3"],
+  crown: ["audio/taunt-crown-1.mp3", "audio/taunt-crown-2.mp3", "audio/taunt-crown-3.mp3"],
+  wall: ["audio/taunt-wall-1.mp3", "audio/taunt-wall-2.mp3"],
+  safe: ["audio/taunt-safe-1.mp3", "audio/taunt-safe-2.mp3", "audio/taunt-safe-3.mp3"],
+  dice: ["audio/taunt-dice-1.mp3", "audio/taunt-dice-2.mp3", "audio/taunt-dice-3.mp3", "audio/taunt-dice-4.mp3"],
 };
 
 /** Painted medal of each reaction (FLUX, option A). */
@@ -21,6 +33,18 @@ export const REACTION_ART: Record<ReactionId, string> = {
   laugh: "taunts/reaction-laugh.png",
   sorry: "taunts/reaction-sorry.png",
   horn: "taunts/reaction-horn.png",
+  popcorn: "taunts/reaction-popcorn.png",
+  dryer: "taunts/reaction-dryer.png",
+  cry: "taunts/reaction-cry.png",
+  chicken: "taunts/reaction-chicken.png",
+  redcard: "taunts/reaction-redcard.png",
+  vuvuzela: "taunts/reaction-vuvuzela.png",
+  drum: "taunts/reaction-drum.png",
+  trophy: "taunts/reaction-trophy.png",
+  crown: "taunts/reaction-crown.png",
+  wall: "taunts/reaction-wall.png",
+  safe: "taunts/reaction-safe.png",
+  dice: "taunts/reaction-dice.png",
 };
 
 /** One of the reaction's recordings, `roll` in [0, 1). */

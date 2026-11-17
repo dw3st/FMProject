@@ -5624,6 +5624,7 @@
       "legends": "Club legends",
       "belongings": "Belongings",
       "stadium": "Stadium",
+      "reactions": "Reactions",
       "courses": "Courses"
     },
     "loading": "Loading achievements…",
@@ -7165,6 +7166,7 @@
       "generic": "Something went wrong. Try again.",
       "self": "You can't wind yourself up.",
       "invalidTaunt": "That line doesn't fit this game.",
+      "notOwned": "You don't have that reaction yet.",
       "rateLimited": "Easy, wait a moment."
     }
   },
@@ -7289,7 +7291,19 @@
       "fire": "Fireworks",
       "laugh": "Laugh",
       "sorry": "Commiserations",
-      "horn": "Honk"
+      "horn": "Honk",
+      "popcorn": "Popcorn",
+      "dryer": "Hair dryer",
+      "cry": "Crying",
+      "chicken": "Chicken",
+      "redcard": "Red card",
+      "vuvuzela": "Vuvuzela",
+      "drum": "Bass drum",
+      "trophy": "Trophy",
+      "crown": "Crown",
+      "wall": "Wall",
+      "safe": "Safe",
+      "dice": "Dice"
     },
     "taunts": {
       "live_goal_for_1": "There it is.",
@@ -8065,6 +8079,28 @@
       "behind": "behind",
       "reached": "reached",
       "missed": "missed"
+    }
+  },
+  "reactionShop": {
+    "tab": "Reactions",
+    "loading": "Loading…",
+    "wallet": "Your wallet",
+    "hint": "Reactions for teasing your friends. The ones you buy or unlock with achievements stay with you at any club.",
+    "forSale": "For sale",
+    "byAchievement": "By achievement",
+    "owned": "Yours",
+    "listen": "Listen",
+    "buy": "Buy",
+    "confirm": "Confirm purchase",
+    "cancel": "Cancel",
+    "noMoney": "Not enough money",
+    "unlockGold": "Gold in {{name}}",
+    "unlockSecret": "A secret achievement",
+    "errors": {
+      "owned": "You already have this reaction.",
+      "notForSale": "This reaction only comes from an achievement.",
+      "noMoney": "Not enough money in your wallet.",
+      "generic": "Could not buy it."
     }
   }
 }

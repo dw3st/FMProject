@@ -5,10 +5,47 @@ import { saveService } from "@/backend/SaveService";
 import { DECOR_ITEMS, decorRefusal, isDecorItem } from "@/Domain/achievements/decorShop";
 import { coursePrice, courseRefusal, isCourseLanguage, LICENCE_KINDS, spokenLanguages, startCourse, type CourseKind } from "@/Domain/managers/courses";
 import { assetRefusal, isAssetKind, managerWallet, nextAssetPrice } from "@/Domain/managers/assets";
+import { SHOP_REACTIONS, SHOP_REACTION_IDS, isShopReaction, ownedReactions, reactionRefusal } from "@/Domain/rivals/reactionShop";
 
 type Req = Request & { params: Record<string, string> };
 
 export const managerAssetRoutes = {
+  /**
+   * The reactions shop (`reactionShop.ts`): GET lists every shop reaction (price or unlocking achievement, owned) and the
+   * manager's wallet; POST `{ id }` buys one with his own money (409 `owned` / `notForSale` / `noMoney`).
+   */
+  "/api/saves/:saveId/manager-reactions": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method === "GET") {
+      const seat = await saveService.getSeat(saveId, auth.seatId);
+      if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
+      const achievements = await saveService.getAchievements(saveId, auth.seatId);
+      const owned = ownedReactions(seat.managerReactions, achievements.unlocked);
+      const bets = await saveService.getBets(saveId, auth.seatId);
+      return Response.json({
+        owned,
+        wallet: managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets)),
+        shop: SHOP_REACTION_IDS.map((id) => ({ id, ...SHOP_REACTIONS[id], owned: owned.includes(id) })),
+      });
+    }
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await req.json().catch(() => null) as { id?: unknown } | null;
+    const id = body?.id;
+    if (!isShopReaction(id)) return Response.json({ error: "invalidReaction" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const seat = await saveService.getSeat(saveId, auth.seatId);
+      if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
+      const bets = await saveService.getBets(saveId, auth.seatId);
+      const refusal = reactionRefusal(seat.managerReactions, id, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets)));
+      if (refusal) return Response.json({ error: refusal }, { status: 409 });
+      const managerReactions = [...(seat.managerReactions ?? []), id];
+      const managerSpent = (seat.managerSpent ?? 0) + SHOP_REACTIONS[id].price!;
+      await saveService.updateSeat(saveId, auth.seatId, { managerReactions, managerSpent });
+      return Response.json({ managerReactions, managerSpent });
+    });
+  },
   /** The manager buys the next level of a personal asset with his own money (never the club's). */
   "/api/saves/:saveId/manager-assets": async (req: Req) => {
     const saveId = req.params.saveId!;

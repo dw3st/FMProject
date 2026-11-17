@@ -7,7 +7,8 @@ import { playReactionSound } from "@/GameInterface/World/reactionSounds";
 import type { ReactionId } from "@/types/rivalsTypes";
 import { rivalsApi } from "@/GameInterface/World/rivalsApi";
 import type { WorldApiError } from "@/GameInterface/World/worldApi";
-import { REACTIONS, tauntTone, tauntsFor } from "@/Domain/rivals/taunts";
+import { tauntTone, tauntsFor } from "@/Domain/rivals/taunts";
+import { useOwnedReactions } from "@/GameInterface/World/ownedReactions";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import type { TauntGroup, TauntKind, TauntTarget } from "@/types/rivalsTypes";
 
@@ -22,6 +23,7 @@ export function TauntActions({ saveId, target, groups }: { saveId: string; targe
   const [status, setStatus] = useState<"sent" | WorldApiError | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const phrases = tauntsFor(groups).slice(0, RIVALS.MENU_PHRASES);
+  const owned = useOwnedReactions(saveId);
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
@@ -39,8 +41,8 @@ export function TauntActions({ saveId, target, groups }: { saveId: string; targe
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1" role="group" aria-label={t("rivals.actionsLabel")}>
-        {REACTIONS.map((id) => (
+      <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("rivals.actionsLabel")}>
+        {owned.map((id) => (
           <button
             key={id}
             type="button"

@@ -70,5 +70,26 @@ describe("manager assets route", () => {
     const after = (await saveService.getSeat(saveId, seatId))!;
     expect(after.managerDecor).toEqual(["heart"]);
     expect(after.managerSpent).toBe(total + DECOR_ITEMS.heart.price);
+
+    // The reactions shop (12.11): bought once from the same wallet; achievement ones are not for sale.
+    const reactions = async (method: "GET" | "POST", body?: unknown) => {
+      const handler = apiRoutes["/api/saves/:saveId/manager-reactions" as keyof typeof apiRoutes] as unknown as (r: Request) => Promise<Response>;
+      const res = await handler(Object.assign(
+        new Request(`http://localhost/api/saves/${saveId}/manager-reactions`, {
+          method, headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        }),
+        { params: { saveId } },
+      ));
+      return { status: res.status, data: await res.json() as Record<string, any> };
+    };
+    expect((await reactions("GET")).data.owned).toEqual(["applause", "fire", "laugh", "sorry", "horn"]);
+    expect((await reactions("POST", { id: "applause" })).status).toBe(400);
+    expect((await reactions("POST", { id: "crown" })).data.error).toBe("notForSale");
+    expect((await reactions("POST", { id: "popcorn" })).data.error).toBe("noMoney");
+    await saveService.updateSeat(saveId, seatId, { managerEarnings: total + DECOR_ITEMS.heart.price + 200_000 });
+    expect((await reactions("POST", { id: "popcorn" })).status).toBe(200);
+    expect((await reactions("POST", { id: "popcorn" })).data.error).toBe("owned");
+    expect((await reactions("GET")).data.owned).toContain("popcorn");
   }, 60_000);
 });
