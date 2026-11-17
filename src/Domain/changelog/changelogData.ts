@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.13",
+    date: "2026-11-17",
+    time: "21:00",
+    items: [
+      { tab: "leagues", pt: "Champions e Liga Europa no formato novo: 36 clubes numa tabela única, 8 jogos cada contra adversários de 4 potes. Do 1º ao 8º vão direto às oitavas, do 9º ao 24º jogam um playoff de ida e volta, do 25º em diante estão fora. Oitavas, quartas e semis seguem uma chave fixa pela posição.", en: "Champions League and Europa League in the new format: 36 clubs in one table, 8 matches each against opponents from 4 pots. 1st to 8th go straight to the round of 16, 9th to 24th play a two-legged play-off, 25th and below are out. The round of 16, quarter-finals and semis follow a fixed bracket by position." },
+      { tab: "leagues", pt: "Aba Continental: a tabela da fase de liga com as faixas, os jogos de cada rodada e o mata-mata.", en: "Continental tab: the league-phase table with its bands, the matches of each round and the knockout stage." },
+    ],
+    fixes: [
+      { tab: "general", pt: "Mundos em andamento terminam a temporada continental atual em grupos; o formato novo começa na próxima.", en: "Worlds in progress finish the current continental season in groups; the new format starts with the next one." },
+    ],
+  },
+  {
     version: "12.12.1",
     date: "2026-11-17",
     time: "19:05",
@@ -6392,7 +6404,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Champions e Liga Europa no formato novo: 36 clubes numa tabela única", en: "Champions League and Europa League in the new format: 36 clubs in one table" },
   { pt: "Copa Intercontinental entre os campeões continentais", en: "Intercontinental Cup between the continental champions" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
