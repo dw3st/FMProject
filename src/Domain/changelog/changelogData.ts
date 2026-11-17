@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.8.5",
+    date: "2026-11-17",
+    time: "16:33",
+    items: [
+      { tab: "friends", pt: "A reação Fogo agora toca fogos de artifício.", en: "The Fire reaction now plays fireworks." },
+    ],
+  },
+  {
     version: "12.8.4",
     date: "2026-11-17",
     time: "12:00",

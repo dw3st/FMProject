@@ -201,7 +201,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "audio/chat-message.mp3": "audio/mpeg",
   "audio/taunt-applause-1.mp3": "audio/mpeg",
   "audio/taunt-applause-2.mp3": "audio/mpeg",
-  "audio/taunt-fire-1.mp3": "audio/mpeg",
+  "audio/taunt-fireworks-3.mp3": "audio/mpeg",
   "audio/taunt-laugh-1.mp3": "audio/mpeg",
   "audio/taunt-laugh-2.mp3": "audio/mpeg",
   "audio/taunt-sorry-1.mp3": "audio/mpeg",
