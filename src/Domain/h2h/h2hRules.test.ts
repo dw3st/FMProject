@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { CUSTOM_PRESETS } from "@/Domain/formation/zones";
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import {
   canPause, canResume, closeRoom, endPause, finishRoom, joinRoom, leaveRoom, newRoom,
@@ -197,6 +198,9 @@ describe("parseH2HCommand", () => {
     expect(parseH2HCommand({ kind: "tactics", style: "balanced", axesOverride: { width: "wide" } }))
       .toEqual({ kind: "tactics", style: "balanced", axesOverride: { width: "wide" } });
     expect(parseH2HCommand({ kind: "formation", formation: "4-4-2" })).toEqual({ kind: "formation", formation: "4-4-2" });
+    const custom = CUSTOM_PRESETS["4-1-3-2"]!;
+    expect(parseH2HCommand({ kind: "formation", formation: "user:free", custom })).toEqual({ kind: "formation", formation: "user:free", custom });
+    expect(parseH2HCommand({ kind: "formation", formation: "user:C", custom })?.formation).toBe("user:C");
     expect(parseH2HCommand({ kind: "instruction", slot: 1, instruction: { variant: "fb_inverted", press: "more" } }))
       .toEqual({ kind: "instruction", slot: 1, instruction: { variant: "fb_inverted", press: "more" } });
     expect(parseH2HCommand({ kind: "instruction", slot: 10, instruction: null }))
@@ -223,6 +227,11 @@ describe("parseH2HCommand", () => {
       { kind: "tactics", style: "balanced", axesOverride: null },
       { kind: "formation", formation: "custom" },
       { kind: "formation", formation: "2-3-5" },
+      { kind: "formation", formation: "4-4-2", custom: CUSTOM_PRESETS["4-1-3-2"] },
+      { kind: "formation", formation: "user:G", custom: CUSTOM_PRESETS["4-1-3-2"] },
+      { kind: "formation", formation: "user:A", custom: { slots: CUSTOM_PRESETS["4-1-3-2"]!.slots.slice(0, 10) } },
+      { kind: "formation", formation: "user:A", custom: { slots: CUSTOM_PRESETS["4-1-3-2"]!.slots.map((s) => ({ ...s, role: "GK" })) } },
+      { kind: "formation", formation: "user:A", custom: "4-1-3-2" },
       { kind: "instruction", slot: 11, instruction: null },
       { kind: "instruction", slot: -1, instruction: null },
       { kind: "instruction", slot: 2, instruction: { variant: "magic" } },

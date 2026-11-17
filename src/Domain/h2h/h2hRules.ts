@@ -1,6 +1,6 @@
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import { FORMATION_IDS } from "@/Domain/matchFormations";
-import { parseAxesOverride } from "@/Domain/formation/zones";
+import { parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { isRoleVariantId } from "@/GameEngine/Configs/RoleVariantConfig";
 import { MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import type { Mentality, PressLevel, SlotInstruction, TacticalStyle } from "@/types/tacticsTypes";
@@ -197,6 +197,9 @@ function parseInstruction(v: unknown): SlotInstruction | null | undefined {
 }
 
 /** Validates an untrusted command from a socket; null when its shape or limits are wrong. */
+/** Id of a manager's own formation in the live match: the free one or a saved line-up's. */
+const USER_FORMATION_ID = /^user:(free|[A-F])$/;
+
 export function parseH2HCommand(raw: unknown): H2HCommand | null {
   if (!isObj(raw) || typeof raw.kind !== "string") return null;
   switch (raw.kind) {
@@ -228,9 +231,16 @@ export function parseH2HCommand(raw: unknown): H2HCommand | null {
       if (axes === null) return null;
       return { kind: "tactics", style, axesOverride: axes };
     }
-    case "formation":
-      if (!hasOnly(raw, ["kind", "formation"]) || typeof raw.formation !== "string" || !FORMATION_IDS.includes(raw.formation)) return null;
-      return { kind: "formation", formation: raw.formation };
+    case "formation": {
+      if (!hasOnly(raw, ["kind", "formation", "custom"]) || typeof raw.formation !== "string") return null;
+      if (raw.custom === undefined) {
+        return FORMATION_IDS.includes(raw.formation) ? { kind: "formation", formation: raw.formation } : null;
+      }
+      // The manager's own formation: his id for it and the slots, checked like the Formation screen.
+      if (!USER_FORMATION_ID.test(raw.formation)) return null;
+      const custom = parseCustomFormation(raw.custom);
+      return custom ? { kind: "formation", formation: raw.formation, custom } : null;
+    }
     case "instruction": {
       if (!hasOnly(raw, ["kind", "slot", "instruction"]) || !isSlot(raw.slot)) return null;
       const instruction = parseInstruction(raw.instruction);

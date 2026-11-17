@@ -1,6 +1,6 @@
 import type { GamePlayer, GameState, MatchPhase, PenaltyOutcome } from "@/GameEngine/types";
 import type { LiveMatchInput } from "@/Domain/match/liveMatchSetup";
-import type { Mentality, SlotInstruction, TacticalAxes, TacticalStyle } from "@/types/tacticsTypes";
+import type { CustomFormation, Mentality, SlotInstruction, TacticalAxes, TacticalStyle } from "@/types/tacticsTypes";
 import type { StatsSnapshot, TeamStats, GoalLogEntry } from "@/GameEngine/Domain/Statistics";
 
 /** Engine side of a live match between two managers: A = home. */
@@ -49,7 +49,11 @@ export type H2HCommand =
   | { kind: "move"; id: number; slot: number }
   | { kind: "mentality"; mentality: Mentality }
   | { kind: "tactics"; style: TacticalStyle; axesOverride?: Partial<TacticalAxes> }
-  | { kind: "formation"; formation: string }
+  /**
+   * A ready-made formation by id, or one of the manager's own (`user:free`, `user:A`…) with its slots in `custom`
+   * (validated like the Formation screen's free formation).
+   */
+  | { kind: "formation"; formation: string; custom?: CustomFormation }
   | { kind: "instruction"; slot: number; instruction: SlotInstruction | null }
   | { kind: "marks"; marks: { markerSlot: number; targetId: number }[] }
   /** The manager complains about the last call against his side (9.6.5): the server decides the card. */

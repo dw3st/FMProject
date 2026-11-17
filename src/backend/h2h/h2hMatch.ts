@@ -24,6 +24,7 @@ import type { GameState, PenaltyOutcome, TeamId } from "@/GameEngine/types";
 import { buildLiveMatchState, type LiveMatchInput, type LiveSideTactics } from "@/Domain/match/liveMatchSetup";
 import { applyLiveTactics } from "@/Domain/tactics/liveTactics";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
+import { customToFormation } from "@/Domain/formation/zones";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import type { H2HCommand, H2HSide, H2HStatsPayload, WorkerOut } from "@/types/h2hTypes";
@@ -219,7 +220,9 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
           retick();
           break;
         case "formation": {
-          const formation = formationForSimId(cmd.formation);
+          const formation = cmd.custom
+            ? { ...customToFormation(cmd.custom), id: cmd.formation }
+            : formationForSimId(cmd.formation);
           state = changeFormation(state, side, formation);
           // A variant the new slot's role does not accept falls back to the default (the pressing stays).
           const list = sanitizeSlotInstructions(formation, state.slotInstructions?.[side]);

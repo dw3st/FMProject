@@ -9,7 +9,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import type { Fixture } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
-import { userFormationsOf } from "@/GameInterface/userFormations";
+import { h2hFormationCommand, userFormationsOf } from "@/GameInterface/userFormations";
 import type { UserFormation } from "@/GameInterface/SubstitutionPanel";
 import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
@@ -132,7 +132,6 @@ import { Icon } from "@/GameInterface/Icons";
 import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
 import { MatchTacticsBar } from "@/GameInterface/MatchTacticsBar";
 import { savedSlotMoves, shortcutInstructions, shortcutLocked, type ShortcutUse } from "@/Domain/match/tacticShortcuts";
-import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -1650,11 +1649,13 @@ export function MatchScreen() {
     if (shortcutLocked(shortcutUse, minute, gs.matchPhase)) return;
     const instructions = shortcutInstructions(preset);
     if (h2hMode) {
-      // The server only knows the ready-made formations: a free one keeps the shape on the pitch.
-      if (preset.formation !== CUSTOM_FORMATION_ID) sendH2H({ kind: "formation", formation: preset.formation });
+      // A free formation goes with its slots; a ready-made one by its id.
+      const own = userFormations.find((u) => u.id === `user:${key}`);
+      const formationCmd = h2hFormationCommand(own, preset.formation);
+      if (formationCmd) sendH2H(formationCmd);
       instructions.forEach((instruction, slot) => sendH2H({ kind: "instruction", slot, instruction }));
       // Same shape on the pitch: put each starter in his saved slot too (another shape is reorganised by the server).
-      const sameShape = preset.formation === (mySide === "A" ? gs.formationA : gs.formationB).id;
+      const sameShape = formationCmd?.formation === (mySide === "A" ? gs.formationA : gs.formationB).id;
       if (sameShape) {
         const mine = gs.players.filter((p) => p.team === mySide);
         for (const m of savedSlotMoves(mine, preset.lineup, 11)) sendH2H(m);
@@ -1687,7 +1688,11 @@ export function MatchScreen() {
   }
 
   function handleChangeFormation(formationId: string) {
-    if (h2hMode) { sendH2H({ kind: "formation", formation: formationId }); return; }
+    if (h2hMode) {
+      const cmd = h2hFormationCommand(userFormations.find((u) => u.id === formationId), formationId);
+      if (cmd) sendH2H(cmd);
+      return;
+    }
     setGameState((prev) => {
       if (!prev) return prev;
       const newFormation = userFormations.find((u) => u.id === formationId)?.formation ?? formationForSimId(formationId);
@@ -2464,7 +2469,7 @@ export function MatchScreen() {
             onMoveToSlot: handleMoveToSlot,
             onFillVacancy: handleFillVacancy,
             onChangeFormation: (id: string) => { setActiveShortcut(null); handleChangeFormation(id); },
-            ...(h2hMode ? {} : { userFormations }),
+            userFormations,
             onInstruction: handleInstruction,
             onManMarks: handleManMarks,
             liveTactics: {

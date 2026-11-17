@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import { CUSTOM_FORMATION_ID, customToFormation } from "@/Domain/formation/zones";
-import { formationForSimId } from "@/Domain/matchFormations";
+import { FORMATION_IDS, formationForSimId } from "@/Domain/matchFormations";
+import type { H2HCommand } from "@/types/h2hTypes";
 import type { TacticsSave } from "@/types/tacticsTypes";
 import type { UserFormation } from "@/GameInterface/SubstitutionPanel";
 
@@ -11,19 +12,28 @@ import type { UserFormation } from "@/GameInterface/SubstitutionPanel";
 export function userFormationsOf(tactics: TacticsSave | undefined, t: TFunction): UserFormation[] {
   const out: UserFormation[] = [];
   if (tactics?.customFormation) {
-    out.push({ id: "user:free", label: t("substitutionPanel.freeFormation"), formation: { ...customToFormation(tactics.customFormation), id: "user:free" } });
+    out.push({ id: "user:free", label: t("substitutionPanel.freeFormation"), formation: { ...customToFormation(tactics.customFormation), id: "user:free" }, custom: tactics.customFormation });
   }
   for (const key of ["A", "B", "C"] as const) {
     const preset = tactics?.lineupPresets?.[key];
     if (!preset) continue;
-    const base = preset.formation === CUSTOM_FORMATION_ID && preset.customFormation
-      ? customToFormation(preset.customFormation)
-      : formationForSimId(preset.formation);
+    const custom = preset.formation === CUSTOM_FORMATION_ID ? preset.customFormation : undefined;
+    const base = custom ? customToFormation(custom) : formationForSimId(preset.formation);
     const name = preset.formation === CUSTOM_FORMATION_ID ? t("substitutionPanel.freeShort") : preset.formation;
     const label = preset.name
       ? t("substitutionPanel.presetNamed", { name: preset.name, formation: name })
       : t("substitutionPanel.presetFormation", { key, formation: name });
-    out.push({ id: `user:${key}`, label, formation: { ...base, id: `user:${key}` } });
+    out.push({ id: `user:${key}`, label, formation: { ...base, id: `user:${key}` }, ...(custom ? { custom } : { readyId: preset.formation }) });
   }
   return out;
+}
+
+/**
+ * The formation command of a match between two managers: one of his own formations goes with its slots (a free one)
+ * or by its ready-made id; anything else only when it is a ready-made formation. Null = nothing the server takes.
+ */
+export function h2hFormationCommand(own: UserFormation | undefined, fallbackId: string): Extract<H2HCommand, { kind: "formation" }> | null {
+  if (own?.custom) return { kind: "formation", formation: own.id, custom: own.custom };
+  const id = own?.readyId ?? fallbackId;
+  return FORMATION_IDS.includes(id) ? { kind: "formation", formation: id } : null;
 }

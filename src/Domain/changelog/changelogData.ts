@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.9",
+    date: "2026-11-17",
+    time: "17:00",
+    items: [
+      { tab: "match", pt: "Jogo ao vivo entre técnicos: suas formações livres e as das escalações salvas aparecem na troca de formação e nos atalhos de tática.", en: "Live match between managers: your free formations and those of your saved line-ups show up in the formation change and the tactic shortcuts." },
+    ],
+  },
+  {
     version: "12.8.5",
     date: "2026-11-17",
     time: "16:33",

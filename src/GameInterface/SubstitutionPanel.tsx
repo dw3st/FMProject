@@ -12,7 +12,7 @@ import { Chip } from "@/GameInterface/ui/Chip";
 import { SlotInstructionChips, useInstructionShort } from "@/GameInterface/Components/SlotInstructionChips";
 import { ManMarkingPanel } from "@/GameInterface/Components/ManMarkingPanel";
 import { SubsPitchView, averageRating, displayRating10 } from "@/GameInterface/Components/SubsPitchView";
-import type { SlotInstruction } from "@/types/tacticsTypes";
+import type { CustomFormation, SlotInstruction } from "@/types/tacticsTypes";
 import { FormationPreview } from "@/GameInterface/Components/FormationPreview";
 import { Button } from "@/GameInterface/ui/Button";
 import { LiveTacticsPanel } from "@/GameInterface/Components/LiveTacticsPanel";
@@ -55,7 +55,15 @@ export interface SubstitutionPanelProps {
 const FORMATION_LIST = [...FORMATION_IDS];
 
 /** A formation the manager made: his saved free formation or one of his saved lineups. */
-export interface UserFormation { id: string; label: string; formation: Formation }
+export interface UserFormation {
+  id: string;
+  label: string;
+  formation: Formation;
+  /** The free formation's slots, sent to the server in a match between two managers. */
+  custom?: CustomFormation;
+  /** The ready-made formation a saved line-up uses. */
+  readyId?: string;
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 

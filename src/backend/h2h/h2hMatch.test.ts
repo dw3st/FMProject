@@ -6,6 +6,7 @@ import { getDefenseConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { getTeamPassConfig } from "@/GameEngine/Configs/AttackConfig";
 import { eligibleLivePlayers, type LiveMatchInput, type LiveSideInput } from "@/Domain/match/liveMatchSetup";
 import { formationForSimId } from "@/Domain/matchFormations";
+import { CUSTOM_PRESETS } from "@/Domain/formation/zones";
 import type { Squad } from "@/types/playerTypes";
 import type { WorkerOut } from "@/types/h2hTypes";
 
@@ -111,6 +112,15 @@ describe("createH2HMatch", () => {
     expect(JSON.stringify(getDefenseConfig("A"))).toBe(defA);
     expect(JSON.stringify(getTeamPassConfig("A"))).toBe(passA);
     expect(ofType(out, "state")).toHaveLength(1);
+  });
+
+  test("a free formation command reshapes that side only", () => {
+    match = createH2HMatch(input());
+    const custom = CUSTOM_PRESETS["3-2-4-1"]!;
+    match.command("B", { kind: "formation", formation: "user:A", custom });
+    expect(match.state.formationB.id).toBe("user:A");
+    expect(match.state.formationB.attacking.map((s) => s.role)).toEqual(custom.slots.map((s) => s.role));
+    expect(match.state.formationA.id).toBe("4-3-3");
   });
 
   test("a sub command substitutes for that side at the next stoppage", () => {

@@ -545,7 +545,7 @@ frame sends the browser to `/match-live`, as before.
 
 ## Formações do técnico na partida (8.9.37)
 
-Report de tester. A aba Formação do painel ao vivo lista "Minhas formações": a formação livre salva (`user:free`) e a de cada escalação salva (`user:A|B|C`, `userFormationsOf`, `src/GameInterface/userFormations.ts`). Só a formação muda (a reorganização de sempre); só na partida sozinho (o servidor do jogo entre técnicos só conhece as prontas). As bolas paradas dessas formações são geradas das vagas.
+Report de tester. A aba Formação do painel ao vivo lista "Minhas formações": a formação livre salva (`user:free`) e a de cada escalação salva (`user:A|B|C`, `userFormationsOf`, `src/GameInterface/userFormations.ts`). Só a formação muda (a reorganização de sempre); desde a 12.9 também no jogo entre técnicos: a formação livre vai no comando `formation` com as vagas (`custom`, id `user:free` ou `user:A`–`F`, `h2hFormationCommand`), e o servidor confere com `parseCustomFormation`, a mesma regra da tela de Formação; uma escalação salva numa formação pronta vai pelo id dela. Os atalhos de tática embaixo do campo também trocam para a formação livre. As bolas paradas dessas formações são geradas das vagas.
 
 # Live match polish (10.1)
 
