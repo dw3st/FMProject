@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer } from "@/types/playerTypes";
-import { LINEUP_PRESET_KEYS, MATCH_PRESET_KEYS, copyPreset, exportPreset, firstFreeSlot, importPreset, isMatchPreset } from "@/Domain/tactics/lineupPresets";
+import { LINEUP_PRESET_KEYS, MATCH_PRESET_KEYS, copyPreset, exportPreset, firstFreeSlot, importPreset, isMatchPreset, rememberedLineup } from "@/Domain/tactics/lineupPresets";
 import type { LineupPreset } from "@/types/tacticsTypes";
 import {
   applyLineupPreset, buildLineupPreset, cleanPresetName, parseLineupPresets, PRESET_NAME_MAX, presetDisplayName, type PresetReplacement,
@@ -125,28 +125,24 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual([]);
   });
 
-  test("saved starters stay: departed, injured and suspended ones leave their slots empty", () => {
+  test("saved starters stay: only departed ones leave their slots; injured, suspended and called-up stay", () => {
     const st = roles.indexOf("ST");
     const cb = roles.indexOf("CB");
     const gk = roles.indexOf("GK");
+    const lb = roles.indexOf("LB");
     const injured = { ...starters[st]!, injury: { severity: "light" as const, returnDate: "2027-03-20" } };
     const suspended = { ...starters[cb]!, suspension: { matches: 1 } };
+    const calledUp = { ...starters[lb]!, nationalDuty: { nation: "Spain", from: "2027-03-01", until: "2027-03-30" } };
+    const changed = new Map([injured, suspended, calledUp].map((p) => [p.id, p]));
     const today = squad
       .filter((p) => p.id !== `s${gk}`) // the goalkeeper left the club
-      .map((p) => (p.id === injured.id ? injured : p.id === suspended.id ? suspended : p));
+      .map((p) => changed.get(p.id) ?? p);
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: xi }, DATE), today, DATE);
 
     expect(applied.lineup[gk]).toBe("");
-    expect(applied.lineup[st]).toBe("");
-    expect(applied.lineup[cb]).toBe("");
-    // Nobody else came in.
-    expect(applied.lineup.filter(Boolean).every((id) => xi.includes(id))).toBe(true);
-    const expected: PresetReplacement[] = [
-      { out: `s${gk}`, in: "", slot: gk, reason: "left" },
-      { out: `s${cb}`, in: "", slot: cb, reason: "suspended" },
-      { out: `s${st}`, in: "", slot: st, reason: "injured" },
-    ];
-    expect(applied.replaced).toEqual(expected.sort((a, b) => a.slot - b.slot));
+    expect(applied.lineup.filter((_, i) => i !== gk)).toEqual(xi.filter((_, i) => i !== gk));
+    const expected: PresetReplacement[] = [{ out: `s${gk}`, in: "", slot: gk, reason: "left" }];
+    expect(applied.replaced).toEqual(expected);
   });
 
   test("a preset with no starters (brought from another club) keeps the XI on screen", () => {
@@ -194,13 +190,27 @@ describe("applyLineupPreset", () => {
     expect(applied.replaced).toEqual([{ out: `s${lb}`, in: "", slot: lb, reason: "left" }]);
   });
 
-  test("an injured starter leaves his slot empty even with nobody on the bench", () => {
+  test("an injured starter keeps his slot", () => {
     const gk = roles.indexOf("GK");
     const injuredGk = { ...starters[gk]!, injury: { severity: "medium" as const, returnDate: "2027-04-01" } };
     const today = starters.map((p) => (p.id === injuredGk.id ? injuredGk : p));
     const applied = applyLineupPreset(buildLineupPreset({ formation: "4-3-3", lineup: xi }, DATE), today, DATE);
-    expect(applied.lineup[gk]).toBe("");
-    expect(applied.replaced).toEqual([{ out: injuredGk.id, in: "", slot: gk, reason: "injured" }]);
+    expect(applied.lineup[gk]).toBe(injuredGk.id);
+    expect(applied.replaced).toEqual([]);
+  });
+});
+
+describe("rememberedLineup", () => {
+  test("gives the XI back as it was, with an empty slot for a player who left", () => {
+    const remembered = [...xi];
+    const today = squad.filter((p) => p.id !== xi[3]);
+    const out = rememberedLineup(remembered, 11, today)!;
+    expect(out[3]).toBe("");
+    expect(out.filter((_, i) => i !== 3)).toEqual(xi.filter((_, i) => i !== 3));
+  });
+  test("nothing remembered gives null", () => {
+    expect(rememberedLineup(undefined, 11, squad)).toBeNull();
+    expect(rememberedLineup(Array(11).fill(""), 11, squad)).toBeNull();
   });
 });
 

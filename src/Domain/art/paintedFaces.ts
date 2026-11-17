@@ -9,7 +9,7 @@ import { seedFrom } from "@/Domain/rng";
 import { pixelSprite, setPixelSprite } from "@/Domain/art/pixelSprite";
 
 /** Version segment of the art URLs (`/assets/art/v3/...`): bump it whenever the art files change. */
-export const ART_ASSET_VERSION = "v8";
+export const ART_ASSET_VERSION = "v9";
 
 export interface PaintedFaceIds {
   players: string[];

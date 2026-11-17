@@ -14,8 +14,6 @@ import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/
 import { FORMATION_IDS, formationForTactics } from "@/Domain/matchFormations";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { remapLineupToFormation } from "@/Domain/lineupHelpers";
-import { isInjured } from "@/Domain/injury/injury";
-import { isUnavailable } from "@/Domain/discipline/discipline";
 import { isRealIsoDate } from "@/Domain/dates";
 
 /** The saved-lineup slots of the formation screen (#84). */
@@ -242,9 +240,9 @@ export interface AppliedLineupPreset {
 }
 
 /**
- * Applies a preset to today's squad, keeping exactly the saved starters in their slots (reports 2026-11-16): a saved
- * player who left the squad (sold, loaned out, released), is injured or is suspended leaves his slot empty (reported
- * with `in: ""`; the match day fills an empty slot). A preset with no starters at all (brought from another club)
+ * Applies a preset to today's squad, keeping exactly the saved starters in their slots (reports 2026-11-16/17): only a
+ * saved player who left the squad (sold, loaned out, released) leaves his slot empty (reported with `in: ""`; the match
+ * day fills an empty slot). Injured, suspended and called-up starters stay; the match day swaps them. A preset with no starters at all (brought from another club)
  * comes back with `remembered`, the last XI used in its formation, as it was; without one it takes `current` (the
  * XI on screen) into its formation, each player in his best-fit slot, nobody swapped.
  */
@@ -267,11 +265,12 @@ export function applyLineupPreset(
   for (let slot = 0; slot < slots.length; slot++) {
     const id = lineup[slot]!;
     if (!id) continue;
-    const p = byId.get(id);
-    if (p && !isUnavailable(p, date)) continue;
+    // Only a player who left the squad leaves his slot (report 2026-11-17: the World Cup call-ups emptied half the XI).
+    // An injured, suspended or called-up starter stays: the match day swaps him if he still cannot play.
+    if (byId.has(id)) continue;
     lineup[slot] = "";
     if (!saved) continue;
-    replaced.push({ out: id, in: "", slot, reason: !p ? "left" : isInjured(p, date) ? "injured" : "suspended" });
+    replaced.push({ out: id, in: "", slot, reason: "left" });
   }
   replaced.sort((a, b) => a.slot - b.slot);
 
@@ -284,4 +283,18 @@ export function applyLineupPreset(
     ...(preset.axesOverride ? { axesOverride: preset.axesOverride } : {}),
     replaced,
   };
+}
+
+/**
+ * The XI last used in a formation (`TacticsSave.lastLineups`), as it was, for a formation picked again on the formation
+ * screen (report 2026-11-17: switching away and back moved the striker to the wing). A player who left the squad
+ * leaves his slot empty. Null when the formation has no remembered XI.
+ */
+export function rememberedLineup(remembered: string[] | undefined, slotCount: number, players: RosterPlayer[]): string[] | null {
+  if (!remembered?.some(Boolean)) return null;
+  const ids = new Set(players.map((p) => p.id));
+  return Array.from({ length: slotCount }, (_, i) => {
+    const id = remembered[i] ?? "";
+    return id && ids.has(id) ? id : "";
+  });
 }

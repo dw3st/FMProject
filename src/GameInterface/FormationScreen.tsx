@@ -34,7 +34,7 @@ import {
   hasAxesOverride,
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
-import { applyLineupPreset, buildLineupPreset, renamePreset, copyPreset, importPreset } from "@/Domain/tactics/lineupPresets";
+import { applyLineupPreset, buildLineupPreset, renamePreset, copyPreset, importPreset, rememberedLineup } from "@/Domain/tactics/lineupPresets";
 import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
 import type { LeagueData, RosterPlayer, Squad } from "@/types/playerTypes";
 import { getDetailedPositionColor, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -465,7 +465,18 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
         nextSlots = null;
       }
       if (nextSlots && squad && savedLineup.length > 0) {
-        const remapped = remapLineupToFormation(savedLineup, nextSlots, squad.players, currentDate);
+        // A formation used before comes back with its own XI, as it was (report 2026-11-17); a new one takes the XI on
+        // screen, each player in his best-fit slot.
+        let remembered: string[] | undefined;
+        if (!national) {
+          try {
+            remembered = ((await (await fetch(tacticsUrl)).json()) as TacticsSave | null)?.lastLineups?.[id];
+          } catch {
+            remembered = undefined;
+          }
+        }
+        const remapped = rememberedLineup(remembered, nextSlots.length, squad.players)
+          ?? remapLineupToFormation(savedLineup, nextSlots, squad.players, currentDate);
         await storeTactics({
           formation: id,
           tactical_style: activeStyle,

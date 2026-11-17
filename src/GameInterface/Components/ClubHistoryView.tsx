@@ -221,8 +221,8 @@ function TopTable({ title, rows, by, squadId, leagueSlug }: {
             <>
               <StatsHead align="center" sort={head("rank")}>#</StatsHead>
               <StatsHead sort={head("player")}>{t("clubHistory.col.player")}</StatsHead>
-              <StatsHead align="center" sort={head("goals")}>{t("clubHistory.col.goals")}</StatsHead>
               <StatsHead align="center" sort={head("apps")}>{t("clubHistory.col.apps")}</StatsHead>
+              <StatsHead align="center" sort={head("goals")}>{t("clubHistory.col.goals")}</StatsHead>
               <StatsHead align="center" sort={head("assists")}>{t("clubHistory.col.assists")}</StatsHead>
             </>
           }
@@ -237,8 +237,8 @@ function TopTable({ title, rows, by, squadId, leagueSlug }: {
                 <span className="truncate">{p.name}</span>
                 {p.retired && <span className="shrink-0 rounded border border-border px-2 py-0.5 text-sm font-normal text-muted-foreground">{t("clubHistory.retired")}</span>}
               </NameCell>
-              <NumberCell strong={by === "goals"}>{p.goals}</NumberCell>
               <NumberCell strong={by === "apps"}>{p.apps}</NumberCell>
+              <NumberCell strong={by === "goals"}>{p.goals}</NumberCell>
               <NumberCell>{p.assists}</NumberCell>
             </StatsRow>
           ))}

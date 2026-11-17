@@ -194,3 +194,7 @@ Reports do usuário. `applyLineupPreset(preset, players, date, current)` mantém
 ## Último time de cada formação (12.6.2)
 
 Report do usuário (ao ir para uma escalação salva e voltar, o centroavante virou ponta). `TacticsSave.lastLineups` (formação → XI; "custom" para a livre) é gravado pelo servidor a cada `PUT /tactics` com titulares (`mergeTacticsBody`; o cliente não escreve o mapa). Uma escalação salva sem titulares volta com o último XI usado na formação dela, exatamente como estava (`applyLineupPreset(..., remembered)`, quem não pode jogar deixa a vaga vazia); sem memória, o XI da tela reorganizado na formação.
+
+## Escalação exata (12.8.3)
+
+Report do usuário (Copa do Mundo de 2038: os convocados sumiam da escalação). `applyLineupPreset` só esvazia a vaga de quem saiu do elenco; lesionado, suspenso ou convocado fica (a partida troca no dia, `replaceUnavailableStarters`). Escolher uma formação na tela de Formação traz a escalação lembrada dela (`rememberedLineup` sobre `TacticsSave.lastLineups`), exatamente como estava; sem lembrança, o XI da tela vai às vagas que lhe servem (`remapLineupToFormation`, que agora mantém no XI quem não pode jogar hoje).

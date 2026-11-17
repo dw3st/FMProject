@@ -124,7 +124,8 @@ export function autoFillLineup(
  * Re-seats the current XI in a new formation's slots. The slot-indexed `lineup` would otherwise be
  * reinterpreted against different slots (a CB landing on a wing). Starters are assigned by the same
  * aptitude logic as `autoFillLineup`, restricted to the current starters; slots left empty (fewer
- * starters than slots, or injured ones dropped via `date`) are then filled from the bench.
+ * starters than slots) are then filled from the bench, `date` keeping unavailable players off it. A starter who
+ * cannot play today keeps his place.
  */
 export function remapLineupToFormation(
   lineup: string[],
@@ -134,7 +135,8 @@ export function remapLineupToFormation(
 ): string[] {
   const byId = new Map(players.map((p) => [p.id, p]));
   const starters = [...new Set(lineup.filter(Boolean))].map((id) => byId.get(id)).filter((p): p is RosterPlayer => !!p);
-  const result = autoFillLineup(newSlots, starters, date);
+  // The starters keep their places even when they cannot play today (injured, called up): the match day swaps them.
+  const result = autoFillLineup(newSlots, starters);
   const used = new Set(result.filter(Boolean));
   const bench = eligiblePool(players, date).filter((p) => !used.has(p.id));
   for (let i = 0; i < newSlots.length; i++) {

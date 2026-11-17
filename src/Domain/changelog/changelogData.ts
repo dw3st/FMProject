@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.8.3",
+    date: "2026-11-17",
+    time: "11:30",
+    items: [
+      { tab: "squad", pt: "Histórico do clube: nas tabelas de artilheiros e de mais jogos, as colunas ficam na ordem jogos, gols e assistências, com o nome inteiro.", en: "Club history: the top scorers and most appearances tables show appearances, goals and assists in that order, with full names." },
+    ],
+    fixes: [
+      { tab: "formation", pt: "Escalação salva e troca de formação mantêm exatamente os seus jogadores: um convocado pela seleção, lesionado ou suspenso fica na vaga (o jogo troca só no dia, se ele ainda não puder jogar), e voltar a uma formação traz a escalação que ela tinha.", en: "Saved line-ups and formation changes keep exactly your players: a player on national duty, injured or suspended keeps his slot (the match day swaps him only if he still cannot play), and going back to a formation brings back the line-up it had." },
+      { tab: "general", pt: "Alguns jogadores novos apareciam com uma imagem errada no lugar do rosto; os rostos foram refeitos.", en: "Some new players showed a wrong picture instead of a face; the faces were redone." },
+    ],
+  },
+  {
     version: "12.8.2",
     date: "2026-11-16",
     time: "20:46",
