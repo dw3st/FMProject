@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.10",
+    date: "2026-11-17",
+    time: "17:30",
+    items: [
+      { tab: "club", pt: "Cinco cortes novos para o gramado do estádio: losango, listras largas, listras estreitas, listras no comprimento e xadrez diagonal.", en: "Five new mowing patterns for the stadium pitch: diamond, wide stripes, narrow stripes, lengthwise stripes and diagonal checker." },
+    ],
+  },
+  {
     version: "12.9",
     date: "2026-11-17",
     time: "17:00",

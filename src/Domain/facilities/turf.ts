@@ -12,7 +12,7 @@ import type { FinancialTier, Squad } from "@/types/playerTypes";
  */
 
 export const TURF_TYPES: readonly TurfType[] = ["natural", "hybrid", "synthetic"];
-export const MOWING_PATTERNS: readonly MowingPattern[] = ["stripes", "checker", "diagonal", "circles", "none"];
+export const MOWING_PATTERNS: readonly MowingPattern[] = ["stripes", "wide", "narrow", "lengthwise", "checker", "diagcheck", "diamond", "diagonal", "circles", "none"];
 /** What an AI club mows (never a plain pitch: the AI rule predates the plain one, art phase 9). */
 const AI_MOWING: readonly MowingPattern[] = ["stripes", "checker", "diagonal", "circles"];
 

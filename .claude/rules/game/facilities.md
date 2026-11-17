@@ -407,3 +407,7 @@ Report do usuário, mock aprovado. Com o visual novo, o mapa dos setores em `/cl
 Report do usuário, opção B. Cinco pinturas genéricas (`club/stadium-level-{1..5}.webp`, `GAME_ART_FILES`; layout em PIL e FLUX img2img, `data_process/assets/club_stadium_levels.py`): do campo modesto de várzea ao estádio de elite com teto branco. Qual aparece: a média dos níveis de gramado, arquibancadas e estrutura (`stadiumArtLevel`, dois níveis por pintura). Só com o visual novo; o mapa dos setores continua abaixo. Não é o estádio real do clube.
 
 Report de tester (8.7.17): as pinturas saíam escuras demais. Exportadas de novo com o tom azul leve e mais brilho (`club_stadium_levels.py`), com o nome novo `club/stadium-lv-{1..5}.webp` (o cache é `immutable`).
+
+## Cortes novos (12.10)
+
+Pedido do usuário. `MowingPattern` ganhou `diamond` (losango, casas compridas no sentido do campo), `wide` (6 listras), `narrow` (24), `lengthwise` (10 listras de um gol ao outro) e `diagcheck` (xadrez a 45°). Fundos pintados `match-backdrop-mow-<diamond|wide|narrow|length|diagcheck>` (feitos como os de 8.2.26, `data_process/assets/pitch_bad/turf_more.py`); desenhados em `pitchSurface.ts` (`MOWING_SHAPES`, `rotatedChecker`). A IA continua sorteando só os quatro cortes de antes.

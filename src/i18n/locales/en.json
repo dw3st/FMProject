@@ -4571,6 +4571,11 @@
       "checker": "Checker",
       "diagonal": "Diagonal",
       "circles": "Circles",
+      "diamond": "Diamond",
+      "wide": "Wide stripes",
+      "narrow": "Narrow stripes",
+      "lengthwise": "Lengthwise stripes",
+      "diagcheck": "Diagonal checker",
       "none": "Plain"
     },
     "hero": {

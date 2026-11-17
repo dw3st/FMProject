@@ -38,6 +38,9 @@ const L = PITCH_LENGTH;
 const W = PITCH_WIDTH;
 const CY = W / 2;
 
+/** The newer cuts (12.9), sized like their painted backdrops (yards). */
+export const MOWING_SHAPES = { WIDE_COUNT: 6, NARROW_COUNT: 24, LENGTH_COUNT: 10, DIAGCHECK_PERIOD: 13.7, DIAMOND_PERIOD: 16.4 } as const;
+
 export function pitchVisualBand(condition: number): PitchVisualBand {
   if (condition >= 70) return "pristine";
   if (condition >= 40) return "faded";
@@ -87,11 +90,52 @@ function blob(rng: () => number, cx: number, cy: number, rx: number, ry: number)
   return clipToPitch(pts);
 }
 
+/**
+ * Checker of rhombi between the lines `a = ka·(x, y)` and `b = kb·(x, y)` every `period` yards (alternate cells), clipped to
+ * the pitch: the diagonal checker (45°) and the diamond (shallow, cells longer than wide).
+ */
+function rotatedChecker(ka: [number, number], kb: [number, number], period: number, color: number, alpha: number): SurfaceShape[] {
+  const out: SurfaceShape[] = [];
+  const corners = [[0, 0], [L, 0], [0, W], [L, W]] as const;
+  const range = (k: [number, number]) => {
+    const v = corners.map(([x, y]) => k[0] * x + k[1] * y);
+    return [Math.floor(Math.min(...v) / period) - 1, Math.ceil(Math.max(...v) / period) + 1] as const;
+  };
+  const det = ka[0] * kb[1] - ka[1] * kb[0];
+  const at = (a: number, b: number) => [(a * kb[1] - b * ka[1]) / det, (ka[0] * b - kb[0] * a) / det];
+  const [ia, ja] = range(ka);
+  const [ib, jb] = range(kb);
+  for (let i = ia; i <= ja; i++) for (let j = ib; j <= jb; j++) {
+    if ((i + j) % 2 === 0) continue;
+    const [a0, a1, b0, b1] = [i * period, (i + 1) * period, j * period, (j + 1) * period];
+    const pts = clipToPitch([...at(a0, b0), ...at(a1, b0), ...at(a1, b1), ...at(a0, b1)]);
+    if (pts.length >= 6) out.push({ kind: "poly", layer: "mowing", points: pts, color, alpha });
+  }
+  return out;
+}
+
+function stripesAcross(count: number, color: number, alpha: number): SurfaceShape[] {
+  const w = L / count;
+  const out: SurfaceShape[] = [];
+  for (let i = 1; i < count; i += 2) out.push({ kind: "rect", layer: "mowing", x: i * w, y: 0, w, h: W, color, alpha });
+  return out;
+}
+
 function mowingShapes(mowing: MowingPattern, color: number, alpha: number): SurfaceShape[] {
   const out: SurfaceShape[] = [];
   if (mowing === "stripes") {
-    const w = L / PITCH_STRIPES.COUNT;
-    for (let i = 1; i < PITCH_STRIPES.COUNT; i += 2) out.push({ kind: "rect", layer: "mowing", x: i * w, y: 0, w, h: W, color, alpha });
+    out.push(...stripesAcross(PITCH_STRIPES.COUNT, color, alpha));
+  } else if (mowing === "wide") {
+    out.push(...stripesAcross(MOWING_SHAPES.WIDE_COUNT, color, alpha));
+  } else if (mowing === "narrow") {
+    out.push(...stripesAcross(MOWING_SHAPES.NARROW_COUNT, color, alpha));
+  } else if (mowing === "lengthwise") {
+    const h = W / MOWING_SHAPES.LENGTH_COUNT;
+    for (let r = 1; r < MOWING_SHAPES.LENGTH_COUNT; r += 2) out.push({ kind: "rect", layer: "mowing", x: 0, y: r * h, w: L, h, color, alpha });
+  } else if (mowing === "diagcheck") {
+    out.push(...rotatedChecker([1, 1], [1, -1], MOWING_SHAPES.DIAGCHECK_PERIOD, color, alpha));
+  } else if (mowing === "diamond") {
+    out.push(...rotatedChecker([0.5, 1], [0.5, -1], MOWING_SHAPES.DIAMOND_PERIOD, color, alpha));
   } else if (mowing === "checker") {
     const cols = PITCH_STRIPES.COUNT;
     const rows = 10;

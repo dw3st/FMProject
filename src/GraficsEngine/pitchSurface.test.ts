@@ -66,3 +66,22 @@ describe("pitchSurface", () => {
     expect(out).toEqual([0, 0, 50, 0, 50, 30, 0, 30]);
   });
 });
+
+describe("newer mowing cuts (12.9)", () => {
+  test("each draws mowing shapes inside the pitch", () => {
+    for (const mowing of ["diamond", "wide", "narrow", "lengthwise", "diagcheck"] as const) {
+      const s = pitchSurface({ condition: 95, turf: "natural", mowing, seed: "t" });
+      const shapes = s.shapes.filter((sh) => sh.layer === "mowing");
+      expect(shapes.length).toBeGreaterThan(2);
+      for (const sh of shapes) {
+        const pts = sh.kind === "poly" ? sh.points : sh.kind === "rect" ? [sh.x, sh.y, sh.x + sh.w, sh.y + sh.h] : [];
+        for (let i = 0; i < pts.length; i += 2) {
+          expect(pts[i]!).toBeGreaterThanOrEqual(-1e-6);
+          expect(pts[i]!).toBeLessThanOrEqual(115 + 1e-6);
+          expect(pts[i + 1]!).toBeGreaterThanOrEqual(-1e-6);
+          expect(pts[i + 1]!).toBeLessThanOrEqual(74 + 1e-6);
+        }
+      }
+    }
+  });
+});

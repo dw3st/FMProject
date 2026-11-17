@@ -9,6 +9,9 @@ describe("painted turf", () => {
     expect(paintedTurfId({ ...base, mowing: "checker" })).toBe("match-backdrop-mow-check");
     expect(paintedTurfId({ ...base, mowing: "diagonal" })).toBe("match-backdrop-mow-diag");
     expect(paintedTurfId({ ...base, mowing: "circles" })).toBe("match-backdrop-mow-rings");
+    expect(paintedTurfId({ ...base, mowing: "diamond" })).toBe("match-backdrop-mow-diamond");
+    expect(paintedTurfId({ ...base, mowing: "lengthwise" })).toBe("match-backdrop-mow-length");
+    expect(paintedTurfId({ ...base, mowing: "diagcheck" })).toBe("match-backdrop-mow-diagcheck");
     expect(paintedTurfId({ ...base, mowing: "none" })).toBeNull();
     for (const mowing of ["none", "checker", "diagonal", "circles"] as const) expect(paintedTurfId({ ...base, mowing, turf: "synthetic" })).toBeNull();
     const a = paintedTurfId({ ...base, seed: "fx1", ground: "33" });

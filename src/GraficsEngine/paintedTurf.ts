@@ -42,6 +42,11 @@ export function paintedTurfId(p: PaintedTurfInput): string | null {
   if (p.mowing === "checker") return "match-backdrop-mow-check";
   if (p.mowing === "diagonal") return "match-backdrop-mow-diag";
   if (p.mowing === "circles") return "match-backdrop-mow-rings";
+  if (p.mowing === "diamond") return "match-backdrop-mow-diamond";
+  if (p.mowing === "wide") return "match-backdrop-mow-wide";
+  if (p.mowing === "narrow") return "match-backdrop-mow-narrow";
+  if (p.mowing === "lengthwise") return "match-backdrop-mow-length";
+  if (p.mowing === "diagcheck") return "match-backdrop-mow-diagcheck";
   if (p.turf === "hybrid") return `match-backdrop-${PAINTED_TURF.HYBRID}`;
   const tones = PAINTED_TURF.TONES;
   return `match-backdrop-${tones[seedFrom(`turf:${p.ground ?? p.seed}`) % tones.length]}`;

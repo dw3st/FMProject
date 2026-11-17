@@ -4568,6 +4568,11 @@
       "checker": "Xadrez",
       "diagonal": "Diagonal",
       "circles": "Círculos",
+      "diamond": "Losango",
+      "wide": "Listras largas",
+      "narrow": "Listras estreitas",
+      "lengthwise": "Listras no comprimento",
+      "diagcheck": "Xadrez diagonal",
       "none": "Sem padrão"
     },
     "hero": {
