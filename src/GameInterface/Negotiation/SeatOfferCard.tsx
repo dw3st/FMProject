@@ -1,3 +1,4 @@
+import { FeeExtremes } from "@/GameInterface/Negotiation/FeeExtremes";
 import { StepButton } from "@/GameInterface/ui/StepButton";
 import { stepAskingPrice } from "@/Domain/negotiation/askingPrice";
 import { useEffect, useState } from "react";
@@ -174,6 +175,7 @@ export function SeatOfferCard({ saveId, offer, onChanged }: {
               />
               <StepButton dir={1} label={t("transfers.feeUp")} disabled={fee >= feeMax}
                 onClick={() => setFee(Math.min(feeMax, stepAskingPrice(fee, 1)))} />
+              <FeeExtremes value={fee} min={0} max={feeMax} onChange={setFee} />
               <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">{formatFee(fee)}</span>
             </div>
           </div>

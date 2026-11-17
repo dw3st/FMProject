@@ -1,3 +1,4 @@
+import { FeeExtremes } from "@/GameInterface/Negotiation/FeeExtremes";
 import { StepButton } from "@/GameInterface/ui/StepButton";
 import { stepAskingPrice } from "@/Domain/negotiation/askingPrice";
 import { RECALL_WAGE_COST, shareWithRecall } from "@/Domain/negotiation/loanReport";
@@ -134,6 +135,7 @@ export function BidCard({
               />
               <StepButton dir={1} label={t("transfers.feeUp")} disabled={fee >= Math.max(b.fee * 2, b.fee + 1_000_000)}
                 onClick={() => setFee(Math.min(Math.max(b.fee * 2, b.fee + 1_000_000), stepAskingPrice(fee, 1)))} />
+              <FeeExtremes value={fee} min={b.fee} max={Math.max(b.fee * 2, b.fee + 1_000_000)} onChange={setFee} />
               <span className="text-xl font-black font-display text-primary w-24 text-right tabular-nums">{formatFee(fee)}</span>
             </div>
           </div>
