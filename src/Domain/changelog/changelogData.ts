@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.13",
     date: "2026-11-17",
-    time: "21:00",
+    time: "19:58",
     items: [
       { tab: "leagues", pt: "Champions e Liga Europa no formato novo: 36 clubes numa tabela única, 8 jogos cada contra adversários de 4 potes. Do 1º ao 8º vão direto às oitavas, do 9º ao 24º jogam um playoff de ida e volta, do 25º em diante estão fora. Oitavas, quartas e semis seguem uma chave fixa pela posição.", en: "Champions League and Europa League in the new format: 36 clubs in one table, 8 matches each against opponents from 4 pots. 1st to 8th go straight to the round of 16, 9th to 24th play a two-legged play-off, 25th and below are out. The round of 16, quarter-finals and semis follow a fixed bracket by position." },
       { tab: "leagues", pt: "Aba Continental: a tabela da fase de liga com as faixas, os jogos de cada rodada e o mata-mata.", en: "Continental tab: the league-phase table with its bands, the matches of each round and the knockout stage." },
