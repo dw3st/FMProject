@@ -98,7 +98,7 @@ async function dayMatches(service: SaveService, saveId: string, date: string): P
   const metas = new Map<string, LeagueSeasonMeta | null>();
   const ranks = new Map<string, ReturnType<typeof rankOf>>();
   await Promise.all(comps.map(async (c) => {
-    if (isCupSlug(c) || isContinentalSlug(c)) metas.set(c, await service.getLeagueMeta(saveId, c));
+    if (isCupSlug(c) || isContinentalSlug(c) || c === "icc") metas.set(c, await service.getLeagueMeta(saveId, c));
     else ranks.set(c, rankOf(await service.getLeagueStandings(saveId, c)));
   }));
   const out: DayMatch[] = [];
@@ -110,6 +110,13 @@ async function dayMatches(service: SaveService, saveId: string, date: string): P
       const stageIndex = Math.max(0, cm?.stages.findIndex((s) => s.rounds.includes(f.round)) ?? 0);
       out.push({ ...base, importance: matchImportance({ kind: "continental", stageIndex }), country: null,
         continent: cm?.continent, clubCountries: [cm?.countryOf[f.home] ?? null, cm?.countryOf[f.away] ?? null] });
+      continue;
+    }
+    // Intercontinental Cup: a referee of a country with no club in the match, from any continent.
+    if (f.competition === "icc") {
+      const icc = metas.get(f.competition)?.intercontinental;
+      out.push({ ...base, importance: matchImportance({ kind: "continental", stageIndex: f.round }), country: null,
+        clubCountries: [icc?.countryOf[f.home] ?? null, icc?.countryOf[f.away] ?? null] });
       continue;
     }
     if (isCupSlug(f.competition)) {

@@ -114,7 +114,7 @@ export function assignDay(input: AssignInput): Record<string, RefereeAssignment>
   // Continental: a referee of another country of the continent (FIFA or quality ≥ 75), relaxed when none.
   for (const m of input.matches.filter((x) => x.country === null).sort(byImportance)) {
     const clubCountries = new Set((m.clubCountries ?? []).filter((c): c is string => !!c));
-    const continental = input.referees.filter((r) => r.role === "referee" && input.continentOf(r.country) === m.continent);
+    const continental = input.referees.filter((r) => r.role === "referee" && (m.continent === undefined || input.continentOf(r.country) === m.continent));
     const foreign = continental.filter((r) => !clubCountries.has(r.country));
     const elite = foreign.filter((r) => r.fifa || r.quality >= REFEREE.CONTINENTAL_MIN_QUALITY);
     appoint(m, pickReferee(m, elite) ?? pickReferee(m, foreign) ?? pickReferee(m, continental));

@@ -30,6 +30,7 @@ import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { playerIntercontinentalSlug } from "@/backend/intercontinentalWorld";
 import { matchPitch, type MatchPitch } from "@/Domain/facilities/pitch";
 import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchConditions";
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
@@ -72,10 +73,11 @@ export async function matchSetupFor(
     }
     const cupSlug = await playerCupSlug(save.leagueSlug);
     const continentalSlug = await playerContinentalSlug(saveService, save.id, myInternalId);
+    const iccSlug = await playerIntercontinentalSlug(saveService, save.id, myInternalId);
     const todayFixtures = await saveService.getFixturesForDate(save.id, currentDate);
     const todayFixture = todayFixtures.find(
       (f) =>
-        (f.competition === save.leagueSlug || f.competition === cupSlug || f.competition === continentalSlug) &&
+        (f.competition === save.leagueSlug || f.competition === cupSlug || f.competition === continentalSlug || f.competition === iccSlug) &&
         (f.home === myInternalId || f.away === myInternalId) &&
         !f.played,
     );

@@ -6,6 +6,7 @@ import { getPyramids, payloadForSeat, runBufferedDay, type SeatDayOutcome } from
 import { pyramidByLeague, pyramidLeagueSlugs } from "@/Domain/season/countryRollover";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { playerIntercontinentalSlug } from "@/backend/intercontinentalWorld";
 import type { ClubMove } from "@/types/pyramidTypes";
 import { addDays } from "@/Domain/dates";
 import { isGroupWorld } from "@/Domain/groupAdvance/groupAdvance";
@@ -195,7 +196,8 @@ export async function nextClubOfficialDate(
 async function seatCompetitions(service: SaveService, saveId: string, leagueSlug: string, clubId: string): Promise<string[]> {
   const cup = await playerCupSlug(leagueSlug);
   const continental = await playerContinentalSlug(service, saveId, clubId);
-  return [leagueSlug, cup, continental].filter((s): s is string => s !== null);
+  const icc = await playerIntercontinentalSlug(service, saveId, clubId);
+  return [leagueSlug, cup, continental, icc].filter((s): s is string => s !== null);
 }
 
 /** Every unplayed game date of the club in `competitions` on or after `from` (and on or before `until`), ascending, repeats kept. */

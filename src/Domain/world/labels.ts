@@ -94,6 +94,7 @@ const CONTINENTAL_NAMES: Record<string, { en: string; pt: string }> = {
   uel: { en: "Europa League", pt: "Europa League" },
   lib: { en: "Copa Libertadores", pt: "Copa Libertadores" },
   sud: { en: "Copa Sudamericana", pt: "Copa Sul-Americana" },
+  icc: { en: "Intercontinental Cup", pt: "Copa Intercontinental" },
 };
 
 /** League names used by more than one country, per catalog array (read on every render of long lists). */

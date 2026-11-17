@@ -98,7 +98,7 @@ export async function collectDayNews(a: CollectDayNewsArgs): Promise<DayNewsInpu
     return p ? tierOfLeague(p, slug) : countryOf.has(slug) ? 1 : null;
   };
   const scopeOf = (slug: string): NewsScope => {
-    if (isContinentalSlug(slug)) return { competition: slug };
+    if (isContinentalSlug(slug) || slug === "icc") return { competition: slug };
     if (isCupSlug(slug)) return { competition: slug, ...(cupCountry.has(slug) ? { country: cupCountry.get(slug)! } : {}) };
     return { league: slug, tier: tierOf(slug), ...(countryOf.has(slug) ? { country: countryOf.get(slug)! } : {}) };
   };

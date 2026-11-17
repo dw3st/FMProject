@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.14",
+    date: "2026-11-17",
+    time: "21:00",
+    items: [
+      { tab: "leagues", pt: "Copa Intercontinental todo dezembro: o campeão da Champions, o da Libertadores e os campeões da liga mais forte da Ásia, da África, da América do Norte e Central e da Oceania, num mata-mata em campo neutro com a chave real. Vale título, pontos de técnico e prêmio: €10M por participar, €15M por vitória e €25M pelo título.", en: "Intercontinental Cup every December: the Champions League winner, the Libertadores winner and the champions of the strongest league in Asia, Africa, North and Central America and Oceania, in a knockout on neutral ground with the real bracket. It counts as a title, gives manager points and prize money: €10M for taking part, €15M per win and €25M for the title." },
+      { tab: "leagues", pt: "Aba Intercontinental em Ligas: os seis clubes, a chave com os placares e as edições anteriores.", en: "Intercontinental tab in Leagues: the six clubs, the bracket with the scores and past editions." },
+    ],
+  },
+  {
     version: "12.13",
     date: "2026-11-17",
     time: "19:58",
@@ -6404,7 +6413,6 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Copa Intercontinental entre os campeões continentais", en: "Intercontinental Cup between the continental champions" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

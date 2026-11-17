@@ -1,3 +1,4 @@
+import { IntercontinentalView } from "@/GameInterface/Components/IntercontinentalView";
 import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
 import { HumanBadge } from "@/GameInterface/World/HumanBadge";
 import i18next from "@/i18n/i18n";
@@ -540,7 +541,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
   );
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup" | "continental" | "youth" | "national">(() =>
+  const [tab, setTab] = useState<"table" | "fixtures" | "finances" | "cup" | "continental" | "icc" | "youth" | "national">(() =>
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "national" ? "national" : "table");
   // Youth competitions of the selected league's country (`GET /youth-comps?country=`).
   const [youthSlugs, setYouthSlugs] = useState<YouthSlugs | null>(null);
@@ -902,6 +903,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   ? [{ key: "cup" as const, label: competitionName(cupSlug, leagues, i18n.language), disabled: !session }]
                   : []),
                 { key: "continental" as const, label: t("continental.tab"), disabled: !session },
+                { key: "icc" as const, label: t("intercontinental.tab"), disabled: !session },
                 ...(hasYouth ? [{ key: "youth" as const, label: t("youthComps.tab"), disabled: !session }] : []),
                 { key: "national" as const, label: t("nav.national"), disabled: !session },
               ]}
@@ -980,6 +982,8 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                   <p className="text-muted-foreground text-sm p-6">{t("cups.loading")}</p>
                 )}
               </div>
+            ) : tab === "icc" ? (
+              session?.saveId ? <IntercontinentalView saveId={session.saveId} myClubId={session.clubId ?? ""} /> : null
             ) : tab === "national" ? (
               <NationalTab />
             ) : tab === "youth" ? (

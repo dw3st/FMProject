@@ -22,6 +22,7 @@ import { getLeagueData } from "@/backend/advanceDay";
 import { sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { playerIntercontinentalSlug } from "@/backend/intercontinentalWorld";
 import { saveCompatibility } from "@/Domain/saveVersion";
 import { publicWorldMeta } from "@/Domain/multiplayer/worldPublic";
 import { createWorldState, deleteWorld } from "@/backend/worlds/worldLifecycle";
@@ -152,9 +153,13 @@ export const saveRoutes = {
                 (f) => f.home === myId || f.away === myId,
               )
             : [];
+          const iccSlug = await playerIntercontinentalSlug(saveService, id, myId);
+          const iccFixtures = iccSlug
+            ? (await saveService.getAllFixturesForLeague(id, iccSlug)).filter((f) => f.home === myId || f.away === myId)
+            : [];
           // His national team's games (Etapa 41b), with the club's id on the national side.
           const national = myId ? await playerNationalCalendar(saveService, id, auth.seatId, myId) : { teamId: null, fixtures: [], teamNames: {} };
-          const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures, ...national.fixtures].sort((a, b) =>
+          const fullCalendar = [...calendar, ...cupFixtures, ...continentalFixtures, ...iccFixtures, ...national.fixtures].sort((a, b) =>
             a.date.localeCompare(b.date),
           );
           const country = (await getLeagueData()).find((l) => l.slug === meta.leagueSlug)?.country;

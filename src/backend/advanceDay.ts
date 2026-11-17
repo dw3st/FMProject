@@ -213,12 +213,14 @@ import {
   continentalTier1LeagueStates,
   seasonDefiningYear,
 } from "@/backend/continentalWorld";
+import { advanceIntercontinental, ensureIntercontinental, ICC_SLUG, playerIntercontinentalSlug } from "@/backend/intercontinentalWorld";
+import { ICC } from "@/Domain/intercontinental/iccConfig";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
 /** A national cup or a continental competition: no table, sim mode gated on the player's league. */
 function isKnockoutComp(slug: string): boolean {
-  return isCupSlug(slug) || isContinentalSlug(slug);
+  return isCupSlug(slug) || isContinentalSlug(slug) || slug === ICC_SLUG;
 }
 
 /** "1st", "2nd", "3rd", "4th"… for the league prize ledger label (design spec §3 "Liga"). */
@@ -1231,11 +1233,25 @@ export async function advanceOneDay(
     for (const [slug, rounds] of roundUpdates) if (isContinentalSlug(slug)) continentalPlayed.set(slug, [...rounds.keys()]);
     const continentalChanges = await advanceContinentalStages(saveService, saveId, continentalPlayed);
 
+    // ── Intercontinental Cup (`.claude/rules/game/intercontinental.md`): today's results move the bracket on; the
+    // first day of December generates the year's edition (never in the start-kit pre-simulation). ──
+    const iccAdvance = await advanceIntercontinental(
+      saveService, saveId, roundUpdates.has(ICC_SLUG) ? [...roundUpdates.get(ICC_SLUG)!.keys()] : undefined,
+    );
+    const iccGenerated = options.marketFrozen ? null : await ensureIntercontinental({
+      service: saveService, saveId, date: currentDate, index, catalog: await getLeagueData(), pyramids: await getPyramids(),
+      activeLeagues,
+    });
+
     // ── League games that clash with the dates just drawn (same day or the day before/after for a club) move
     // to a free midweek day (`.claude/rules/game/rescheduling.md`). Scope: the leagues of the drawn clubs. ──
     const rescheduleMoves: FixtureMove[] = [];
     {
       const scope = await drawnLeaguesOf({ service: saveService, saveId, index, cupChanges, continentalChanges });
+      for (const id of iccGenerated?.clubs ?? []) {
+        const league = index.byId(id)?.leagueSlug;
+        if (league) scope.add(league);
+      }
       if (scope.size > 0) {
         const r = await rescheduleFixtureConflicts({
           service: saveService, saveId, minDate: addOneDay(currentDate), catalog: await getLeagueData(), scope,
@@ -1494,6 +1510,53 @@ export async function advanceOneDay(
           );
           add(continentalPrizeAwardedTo, award.clubId, paid);
           if (award.reason === "r16") add(continentalR16PrizeAwardedTo, award.clubId, paid);
+        }
+      }
+    }
+
+    // ── Intercontinental Cup: participation, wins, title, manager points and each seat's news ──────────
+    // (`.claude/rules/game/intercontinental.md`). Messages are queued like the continental ones (a December day can
+    // be the rollover day of a calendar-year league, which clears the inbox).
+    if (iccGenerated || iccAdvance) {
+      const iccMeta = (iccAdvance?.meta ?? iccGenerated?.meta)!;
+      const icc = iccMeta.intercontinental!;
+      const label = competitionName(ICC_SLUG, [], "en");
+      const nameOf = (id: string | null | undefined) => (id ? index.byId(id)?.name ?? id : "?");
+      const paidTo = new Map<string, number>();
+      const pay = async (clubId: string, amount: number, stage: string) => {
+        const paid = await awardClubPrize(clubId, amount, `${label} · ${stage}`, { competition: ICC_SLUG, stage });
+        if (paid > 0) paidTo.set(clubId, (paidTo.get(clubId) ?? 0) + paid);
+      };
+      const queue = (clubId: string | null | undefined, msg: Omit<Parameters<typeof buildContinentalMessage>[0], "date" | "competition" | "competitionName">) => {
+        const ds = clubId ? seatOf.get(clubId) : undefined;
+        if (ds) ds.deferred.continental.push({ date: currentDate, competition: ICC_SLUG, competitionName: label, ...msg });
+      };
+      if (iccGenerated) {
+        for (const clubId of iccGenerated.clubs) {
+          await pay(clubId, ICC.PRIZE.PARTICIPATION, "participation");
+          queue(clubId, { kind: "qualified", stage: "afc_ofc" });
+        }
+      }
+      const decisions = [...(iccGenerated?.step.decided ?? []), ...(iccAdvance?.step.decided ?? [])];
+      for (const d of decisions) {
+        const m = icc.matches.find((x) => x.n === d.n)!;
+        if (!d.bye && d.winner) await pay(d.winner, ICC.PRIZE.WIN, m.name);
+        if (d.loser) queue(d.loser, { kind: "eliminated", stage: m.name, opponentName: nameOf(d.winner) });
+        if (d.n !== 5 || !d.winner) continue;
+        // The title: club and player history (pending until the club's rollover), manager points, board, news.
+        await pay(d.winner, ICC.PRIZE.TITLE, "title");
+        recordTitle(d.winner, `continental:${ICC_SLUG}`);
+        await managerTracker.credit({
+          season: String(icc.year), kind: "continental", competition: ICC_SLUG, squadId: d.winner, points: ICC.MANAGER_POINTS,
+        });
+        const champSeat = seatOf.get(d.winner);
+        if (champSeat?.board) champSeat.board = applyCompetitionEvent(champSeat.board, { kind: "title", title: `continental:${ICC_SLUG}` });
+        if (champSeat) champSeat.press.titles.push(`continental:${ICC_SLUG}`);
+        queue(d.winner, { kind: "champion", stage: "final", prize: paidTo.get(d.winner) });
+      }
+      for (const m of [...(iccGenerated?.step.created ?? []), ...(iccAdvance?.step.created ?? [])]) {
+        for (const [me, other] of [[m.home, m.away], [m.away, m.home]] as const) {
+          queue(me, { kind: "draw", stage: m.name, opponentName: nameOf(other), firstLegDate: m.date, venue: "neutral" });
         }
       }
     }
@@ -4053,7 +4116,7 @@ export const advanceDayRoutes = {
     if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
     if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
     const club = meta.clubId;
-    const slugs = [meta.leagueSlug, await playerCupSlug(meta.leagueSlug), await playerContinentalSlug(saveService, saveId, club)]
+    const slugs = [meta.leagueSlug, await playerCupSlug(meta.leagueSlug), await playerContinentalSlug(saveService, saveId, club), await playerIntercontinentalSlug(saveService, saveId, club)]
       .filter((x): x is string => !!x);
     const dates: string[] = [];
     for (const slug of slugs) {

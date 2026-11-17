@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import type { StaffContractNews } from "@/Domain/staff/staffContracts";
 import { attrDisplay } from "@/Domain/attributes";
 import type { PressKind, PressTrigger } from "@/types/pressTypes";
-import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
+import type { ContinentalSlug, ContinentalStageName, IccMatchName } from "@/types/calendarTypes";
 import type { RetiredPlayer } from "@/types/playerTypes";
 import type {
   BoardInboxMessage,
@@ -230,8 +230,8 @@ export function buildCupMessage(args: {
  * the inbox UI can render a localized list — see `ContinentalInboxMessage`.
  */
 export function buildContinentalMessage(args: {
-  date: string; kind: ContinentalInboxMessage["kind"]; competition: ContinentalSlug; competitionName: string;
-  stage: ContinentalStageName; group?: string; opponentName?: string; opponentNames?: string[];
+  date: string; kind: ContinentalInboxMessage["kind"]; competition: ContinentalSlug | "icc"; competitionName: string;
+  stage: ContinentalStageName | IccMatchName; group?: string; opponentName?: string; opponentNames?: string[];
   firstLegDate?: string; venue?: ContinentalInboxMessage["venue"];
   /** League phase: the final position. */
   position?: number;

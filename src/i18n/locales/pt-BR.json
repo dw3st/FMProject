@@ -2606,7 +2606,11 @@
       "sf": "Semifinal",
       "final": "Final",
       "league": "Fase de liga",
-      "playoff": "Playoff"
+      "playoff": "Playoff",
+      "afc_ofc": "Ásia × Oceania",
+      "apac": "Copa África–Ásia–Pacífico",
+      "americas": "Dérbi das Américas",
+      "challenger": "Copa Challenger"
     },
     "leagueRound": "Fase de liga · rodada {{round}}",
     "bandTop8": "1º a 8º: direto às oitavas",
@@ -8138,6 +8142,39 @@
       "notForSale": "Essa reação só sai por conquista.",
       "noMoney": "Dinheiro insuficiente na carteira.",
       "generic": "Não foi possível comprar."
+    }
+  },
+  "intercontinental": {
+    "title": "Copa Intercontinental",
+    "tab": "Intercontinental",
+    "champion": "Campeão",
+    "year": "Ano",
+    "bye": "Folga",
+    "none": "Ainda não houve Copa Intercontinental: a primeira edição é jogada em dezembro.",
+    "notDrawn": "A definir",
+    "neutral": "Campo neutro",
+    "entrants": "Clubes",
+    "pastEditions": "Edições anteriores",
+    "via": {
+      "ucl": "Campeão da Champions League",
+      "lib": "Campeão da Libertadores",
+      "league": "Campeão da {{league}}",
+      "runnerUp": "Vice de {{source}}"
+    },
+    "confed": {
+      "UEFA": "Europa",
+      "CONMEBOL": "América do Sul",
+      "AFC": "Ásia",
+      "CAF": "África",
+      "CONCACAF": "América do Norte e Central",
+      "OFC": "Oceania"
+    },
+    "stage": {
+      "afc_ofc": "Ásia × Oceania",
+      "apac": "Copa África–Ásia–Pacífico",
+      "americas": "Dérbi das Américas",
+      "challenger": "Copa Challenger",
+      "final": "Final"
     }
   }
 }

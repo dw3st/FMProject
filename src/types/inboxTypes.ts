@@ -1,5 +1,5 @@
 import type { StaffRole } from "@/types/staffTypes";
-import type { ContinentalSlug, ContinentalStageName } from "@/types/calendarTypes";
+import type { ContinentalSlug, ContinentalStageName, IccMatchName } from "@/types/calendarTypes";
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 import type { JobOffer } from "@/types/jobTypes";
 import type { ClubRecordBroken } from "@/types/clubHistoryTypes";
@@ -131,11 +131,12 @@ export interface ContinentalInboxMessage extends InboxMessageBase {
   category:    "continental";
   /** "group" with stage "league" = the league-phase opponents; "top8" = finished in the top 8 of the league phase. */
   kind:        "qualified" | "group" | "draw" | "eliminated" | "champion" | "top8";
-  competition: ContinentalSlug;
+  /** A continental competition, or `icc` (Intercontinental Cup: stage = its match name). */
+  competition: ContinentalSlug | "icc";
   /** English fallback name, shown only until the league catalog loads (mirrors CupInboxMessage.cupName). */
   competitionName: string;
   /** Stage key of the draw / elimination / final. "group" for qualified/group. */
-  stage:       ContinentalStageName;
+  stage:       ContinentalStageName | IccMatchName;
   /** Qualified / group only: the group letter. */
   group?:      string;
   /** Group only: the other clubs in the group, for the message body. */

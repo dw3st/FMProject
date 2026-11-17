@@ -2606,7 +2606,11 @@
       "sf": "Semi-finals",
       "final": "Final",
       "league": "League phase",
-      "playoff": "Knockout play-off"
+      "playoff": "Knockout play-off",
+      "afc_ofc": "Asia–Oceania play-off",
+      "apac": "Africa–Asia–Pacific Cup",
+      "americas": "Derby of the Americas",
+      "challenger": "Challenger Cup"
     },
     "leagueRound": "League phase · matchday {{round}}",
     "bandTop8": "1st to 8th: straight to the round of 16",
@@ -8150,6 +8154,39 @@
       "notForSale": "This reaction only comes from an achievement.",
       "noMoney": "Not enough money in your wallet.",
       "generic": "Could not buy it."
+    }
+  },
+  "intercontinental": {
+    "title": "Intercontinental Cup",
+    "tab": "Intercontinental",
+    "champion": "Champion",
+    "year": "Year",
+    "bye": "Bye",
+    "none": "No Intercontinental Cup yet: the first edition is played in December.",
+    "notDrawn": "To be decided",
+    "neutral": "Neutral venue",
+    "entrants": "Clubs",
+    "pastEditions": "Past editions",
+    "via": {
+      "ucl": "Champions League winner",
+      "lib": "Libertadores winner",
+      "league": "Champion of {{league}}",
+      "runnerUp": "Runner-up of {{source}}"
+    },
+    "confed": {
+      "UEFA": "Europe",
+      "CONMEBOL": "South America",
+      "AFC": "Asia",
+      "CAF": "Africa",
+      "CONCACAF": "North and Central America",
+      "OFC": "Oceania"
+    },
+    "stage": {
+      "afc_ofc": "Asia–Oceania play-off",
+      "apac": "Africa–Asia–Pacific Cup",
+      "americas": "Derby of the Americas",
+      "challenger": "Challenger Cup",
+      "final": "Final"
     }
   }
 }

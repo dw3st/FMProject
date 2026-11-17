@@ -31,7 +31,7 @@ export interface VarFixture {
 }
 
 export function hasVar(f: VarFixture): boolean {
-  if (isContinentalSlug(f.competition)) return true;
+  if (isContinentalSlug(f.competition) || f.competition === "icc") return true;
   if (isCupSlug(f.competition)) return VAR_CUPS.has(f.competition) && !!f.cupStage && VAR_CUP_STAGES.has(f.cupStage);
   return f.competition in VAR_LEAGUES;
 }

@@ -608,3 +608,7 @@ e a Liga Europa jogam no formato real desde 2024; Libertadores e Sul-Americana c
 | `src/Domain/continental/clubStatus.ts` | Situação do clube depois do kit (fase de liga, top 8, playoff, fora) |
 | `src/backend/continentalWorld.ts` | `createContinentalSeason` (formato pelo continente), `playerContinentalSlug`, `continentalClubStatus` |
 | `src/backend/continentalWorld.leaguePhase.test.ts` | Carreira de verdade: fase de liga → playoff → oitavas; um kit em grupos ainda avança |
+
+## Copa Intercontinental (Etapa 2)
+
+Os campeões da Champions e da Libertadores jogam a Copa Intercontinental em dezembro: `.claude/rules/game/intercontinental.md`.

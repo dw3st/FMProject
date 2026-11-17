@@ -88,6 +88,8 @@ export interface SeasonArchive {
   titles:     SeasonTitle[];
   /** Every player's season log at season end, keyed by player id. */
   playerLogs: Record<string, PlayerSeasonLog>;
+  /** Intercontinental Cup archive only: the edition's bracket (entrants and matches). */
+  intercontinental?: IntercontinentalMetaData;
 }
 
 // --- NEW MULTI-LEAGUE TYPES ---
@@ -149,6 +151,49 @@ export interface ContinentalMetaData {
   championId:  string | null;
 }
 
+/** Confederation of an Intercontinental Cup slot (`.claude/rules/game/intercontinental.md`). */
+export type IccConfed = "UEFA" | "CONMEBOL" | "AFC" | "CAF" | "CONCACAF" | "OFC";
+/** The five Intercontinental Cup matches: OFC×AFC, then ×CAF (Africa–Asia–Pacific), CONCACAF×Libertadores (Derby of the
+ * Americas), the Challenger Cup and the final against the Champions League winner. */
+export type IccMatchName = "afc_ofc" | "apac" | "americas" | "challenger" | "final";
+
+/** How a slot was filled: the competition/league champion, the runner-up (next in line), or nobody (bye). */
+export interface IccEntrant {
+  clubId:  string | null;
+  /** League slug (AFC/CAF/CONCACAF/OFC) or continental slug (`ucl`, `lib`) the club came from. */
+  source:  string | null;
+  /** Final position in that table / competition (1 = champion). Absent for a bye. */
+  position?: number;
+}
+
+/** One match of the bracket. `round` = its RoundFixtures file (1..5). */
+export interface IccMatch {
+  n:      1 | 2 | 3 | 4 | 5;
+  name:   IccMatchName;
+  round:  number;
+  date:   string;
+  /** Sides once known (null = empty side, i.e. a bye; undefined = not decided yet). */
+  home?:  string | null;
+  away?:  string | null;
+  /** The match is settled: played, or decided by a bye. */
+  done:   boolean;
+  /** Winner once done (null when both sides were empty). */
+  winner: string | null;
+  /** Settled without a game (one side or both empty). */
+  bye?:   true;
+}
+
+export interface IntercontinentalMetaData {
+  year:       number;
+  entrants:   Record<IccConfed, IccEntrant>;
+  matches:    IccMatch[];
+  /** Club → leagueData country, for display. */
+  countryOf:  Record<string, string>;
+  championId: string | null;
+  /** Earlier editions archived in `seasons/<year>/icc/` (oldest first). */
+  pastYears:  number[];
+}
+
 /** Lightweight season metadata for one league (replaces SeasonData as the per-league store) */
 export interface LeagueSeasonMeta {
   leagueSlug:   string;
@@ -159,9 +204,11 @@ export interface LeagueSeasonMeta {
   /** Rest days for the player's league (shown in training calendar UI) */
   restDays?:    string[];
   /** "cup" for a national cup, "continental" for UCL/UEL/Lib/Sud, "youth" for an under-21/under-19; absent for a league. */
-  kind?:        "cup" | "continental" | "youth";
+  kind?:        "cup" | "continental" | "youth" | "intercontinental";
   cup?:         CupMetaData;
   continental?: ContinentalMetaData;
+  /** Intercontinental Cup (`leagues/icc`, one edition a year in December). */
+  intercontinental?: IntercontinentalMetaData;
   youth?:       YouthCompMetaData;
 }
 

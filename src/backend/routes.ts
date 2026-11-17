@@ -71,6 +71,7 @@ import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 import { totalsByKind, weeklyNet } from "@/Domain/finance/ledger";
 import { getClubBudget } from "@/backend/FinancialService";
 import { continentalClubIds, isContinentalSlug } from "@/Domain/continental/competitions";
+import { intercontinentalView } from "@/backend/intercontinentalWorld";
 import { groupTable } from "@/Domain/continental/groupTable";
 import { leaguePhaseTable } from "@/Domain/continental/leaguePhase";
 
@@ -534,6 +535,22 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
       return Response.json({ meta, fixtures, names, groups, table });
     }
     return Response.json({ meta, fixtures, names, groups });
+  },
+
+  /**
+   * Intercontinental Cup (`.claude/rules/game/intercontinental.md`): one edition (`?year=`, default the current one) —
+   * `IntercontinentalView` (`src/backend/intercontinentalWorld.ts`). 404 before the first edition or for an unknown year.
+   */
+  "/api/saves/:saveId/intercontinental": async (req: Request & { params: Record<string, string> }) => {
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const { saveId } = req.params;
+    const auth = requireSeat(req, saveId!);
+    if (auth instanceof Response) return auth;
+    const raw = new URL(req.url).searchParams.get("year");
+    if (raw !== null && !/^\d{4}$/.test(raw)) return Response.json({ error: "invalid year" }, { status: 400 });
+    const view = await intercontinentalView(saveService, saveId!, await saveService.getSquadIndex(saveId!), raw === null ? undefined : Number(raw));
+    if (!view) return Response.json({ error: "intercontinental cup not found" }, { status: 404 });
+    return Response.json(view);
   },
 
   /** Top-20 player rankings of one competition (`?competition=<league|cup_x|ucl...>`). */
