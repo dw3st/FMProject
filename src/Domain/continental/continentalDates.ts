@@ -10,6 +10,9 @@ const GROUP_STAGES = 6;
 /** r16 (leg 1 + leg 2) + qf (leg 1 + leg 2) + sf (leg 1 + leg 2) + final. */
 const KNOCKOUT_STAGES = 7;
 const FINAL_BEFORE_END_DAYS = 7;
+/** League-phase format: 8 rounds, then play-off (2) + r16 (2) + qf (2) + sf (2) + final. */
+const LEAGUE_ROUNDS = 8;
+const LEAGUE_KNOCKOUT_ROUNDS = 9;
 
 /** Hard constraint: two continental dates of the same competition are never closer than this. */
 const MIN_GAP_DAYS = 3;
@@ -280,20 +283,23 @@ export function continentalDates(
   end: string,
   weekday: number,
   participants: readonly ParticipantDates[],
+  /** "league": 8 league-phase dates (15/09–31/01) then 9 knockout ones (play-off + r16 … final); "groups": 6 + 7. */
+  format: "league" | "groups" = "groups",
 ): string[] {
   const Y = seasonYear;
+  const league = format === "league";
   const groupStart = continent === "Europe" ? `${Y}-09-15` : `${Y}-03-01`;
-  const groupEnd = continent === "Europe" ? `${Y}-12-15` : `${Y}-05-31`;
+  const groupEnd = league ? `${Y + 1}-01-31` : continent === "Europe" ? `${Y}-12-15` : `${Y}-05-31`;
   const knockoutStart = continent === "Europe" ? `${Y + 1}-02-10` : `${Y}-07-15`;
   const knockoutWindowEnd = continent === "Europe" ? `${Y + 1}-05-31` : `${Y}-11-30`;
 
-  const groupDates = scheduleWindow(toMs(groupStart), toMs(groupEnd), GROUP_STAGES, weekday, participants, "group");
+  const groupDates = scheduleWindow(toMs(groupStart), toMs(groupEnd), league ? LEAGUE_ROUNDS : GROUP_STAGES, weekday, participants, league ? "league" : "group");
 
   const knockoutHi = Math.min(toMs(end) - FINAL_BEFORE_END_DAYS * DAY, toMs(knockoutWindowEnd));
   const knockoutDates = scheduleWindow(
     toMs(knockoutStart),
     knockoutHi,
-    KNOCKOUT_STAGES,
+    league ? LEAGUE_KNOCKOUT_ROUNDS : KNOCKOUT_STAGES,
     weekday,
     participants,
     "knockout",

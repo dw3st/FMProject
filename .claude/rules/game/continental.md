@@ -576,3 +576,35 @@ dois, "Copa Sudamericana" (inglês) vs. "Copa Sul-Americana" (`pt-BR`).
 
 Os dias bloqueados do país de cada participante (`countryBlockedDays`) entram nas datas ocupadas dele: o otimizador
 trata como choque no mesmo dia. Ver `.claude/rules/game/national-teams.md`.
+
+## Fase de liga (Champions e Liga Europa, 12.13)
+
+Spec: `docs/superpowers/specs/2026-11-17-champions-league-phase-and-intercontinental-design.md` (Etapa 1). A Champions
+e a Liga Europa jogam no formato real desde 2024; Libertadores e Sul-Americana continuam com grupos.
+
+- **Formato:** `ContinentalMetaData.format = "league"` (ausente = `"groups"`, as temporadas sorteadas antes jogam até o
+  fim nos grupos). 36 clubes (`allocateSlots(..., 36)`), 4 potes de 9 em `pots` (`groups` vazio). Cada clube pega 2
+  adversários de cada pote, 4 jogos em casa e 4 fora, nunca do mesmo país, no máximo 2 do mesmo país estrangeiro
+  (`drawLeaguePhase`), em 8 rodadas sem 3 seguidas em casa ou fora (`scheduleLeaguePhase`).
+- **Tabela única** (`leaguePhaseTable`: pontos, saldo, gols, gols fora, vitórias, vitórias fora, id). 1º a 8º direto às
+  oitavas; 9º a 24º no playoff de ida e volta (9º × 24º … 16º × 17º, o mais bem colocado decide em casa); 25º a 36º
+  fora. A posição final fica em `seeds`.
+- **Chave fixa:** oitavas pela posição (`roundOf16Ties`, `BRACKET_ORDER`), quartas e semis pela chave (`bracketTies`);
+  final em campo neutro.
+- **Datas:** 17 (8 da fase de liga, 15/09 a 31/01; playoff, oitavas, quartas, semi e final a partir de 10/02).
+  Estágios `league`, `playoff`, `r16`, `qf`, `sf`, `final`; rodadas 1–8, 9–10, 11–12, 13–14, 15–16, 17.
+- **Avanço do dia:** participação e vitória/empate pagos em toda rodada da fase de liga (como nos grupos); quem passa
+  do playoff ou fica no top 8 recebe o prêmio das oitavas. Caixa de entrada: "group" com `stage: "league"` e os 8
+  adversários, `top8` com a posição, `eliminated` com `stage: "league"` e a posição (25º a 36º).
+- **Em volta:** inscrição (prazo antes da fase de liga e entre ela e o playoff, `gateOf` em `registrationWorld.ts`),
+  diretoria (25º a 36º = eliminação precoce), classificação dos amigos (top 24 = passou da fase), rivais e prévia
+  ("Fase de liga · rodada N"), a rota `GET /continental/:slug` devolve `table` (as 36 linhas).
+- **Kits:** um kit antigo (grupos) continua valendo; a próxima regeneração da Europa já sai no formato novo.
+
+| Arquivo | Papel |
+|---|---|
+| `src/Domain/continental/leaguePhase.ts` (+ testes) | Sorteio, calendário, tabela, playoff e chave |
+| `src/Domain/continental/generateContinental.ts`, `continentalProgress.ts`, `continentalDates.ts` | Geração, avanço e datas dos dois formatos |
+| `src/Domain/continental/clubStatus.ts` | Situação do clube depois do kit (fase de liga, top 8, playoff, fora) |
+| `src/backend/continentalWorld.ts` | `createContinentalSeason` (formato pelo continente), `playerContinentalSlug`, `continentalClubStatus` |
+| `src/backend/continentalWorld.leaguePhase.test.ts` | Carreira de verdade: fase de liga → playoff → oitavas; um kit em grupos ainda avança |

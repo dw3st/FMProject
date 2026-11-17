@@ -31,3 +31,14 @@ describe("outOfCompetition (4.47.19)", () => {
     expect(outOfCompetition(f, "b", "a")).toBe(true);
   });
 });
+
+describe("outOfCompetition (league phase, 12.13)", () => {
+  test("a top-8 club waits for the round of 16 without a knockout fixture; 25th-36th is out", () => {
+    const f = [
+      fx({ id: "1", home: "c", away: "d", played: true, result: { home: 1, away: 0 } }),
+      fx({ id: "2", round: 9, home: "x", away: "y", knockout: true, tieId: "t", leg: 1 }),
+    ];
+    expect(outOfCompetition(f, "c", null, { c: 3, d: 30 })).toBe(false);
+    expect(outOfCompetition(f, "d", null, { c: 3, d: 30 })).toBe(true);
+  });
+});

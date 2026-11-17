@@ -1,4 +1,5 @@
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
+import { continentalClubIds } from "@/Domain/continental/competitions";
 import { afterAll, describe, expect, test } from "bun:test";
 import { comfortPriceMult, facilitiesGate, seasonFraction, seasonPhaseMult } from "@/Domain/facilities/facilities";
 import { saveService } from "@/backend/SaveService";
@@ -108,8 +109,8 @@ describe("finance ledger — continental home gate", () => {
       const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
       for (const slug of ["ucl", "uel"] as const) {
         const lm = await saveService.getLeagueMeta(probeMeta.id, slug);
-        const group = lm!.continental!.stages.find((s) => s.name === "group")!;
-        const candidates = lm!.continental!.groups.flatMap((g) => g.clubs);
+        const group = lm!.continental!.stages.find((s) => s.name === "group" || s.name === "league")!;
+        const candidates = continentalClubIds(lm!.continental!);
         const qualified = candidates.filter((id) => plClubs.has(id));
         for (const club of qualified) {
           for (let i = 0; i < group.rounds.length && !homeClub; i++) {
@@ -137,6 +138,19 @@ describe("finance ledger — continental home gate", () => {
     });
     saveId = meta.id;
     meta = await applyBroadcasting(saveId, meta, meta.leagueSlug, meta.clubId, meta.seatId);
+
+    // The draw is seeded by the save (league phase since 12.13: the home rounds differ per save) — find
+    // the club's home round again in this save.
+    {
+      const lm = await saveService.getLeagueMeta(saveId, contSlug);
+      const first = lm!.continental!.stages.find((s) => s.name === "group" || s.name === "league")!;
+      matchDate = "";
+      for (let i = 0; i < first.rounds.length && !matchDate; i++) {
+        const round = await saveService.getRound(saveId, contSlug, first.rounds[i]!);
+        if (round?.fixtures.some((f) => f.home === homeClub)) matchDate = first.dates[i]!;
+      }
+      expect(matchDate).toBeTruthy();
+    }
 
     await saveService.updateMeta(saveId, { currentDate: matchDate });
     const outcome = await advanceOneDay(saveService, saveId);

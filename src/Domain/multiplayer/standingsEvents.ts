@@ -16,12 +16,14 @@ export function cupTieItems(stage: string, competition?: string): { winner: Stan
   };
 }
 
-/** A continental event: the stage it reached (group passed, semi-final, final, title); null otherwise. */
+/** A continental event: the stage it reached (group or league phase passed, semi-final, final, title); null otherwise. */
 export function continentalEventItem(ev: ContinentalEvent, competition?: string): StandingItem | null {
   let reached: Parameters<typeof continentalPoints>[0] | null = null;
   if (ev.kind === "champion") reached = "champion";
+  // League phase (UCL/UEL): finishing in the top 24 (straight to the r16 or into the play-off) counts as leaving the groups.
+  else if (ev.kind === "toPlayoff") reached = "groups";
   else if (ev.kind === "advanced") {
-    if (ev.stage === "group") reached = "groups";
+    if (ev.stage === "group" || ev.stage === "league") reached = "groups";
     else if (ev.stage === "qf") reached = "semifinal";
     else if (ev.stage === "sf") reached = "finalist";
   }

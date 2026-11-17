@@ -10,7 +10,7 @@ export interface CountrySlotInput {
 
 export type SlotTable = Record<string, { primary: number; secondary: number }>;
 
-const PER_COMPETITION = 32;
+const DEFAULT_PER_COMPETITION = 32;
 const SA_OTHERS_PATTERN = [4, 4, 3, 3, 3, 3];
 const ARGENTINA_SA = 6;
 
@@ -31,7 +31,12 @@ function byCoefficient(a: CountrySlotInput, b: CountrySlotInput): number {
  * for its full pattern share, or from a missing country — flow forward to the next country by
  * coefficient, never back up to a country already placed earlier in the order.
  */
-export function allocateSlots(continent: "Europe" | "South America", countries: CountrySlotInput[]): SlotTable {
+export function allocateSlots(
+  continent: "Europe" | "South America",
+  countries: CountrySlotInput[],
+  /** Places per competition: 32 (groups), 36 (league phase). */
+  PER_COMPETITION = DEFAULT_PER_COMPETITION,
+): SlotTable {
   const out: SlotTable = {};
   for (const c of countries) {
     const primary = Math.min(c.zoneSlots?.primary ?? 0, c.clubs);

@@ -129,7 +129,8 @@ export interface CupInboxMessage extends InboxMessageBase {
 /** Continental-competition (UCL/UEL/Lib/Sud) news for the human club. */
 export interface ContinentalInboxMessage extends InboxMessageBase {
   category:    "continental";
-  kind:        "qualified" | "group" | "draw" | "eliminated" | "champion";
+  /** "group" with stage "league" = the league-phase opponents; "top8" = finished in the top 8 of the league phase. */
+  kind:        "qualified" | "group" | "draw" | "eliminated" | "champion" | "top8";
   competition: ContinentalSlug;
   /** English fallback name, shown only until the league catalog loads (mirrors CupInboxMessage.cupName). */
   competitionName: string;
@@ -145,6 +146,8 @@ export interface ContinentalInboxMessage extends InboxMessageBase {
   firstLegDate?: string;
   /** Draw only: whether we are at home ("neutral" for the final). */
   venue?:      "home" | "away" | "neutral";
+  /** League phase: the final position (top8, eliminated in the league phase). */
+  position?:   number;
   /**
    * Prize paid THIS DAY for this event: champion (title), or reaching the round of 16 (the
    * "draw" message for stage "r16"). Never set on "eliminated" — the design table has no

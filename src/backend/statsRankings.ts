@@ -2,7 +2,7 @@ import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { getLeagueData } from "@/backend/advanceDay";
 import { isCupSlug } from "@/Domain/cups/cupIds";
-import { isContinentalSlug } from "@/Domain/continental/competitions";
+import { continentalClubIds, isContinentalSlug } from "@/Domain/continental/competitions";
 import { ALL_COMPETITIONS, buildCompetitionRankings, type CompetitionKind, type CompetitionRankings } from "@/Domain/stats/rankings";
 
 interface Entry { key: string; rankings: CompetitionRankings }
@@ -35,7 +35,7 @@ export async function getCompetitionRankings(
     const lm = await saveService.getLeagueMeta(saveId, competition);
     if (!lm?.continental) return "not_found";
     kind = "continental";
-    clubIds = new Set(lm.continental.groups.flatMap((g) => g.clubs));
+    clubIds = new Set(continentalClubIds(lm.continental));
   } else if (isCupSlug(competition)) {
     const catalog = await getLeagueData();
     const countryOf = new Map(catalog.filter((l) => l.country).map((l) => [l.slug, l.country!]));

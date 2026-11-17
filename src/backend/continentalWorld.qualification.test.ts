@@ -24,7 +24,7 @@ function competitionResult(
       championId: null,
     },
   };
-  return { slug, meta, groupOf };
+  return { slug, meta, groupOf, opponentsOf: {} };
 }
 
 describe("continentalQualificationOf", () => {
@@ -55,6 +55,15 @@ describe("continentalQualificationOf", () => {
     expect(result?.slug).toBe("uel");
     expect(result?.group).toBe("B");
     expect(result?.opponentIds.sort()).toEqual(["b2", "b3", "b4"]);
+  });
+
+  test("league format: no group, the 8 league-phase opponents", () => {
+    const primary = competitionResult("ucl", [], { my_club: "", o1: "" });
+    primary.meta.continental!.format = "league";
+    primary.opponentsOf = { my_club: ["o1", "o2", "o3", "o4", "o5", "o6", "o7", "o8"] };
+    const secondary = competitionResult("uel", [], {});
+    const result = continentalQualificationOf("my_club", { primary, secondary });
+    expect(result).toEqual({ slug: "ucl", group: "", format: "league", opponentIds: ["o1", "o2", "o3", "o4", "o5", "o6", "o7", "o8"] });
   });
 
   test("returns null when the club is in neither competition", () => {

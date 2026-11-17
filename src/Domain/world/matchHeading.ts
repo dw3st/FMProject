@@ -33,6 +33,8 @@ export function matchHeading(input: MatchHeadingInput, t: Translate): string {
     const leg = fixture.leg === 1 ? t("continental.leg1") : fixture.leg === 2 ? t("continental.leg2") : undefined;
     const phase = stage === "group"
       ? t("continental.groupRound", { group: input.continentalGroup ?? "?", round: fixture.round })
+      : stage === "league"
+      ? t("continental.leagueRound", { round: fixture.round })
       : [t(`continental.stage.${stage}`), leg].filter(Boolean).join(" · ");
     return `${phase} • ${competition}`;
   }

@@ -66,7 +66,7 @@ const { applyHumanSeasonReaction, clubSeasonOutcome } = await import("@/Domain/a
 const { applyTierFinanceChange } = await import("@/Domain/advanceDay/tierFinances");
 const { continentalGoodClubsThisSeason } = await import("@/backend/continentalWorld");
 const { isCupSlug } = await import("@/Domain/cups/cupIds");
-const { isContinentalSlug, competitionsOf } = await import("@/Domain/continental/competitions");
+const { isContinentalSlug, competitionsOf, continentalClubIds: clubIdsOfContinental } = await import("@/Domain/continental/competitions");
 const { totalsByKind } = await import("@/Domain/finance/ledger");
 const { aiTransferBudgetOf, seasonalTransferBudgetFor, popularityOf } = await import("@/Domain/aiFinance/aiClubFinance");
 const { AI_FINANCE_CONFIG } = await import("@/Domain/aiFinance/aiFinanceConfig");
@@ -1912,12 +1912,14 @@ try {
   for (const slug of continentalSlugsEnd) {
     const cm = await plain().getLeagueMeta(smokeSaveId, slug);
     if (!cm?.continental) { continentalMissingMeta++; continue; }
-    const clubs = cm.continental.groups.flatMap((g) => g.clubs);
+    const clubs = clubIdsOfContinental(cm.continental);
     continentalClubs.set(slug, clubs);
-    if (clubs.length !== 32) { continentalWrongSize++; console.log(`    ${slug}: ${clubs.length} clubs (expected 32)`); }
+    // League phase (UCL/UEL since 12.13): 36; group format (Lib/Sud, or a season drawn before): 32.
+    const expected = cm.continental.format === "league" ? 36 : 32;
+    if (clubs.length !== expected) { continentalWrongSize++; console.log(`    ${slug}: ${clubs.length} clubs (expected ${expected})`); }
   }
   check(continentalMissingMeta === 0, `every continental folder has meta.continental (${continentalMissingMeta} missing)`);
-  check(continentalWrongSize === 0, `every continental competition has exactly 32 clubs (${continentalWrongSize} bad)`);
+  check(continentalWrongSize === 0, `every continental competition has its 36 (league phase) or 32 (groups) clubs (${continentalWrongSize} bad)`);
 
   // 2. No club plays in two continental competitions.
   const clubComps = new Map<string, string[]>();

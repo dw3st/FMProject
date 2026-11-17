@@ -7,7 +7,7 @@ import countriesRaw from "@/Data/countries.json";
 import { loadWindowContext, seatWindowRef, type SeatWindowRef, type WindowContext } from "@/backend/marketWindowWorld";
 import { seasonLabel } from "@/Domain/history/history";
 import { cupSlugOf, isCupSlug } from "@/Domain/cups/cupIds";
-import { CONTINENTAL_SLUGS, isContinentalSlug } from "@/Domain/continental/competitions";
+import { CONTINENTAL_SLUGS, inContinental, isContinentalSlug } from "@/Domain/continental/competitions";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import { registrationStatus, type ContinentalGate } from "@/Domain/registration/deadlines";
 import { registeredSet, ruleFor } from "@/Domain/registration/rules";
@@ -38,8 +38,10 @@ export function kindOf(slug: string): RegistrationCompKind {
 
 function gateOf(meta: LeagueSeasonMeta | null): ContinentalGate | undefined {
   const stages = meta?.continental?.stages;
-  const group = stages?.find((s) => s.name === "group");
-  const r16 = stages?.find((s) => s.name === "r16");
+  // League format (UCL/UEL since 12.13): the league phase plays the groups' part, and the play-off opens the knockouts.
+  const league = meta?.continental?.format === "league";
+  const group = stages?.find((s) => s.name === (league ? "league" : "group"));
+  const r16 = stages?.find((s) => s.name === (league ? "playoff" : "r16"));
   if (!group?.dates.length || !r16?.dates.length) return undefined;
   return { groupStart: group.dates[0]!, groupEnd: group.dates[group.dates.length - 1]!, knockoutStart: r16.dates[0]! };
 }
@@ -82,7 +84,7 @@ export async function registrationDayCtx(
     } else {
       compMeta = await metaOf(slug);
       if (!compMeta) return null;
-      if (kind === "continental" && !compMeta.continental?.groups.some((g) => g.clubs.includes(squad.id))) return null;
+      if (kind === "continental" && !(compMeta.continental && inContinental(compMeta.continental, squad.id))) return null;
       season = seasonLabel(compMeta.year, compMeta.start, compMeta.end);
     }
     const country = w.countryOfLeague(leagueSlug);
@@ -103,7 +105,7 @@ export async function registrationDayCtx(
     if (country) slugs.push(cupSlugOf(country));
     for (const c of CONTINENTAL_SLUGS) {
       const m = await metaOf(c);
-      if (m?.continental?.groups.some((g) => g.clubs.includes(squad.id))) slugs.push(c);
+      if (m?.continental && inContinental(m.continental, squad.id)) slugs.push(c);
     }
     const out: CompInfo[] = [];
     for (const s of slugs) {

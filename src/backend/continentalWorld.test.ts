@@ -6,7 +6,7 @@ import { countryByLeague, leagueBusyDates } from "@/backend/cupWorld";
 import { continentalGoodClubsThisSeason, continentalTier1LeagueStates, playerContinentalSlug } from "@/backend/continentalWorld";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { CONTINENTAL, CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
+import { CONTINENTAL, CONTINENTAL_SLUGS, continentalClubIds } from "@/Domain/continental/competitions";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import type { RoundFixtures } from "@/types/calendarTypes";
@@ -45,14 +45,42 @@ describe("createSave generates continental competitions", () => {
     expect(createSaveMs).toBeGreaterThan(0);
   });
 
-  test("all 4 competitions exist with 32 clubs, 8 groups of 4, rounds 1-6 with 16 fixtures", async () => {
-    for (const slug of CONTINENTAL_SLUGS) {
+  test("ucl/uel: league format, 36 clubs in 4 pots, 8 matches each (4 at home), no same-country opponent", async () => {
+    for (const slug of ["ucl", "uel"] as const) {
+      const cont = (await saveService.getLeagueMeta(saveId, slug))!.continental!;
+      expect(cont.format).toBe("league");
+      expect(cont.groups).toEqual([]);
+      expect(cont.pots!.length).toBe(4);
+      for (const p of cont.pots!) expect(p.length).toBe(9);
+      const clubs = continentalClubIds(cont);
+      expect(new Set(clubs).size).toBe(36);
+      expect(cont.stages.map((s) => s.name)).toEqual(["league", "playoff", "r16", "qf", "sf", "final"]);
+      const games = new Map(clubs.map((id) => [id, { home: 0, away: 0 }]));
+      for (const round of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        const r = await saveService.getRound(saveId, slug, round);
+        expect(r!.fixtures.length).toBe(18);
+        const seen = new Set<string>();
+        for (const f of r!.fixtures) {
+          expect(seen.has(f.home) || seen.has(f.away)).toBe(false);
+          seen.add(f.home); seen.add(f.away);
+          expect(cont.countryOf[f.home]).not.toBe(cont.countryOf[f.away]);
+          games.get(f.home)!.home++;
+          games.get(f.away)!.away++;
+        }
+      }
+      for (const g of games.values()) expect(g).toEqual({ home: 4, away: 4 });
+    }
+  }, 300_000);
+
+  test("lib/sud keep the group format: 32 clubs, 8 groups of 4, rounds 1-6 with 16 fixtures", async () => {
+    for (const slug of ["lib", "sud"] as const) {
       const compMeta = await saveService.getLeagueMeta(saveId, slug);
       expect(compMeta?.kind).toBe("continental");
       const cont = compMeta!.continental!;
+      expect(cont.format ?? "groups").toBe("groups");
       expect(cont.groups.length).toBe(8);
       for (const g of cont.groups) expect(g.clubs.length).toBe(4);
-      const clubs = cont.groups.flatMap((g) => g.clubs);
+      const clubs = continentalClubIds(cont);
       expect(new Set(clubs).size).toBe(32);
       expect(cont.championId).toBeNull();
 
@@ -67,11 +95,11 @@ describe("createSave generates continental competitions", () => {
     const allClubs: string[] = [];
     for (const slug of CONTINENTAL_SLUGS) {
       const compMeta = await saveService.getLeagueMeta(saveId, slug);
-      allClubs.push(...compMeta!.continental!.groups.flatMap((g) => g.clubs));
+      allClubs.push(...continentalClubIds(compMeta!.continental!));
     }
     const duplicates = allClubs.filter((id, i) => allClubs.indexOf(id) !== i);
     expect(duplicates, `clubs in more than one continental: ${JSON.stringify([...new Set(duplicates)])}`).toEqual([]);
-    expect(allClubs.length).toBe(4 * 32);
+    expect(allClubs.length).toBe(2 * 36 + 2 * 32);
   }, 300_000);
 
   test("Premier League clubs in UCL match the league's ucl zone span", async () => {
@@ -83,7 +111,7 @@ describe("createSave generates continental competitions", () => {
     const index = await saveService.getSquadIndex(saveId);
     const ucl = await saveService.getLeagueMeta(saveId, "ucl");
     const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
-    const uclClubs = ucl!.continental!.groups.flatMap((g) => g.clubs);
+    const uclClubs = continentalClubIds(ucl!.continental!);
     const plInUcl = uclClubs.filter((id) => plClubs.has(id));
     expect(plInUcl.length).toBe(expected);
   }, 300_000);
@@ -116,7 +144,7 @@ describe("createSave generates continental competitions", () => {
     const index = await saveService.getSquadIndex(saveId);
     const compMeta = await saveService.getLeagueMeta(saveId, slug);
     const cont = compMeta!.continental!;
-    const clubs = cont.groups.flatMap((g) => g.clubs);
+    const clubs = continentalClubIds(cont);
     const dates = cont.stages.flatMap((s) => s.dates);
     const weekday = CONTINENTAL[slug as keyof typeof CONTINENTAL].weekday;
 
@@ -185,11 +213,12 @@ describe("createSave generates continental competitions", () => {
     return { slug, dates, participantDates, sameDayCount, detail, adjacentDayCount, onWeekdayCount, minGapDays };
   }
 
-  test("(a) same-day double-booking is impossible, across all 4 competitions, over all 13 dates (league + cup, incl. undrawn cup stages)", async () => {
+  test("(a) same-day double-booking is impossible, across all 4 competitions, over all their dates (17 league format, 13 groups)", async () => {
     for (const slug of CONTINENTAL_SLUGS) {
       const m = await competitionMetrics(slug);
-      expect(m.dates).toHaveLength(13);
-      expect(m.participantDates).toHaveLength(32);
+      const league = slug === "ucl" || slug === "uel";
+      expect(m.dates).toHaveLength(league ? 17 : 13);
+      expect(m.participantDates).toHaveLength(league ? 36 : 32);
       expect(m.sameDayCount, `${slug}: same-day clash date(s): ${m.detail.join(", ")}`).toBe(0);
     }
   }, 300_000);
@@ -203,10 +232,10 @@ describe("createSave generates continental competitions", () => {
   test("(b) per-club adjacent-day rate and weekday count are reported per competition; (c) min gap >= 3", async () => {
     for (const slug of CONTINENTAL_SLUGS) {
       const m = await competitionMetrics(slug);
-      const total = m.participantDates.length * m.dates.length; // 32 * 13 = 416
+      const total = m.participantDates.length * m.dates.length;
       // eslint-disable-next-line no-console
       console.log(
-        `${slug}: adjacent-day ${m.adjacentDayCount}/${total}, on-weekday ${m.onWeekdayCount}/13, ` +
+        `${slug}: adjacent-day ${m.adjacentDayCount}/${total}, on-weekday ${m.onWeekdayCount}/${m.dates.length}, ` +
           `min gap ${m.minGapDays}d`,
       );
       expect(m.minGapDays, `${slug}: dates ${JSON.stringify(m.dates)}`).toBeGreaterThanOrEqual(3);
@@ -218,8 +247,8 @@ describe("createSave generates continental competitions", () => {
     const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
     const ucl = await saveService.getLeagueMeta(saveId, "ucl");
     const uel = await saveService.getLeagueMeta(saveId, "uel");
-    const uclClubs = ucl!.continental!.groups.flatMap((g) => g.clubs);
-    const uelClubs = uel!.continental!.groups.flatMap((g) => g.clubs);
+    const uclClubs = continentalClubIds(ucl!.continental!);
+    const uelClubs = continentalClubIds(uel!.continental!);
     const qualifiedClub = [...uclClubs, ...uelClubs].find((id) => plClubs.has(id));
     expect(qualifiedClub).toBeTruthy();
 
@@ -231,12 +260,12 @@ describe("createSave generates continental competitions", () => {
     expect(await playerContinentalSlug(saveService, saveId, championshipClub!)).toBeNull();
   }, 300_000);
 
-  test("GET /api/saves/:id/continental/:slug returns meta, fixtures, names and 8 group tables of 4 rows each", async () => {
+  test("GET /api/saves/:id/continental/:slug: groups for lib (8 tables of 4), the league table of 36 for ucl", async () => {
     const { user, session } = devAutoLogin(`continental-route-${saveId}@test.local`);
     await ownSolo(saveId, user.id);
     const handler = apiRoutes["/api/saves/:saveId/continental/:slug"];
 
-    const contSlug = "ucl";
+    const contSlug = "lib";
     const okReq = Object.assign(
       new Request(`http://localhost/api/saves/${saveId}/continental/${contSlug}`, {
         headers: { cookie: `fs_session=${session.token}` },
@@ -259,6 +288,19 @@ describe("createSave generates continental competitions", () => {
       for (const clubId of g.clubs) expect(body.names[clubId]).toBeTruthy();
     }
 
+    const uclReq = Object.assign(
+      new Request(`http://localhost/api/saves/${saveId}/continental/ucl`, {
+        headers: { cookie: `fs_session=${session.token}` },
+      }),
+      { params: { saveId, slug: "ucl" } },
+    );
+    const uclRes = await handler(uclReq as Request & { params: Record<string, string> });
+    expect(uclRes.status).toBe(200);
+    const uclBody = (await uclRes.json()) as { table: { squadId: string }[]; groups: unknown[]; names: Record<string, string> };
+    expect(uclBody.groups).toEqual([]);
+    expect(uclBody.table.length).toBe(36);
+    for (const r of uclBody.table) expect(uclBody.names[r.squadId]).toBeTruthy();
+
     const badReq = Object.assign(
       new Request(`http://localhost/api/saves/${saveId}/continental/xyz`, {
         headers: { cookie: `fs_session=${session.token}` },
@@ -278,8 +320,8 @@ describe("createSave generates continental competitions", () => {
     const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
     const ucl = await saveService.getLeagueMeta(saveId, "ucl");
     const uel = await saveService.getLeagueMeta(saveId, "uel");
-    const uclClubs = ucl!.continental!.groups.flatMap((g) => g.clubs);
-    const uelClubs = uel!.continental!.groups.flatMap((g) => g.clubs);
+    const uclClubs = continentalClubIds(ucl!.continental!);
+    const uelClubs = continentalClubIds(uel!.continental!);
     const qualifiedClub = [...uclClubs, ...uelClubs].find((id) => plClubs.has(id))!;
     expect(qualifiedClub).toBeTruthy();
 
@@ -292,7 +334,7 @@ describe("createSave generates continental competitions", () => {
       const contSlug = (await playerContinentalSlug(saveService, saveId2, qualifiedClub))!;
       expect(contSlug).toBeTruthy();
       const contMeta = await saveService.getLeagueMeta(saveId2, contSlug);
-      const group = contMeta!.continental!.stages.find((s) => s.name === "group")!;
+      const group = contMeta!.continental!.stages.find((s) => s.name === "group" || s.name === "league")!;
       const round1Date = group.dates[0]!;
 
       const mySquad = (await saveService.getSquadById(saveId2, qualifiedClub))!;
@@ -325,7 +367,7 @@ describe("advanceOneDay plays continental fixtures", () => {
   let saveId = "";
   afterAll(async () => { if (saveId) await saveService.deleteSave(saveId); });
 
-  test("UCL group-stage round 1 (16 fixtures) gets played", async () => {
+  test("UCL league-phase round 1 (18 fixtures) gets played", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
@@ -333,7 +375,7 @@ describe("advanceOneDay plays continental fixtures", () => {
     saveId = meta.id;
 
     const ucl = await saveService.getLeagueMeta(saveId, "ucl");
-    const group = ucl!.continental!.stages.find((s) => s.name === "group")!;
+    const group = ucl!.continental!.stages.find((s) => s.name === "league")!;
     const round1Date = group.dates[0]!;
 
     await saveService.updateMeta(saveId, { currentDate: round1Date });
@@ -341,7 +383,7 @@ describe("advanceOneDay plays continental fixtures", () => {
     expect(outcome.ok).toBe(true);
 
     const round1 = await saveService.getRound(saveId, "ucl", 1);
-    expect(round1!.fixtures.length).toBe(16);
+    expect(round1!.fixtures.length).toBe(18);
     for (const f of round1!.fixtures) {
       expect(f.played).toBe(true);
       expect(f.result).not.toBeNull();
@@ -367,8 +409,7 @@ describe("advanceOneDay fills a missing second-leg aggregate before kickoff", ()
     const [date0, date1] = r16.dates as [string, string];
 
     const index = await saveService.getSquadIndex(saveId);
-    const uclClubs = ucl!.continental!.groups
-      .flatMap((g) => g.clubs)
+    const uclClubs = continentalClubIds(ucl!.continental!)
       .filter((id) => index.byId(id)?.leagueSlug !== "premier_league");
     const [clubA, clubB, clubC, clubD] = uclClubs;
     if (!clubA || !clubB || !clubC || !clubD) {
@@ -481,7 +522,7 @@ describe("continentalGoodClubsThisSeason (Task 6 review fix — good vs title, t
     const uclMeta = (await saveService.getLeagueMeta(saveId, "ucl"))!;
     const cont = uclMeta.continental!;
     const finalStage = cont.stages.find((s) => s.name === "final")!;
-    const [home, away] = cont.groups.flatMap((g) => g.clubs);
+    const [home, away] = continentalClubIds(cont);
 
     const stages = cont.stages.map((s) => (s.name === "final" ? { ...s, drawn: true } : s));
     await saveService.writeLeagueMeta(saveId, { ...uclMeta, continental: { ...cont, stages } });
@@ -501,7 +542,7 @@ describe("continentalGoodClubsThisSeason (Task 6 review fix — good vs title, t
   test("champion decided: the champion is in BOTH sets, the runner-up only in 'good'", async () => {
     const uclMeta = (await saveService.getLeagueMeta(saveId, "ucl"))!;
     const cont = uclMeta.continental!;
-    const [home, away] = cont.groups.flatMap((g) => g.clubs);
+    const [home, away] = continentalClubIds(cont);
 
     await saveService.writeLeagueMeta(saveId, { ...uclMeta, continental: { ...cont, championId: home! } });
 

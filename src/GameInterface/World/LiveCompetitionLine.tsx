@@ -14,7 +14,7 @@ export function LiveCompetitionLine({ live, className = "" }: { live: LiveBase; 
   if (s?.kind === "group") parts.push(t("continental.groupRound", { group: s.group, round: s.round }));
   if (s?.kind === "cup") parts.push(t(`cups.stage.${s.stage}`));
   if (s?.kind === "continental") {
-    parts.push(t(`continental.stage.${s.stage}`));
+    parts.push(s.stage === "league" && s.round ? t("continental.leagueRound", { round: s.round }) : t(`continental.stage.${s.stage}`));
     if (s.leg) parts.push(t(`continental.leg${s.leg}`));
   }
   const text = parts.join(" · ");

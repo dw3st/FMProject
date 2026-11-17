@@ -2,20 +2,24 @@ import type { RegistrationCompKind, RegistrationStatus } from "@/types/registrat
 import type { WindowStatus } from "@/Domain/market/windows";
 import { addDays } from "@/Domain/dates";
 
-/** Stage dates of a continental competition (`meta.continental.stages`). */
+/**
+ * Stage dates of a continental competition (`meta.continental.stages`). In the league format (Champions League /
+ * Europa League since 12.13) "group" is the league phase and the knockouts start with the play-off.
+ */
 export interface ContinentalGate {
-  /** First group match date. */
+  /** First group (or league-phase) match date. */
   groupStart: string;
-  /** Last group round date. */
+  /** Last group (or league-phase) round date. */
   groupEnd: string;
-  /** Round-of-16 first-leg date. */
+  /** First leg of the first knockout stage: the round of 16, or the play-off in the league format. */
   knockoutStart: string;
 }
 
 /**
  * Registration deadline (`.claude/rules/game/registration.md` → Prazo). League and cup: the transfer window of the
- * club's country. Continental: the window, and the next stage not started yet (before the first group match, or
- * between the end of the groups and the round-of-16 first leg); closed for good once the knockouts start.
+ * club's country. Continental: the window, and the next stage not started yet (before the first group / league-phase
+ * match, or between the end of the groups and the round-of-16 first leg — the league phase and the play-off in the
+ * league format); closed for good once the knockouts start.
  */
 export function registrationStatus(args: {
   kind: RegistrationCompKind;

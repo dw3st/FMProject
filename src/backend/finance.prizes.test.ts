@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
+import { continentalClubIds } from "@/Domain/continental/competitions";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData, getPyramids, runBufferedDay } from "@/backend/advanceDay";
 import { applyBroadcasting } from "@/backend/FinancialService";
@@ -37,8 +38,8 @@ describe("finance prizes — continental (UCL group round 1)", () => {
       const index = await saveService.getSquadIndex(probeMeta.id);
       const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
       const ucl = await saveService.getLeagueMeta(probeMeta.id, "ucl");
-      const group = ucl!.continental!.stages.find((s) => s.name === "group")!;
-      const uclClubs = ucl!.continental!.groups.flatMap((g) => g.clubs);
+      const group = ucl!.continental!.stages.find((s) => s.name === "group" || s.name === "league")!;
+      const uclClubs = continentalClubIds(ucl!.continental!);
       qualifiedClub = uclClubs.find((id) => plClubs.has(id))!;
       expect(qualifiedClub).toBeTruthy();
       round1Date = group.dates[0]!;

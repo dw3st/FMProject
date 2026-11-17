@@ -29,3 +29,13 @@ describe("standings events", () => {
     expect(nationalNewsItems({ kind: "sacked" })).toEqual([]);
   });
 });
+
+describe("standings events (league phase, 12.13)", () => {
+  test("top 24 of the league phase counts as leaving the groups; the play-off adds nothing more", () => {
+    const groups = continentalEventItem({ kind: "advanced", clubId: "a", stage: "group" });
+    expect(continentalEventItem({ kind: "advanced", clubId: "a", stage: "league" })).toEqual(groups);
+    expect(continentalEventItem({ kind: "toPlayoff", clubId: "a", position: 12 })).toEqual(groups);
+    expect(continentalEventItem({ kind: "advanced", clubId: "a", stage: "playoff" })).toBeNull();
+    expect(continentalEventItem({ kind: "eliminated", clubId: "a", stage: "league" })).toBeNull();
+  });
+});

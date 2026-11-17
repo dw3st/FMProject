@@ -79,7 +79,8 @@ export type LiveStage =
   | { kind: "round"; round: number }
   | { kind: "group"; group: string; round: number }
   | { kind: "cup"; stage: string }
-  | { kind: "continental"; stage: string; leg?: number };
+  /** `round`: league phase of the Champions League / Europa League (stage "league"), round 1..8. */
+  | { kind: "continental"; stage: string; leg?: number; round?: number };
 
 /** The fixed part of a live game (who, against whom, which fixture). */
 export interface LiveBase {

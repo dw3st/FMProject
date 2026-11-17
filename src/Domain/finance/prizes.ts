@@ -53,7 +53,7 @@ export function aiBudgetWithPrize(current: number, prize: number, seasonalGrant:
 
 /** The stage a club REACHED, from the `ContinentalStageName` it "advanced" out of. Skips "final" — the eventual champion's own "advanced,stage:final" event has no further stage; they're paid via the separate "champion" event. */
 const STAGE_REACHED: Partial<Record<ContinentalStageName, "r16" | "qf" | "sf" | "final">> = {
-  group: "r16", r16: "qf", qf: "sf", sf: "final",
+  group: "r16", league: "r16", playoff: "r16", r16: "qf", qf: "sf", sf: "final",
 };
 
 /** One club's prize for one continental event, from `continentalStagePrizesFromEvents`. */

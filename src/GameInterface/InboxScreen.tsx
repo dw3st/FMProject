@@ -590,20 +590,9 @@ function newsTexts(
     case "continental": {
       const competition = competitionName(message.competition, [], lang);
       const stage = t(`continental.stage.${message.stage}`, { defaultValue: message.stage });
-      const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
-      const preview =
-        message.kind === "qualified" ? t("inbox.continental.qualified", { competition })
-        : message.kind === "group" ? t("inbox.continental.group", { competition, group: message.group ?? "?", opponents: (message.opponentNames ?? []).join(", ") })
-        : message.kind === "champion" ? t("inbox.continental.champion", { competition })
-        : message.kind === "eliminated"
-          ? message.opponentName
-            ? t("inbox.continental.eliminated", { competition, stage, opponent: message.opponentName })
-            : t("inbox.continental.eliminatedGroup", { competition })
-        : t("inbox.continental.draw", {
-            competition, stage, opponent: message.opponentName ?? "?", venue,
-            date: message.firstLegDate ? formatFullDate(message.firstLegDate) : "?",
-          });
-      return { subject: t(`inbox.subjects.continental.${message.kind}`, { competition }), preview };
+      const preview = continentalText(message, competition, stage, t);
+      const subjectKey = message.kind === "group" && message.stage === "league" ? "league" : message.kind;
+      return { subject: t(`inbox.subjects.continental.${subjectKey}`, { competition }), preview };
     }
     case "cup": {
       const cup = message.cupName;
@@ -1539,53 +1528,42 @@ function ContinentalBody({
     ? competitionName(message.competition, leagues, i18n.language)
     : message.competitionName;
 
-  if (message.kind === "qualified") {
-    return <p className="text-sm text-foreground m-0">{t("inbox.continental.qualified", { competition })}</p>;
-  }
-  if (message.kind === "group") {
-    return (
-      <p className="text-sm text-foreground m-0">
-        {t("inbox.continental.group", {
-          competition, group: message.group ?? "?", opponents: (message.opponentNames ?? []).join(", "),
-        })}
-      </p>
-    );
-  }
-  if (message.kind === "champion") {
-    return (
-      <div>
-        <p className="text-sm text-foreground m-0">{t("inbox.continental.champion", { competition })}</p>
-        <PrizeLine prize={message.prize} />
-      </div>
-    );
-  }
-  if (message.kind === "eliminated") {
-    return (
-      <div>
-        <p className="text-sm text-foreground m-0">
-          {message.opponentName
-            ? t("inbox.continental.eliminated", { competition, stage, opponent: message.opponentName })
-            : t("inbox.continental.eliminatedGroup", { competition })}
-        </p>
-        <PrizeLine prize={message.prize} />
-      </div>
-    );
-  }
-  const venue = message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?";
   return (
     <div>
-      <p className="text-sm text-foreground m-0">
-        {t("inbox.continental.draw", {
-          competition,
-          stage,
-          opponent: message.opponentName ?? "?",
-          venue,
-          date: message.firstLegDate ? formatFullDate(message.firstLegDate) : "?",
-        })}
-      </p>
+      <p className="text-sm text-foreground m-0">{continentalText(message, competition, stage, t)}</p>
       <PrizeLine prize={message.prize} />
     </div>
   );
+}
+
+/** One line for a continental message (list preview and body), group and league-phase formats alike. */
+function continentalText(
+  message: Extract<InboxMessage, { category: "continental" }>,
+  competition: string,
+  stage: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+  const opponents = (message.opponentNames ?? []).join(", ");
+  switch (message.kind) {
+    case "qualified": return t("inbox.continental.qualified", { competition });
+    case "group":
+      return message.stage === "league"
+        ? t("inbox.continental.league", { competition, opponents })
+        : t("inbox.continental.group", { competition, group: message.group ?? "?", opponents });
+    case "champion": return t("inbox.continental.champion", { competition });
+    case "top8": return t("inbox.continental.top8", { competition, position: message.position ?? "?" });
+    case "eliminated":
+      if (message.opponentName) return t("inbox.continental.eliminated", { competition, stage, opponent: message.opponentName });
+      return message.stage === "league"
+        ? t("inbox.continental.eliminatedLeague", { competition, position: message.position ?? "?" })
+        : t("inbox.continental.eliminatedGroup", { competition });
+    default:
+      return t("inbox.continental.draw", {
+        competition, stage, opponent: message.opponentName ?? "?",
+        venue: message.venue ? t(`inbox.cup.venue.${message.venue}`) : "?",
+        date: message.firstLegDate ? formatFullDate(message.firstLegDate) : "?",
+      });
+  }
 }
 
 function DevelopmentBody({

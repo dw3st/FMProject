@@ -6,7 +6,13 @@ import { fixtureWinner } from "@/Domain/cups/cupProgress";
 import { tieWinner } from "@/Domain/continental/knockout";
 import type { Fixture } from "@/types/calendarTypes";
 
-export function outOfCompetition(fixtures: readonly Fixture[], clubId: string, championId: string | null | undefined): boolean {
+export function outOfCompetition(
+  fixtures: readonly Fixture[],
+  clubId: string,
+  championId: string | null | undefined,
+  /** League-phase continental: final positions; a top-8 club waits for the round of 16 without a knockout fixture yet. */
+  seeds?: Readonly<Record<string, number>>,
+): boolean {
   const mine = fixtures.filter((f) => f.home === clubId || f.away === clubId);
   if (mine.some((f) => !f.played)) return false;
   // The winner is not out of it (code review 8.8.9); everyone else is once the competition has a champion.
@@ -14,7 +20,7 @@ export function outOfCompetition(fixtures: readonly Fixture[], clubId: string, c
   // Out in the group stage: the knockout draw is made and the club is not in it.
   const anyKnockout = fixtures.some((f) => f.knockout);
   const myKnockout = mine.filter((f) => f.knockout);
-  if (anyKnockout && mine.length > 0 && myKnockout.length === 0) return true;
+  if (anyKnockout && mine.length > 0 && myKnockout.length === 0) return !((seeds?.[clubId] ?? 99) <= 8);
   const legs = new Map<string, Fixture[]>();
   for (const f of myKnockout) {
     if (f.tieId && f.leg) {

@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay, getLeagueData } from "@/backend/advanceDay";
 import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
+import { continentalClubIds } from "@/Domain/continental/competitions";
 import type { LeagueZone } from "@/types/playerTypes";
 import type { StandingRow } from "@/types/playerTypes";
 
@@ -47,8 +48,8 @@ describe("advanceOneDay rolls Europe's continental competitions over", () => {
 
     // Champion of the OLD season, set by hand (normally done by `advanceContinentalStages` once
     // the final is played) — the thing the archive must carry forward as a title.
-    const uclChampion = uclBefore!.continental!.groups[0]!.clubs[0]!;
-    const uelChampion = uelBefore!.continental!.groups[0]!.clubs[0]!;
+    const uclChampion = continentalClubIds(uclBefore!.continental!)[0]!;
+    const uelChampion = continentalClubIds(uelBefore!.continental!)[0]!;
     await saveService.writeLeagueMeta(saveId, {
       ...uclBefore!, continental: { ...uclBefore!.continental!, championId: uclChampion },
     });
@@ -113,8 +114,10 @@ describe("advanceOneDay rolls Europe's continental competitions over", () => {
     expect(uclAfter!.year).toBe(oldYear + 1);
     expect(uelAfter!.year).toBe(oldYear + 1);
     expect(uclAfter!.continental!.championId).toBeNull();
-    expect(uclAfter!.continental!.groups.flatMap((g) => g.clubs)).toHaveLength(32);
-    expect(uelAfter!.continental!.groups.flatMap((g) => g.clubs)).toHaveLength(32);
+    expect(continentalClubIds(uclAfter!.continental!)).toHaveLength(36);
+    expect(continentalClubIds(uelAfter!.continental!)).toHaveLength(36);
+    expect(uclAfter!.continental!.format).toBe("league");
+    expect(uelAfter!.continental!.format).toBe("league");
 
     // England's qualifiers came from the archive order we wrote, not level/id fallback ordering:
     // the top `ucl` zone span of `customOrder`, then the next `uel`+`uecl` span.
@@ -127,8 +130,8 @@ describe("advanceOneDay rolls Europe's continental competitions over", () => {
     const uclSpan = spanOf("ucl");
     const uelSpan = spanOf("uel") + spanOf("uecl");
 
-    const uclEnglandClubs = new Set(uclAfter!.continental!.groups.flatMap((g) => g.clubs).filter((id) => plClubs.includes(id)));
-    const uelEnglandClubs = new Set(uelAfter!.continental!.groups.flatMap((g) => g.clubs).filter((id) => plClubs.includes(id)));
+    const uclEnglandClubs = new Set(continentalClubIds(uclAfter!.continental!).filter((id) => plClubs.includes(id)));
+    const uelEnglandClubs = new Set(continentalClubIds(uelAfter!.continental!).filter((id) => plClubs.includes(id)));
     expect(uclEnglandClubs).toEqual(new Set(customOrder.slice(0, uclSpan)));
     expect(uelEnglandClubs).toEqual(new Set(customOrder.slice(uclSpan, uclSpan + uelSpan)));
   }, 300_000);

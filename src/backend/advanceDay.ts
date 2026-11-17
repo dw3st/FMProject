@@ -173,7 +173,7 @@ import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
 import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { impliedStars, staffEffectsOf } from "@/Domain/staff/staff";
-import { isContinentalSlug, competitionsOf } from "@/Domain/continental/competitions";
+import { isContinentalSlug, competitionsOf, continentalClubIds } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
 import { continentalPoints, cupPoints, leaguePoints, promotionPoints } from "@/Domain/managers/managers";
@@ -434,11 +434,30 @@ export async function emitContinentalSeasonStartNews(
   const compName = competitionName(slug, catalog as unknown as LeagueData[], "en");
   const index = await saveService.getSquadIndex(saveId);
 
+  const leagueFormat = status.kind === "league" || status.kind === "top8" || status.kind === "eliminatedLeague"
+    || (status.kind === "eliminated") || (status.kind === "drawn" && status.stage === "playoff");
   await emitInboxMessage(saveId, buildContinentalMessage({
-    date, kind: "qualified", competition: slug, competitionName: compName, stage: "group",
+    date, kind: "qualified", competition: slug, competitionName: compName, stage: leagueFormat ? "league" : "group",
   }), saveService, seatId);
 
-  if (status.kind === "group") {
+  if (status.kind === "league") {
+    const opponentNames = status.opponentIds.map((id) => index.byId(id)?.name ?? id);
+    await emitInboxMessage(saveId, buildContinentalMessage({
+      date, kind: "group", competition: slug, competitionName: compName, stage: "league", opponentNames,
+    }), saveService, seatId);
+  } else if (status.kind === "top8") {
+    await emitInboxMessage(saveId, buildContinentalMessage({
+      date, kind: "top8", competition: slug, competitionName: compName, stage: "league", position: status.position,
+    }), saveService, seatId);
+  } else if (status.kind === "eliminatedLeague") {
+    await emitInboxMessage(saveId, buildContinentalMessage({
+      date, kind: "eliminated", competition: slug, competitionName: compName, stage: "league", position: status.position,
+    }), saveService, seatId);
+  } else if (status.kind === "eliminated") {
+    await emitInboxMessage(saveId, buildContinentalMessage({
+      date, kind: "eliminated", competition: slug, competitionName: compName, stage: status.stage,
+    }), saveService, seatId);
+  } else if (status.kind === "group") {
     const opponentNames = status.opponentIds.map((id) => index.byId(id)?.name ?? id);
     await emitInboxMessage(saveId, buildContinentalMessage({
       date, kind: "group", competition: slug, competitionName: compName, stage: "group",
@@ -1406,12 +1425,13 @@ export async function advanceOneDay(
         if (!cont) continue;
         const compSlug = cSlug as ContinentalSlug;
         const label = competitionName(cSlug, catalogForContinentalPrizes as unknown as LeagueData[], "en");
-        const groupStage = cont.stages.find((s) => s.name === "group")!;
+        // The first stage: the group stage, or the league phase (UCL/UEL since 12.13) — paid the same way.
+        const groupStage = cont.stages.find((s) => s.name === "group" || s.name === "league")!;
 
-        // Participation: every one of the 32 clubs, the day round 1 of the group stage is played.
+        // Participation: every club (32 in groups, 36 in the league phase), the day round 1 is played.
         if (rounds.includes(groupStage.rounds[0]!)) {
           const amount = continentalPrize(compSlug, "participation");
-          for (const clubId of cont.groups.flatMap((g) => g.clubs)) {
+          for (const clubId of continentalClubIds(cont)) {
             const paid = await awardClubPrize(clubId, amount, `${label} · participation`, { competition: cSlug, stage: "participation" });
             add(continentalPrizeAwardedTo, clubId, paid);
           }
@@ -1454,7 +1474,7 @@ export async function advanceOneDay(
           if (evSeat?.board) {
             if (ev.kind === "champion") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "title", title: `continental:${cSlug}` });
             else if (ev.kind === "advanced") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "stage" });
-            else if (ev.kind === "eliminated" && ev.stage === "group") evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "early_exit" });
+            else if (ev.kind === "eliminated" && (ev.stage === "group" || ev.stage === "league")) evSeat.board = applyCompetitionEvent(evSeat.board, { kind: "early_exit" });
           }
           const contStanding = evSeat ? continentalEventItem(ev, cSlug) : null;
           if (contStanding) standingExtra(evSeat, contStanding);
@@ -1592,9 +1612,19 @@ export async function advanceOneDay(
           return undefined;
         };
 
+        const seedsOf = async (): Promise<Record<string, number>> =>
+          (await saveService.getLeagueMeta(saveId, slug))?.continental?.seeds ?? {};
+
         for (const event of events) {
-          if (event.kind === "eliminated" && event.clubId === myClub) {
-            const opponentId = event.stage === "group" ? undefined : opponentOfTodaysFixture();
+          if (event.kind === "advanced" && event.stage === "league" && event.clubId === myClub) {
+            // League phase: finished in the top 8, straight to the round of 16 (the r16 prize is paid today).
+            ds.deferred.continental.push({
+              date: currentDate, kind: "top8", competition: compSlug, competitionName: compDisplayName, stage: "league",
+              position: (await seedsOf())[myClub], prize: continentalR16PrizeAwardedTo.get(myClub),
+            });
+          } else if (event.kind === "eliminated" && event.clubId === myClub) {
+            const groupLike = event.stage === "group" || event.stage === "league";
+            const opponentId = groupLike ? undefined : opponentOfTodaysFixture();
             const opponentName = opponentId ? (index.byId(opponentId)?.name ?? opponentId) : undefined;
             // No prize field here — the design table has no continental runner-up/elimination
             // payout (unlike cups). A group-stage elimination happens the SAME day as that club's
@@ -1604,6 +1634,7 @@ export async function advanceOneDay(
             ds.deferred.continental.push({
               date: currentDate, kind: "eliminated", competition: compSlug, competitionName: compDisplayName,
               stage: event.stage, opponentName,
+              ...(event.stage === "league" ? { position: (await seedsOf())[myClub] } : {}),
             });
           } else if (event.kind === "champion" && event.clubId === myClub) {
             ds.deferred.continental.push({
@@ -2923,12 +2954,13 @@ export async function advanceOneDay(
           if (!qual) continue;
           const compName = competitionName(qual.slug, catalog as unknown as LeagueData[], "en");
           const opponentNames = qual.opponentIds.map((id) => index.byId(id)?.name ?? id);
+          const firstStage = qual.format === "league" ? "league" : "group";
           ds.deferred.continental.push({
-            date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: "group",
+            date: currentDate, kind: "qualified", competition: qual.slug, competitionName: compName, stage: firstStage,
           });
           ds.deferred.continental.push({
-            date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: "group",
-            group: qual.group, opponentNames,
+            date: currentDate, kind: "group", competition: qual.slug, competitionName: compName, stage: firstStage,
+            ...(qual.group ? { group: qual.group } : {}), opponentNames,
           });
         }
       };

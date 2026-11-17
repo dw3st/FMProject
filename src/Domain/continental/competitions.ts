@@ -35,3 +35,23 @@ export function competitionsOf(continent: "Europe" | "South America"): Continent
   return CONTINENTAL_SLUGS.map((s) => CONTINENTAL[s]).filter((c) => c.continent === continent)
     .sort((a, b) => Number(b.primary) - Number(a.primary));
 }
+
+/** Format of a newly generated season: the league phase in Europe (UCL/UEL, the real format since 2024), groups in South America. */
+export function continentalFormatOf(continent: "Europe" | "South America"): "league" | "groups" {
+  return continent === "Europe" ? "league" : "groups";
+}
+
+/** Clubs of a competition's season per format: 36 in the league phase, 32 with groups. */
+export function continentalClubCount(format: "league" | "groups"): number {
+  return format === "league" ? 36 : 32;
+}
+
+/** Every club in a continental season, whatever the format (group members, or the league-phase pots). */
+export function continentalClubIds(cont: { groups: { clubs: string[] }[]; pots?: string[][] }): string[] {
+  return cont.pots ? cont.pots.flat() : cont.groups.flatMap((g) => g.clubs);
+}
+
+/** Whether a club takes part in this continental season. */
+export function inContinental(cont: { groups: { clubs: string[] }[]; pots?: string[][] }, clubId: string): boolean {
+  return cont.pots ? cont.pots.some((p) => p.includes(clubId)) : cont.groups.some((g) => g.clubs.includes(clubId));
+}

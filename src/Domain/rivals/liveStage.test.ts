@@ -26,3 +26,10 @@ describe("liveStageOf", () => {
     expect(liveStageOf(null, fx(1))).toBeNull();
   });
 });
+
+describe("liveStageOf (league phase, 12.13)", () => {
+  test("a league-phase game: stage league and its round", () => {
+    const meta = { continental: { stages: [{ name: "league", rounds: [1, 2, 3, 4, 5, 6, 7, 8] }] } } as unknown as LeagueSeasonMeta;
+    expect(liveStageOf(meta, fx(4))).toEqual({ kind: "continental", stage: "league", round: 4 });
+  });
+});

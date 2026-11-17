@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
+import { continentalClubIds } from "@/Domain/continental/competitions";
 import { rm } from "fs/promises";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
@@ -62,7 +63,7 @@ describe("advanceOneDay self-heals a continent with no continental competition o
     const uelAfter = await saveService.getLeagueMeta(saveId, "uel");
     expect(uclAfter?.kind).toBe("continental");
     expect(uelAfter?.kind).toBe("continental");
-    expect(uclAfter!.continental!.groups.flatMap((g) => g.clubs)).toHaveLength(32);
-    expect(uelAfter!.continental!.groups.flatMap((g) => g.clubs)).toHaveLength(32);
+    expect(continentalClubIds(uclAfter!.continental!)).toHaveLength(36);
+    expect(continentalClubIds(uelAfter!.continental!)).toHaveLength(36);
   }, 300_000);
 });

@@ -135,7 +135,7 @@ export const registrationRoutes = {
         saveService.getAllFixturesForLeague(saveId, i.slug).catch(() => []),
       ]);
       const champion = meta?.cup?.championId ?? meta?.continental?.championId ?? null;
-      return outOfCompetition(fixtures, h.squad.id, champion) ? { ...view, out: true } : view;
+      return outOfCompetition(fixtures, h.squad.id, champion, meta?.continental?.seeds) ? { ...view, out: true } : view;
     }));
     return Response.json({ date: h.date, competitions });
   },

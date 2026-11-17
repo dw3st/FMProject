@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
+import { continentalClubIds } from "@/Domain/continental/competitions";
 import { saveService } from "@/backend/SaveService";
 import { nextPlayerFixtureDate, readAdvancePosition } from "@/backend/advanceUntil";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
@@ -25,8 +26,8 @@ describe("readAdvancePosition includes the player's continental competition", ()
       const plClubs = new Set(index.inLeague("premier_league").map((t) => t.squadId));
       const ucl = await saveService.getLeagueMeta(probeMeta.id, "ucl");
       const uel = await saveService.getLeagueMeta(probeMeta.id, "uel");
-      const uclClubs = ucl!.continental!.groups.flatMap((g) => g.clubs);
-      const uelClubs = uel!.continental!.groups.flatMap((g) => g.clubs);
+      const uclClubs = continentalClubIds(ucl!.continental!);
+      const uelClubs = continentalClubIds(uel!.continental!);
       qualifiedClub = [...uclClubs, ...uelClubs].find((id) => plClubs.has(id))!;
       expect(qualifiedClub).toBeTruthy();
     } finally {
@@ -46,7 +47,7 @@ describe("readAdvancePosition includes the player's continental competition", ()
     expect(contSlug).not.toBeNull();
 
     const contMeta = await saveService.getLeagueMeta(saveId, contSlug!);
-    const group = contMeta!.continental!.stages.find((s) => s.name === "group")!;
+    const group = contMeta!.continental!.stages.find((s) => s.name === "group" || s.name === "league")!;
     const round1Date = group.dates[0]!;
 
     // Without the continental competition in the list, this date is invisible to

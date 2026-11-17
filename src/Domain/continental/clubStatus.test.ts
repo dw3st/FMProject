@@ -100,3 +100,51 @@ describe("continentalClubStatusOf", () => {
     expect(status).toEqual({ kind: "eliminatedGroup" });
   });
 });
+
+describe("continentalClubStatusOf (league format)", () => {
+  const others = Array.from({ length: 35 }, (_, i) => `c${i + 1}`);
+  const pots = [["my_club", ...others.slice(0, 8)], others.slice(8, 17), others.slice(17, 26), others.slice(26, 35)];
+  function leagueMeta(drawn: { playoff?: boolean; r16?: boolean } = {}, seeds?: Record<string, number>): ContinentalMetaData {
+    return {
+      competition: "ucl", continent: "Europe", format: "league", groups: [], pots,
+      stages: [
+        { name: "league", rounds: [1, 2, 3, 4, 5, 6, 7, 8], dates: [], drawn: true },
+        { name: "playoff", rounds: [9, 10], dates: [], drawn: !!drawn.playoff },
+        { name: "r16", rounds: [11, 12], dates: [], drawn: !!drawn.r16 },
+        { name: "qf", rounds: [13, 14], dates: [], drawn: false },
+        { name: "sf", rounds: [15, 16], dates: [], drawn: false },
+        { name: "final", rounds: [17], dates: [], drawn: false },
+      ],
+      countryOf: {}, level: {}, championId: null, ...(seeds ? { seeds } : {}),
+    };
+  }
+  const leagueRounds = new Map<number, Fixture[]>(
+    [1, 2, 3, 4, 5, 6, 7, 8].map((r) => [r, [tie(r % 2 ? "my_club" : `c${r}`, r % 2 ? `c${r}` : "my_club", "2027-10-01", { round: r })]]),
+  );
+
+  test("league phase running: the 8 opponents in round order", () => {
+    expect(continentalClubStatusOf(leagueMeta(), "my_club", leagueRounds))
+      .toEqual({ kind: "league", opponentIds: ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"] });
+    expect(continentalClubStatusOf(leagueMeta(), "outsider", leagueRounds)).toBeNull();
+  });
+
+  test("play-off drawn: top 8 waits, 9th-24th drawn, 25th-36th out", () => {
+    const m = (pos: number) => leagueMeta({ playoff: true }, { my_club: pos });
+    const playoff = new Map([[9, [tie("c20", "my_club", "2028-02-11", { round: 9 })]]]);
+    expect(continentalClubStatusOf(m(3), "my_club", new Map([[9, []]]))).toEqual({ kind: "top8", position: 3 });
+    expect(continentalClubStatusOf(m(30), "my_club", new Map([[9, []]]))).toEqual({ kind: "eliminatedLeague", position: 30 });
+    expect(continentalClubStatusOf(m(12), "my_club", playoff)).toEqual({
+      kind: "drawn", stage: "playoff", opponentId: "c20", firstLegDate: "2028-02-11", venue: "away",
+    });
+  });
+
+  test("r16 drawn: in it -> drawn r16; lost the play-off -> eliminated in the play-off", () => {
+    const m = (pos: number) => leagueMeta({ playoff: true, r16: true }, { my_club: pos });
+    const playoff = new Map([[9, [tie("c20", "my_club", "2028-02-11", { round: 9 })]], [11, []]]);
+    expect(continentalClubStatusOf(m(12), "my_club", playoff)).toEqual({ kind: "eliminated", stage: "playoff" });
+    const r16 = new Map([[9, []], [11, [tie("my_club", "c5", "2028-03-03", { round: 11 })]]]);
+    expect(continentalClubStatusOf(m(2), "my_club", r16)).toEqual({
+      kind: "drawn", stage: "r16", opponentId: "c5", firstLegDate: "2028-03-03", venue: "home",
+    });
+  });
+});

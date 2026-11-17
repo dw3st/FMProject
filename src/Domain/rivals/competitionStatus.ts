@@ -3,6 +3,7 @@
  */
 import { outOfCompetition } from "@/Domain/registration/eliminated";
 import { groupTable } from "@/Domain/continental/groupTable";
+import { leaguePhaseTable } from "@/Domain/continental/leaguePhase";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
 import type { StandingRow } from "@/types/playerTypes";
 import type { RivalComp, RivalTableRow } from "@/types/rivalsTypes";
@@ -37,7 +38,7 @@ export function knockoutComp(slug: string, meta: LeagueSeasonMeta, fixtures: rea
   const last = mine.filter((f) => f.played).at(-1) ?? mine[0]!;
   const latest = mine.find((f) => !f.played) ?? last;
   const championId = cont?.championId ?? cup?.championId ?? null;
-  const state = championId === clubId ? "champion" : outOfCompetition(fixtures, clubId, championId) ? "out" : "alive";
+  const state = championId === clubId ? "champion" : outOfCompetition(fixtures, clubId, championId, cont?.seeds) ? "out" : "alive";
   const nextDate = state === "alive" ? nextDateOf(mine) : undefined;
   const base = { slug, kind, state, ...(nextDate ? { nextDate } : {}) } as const;
 
@@ -49,6 +50,12 @@ export function knockoutComp(slug: string, meta: LeagueSeasonMeta, fixtures: rea
       if (!group) return null;
       const rows = groupTable(group.clubs, fixtures.filter((f) => stage.rounds.includes(f.round)));
       return { ...base, stage: "group", group: group.name, position: rows.findIndex((r) => r.squadId === clubId) + 1 };
+    }
+    if (stage.name === "league") {
+      // League phase: his place in the one table of 36.
+      const rows = leaguePhaseTable(cont.pots?.flat() ?? [], fixtures.filter((f) => stage.rounds.includes(f.round)));
+      const position = rows.findIndex((r) => r.squadId === clubId) + 1;
+      return { ...base, stage: "league", ...(position > 0 ? { position, size: rows.length } : {}) };
     }
     const leg1 = mine.find((f) => f.tieId && f.tieId === latest.tieId && f.leg === 1);
     const leg2 = mine.find((f) => f.tieId && f.tieId === latest.tieId && f.leg === 2);

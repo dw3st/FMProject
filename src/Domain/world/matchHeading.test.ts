@@ -23,3 +23,12 @@ describe("matchHeading", () => {
     expect(k).toBe("continental.stage.qf · continental.leg2 • UCL");
   });
 });
+
+describe("matchHeading (league phase, 12.13)", () => {
+  test("a league-phase match shows the round, a play-off match the stage and leg", () => {
+    expect(matchHeading({ fixture: { competition: "ucl", round: 5 }, competition: "UCL", continentalStage: "league" }, t))
+      .toBe('continental.leagueRound:{"round":5} • UCL');
+    expect(matchHeading({ fixture: { competition: "ucl", round: 10, leg: 2 }, competition: "UCL", continentalStage: "playoff" }, t))
+      .toBe("continental.stage.playoff · continental.leg2 • UCL");
+  });
+});

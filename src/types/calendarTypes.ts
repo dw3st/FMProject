@@ -118,7 +118,8 @@ export interface CupMetaData {
 
 /** UCL/UEL (Europe) or Lib/Sud (South America). */
 export type ContinentalSlug = "ucl" | "uel" | "lib" | "sud";
-export type ContinentalStageName = "group" | "r16" | "qf" | "sf" | "final";
+/** `league`/`playoff` only in the league-phase format (Champions League / Europa League since 12.12); `group` only in the group format. */
+export type ContinentalStageName = "group" | "league" | "playoff" | "r16" | "qf" | "sf" | "final";
 
 /** One stage of a continental competition. `rounds` are RoundFixtures file numbers. */
 export interface ContinentalStage {
@@ -132,8 +133,14 @@ export interface ContinentalStage {
 export interface ContinentalMetaData {
   competition: ContinentalSlug;
   continent:   "Europe" | "South America";
-  /** A–H, 4 clubs each, pot order (pot 1 first). */
+  /** "league": one table of 36, play-off, fixed bracket (UCL/UEL since 12.12). Absent = "groups" (seasons drawn before). */
+  format?:     "league" | "groups";
+  /** Group format: A–H, 4 clubs each, pot order (pot 1 first). Empty in the league format. */
   groups:      { name: string; clubs: string[] }[];
+  /** League format: 4 pots of 9, pot 1 first. */
+  pots?:       string[][];
+  /** League format: final league-phase position of every club (1..36), set when the league phase ends. */
+  seeds?:      Record<string, number>;
   stages:      ContinentalStage[];
   /** Club → leagueData country, for draw restrictions and display. */
   countryOf:   Record<string, string>;

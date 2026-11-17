@@ -83,7 +83,7 @@ export const BOARD_FANS = {
     /** A cup/continental stage won (the "bonus" competitions). */
     STAGE_BOARD: 1,
     STAGE_FANS: 1.5,
-    /** Knocked out early: cup before the quarter-finals, continental in the group stage. */
+    /** Knocked out early: cup before the quarter-finals, continental in the group stage (or 25th–36th of the league phase). */
     EARLY_EXIT_BOARD: -2.5,
     EARLY_EXIT_FANS: -2,
     PROMOTED_BOARD: 10,

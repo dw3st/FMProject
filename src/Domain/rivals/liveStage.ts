@@ -15,6 +15,7 @@ export function liveStageOf(meta: LeagueSeasonMeta | null | undefined, fixture: 
       const group = meta.continental.groups.find((g) => g.clubs.includes(fixture.home));
       return group ? { kind: "group", group: group.name, round: stage.rounds.indexOf(fixture.round) + 1 } : null;
     }
+    if (stage.name === "league") return { kind: "continental", stage: "league", round: stage.rounds.indexOf(fixture.round) + 1 };
     return { kind: "continental", stage: stage.name, ...(fixture.leg ? { leg: fixture.leg } : {}) };
   }
   return { kind: "round", round: fixture.round };

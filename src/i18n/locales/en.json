@@ -2126,7 +2126,10 @@
       "draw": "{{competition}} — {{stage}}: {{opponent}} ({{venue}}) on {{date}}",
       "eliminated": "Eliminated from the {{competition}} ({{stage}}) by {{opponent}}",
       "eliminatedGroup": "Eliminated from the {{competition}} group stage",
-      "champion": "Champions of the {{competition}}!"
+      "champion": "Champions of the {{competition}}!",
+      "league": "{{competition}} league phase draw: {{opponents}}",
+      "top8": "{{position}} in the {{competition}} league phase: straight to the round of 16",
+      "eliminatedLeague": "Eliminated in the {{competition}} league phase ({{position}})"
     },
     "injury": {
       "injured": "{{player}} injured ({{severity}}) — expected back {{date}}",
@@ -2366,7 +2369,9 @@
         "group": "{{competition}} group draw",
         "draw": "{{competition}} draw",
         "eliminated": "Out of the {{competition}}",
-        "champion": "{{competition}} champions!"
+        "champion": "{{competition}} champions!",
+        "league": "{{competition}} league phase draw",
+        "top8": "{{competition}}: straight to the round of 16"
       },
       "cup": {
         "draw": "{{cup}} draw",
@@ -2599,8 +2604,15 @@
       "r16": "Round of 16",
       "qf": "Quarter-finals",
       "sf": "Semi-finals",
-      "final": "Final"
-    }
+      "final": "Final",
+      "league": "League phase",
+      "playoff": "Knockout play-off"
+    },
+    "leagueRound": "League phase · matchday {{round}}",
+    "bandTop8": "1st to 8th: straight to the round of 16",
+    "bandPlayoff": "9th to 24th: play-off",
+    "bandOut": "25th to 36th: eliminated",
+    "leagueMatches": "League phase matches"
   },
   "development": {
     "statusTitle": "Status",

@@ -1,6 +1,9 @@
 import { useTranslation } from "react-i18next";
 import type { Fixture, LeagueSeasonMeta } from "@/types/calendarTypes";
 import type { GroupRow } from "@/Domain/continental/groupTable";
+import type { LeagueRow } from "@/Domain/continental/leaguePhase";
+import { useState } from "react";
+import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { finalWinner, tieWinner } from "@/Domain/continental/knockout";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { Icon } from "@/GameInterface/Icons";
@@ -12,10 +15,16 @@ export interface ContinentalData {
   fixtures: Fixture[];
   names: Record<string, string>;
   groups: { name: string; rows: GroupRow[] }[];
+  /** League format (Champions, Europa League from 12.13): the single table of 36. */
+  table?: LeagueRow[];
 }
 
 /** Knockout stages in bracket order — the group stage is rendered separately above. */
-const KNOCKOUT_STAGE_NAMES = ["r16", "qf", "sf", "final"] as const;
+const KNOCKOUT_STAGE_NAMES = ["playoff", "r16", "qf", "sf", "final"] as const;
+
+/** League-phase bands: 1-8 straight to the r16, 9-24 to the play-off, 25-36 out. */
+const TOP8 = 8;
+const PLAYOFF_LAST = 24;
 
 /** Groups a stage's fixtures into legs of the same tie, sorted leg 1 then leg 2. Final has no tieId. */
 function legsByTie(fixtures: Fixture[], rounds: number[]): Fixture[][] {
@@ -65,6 +74,7 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
   const continental = data.meta.continental!;
   const name = (id: string) => data.names[id] ?? id;
   const vsLabel = t("leagues.vs");
+  const isLeague = continental.format === "league";
 
   const knockoutStages = continental.stages.filter(
     (s): s is typeof s & { name: (typeof KNOCKOUT_STAGE_NAMES)[number] } =>
@@ -80,6 +90,9 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
         </div>
       )}
 
+      {isLeague ? (
+        <LeaguePhase data={data} myClubId={myClubId} name={name} vsLabel={vsLabel} />
+      ) : (
       <section className="space-y-3">
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("continental.groups")}</h3>
         <div className="grid sm:grid-cols-2 gap-3">
@@ -131,6 +144,7 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
           ))}
         </div>
       </section>
+      )}
 
       <section className="space-y-3">
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("continental.knockout")}</h3>
@@ -225,5 +239,86 @@ export function ContinentalView({ data, myClubId }: { data: ContinentalData; myC
         </div>
       </section>
     </div>
+  );
+}
+
+const LEAGUE_COLS = "grid-cols-[40px_1fr_32px_32px_32px_32px_44px_40px]";
+
+/** The league phase: the single table of 36 with its three bands, then the matches of one round. */
+function LeaguePhase({ data, myClubId, name, vsLabel }: {
+  data: ContinentalData; myClubId: string; name: (id: string) => string; vsLabel: string;
+}) {
+  const { t } = useTranslation();
+  const stage = data.meta.continental!.stages.find((s) => s.name === "league");
+  const rounds = stage?.rounds ?? [];
+  const firstOpen = rounds.find((r) => data.fixtures.some((f) => f.round === r && !f.played)) ?? rounds[rounds.length - 1];
+  const [round, setRound] = useState<number | undefined>(firstOpen);
+  const rows = data.table ?? [];
+  const band = (pos: number) => (pos <= TOP8 ? "border-star-green" : pos <= PLAYOFF_LAST ? "border-primary" : "border-transparent");
+  const matches = data.fixtures.filter((f) => f.round === round);
+  return (
+    <>
+      <section className="space-y-3">
+        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("continental.stage.league")}</h3>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-star-green" />{t("continental.bandTop8")}</span>
+          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-primary" />{t("continental.bandPlayoff")}</span>
+          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm border border-border" />{t("continental.bandOut")}</span>
+        </div>
+        <div className={TABLE_STYLE.shell}>
+          <div className={`grid ${LEAGUE_COLS} gap-2 px-3 py-2 ${TABLE_STYLE.head}`}>
+            <div className="text-center">#</div>
+            <div>{t("leagues.club")}</div>
+            <div className="text-center">{t("leagues.matches")}</div>
+            <div className="text-center">{t("leagues.won")}</div>
+            <div className="text-center">{t("leagues.drawn")}</div>
+            <div className="text-center">{t("leagues.lost")}</div>
+            <div className="text-center">{t("leagues.goalDifference")}</div>
+            <div className="text-center">{t("leagues.points")}</div>
+          </div>
+          <div className={TABLE_STYLE.body}>
+            {rows.map((row, idx) => {
+              const pos = idx + 1;
+              const mine = row.squadId === myClubId;
+              return (
+                <div key={row.squadId}
+                  className={`grid ${LEAGUE_COLS} gap-2 items-center px-3 py-2 tabular-nums border-l-4 ${band(pos)} ${mine ? TABLE_STYLE.rowHighlight : ""}`}>
+                  <div className="text-center font-bold text-muted-foreground">{pos}</div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ClubLogo logoUrl={squadLogoUrl(row.squadId)} className="w-8 h-8 rounded-full shrink-0" imgClassName="w-full h-full object-contain" />
+                    <span className={`truncate ${mine ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}`}>{name(row.squadId)}</span>
+                  </div>
+                  <div className={TABLE_STYLE.number}>{row.mp}</div>
+                  <div className={TABLE_STYLE.number}>{row.w}</div>
+                  <div className={TABLE_STYLE.number}>{row.d}</div>
+                  <div className={TABLE_STYLE.number}>{row.l}</div>
+                  <div className={`text-center font-semibold ${row.gd >= 0 ? "text-primary" : "text-destructive"}`}>{row.gd > 0 ? `+${row.gd}` : row.gd}</div>
+                  <div className={TABLE_STYLE.key}>{row.pts}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {rounds.length > 0 && round !== undefined && (
+        <section className="space-y-3">
+          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("continental.leagueMatches")}</h3>
+          <SegmentedTabs
+            compact wrap
+            tabs={rounds.map((r, i) => ({ key: String(r), label: String(i + 1) }))}
+            active={String(round)}
+            onChange={(k) => setRound(Number(k))}
+          />
+          <ul className="rounded-lg border border-border divide-y divide-border">
+            {matches.map((f) => (
+              <li key={f.id} className={`px-4 py-2 text-sm ${f.home === myClubId || f.away === myClubId ? "bg-primary/10" : ""}`}>
+                <LegScore f={f} winner={null} name={name} vsLabel={vsLabel} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
   );
 }

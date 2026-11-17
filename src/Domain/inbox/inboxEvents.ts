@@ -233,6 +233,8 @@ export function buildContinentalMessage(args: {
   date: string; kind: ContinentalInboxMessage["kind"]; competition: ContinentalSlug; competitionName: string;
   stage: ContinentalStageName; group?: string; opponentName?: string; opponentNames?: string[];
   firstLegDate?: string; venue?: ContinentalInboxMessage["venue"];
+  /** League phase: the final position. */
+  position?: number;
   /**
    * Prize paid THIS DAY for this event: champion (title), or reaching the round of 16 (the
    * "draw" message for stage "r16"). Never pass one for "eliminated" — continental has no
@@ -240,18 +242,20 @@ export function buildContinentalMessage(args: {
    */
   prize?: number;
 }): ContinentalInboxMessage {
-  const { date, kind, competition, competitionName, stage, group, opponentName, opponentNames, firstLegDate, venue, prize } = args;
+  const { date, kind, competition, competitionName, stage, group, opponentName, opponentNames, firstLegDate, venue, prize, position } = args;
   const subject =
     kind === "qualified"  ? `Qualified for the ${competitionName}` :
     kind === "group"      ? `${competitionName} group draw` :
     kind === "draw"       ? `${competitionName} draw` :
     kind === "eliminated" ? `Out of the ${competitionName}` :
+    kind === "top8"       ? `${competitionName}: straight to the round of 16` :
     `${competitionName} champions!`;
   const preview =
     kind === "qualified"  ? `The club qualified for the ${competitionName}.` :
-    kind === "group"      ? `Group ${group ?? "?"}: ${opponentNames && opponentNames.length > 0 ? opponentNames.join(", ") : "?"}.` :
+    kind === "group"      ? `${group ? `Group ${group}` : "League phase"}: ${opponentNames && opponentNames.length > 0 ? opponentNames.join(", ") : "?"}.` :
+    kind === "top8"       ? `Finished ${position ?? "?"} in the league phase.` :
     kind === "draw"       ? `Next: ${opponentName ?? "?"} (${venue ?? "?"}) on ${firstLegDate ?? "?"}.` :
-    kind === "eliminated" ? (opponentName ? `Knocked out by ${opponentName}.` : `Eliminated from the ${competitionName} group stage.`) :
+    kind === "eliminated" ? (opponentName ? `Knocked out by ${opponentName}.` : `Eliminated from the ${competitionName} ${stage === "league" ? "league phase" : "group stage"}.`) :
     `The club won the ${competitionName}.`;
   return {
     id: `continental-${date}-${kind}-${competition}-${randomUUID()}`,
@@ -264,6 +268,7 @@ export function buildContinentalMessage(args: {
     ...(firstLegDate ? { firstLegDate } : {}),
     ...(venue ? { venue } : {}),
     ...(prize ? { prize } : {}),
+    ...(position ? { position } : {}),
   } as ContinentalInboxMessage;
 }
 

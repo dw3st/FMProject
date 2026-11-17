@@ -70,8 +70,9 @@ import { getCompetitionRankings } from "@/backend/statsRankings";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
 import { totalsByKind, weeklyNet } from "@/Domain/finance/ledger";
 import { getClubBudget } from "@/backend/FinancialService";
-import { isContinentalSlug } from "@/Domain/continental/competitions";
+import { continentalClubIds, isContinentalSlug } from "@/Domain/continental/competitions";
 import { groupTable } from "@/Domain/continental/groupTable";
+import { leaguePhaseTable } from "@/Domain/continental/leaguePhase";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -505,7 +506,8 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   /**
    * Continental competition (UCL/UEL/Libertadores/Sudamericana): meta (groups, stages, champion),
    * every fixture, club names, and group tables (`groupTable` over each group's own round-1..6
-   * fixtures). Mirrors the national-cup route above.
+   * fixtures). Mirrors the national-cup route above. League format (UCL/UEL since 12.13): `table`, the one
+   * league-phase table of 36 (`leaguePhaseTable` over the 8 league rounds), and `groups` empty.
    */
   "/api/saves/:saveId/continental/:slug": async (req: Request & { params: Record<string, string> }) => {
     if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
@@ -519,13 +521,18 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
     if (!meta?.continental) return Response.json({ error: "continental competition not found" }, { status: 404 });
     const fixtures = await saveService.getAllFixturesForLeague(saveId!, slug!);
     const index = await saveService.getSquadIndex(saveId!);
-    const ids = new Set(meta.continental.groups.flatMap((g) => g.clubs));
+    const ids = new Set(continentalClubIds(meta.continental));
     for (const f of fixtures) { ids.add(f.home); ids.add(f.away); }
     if (meta.continental.championId) ids.add(meta.continental.championId);
     const names = Object.fromEntries([...ids].map((id) => [id, index.byId(id)?.name ?? id]));
     const groupRounds = meta.continental.stages.find((s) => s.name === "group")?.rounds ?? [];
     const groupFixtures = fixtures.filter((f) => groupRounds.includes(f.round));
     const groups = meta.continental.groups.map((g) => ({ name: g.name, rows: groupTable(g.clubs, groupFixtures) }));
+    if (meta.continental.format === "league") {
+      const leagueRounds = meta.continental.stages.find((s) => s.name === "league")?.rounds ?? [];
+      const table = leaguePhaseTable(continentalClubIds(meta.continental), fixtures.filter((f) => leagueRounds.includes(f.round)));
+      return Response.json({ meta, fixtures, names, groups, table });
+    }
     return Response.json({ meta, fixtures, names, groups });
   },
 

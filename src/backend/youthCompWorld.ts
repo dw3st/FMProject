@@ -9,7 +9,7 @@ import type { SquadIndex } from "@/backend/squadIndex";
 import type { LeagueDataEntry } from "@/backend/advanceDay";
 import { topLeagueOf } from "@/backend/continentalWorld";
 import { countryBlockedDays } from "@/Domain/national/fifaCalendar";
-import { CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
+import { CONTINENTAL_SLUGS, continentalClubIds } from "@/Domain/continental/competitions";
 import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
@@ -82,7 +82,7 @@ async function busyByClubOf(
     const cm = (await service.getLeagueMeta(saveId, slug))?.continental;
     if (!cm) continue;
     const dates = cm.stages.flatMap((s) => s.dates);
-    for (const g of cm.groups) for (const club of g.clubs) for (const d of dates) busy.get(club)?.add(d);
+    for (const club of continentalClubIds(cm)) for (const d of dates) busy.get(club)?.add(d);
   }
   return busy;
 }
@@ -390,7 +390,7 @@ export async function playYouthDay(args: {
       for (const slug of CONTINENTAL_SLUGS) {
         const cm = (await service.getLeagueMeta(saveId, slug))?.continental;
         if (!cm) continue;
-        list.push({ clubs: new Set(cm.groups.flatMap((g) => g.clubs)), dates: new Set(cm.stages.flatMap((s) => s.dates)) });
+        list.push({ clubs: new Set(continentalClubIds(cm)), dates: new Set(cm.stages.flatMap((s) => s.dates)) });
       }
       continental = list;
     }

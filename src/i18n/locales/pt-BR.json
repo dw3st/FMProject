@@ -2126,7 +2126,10 @@
       "draw": "{{competition}} — {{stage}}: {{opponent}} ({{venue}}) em {{date}}",
       "eliminated": "Eliminados da {{competition}} ({{stage}}) por {{opponent}}",
       "eliminatedGroup": "Eliminados na fase de grupos da {{competition}}",
-      "champion": "Campeões da {{competition}}!"
+      "champion": "Campeões da {{competition}}!",
+      "league": "Sorteio da fase de liga da {{competition}}: {{opponents}}",
+      "top8": "{{position}}º lugar na fase de liga da {{competition}}: direto às oitavas de final",
+      "eliminatedLeague": "Eliminados na fase de liga da {{competition}} ({{position}}º lugar)"
     },
     "injury": {
       "injured": "{{player}} sofreu uma lesão ({{severity}}) — retorno previsto para {{date}}",
@@ -2366,7 +2369,9 @@
         "group": "Sorteio dos grupos da {{competition}}",
         "draw": "Sorteio da {{competition}}",
         "eliminated": "Fora da {{competition}}",
-        "champion": "Campeões da {{competition}}!"
+        "champion": "Campeões da {{competition}}!",
+        "league": "Sorteio da fase de liga da {{competition}}",
+        "top8": "Direto às oitavas da {{competition}}"
       },
       "cup": {
         "draw": "Sorteio da {{cup}}",
@@ -2599,8 +2604,15 @@
       "r16": "Oitavas de final",
       "qf": "Quartas de final",
       "sf": "Semifinal",
-      "final": "Final"
-    }
+      "final": "Final",
+      "league": "Fase de liga",
+      "playoff": "Playoff"
+    },
+    "leagueRound": "Fase de liga · rodada {{round}}",
+    "bandTop8": "1º a 8º: direto às oitavas",
+    "bandPlayoff": "9º a 24º: playoff",
+    "bandOut": "25º a 36º: eliminados",
+    "leagueMatches": "Jogos da fase de liga"
   },
   "development": {
     "statusTitle": "Status",

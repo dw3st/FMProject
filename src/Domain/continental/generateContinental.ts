@@ -9,6 +9,7 @@ import type {
 import { CONTINENTAL } from "@/Domain/continental/competitions";
 import { drawGroups, type DrawClub, type DrawnGroup } from "@/Domain/continental/groupDraw";
 import { mulberry32, seedFrom } from "@/Domain/rng";
+import { LEAGUE_PHASE, drawLeaguePhase, scheduleLeaguePhase } from "@/Domain/continental/leaguePhase";
 
 export interface GenerateContinentalArgs {
   slug: ContinentalSlug;
@@ -19,6 +20,8 @@ export interface GenerateContinentalArgs {
   dates: string[];
   /** Deterministic seed base, e.g. `${saveId}:${year}:${slug}`. */
   seedKey: string;
+  /** "league": 36 clubs, 17 dates (8 league rounds + play-off + r16/qf/sf legs + final). Absent = "groups". */
+  format?: "league" | "groups";
 }
 
 const GROUP_ROUNDS = 6;
@@ -72,6 +75,7 @@ function groupStageRounds(
  * see `continentalProgress.ts`).
  */
 export function generateContinental(a: GenerateContinentalArgs): LeagueCalendarResult {
+  if (a.format === "league") return generateLeaguePhase(a);
   if (a.clubs.length !== 32) {
     throw new Error(`generateContinental: need 32 clubs, got ${a.clubs.length}`);
   }
@@ -131,5 +135,85 @@ export function generateContinental(a: GenerateContinentalArgs): LeagueCalendarR
     },
     rounds,
     dateIndex,
+  };
+}
+
+const LEAGUE_TOTAL_ROUNDS = 17;
+
+function checkDates(dates: string[], n: number): void {
+  if (dates.length !== n) throw new Error(`generateContinental: need ${n} dates, got ${dates.length}`);
+  for (let i = 1; i < dates.length; i++) {
+    if (!(dates[i]! > dates[i - 1]!)) {
+      throw new Error(`generateContinental: dates must be strictly increasing and unique, got "${dates[i - 1]}" then "${dates[i]}" at index ${i}`);
+    }
+  }
+}
+
+/**
+ * League-phase season (UCL/UEL since 12.12): pots and opponents drawn (`drawLeaguePhase`), the 144 matches in 8 rounds
+ * (`scheduleLeaguePhase`), empty round files for the play-off and the bracket (written as each stage ends,
+ * `continentalProgress.ts`).
+ */
+function generateLeaguePhase(a: GenerateContinentalArgs): LeagueCalendarResult {
+  if (a.clubs.length !== LEAGUE_PHASE.CLUBS) {
+    throw new Error(`generateContinental: need ${LEAGUE_PHASE.CLUBS} clubs, got ${a.clubs.length}`);
+  }
+  checkDates(a.dates, LEAGUE_TOTAL_ROUNDS);
+  const comp = CONTINENTAL[a.slug];
+  const draw = drawLeaguePhase(a.clubs, mulberry32(seedFrom(`${a.seedKey}:league`)));
+  const schedule = scheduleLeaguePhase(draw.matches, mulberry32(seedFrom(`${a.seedKey}:schedule`)));
+
+  const leagueRounds: RoundFixtures[] = schedule.map((matches, i) => {
+    const round = i + 1;
+    const date = a.dates[i]!;
+    return {
+      leagueSlug: a.slug,
+      round,
+      fixtures: matches.map((m, n): Fixture => ({
+        id: `${a.slug}_${a.year}_r${round}_${n + 1}`,
+        date,
+        competition: a.slug,
+        round,
+        home: m.home,
+        away: m.away,
+        played: false,
+        result: null,
+      })),
+    };
+  });
+  const rest: RoundFixtures[] = [];
+  for (let round = LEAGUE_PHASE.ROUNDS + 1; round <= LEAGUE_TOTAL_ROUNDS; round++) rest.push({ leagueSlug: a.slug, round, fixtures: [] });
+
+  const stages: ContinentalStage[] = [
+    { name: "league", rounds: [1, 2, 3, 4, 5, 6, 7, 8], dates: a.dates.slice(0, 8), drawn: true },
+    { name: "playoff", rounds: [9, 10], dates: a.dates.slice(8, 10), drawn: false },
+    { name: "r16", rounds: [11, 12], dates: a.dates.slice(10, 12), drawn: false },
+    { name: "qf", rounds: [13, 14], dates: a.dates.slice(12, 14), drawn: false },
+    { name: "sf", rounds: [15, 16], dates: a.dates.slice(14, 16), drawn: false },
+    { name: "final", rounds: [17], dates: a.dates.slice(16, 17), drawn: false },
+  ];
+  const continental: ContinentalMetaData = {
+    competition: a.slug,
+    continent: comp.continent,
+    format: "league",
+    groups: [],
+    pots: draw.pots,
+    stages,
+    countryOf: Object.fromEntries(a.clubs.map((c) => [c.id, c.country])),
+    level: Object.fromEntries(a.clubs.map((c) => [c.id, c.level])),
+    championId: null,
+  };
+  return {
+    meta: {
+      leagueSlug: a.slug,
+      year: a.year,
+      start: a.dates[0]!,
+      end: a.dates[LEAGUE_TOTAL_ROUNDS - 1]!,
+      totalRounds: LEAGUE_TOTAL_ROUNDS,
+      kind: "continental",
+      continental,
+    },
+    rounds: [...leagueRounds, ...rest],
+    dateIndex: Object.fromEntries(a.dates.map((d, i) => [d, [i + 1]])),
   };
 }

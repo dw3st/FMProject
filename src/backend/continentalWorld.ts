@@ -18,7 +18,7 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { autoLineupDefaultFormation, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { DEFAULT_SIM_FORMATION_ID, formationForSimId } from "@/Domain/matchFormations";
 import { teamLevel, teamStrength } from "@/Domain/advanceDay/quickSim";
-import { CONTINENTAL, CONTINENTAL_SLUGS, competitionsOf, isContinentalSlug } from "@/Domain/continental/competitions";
+import { CONTINENTAL, CONTINENTAL_SLUGS, competitionsOf, continentalClubCount, continentalFormatOf, inContinental, isContinentalSlug } from "@/Domain/continental/competitions";
 import { allocateSlots, type CountrySlotInput } from "@/Domain/continental/slots";
 import { pickQualifiers } from "@/Domain/continental/qualify";
 import { continentalDates, type ParticipantDates } from "@/Domain/continental/continentalDates";
@@ -241,15 +241,20 @@ async function writeContinental(service: SaveService, saveId: string, r: LeagueC
 export interface ContinentalCompetitionResult {
   slug: ContinentalSlug;
   meta: LeagueSeasonMeta;
-  /** Club → group name, for the Plan 3 inbox draw message. */
+  /** Club → group name, for the Plan 3 inbox draw message ("" in the league format: no group). */
   groupOf: Record<string, string>;
+  /** League format: club → its 8 league-phase opponents (round order). Empty in the group format. */
+  opponentsOf: Record<string, string[]>;
 }
 
 export interface ContinentalQualification {
   slug: ContinentalSlug;
+  /** Group name; "" in the league format. */
   group: string;
-  /** The other 3 clubs in the group. */
+  /** The other 3 clubs in the group, or the 8 league-phase opponents. */
   opponentIds: string[];
+  /** "league" when the competition plays the league phase. */
+  format: "league" | "groups";
 }
 
 /**
@@ -266,8 +271,11 @@ export function continentalQualificationOf(
   for (const r of [results.primary, results.secondary]) {
     const group = r.groupOf[clubId];
     if (group === undefined) continue;
+    if (r.meta.continental?.format === "league") {
+      return { slug: r.slug, group: "", opponentIds: r.opponentsOf[clubId] ?? [], format: "league" };
+    }
     const clubs = r.meta.continental?.groups.find((g) => g.name === group)?.clubs ?? [];
-    return { slug: r.slug, group, opponentIds: clubs.filter((id) => id !== clubId) };
+    return { slug: r.slug, group, opponentIds: clubs.filter((id) => id !== clubId), format: "groups" };
   }
   return null;
 }
@@ -313,15 +321,17 @@ export async function createContinentalSeason(args: {
     clubs: t.clubs.length,
     zoneSlots: t.zoneSlots,
   }));
-  const slots = allocateSlots(continent, slotInputs);
+  const format = continentalFormatOf(continent);
+  const perCompetition = continentalClubCount(format);
+  const slots = allocateSlots(continent, slotInputs, perCompetition);
 
   const rankingByCountry: Record<string, string[]> = {};
   for (const t of infos) rankingByCountry[t.country] = await rankingOf(service, saveId, t, year - 1);
 
   const { primary, secondary } = pickQualifiers(slots, rankingByCountry);
-  if (primary.length !== 32 || secondary.length !== 32) {
+  if (primary.length !== perCompetition || secondary.length !== perCompetition) {
     throw new Error(
-      `createContinentalSeason: ${continent} needs exactly 32+32 qualifiers, got ${primary.length}+${secondary.length}`,
+      `createContinentalSeason: ${continent} needs exactly ${perCompetition}+${perCompetition} qualifiers, got ${primary.length}+${secondary.length}`,
     );
   }
 
@@ -384,13 +394,14 @@ export async function createContinentalSeason(args: {
   const primaryParticipants = await participantsFor(primary);
   const secondaryParticipants = await participantsFor(secondary);
 
-  const primaryDates = continentalDates(continent, year, end, CONTINENTAL[primarySlug].weekday, primaryParticipants);
+  const primaryDates = continentalDates(continent, year, end, CONTINENTAL[primarySlug].weekday, primaryParticipants, format);
   const secondaryDates = continentalDates(
     continent,
     year,
     end,
     CONTINENTAL[secondarySlug].weekday,
     secondaryParticipants,
+    format,
   );
 
   // Should never happen — `continentalDates`' HUGE same-day weight means it only ever lands on a
@@ -420,6 +431,7 @@ export async function createContinentalSeason(args: {
     clubs: drawClubsFor(primary),
     dates: primaryDates,
     seedKey: `${saveId}:${year}:${primarySlug}`,
+    format,
   });
   const secondaryResult = generateContinental({
     slug: secondarySlug,
@@ -427,20 +439,35 @@ export async function createContinentalSeason(args: {
     clubs: drawClubsFor(secondary),
     dates: secondaryDates,
     seedKey: `${saveId}:${year}:${secondarySlug}`,
+    format,
   });
 
   await writeContinental(service, saveId, primaryResult);
   await writeContinental(service, saveId, secondaryResult);
 
+  // Group format: club → group name. League format: club → "" (no group; the opponents come from the league rounds).
   const groupOfFrom = (r: LeagueCalendarResult): Record<string, string> => {
     const out: Record<string, string> = {};
-    for (const g of r.meta.continental!.groups) for (const club of g.clubs) out[club] = g.name;
+    const cont = r.meta.continental!;
+    for (const g of cont.groups) for (const club of g.clubs) out[club] = g.name;
+    for (const club of cont.pots?.flat() ?? []) out[club] = "";
+    return out;
+  };
+  const opponentsFrom = (r: LeagueCalendarResult): Record<string, string[]> => {
+    const out: Record<string, string[]> = {};
+    if (r.meta.continental?.format !== "league") return out;
+    for (const rf of r.rounds) {
+      for (const f of rf.fixtures) {
+        (out[f.home] ??= []).push(f.away);
+        (out[f.away] ??= []).push(f.home);
+      }
+    }
     return out;
   };
 
   return {
-    primary: { slug: primarySlug, meta: primaryResult.meta, groupOf: groupOfFrom(primaryResult) },
-    secondary: { slug: secondarySlug, meta: secondaryResult.meta, groupOf: groupOfFrom(secondaryResult) },
+    primary: { slug: primarySlug, meta: primaryResult.meta, groupOf: groupOfFrom(primaryResult), opponentsOf: opponentsFrom(primaryResult) },
+    secondary: { slug: secondarySlug, meta: secondaryResult.meta, groupOf: groupOfFrom(secondaryResult), opponentsOf: opponentsFrom(secondaryResult) },
   };
 }
 
@@ -523,10 +550,10 @@ export async function continentalTier1LeagueStates(
 }
 
 /**
- * The continental competition (ucl/uel/lib/sud) whose group stage this club belongs to this
- * season, or null when the club did not qualify for any of the 4. Group membership is fixed for
- * the season (`meta.continental.groups`) — a knockout-stage club is always a subset of some
- * group's clubs, so checking the groups alone is enough. Mirrors `playerCupSlug` (cupWorld.ts).
+ * The continental competition (ucl/uel/lib/sud) this club plays this season, or null when the club
+ * did not qualify for any of the 4. Membership is fixed for the season (`meta.continental.groups`,
+ * or `pots` in the league format) — a knockout-stage club is always one of them, so checking those
+ * alone is enough. Mirrors `playerCupSlug` (cupWorld.ts).
  */
 export async function playerContinentalSlug(
   service: SaveService,
@@ -535,7 +562,7 @@ export async function playerContinentalSlug(
 ): Promise<ContinentalSlug | null> {
   for (const slug of CONTINENTAL_SLUGS) {
     const meta = await service.getLeagueMeta(saveId, slug);
-    if (meta?.continental?.groups.some((g) => g.clubs.includes(clubId))) return slug;
+    if (meta?.continental && inContinental(meta.continental, clubId)) return slug;
   }
   return null;
 }
@@ -556,13 +583,17 @@ export async function continentalClubStatus(
     const meta = await service.getLeagueMeta(saveId, slug);
     const cont = meta?.continental;
     if (!cont) continue;
-    if (!cont.groups.some((g) => g.clubs.includes(clubId))) continue;
+    if (!inContinental(cont, clubId)) continue;
 
-    const r16 = cont.stages.find((s) => s.name === "r16");
-    const r16FirstLegFixtures = r16?.drawn
-      ? ((await service.getRound(saveId, slug, r16.rounds[0]!))?.fixtures ?? [])
-      : [];
-    const status = continentalClubStatusOf(cont, clubId, r16FirstLegFixtures);
+    // Rounds the status reads: the league-phase rounds (opponents), and the first leg of every drawn stage.
+    const wanted = new Set<number>();
+    for (const s of cont.stages) {
+      if (s.name === "league") s.rounds.forEach((r) => wanted.add(r));
+      else if (s.name !== "group" && s.drawn) wanted.add(s.rounds[0]!);
+    }
+    const roundsById = new Map<number, Fixture[]>();
+    for (const r of wanted) roundsById.set(r, (await service.getRound(saveId, slug, r))?.fixtures ?? []);
+    const status = continentalClubStatusOf(cont, clubId, roundsById);
     if (status) return { slug, status };
   }
   return null;
