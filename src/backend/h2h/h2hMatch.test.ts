@@ -119,7 +119,7 @@ describe("createH2HMatch", () => {
     const custom = CUSTOM_PRESETS["3-2-4-1"]!;
     match.command("B", { kind: "formation", formation: "user:A", custom });
     expect(match.state.formationB.id).toBe("user:A");
-    expect(match.state.formationB.attacking.map((s) => s.role)).toEqual(custom.slots.map((s) => s.role));
+    expect(match.state.formationB.attacking.map((s) => s.role as string)).toEqual(custom.slots.map((s) => s.role));
     expect(match.state.formationA.id).toBe("4-3-3");
   });
 

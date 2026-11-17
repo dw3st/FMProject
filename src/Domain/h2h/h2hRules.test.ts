@@ -200,7 +200,7 @@ describe("parseH2HCommand", () => {
     expect(parseH2HCommand({ kind: "formation", formation: "4-4-2" })).toEqual({ kind: "formation", formation: "4-4-2" });
     const custom = CUSTOM_PRESETS["4-1-3-2"]!;
     expect(parseH2HCommand({ kind: "formation", formation: "user:free", custom })).toEqual({ kind: "formation", formation: "user:free", custom });
-    expect(parseH2HCommand({ kind: "formation", formation: "user:C", custom })?.formation).toBe("user:C");
+    expect(parseH2HCommand({ kind: "formation", formation: "user:C", custom })).toMatchObject({ formation: "user:C" });
     expect(parseH2HCommand({ kind: "instruction", slot: 1, instruction: { variant: "fb_inverted", press: "more" } }))
       .toEqual({ kind: "instruction", slot: 1, instruction: { variant: "fb_inverted", press: "more" } });
     expect(parseH2HCommand({ kind: "instruction", slot: 10, instruction: null }))
