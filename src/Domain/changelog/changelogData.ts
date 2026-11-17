@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.10.1",
+    date: "2026-11-17",
+    time: "19:30",
+    items: [],
+    fixes: [
+      { tab: "squad", pt: "Trabalho de mentalidade na ficha: cartões dos traços, o progresso do jogador até o próximo ganho e a lista de quem o auxiliar acompanha. Com o auxiliar cheio, dá para trocar um jogador por outro.", en: "Mentality work on the player page: trait cards, the player's progress to the next gain and the list of who the assistant works with. With the assistant full, you can swap one player for another." },
+    ],
+  },
+  {
     version: "12.10",
     date: "2026-11-17",
     time: "17:30",

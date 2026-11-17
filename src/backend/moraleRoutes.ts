@@ -4,7 +4,7 @@ import { buildContractMessage, emitInboxMessage } from "@/Domain/inbox/inboxEven
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { isMentoredTrait, mentoringRefusal } from "@/Domain/personality/mentoring";
+import { MENTORING, hasGoodAssistant, isMentoredTrait, mentoringRefusal, mentoringTeam } from "@/Domain/personality/mentoring";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import { marketAfterRequests } from "@/backend/moraleWorld";
 import {
@@ -130,6 +130,22 @@ export const moraleRoutes = {
 
   /** `PUT /api/saves/:saveId/players/:playerId/squad-status` `{ status }` — `null` = back to the suggestion. */
   /** `PUT { trait: "professionalism" | "temperament" | null }` - the assistant's work on his mentality. */
+  /** `GET` - who the assistant works with, the end of the club's season and whether the assistant speeds it up. */
+  "/api/saves/:saveId/mentoring": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const found = await loadHuman(saveId, auth.seatId);
+    if (found instanceof Response) return found;
+    const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+    const seasonEnd = meta?.activeLeagues?.find((l) => l.leagueSlug === meta.leagueSlug)?.end ?? null;
+    return Response.json({
+      max: MENTORING.MAX_PLAYERS, team: mentoringTeam(found.squad), seasonEnd,
+      goodAssistant: hasGoodAssistant(found.squad), today: found.date,
+    });
+  },
+
   "/api/saves/:saveId/players/:playerId/mentoring": async (req: Req) => {
     const saveId = req.params.saveId!;
     const playerId = req.params.playerId!;
@@ -138,11 +154,24 @@ export const moraleRoutes = {
     if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
     let body: unknown;
     try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
-    const { trait } = (body ?? {}) as Record<string, unknown>;
+    const { trait, replace } = (body ?? {}) as Record<string, unknown>;
     if (trait !== null && !isMentoredTrait(trait)) return Response.json({ error: "invalidTrait" }, { status: 400 });
+    if (replace !== undefined && (typeof replace !== "string" || replace === playerId || trait === null)) {
+      return Response.json({ error: "invalidReplace" }, { status: 400 });
+    }
     return withSaveLock(saveId, async () => {
       const found = await loadHuman(saveId, auth.seatId);
       if (found instanceof Response) return found;
+      // Swapping (tester report 2026-11-17): the other player leaves the work in the same write.
+      if (typeof replace === "string") {
+        const out = found.squad.players.find((p) => p.id === replace && p.mentoring);
+        if (!out) return Response.json({ error: "invalidReplace" }, { status: 400 });
+        found.squad = { ...found.squad, players: found.squad.players.map((p) => {
+          if (p.id !== replace) return p;
+          const { mentoring: _gone, ...rest } = p;
+          return rest;
+        }) };
+      }
       const player = found.squad.players.find((p) => p.id === playerId);
       if (!player) return Response.json({ error: "notYourPlayer" }, { status: 404 });
       const updated = { ...player };

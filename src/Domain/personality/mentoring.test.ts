@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { advanceMentoring, mentoringRefusal } from "@/Domain/personality/mentoring";
+import { advanceMentoring, mentoringRefusal, mentoringTeam, nextMentoringGain } from "@/Domain/personality/mentoring";
 import { generatePersonality, personalityOf } from "@/Domain/personality/personality";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -62,5 +62,18 @@ describe("mentoringRefusal", () => {
     expect(mentoringRefusal(squad(three), three[0]!, "temperament")).toBeNull();
     const best = player({ personality: { ambition: 10, loyalty: 10, professionalism: 20, temperament: 10 } });
     expect(mentoringRefusal(squad([best]), best, "professionalism")).toBe("atBest");
+  });
+});
+
+describe("the player page view (tester report 2026-11-17)", () => {
+  test("team rows carry the trait, start and the points gained", () => {
+    const rows = mentoringTeam(squad([player({ id: "a", mentoring: m(), personalityGrowth: { professionalism: 3 } }), player({ id: "b" })]));
+    expect(rows).toEqual([{ id: "a", name: "M", trait: "professionalism", since: "2027-01-01", gained: 3 }]);
+  });
+  test("the next gain counts only after the minimum days, by age and assistant", () => {
+    expect(nextMentoringGain(20, "2027-01-01", END, false)).toEqual({ amount: 1, counts: true });
+    expect(nextMentoringGain(26, "2027-01-01", END, true)).toEqual({ amount: 0.75, counts: true });
+    expect(nextMentoringGain(20, "2027-11-01", END, false).counts).toBe(false);
+    expect(nextMentoringGain(30, "2027-01-01", END, false)).toEqual({ amount: 0, counts: false });
   });
 });

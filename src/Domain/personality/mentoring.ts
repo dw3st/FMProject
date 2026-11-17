@@ -41,6 +41,37 @@ export function mentoringRefusal(squad: Squad, player: RosterPlayer, trait: Ment
   return others >= MENTORING.MAX_PLAYERS ? "mentoringFull" : null;
 }
 
+/** One player in the assistant's work, for the player page (tester report 2026-11-17). */
+export interface MentoringRow {
+  id: string;
+  name: string;
+  trait: MentoredTrait;
+  since: string;
+  /** Points of the trait he gained so far (`personalityGrowth`, temperament counted down). */
+  gained: number;
+}
+
+export function mentoringTeam(squad: Squad): MentoringRow[] {
+  return squad.players.filter((p) => p.mentoring).map((p) => ({
+    id: p.id, name: p.name, trait: p.mentoring!.trait, since: p.mentoring!.since,
+    gained: Math.abs(p.personalityGrowth?.[p.mentoring!.trait] ?? 0),
+  }));
+}
+
+export function hasGoodAssistant(squad: Squad): boolean {
+  return effectiveStars(squad, "assistant") >= MENTORING.GOOD_ASSISTANT_STARS;
+}
+
+/**
+ * What the next end of season gives a player in the work: the season's gain (by today's age, the assistant) and whether
+ * he will have the MIN_DAYS by then. Past MAX_AGE at that rollover nothing.
+ */
+export function nextMentoringGain(age: number, since: string, seasonEnd: string, goodAssistant: boolean): { amount: number; counts: boolean } {
+  if (age > MENTORING.MAX_AGE) return { amount: 0, counts: false };
+  const amount = (age <= MENTORING.YOUNG_AGE ? MENTORING.GAIN_YOUNG : MENTORING.GAIN_OLDER) * (goodAssistant ? MENTORING.GOOD_ASSISTANT_MULT : 1);
+  return { amount, counts: daysBetween(since, seasonEnd) >= MENTORING.MIN_DAYS };
+}
+
 export interface MentoringNews {
   playerId: string;
   playerName: string;

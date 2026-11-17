@@ -128,6 +128,19 @@ describe("morale routes", () => {
     expect((await human()).players.find((p) => p.id === youngs[0]!.id)!.mentoring).toBeUndefined();
     expect((await mentor(youngs[3]!.id, "temperament")).status).toBe(200);
 
+    // The team view, and a swap in one call (tester report 2026-11-17).
+    const teamView = await call("/api/saves/:saveId/mentoring", `/api/saves/${saveId}/mentoring`, "GET", session.token, { saveId });
+    const team = ((await teamView.json()) as { team: { id: string }[]; max: number }).team.map((r) => r.id).sort();
+    expect(team).toEqual([youngs[1]!.id, youngs[2]!.id, youngs[3]!.id].sort());
+    const swap = (playerId: string, trait: unknown, replace: unknown) =>
+      call("/api/saves/:saveId/players/:playerId/mentoring", `/api/saves/${saveId}/players/${playerId}/mentoring`, "PUT", session.token, { saveId, playerId }, { trait, replace });
+    expect((await swap(youngs[0]!.id, "professionalism", youngs[0]!.id)).status).toBe(400);
+    expect((await swap(youngs[0]!.id, "professionalism", "nobody")).status).toBe(400);
+    expect((await swap(youngs[0]!.id, "professionalism", youngs[1]!.id)).status).toBe(200);
+    const after = await human();
+    expect(after.players.find((p) => p.id === youngs[1]!.id)!.mentoring).toBeUndefined();
+    expect(after.players.find((p) => p.id === youngs[0]!.id)!.mentoring?.trait).toBe("professionalism");
+
     await saveService.updateSeat(saveId, meta.seatId, { clubId: "" });
     expect((await getMorale()).status).toBe(409);
   }, 120_000);
