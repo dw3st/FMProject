@@ -15,18 +15,19 @@ import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
 import { useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { SeatOfferView } from "@/types/seatOfferTypes";
-import type { ActiveLoan, MarketBid, PreContract, RivalBid, SellOnHeld } from "@/types/transferMarketTypes";
+import type { ActiveLoan, DeferredTransfer, MarketBid, PreContract, RivalBid, SellOnHeld } from "@/types/transferMarketTypes";
 
-type Section = "seatOffers" | "out" | "in" | "sellOn" | "bids" | "rivals" | "preContracts";
+type Section = "seatOffers" | "out" | "in" | "sellOn" | "bids" | "rivals" | "preContracts" | "deferred";
 
 /** Sections whose table needs the full width. */
-const WIDE = new Set<Section>(["seatOffers", "preContracts", "out"]);
+const WIDE = new Set<Section>(["seatOffers", "preContracts", "deferred", "out"]);
 
 const SECTION_LOOK: Record<Section, { icon: IconName; fg: string; bg: string }> = {
   seatOffers: { icon: "handshake", fg: "text-primary", bg: "bg-primary/20" },
   bids: { icon: "tag", fg: "text-chart-4", bg: "bg-chart-4/20" },
   rivals: { icon: "users", fg: "text-destructive", bg: "bg-destructive/20" },
   preContracts: { icon: "file-signature", fg: "text-primary", bg: "bg-primary/20" },
+  deferred: { icon: "calendar", fg: "text-chart-2", bg: "bg-chart-2/20" },
   out: { icon: "arrow-up-right", fg: "text-chart-4", bg: "bg-chart-4/20" },
   in: { icon: "arrow-down-left", fg: "text-chart-2", bg: "bg-chart-2/20" },
   sellOn: { icon: "wallet", fg: "text-chart-2", bg: "bg-chart-2/20" },
@@ -41,6 +42,8 @@ interface Overview {
   /** Etapa 25: rivals on the human's targets, pre-contracts, targets lost to a rival. */
   rivals?: RivalBid[];
   preContracts?: PreContract[];
+  /** Fee transfers agreed with the window closed, joining when it opens. */
+  deferredTransfers?: DeferredTransfer[];
   lostTargets?: { playerId: string; clubName: string; fee: number; date: string }[];
 }
 
@@ -100,6 +103,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
   const counts: Record<Section, number> = {
     seatOffers: seatOffers.data?.offers.length ?? 0, out: out.length, in: inn.length, sellOn: data.sellOnHeld.length,
     bids: data.bids.length, rivals: data.rivals?.length ?? 0, preContracts: data.preContracts?.length ?? 0,
+    deferred: data.deferredTransfers?.length ?? 0,
   };
   const block = (key: Section, title: string, body: React.ReactNode, empty: boolean, note?: string | null) => {
     if (hideEmpty && empty && !note) return null;
@@ -219,6 +223,38 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
               ]}
             />
           ), pcs.length === 0, pcs.length > 0 ? t("negotiation.preContract.arriveNote") : null);
+        }
+        if (s === "deferred") {
+          const ds = data.deferredTransfers ?? [];
+          return block(s, t("negotiation.deferred.title"), (
+            <DataTable
+              rows={ds}
+              rowKey={(d) => d.playerId}
+              columns={[
+                {
+                  key: "pos", header: t("negotiation.overview.position"),
+                  cell: (d) => (d.position ? <span className={`font-display font-bold uppercase ${getDetailedPositionColor(d.position)}`}>{t(`roles.detailedAbbr.${d.position}` as never)}</span> : "—"),
+                },
+                {
+                  key: "p", header: t("negotiation.overview.player"),
+                  cell: (d) => {
+                    const code = d.nationality ? nationalityFlagCode(d.nationality) : undefined;
+                    return (
+                      <span className="inline-flex items-center gap-2">
+                        {code && <span title={nationalityDisplayName(d.nationality ?? "", i18n.language, t)} className="inline-flex"><Flag code={code} /></span>}
+                        <PlayerNameLink player={{ id: d.playerId, name: d.playerName }} />
+                      </span>
+                    );
+                  },
+                },
+                { key: "c", header: t("negotiation.overview.from"), sortValue: (d) => d.fromClubName, cell: (d) => d.fromClubName },
+                { key: "f", header: t("negotiation.deferred.fee"), sortValue: (d) => d.fee, cell: (d) => formatFee(d.fee), className: "tabular-nums" },
+                { key: "w", header: t("negotiation.preContract.wage"), sortValue: (d) => d.wage, cell: (d) => formatFee(d.wage), className: "tabular-nums" },
+                { key: "y", header: t("negotiation.preContract.years"), sortValue: (d) => d.years, cell: (d) => d.years, className: "tabular-nums" },
+                { key: "j", header: t("negotiation.deferred.joins"), sortValue: (d) => d.joinsOn, cell: (d) => fmtDate(d.joinsOn), className: "tabular-nums" },
+              ]}
+            />
+          ), ds.length === 0, ds.length > 0 ? t("negotiation.deferred.note") : null);
         }
         if (s === "out") {
           return block(s, t("negotiation.overview.loanedOut"), (

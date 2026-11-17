@@ -24,7 +24,7 @@ export function InjuryVacancyPanel({ vacancies, bench, ratings, canSub, onFill }
   const { t } = useTranslation();
   if (vacancies.length === 0) return null;
   return (
-    <div className="px-4 py-3 border-b border-border space-y-3 shrink-0">
+    <div className="flex flex-col gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
       {vacancies.map((v) => {
         const ordered = [...bench].sort((a, b) =>
           a.id === v.suggestedInId ? -1 : b.id === v.suggestedInId ? 1 : displayRating10(b, ratings) - displayRating10(a, ratings));

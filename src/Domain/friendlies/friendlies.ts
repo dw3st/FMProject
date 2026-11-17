@@ -33,14 +33,15 @@ function fieldable(players: RosterPlayer[]): boolean {
 
 /**
  * Who can play: fit and available. One Saturday the whole squad (the starters come out on top), the next
- * the saved starters sit out, so the reserves get the minutes too. Null when there is no team to field.
+ * the saved starters sit out, so the reserves get the minutes too, except a starter still settling in, who
+ * plays both weeks so the game counts for his adaptation (report 4bf4efac). Null when there is no team to field.
  */
 export function friendlyPool(players: RosterPlayer[], date: string, savedXi: string[]): RosterPlayer[] | null {
   const fit = players.filter((p) => !isUnavailable(p, date) && (p.seasonLog?.fitness ?? 100) >= FRIENDLY.MIN_FITNESS);
   if (!fieldable(fit)) return null;
   if (weekIndex(date) % 2 === 0) return fit;
   const starters = new Set(savedXi);
-  const reserves = fit.filter((p) => !starters.has(p.id));
+  const reserves = fit.filter((p) => !starters.has(p.id) || p.settling);
   return fieldable(reserves) ? reserves : fit;
 }
 

@@ -103,7 +103,8 @@ export async function resolveRivalDeadlines(
     if (humans.has(r.clubId) || humans.has(r.fromClubId)) continue;
     const seller = await service.getSquadById(saveId, r.fromClubId);
     const buyer = await service.getSquadById(saveId, r.clubId);
-    const player = seller?.players.find((p) => p.id === r.playerId && !p.loan);
+    // Already sold to a human club, joining when its window opens (`DeferredTransfer`): no rival takes him.
+    const player = seller?.players.find((p) => p.id === r.playerId && !p.loan && !p.deferredTo);
     if (!seller || !buyer || !player || buyer.players.length >= MAX_SQUAD) continue;
     if (!args.windows.ofLeague(buyer.leagueSlug ?? "").open || aiTransferBudgetOf(buyer) < r.fee) continue;
     const sellerRef = await service.resolveSquadId(saveId, seller.id);

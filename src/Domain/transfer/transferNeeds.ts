@@ -216,6 +216,8 @@ export function findCandidates(
     for (const player of squad.players) {
       // On loan (`.claude/rules/game/negotiation.md`): not the holding club's to sell.
       if (player.loan) continue;
+      // Already sold to a human club, joining when its window opens (`DeferredTransfer`).
+      if (player.deferredTo) continue;
       if (!playerMatchesBand(player, need.position)) continue;
       // Nobody about to retire (`AI_SIGN_MAX_AGE`, the same cap as the rollover refill).
       if (player.age >= AI_SIGN_MAX_AGE) continue;

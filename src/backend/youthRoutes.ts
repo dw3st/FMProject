@@ -18,6 +18,26 @@ import { coursePriceOf } from "@/Domain/staff/trustedStaff";
 
 type Req = Request & { params: Record<string, string> };
 
+/** At most this many ids in one `release-many` / `promote-many` call. */
+const MAX_BATCH = 50;
+
+function parseIds(body: unknown): string[] | null {
+  const ids = (body as { ids?: unknown } | null)?.ids;
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > MAX_BATCH || !ids.every((i) => typeof i === "string")) return null;
+  return [...new Set(ids as string[])];
+}
+
+/** An academy player in the first team: new wage from the curve, the base contract's end, arrival from the academy. */
+function promotedPlayer(squad: Squad, player: RosterPlayer & { contract: NonNullable<RosterPlayer["contract"]> }, date: string): RosterPlayer {
+  return {
+    ...player,
+    contract: { until: player.contract.until, wage: playerWeeklyWage(player, wageFactorOf(squad)) },
+    arrival: { squadId: squad.id, kind: "academy", on: date },
+  };
+}
+
+export type PromoteSkipReason = "squadFull" | "notFound" | "noContract";
+
 async function loadHumanSquad(saveId: string, seatId: string) {
   const meta = await saveService.getSeatMeta(saveId, seatId);
   if (!meta) return null;
@@ -174,21 +194,65 @@ export const youthRoutes = {
     const auth = requireSeat(req, saveId);
     if (auth instanceof Response) return auth;
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
-    const ids = ((await req.json().catch(() => null)) as { ids?: unknown } | null)?.ids;
-    if (!Array.isArray(ids) || ids.length === 0 || ids.length > 50 || !ids.every((i) => typeof i === "string")) {
-      return Response.json({ error: "invalidIds" }, { status: 400 });
-    }
+    const ids = parseIds(await req.json().catch(() => null));
+    if (!ids) return Response.json({ error: "invalidIds" }, { status: 400 });
     return withSaveLock(saveId, async () => {
       const found = await loadHumanSquad(saveId, auth.seatId);
       if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
       const { squad, meta } = found;
-      const chosen = new Set(ids as string[]);
+      const chosen = new Set(ids);
       const leaving = (squad.youth ?? []).filter((p) => chosen.has(p.id));
       const next: Squad = { ...squad, youth: (squad.youth ?? []).filter((p) => !chosen.has(p.id)) };
       await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       await saveService.writeFreeAgents(saveId, [...(await saveService.getFreeAgents(saveId)), ...leaving.map((p) => toFreeAgent(p, date))]);
       return Response.json(youthView(next, found.meta));
+    });
+  },
+
+  /**
+   * `POST { ids }` - promote several academy players at once (report 7da62af2), in the given order, until the squad
+   * is full (`HUMAN_MAX_SQUAD`). `{ promoted, skipped: [{ id, reason }], ...youthView }`. 400 `invalidIds`.
+   */
+  "/api/saves/:saveId/youth/promote-many": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const ids = parseIds(await req.json().catch(() => null));
+    if (!ids) return Response.json({ error: "invalidIds" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const found = await loadHumanSquad(saveId, auth.seatId);
+      if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
+      const { squad } = found;
+      const date = found.meta.currentDate ?? "";
+      let size = await humanRosterSize(saveService, saveId, auth.seatId, squad);
+      const youth = new Map((squad.youth ?? []).map((p) => [p.id, p]));
+      const promoted: RosterPlayer[] = [];
+      const skipped: { id: string; reason: PromoteSkipReason }[] = [];
+      for (const id of ids) {
+        const player = youth.get(id);
+        if (!player) skipped.push({ id, reason: "notFound" });
+        else if (!player.contract) skipped.push({ id, reason: "noContract" });
+        else if (size >= HUMAN_MAX_SQUAD) skipped.push({ id, reason: "squadFull" });
+        else {
+          promoted.push(promotedPlayer(squad, { ...player, contract: player.contract }, date));
+          size++;
+        }
+      }
+      const moved = new Set(promoted.map((p) => p.id));
+      const next: Squad = moved.size === 0 ? squad : {
+        ...squad,
+        players: [...squad.players, ...promoted],
+        youth: (squad.youth ?? []).filter((p) => !moved.has(p.id)),
+      };
+      if (moved.size > 0) {
+        await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
+        let ach = await saveService.getAchievements(saveId, auth.seatId);
+        for (const p of promoted) ach = recordPromotion(ach, p.id);
+        await saveService.writeAchievements(saveId, ach, auth.seatId);
+      }
+      return Response.json({ ...youthView(next, found.meta), promoted: promoted.map((p) => p.id), skipped });
     });
   },
 
@@ -207,11 +271,7 @@ export const youthRoutes = {
       if (!player) return Response.json({ error: "player not found" }, { status: 404 });
       if ((await humanRosterSize(saveService, saveId, auth.seatId, squad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
       if (!player.contract) return Response.json({ error: "noContract" }, { status: 409 });
-      const promoted: RosterPlayer = {
-        ...player,
-        contract: { until: player.contract.until, wage: playerWeeklyWage(player, wageFactorOf(squad)) },
-        arrival: { squadId: squad.id, kind: "academy", on: found.meta.currentDate ?? "" },
-      };
+      const promoted = promotedPlayer(squad, { ...player, contract: player.contract }, found.meta.currentDate ?? "");
       const next: Squad = {
         ...squad,
         players: [...squad.players, promoted],

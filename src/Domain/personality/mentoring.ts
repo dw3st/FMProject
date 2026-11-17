@@ -37,8 +37,21 @@ export function mentoringRefusal(squad: Squad, player: RosterPlayer, trait: Ment
   if (player.age > MENTORING.MAX_AGE) return "tooOld";
   if (player.loan) return "onLoan";
   if (traitAtBest(player, trait)) return "atBest";
-  const others = squad.players.filter((p) => p.mentoring && p.id !== player.id).length;
+  const others = mentoredPlayers(squad).filter((p) => p.id !== player.id).length;
   return others >= MENTORING.MAX_PLAYERS ? "mentoringFull" : null;
+}
+
+/** The club's players and academy players in the assistant's work (the academy too since report 2eeaae39). */
+export function mentoredPlayers(squad: Squad): RosterPlayer[] {
+  return [...squad.players, ...(squad.youth ?? [])].filter((p) => p.mentoring);
+}
+
+/** A player of the club or of its academy, by id. */
+export function findOwnPlayer(squad: Squad, id: string): { player: RosterPlayer; academy: boolean } | null {
+  const first = squad.players.find((p) => p.id === id);
+  if (first) return { player: first, academy: false };
+  const young = squad.youth?.find((p) => p.id === id);
+  return young ? { player: young, academy: true } : null;
 }
 
 /** One player in the assistant's work, for the player page (tester report 2026-11-17). */
@@ -49,13 +62,25 @@ export interface MentoringRow {
   since: string;
   /** Points of the trait he gained so far (`personalityGrowth`, temperament counted down). */
   gained: number;
+  /** In the academy (`squad.youth`). */
+  academy?: true;
+  /** With the end of the club's season known: whether the work counts at that end of season, and how much. */
+  counts?: boolean;
+  amount?: number;
 }
 
-export function mentoringTeam(squad: Squad): MentoringRow[] {
-  return squad.players.filter((p) => p.mentoring).map((p) => ({
-    id: p.id, name: p.name, trait: p.mentoring!.trait, since: p.mentoring!.since,
-    gained: Math.abs(p.personalityGrowth?.[p.mentoring!.trait] ?? 0),
-  }));
+export function mentoringTeam(squad: Squad, seasonEnd?: string | null): MentoringRow[] {
+  const youth = new Set((squad.youth ?? []).map((p) => p.id));
+  const good = seasonEnd ? hasGoodAssistant(squad) : false;
+  return mentoredPlayers(squad).map((p) => {
+    const next = seasonEnd ? nextMentoringGain(p.age, p.mentoring!.since, seasonEnd, good) : null;
+    return {
+      id: p.id, name: p.name, trait: p.mentoring!.trait, since: p.mentoring!.since,
+      gained: Math.abs(p.personalityGrowth?.[p.mentoring!.trait] ?? 0),
+      ...(youth.has(p.id) ? { academy: true as const } : {}),
+      ...(next ? { counts: next.counts, amount: next.amount } : {}),
+    };
+  });
 }
 
 export function hasGoodAssistant(squad: Squad): boolean {
@@ -82,15 +107,18 @@ export interface MentoringNews {
   finished: boolean;
 }
 
-/** End of the club's season: the players in the work for long enough move on (the squad has already aged). */
+/**
+ * End of the club's season: the players in the work for long enough move on. The squad has already aged; the
+ * academy has not (it ages with the youth rollover, later the same day), so its age is taken as it is.
+ */
 export function advanceMentoring(squad: Squad, date: string): { squad: Squad; news: MentoringNews[] } {
-  if (!squad.players.some((p) => p.mentoring)) return { squad, news: [] };
+  if (mentoredPlayers(squad).length === 0) return { squad, news: [] };
   const mult = effectiveStars(squad, "assistant") >= MENTORING.GOOD_ASSISTANT_STARS ? MENTORING.GOOD_ASSISTANT_MULT : 1;
   const news: MentoringNews[] = [];
-  const players = squad.players.map((p) => {
+  const grow = (p: RosterPlayer, age: number): RosterPlayer => {
     const m = p.mentoring;
-    if (!m || daysBetween(m.since, date) < MENTORING.MIN_DAYS || p.age - 1 > MENTORING.MAX_AGE) return p;
-    const gain = (p.age - 1 <= MENTORING.YOUNG_AGE ? MENTORING.GAIN_YOUNG : MENTORING.GAIN_OLDER) * mult;
+    if (!m || daysBetween(m.since, date) < MENTORING.MIN_DAYS || age > MENTORING.MAX_AGE) return p;
+    const gain = (age <= MENTORING.YOUNG_AGE ? MENTORING.GAIN_YOUNG : MENTORING.GAIN_OLDER) * mult;
     const progress = m.progress + gain;
     const whole = Math.floor(progress);
     if (whole === 0) return { ...p, mentoring: { ...m, progress } };
@@ -108,6 +136,8 @@ export function advanceMentoring(squad: Squad, date: string): { squad: Squad; ne
     if (!finished) return grown;
     const { mentoring: _done, ...rest } = grown;
     return rest as RosterPlayer;
-  });
-  return { squad: { ...squad, players }, news };
+  };
+  const players = squad.players.map((p) => grow(p, p.age - 1));
+  const youth = squad.youth?.map((p) => grow(p, p.age));
+  return { squad: { ...squad, players, ...(youth ? { youth } : {}) }, news };
 }

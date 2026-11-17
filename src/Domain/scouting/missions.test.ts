@@ -2,7 +2,7 @@ import { playerMissionWeeks, playerWeeklyGain } from "@/Domain/scouting/missions
 import { describe, expect, test } from "bun:test";
 import {
   addProspects, advanceScoutingWeek, capReports, allowedWeeks, buildReport, countryVisits, generateProspects, gradeOf, isGem, missionCost,
-  missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, pruneProspects, recordRecommendations, relativeNote,
+  missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, pruneProspects, recordRecommendations, regradeReport, relativeNote,
   shortlistAlerts, starterLineAverages, type PoolEntry, type ViewerContext,
 } from "@/Domain/scouting/missions";
 import { emptyScoutingState, RECOMMENDATION_ORIGIN, type ScoutAssignment, type ScoutReport } from "@/types/scoutingTypes";
@@ -48,9 +48,32 @@ describe("grades and gems", () => {
     expect(gradeOf(-0.71)).toBe("E");
     expect(relativeNote(6, 7, 20, 6)).toBeCloseTo(0.5);
     expect(relativeNote(6, 7, 30, 6)).toBeCloseTo(0);
-    // A 16-year-old prospect: graded on the middle of his potential when it is better.
-    expect(relativeNote(2.5, 7, 16, 6, 5.8)).toBeCloseTo(-0.2);
+    // A 16-year-old prospect: graded on the middle of his potential, against the academy reference (starters − 1).
+    expect(relativeNote(2.5, 7, 16, 6, 5.8)).toBeCloseTo(0.8);
     expect(relativeNote(2.5, 7, 22, 6, 5.8)).toBeCloseTo(-1.25);
+  });
+  test("academy-age prospects are graded against the academy reference (report 6781d1e7)", () => {
+    // Potential mid 6.1 at a club whose starters average 6.8: B/C (about +0.3), no longer D/E (−0.7 before).
+    const note = relativeNote(4.5, 6.6, 17, 6.8, 6.1);
+    expect(note).toBeCloseTo(0.3);
+    expect(["B", "C"]).toContain(gradeOf(note));
+    expect(gradeOf(relativeNote(4.5, 6.6, 17, 6.8, 6.3))).toBe("B");
+    // Adults keep the first-team rule.
+    expect(gradeOf(relativeNote(6.1, 6.1, 26, 6.8))).toBe("E");
+  });
+  test("a stored academy-age report is regraded with today's rule; adults are left alone", () => {
+    const report = {
+      id: "r", date: "2027-03-01", playerId: "p", name: "P", squadId: "s", club: "C", league: "l", country: "Spain",
+      nationality: "Spain", age: 17, position: "Midfielder", k: 40, overall: [4, 5] as [number, number],
+      potential: [5.4, 7.0] as [number, number], value: [1, 2] as [number, number], wageDemand: 1000, forSale: false,
+      grade: "E" as const, gem: false, text: "no_upgrade" as const,
+    };
+    const lines = { GK: 6.8, Defender: 6.8, Midfielder: 6.8, Forward: 6.8 };
+    const regraded = regradeReport(report, lines);
+    expect(regraded.grade).toBe("B");
+    expect(regraded.text).toBe("future");
+    const adult = { ...report, age: 25 };
+    expect(regradeReport(adult, lines)).toBe(adult);
   });
   test("gem: young, potential above the line, from any country (8.9.27)", () => {
     const base = { age: 18, country: "Spain", ownCountry: "England", potentialHigh: 6.5, lineAverage: 6 };

@@ -31,6 +31,23 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.12",
+    date: "2026-11-17",
+    time: "21:00",
+    items: [
+      { tab: "market", pt: "Compra fora da janela: com a janela fechada você ainda fecha a compra de um jogador de clube da IA. A taxa é paga na hora e ele chega quando a sua janela abrir (até 5 por vez). Os acertos aparecem em Transferências, em \"Chegam na janela\".", en: "Buying outside the window: with your window closed you can still agree a deal for a player at an AI club. The fee is paid now and he joins when your window opens (up to 5 at a time). The deals are listed in Transfers under \"Joining when the window opens\"." },
+      { tab: "match", pt: "Tela de substituições refeita: um campinho em pé à esquerda e o que cada aba faz à direita (troca de jogador, formação, tática e instruções), numa janela maior.", en: "The substitutions screen redone: an upright pitch on the left and each tab's controls on the right (player change, formation, tactics and instructions), in a larger window." },
+      { tab: "squad", pt: "Base: marque vários jovens e promova ou dispense todos de uma vez.", en: "Academy: tick several youngsters and promote or release them all at once." },
+      { tab: "squad", pt: "Elenco: uma faixa no topo diz o que o número da aba está contando (lesionados, suspensos, contratos acabando, pedidos de conversa), com o nome de cada jogador.", en: "Squad: a strip at the top says what the tab's number is counting (injured, suspended, contracts ending, talk requests), with each player's name." },
+    ],
+    fixes: [
+      { tab: "squad", pt: "Amistosos contam para a adaptação dos recém-chegados, e a mensagem do amistoso mostra quantos jogos faltam.", en: "Friendlies count toward a new signing's settling, and the friendly message shows how many games are left." },
+      { tab: "squad", pt: "Trabalho de mentalidade: os cartões dos traços ficaram alinhados, a lista diz se o ganho já vale nesta temporada e os jogadores da base também podem ser acompanhados.", en: "Mentality work: the trait cards line up, the list says whether the gain counts this season, and academy players can be followed too." },
+      { tab: "formation", pt: "Formação livre: cada desenho guarda a própria escalação, como as formações prontas.", en: "Free formation: each shape keeps its own line-up, like the ready-made formations." },
+      { tab: "scout", pt: "Relatórios de jovens: a nota compara o garoto com o que se espera para a idade, e não com os titulares.", en: "Youth reports: the grade compares the youngster with what is expected at his age, not with the starters." },
+    ],
+  },
+  {
     version: "12.11",
     date: "2026-11-17",
     time: "20:30",

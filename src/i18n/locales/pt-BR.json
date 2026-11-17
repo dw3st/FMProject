@@ -1759,7 +1759,10 @@
       "professionalism": "Evolui mais e cai menos com a idade",
       "temperament": "Menos faltas e cartões, reage menos"
     },
-    "letter": { "professionalism": "P", "temperament": "T" },
+    "letter": {
+      "professionalism": "P",
+      "temperament": "T"
+    },
     "progress": "Progresso",
     "gained": "Melhorou {{n}} de {{trait}} até aqui",
     "notYet": "Ainda sem ganho",
@@ -1785,7 +1788,11 @@
     "inbox": {
       "progress": "O trabalho com o auxiliar deu resultado: {{trait}} de {{player}} agora é {{band}}.",
       "finished": "O trabalho com o auxiliar terminou: {{trait}} de {{player}} chegou ao melhor nível, {{band}}."
-    }
+    },
+    "countsNextSeason": "Começou a menos de {{days}} dias do fim da temporada ({{date}}): só conta a partir da próxima temporada",
+    "rowCounts": "Conta no fim desta temporada (+{{n}})",
+    "rowNextSeason": "Só conta a partir da próxima temporada",
+    "academy": "Base"
   },
   "bets": {
     "competition": "Competição",
@@ -1856,7 +1863,8 @@
     "intro": "O diretor marcou um amistoso contra o {{opponent}}.",
     "line": "Nota {{rating}} · fôlego {{fitness}} · gols {{count}}",
     "lineSub": "Entrou no 2º tempo · fôlego {{fitness}}",
-    "note": "Não vale para nenhuma competição. Quem jogou deixou de treinar no dia; abaixo, o que cada um fez e os atributos que subiram."
+    "note": "Não vale para nenhuma competição. Quem jogou deixou de treinar no dia; abaixo, o que cada um fez e os atributos que subiram.",
+    "settling": "Valeu para a adaptação: {{list}}"
   },
   "responsibilities": {
     "title": "Responsabilidades",
@@ -2231,7 +2239,9 @@
         "pre_contract": "Pré-contrato: {{player}}",
         "pre_contract_joined": "{{player}} chegou pelo pré-contrato",
         "pre_contract_failed": "O pré-contrato caiu: {{player}}",
-        "seat_offer": "Proposta por {{player}}"
+        "seat_offer": "Proposta por {{player}}",
+        "deferred_joined": "{{player}} chegou do {{club}}",
+        "deferred_cancelled": "A contratação caiu: {{player}}"
       },
       "body": {
         "bid": "O {{club}} oferece {{fee}} por {{player}}.",
@@ -2240,14 +2250,16 @@
         "loan_home": "O empréstimo de {{player}} ao {{club}} acabou. Ele voltou ao seu elenco.",
         "sell_on": "{{player}} foi vendido pelo {{club}}. Sua cláusula de venda rendeu {{fee}}.",
         "window_open": "A janela de transferências em {{country}} está aberta até {{until}}.",
-        "window_closing": "A janela de transferências em {{country}} fecha em {{until}}. Compras com taxa e empréstimos param nessa data.",
+        "window_closing": "A janela de transferências em {{country}} fecha em {{until}}. Empréstimos param nessa data; quem você comprar depois chega quando a próxima janela abrir.",
         "window_closed": "A janela de transferências em {{country}} fechou. Ela abre de novo em {{opensOn}}. Jogadores livres continuam disponíveis.",
         "rival_bid": "O {{club}} ofereceu {{fee}} por {{player}}. Cubra a oferta até {{deadline}} ou o clube vende para eles.",
         "lost_to_rival": "{{player}} foi para o {{club}} por {{fee}}. Sua negociação acabou.",
         "pre_contract": "{{player}} assinou um pré-contrato ({{wage}} por semana, {{years}} temporadas). Ele deixa o {{club}} no fim da temporada dele.",
         "pre_contract_joined": "{{player}} deixou o {{club}} e chegou ao seu elenco pelo pré-contrato.",
         "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio).",
-        "seat_offer": "Novidade na proposta por {{player}} com o {{club}}."
+        "seat_offer": "Novidade na proposta por {{player}} com o {{club}}.",
+        "deferred_joined": "A janela abriu e {{player}} deixou o {{club}} para o seu elenco. A taxa de {{fee}} foi paga quando o negócio fechou.",
+        "deferred_cancelled": "O negócio de {{player}} com o {{club}} caiu (ele saiu do clube ou seu elenco está cheio). A taxa de {{fee}} foi devolvida."
       },
       "seatOffer": {
         "offer": {
@@ -3033,7 +3045,16 @@
       "release_one": "Dispensar {{count}} selecionado",
       "release_other": "Dispensar {{count}} selecionados",
       "confirm_one": "Confirmar a dispensa de {{count}} jovem",
-      "confirm_other": "Confirmar a dispensa de {{count}} jovens"
+      "confirm_other": "Confirmar a dispensa de {{count}} jovens",
+      "selected_one": "{{count}} selecionado",
+      "selected_other": "{{count}} selecionados",
+      "hint": "Marque jogadores para promover ou dispensar vários de uma vez",
+      "promote_one": "Promover {{count}}",
+      "promote_other": "Promover {{count}}",
+      "dismiss_one": "Dispensar {{count}}",
+      "dismiss_other": "Dispensar {{count}}",
+      "notFit_one": "Elenco cheio: {{names}} ficou na base.",
+      "notFit_other": "Elenco cheio: {{names}} ficaram na base."
     }
   },
   "matchPreview": {
@@ -3159,7 +3180,11 @@
     "presetFormation": "Escalação {{key}} · {{formation}}",
     "presetNamed": "{{name}} · {{formation}}",
     "pickOnPitch": "Clique num jogador no campo.",
-    "readyFormations": "Formações prontas"
+    "readyFormations": "Formações prontas",
+    "tacticsHint": "Só nesta partida. A tática salva não muda.",
+    "formationHint": "Escolha uma formação para ver; cada jogador vai para a vaga que combina com ele.",
+    "instructionsHint": "Toque num jogador no campo para mudar a função dele nesta partida.",
+    "markingHint": "Até 2 jogadores seguem um adversário específico."
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -3325,7 +3350,8 @@
       "boardFundingItem": "Verba da diretoria: {{item}}",
       "legendHire": "Lenda de volta à base: {{player}}",
       "signingBonus": "Luvas: {{player}}",
-      "playerBonus": "Bônus por desafio"
+      "playerBonus": "Bônus por desafio",
+      "deferredRefund": "Devolução: {{player}}"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -4430,6 +4456,17 @@
     "card": {
       "age": "{{age}} anos",
       "ovr": "OVR"
+    },
+    "deferred": {
+      "title": "Chegam na janela",
+      "fee": "Taxa",
+      "joins": "Chega em",
+      "note": "A taxa já foi paga. Cada jogador fica no clube dele até a sua janela abrir.",
+      "closedLine": "Janela fechada: ele chega em {{date}}, quando ela abrir. A taxa é paga agora.",
+      "agreed": "{{name}} chega em {{date}}, quando a sua janela abrir.",
+      "limit": "Você já tem {{max}} contratações esperando a janela.",
+      "already": "Ele já está contratado e chega quando a janela abrir.",
+      "committed": "Ele já foi vendido para outro clube e chega lá quando a janela dele abrir."
     }
   },
   "morale": {

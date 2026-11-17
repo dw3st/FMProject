@@ -1759,7 +1759,10 @@
       "professionalism": "Develops more, declines less with age",
       "temperament": "Fewer fouls and cards, reacts less"
     },
-    "letter": { "professionalism": "P", "temperament": "T" },
+    "letter": {
+      "professionalism": "P",
+      "temperament": "T"
+    },
     "progress": "Progress",
     "gained": "Up {{n}} in {{trait}} so far",
     "notYet": "No gain yet",
@@ -1785,7 +1788,11 @@
     "inbox": {
       "progress": "The work with the assistant paid off: {{player}}'s {{trait}} is now {{band}}.",
       "finished": "The work with the assistant is over: {{player}}'s {{trait}} reached its best, {{band}}."
-    }
+    },
+    "countsNextSeason": "Started under {{days}} days before the end of the season ({{date}}): it only counts from next season",
+    "rowCounts": "Counts at the end of this season (+{{n}})",
+    "rowNextSeason": "Counts only from next season",
+    "academy": "Academy"
   },
   "bets": {
     "competition": "Competition",
@@ -1856,7 +1863,8 @@
     "intro": "The director arranged a friendly against {{opponent}}.",
     "line": "Rating {{rating}} · fitness {{fitness}} · goals {{count}}",
     "lineSub": "Came on in the second half · fitness {{fitness}}",
-    "note": "It counts for no competition. Those who played did not train that day; below, what each one did and the attributes that went up."
+    "note": "It counts for no competition. Those who played did not train that day; below, what each one did and the attributes that went up.",
+    "settling": "Counted for adaptation: {{list}}"
   },
   "responsibilities": {
     "title": "Responsibilities",
@@ -2231,7 +2239,9 @@
         "pre_contract": "Pre-contract: {{player}}",
         "pre_contract_joined": "{{player}} arrived on his pre-contract",
         "pre_contract_failed": "Pre-contract fell through: {{player}}",
-        "seat_offer": "Offer for {{player}}"
+        "seat_offer": "Offer for {{player}}",
+        "deferred_joined": "{{player}} joined from {{club}}",
+        "deferred_cancelled": "Transfer fell through: {{player}}"
       },
       "body": {
         "bid": "{{club}} offer {{fee}} for {{player}}.",
@@ -2240,14 +2250,16 @@
         "loan_home": "The loan of {{player}} at {{club}} ended. He is back in your squad.",
         "sell_on": "{{player}} was sold by {{club}}. Your sell-on clause paid {{fee}}.",
         "window_open": "The transfer window in {{country}} is open until {{until}}.",
-        "window_closing": "The transfer window in {{country}} closes on {{until}}. Fee transfers and loans stop then.",
+        "window_closing": "The transfer window in {{country}} closes on {{until}}. Loans stop then; a player bought after it joins when the next window opens.",
         "window_closed": "The transfer window in {{country}} closed. It opens again on {{opensOn}}. Free agents can still be signed.",
         "rival_bid": "{{club}} offered {{fee}} for {{player}}. Match it before {{deadline}} or the club sells him to them.",
         "lost_to_rival": "{{player}} joined {{club}} for {{fee}}. Your negotiation is over.",
         "pre_contract": "{{player}} signed a pre-contract ({{wage}} a week, {{years}} seasons). He leaves {{club}} at the end of his season.",
         "pre_contract_joined": "{{player}} left {{club}} and joined your squad on his pre-contract.",
         "pre_contract_failed": "The pre-contract with {{player}} fell through (he left {{club}} or your squad is full).",
-        "seat_offer": "News on the offer for {{player}} with {{club}}."
+        "seat_offer": "News on the offer for {{player}} with {{club}}.",
+        "deferred_joined": "The window opened and {{player}} left {{club}} for your squad. The fee of {{fee}} was paid when the deal was agreed.",
+        "deferred_cancelled": "The deal for {{player}} with {{club}} fell through (he left the club or your squad is full). The fee of {{fee}} was refunded."
       },
       "seatOffer": {
         "offer": {
@@ -3033,7 +3045,16 @@
       "release_one": "Release {{count}} selected",
       "release_other": "Release {{count}} selected",
       "confirm_one": "Confirm releasing {{count}} youngster",
-      "confirm_other": "Confirm releasing {{count}} youngsters"
+      "confirm_other": "Confirm releasing {{count}} youngsters",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "hint": "Tick players to promote or release several at once",
+      "promote_one": "Promote {{count}}",
+      "promote_other": "Promote {{count}}",
+      "dismiss_one": "Release {{count}}",
+      "dismiss_other": "Release {{count}}",
+      "notFit_one": "Squad full: {{names}} stayed in the academy.",
+      "notFit_other": "Squad full: {{names}} stayed in the academy."
     }
   },
   "matchPreview": {
@@ -3159,7 +3180,11 @@
     "presetFormation": "Lineup {{key}} · {{formation}}",
     "presetNamed": "{{name}} · {{formation}}",
     "pickOnPitch": "Click a player on the pitch.",
-    "readyFormations": "Ready formations"
+    "readyFormations": "Ready formations",
+    "tacticsHint": "For this match only. Your saved tactics stay as they are.",
+    "formationHint": "Pick a formation to see it; each player goes to the slot that suits him.",
+    "instructionsHint": "Tap a player on the pitch to change his role for this match.",
+    "markingHint": "Up to 2 players follow a specific opponent."
   },
   "scoreBar": {},
   "matchOverlay": {
@@ -3325,7 +3350,8 @@
       "boardFundingItem": "Board funding: {{item}}",
       "legendHire": "Legend back to the academy: {{player}}",
       "signingBonus": "Signing bonus: {{player}}",
-      "playerBonus": "Challenge bonus"
+      "playerBonus": "Challenge bonus",
+      "deferredRefund": "Refund: {{player}}"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -4433,6 +4459,17 @@
     "card": {
       "age": "{{age}} yrs",
       "ovr": "OVR"
+    },
+    "deferred": {
+      "title": "Joining when the window opens",
+      "fee": "Fee",
+      "joins": "Joins on",
+      "note": "The fee is already paid. Each player stays at his club until your window opens.",
+      "closedLine": "Window closed: he joins on {{date}}, when it opens. The fee is paid now.",
+      "agreed": "{{name}} joins on {{date}}, when your window opens.",
+      "limit": "You already have {{max}} signings waiting for the window.",
+      "already": "He is already signed and joins when the window opens.",
+      "committed": "He is already sold to another club and joins it when its window opens."
     }
   },
   "morale": {

@@ -198,3 +198,7 @@ Report do usuário (ao ir para uma escalação salva e voltar, o centroavante vi
 ## Escalação exata (12.8.3)
 
 Report do usuário (Copa do Mundo de 2038: os convocados sumiam da escalação). `applyLineupPreset` só esvazia a vaga de quem saiu do elenco; lesionado, suspenso ou convocado fica (a partida troca no dia, `replaceUnavailableStarters`). Escolher uma formação na tela de Formação traz a escalação lembrada dela (`rememberedLineup` sobre `TacticsSave.lastLineups`), exatamente como estava; sem lembrança, o XI da tela vai às vagas que lhe servem (`remapLineupToFormation`, que agora mantém no XI quem não pode jogar hoje).
+
+## Escalação da formação livre (12.12)
+
+Report de tester. A última escalação de cada formação (`lastLineupKey`, `src/Domain/tactics/lastLineups.ts`) separa as formações livres pelo desenho (`custom:` + assinatura das vagas).

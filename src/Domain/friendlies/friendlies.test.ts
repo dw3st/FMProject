@@ -37,6 +37,14 @@ describe("friendlyPool", () => {
     expect(reserves).toHaveLength(13);
     expect(reserves.some((p) => xi.includes(p.id))).toBe(false);
   });
+  test("a starter still settling in plays on the reserves' week too (report 4bf4efac)", () => {
+    const settling = squad.map((p) => (p.id === "p1" || p.id === "p2" ? { ...p, settling: { games: 0, need: 10 } } : p));
+    const reserves = [SAT, SAT_NEXT].map((d) => friendlyPool(settling, d, xi)!).find((p) => !p.some((x) => x.id === "gk1"))!;
+    expect(reserves).toHaveLength(15);
+    expect(reserves.some((p) => p.id === "p1")).toBe(true);
+    expect(reserves.some((p) => p.id === "p2")).toBe(true);
+    expect(reserves.some((p) => p.id === "p3")).toBe(false);
+  });
   test("a tired player stays out", () => {
     const pools = [SAT, SAT_NEXT].map((d) => friendlyPool([...squad, player("tired", "Forward", 40)], d, xi)!);
     expect(pools.flat().some((p) => p.id === "tired")).toBe(false);

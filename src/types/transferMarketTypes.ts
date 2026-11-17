@@ -53,6 +53,8 @@ export interface MarketState {
   rivalBids?: RivalBid[];
   /** Pre-contracts signed by the human with AI players whose contract ends (Etapa 25). */
   preContracts?: PreContract[];
+  /** Fee transfers agreed with the window closed: the player joins when it opens (tester report 0a35192c). */
+  deferredTransfers?: DeferredTransfer[];
   /** Players the human lost to a rival (kept for the talk screen, pruned after a week). */
   lostTargets?: { playerId: string; clubName: string; fee: number; date: string }[];
 }
@@ -97,6 +99,33 @@ export interface PreContract {
   /** Signing bonus agreed, EUR, paid on arrival (4.47.9). */
   bonus?: number;
   /** Only in the `/negotiation` response (4.47.21): his natural position and nationality, read from his club today. */
+  position?: string;
+  nationality?: string;
+}
+
+/**
+ * A fee transfer agreed with the buyer's window closed: the fee is paid at once, the player stays
+ * at his club and joins the human club on `joinsOn` (the next opening of the buyer's window).
+ */
+export interface DeferredTransfer {
+  playerId: string;
+  playerName: string;
+  fromClubId: string;
+  fromClubName: string;
+  /** The human club that bought him. */
+  toClubId: string;
+  /** Fee paid at agreement, EUR. */
+  fee: number;
+  /** Weekly wage and seasons agreed. */
+  wage: number;
+  years: number;
+  /** Sell-on clause left to the seller, percent. */
+  sellOnPct?: number;
+  /** Bought by paying the release clause. */
+  clause?: boolean;
+  agreedOn: string;
+  joinsOn: string;
+  /** Only in the `/negotiation` response: his natural position and nationality, read from his club today. */
   position?: string;
   nationality?: string;
 }

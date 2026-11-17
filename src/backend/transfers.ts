@@ -41,6 +41,8 @@ import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { parseAskingPrice, playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { rebuyBlockedUntil } from "@/Domain/transfer/formerClub";
 import { releaseClause } from "@/Domain/negotiation/releaseClause";
+import { committedElsewhere, DEFERRED_TRANSFER, deferredRefusal, pendingDeferred, withPendingArrivals } from "@/Domain/negotiation/deferredTransfer";
+import { agreeDeferredTransfer } from "@/backend/deferredTransferWorld";
 
 function splitTransfersByClub(
   transfers: TransferRecord[],
@@ -148,7 +150,11 @@ export const transferRoutes = {
 
         // Transfer window of the buyer — the human club (`.claude/rules/game/transfer-windows.md`).
         const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
-        if (!windows.seat(auth.seatId).today.open) return windowClosedResponse(windows.seat(auth.seatId).today);
+        // Closed: the deal is agreed now and the player joins when it opens (`DeferredTransfer`, tester report 0a35192c).
+        // A swap still needs the window.
+        const seatWindow = windows.seat(auth.seatId).today;
+        const deferred = !seatWindow.open;
+        if (deferred && swapId) return windowClosedResponse(seatWindow);
 
         // ── Resolve squads ────────────────────────────────────────────────────
         const buyerResolved = { leagueSlug: meta.leagueSlug, clubSlug: meta.clubId };
@@ -165,10 +171,18 @@ export const transferRoutes = {
 
         // On loan here from the selling club (9.8): bought from the parent club, already in the squad.
         const loanedIn = loanedInFrom(buyerSquad, playerId, sellerSquad.id);
-        if (!loanedIn && (await humanRosterSize(saveService, saveId, auth.seatId, buyerSquad)) >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
+        if (deferred && loanedIn) return windowClosedResponse(seatWindow);
+        // Signings waiting for the window count as arrived for the squad cap and the top-25 limit.
+        const pendingIn = pendingDeferred((await saveService.getMarket(saveId, auth.seatId))?.deferredTransfers, buyerSquad.id);
+        if (!loanedIn && (await humanRosterSize(saveService, saveId, auth.seatId, buyerSquad)) + pendingIn.length >= HUMAN_MAX_SQUAD) return Response.json({ error: "squadFull" }, { status: 400 });
         // At most STAR_LIMIT.MAX of the world's top players (`.claude/rules/game/transfers.md`).
-        const starLimit = loanedIn ? null : await starLimitResponse(saveId, buyerSquad, playerId);
+        const starLimit = loanedIn ? null : await starLimitResponse(saveId, withPendingArrivals(buyerSquad, pendingIn), playerId);
         if (starLimit) return starLimit;
+        if (deferred) {
+          const refusal = deferredRefusal({ pending: pendingIn, playerId, joinsOn: seatWindow.opensOn });
+          if (refusal === "noWindow") return windowClosedResponse(seatWindow);
+          if (refusal) return Response.json({ error: refusal, max: DEFERRED_TRANSFER.MAX_PENDING }, { status: 409 });
+        }
 
         // ── Budget check ──────────────────────────────
         const budget = buyerSquad.finances?.budget ?? 0;
@@ -186,6 +200,9 @@ export const transferRoutes = {
         if (sellerSquad.id === buyerSquad.id) return Response.json({ error: "not for sale" }, { status: 400 });
         // On loan at that club: not its player to sell (`.claude/rules/game/negotiation.md`).
         if (player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
+        // Already sold to a human club, waiting for its window (`DeferredTransfer`).
+        if (committedElsewhere(player, buyerSquad.id)) return Response.json({ error: "committed" }, { status: 409 });
+        if (player.deferredTo === buyerSquad.id) return Response.json({ error: "alreadyDeferred" }, { status: 409 });
         // Paying the release clause: the seller cannot refuse, no rounds and no rivals; the player still has to agree.
         const clause = payClause === true ? releaseClause(player) : null;
         if (clause !== null && fee < clause) return Response.json({ error: "belowClause", clause }, { status: 400 });
@@ -332,6 +349,20 @@ export const transferRoutes = {
         };
 
         let updatedMeta = meta;
+
+        // Window closed: the fee is paid now, he stays at his club until the window opens.
+        if (accepted && deferred) {
+          const joinsOn = seatWindow.opensOn!;
+          await agreeDeferredTransfer(saveService, saveId, auth.seatId, meta, {
+            player, seller: sellerSquad, buyer: buyerSquad, buyerRef: buyerResolved,
+            fee: offerFee, wage: contractWage, years: contractYears, sellOnPct, clause: clause !== null, joinsOn,
+          });
+          return Response.json({
+            record: withDirection(record, buyerSquad.id), newBudget: (buyerSquad.finances?.budget ?? 0) - offerFee,
+            response: answer, talk, deferred: { joinsOn },
+            ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}),
+          });
+        }
 
         if (accepted) {
           // A loaned-in player goes back to his club first (no news, he stays in the line-up), then is sold (9.8).

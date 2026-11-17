@@ -37,6 +37,8 @@ export interface BadgeItem {
   /** Stable while the thing lasts (`<kind>:<key>`). */
   id: string;
   name?: string;
+  /** The player behind it (squad items), for a link to his page. */
+  playerId?: string;
 }
 export interface TabBadge {
   items: BadgeItem[];
@@ -70,7 +72,9 @@ export interface NavBadgeInput {
   prospects: string[];
 }
 
-const item = (kind: string, key: string, name?: string): BadgeItem => ({ kind, id: `${kind}:${key}`, ...(name !== undefined ? { name } : {}) });
+const item = (kind: string, key: string, name?: string, playerId?: string): BadgeItem => ({
+  kind, id: `${kind}:${key}`, ...(name !== undefined ? { name } : {}), ...(playerId !== undefined ? { playerId } : {}),
+});
 
 const put = (out: NavBadges, tab: BadgeTab, items: BadgeItem[]) => {
   if (items.length > 0) out[tab] = { items };
@@ -84,14 +88,14 @@ export function navBadges(input: NavBadgeInput): NavBadges {
   // Squad: injured (each injury), suspended, contracts ending, talks asked, promises close to their deadline.
   const morale = squad.moraleClub ? moraleAttention(squad, date) : { talks: [], promisesDue: [] };
   put(out, "/squad", [
-    ...players.filter((p) => p.injury && isInjured(p, date)).map((p) => item("injured", `${p.id}:${p.injury!.returnDate}`, p.name)),
-    ...players.filter((p) => isSuspended(p)).map((p) => item("suspended", p.id, p.name)),
+    ...players.filter((p) => p.injury && isInjured(p, date)).map((p) => item("injured", `${p.id}:${p.injury!.returnDate}`, p.name, p.id)),
+    ...players.filter((p) => isSuspended(p)).map((p) => item("suspended", p.id, p.name, p.id)),
     ...(input.seasonEnd
       ? players.filter((p) => !p.loan && isExpired(p.contract, input.seasonEnd!, CONTRACT_CONFIG.ROLLOVER_GRACE_DAYS))
-        .map((p) => item("contract", `${p.id}:${p.contract?.until ?? ""}`, p.name))
+        .map((p) => item("contract", `${p.id}:${p.contract?.until ?? ""}`, p.name, p.id))
       : []),
-    ...morale.talks.map((x) => item("talk", x.id, x.playerName)),
-    ...morale.promisesDue.map((x) => item("promise", x.id, x.playerName)),
+    ...morale.talks.map((x) => item("talk", x.id, x.playerName, x.playerId)),
+    ...morale.promisesDue.map((x) => item("promise", x.id, x.playerName, x.playerId)),
   ]);
 
   // Formation: a starter who cannot play (injured, suspended, away with his country, gone), one not registered for
@@ -160,6 +164,23 @@ export function badgeReasons(badge: TabBadge | undefined, seen: ReadonlySet<stri
     if (!r) out.push((r = { kind: i.kind, count: 0 }));
     r.count++;
     if (i.name !== undefined) (r.names ??= []).push(i.name);
+  }
+  return out;
+}
+
+/** One kind of a tab's items with every entry, seen or not (the strip on top of the Squad screen, report 8b435dc7). */
+export interface BadgeGroup {
+  kind: string;
+  entries: { name?: string; playerId?: string }[];
+}
+
+/** All items of a tab grouped by kind, in order. Unlike `badgeReasons`, seen items stay: the screen explains them. */
+export function badgeGroups(badge: TabBadge | undefined): BadgeGroup[] {
+  const out: BadgeGroup[] = [];
+  for (const i of badge?.items ?? []) {
+    let g = out.find((x) => x.kind === i.kind);
+    if (!g) out.push((g = { kind: i.kind, entries: [] }));
+    g.entries.push({ ...(i.name !== undefined ? { name: i.name } : {}), ...(i.playerId !== undefined ? { playerId: i.playerId } : {}) });
   }
   return out;
 }

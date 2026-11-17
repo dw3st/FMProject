@@ -4,7 +4,7 @@ import { buildContractMessage, emitInboxMessage } from "@/Domain/inbox/inboxEven
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
-import { MENTORING, hasGoodAssistant, isMentoredTrait, mentoringRefusal, mentoringTeam } from "@/Domain/personality/mentoring";
+import { MENTORING, findOwnPlayer, hasGoodAssistant, isMentoredTrait, mentoringRefusal, mentoringTeam } from "@/Domain/personality/mentoring";
 import { emptyMarket } from "@/backend/negotiationWorld";
 import { marketAfterRequests } from "@/backend/moraleWorld";
 import {
@@ -12,7 +12,7 @@ import {
   suggestedStatuses, windowMatches,
 } from "@/Domain/morale/morale";
 import { SQUAD_STATUSES, type SquadStatus, type TalkAnswer } from "@/types/moraleTypes";
-import type { Squad } from "@/types/playerTypes";
+import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -141,7 +141,7 @@ export const moraleRoutes = {
     const meta = await saveService.getSeatMeta(saveId, auth.seatId);
     const seasonEnd = meta?.activeLeagues?.find((l) => l.leagueSlug === meta.leagueSlug)?.end ?? null;
     return Response.json({
-      max: MENTORING.MAX_PLAYERS, team: mentoringTeam(found.squad), seasonEnd,
+      max: MENTORING.MAX_PLAYERS, team: mentoringTeam(found.squad, seasonEnd), seasonEnd,
       goodAssistant: hasGoodAssistant(found.squad), today: found.date,
     });
   },
@@ -163,17 +163,20 @@ export const moraleRoutes = {
       const found = await loadHuman(saveId, auth.seatId);
       if (found instanceof Response) return found;
       // Swapping (tester report 2026-11-17): the other player leaves the work in the same write.
+      // The academy too (report 2eeaae39): the player and the one swapped out may be in `squad.youth`.
       if (typeof replace === "string") {
-        const out = found.squad.players.find((p) => p.id === replace && p.mentoring);
-        if (!out) return Response.json({ error: "invalidReplace" }, { status: 400 });
-        found.squad = { ...found.squad, players: found.squad.players.map((p) => {
+        const out = findOwnPlayer(found.squad, replace);
+        if (!out?.player.mentoring) return Response.json({ error: "invalidReplace" }, { status: 400 });
+        const drop = (p: RosterPlayer): RosterPlayer => {
           if (p.id !== replace) return p;
           const { mentoring: _gone, ...rest } = p;
           return rest;
-        }) };
+        };
+        found.squad = { ...found.squad, players: found.squad.players.map(drop), ...(found.squad.youth ? { youth: found.squad.youth.map(drop) } : {}) };
       }
-      const player = found.squad.players.find((p) => p.id === playerId);
-      if (!player) return Response.json({ error: "notYourPlayer" }, { status: 404 });
+      const own = findOwnPlayer(found.squad, playerId);
+      if (!own) return Response.json({ error: "notYourPlayer" }, { status: 404 });
+      const player = own.player;
       const updated = { ...player };
       if (trait === null) {
         delete updated.mentoring;
@@ -186,7 +189,10 @@ export const moraleRoutes = {
           updated.mentoring = { trait, since: date, progress: 0 };
         }
       }
-      await saveService.saveSquadById(saveId, { ...found.squad, players: found.squad.players.map((p) => (p.id === playerId ? updated : p)) });
+      const put = (p: RosterPlayer) => (p.id === playerId ? updated : p);
+      await saveService.saveSquadById(saveId, own.academy
+        ? { ...found.squad, youth: (found.squad.youth ?? []).map(put) }
+        : { ...found.squad, players: found.squad.players.map(put) });
       return Response.json({ mentoring: updated.mentoring ?? null });
     });
   },

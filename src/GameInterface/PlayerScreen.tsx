@@ -144,6 +144,11 @@ export function PlayerScreen({
   const offerState: "open" | "closed" | "precontract" =
     !windowsData || windowsData.player.open ? "open" : canPreContract ? "precontract" : "closed";
 
+  // Window closed (tester report 0a35192c): the offer still goes; he joins when it opens.
+  const deferredTitle = windowsData?.player.opensOn
+    ? t("negotiation.deferred.closedLine", { date: new Date(`${windowsData.player.opensOn}T12:00:00`).toLocaleDateString(i18n.language, { day: "numeric", month: "long", year: "numeric" }) })
+    : windowClosedText(t, i18n.language, windowsData?.player.opensOn);
+
   function handleTransferComplete(record: TransferRecord) {
     lastTransferResult.current = record;
   }
@@ -183,15 +188,13 @@ export function PlayerScreen({
             !isOwnPlayer && !player.loan ? (
               <button
                 type="button"
-                disabled={offerState === "closed" || starLimit.full}
+                disabled={starLimit.full}
                 onClick={() => setOfferTarget(displayPlayer)}
-                title={offerState === "closed" ? windowClosedText(t, i18n.language, windowsData?.player.opensOn) : starLimit.full ? t("starLimit.refused", { max: starLimit.max, top: STAR_LIMIT.TOP }) : undefined}
+                title={offerState === "closed" ? deferredTitle : starLimit.full ? t("starLimit.refused", { max: starLimit.max, top: STAR_LIMIT.TOP }) : undefined}
                 className="flex items-center gap-2 px-5 h-10 rounded bg-primary text-primary-foreground text-sm font-semibold cursor-pointer border-0 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Icon name="user-plus" className="w-4 h-4" />
-                {offerState === "closed"
-                  ? windowClosedText(t, i18n.language, windowsData?.player.opensOn)
-                  : offerState === "precontract" ? t("negotiation.preContract.tab") : t("playerScreen.makeOffer")}
+                {offerState === "precontract" ? t("negotiation.preContract.tab") : t("playerScreen.makeOffer")}
               </button>
             ) : isOwnPlayer && player.loan ? (
               // On loan here (9.8): his own club can still sell him, or he can sign a pre-contract.

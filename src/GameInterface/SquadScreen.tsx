@@ -24,10 +24,11 @@ import { ClubOverviewView } from "@/GameInterface/Components/ClubOverviewView";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import type { TransferRecord } from "@/types/transferTypes";
 import { navigate } from "@/GameInterface/router/navigation";
+import { SquadAttentionStrip } from "@/GameInterface/Squad/SquadAttentionStrip";
 
 export function SquadScreen({ league, club }: { league: string; club: string }) {
   const { t } = useTranslation();
-  const { session, squad: mySquad, loading: saveLoading, refresh } = useGameSave();
+  const { session, squad: mySquad, loading: saveLoading, refresh, currentDate } = useGameSave();
   const [squad, setSquad] = useState<Squad | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -190,6 +191,13 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
           <NegotiationOverview saveId={session.saveId} sections={["out", "in"]} />
         ) : (
           <>
+          {squad.id === mySquadId && session && (
+            <SquadAttentionStrip
+              saveId={session.saveId}
+              currentDate={currentDate}
+              playerHref={(id) => `/player/${encodeURIComponent(league)}/${encodeURIComponent(club)}/${encodeURIComponent(id)}`}
+            />
+          )}
           {squad.id === mySquadId && (
             <MoralePromises
               talks={squad.moraleClub?.talks ?? []}

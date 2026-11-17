@@ -252,7 +252,7 @@ export function trimSquadToCap(squad: Squad, cap = MAX_SQUAD): { squad: Squad; r
   if (squad.players.length <= cap) return { squad, released: [] };
   const counts = countByRole(squad.players);
   const released: RosterPlayer[] = [];
-  const ranked = [...squad.players].filter((p) => !p.loan).sort((a, b) => overallAvg(a) - overallAvg(b));
+  const ranked = [...squad.players].filter((p) => !p.loan && !p.deferredTo).sort((a, b) => overallAvg(a) - overallAvg(b));
   for (const p of ranked) {
     if (squad.players.length - released.length <= cap) break;
     const role = roleOf(p);
@@ -267,7 +267,7 @@ export function trimSquadToCap(squad: Squad, cap = MAX_SQUAD): { squad: Squad; r
 export function toFreeAgent(player: RosterPlayer, date: string): FreeAgent {
   // A sell-on clause or a loan ends with the contract (`.claude/rules/game/negotiation.md`).
   // Morale is the human club's only (`.claude/rules/game/morale.md`).
-  return { player: { ...stripPlayerMorale(player), squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined, awardBoost: undefined }, since: date };
+  return { player: { ...stripPlayerMorale(player), squadId: "", contract: undefined, injury: undefined, sellOn: undefined, loan: undefined, deferredTo: undefined, awardBoost: undefined }, since: date };
 }
 
 /**

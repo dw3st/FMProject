@@ -8,6 +8,7 @@ import { CUSTOM_FORMATION_ID, parseAxesOverride, parseCustomFormation } from "@/
 import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
+import { lastLineupKey } from "@/Domain/tactics/lastLineups";
 import type { Formation } from "@/GameEngine/types";
 import type { TacticsSave } from "@/types/tacticsTypes";
 
@@ -57,8 +58,12 @@ export function mergeTacticsBody(existing: TacticsSave, body: Partial<TacticsSav
   }
 
   const lineup = body.lineup ?? existing.lineup;
-  // The XI of each formation is remembered (report 2026-11-16); the client never writes this map.
-  const lastLineups = lineup.some(Boolean) ? { ...(existing.lastLineups ?? {}), [formationId]: lineup } : existing.lastLineups;
+  // The XI of each formation is remembered (report 2026-11-16); the client never writes this map. A free formation is
+  // keyed by its shape (`lastLineupKey`), so another free shape never inherits these slots.
+  const memoryKey = lastLineupKey(formationId, customFormation);
+  const lastLineups = memoryKey && lineup.some(Boolean)
+    ? { ...(existing.lastLineups ?? {}), [memoryKey]: lineup }
+    : existing.lastLineups;
   const value: TacticsSave = {
     formation:      formationId,
     tactical_style: body.tactical_style ?? existing.tactical_style,

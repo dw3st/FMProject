@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MENTORING, nextMentoringGain, type MentoringRow } from "@/Domain/personality/mentoring";
 import { daysBetween } from "@/Domain/dates";
-import { Button } from "@/GameInterface/ui/Button";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import type { MentoredTrait, RosterPlayer } from "@/types/playerTypes";
 
@@ -95,7 +94,7 @@ export function MentoringPanel({ saveId, player, onChanged }: { saveId: string; 
       <span className={LABEL}>{t("mentoring.label")}</span>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <div className="flex flex-col gap-3 min-w-0">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 grid-cols-1">
             {TRAITS.map((trait) => {
               const on = current === trait || pending === trait;
               const sub = current === trait && since
@@ -108,18 +107,18 @@ export function MentoringPanel({ saveId, player, onChanged }: { saveId: string; 
                   disabled={busy}
                   aria-pressed={current === trait}
                   onClick={() => pick(trait)}
-                  className={`flex items-center gap-3 rounded-lg border p-4 text-left cursor-pointer transition-colors disabled:opacity-60 ${
+                  className={`flex items-center gap-4 rounded-lg border px-4 py-3 text-left cursor-pointer transition-colors disabled:opacity-60 ${
                     on ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/60"
                   }`}
                 >
                   <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-display font-bold text-xl ${on ? "border-primary text-primary" : "border-foreground/80 text-foreground"}`}>
                     {t(`mentoring.letter.${trait}`)}
                   </span>
-                  <span className="flex flex-col min-w-0">
-                    <span className={`font-display font-bold uppercase text-lg leading-tight ${on ? "text-primary" : "text-foreground"}`}>
+                  <span className="flex flex-col min-w-0 flex-1">
+                    <span className={`font-display font-bold uppercase text-base leading-tight break-words ${on ? "text-primary" : "text-foreground"}`}>
                       {t(`personality.trait.${trait}`)}
                     </span>
-                    <span className="text-sm text-muted-foreground">{sub}</span>
+                    <span className="text-sm text-muted-foreground line-clamp-2">{sub}</span>
                   </span>
                 </button>
               );
@@ -142,7 +141,7 @@ export function MentoringPanel({ saveId, player, onChanged }: { saveId: string; 
                     <span className="text-foreground">
                       {next?.counts
                         ? t("mentoring.nextGain", { date: date(info.seasonEnd), n: next.amount.toLocaleString(i18n.language) })
-                        : t("mentoring.nextGainShort", { date: date(info.seasonEnd), days: MENTORING.MIN_DAYS })}
+                        : t("mentoring.countsNextSeason", { date: date(info.seasonEnd), days: MENTORING.MIN_DAYS })}
                     </span>
                   </div>
                 </>
@@ -152,7 +151,14 @@ export function MentoringPanel({ saveId, player, onChanged }: { saveId: string; 
 
           {current && (
             <div>
-              <Button variant="danger" flush disabled={busy} onClick={() => void save(null)}>{t("mentoring.stop")}</Button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void save(null)}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-destructive/60 bg-transparent px-5 text-sm font-semibold text-destructive hover:bg-destructive/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t("mentoring.stop")}
+              </button>
             </div>
           )}
 
@@ -170,7 +176,16 @@ export function MentoringPanel({ saveId, player, onChanged }: { saveId: string; 
             <div key={r.id} className={`flex items-center gap-3 rounded-md border px-3 py-2 ${r.id === player.id ? "border-primary/60 bg-primary/10" : "border-border bg-card"}`}>
               <div className="flex flex-col min-w-0 flex-1">
                 <span className="text-sm font-semibold text-primary truncate">{r.name}</span>
-                <span className="text-sm text-muted-foreground truncate">{t(`personality.trait.${r.trait}`)} · {t("mentoring.sinceShort", { date: formatGameDate(r.since, i18n.language) })}</span>
+                <span className="text-sm text-muted-foreground truncate">
+                  {r.academy ? `${t("mentoring.academy")} · ` : ""}{t(`personality.trait.${r.trait}`)} · {t("mentoring.sinceShort", { date: formatGameDate(r.since, i18n.language) })}
+                </span>
+                {r.counts !== undefined && (
+                  <span className={`text-sm tabular-nums truncate ${r.counts ? "text-foreground" : "text-chart-4"}`}>
+                    {r.counts
+                      ? t("mentoring.rowCounts", { n: (r.amount ?? 0).toLocaleString(i18n.language) })
+                      : t("mentoring.rowNextSeason")}
+                  </span>
+                )}
               </div>
               <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${r.gained > 0 ? "text-star-green" : "text-muted-foreground"}`}>
                 {t("mentoring.gainedShort", { n: r.gained.toLocaleString(i18n.language) })}

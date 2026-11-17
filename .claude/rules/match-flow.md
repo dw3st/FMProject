@@ -589,3 +589,7 @@ The shortcut also puts each starter in his saved slot (12.8.2, user report: line
 # Substitutions panel layout (12.8.2)
 
 User report, option A of the mock (`data_process/assets/subs_panel_mock.py`). Every tab of the panel puts the mini pitch on the left and its controls on the right (`PanelColumns`, `SubstitutionPanel.tsx`; stacked below `md`): Player swap keeps its pitch with the bench beside it, Formation shows the preview (`FormationPreview`, height `PANEL_PITCH_HEIGHT`) with "my formations" and the ready ones in a grid of 6, Tactics shows the current XI beside the style and axes, Instructions picks the player by clicking him on the pitch (`FormationPreview` `onPick` / `selectedSlot`) instead of the chip grid. `/test` now also opens the Formation and Instructions tabs (test commands `changeFormation`, `setInstruction`).
+
+# Substitutions screen redone (12.12)
+
+Tester report, approved by the user from real screenshots. `SubstitutionPanel` is a wide `Modal`; every tab is `PanelColumns` (`Components/SubsPanelLayout.tsx`): the upright mini pitch on the left (`PANEL_PITCH_HEIGHT`), the tab's controls on the right, the main button at the bottom. Out of position on the formation preview uses the aptitude (needs training or worse), like the player-change tab.

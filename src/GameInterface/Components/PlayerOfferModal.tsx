@@ -22,6 +22,7 @@ import { StepButton } from "@/GameInterface/ui/StepButton";
 import { stepAskingPrice } from "@/Domain/negotiation/askingPrice";
 import { NegotiationHistory } from "@/GameInterface/Negotiation/NegotiationHistory";
 import { windowClosedText } from "@/GameInterface/Transfers/transferWindow";
+import { DEFERRED_TRANSFER } from "@/Domain/negotiation/deferredTransfer";
 import { addDays } from "@/Domain/dates";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { squadWeeklyWages, wageFactorOf } from "@/Domain/finance/wages";
@@ -85,6 +86,8 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const [loanFee, setLoanFee] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<TransferRecord | null>(null);
+  // Agreed with the window closed (tester report 0a35192c): the day he joins.
+  const [joinsOn, setJoinsOn] = useState<string | null>(null);
   const [loanDone, setLoanDone] = useState<string | null>(null);
   const [talks, setTalks] = useState<Record<Tab, Talk>>({ transfer: null, loan: null, precontract: null });
   const [buyWindow, setBuyWindow] = useState<WindowDto | null>(null);
@@ -144,6 +147,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   // A different player: fresh state and that player's talks of the day.
   useEffect(() => {
     setResult(null);
+    setJoinsOn(null);
     setLoanDone(null);
     setMessage(null);
     setContractError(null);
@@ -189,6 +193,9 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const today = tab === "precontract" ? null : talks[tab];
   const windowClosed = buyWindow !== null && !buyWindow.open;
   const isSeat = seatClub !== null;
+  // A fee transfer from an AI club goes through with the window closed: he joins when it opens.
+  const deferrable = windowClosed && tab === "transfer" && !isSeat && !swapId;
+  const windowBlocks = windowClosed && !deferrable;
   const myOpenOffer = isSeat
     ? (seatOffers.data?.offers ?? []).find((o) => o.playerId === player.id && o.side === "buyer" && o.kind === (tab === "loan" ? "loan" : "transfer")) ?? null
     : null;
@@ -216,6 +223,9 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
     if (code === "noClub") return t("negotiation.errors.noClub");
     if (code === "notEligible") return t("negotiation.preContract.notEligible");
     if (code === "alreadySigned") return t("negotiation.preContract.alreadySigned");
+    if (code === "deferredLimit") return t("negotiation.deferred.limit", { max: DEFERRED_TRANSFER.MAX_PENDING });
+    if (code === "alreadyDeferred") return t("negotiation.deferred.already");
+    if (code === "committed") return t("negotiation.deferred.committed");
     return t("negotiation.errors.generic");
   }
 
@@ -299,8 +309,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         rival?: RivalDto[];
         preference?: { winner: string; clubName: string; reason: string };
         swapValue?: number;
+        deferred?: { joinsOn: string };
       };
       setSwapWorth(body.swapValue ?? null);
+      setJoinsOn(body.deferred?.joinsOn ?? null);
       if (!res.ok) {
         if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) {
           setContractError(refusalText(body.error));
@@ -422,6 +434,9 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                   <p className="text-sm text-muted-foreground mt-1 m-0 tabular-nums">
                     {t("transfers.acceptedSummary", { name: player.name, fee: formatFee(result.fee) })}
                   </p>
+                  {joinsOn && (
+                    <p className="text-sm text-foreground mt-1 m-0 tabular-nums">{t("negotiation.deferred.agreed", { name: player.name, date: fmtDate(joinsOn) })}</p>
+                  )}
                 </>
               ) : (
                 <>
@@ -493,7 +508,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
               {isSeat && (
                 <p className="text-sm text-muted-foreground m-0">{t("seatOffers.toManager", { manager: seatClub?.managerName || player.club })}</p>
               )}
-              {windowClosed && tab !== "precontract" && (
+              {deferrable && buyWindow?.opensOn && (
+                <p className="text-sm text-chart-4 m-0" role="status">{t("negotiation.deferred.closedLine", { date: fmtDate(buyWindow.opensOn) })}</p>
+              )}
+              {windowBlocks && tab !== "precontract" && (
                 <p className="text-sm text-destructive m-0" role="status">
                   {windowClosedText(t, i18n.language, buyWindow?.opensOn)}
                   {preContractEligible ? ` · ${t("negotiation.preContract.hint")}` : ""}
@@ -687,7 +705,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                   ) : (
                     <Button
                       variant="secondary"
-                      disabled={submitting || seatListPending || windowClosed || budget < demandInfo.clause}
+                      disabled={submitting || seatListPending || windowBlocks || budget < demandInfo.clause}
                       title={budget < demandInfo.clause ? t("negotiation.clause.noMoney") : undefined}
                       onClick={() => setConfirmClause(true)}
                     >
@@ -714,7 +732,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                     {submitting ? t("transfers.sending") : t("negotiation.preContract.send")}
                   </Button>
                 )}
-                {tab !== "precontract" && !isSeat && counter && !closedUntil && !windowClosed && (
+                {tab !== "precontract" && !isSeat && counter && !closedUntil && !windowBlocks && (
                   <Button
                     disabled={submitting || seatListPending}
                     className="tabular-nums"
@@ -731,7 +749,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 )}
                 {tab !== "precontract" && <Button
                   variant={counter && !isSeat ? "secondary" : "primary"}
-                  disabled={submitting || seatListPending || blocked || windowClosed || (tab === "transfer" && !slider.canOffer && !(swapId && cashDir !== "pay"))}
+                  disabled={submitting || seatListPending || blocked || windowBlocks || (tab === "transfer" && !slider.canOffer && !(swapId && cashDir !== "pay"))}
                   onClick={() => (tab === "transfer" ? void submitOffer(offerCash(offerFee, swapId, cashDir), Number(sellOn)) : void submitLoan(wageShare, loanFee))}
                 >
                   {submitting ? t("transfers.sending") : tab === "transfer" ? t("transfers.sendOffer") : t("negotiation.requestLoan")}

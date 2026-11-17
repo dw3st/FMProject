@@ -50,6 +50,8 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
       }
       if (ref?.stage === "legend" && entry.kind === "transfer_out") return { key: "legendHire", player: ref.playerName ?? "" };
       if (ref?.stage === "signing_bonus") return { key: "signingBonus", player: ref.playerName ?? "" };
+      // A transfer agreed with the window closed that fell through: the fee came back.
+      if (ref?.stage === "deferred_refund") return { key: "deferredRefund", player: ref.playerName ?? "" };
       if (ref?.stage === "loan_fee" && ref.clubName) {
         return { key: entry.kind === "transfer_in" ? "loanFeeIn" : "loanFeeOut", club: ref.clubName, ...(ref.playerName ? { player: ref.playerName } : {}) };
       }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { badgeCount, badgeIds, badgeReasons, navBadges, type NavBadgeInput } from "@/Domain/navBadges/navBadges";
+import { badgeCount, badgeGroups, badgeIds, badgeReasons, navBadges, type NavBadgeInput } from "@/Domain/navBadges/navBadges";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const DATE = "2038-02-28";
@@ -72,5 +72,19 @@ describe("navBadges", () => {
     // The same player hurt again later: another injury, another id.
     const again = navBadges(input(squad([hurt("2038-06-10")])));
     expect(badgeCount(again["/squad"], seen)).toBe(1);
+  });
+
+  test("squad strip (report 8b435dc7): every item grouped by kind with the player to link, seen or not", () => {
+    const s = squad([
+      player("muniz", { name: "B. Muniz", injury: { severity: "light", returnDate: "2038-03-10" } } as never),
+      player("rui", { name: "Rui", injury: { severity: "light", returnDate: "2038-03-05" } } as never),
+      player("x", { name: "X", suspension: { matches: 1 } } as never),
+    ]);
+    const b = navBadges(input(s));
+    expect(badgeGroups(b["/squad"])).toEqual([
+      { kind: "injured", entries: [{ name: "B. Muniz", playerId: "muniz" }, { name: "Rui", playerId: "rui" }] },
+      { kind: "suspended", entries: [{ name: "X", playerId: "x" }] },
+    ]);
+    expect(badgeGroups(undefined)).toEqual([]);
   });
 });

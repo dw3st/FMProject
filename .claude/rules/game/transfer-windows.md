@@ -193,3 +193,7 @@ Report de tester. Cada bloco de `NegotiationOverview` é um cartão como Entrada
 Posição e bandeira nos pré-contratos (8.7.21, report de tester): `GET /negotiation` acrescenta `position` (natural) e `nationality` a cada pré-contrato, lidos do clube de origem na hora.
 
 Limite e pré-contratos (8.7.23, report de tester): o topo do Elenco mostra "Elenco: 33/36 · +3 pré-contratos"; o pré-contrato recusado por `squadFull` devolve `roster`, `preContracts` e `max`, e a janela explica a conta.
+
+## Compra fora da janela (12.12)
+
+Ideia de tester (Fabio). Com a janela do clube humano fechada, `POST /transfers` (sem troca, sem jogador emprestado) segue a negociação de sempre; aceita, a taxa sai na hora (`transfer_out`), o jogador fica no clube dele com `RosterPlayer.deferredTo` e o acerto vai para `market.deferredTransfers` (`joinsOn` = abertura da janela; até `DEFERRED_TRANSFER.MAX_PENDING` 5; 409 `deferredLimit`, `alreadyDeferred`, `committed`). No dia da abertura (`applyDueDeferredTransfers`, `src/backend/deferredTransferWorld.ts`, depois das voltas de empréstimo) ele chega com o contrato combinado (inbox `deferred_joined`); se sumiu do clube ou o elenco está cheio, cai e a taxa volta (`transfer_in`, `deferred_refund`, `deferred_cancelled`). A IA não compra, não dispensa e sempre renova quem tem `deferredTo`. Os pendentes contam no teto do elenco e no limite do top 25. Tela: "Chegam na janela" em Transferências. Empréstimo e propostas entre técnicos continuam presos à janela.

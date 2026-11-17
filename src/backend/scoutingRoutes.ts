@@ -10,7 +10,9 @@ import {
 } from "@/backend/scoutingWorld";
 import { countryKnowledgeMap, countryKnowledgeOf, meanKnowledge, strongCountry } from "@/Domain/scouting/countryKnowledge";
 import { SCOUTING as S } from "@/Domain/scouting/scoutingConfig";
-import { allowedWeeks, missionCost, playerMissionWeeks, playerWeeklyGain, seenProfile } from "@/Domain/scouting/missions";
+import {
+  allowedWeeks, missionCost, playerMissionWeeks, playerWeeklyGain, regradeReport, seenProfile, starterLineAverages,
+} from "@/Domain/scouting/missions";
 import { scoutMultipliersOf } from "@/Domain/scouting/knowledge";
 import { buildScoutingMessage } from "@/Domain/scouting/scoutingMessages";
 import { effectiveRating, effectiveStars, headOf, memberStars, membersOf, ratingFromStars } from "@/Domain/staff/staff";
@@ -284,7 +286,9 @@ async function reportsView(
   availabilityOf: (playerId: string, squadId: string | undefined) => Promise<PlayerAvailability>,
 ): Promise<ScoutReport[]> {
   const mine = new Set([...(own?.players ?? []), ...(own?.youth ?? [])].map((p) => p.id));
-  const kept = reports.filter((r) => !mine.has(r.playerId));
+  // Academy-age reports are graded again with today's rule and starters (report 6781d1e7: old reports stayed at E).
+  const lineAverages = own ? starterLineAverages(own) : null;
+  const kept = reports.filter((r) => !mine.has(r.playerId)).map((r) => (lineAverages ? regradeReport(r, lineAverages) : r));
   const clubs = new Map<string, Promise<Set<string> | null>>();
   const rosterOf = (id: string) => {
     let p = clubs.get(id);
@@ -299,6 +303,13 @@ async function reportsView(
     const roster = await rosterOf(r.squadId);
     return roster?.has(r.playerId) ? { ...r, availability: await availabilityOf(r.playerId, r.squadId) } : { ...r, gone: true as const };
   }));
+}
+
+/** A player's stored report, regraded with today's rule (academy-age players only). */
+async function playerReport(saveId: string, ownClubId: string, report: ScoutReport | null): Promise<ScoutReport | null> {
+  if (!report || !ownClubId) return report;
+  const own = await saveService.getSquadById(saveId, ownClubId);
+  return own ? regradeReport(report, starterLineAverages(own)) : report;
 }
 
 /** A prospect as the screen sees him: identity only, never his exact attributes. */
@@ -515,7 +526,7 @@ export const scoutingRoutes = {
       plans: await levelPlans(saveId, auth.seatId, state, view.knowledge, country, found.squad?.id ?? ""),
       // Country of his club's league (free agent: ""): the scouts' knowledge of it on the screen.
       country,
-      report: state.reports.find((r) => r.playerId === found.player.id) ?? null,
+      report: await playerReport(saveId, viewer.ownClubId, state.reports.find((r) => r.playerId === found.player.id) ?? null),
       shortlisted: state.shortlist.some((e) => e.playerId === found.player.id),
       mission: state.missions.find((m) => m.target.kind === "player" && m.target.playerId === found.player.id) ?? null,
     });

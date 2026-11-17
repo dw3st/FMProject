@@ -63,14 +63,10 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     expect(body.countries.length).toBeGreaterThan(10);
   });
 
-  test("fee buy, loan and an AI bid are refused with the window closed; a free agent signs", async () => {
+  // A fee buy with the window closed is agreed and deferred (`deferredTransfer.test.ts`); a swap still needs it.
+  test("loan and an AI bid are refused with the window closed; a free agent signs", async () => {
     const club = await aiClub();
     const target = midfielder(club);
-    const buy = await route("/api/saves/:saveId/transfers")(req(`/api/saves/${saveId}/transfers`, "POST", { saveId },
-      { playerId: target.id, fromSquadId: club.id, fee: 50_000_000 }));
-    expect(buy.status).toBe(409);
-    expect(await buy.json()).toMatchObject({ error: "windowClosed", opensOn: "2027-01-01" });
-
     const loan = await route("/api/saves/:saveId/loans")(req(`/api/saves/${saveId}/loans`, "POST", { saveId },
       { playerId: target.id, fromSquadId: club.id, wageShare: 100, fee: 0 }));
     expect(loan.status).toBe(409);

@@ -57,6 +57,8 @@ export const SCOUTING = {
   GROWTH_AGE: 23,
   /** Up to this age a report grades the middle of the potential band too (the best of the two). */
   PROSPECT_GRADE_AGE: 19,
+  /** Players up to `PROSPECT_GRADE_AGE` are graded against the starters' line average less this (academy reference). */
+  PROSPECT_GRADE_OFFSET: 1.0,
   GEM_MAX_AGE: 20,
   GEM_MARGIN: 0.3,
   GEMS_PER_WEEK: 2,

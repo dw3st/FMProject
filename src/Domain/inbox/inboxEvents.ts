@@ -653,6 +653,8 @@ export function buildTransferNegotiationMessage(args: {
     : kind === "pre_contract" ? `Pre-contract: ${playerName}`
     : kind === "pre_contract_joined" ? `${playerName} joined on his pre-contract`
     : kind === "pre_contract_failed" ? `Pre-contract fell through: ${playerName}`
+    : kind === "deferred_joined" ? `${playerName} joined from ${clubName}`
+    : kind === "deferred_cancelled" ? `Transfer fell through: ${playerName}`
     : kind === "bid" ? `${clubName} bid for ${playerName}`
     : kind === "loan_bid" ? `${clubName} want ${playerName} on loan`
     : kind === "loan_back" ? `${playerName} returned to ${clubName}`

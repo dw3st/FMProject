@@ -1089,6 +1089,11 @@ function RegistrationInboxBody({ message, leagues }: { message: Extract<InboxMes
   );
 }
 
+/** "X 4/15, Y 4/15": the new signings for whom the friendly counted as an adaptation game (report 4bf4efac). */
+function settlingLine(players: Extract<InboxMessage, { category: "friendly" }>["players"]): string {
+  return players.flatMap((p) => (p.settling ? [`${p.name} ${p.settling.games}/${p.settling.need}`] : [])).join(", ");
+}
+
 /** League games of the club moved off a clash: competition, opponent (home/away), old → new date. */
 function FriendlyBody({ message }: { message: Extract<InboxMessage, { category: "friendly" }> }) {
   const { t } = useTranslation();
@@ -1099,6 +1104,9 @@ function FriendlyBody({ message }: { message: Extract<InboxMessage, { category: 
         {t("friendlies.score", { club: message.clubName, home: message.goalsFor, away: message.goalsAgainst, opponent: message.opponentName })}
       </p>
       <p className="m-0 text-muted-foreground">{t("friendlies.note")}</p>
+      {settlingLine(message.players ?? []) && (
+        <p className="m-0 text-foreground tabular-nums">{t("friendlies.settling", { list: settlingLine(message.players ?? []) })}</p>
+      )}
       <ul className="m-0 p-0 list-none flex flex-col rounded-lg border border-border divide-y divide-border overflow-hidden">
         {(message.players ?? []).map((p) => (
           <li key={p.playerId} className="p-3 bg-muted/10 flex flex-col gap-1">

@@ -210,3 +210,5 @@ Report de tester, regra aprovada pelo usuário. Só o clube do jogador: na ficha
 
 Report do usuário, opção B do mock. `MentoringPanel`: os dois traços em cartões, o progresso do jogador (quanto ganhou, barra até o fim da temporada da liga do clube e o próximo ganho, `nextMentoringGain`) e "Encerrar trabalho"; ao lado, quem o auxiliar acompanha (`mentoringTeam`, `GET /api/saves/:id/mentoring`, com o fim da temporada e se o auxiliar acelera). Com o auxiliar cheio, escolher um traço pede quem sai: `PUT .../mentoring { trait, replace }` tira o outro e põe este na mesma gravação (400 `invalidReplace`).
 
+
+Mentalidade na base (12.12, report de tester): jogadores da base também podem ser acompanhados (contam no limite de 3 e crescem na virada); a lista diz se o ganho já vale nesta temporada (90 dias antes do fim).

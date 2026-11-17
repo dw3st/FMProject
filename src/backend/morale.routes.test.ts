@@ -141,6 +141,22 @@ describe("morale routes", () => {
     expect(after.players.find((p) => p.id === youngs[1]!.id)!.mentoring).toBeUndefined();
     expect(after.players.find((p) => p.id === youngs[0]!.id)!.mentoring?.trait).toBe("professionalism");
 
+    // An academy player too (report 2eeaae39): swapped in for a squad player, shown with when the work counts.
+    const kid = { ...after.players.find((p) => p.id === youngs[2]!.id)!, id: "academy_kid", age: 17 };
+    delete kid.mentoring;
+    await saveService.saveSquadById(saveId, { ...after, youth: [...(after.youth ?? []), kid] });
+    expect((await swap("academy_kid", "temperament", youngs[2]!.id)).status).toBe(200);
+    const withKid = await human();
+    expect(withKid.youth!.find((p) => p.id === "academy_kid")!.mentoring?.trait).toBe("temperament");
+    expect(withKid.players.find((p) => p.id === youngs[2]!.id)!.mentoring).toBeUndefined();
+    const kidView = (await (await call("/api/saves/:saveId/mentoring", `/api/saves/${saveId}/mentoring`, "GET", session.token, { saveId })).json()) as
+      { team: { id: string; academy?: boolean; counts?: boolean }[]; seasonEnd: string | null };
+    const kidRow = kidView.team.find((r) => r.id === "academy_kid")!;
+    expect(kidRow.academy).toBe(true);
+    if (kidView.seasonEnd) expect(typeof kidRow.counts).toBe("boolean");
+    expect((await mentor("academy_kid", null)).status).toBe(200);
+    expect((await human()).youth!.find((p) => p.id === "academy_kid")!.mentoring).toBeUndefined();
+
     await saveService.updateSeat(saveId, meta.seatId, { clubId: "" });
     expect((await getMorale()).status).toBe(409);
   }, 120_000);

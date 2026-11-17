@@ -97,6 +97,8 @@ export const marketRoutes = {
       const loanedIn = loanedInFrom(human, playerId, current.id);
       const player = current.players.find((p) => p.id === playerId) ?? (loanedIn ? { ...loanedIn, loan: undefined } : undefined);
       if (!player) return json({ error: "player not found" }, 404);
+      // Already sold to a human club, joining when its window opens (`DeferredTransfer`).
+      if (player.deferredTo) return json({ error: player.deferredTo === human.id ? "alreadyDeferred" : "committed" }, 409);
       const blockedUntil = rebuyBlockedUntil(player, human.id, date);
       if (blockedUntil) return json({ error: "recentlySold", until: blockedUntil }, 409);
       const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();

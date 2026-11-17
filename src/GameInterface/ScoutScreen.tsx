@@ -12,8 +12,6 @@ import type { CountryEntry } from "@/types/worldTypes";
 import { ScoutTable } from "@/GameInterface/Scout/ScoutTable";
 import { loadSession } from "@/GameInterface/gameSession";
 import { PlayerOfferModal } from "@/GameInterface/Components/PlayerOfferModal";
-import { useTransferWindows, windowClosedText } from "@/GameInterface/Transfers/transferWindow";
-import { addDays } from "@/Domain/dates";
 import { ContractOfferModal } from "@/GameInterface/Contracts/ContractOfferModal";
 import { FreeAgentQuickView } from "@/GameInterface/Scout/FreeAgentQuickView";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
@@ -81,7 +79,6 @@ function storeSavedFilters(list: SavedScoutFilter[]) {
 
 export function ScoutScreen() {
   const { t, i18n } = useTranslation();
-  const windowsData = useTransferWindows();
   const [session] = useState(() => loadSession());
   // `filters` is what the screen shows; `appliedFilters` the last search (#147: the search only
   // runs on "Pesquisar" / Enter; the first load searches the last applied filters).
@@ -163,12 +160,6 @@ export function ScoutScreen() {
     (id: string, on: boolean) => setStarOverrides((prev) => ({ ...prev, [id]: on })),
     [],
   );
-  const currentDate = session?.currentDate ?? "";
-  const offerBlocked = useCallback((p: DisplayPlayer) => {
-    if (!windowsData || windowsData.player.open) return null;
-    const preContract = !!p.contractEnd && !!currentDate && p.contractEnd >= currentDate && p.contractEnd <= addDays(currentDate, 183);
-    return preContract ? null : windowClosedText(t, i18n.language, windowsData.player.opensOn);
-  }, [windowsData, currentDate, t, i18n.language]);
 
   // Static data: league list (filter options) and the user's squad id (disables offers on own players).
   useEffect(() => {
@@ -335,7 +326,6 @@ export function ScoutScreen() {
           mySquadId={mySquadId}
           onOffer={handleOffer}
           onView={setViewTarget}
-          offerBlocked={offerBlocked}
           sellListedIds={sellListedIds}
           error={fetchError}
           onRetry={handleRetry}

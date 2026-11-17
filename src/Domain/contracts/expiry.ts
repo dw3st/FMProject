@@ -49,7 +49,8 @@ export function processContractExpiries(args: {
 
   for (const p of byRating) {
     const next = renewalContract(p, squad, nextSeasonEnd, aiRenewalYears(p));
-    if (aiShouldRenew(p, squad, next.wage, bill, maxWage)) renewed.push(renew(p));
+    // A player already sold to a human club (`DeferredTransfer`) stays until he joins it.
+    if (p.deferredTo || aiShouldRenew(p, squad, next.wage, bill, maxWage)) renewed.push(renew(p));
     else released.push(p);
   }
 

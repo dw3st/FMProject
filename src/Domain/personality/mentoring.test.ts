@@ -77,3 +77,21 @@ describe("the player page view (tester report 2026-11-17)", () => {
     expect(nextMentoringGain(30, "2027-01-01", END, false)).toEqual({ amount: 0, counts: false });
   });
 });
+
+describe("the academy too (report 2eeaae39)", () => {
+  const withYouth = (players: RosterPlayer[], youth: RosterPlayer[]): Squad => ({ id: "s", players, youth }) as unknown as Squad;
+  test("an academy player in the work grows at the rollover, by his age before the youth rollover", () => {
+    const kid = player({ id: "k", age: 17, mentoring: m() });
+    const r = advanceMentoring(withYouth([player({ id: "a" })], [kid]), END);
+    expect(r.squad.youth![0]!.personalityGrowth).toEqual({ professionalism: 1 });
+    expect(r.news.map((n) => n.playerId)).toEqual(["k"]);
+  });
+  test("the academy counts in the limit of three and in the team view, with when it counts", () => {
+    const youth = ["a", "b", "c"].map((id) => player({ id, mentoring: m() }));
+    const p = player({ id: "p" });
+    expect(mentoringRefusal(withYouth([p], youth), p, "professionalism")).toBe("mentoringFull");
+    const late = player({ id: "late", mentoring: { ...m(), since: "2027-11-01" } });
+    const rows = mentoringTeam(withYouth([late], [youth[0]!]), END);
+    expect(rows.map((r) => [r.id, r.academy ?? false, r.counts, r.amount])).toEqual([["late", false, false, 1], ["a", true, true, 1]]);
+  });
+});

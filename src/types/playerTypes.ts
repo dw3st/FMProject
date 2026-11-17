@@ -193,6 +193,11 @@ export interface RosterPlayer {
    * parent club's; the borrowing club pays `wageShare` (0..1) of the wage. Returns at `until`.
    */
   loan?: PlayerLoan;
+  /**
+   * Sold with the buyer's window closed (`DeferredTransfer`): the human club he joins when the window
+   * opens. Until then nobody else buys, loans, releases or trims him.
+   */
+  deferredTo?: string;
   /** The human club that sold him and the last day it cannot buy him back (`Domain/transfer/formerClub.ts`). */
   formerClub?: { squadId: string; until: string };
   /**

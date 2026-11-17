@@ -104,15 +104,37 @@ export function seenProfile(
   };
 }
 
-/** Relative note of a report: seen overall vs the own starters of the line, + half the seen growth (≤ 23). */
+/**
+ * Relative note of a report: seen overall vs the own starters of the line, + half the seen growth (≤ 23). An
+ * academy-age youngster (≤ `PROSPECT_GRADE_AGE`) is graded against an academy reference, the starters' average less
+ * `PROSPECT_GRADE_OFFSET`, and on where he can get to: the best of that and the middle of his seen potential band
+ * (reports 2026-11-17 and 6781d1e7: at a strong club every youth prospect was an E against the first team).
+ */
 export function relativeNote(
   seenOverall: number, potentialHigh: number, age: number, lineAverage: number, potentialMid?: number,
 ): number {
   const growth = age <= S.GROWTH_AGE ? Math.max(0, potentialHigh - seenOverall) : 0;
-  const now = seenOverall - lineAverage + 0.5 * growth;
-  // An academy-age youngster is graded on where he can get to (report 2026-11-17: every 16-year-old prospect was an E
-  // against the first team): the middle of his seen potential band against the starters.
-  return age <= S.PROSPECT_GRADE_AGE && potentialMid !== undefined ? Math.max(now, potentialMid - lineAverage) : now;
+  if (age > S.PROSPECT_GRADE_AGE) return seenOverall - lineAverage + 0.5 * growth;
+  const reference = lineAverage - S.PROSPECT_GRADE_OFFSET;
+  const now = seenOverall - reference + 0.5 * growth;
+  return potentialMid !== undefined ? Math.max(now, potentialMid - reference) : now;
+}
+
+/**
+ * A stored report graded again with today's rule and line averages (reports are graded when written; the rule for
+ * academy-age players changed after). Only players ≤ `PROSPECT_GRADE_AGE`; the seen values come from the report's
+ * ranges (centre of the overall band, its half-width as the noise). Adults are returned unchanged.
+ */
+export function regradeReport(report: ScoutReport, lineAverages: Partial<Record<MainRole, number>>): ScoutReport {
+  if (report.age > S.PROSPECT_GRADE_AGE || !report.overall || !report.potential) return report;
+  const noise = Math.max(0, (report.overall[1] - report.overall[0]) / 2);
+  const seenOverall = (report.overall[0] + report.overall[1]) / 2;
+  const potentialHigh = Math.max(seenOverall, report.potential[1] - noise);
+  const potentialMid = (report.potential[0] + report.potential[1]) / 2;
+  const lineAvg = lineAverages[getMainRole(report.position === "—" ? "CM" : report.position)] ?? 5;
+  const grade = gradeOf(relativeNote(seenOverall, potentialHigh, report.age, lineAvg, potentialMid));
+  if (grade === report.grade) return report;
+  return { ...report, grade, text: reportText(seenOverall, lineAvg, grade, report.age) };
 }
 
 export function gradeOf(note: number): ScoutGrade {

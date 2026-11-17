@@ -132,7 +132,9 @@ function applyFriendlySide(squad: Squad, pool: RosterPlayer[], recording: Played
       now[attribute] !== was[attribute] ? [{ attribute, from: was[attribute] ?? 0, to: now[attribute] ?? 0 }] : []);
     return [{
       playerId: p.id, name: p.name, goals: ps.goals, rating: recording.playerRatings[p.id] ?? 6,
-      fitness: Math.round(p.seasonLog?.fitness ?? 0), ...(subIds.has(p.id) ? { sub: true as const } : {}), changes,
+      fitness: Math.round(p.seasonLog?.fitness ?? 0), ...(subIds.has(p.id) ? { sub: true as const } : {}),
+      ...(old.settling ? { settling: p.settling ? { games: p.settling.games, need: p.settling.need } : { games: old.settling.need, need: old.settling.need } } : {}),
+      changes,
     }];
   });
   return { applied, players };

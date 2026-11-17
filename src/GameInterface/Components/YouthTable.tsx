@@ -59,6 +59,8 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
   /** Players ticked for a release together (report 2026-11-16). */
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [confirmPicked, setConfirmPicked] = useState(false);
+  /** Names left in the academy by the last "promote selected" (squad full, report 7da62af2). */
+  const [notFit, setNotFit] = useState<string[]>([]);
 
   const saveId = session?.saveId;
 
@@ -103,6 +105,28 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
     } finally {
       setBusy(null);
       setConfirmMany(false);
+      setConfirmPicked(false);
+    }
+  }
+
+  async function promoteMany(ids: string[]) {
+    if (!saveId || !data) return;
+    const names = new Map(data.youth.map((r) => [r.player.id, r.player.name]));
+    setBusy("many");
+    setError(null);
+    setNotFit([]);
+    try {
+      const res = await fetch(`/api/saves/${saveId}/youth/promote-many`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) { setError(t("youth.actionFailed")); return; }
+      const body = (await res.json()) as YouthData & { promoted: string[]; skipped: { id: string; reason: string }[] };
+      setData(body);
+      setNotFit(body.skipped.filter((x) => x.reason === "squadFull").map((x) => names.get(x.id) ?? x.id));
+      setPicked(new Set(body.skipped.map((x) => x.id)));
+      if (body.promoted.length > 0) void refresh();
+    } finally {
+      setBusy(null);
       setConfirmPicked(false);
     }
   }
@@ -346,21 +370,35 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
         <p className="text-sm text-muted-foreground">{t("youth.empty")}</p>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="secondary" flush onClick={() => { setConfirmPicked(false); setPicked(pickedIds.length === data.youth.length ? new Set() : new Set(data.youth.map((r) => r.player.id))); }}>
-              {pickedIds.length === data.youth.length ? t("youth.pick.none") : t("youth.pick.all")}
-            </Button>
-            {confirmPicked ? (
-              <>
-                <Button variant="danger" disabled={busy !== null} onClick={() => void releaseMany(pickedIds)}>{t("youth.pick.confirm", { count: pickedIds.length })}</Button>
-                <Button variant="secondary" onClick={() => setConfirmPicked(false)}>{t("youth.cancel")}</Button>
-              </>
-            ) : (
-              <Button variant="danger" disabled={busy !== null || pickedIds.length === 0} onClick={() => setConfirmPicked(true)}>
-                {t("youth.pick.release", { count: pickedIds.length })}
+          <div className={`flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 ${pickedIds.length > 0 ? "border-primary/40 bg-primary/5" : "border-border"}`}>
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {pickedIds.length > 0 ? t("youth.pick.selected", { count: pickedIds.length }) : t("youth.pick.hint")}
+            </span>
+            <span className="flex-1" />
+            {pickedIds.length > 0 && !confirmPicked && (
+              <Button disabled={busy !== null || full} title={full ? t("youth.squadFull") : undefined} onClick={() => void promoteMany(pickedIds)}>
+                {t("youth.pick.promote", { count: pickedIds.length })}
               </Button>
             )}
+            {pickedIds.length > 0 && (confirmPicked ? (
+              <>
+                <Button variant="danger" className="border! border-destructive/60" disabled={busy !== null} onClick={() => void releaseMany(pickedIds)}>{t("youth.pick.confirm", { count: pickedIds.length })}</Button>
+                <Button variant="secondary" className="border! border-border bg-card" onClick={() => setConfirmPicked(false)}>{t("youth.cancel")}</Button>
+              </>
+            ) : (
+              <Button variant="danger" className="border! border-destructive/60" disabled={busy !== null} onClick={() => setConfirmPicked(true)}>
+                {t("youth.pick.dismiss", { count: pickedIds.length })}
+              </Button>
+            ))}
+            <Button
+              variant="secondary"
+              className="border! border-border bg-card"
+              onClick={() => { setConfirmPicked(false); setNotFit([]); setPicked(pickedIds.length === data.youth.length ? new Set() : new Set(data.youth.map((r) => r.player.id))); }}
+            >
+              {pickedIds.length === data.youth.length ? t("youth.pick.none") : t("youth.pick.all")}
+            </Button>
           </div>
+          {notFit.length > 0 && <Notice kind="warning">{t("youth.pick.notFit", { count: notFit.length, names: notFit.join(", ") })}</Notice>}
           <DataTable columns={columns} rows={data.youth} rowKey={(r) => r.player.id} />
           <section className="flex flex-col gap-2">
             <label htmlFor="youth-min-potential" className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.bulk.label")}</label>

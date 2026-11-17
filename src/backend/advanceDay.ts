@@ -186,6 +186,7 @@ import {
 } from "@/backend/registrationWorld";
 import { buildRegistrationMessage } from "@/Domain/inbox/registrationMessage";
 import { applyDuePreContracts, resolveRivalDeadlines, rollRivalFor } from "@/backend/rivalWorld";
+import { applyDueDeferredTransfers } from "@/backend/deferredTransferWorld";
 import { getCountries } from "@/backend/continentalWorld";
 import { buildManagerNewsMessage, buildPressInviteMessage, buildScheduleMessage, buildStaffContractMessages } from "@/Domain/inbox/inboxEvents";
 import { drawnLeaguesOf, playerRestDaysAfterMoves, rescheduleFixtureConflicts, syncPlayerRestDays } from "@/backend/reschedulingWorld";
@@ -1670,6 +1671,12 @@ export async function advanceOneDay(
         const back = await returnDueLoans(saveService, saveId, ds.seatId, ds.meta, seatMarket, currentDate);
         if (back.market !== seatMarket) await saveService.saveMarket(saveId, back.market, ds.seatId);
         ds.deferred.negotiation.push(...back.news);
+      }
+      // Transfers agreed with the window closed: the players join on the day it opens (`DeferredTransfer`).
+      for (const ds of daySeats) {
+        const joined = await applyDueDeferredTransfers(saveService, saveId, ds.seatId, ds.meta, currentDate);
+        ds.deferred.negotiation.push(...joined.news);
+        dayMoves.push(...joined.moves);
       }
       // AI clubs tie their key players down before the last year (`.claude/rules/game/contracts.md`).
       const preContracted = new Set<string>();

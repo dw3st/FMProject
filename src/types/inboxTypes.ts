@@ -289,6 +289,8 @@ export interface TransferInboxMessage extends InboxMessageBase {
     // Etapa 25 (`.claude/rules/game/transfer-windows.md`, `negotiation.md`)
     | "window_open" | "window_closing" | "window_closed"
     | "rival_bid" | "lost_to_rival" | "pre_contract" | "pre_contract_joined" | "pre_contract_failed"
+    // A fee transfer agreed with the window closed joined, or fell through (fee refunded)
+    | "deferred_joined" | "deferred_cancelled"
     // Offers between two human seats (multiplayer part 4, `.claude/rules/game/multiplayer.md`)
     | "seat_offer";
   /** "" for the window news. */
@@ -478,6 +480,8 @@ export interface FriendlyPlayer {
   fitness: number;
   /** Came on as a substitute. */
   sub?: true;
+  /** Adaptation of a new signing after this game (`games` = `need` when it finished). */
+  settling?: { games: number; need: number };
   changes: { attribute: string; from: number; to: number }[];
 }
 

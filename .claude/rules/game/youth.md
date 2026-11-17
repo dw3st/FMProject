@@ -185,3 +185,7 @@ Report do usuário. Lógica pura em `src/Domain/youth/youthGoals.ts` (`YOUTH_GOA
 ## Dispensar vários (12.6.2)
 
 Report do usuário. A tabela da base tem uma caixa de marcar por jovem, "Selecionar todos" e "Dispensar N selecionados" (com confirmação), pela rota `POST /youth/release-many`.
+
+## Promover e dispensar em lote (12.12)
+
+Report de tester. `POST /youth/promote-many { ids }` (até 50, a regra do promover sozinho, na ordem até o teto de 36; devolve `promoted` e `skipped`); a aba Base tem a barra de seleção (Promover N, Dispensar N, Selecionar todos).

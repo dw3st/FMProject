@@ -278,3 +278,7 @@ Report do usuário. Cada aba pode levar um número no canto do ícone (`NavBadge
 Motivo de cada número (12.7.1, report do usuário: entrou no Elenco e não achou o que era): `TabBadge.why` lista os problemas por tipo com os nomes (jogadores, itens, funções), e as novidades contam pelo prefixo do id (`badgeReasons`). A dica da aba (`title`) mostra uma linha por motivo, como "1 lesionado: B. Muniz" (`nav.badge.*`).
 
 Tudo some ao abrir a aba (12.7.2, report do usuário: o "1" do lesionado ficaria lá dois meses). Cada problema e cada novidade é um item com id estável (`BadgeItem`: o lesionado leva a data de volta, o contrato a data do fim, a janela o último dia); abrir a aba marca todos como vistos (`fm.nav.seen.<save>`), e o número só volta com algo novo. O cliente esquece os ids que deixaram de aparecer (`badgeIds`), então um problema resolvido que volta acende de novo.
+
+## Faixa do Elenco (12.12)
+
+Report de tester. `SquadAttentionStrip` explica o número da aba Elenco (`badgeGroups`, `src/Domain/navBadges/navBadges.ts`, mesmo vistos), com o nome de cada jogador como link.

@@ -40,3 +40,5 @@ Ficou 0,04: cerca de −2,9 pontos de vitória, dentro da meta de 2 a 4. Os dois
 - O efeito é individual: não há ligação entre jogadores vizinhos nem entre nacionalidades no campo.
 - A língua é uma aproximação pela nacionalidade.
 - Um reserva que não joga segue em adaptação até a virada.
+
+Amistoso (12.12, report de tester): no sábado dos reservas, quem está em adaptação também joga, e a mensagem do amistoso mostra os jogos que faltam.

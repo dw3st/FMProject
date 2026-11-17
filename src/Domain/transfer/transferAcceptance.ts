@@ -196,7 +196,7 @@ export function squadsAfterAcceptedTransfer(
     ? closePartialSeason(player, { squadId: sellingSquad.id, clubName: sellingSquad.name, league: from.league }, from.season)
     : player;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { sellOn: _paid, loan: _loan, ...rest } = closed;
+  const { sellOn: _paid, loan: _loan, deferredTo: _deferred, ...rest } = closed;
   // Morale belongs to the human club he leaves (`.claude/rules/game/morale.md`): a new club starts fresh.
   const updatedPlayer: RosterPlayer = stripPlayerMorale({
     ...arriving(rest, buyingSquad), squadId: buyerSquadId, ...(contract ? { contract } : {}), ...(sellOn ? { sellOn } : {}),

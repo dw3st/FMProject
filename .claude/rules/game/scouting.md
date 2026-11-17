@@ -403,3 +403,7 @@ Report do usuário. `ReportSortKey` ganhou `pos` (ordem das posições, `positio
 ## Nota dos jovens pelo potencial (12.8.4)
 
 Report do usuário (todo prospecto de 16 anos vinha E). Até `PROSPECT_GRADE_AGE` (19) a nota relativa é a maior entre a de sempre e o meio da faixa de potencial vista menos a média dos titulares da linha (`relativeNote(..., potentialSeenMid)`). Relatórios antigos não mudam.
+
+## Nota dos jovens (12.12)
+
+Report de tester. Na nota relativa de quem tem até 19 anos a referência é a média dos titulares da linha − `PROSPECT_GRADE_OFFSET` (1,0); os relatórios guardados são renotados na leitura (`regradeReport`). O filtro de nota da busca ainda lê a nota gravada.

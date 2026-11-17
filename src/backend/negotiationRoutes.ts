@@ -102,6 +102,11 @@ export const negotiationRoutes = {
         const p = (await saveService.getSquadById(saveId, pc.fromClubId))?.players.find((x) => x.id === pc.playerId);
         return p ? { ...pc, position: preferredRole(p), ...(p.nationality ? { nationality: p.nationality } : {}) } : pc;
       })),
+      // Fee transfers agreed with the window closed, joining when it opens (`DeferredTransfer`).
+      deferredTransfers: await Promise.all((market?.deferredTransfers ?? []).filter((d) => d.toClubId === meta.clubId).map(async (d) => {
+        const p = (await saveService.getSquadById(saveId, d.fromClubId))?.players.find((x) => x.id === d.playerId);
+        return p ? { ...d, position: preferredRole(p), ...(p.nationality ? { nationality: p.nationality } : {}) } : d;
+      })),
       rivals: (market?.rivalBids ?? []).filter((r) => r.deadline >= date),
       lostTargets: market?.lostTargets ?? [],
       bids,
@@ -303,6 +308,8 @@ export const negotiationRoutes = {
       if (await isOtherSeatClub(saveService, saveId, parent.id, borrower.id)) return json({ error: "notFound" }, 404);
       const player = parent.players.find((p) => p.id === playerId);
       if (!player) return json({ error: "player not found" }, 404);
+      // Already sold to a human club, joining when its window opens (`DeferredTransfer`).
+      if (player.deferredTo) return json({ error: player.deferredTo === borrower.id ? "alreadyDeferred" : "committed" }, 409);
       const blockedUntil = rebuyBlockedUntil(player, borrower.id, date);
       if (blockedUntil) return json({ error: "recentlySold", until: blockedUntil }, 409);
       if ((await humanRosterSize(saveService, saveId, auth.seatId, borrower)) >= HUMAN_MAX_SQUAD) return json({ error: "squadFull" }, 400);

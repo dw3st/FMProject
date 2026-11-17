@@ -87,7 +87,7 @@ export function TransfersScreen() {
         ) : activeTab === "windows" ? (
           <WindowsTable data={windows} />
         ) : activeTab === "loans" ? (
-          loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["seatOffers", "bids", "rivals", "preContracts", "out", "in", "sellOn"]} /> : null
+          loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["seatOffers", "bids", "rivals", "preContracts", "deferred", "out", "in", "sellOn"]} /> : null
         ) : loading && activeTab !== "sell" ? (
           <div className="card-arcade rounded-md p-12 text-center">
             <p className="text-muted-foreground text-sm m-0">{t("transfers.loadingTransfers")}</p>
@@ -95,7 +95,7 @@ export function TransfersScreen() {
         ) : activeTab === "my" ? (
           <>
             {/* Pre-contracts signed (user request, 4.47.15): they only arrive at the season's end, so they show here too. */}
-            {loadSession() && <NegotiationOverview saveId={loadSession()!.saveId} sections={["preContracts"]} hideEmpty />}
+            {loadSession() && <NegotiationOverview saveId={loadSession()!.saveId} sections={["deferred", "preContracts"]} hideEmpty />}
             <MyTransfers records={club} playerSquadId={playerSquadId} />
           </>
         ) : activeTab === "world" ? (

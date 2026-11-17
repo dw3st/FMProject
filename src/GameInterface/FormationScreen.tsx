@@ -35,6 +35,7 @@ import {
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
 import { applyLineupPreset, buildLineupPreset, renamePreset, copyPreset, importPreset, rememberedLineup } from "@/Domain/tactics/lineupPresets";
+import { lastLineupFor } from "@/Domain/tactics/lastLineups";
 import { LineupPresetsPanel, type PresetSwapLine } from "@/GameInterface/Components/LineupPresetsPanel";
 import type { LeagueData, RosterPlayer, Squad } from "@/types/playerTypes";
 import { getDetailedPositionColor, positionLabel, positionLabelColor } from "@/GameInterface/positionHelpers";
@@ -370,7 +371,7 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
     try {
       // A preset with no starters comes back with the last XI used in its formation (report 2026-11-16).
       const stored = preset.lineup.some(Boolean) ? null : ((await (await fetch(tacticsUrl)).json()) as TacticsSave | null);
-      const applied = applyLineupPreset(preset, squad.players, currentDate, savedLineup, stored?.lastLineups?.[preset.formation]);
+      const applied = applyLineupPreset(preset, squad.players, currentDate, savedLineup, lastLineupFor(stored?.lastLineups, preset.formation, preset.customFormation));
       await storeTactics({
         formation: applied.formation,
         tactical_style: applied.tacticalStyle ?? activeStyle,
@@ -471,7 +472,11 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
         let remembered: string[] | undefined;
         if (!national) {
           try {
-            remembered = ((await (await fetch(tacticsUrl)).json()) as TacticsSave | null)?.lastLineups?.[id];
+            remembered = lastLineupFor(
+              ((await (await fetch(tacticsUrl)).json()) as TacticsSave | null)?.lastLineups,
+              id,
+              id === CUSTOM_FORMATION_ID ? customFormation : null,
+            );
           } catch {
             remembered = undefined;
           }
