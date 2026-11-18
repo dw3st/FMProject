@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import { recordMoney, type SquadRef } from "@/backend/FinancialService";
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
-import { historyFromOf, humanRosterSize, seasonEndOf, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { completeHumanSale, historyFromOf, humanRosterSize, seasonEndOf, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { applyAITransferSale } from "@/Domain/aiFinance/aiClubFinance";
 import { applyPurchase } from "@/Domain/boardFans/boardFans";
 import { contractEndFor } from "@/Domain/contracts/contracts";
@@ -39,14 +39,23 @@ export async function agreeDeferredTransfer(
   args: {
     player: RosterPlayer; seller: Squad; buyer: Squad; buyerRef: SquadRef;
     fee: number; wage: number; years: number; sellOnPct: number; clause: boolean; joinsOn: string;
+    /** Swap (12.14.1): the human club's player who goes the other way on the day, and the cash the seller then pays. */
+    swap?: DeferredTransfer["swap"]; cashIn?: number;
   },
 ): Promise<DeferredTransfer> {
   const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
   const { player, seller, buyer, fee } = args;
-  await recordMoney(service, saveId, await ledgerSeason(service, saveId, args.buyerRef, date), args.buyerRef, {
-    date, kind: "transfer_out", amount: -fee, label: `Transfer fee paid to ${seller.name}`,
-    ref: { opponentId: seller.id, clubName: seller.name, playerName: player.name, playerId: player.id },
-  }, seatId);
+  if (fee > 0) {
+    await recordMoney(service, saveId, await ledgerSeason(service, saveId, args.buyerRef, date), args.buyerRef, {
+      date, kind: "transfer_out", amount: -fee, label: `Transfer fee paid to ${seller.name}`,
+      ref: { opponentId: seller.id, clubName: seller.name, playerName: player.name, playerId: player.id },
+    }, seatId);
+  }
+  // The swapped player stays here, promised to the seller, until the window opens.
+  if (args.swap) {
+    const buyerNow = await service.getSquadById(saveId, buyer.id);
+    if (buyerNow) await service.saveSquadById(saveId, markDeferred(buyerNow, args.swap.playerId, seller.id));
+  }
   // Board (`.claude/rules/game/board-fans.md`): spending past the balance costs confidence.
   const budgetAfter = (buyer.finances?.budget ?? 0) - fee;
   if (meta.board && budgetAfter < 0) await service.updateSeat(saveId, seatId, { board: applyPurchase(meta.board, { balanceAfter: budgetAfter }) });
@@ -58,6 +67,7 @@ export async function agreeDeferredTransfer(
     playerId: player.id, playerName: player.name, fromClubId: seller.id, fromClubName: seller.name, toClubId: buyer.id,
     fee, wage: args.wage, years: args.years, ...(args.sellOnPct > 0 ? { sellOnPct: args.sellOnPct } : {}),
     ...(args.clause ? { clause: true } : {}), agreedOn: date, joinsOn: args.joinsOn,
+    ...(args.swap ? { swap: args.swap } : {}), ...(args.cashIn ? { cashIn: args.cashIn } : {}),
   };
   const market = await service.getMarket(saveId, seatId);
   if (market) {
@@ -111,9 +121,13 @@ export async function applyDueDeferredTransfers(
     const player = from?.players.find((p) => p.id === d.playerId && !p.loan);
     const buyer = await service.getSquadById(saveId, d.toClubId);
     const ownClub = d.toClubId === meta.clubId;
-    const full = buyer && ownClub ? (await humanRosterSize(service, saveId, seatId, buyer)) >= HUMAN_MAX_SQUAD : false;
-    if (!from || !player || !buyer || full) {
+    // A swap (12.14.1) moves our player the other way the same day: he must still be ours, and so must the club.
+    const swapPlayer = d.swap ? buyer?.players.find((p) => p.id === d.swap!.playerId && !p.loan) : undefined;
+    const swapGone = !!d.swap && (!swapPlayer || !ownClub);
+    const full = buyer && ownClub && !d.swap ? (await humanRosterSize(service, saveId, seatId, buyer)) >= HUMAN_MAX_SQUAD : false;
+    if (!from || !player || !buyer || full || swapGone) {
       if (from && player) await service.saveSquadById(saveId, markDeferred(from, player.id, null));
+      if (buyer && swapPlayer) await service.saveSquadById(saveId, markDeferred(buyer, swapPlayer.id, null));
       await refund(service, saveId, seatId, meta, d, date);
       if (ownClub) news.push({ date, kind: "deferred_cancelled", playerId: d.playerId, playerName: d.playerName, clubName: d.fromClubName, fee: d.fee });
       continue;
@@ -171,6 +185,20 @@ export async function applyDueDeferredTransfers(
     const tref: TransferRef = { kind: "transfer_ref", transferId: record.id };
     await service.appendDayEvent(saveId, date, tref);
     moves.push({ playerId: player.id, from: from.id, to: buyer.id, fee: d.fee, kind: "transfer", date });
+    // The swapped player goes to the seller the same day (the seller pays any cash it owed).
+    if (d.swap) {
+      const humanNow = await service.getSquadById(saveId, buyer.id);
+      const aiNow = await service.getSquadById(saveId, from.id);
+      const swapNow = humanNow?.players.find((p) => p.id === d.swap!.playerId);
+      const marketNow = await service.getMarket(saveId, seatId);
+      if (humanNow && aiNow && swapNow && marketNow) {
+        const sale = await completeHumanSale(service, saveId, seatId, meta, marketNow, {
+          player: swapNow, seller: humanNow, buyer: aiNow, fee: d.cashIn ?? 0, sellOnPct: 0,
+        });
+        await service.saveMarket(saveId, sale.market, seatId);
+        moves.push({ playerId: swapNow.id, from: buyer.id, to: from.id, fee: d.cashIn ?? 0, kind: "transfer", date });
+      }
+    }
     if (ownClub) news.push({ date, kind: "deferred_joined", playerId: player.id, playerName: player.name, clubName: from.name, fee: d.fee });
   }
   const latest = (await service.getMarket(saveId, seatId)) ?? market;

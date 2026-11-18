@@ -4485,7 +4485,10 @@
       "agreed": "{{name}} joins on {{date}}, when your window opens.",
       "limit": "You already have {{max}} signings waiting for the window.",
       "already": "He is already signed and joins when the window opens.",
-      "committed": "He is already sold to another club and joins it when its window opens."
+      "committed": "He is already sold to another club and joins it when its window opens.",
+      "swapLine": "{{name}} joins {{club}} on the same day.",
+      "feeSwap": "{{fee}} + {{name}}",
+      "feeSwapIn": "{{name}}, and you receive {{fee}}"
     }
   },
   "morale": {

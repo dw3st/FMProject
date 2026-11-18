@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.14.1",
+    date: "2026-11-17",
+    time: "21:30",
+    items: [],
+    fixes: [
+      { tab: "market", pt: "Troca com a janela fechada: o acerto sai na hora e os dois jogadores mudam de clube quando a sua janela abrir. O seu jogador fica no elenco até lá.", en: "Swaps with the window closed: the deal is agreed now and both players change clubs when your window opens. Your player stays in the squad until then." },
+    ],
+  },
+  {
     version: "12.14",
     date: "2026-11-17",
     time: "20:48",

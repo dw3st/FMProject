@@ -248,7 +248,12 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                   },
                 },
                 { key: "c", header: t("negotiation.overview.from"), sortValue: (d) => d.fromClubName, cell: (d) => d.fromClubName },
-                { key: "f", header: t("negotiation.deferred.fee"), sortValue: (d) => d.fee, cell: (d) => formatFee(d.fee), className: "tabular-nums" },
+                {
+                  key: "f", header: t("negotiation.deferred.fee"), sortValue: (d) => d.fee, className: "tabular-nums",
+                  cell: (d) => d.swap
+                    ? (d.cashIn ? t("negotiation.deferred.feeSwapIn", { fee: formatFee(d.cashIn), name: d.swap.playerName }) : t("negotiation.deferred.feeSwap", { fee: formatFee(d.fee), name: d.swap.playerName }))
+                    : formatFee(d.fee),
+                },
                 { key: "w", header: t("negotiation.preContract.wage"), sortValue: (d) => d.wage, cell: (d) => formatFee(d.wage), className: "tabular-nums" },
                 { key: "y", header: t("negotiation.preContract.years"), sortValue: (d) => d.years, cell: (d) => d.years, className: "tabular-nums" },
                 { key: "j", header: t("negotiation.deferred.joins"), sortValue: (d) => d.joinsOn, cell: (d) => fmtDate(d.joinsOn), className: "tabular-nums" },

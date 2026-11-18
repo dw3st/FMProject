@@ -114,8 +114,13 @@ export interface DeferredTransfer {
   fromClubName: string;
   /** The human club that bought him. */
   toClubId: string;
-  /** Fee paid at agreement, EUR. */
+  /** Cash paid at agreement, EUR (never negative). */
   fee: number;
+  /** Swap (12.14.1): one of the human club's players goes the other way on the same day. He stays
+   * at the human club until then (`RosterPlayer.deferredTo` = the seller). */
+  swap?: { playerId: string; playerName: string; value: number };
+  /** Cash the selling club pays the human club on the day (a swap worth more than the target). */
+  cashIn?: number;
   /** Weekly wage and seasons agreed. */
   wage: number;
   years: number;

@@ -124,4 +124,56 @@ describe("deferred transfers (route and day)", () => {
     expect((await ledger()).some((e) => e.kind === "transfer_in" && e.amount === fee && e.ref?.stage === "deferred_refund")).toBe(true);
     expect((await saveService.getMarket(saveId, meta.seatId))!.deferredTransfers).toEqual([]);
   }, 60_000);
+  test("a swap waits too: our player stays, both move on the opening day (12.14.1)", async () => {
+    const club = (await aiClubs())[2]!;
+    const target = midfielder(club);
+    const ours = (await human()).players.find((p) => !p.loan && p.positions[0] !== "GK" && p.positions[0] !== "Goalkeeper")!;
+    const cash = releaseClause(target);
+    const before = (await human()).finances?.budget ?? 0;
+    const res = await route("/api/saves/:saveId/transfers")(req(`/api/saves/${saveId}/transfers`, "POST", { saveId },
+      { playerId: target.id, fromSquadId: club.id, fee: cash, wage: await wageFor(club, target), years: 2, swapPlayerId: ours.id }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { deferred?: { joinsOn: string }; record?: { status: string } };
+    expect(body.record?.status).toBe("accepted");
+    expect(body.deferred).toEqual({ joinsOn: "2027-01-01" });
+    // Only the cash leaves now; our player stays, promised to the seller.
+    expect((await human()).finances?.budget).toBe(before - cash);
+    expect((await human()).players.find((p) => p.id === ours.id)?.deferredTo).toBe(club.id);
+    const entry = (await saveService.getMarket(saveId, meta.seatId))!.deferredTransfers!.find((d) => d.playerId === target.id)!;
+    expect(entry).toMatchObject({ fee: cash, swap: { playerId: ours.id } });
+    // He cannot be offered in another deal meanwhile.
+    const other = (await aiClubs())[3]!;
+    const again = await route("/api/saves/:saveId/transfers")(req(`/api/saves/${saveId}/transfers`, "POST", { saveId },
+      { playerId: midfielder(other).id, fromSquadId: other.id, fee: releaseClause(midfielder(other)), wage: await wageFor(other, midfielder(other)), years: 2, swapPlayerId: ours.id }));
+    expect(again.status).toBe(409);
+
+    const seatMeta = (await saveService.getSeatMeta(saveId, meta.seatId))!;
+    const out = await applyDueDeferredTransfers(saveService, saveId, meta.seatId, seatMeta, "2027-01-01");
+    expect(out.moves.map((m) => [m.playerId, m.to])).toEqual([[target.id, meta.clubId], [ours.id, club.id]]);
+    expect((await human()).players.some((p) => p.id === target.id)).toBe(true);
+    expect((await human()).players.some((p) => p.id === ours.id)).toBe(false);
+    const sellerNow = (await saveService.getSquadById(saveId, club.id))!;
+    expect(sellerNow.players.find((p) => p.id === ours.id)?.deferredTo).toBeUndefined();
+    expect(sellerNow.players.some((p) => p.id === target.id)).toBe(false);
+  }, 60_000);
+
+  test("a swap whose player left first falls through: the cash comes back", async () => {
+    const club = (await aiClubs())[4]!;
+    const target = midfielder(club);
+    const ours = (await human()).players.find((p) => !p.loan && !p.deferredTo && p.positions[0] !== "GK" && p.positions[0] !== "Goalkeeper")!;
+    const cash = releaseClause(target);
+    const before = (await human()).finances?.budget ?? 0;
+    const res = await route("/api/saves/:saveId/transfers")(req(`/api/saves/${saveId}/transfers`, "POST", { saveId },
+      { playerId: target.id, fromSquadId: club.id, fee: cash, wage: await wageFor(club, target), years: 2, swapPlayerId: ours.id }));
+    expect(res.status).toBe(200);
+    // Our player is gone before the window opens.
+    const h = await human();
+    await saveService.saveSquadById(saveId, { ...h, players: h.players.filter((p) => p.id !== ours.id) });
+    const seatMeta = (await saveService.getSeatMeta(saveId, meta.seatId))!;
+    const out = await applyDueDeferredTransfers(saveService, saveId, meta.seatId, seatMeta, "2027-01-01");
+    expect(out.moves).toEqual([]);
+    expect(out.news.map((n) => n.kind)).toEqual(["deferred_cancelled"]);
+    expect((await human()).finances?.budget).toBe(before);
+    expect((await saveService.getSquadById(saveId, club.id))!.players.find((p) => p.id === target.id)?.deferredTo).toBeUndefined();
+  }, 60_000);
 });

@@ -151,10 +151,9 @@ export const transferRoutes = {
         // Transfer window of the buyer — the human club (`.claude/rules/game/transfer-windows.md`).
         const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
         // Closed: the deal is agreed now and the player joins when it opens (`DeferredTransfer`, tester report 0a35192c).
-        // A swap still needs the window.
+        // A swap waits too: both players move on the day the window opens (12.14.1).
         const seatWindow = windows.seat(auth.seatId).today;
         const deferred = !seatWindow.open;
-        if (deferred && swapId) return windowClosedResponse(seatWindow);
 
         // ── Resolve squads ────────────────────────────────────────────────────
         const buyerResolved = { leagueSlug: meta.leagueSlug, clubSlug: meta.clubId };
@@ -223,8 +222,10 @@ export const transferRoutes = {
         if (swapId) {
           const refusal = swapRefusal({ swap: swapPlayer, target: player, seller: sellerSquad, cash: fee, value: swapWorth, sellerBudget: aiTransferBudgetOf(sellerSquad) });
           if (refusal) return Response.json({ error: refusal }, { status: 400 });
-          // The AI club takes a player too: its own window must be open.
-          if (!windows.ofLeague(sellerResolved.leagueSlug).open) return Response.json({ error: "sellerWindowClosed" }, { status: 409 });
+          // Already promised to another club in a deal waiting for the window.
+          if (swapPlayer?.deferredTo) return Response.json({ error: "committed" }, { status: 409 });
+          // The AI club takes a player too: its own window must be open, unless the whole deal waits for ours.
+          if (!deferred && !windows.ofLeague(sellerResolved.leagueSlug).open) return Response.json({ error: "sellerWindowClosed" }, { status: 409 });
         }
         // The offer the seller weighs: cash plus the swap.
         const offerFee = fee + swapWorth;
@@ -355,10 +356,11 @@ export const transferRoutes = {
           const joinsOn = seatWindow.opensOn!;
           await agreeDeferredTransfer(saveService, saveId, auth.seatId, meta, {
             player, seller: sellerSquad, buyer: buyerSquad, buyerRef: buyerResolved,
-            fee: offerFee, wage: contractWage, years: contractYears, sellOnPct, clause: clause !== null, joinsOn,
+            fee: Math.max(fee, 0), wage: contractWage, years: contractYears, sellOnPct, clause: clause !== null, joinsOn,
+            ...(swapPlayer ? { swap: { playerId: swapPlayer.id, playerName: swapPlayer.name, value: swapWorth }, cashIn: Math.max(-fee, 0) } : {}),
           });
           return Response.json({
-            record: withDirection(record, buyerSquad.id), newBudget: (buyerSquad.finances?.budget ?? 0) - offerFee,
+            record: withDirection(record, buyerSquad.id), newBudget: (buyerSquad.finances?.budget ?? 0) - Math.max(fee, 0),
             response: answer, talk, deferred: { joinsOn },
             ...(rivalInfo ? { rival: rivalInfo } : {}), ...(preference ? { preference } : {}),
           });

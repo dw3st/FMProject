@@ -4482,7 +4482,10 @@
       "agreed": "{{name}} chega em {{date}}, quando a sua janela abrir.",
       "limit": "Você já tem {{max}} contratações esperando a janela.",
       "already": "Ele já está contratado e chega quando a janela abrir.",
-      "committed": "Ele já foi vendido para outro clube e chega lá quando a janela dele abrir."
+      "committed": "Ele já foi vendido para outro clube e chega lá quando a janela dele abrir.",
+      "swapLine": "{{name}} vai para o {{club}} no mesmo dia.",
+      "feeSwap": "{{fee}} + {{name}}",
+      "feeSwapIn": "{{name}}, e você recebe {{fee}}"
     }
   },
   "morale": {

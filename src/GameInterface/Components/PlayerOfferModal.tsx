@@ -194,7 +194,9 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const windowClosed = buyWindow !== null && !buyWindow.open;
   const isSeat = seatClub !== null;
   // A fee transfer from an AI club goes through with the window closed: he joins when it opens.
-  const deferrable = windowClosed && tab === "transfer" && !isSeat && !swapId;
+  // A swap too (12.14.1): both players move on that day.
+  const deferrable = windowClosed && tab === "transfer" && !isSeat;
+  const swapName = swapId ? squad?.players.find((p) => p.id === swapId)?.name ?? null : null;
   const windowBlocks = windowClosed && !deferrable;
   const myOpenOffer = isSeat
     ? (seatOffers.data?.offers ?? []).find((o) => o.playerId === player.id && o.side === "buyer" && o.kind === (tab === "loan" ? "loan" : "transfer")) ?? null
@@ -509,7 +511,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 <p className="text-sm text-muted-foreground m-0">{t("seatOffers.toManager", { manager: seatClub?.managerName || player.club })}</p>
               )}
               {deferrable && buyWindow?.opensOn && (
-                <p className="text-sm text-chart-4 m-0" role="status">{t("negotiation.deferred.closedLine", { date: fmtDate(buyWindow.opensOn) })}</p>
+                <p className="text-sm text-chart-4 m-0" role="status">
+                  {t("negotiation.deferred.closedLine", { date: fmtDate(buyWindow.opensOn) })}
+                  {swapName ? ` ${t("negotiation.deferred.swapLine", { name: swapName, club: player.club })}` : ""}
+                </p>
               )}
               {windowBlocks && tab !== "precontract" && (
                 <p className="text-sm text-destructive m-0" role="status">
