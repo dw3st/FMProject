@@ -107,6 +107,7 @@ import { sponsorRollover } from "@/backend/sponsorWorld";
 import { withBankLoanPayment } from "@/Domain/finance/bankLoan";
 import { advanceFacilities, comfortPriceMult, facilitiesMatchday, seasonFraction, withFacilities } from "@/Domain/facilities/facilities";
 import { wearDay } from "@/Domain/facilities/facilityItems";
+import { craftDay, ensureCraft } from "@/backend/craftWorld";
 import { matchPitch } from "@/Domain/facilities/pitch";
 import { homeMatchImportance } from "@/backend/matchImportance";
 import { buildFacilityMessage } from "@/Domain/facilities/facilityMessages";
@@ -2149,7 +2150,12 @@ export async function advanceOneDay(
         for (const c of worn.crossings) {
           ds.deferred.facility.push({ date: currentDate, kind: c.kind, item: c.item, condition: Math.round(c.condition) });
         }
-        const day = advanceFacilities({ ...playerSquad.facilities, items: worn.items }, currentDate);
+        // The workshop (craft): the board's monthly materials and the queue (`.claude/rules/game/facilities.md`).
+        const withCraft = ensureCraft(playerSquad.facilities, playerSquad);
+        const cd = craftDay(withCraft.craft!, playerSquad, { saveId, date: currentDate, board: ds.board?.board ?? BOARD_FANS.START });
+        if (cd.allowance > 0) ds.deferred.facility.push({ date: currentDate, kind: "craft_allowance", cost: cd.allowance });
+        if (Object.keys(cd.done).length > 0) ds.deferred.facility.push({ date: currentDate, kind: "craft_done", components: cd.done });
+        const day = advanceFacilities({ ...withCraft, craft: cd.craft, items: worn.items }, currentDate);
         facilityEntries = day.entries;
         for (const p of day.completed) {
           if (p.kind === "turf" && p.turf) {

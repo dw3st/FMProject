@@ -9,6 +9,7 @@ import { logError } from "@/Logger";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
+import { ensureCraft } from "@/backend/craftWorld";
 import {
   academyEffectsAt, academyEffectsOf, boardDecision, busyGroups, groupBusy, impliedLevel, requestGroup, comfortPriceMult, committedSpend, effectiveCapacity, itemBusy,
   payRepairNow, projectProgress, projectRunning, quoteProject, startProject, totalSeats, trainingEffectsAt, trainingGroundEffectsOf,
@@ -52,6 +53,8 @@ async function loadHuman(saveId: string, seatId: string, service: SaveService = 
   if (!squad) return Response.json({ error: "squad not found" }, { status: 404 });
   // A save from before the items (Etapa 34) has facilities without `items`: set up again (no migration).
   if (!squad.facilities?.items) squad = await withInitialFacilities(squad, entry.leagueSlug);
+  // The workshop and its stock (craft, spec 2026-11-18): created on first read, written by the first write.
+  if (!squad.facilities!.craft) squad = { ...squad, facilities: ensureCraft(squad.facilities!, squad) };
   return {
     meta, squad, ref: { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
     date: meta.currentDate ?? new Date().toISOString().slice(0, 10),
