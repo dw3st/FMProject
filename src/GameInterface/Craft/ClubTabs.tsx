@@ -2,9 +2,16 @@ import { useTranslation } from "react-i18next";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { Icon, type IconName } from "@/GameInterface/Icons";
 
-export type ClubTab = "facilities" | "workshop" | "stock" | "shop";
-export const CLUB_TABS: ClubTab[] = ["facilities", "workshop", "stock", "shop"];
-const ICON: Record<ClubTab, IconName> = { facilities: "building", workshop: "hammer", stock: "package", shop: "store" };
+export type ClubTab = "facilities" | "stadium" | "attendance" | "works" | "workshop" | "stock" | "shop";
+export const CLUB_TABS: ClubTab[] = ["facilities", "stadium", "attendance", "works", "workshop", "stock", "shop"];
+/** The tabs drawn by `FacilitiesView` (they share its data). */
+export type FacilitiesSection = "facilities" | "stadium" | "attendance" | "works";
+export const isFacilitiesSection = (t: ClubTab): t is FacilitiesSection =>
+  t === "facilities" || t === "stadium" || t === "attendance" || t === "works";
+const ICON: Record<ClubTab, IconName> = {
+  facilities: "building", stadium: "stadium", attendance: "users", works: "construction",
+  workshop: "hammer", stock: "package", shop: "store",
+};
 
 export const isClubTab = (v: string | null): v is ClubTab => v !== null && (CLUB_TABS as string[]).includes(v);
 

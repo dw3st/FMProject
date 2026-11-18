@@ -4862,6 +4862,12 @@
       "hint": "Click a stand to expand it",
       "occupancy": "Occupancy"
     },
+    "stadiumPanel": {
+      "label": "What to change in the stadium",
+      "stands": "Stands",
+      "comfort": "Comfort",
+      "turf": "Turf"
+    },
     "stand": {
       "title": "Expand a stand",
       "pick": "Pick a stand on the drawing to see the cost, the duration and the new capacity.",
@@ -5054,7 +5060,9 @@
         "repair": "Repair recipe",
         "rebuild": "Rebuild recipe"
       },
-      "maxLevel": "Top level and in perfect shape."
+      "maxLevel": "Top level and in perfect shape.",
+      "materials": "Materials to make what is missing",
+      "areasHint": "Pick an item to see its levels and works."
     },
     "benefit": {
       "trainingDev": "Training development (training ground)",
@@ -5092,12 +5100,6 @@
         "stadiumPitch": "The level makes the pitch last longer in a normal season.",
         "stadiumStructure": "The level makes the structure last longer in a normal season."
       }
-    },
-    "stockStrip": {
-      "title": "Components in stock",
-      "workshop_one": "Workshop level {{level}} · {{count}} order queued",
-      "workshop_other": "Workshop level {{level}} · {{count}} orders queued",
-      "open": "Open the workshop"
     }
   },
   "transferWindows": {
@@ -8591,6 +8593,9 @@
     "tabs": {
       "label": "Club sections",
       "facilities": "Facilities",
+      "stadium": "Stadium",
+      "attendance": "Attendance",
+      "works": "Works",
       "workshop": "Workshop",
       "stock": "Stock",
       "shop": "Shop"

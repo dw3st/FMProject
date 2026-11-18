@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { craftableMissing, materialsShort } from "@/Domain/craft/shortfall";
+import { craftableMissing, materialsNeeded, materialsShort } from "@/Domain/craft/shortfall";
 import { addMaterials, emptyStock } from "@/Domain/craft/stock";
 
 describe("shortfall", () => {
@@ -13,6 +13,10 @@ describe("shortfall", () => {
     stock = addMaterials(stock, "good", { steel: 1, concrete: 5 });
     // 2 beams = 6 steel + 2 concrete; 1 slab = 4 concrete.
     expect(materialsShort({ beam: 2, slab: 1 }, stock)).toEqual({ steel: 1, concrete: 1 });
+  });
+
+  test("materials needed sums the recipes", () => {
+    expect(materialsNeeded({ beam: 2, slab: 1 })).toEqual({ steel: 6, concrete: 6 });
   });
 
   test("nothing short when the stock covers it", () => {

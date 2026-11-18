@@ -5,7 +5,7 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { FacilitiesView } from "@/GameInterface/Facilities/FacilitiesView";
 import { ClubSponsorsStrip } from "@/GameInterface/Sponsors/ClubSponsorsStrip";
-import { ClubTabs, isClubTab, type ClubTab } from "@/GameInterface/Craft/ClubTabs";
+import { ClubTabs, isClubTab, isFacilitiesSection, type ClubTab } from "@/GameInterface/Craft/ClubTabs";
 import { CraftLinksContext, type CraftLinks } from "@/GameInterface/Craft/RecipeLine";
 import { WorkshopView } from "@/GameInterface/Craft/WorkshopView";
 import { StockView } from "@/GameInterface/Craft/StockView";
@@ -28,9 +28,9 @@ function writeTab(tab: ClubTab): void {
 }
 
 /**
- * Club (#120): the club's facilities — stadium, training ground, academy and their items
- * (`.claude/rules/game/facilities.md`) — and the craft tabs (workshop, stock, shop; spec
- * 2026-11-18-club-craft) the works are built from. `?tab=` opens a tab.
+ * Club (#120): tabs Facilities (club map + the picked item's upgrade), Stadium (stands, comfort, turf),
+ * Attendance (crowd, home games, sponsors), Works (items by area, training ground and academy, works in progress)
+ * and the craft tabs (workshop, stock, shop; spec 2026-11-18-club-craft). `?tab=` opens a tab.
  */
 export function ClubScreen() {
   const { t } = useTranslation();
@@ -68,18 +68,21 @@ export function ClubScreen() {
   return (
     <ScreenContainer>
       <ScreenTitle accent={t("screenTitles.club.accent")}>{t("screenTitles.club.main")}</ScreenTitle>
-      {/* The club's own sponsors (12.1): plates that open each company's page. */}
-      {session && <ClubSponsorsStrip saveId={session.saveId} />}
       {session ? (
         <CraftLinksContext.Provider value={links}>
           <ClubTabs active={tab} onChange={change} />
-          {tab === "facilities" && (
+          {/* One FacilitiesView for its four tabs: switching between them keeps the data and the picked item. */}
+          {isFacilitiesSection(tab) && (
             <FacilitiesView
               saveId={session.saveId}
               squadId={squad?.id ?? session.clubId}
               fixtures={fixtures}
               leagues={leagues}
               currentDate={session.currentDate ?? null}
+              section={tab}
+              onSection={change}
+              /* The club's own sponsors (12.1), with the crowd figures: plates that open each company's page. */
+              sponsors={<ClubSponsorsStrip saveId={session.saveId} />}
             />
           )}
           {tab === "workshop" && <WorkshopView saveId={session.saveId} />}

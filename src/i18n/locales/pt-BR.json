@@ -4859,6 +4859,12 @@
       "hint": "Clique num setor para ampliar",
       "occupancy": "Ocupação"
     },
+    "stadiumPanel": {
+      "label": "O que mudar no estádio",
+      "stands": "Setores",
+      "comfort": "Conforto",
+      "turf": "Gramado"
+    },
     "stand": {
       "title": "Ampliar um setor",
       "pick": "Escolha um setor no desenho para ver o custo, o prazo e a nova capacidade.",
@@ -5051,7 +5057,9 @@
         "repair": "Receita da reforma",
         "rebuild": "Receita da reconstrução"
       },
-      "maxLevel": "Nível máximo e em perfeito estado."
+      "maxLevel": "Nível máximo e em perfeito estado.",
+      "materials": "Materiais para fabricar o que falta",
+      "areasHint": "Escolha um item para ver os níveis e as obras."
     },
     "benefit": {
       "trainingDev": "Evolução no treino (CT)",
@@ -5089,12 +5097,6 @@
         "stadiumPitch": "O nível faz o gramado durar mais numa temporada normal.",
         "stadiumStructure": "O nível faz a estrutura durar mais numa temporada normal."
       }
-    },
-    "stockStrip": {
-      "title": "Peças no estoque",
-      "workshop_one": "Oficina nível {{level}} · {{count}} na fila",
-      "workshop_other": "Oficina nível {{level}} · {{count}} na fila",
-      "open": "Abrir a oficina"
     }
   },
   "transferWindows": {
@@ -8579,6 +8581,9 @@
     "tabs": {
       "label": "Seções do clube",
       "facilities": "Instalações",
+      "stadium": "Estádio",
+      "attendance": "Público",
+      "works": "Obras",
       "workshop": "Oficina",
       "stock": "Estoque",
       "shop": "Loja"

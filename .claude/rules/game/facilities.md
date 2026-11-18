@@ -464,9 +464,8 @@ Só o clube humano (cada assento); a IA não tem craft. Lógica pura em `src/Dom
 | `POST …/craft/workshop` | Melhora a oficina com o estoque (409 `missingComponents`, 400 `maxLevel`) |
 | `POST …/craft/recycle { item }` | Desmonta um nível (400 `minLevel`, 409 `busy`) |
 
-Todas com `requireSeat`, escrita com `withSaveLock` e guarda de lobby. **Telas:** a aba Clube tem `SegmentedTabs`
-Instalações · Oficina · Estoque · Loja (`Craft/*`); Instalações abre no mapa do clube (seção acima) e cada obra mostra a
-receita (tem / falta), Montar, Fabricar o que falta e Comprar os materiais que faltam (abre a Loja com o carrinho).
+Todas com `requireSeat`, escrita com `withSaveLock` e guarda de lobby. **Telas:** ver "Abas do Clube" abaixo; cada obra
+mostra a receita (tem / falta), Montar, Fabricar o que falta e Comprar os materiais que faltam (abre a Loja com o carrinho).
 Ícones pintados dos materiais e componentes e faixas da oficina por nível. `/test`, `/lab`: nada (o motor não lê o craft).
 
 **Medição M1** (`bun scripts/craft-measure.ts`, os 40 clubes da Premier e do Brasileirão, preço base, fornecedor padrão):
@@ -487,3 +486,15 @@ típica (estimativa do script).
 
 **Limitações:** a IA não fabrica; o preço da semana não reage às compras; não há componente pronto na loja; o cartão
 Obras do Painel ainda não mostra a fila da oficina.
+
+## Abas do Clube (12.21)
+
+Pedido do usuário (rolar demais). `/club` tem `SegmentedTabs` (`Craft/ClubTabs.tsx`, `?tab=` guarda a aba): **Instalações**
+(o mapa do clube e, embaixo dele, a trilha de níveis do item em duas linhas; ao lado o painel do item: receita do próximo
+nível com tem / falta, os materiais para fabricar o que falta contra o estoque (`materialsNeeded`, `shortfall.ts`), o
+ganho, o prazo e Montar / Fabricar / Comprar, ou Reformar / Reconstruir), **Estádio** (o desenho dos setores e, ao lado,
+chips Setores / Conforto / Gramado), **Público** (números, o gráfico dos jogos em casa, os patrocinadores), **Obras** (os
+itens por área, que abrem o item na aba Instalações; as obras de grupo do CT e da base; as obras em andamento), **Oficina**,
+**Estoque** e **Loja**. As quatro primeiras são um `FacilitiesView` só (`section`), que mantém os dados e o item escolhido.
+Sem o visual novo, os cartões das áreas ficam no lugar do mapa e a trilha vai embaixo. A faixa de peças no estoque saiu
+da aba Instalações (o Estoque mostra).

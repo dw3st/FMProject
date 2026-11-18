@@ -1,10 +1,9 @@
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
-import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
-import { BuildActions, CraftLinksContext } from "@/GameInterface/Craft/RecipeLine";
+import { BuildActions } from "@/GameInterface/Craft/RecipeLine";
 import { CancelWorks, conditionTone } from "@/GameInterface/Facilities/FacilityItemsPanel";
 import { FacilityItemArt } from "@/GameInterface/Facilities/FacilityItemArt";
 import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
@@ -16,8 +15,9 @@ import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import {
   benefitContext, higherIsBetter, itemLevelBenefit, itemLevelTrack, type BenefitValue,
 } from "@/Domain/facilities/levelBenefit";
-import { CRAFT } from "@/Domain/craft/craftConfig";
-import type { ComponentCounts, ComponentId } from "@/types/craftTypes";
+import { CRAFT, MATERIALS } from "@/Domain/craft/craftConfig";
+import { craftableMissing, materialTotal, materialsNeeded } from "@/Domain/craft/shortfall";
+import type { ComponentCounts, ComponentId, CraftStock, MaterialId } from "@/types/craftTypes";
 import type { FacilityGroup, FacilityItemId, FacilityRequest } from "@/types/facilityTypes";
 
 type Mode = "upgrade" | "repair" | "rebuild";
@@ -27,7 +27,6 @@ type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
 const GROUPS: FacilityGroup[] = ["stadium", "training", "academy"];
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
-const COMPONENTS: ComponentId[] = ["beam", "slab", "turfPanel", "seat", "floodlight", "gymKit", "medKit", "furniture"];
 
 /** "+" of an item: green = the next level can be built from the stock now, amber = components missing, none = max level or the area busy. */
 export function upgradeState(item: FacilityItemView, groupBusy: boolean): Upgrade {
@@ -57,30 +56,43 @@ export function benefitText(v: BenefitValue, t: TFn, lang: string): string {
   }
 }
 
-/**
- * Club → Facilities (craft, mocks B + A of 2026-11-18): the painted club complex with each item's level, an upgrade
- * marker and its condition; the picked item's panel (next level's components, its real benefit, the works);
- * its level track 1..10; the three areas with every item; and the components in stock. Without the new visual the
- * map is left out and the area cards pick the item.
- */
-export function ClubFacilitiesHub({
-  data, pending, onAsk, onCancel,
-}: {
-  data: FacilitiesViewData;
-  pending: boolean;
-  onAsk: (req: FacilityRequest) => Promise<void>;
-  onCancel: (projectId: string) => Promise<void>;
-}) {
-  const { t } = useTranslation();
+/** Upgrade marker of every item (the area's works blocks it). */
+function useUpgrades(data: FacilitiesViewData) {
   const busy = useMemo(() => new Set(data.busyGroups ?? []), [data.busyGroups]);
   const upgrades = useMemo(
     () => Object.fromEntries(data.items.map((it) => [it.id, upgradeState(it, busy.has(it.group))])) as Record<FacilityItemId, Upgrade>,
     [data.items, busy],
   );
-  const [selected, setSelected] = useState<FacilityItemId>(
-    () => data.items.find((it) => upgrades[it.id] === "ready")?.id
-      ?? data.items.find((it) => upgrades[it.id] === "missing")?.id ?? data.items[0]?.id ?? "stadiumPitch",
-  );
+  return { busy, upgrades };
+}
+
+/** The item the screen opens on: one ready to upgrade, else one missing components, else the first. */
+export function defaultItem(data: FacilitiesViewData): FacilityItemId {
+  const busy = new Set(data.busyGroups ?? []);
+  const state = (it: FacilityItemView) => upgradeState(it, busy.has(it.group));
+  return data.items.find((it) => state(it) === "ready")?.id
+    ?? data.items.find((it) => state(it) === "missing")?.id ?? data.items[0]?.id ?? "stadiumPitch";
+}
+
+/**
+ * Club → Facilities (craft, mocks B + A of 2026-11-18; own tab since 12.21): the painted club complex with each item's
+ * level, an upgrade marker and its condition, and next to it the picked item's panel (next level's components, the
+ * materials to make the missing ones, its real benefit, the works); below, its level track 1..10. Without the new
+ * visual the area cards take the map's place.
+ */
+export function ClubFacilitiesHub({
+  data, selected, onSelect, pending, onAsk, onCancel,
+}: {
+  data: FacilitiesViewData;
+  selected: FacilityItemId;
+  onSelect: (id: FacilityItemId) => void;
+  pending: boolean;
+  onAsk: (req: FacilityRequest) => Promise<void>;
+  onCancel: (projectId: string) => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const { busy, upgrades } = useUpgrades(data);
+  const setSelected = onSelect;
   const [mapFailed, setMapFailed] = useState(false);
   const item = data.items.find((it) => it.id === selected) ?? data.items[0];
   const ctx = useMemo(
@@ -92,23 +104,25 @@ export function ClubFacilitiesHub({
   const map = newVisualOn() && !mapFailed;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground m-0">{t(map ? "facilities.map.hint" : "facilities.map.hintCards")}</p>
         <MapLegend />
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
         {map ? (
-          <ClubMap data={data} selected={item.id} upgrades={upgrades} onSelect={setSelected} onFail={() => setMapFailed(true)} />
+          /* The map and, under it, the picked item's level track in two rows: the tab fits one screen. */
+          <div className="flex flex-col gap-4 min-w-0">
+            <ClubMap data={data} selected={item.id} upgrades={upgrades} onSelect={setSelected} onFail={() => setMapFailed(true)} />
+            <LevelTrack item={item} ctx={ctx} compact />
+          </div>
         ) : (
-          <AreaCards data={data} selected={item.id} upgrades={upgrades} busy={busy} onSelect={setSelected} />
+          <AreaCardsGrid data={data} selected={item.id} upgrades={upgrades} busy={busy} onSelect={setSelected} />
         )}
         <ItemPanel key={item.id} item={item} data={data} ctx={ctx} groupBusy={busy.has(item.group)}
           pending={pending} onAsk={onAsk} onCancel={onCancel} />
       </div>
-      <LevelTrack item={item} ctx={ctx} />
-      {map && <AreaCards data={data} selected={item.id} upgrades={upgrades} busy={busy} onSelect={setSelected} />}
-      <StockStrip data={data} />
+      {!map && <LevelTrack item={item} ctx={ctx} />}
     </div>
   );
 }
@@ -271,6 +285,7 @@ function ItemPanel({ item, data, ctx, groupBusy, pending, onAsk, onCancel }: {
             </span>
             <RecipeChips recipe={quote.build.recipe} missing={quote.build.missing} locked={quote.build.locked} />
           </div>
+          <MaterialsForMissing missing={quote.build.missing} stock={data.stock} workshop={workshop} />
           <div className="flex flex-col gap-2">
             {next
               ? now.map((v, i) => <BenefitRow key={v.key} now={v} next={next[i]!} />)
@@ -315,6 +330,33 @@ function RecipeChips({ recipe, missing, locked }: { recipe: ComponentCounts; mis
   );
 }
 
+/** The materials the workshop needs for the missing components it can make, against the stock ("Aço 12/18"). */
+function MaterialsForMissing({ missing, stock, workshop }: { missing: ComponentCounts; stock: CraftStock | undefined; workshop: number }) {
+  const { t, i18n } = useTranslation();
+  const need = materialsNeeded(craftableMissing(missing, workshop));
+  const entries = MATERIALS.filter((m) => (need[m] ?? 0) > 0).map((m): [MaterialId, number] => [m, need[m] ?? 0]);
+  if (entries.length === 0) return null;
+  const nf = (n: number) => n.toLocaleString(i18n.language);
+  return (
+    <div className="flex flex-col gap-2">
+      <span className={LABEL}>{t("facilities.map.materials")}</span>
+      <ul className="m-0 p-0 list-none flex flex-wrap gap-2">
+        {entries.map(([m, n]) => {
+          const have = Math.min(n, stock ? materialTotal(stock, m) : 0);
+          const ok = have >= n;
+          return (
+            <li key={m} className={`flex items-center gap-2 rounded-md border px-2 py-1 text-sm tabular-nums ${ok ? "border-star-green/50" : "border-chart-4/60"}`}>
+              <CraftIcon kind="material" id={m} size={24} />
+              <span className="text-foreground">{t(`craft.material.${m}`)}</span>
+              <span className={`font-semibold ${ok ? "text-star-green" : "text-chart-4"}`}>{nf(have)}/{nf(n)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function ChangeRow({ label, from, to, better }: { label: string; from?: string; to: string; better?: boolean }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -340,7 +382,7 @@ function BenefitRow({ now, next }: { now: BenefitValue; next: BenefitValue }) {
 
 // ── Level track ───────────────────────────────────────────────────────────────
 
-function LevelTrack({ item, ctx }: { item: FacilityItemView; ctx: ReturnType<typeof benefitContext> }) {
+function LevelTrack({ item, ctx, compact = false }: { item: FacilityItemView; ctx: ReturnType<typeof benefitContext>; compact?: boolean }) {
   const { t, i18n } = useTranslation();
   const track = itemLevelTrack(item.id, ctx);
   const key = track[0]![0]!.key;
@@ -354,8 +396,8 @@ function LevelTrack({ item, ctx }: { item: FacilityItemView; ctx: ReturnType<typ
         <span className="text-sm text-muted-foreground">{t(`facilities.track.note.${item.group === "stadium" ? item.id : item.group}`)}</span>
       </div>
       <div className="relative">
-        <span aria-hidden className="hidden xl:block absolute left-[5%] right-[5%] top-9 h-0.5 bg-border" />
-        <ol className="relative m-0 p-0 list-none grid grid-cols-2 sm:grid-cols-5 xl:grid-cols-10 gap-2">
+        {!compact && <span aria-hidden className="hidden xl:block absolute left-[5%] right-[5%] top-9 h-0.5 bg-border" />}
+        <ol className={`relative m-0 p-0 list-none grid grid-cols-2 sm:grid-cols-5 gap-2 ${compact ? "" : "xl:grid-cols-10"}`}>
           {track.map((values, i) => {
             const lv = i + 1;
             const state = lv < item.level ? "done" : lv === item.level ? "current" : lv === item.level + 1 ? "next" : "locked";
@@ -367,8 +409,8 @@ function LevelTrack({ item, ctx }: { item: FacilityItemView; ctx: ReturnType<typ
             }[state];
             const tag = { done: "text-star-green", current: "text-primary", next: "text-chart-4", locked: "text-muted-foreground" }[state];
             return (
-              <li key={lv} className={`relative flex flex-col items-center gap-1.5 rounded-md border bg-card p-2 min-w-0 ${box}`}>
-                <ItemThumb id={item.id} level={lv} tone={tone} className={`w-full h-14 ${state === "locked" ? "grayscale" : ""}`} />
+              <li key={lv} className={`relative flex flex-col items-center rounded-md border bg-card min-w-0 ${compact ? "gap-1 p-1.5" : "gap-1.5 p-2"} ${box}`}>
+                <ItemThumb id={item.id} level={lv} tone={tone} className={`w-full ${compact ? "h-8" : "h-14"} ${state === "locked" ? "grayscale" : ""}`} />
                 {state === "done" && (
                   <span className="absolute right-1 top-1 rounded-full bg-background">
                     <Icon name="check-circle" size={18} className="text-star-green" />
@@ -378,7 +420,7 @@ function LevelTrack({ item, ctx }: { item: FacilityItemView; ctx: ReturnType<typ
                 <span className={`font-display font-bold text-xl tabular-nums leading-none ${state === "next" ? "text-chart-4" : "text-foreground"}`}>
                   {benefitText(values[0]!, t, i18n.language)}
                 </span>
-                <span className="text-sm text-muted-foreground text-center leading-tight">{t(`facilities.benefitShort.${key}`)}</span>
+                {!compact && <span className="text-sm text-muted-foreground text-center leading-tight">{t(`facilities.benefitShort.${key}`)}</span>}
                 <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${tag}`}>{t(`facilities.track.${state}`)}</span>
               </li>
             );
@@ -391,8 +433,16 @@ function LevelTrack({ item, ctx }: { item: FacilityItemView; ctx: ReturnType<typ
 
 // ── Area cards ────────────────────────────────────────────────────────────────
 
-function AreaCards({ data, selected, upgrades, busy, onSelect }: {
-  data: FacilitiesViewData; selected: FacilityItemId; upgrades: Record<FacilityItemId, Upgrade>; busy: Set<FacilityGroup>;
+/** The three areas with every item (condition bar, level, marker); picking one calls `onSelect`. */
+export function AreaCards({ data, selected, onSelect }: {
+  data: FacilitiesViewData; selected: FacilityItemId | null; onSelect: (id: FacilityItemId) => void;
+}) {
+  const { busy, upgrades } = useUpgrades(data);
+  return <AreaCardsGrid data={data} selected={selected} upgrades={upgrades} busy={busy} onSelect={onSelect} />;
+}
+
+function AreaCardsGrid({ data, selected, upgrades, busy, onSelect }: {
+  data: FacilitiesViewData; selected: FacilityItemId | null; upgrades: Record<FacilityItemId, Upgrade>; busy: Set<FacilityGroup>;
   onSelect: (id: FacilityItemId) => void;
 }) {
   const { t } = useTranslation();
@@ -441,41 +491,5 @@ function AreaCards({ data, selected, upgrades, busy, onSelect }: {
         </section>
       ))}
     </div>
-  );
-}
-
-// ── Stock strip ───────────────────────────────────────────────────────────────
-
-function StockStrip({ data }: { data: FacilitiesViewData }) {
-  const { t, i18n } = useTranslation();
-  const links = useContext(CraftLinksContext);
-  const craft = data.facilities.craft;
-  if (!data.stock || !craft) return null;
-  const count = (id: ComponentId) => Object.values(data.stock!.components[id] ?? {}).reduce((s, n) => s + n, 0);
-  return (
-    <section className="card-arcade rounded-md p-4 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.stockStrip.title")}</h3>
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {t("facilities.stockStrip.workshop", { level: craft.workshop, count: craft.queue.length })}
-          </span>
-        </div>
-        {links?.openWorkshop && (
-          <Button variant="secondary" onClick={links.openWorkshop}>
-            <Icon name="hammer" size={16} />{t("facilities.stockStrip.open")}
-          </Button>
-        )}
-      </div>
-      <ul className="m-0 p-0 list-none grid grid-cols-4 lg:grid-cols-8 gap-3">
-        {COMPONENTS.map((id) => (
-          <li key={id} className="flex flex-col items-center gap-1 min-w-0">
-            <CraftIcon kind="component" id={id} size={48} />
-            <span className="font-display font-bold text-xl tabular-nums leading-none text-foreground">{count(id).toLocaleString(i18n.language)}</span>
-            <span className="text-sm text-muted-foreground text-center truncate max-w-full">{t(`craft.component.${id}`)}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
