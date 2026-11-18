@@ -42,7 +42,9 @@ export function WorkshopView({ saveId }: { saveId: string }) {
 function WorkshopHeader({ view }: { view: CraftView }) {
   const { t, i18n } = useTranslation();
   const speed = view.foremanSpeed.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const art = `craft/workshop-lv-${Math.min(5, Math.max(1, view.workshop))}.webp`;
+  const level = Math.min(5, Math.max(1, view.workshop));
+  // level 1 was repainted with the workbench: a new file name, art URLs are cached immutable
+  const art = level === 1 ? "craft/workshop-lv-1b.webp" : `craft/workshop-lv-${level}.webp`;
   return (
     <CraftBanner art={art}>
     <div className="flex flex-wrap items-end justify-between gap-3">

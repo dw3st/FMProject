@@ -191,7 +191,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "craft/gymKit.webp": "image/webp",
   "craft/medKit.webp": "image/webp",
   "craft/furniture.webp": "image/webp",
-  "craft/workshop-lv-1.webp": "image/webp",
+  "craft/workshop-lv-1b.webp": "image/webp",
   "craft/workshop-lv-2.webp": "image/webp",
   "craft/workshop-lv-3.webp": "image/webp",
   "craft/workshop-lv-4.webp": "image/webp",
