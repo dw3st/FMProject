@@ -177,6 +177,15 @@ export function migrateAccountSchema(database: Database): void {
       badges     TEXT NOT NULL DEFAULT '[]',
       backfilled INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS account_tactics (
+      id         TEXT PRIMARY KEY,
+      user_id    TEXT NOT NULL,
+      name       TEXT NOT NULL,
+      code       TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_account_tactics_user ON account_tactics(user_id);
   `);
 }
 

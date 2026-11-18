@@ -60,3 +60,27 @@ export function userCreatedAt(userId: string): number | null {
   const row = db.prepare("SELECT created_at AS c FROM users WHERE id = ?").get(userId) as { c: number } | undefined;
   return row?.c ?? null;
 }
+
+/** A tactic the user keeps in his account (tactics library, tester report 2026-11-18): a saved line-up's code. */
+export interface AccountTactic { id: string; name: string; code: string; savedAt: string }
+
+export function listTactics(userId: string): AccountTactic[] {
+  const rows = db.prepare("SELECT id, name, code, created_at FROM account_tactics WHERE user_id = ? ORDER BY created_at DESC")
+    .all(userId) as { id: string; name: string; code: string; created_at: number }[];
+  return rows.map((r) => ({ id: r.id, name: r.name, code: r.code, savedAt: new Date(r.created_at).toISOString().slice(0, 10) }));
+}
+
+export function countTactics(userId: string): number {
+  return (db.prepare("SELECT COUNT(*) AS n FROM account_tactics WHERE user_id = ?").get(userId) as { n: number }).n;
+}
+
+export function addTactic(userId: string, name: string, code: string): AccountTactic {
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  db.prepare("INSERT INTO account_tactics (id, user_id, name, code, created_at) VALUES (?, ?, ?, ?, ?)").run(id, userId, name, code, now);
+  return { id, name, code, savedAt: new Date(now).toISOString().slice(0, 10) };
+}
+
+export function deleteTactic(userId: string, id: string): boolean {
+  return db.prepare("DELETE FROM account_tactics WHERE user_id = ? AND id = ?").run(userId, id).changes > 0;
+}

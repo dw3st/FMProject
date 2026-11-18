@@ -6,6 +6,7 @@ import { CUSTOM_FORMATION_ID, customShape } from "@/Domain/formation/zones";
 import { Button } from "@/GameInterface/ui/Button";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { Icon } from "@/GameInterface/Icons";
+import { AccountTacticsLibrary, useAccountTactics } from "@/GameInterface/Components/AccountTacticsLibrary";
 
 /** One swap made when a preset was used, already resolved to names. */
 export interface PresetSwapLine {
@@ -68,6 +69,15 @@ export function LineupPresetsPanel({
   const [copied, setCopied] = useState<LineupPresetKey | null>(null);
   const [importing, setImporting] = useState<{ code: string; failed: boolean } | null>(null);
   const free = firstFreeSlot(presets);
+  const library = useAccountTactics();
+  const [kept, setKept] = useState<{ key: LineupPresetKey; error: string | null } | null>(null);
+
+  async function keepInAccount(key: LineupPresetKey) {
+    const preset = presets[key];
+    if (!preset) return;
+    const error = await library.keep(preset.name || t("formations.presets.account.defaultName", { key }), exportPreset(preset));
+    setKept({ key, error });
+  }
 
   async function copyCode(key: LineupPresetKey) {
     const preset = presets[key];
@@ -100,6 +110,19 @@ export function LineupPresetsPanel({
     <div className="card-arcade rounded-md p-5">
       <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("formations.presets.title")}</h3>
       <p className="text-sm text-muted-foreground mt-2 mb-4">{t("formations.presets.hint")}</p>
+      <AccountTacticsLibrary
+        tactics={library.tactics}
+        max={library.max}
+        busy={busy}
+        freeSlot={free}
+        onUse={(x) => { if (free) onImport(free, x.code); }}
+        onRemove={(x) => void library.remove(x.id)}
+      />
+      {kept && (
+        <p role="status" className={`m-0 mb-3 text-sm ${kept.error ? "text-destructive" : "text-foreground"}`}>
+          {kept.error ? t(kept.error === "full" ? "formations.presets.account.full" : "formations.presets.account.failed") : t("formations.presets.account.kept")}
+        </p>
+      )}
       <div className="mb-4 flex flex-col gap-2">
         {importing ? (
           <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); importCode(); }}>
@@ -259,6 +282,18 @@ export function LineupPresetsPanel({
                       className={`!px-2 ${copied === key ? "!text-primary" : ""}`}
                     >
                       <Icon name={copied === key ? "check" : "upload"} size={16} />
+                    </Button>
+                  )}
+                  {preset && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => void keepInAccount(key)}
+                      disabled={busy}
+                      aria-label={t("formations.presets.account.keep", { key: shown })}
+                      title={t(kept?.key === key && !kept.error ? "formations.presets.account.kept" : "formations.presets.account.keep", { key: shown })}
+                      className={`!px-2 ${kept?.key === key && !kept.error ? "!text-primary" : ""}`}
+                    >
+                      <Icon name={kept?.key === key && !kept.error ? "check" : "cloud"} size={16} />
                     </Button>
                   )}
                   {preset && (

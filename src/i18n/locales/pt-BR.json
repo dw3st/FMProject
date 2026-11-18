@@ -1104,7 +1104,21 @@
       "import": "Importar escalação",
       "importLabel": "Cole o código da escalação",
       "importSave": "Salvar no espaço {{key}}",
-      "importFailed": "Este código não é de uma escalação."
+      "importFailed": "Este código não é de uma escalação.",
+      "account": {
+        "title": "Táticas da sua conta",
+        "count": "{{count}} de {{max}}",
+        "empty": "Nenhuma ainda. Use o botão de nuvem numa escalação salva para guardá-la na conta e usar em qualquer save.",
+        "savedOn": "Guardada em {{date}}",
+        "use": "Usar na vaga {{key}}",
+        "remove": "Tirar {{name}} da conta",
+        "confirmRemove": "Tirar da conta",
+        "keep": "Guardar a escalação {{key}} na conta",
+        "kept": "Guardada na conta: aparece em todos os seus saves.",
+        "full": "A conta já tem 30 táticas: tire uma para guardar outra.",
+        "failed": "Não deu para guardar. Tente de novo.",
+        "defaultName": "Escalação {{key}}"
+      }
     },
     "custom": "Personalizada",
     "editor": {

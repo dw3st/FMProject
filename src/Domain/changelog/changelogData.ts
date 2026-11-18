@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.18",
+    date: "2026-11-18",
+    items: [
+      { tab: "formation", pt: "Táticas da sua conta: guarde uma escalação salva na conta com o botão de nuvem e use em qualquer save, sem copiar código.", en: "Tactics in your account: keep a saved line-up in your account with the cloud button and use it in any save, no code to copy." },
+    ],
+    fixes: [
+      { tab: "squad", pt: "Elenco: a tabela cabe na tela, sem rolar para o lado para ver as ações.", en: "Squad: the table fits the screen, no sideways scroll to reach the actions." },
+    ],
+  },
+  {
     version: "12.17",
     date: "2026-11-18",
     time: "12:54",

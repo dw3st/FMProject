@@ -202,3 +202,7 @@ Report do usuário (Copa do Mundo de 2038: os convocados sumiam da escalação).
 ## Escalação da formação livre (12.12)
 
 Report de tester. A última escalação de cada formação (`lastLineupKey`, `src/Domain/tactics/lastLineups.ts`) separa as formações livres pelo desenho (`custom:` + assinatura das vagas).
+
+## Táticas da conta (12.18)
+
+Report do usuário. A tabela `account_tactics` (SQLite, por usuário, até `MAX_ACCOUNT_TACTICS` 30) guarda o código de uma escalação salva (`exportPreset`: formação, instruções, estilo, eixos e nome, sem jogadores). Rotas (`accountRoutes.ts`): `GET /api/account/tactics`, `POST { name, code }` (201; 400 `invalidTactic` para código que `importPreset` não aceita, nome vazio; 409 `full`; 413), `DELETE /api/account/tactics/:id` (404 de outro usuário). Tela (`AccountTacticsLibrary`, no topo de "Escalações salvas"): o botão de nuvem de cada escalação guarda na conta; cada tática da lista tem Usar (põe na primeira vaga livre pelo mesmo caminho da importação) e Tirar, com confirmação.

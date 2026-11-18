@@ -91,18 +91,18 @@ export function SquadRosterTable({
     title: t(`dashboard.squadRosterTable.titles.${key}`),
   });
   const columns: { key: string; label: string; title: string; width: string; align: "left" | "center" }[] = [
-    col("pos", "5rem", "left"),
+    col("pos", "4.5rem", "left"),
     col("name", "minmax(8rem,1fr)", "left"),
     col("age", "4rem", "center"),
     col("avg", "4rem", "center"),
-    col("salary", "5.5rem", "center"),
-    col("contract", "5.5rem", "center"),
-    col("value", "5.5rem", "center"),
-    col("apps", "3.5rem", "center"),
-    col("goals", "3.5rem", "center"),
-    col("assists", "3.5rem", "center"),
-    col("rating", "4.5rem", "center"),
-    ...(showMorale ? [{ key: "morale", label: t("morale.column"), title: t("dashboard.squadRosterTable.titles.morale"), width: "9rem", align: "left" as const }] : []),
+    col("salary", "5rem", "center"),
+    col("contract", "5rem", "center"),
+    col("value", "5rem", "center"),
+    col("apps", "3rem", "center"),
+    col("goals", "3rem", "center"),
+    col("assists", "3rem", "center"),
+    col("rating", "4rem", "center"),
+    ...(showMorale ? [{ key: "morale", label: t("morale.column"), title: t("dashboard.squadRosterTable.titles.morale"), width: "8.5rem", align: "left" as const }] : []),
   ];
   // Own squad: Talk (or Answer, with an open request) beside Renew, icon buttons so the table fits without a
   // sideways scroll (tester report, 4.47.10); the label is in `title` and `aria-label`.
@@ -203,7 +203,9 @@ export function SquadRosterTable({
       </div>
 
       <div className="overflow-x-auto flex-1 flex flex-col">
-      <div className="min-w-max">
+      {/* A fixed minimum, not min-w-max: with max-content the name column grew to the longest name and its badges
+          and pushed the actions off the screen (tester report 2026-11-18); now the name truncates instead. */}
+      <div className={showMorale ? "min-w-[71rem]" : "min-w-[60rem]"}>
       <div
         className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display overflow-y-hidden [scrollbar-gutter:stable]"
         style={{ gridTemplateColumns }}

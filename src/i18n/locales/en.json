@@ -1104,7 +1104,21 @@
       "import": "Import line-up",
       "importLabel": "Paste the line-up code",
       "importSave": "Save into slot {{key}}",
-      "importFailed": "This code is not a line-up."
+      "importFailed": "This code is not a line-up.",
+      "account": {
+        "title": "Tactics in your account",
+        "count": "{{count}} of {{max}}",
+        "empty": "None yet. Use the cloud button on a saved line-up to keep it in your account and use it in any save.",
+        "savedOn": "Kept on {{date}}",
+        "use": "Use in slot {{key}}",
+        "remove": "Remove {{name}} from the account",
+        "confirmRemove": "Remove from the account",
+        "keep": "Keep line-up {{key}} in the account",
+        "kept": "Kept in the account: it shows in all your saves.",
+        "full": "The account already has 30 tactics: remove one to keep another.",
+        "failed": "It could not be kept. Try again.",
+        "defaultName": "Line-up {{key}}"
+      }
     },
     "custom": "Custom",
     "editor": {
