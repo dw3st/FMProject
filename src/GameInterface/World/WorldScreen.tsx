@@ -295,8 +295,8 @@ export function WorldScreen() {
                               size={32}
                             />
                             <div className="min-w-0">
-                              <div className={me ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}><a href={managerHref(seatManagerId(m.seatId))} className="no-underline hover:underline text-inherit">{m.managerName}</a></div>
-                              {m.nickname && <div className="text-sm text-muted-foreground truncate">{m.nickname}</div>}
+                              <div className={me ? TABLE_STYLE.nameHighlight : TABLE_STYLE.name}><a href={managerHref(seatManagerId(m.seatId))} className="no-underline hover:underline text-inherit">{m.nickname ?? m.managerName}</a></div>
+                              {m.nickname && <div className="text-sm text-muted-foreground truncate">{m.managerName}</div>}
                             </div>
                           </div>
                         </td>

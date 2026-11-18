@@ -44,6 +44,7 @@ import { inboxRoutes } from "@/backend/inbox";
 import { pressRoutes } from "@/backend/pressRoutes";
 import { newsRoutes } from "@/backend/newsRoutes";
 import { socialRoutes } from "@/backend/social/socialRoutes";
+import { accountRoutes } from "@/backend/account/accountRoutes";
 import { worldRoutes } from "@/backend/worlds/worldRoutes";
 import { groupAdvanceRoutes } from "@/backend/groupAdvanceRoutes";
 import { saveService } from "@/backend/SaveService";
@@ -142,6 +143,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...pressRoutes,
   ...newsRoutes,
   ...socialRoutes,
+  ...accountRoutes,
   ...worldRoutes,
   ...groupAdvanceRoutes,
   ...rivalsRoutes,

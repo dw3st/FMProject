@@ -15,12 +15,16 @@ import { WORLD } from "@/Domain/multiplayer/worldConfig";
 import { brasiliaTime } from "@/GameInterface/World/publicTime";
 import type { PublicWorldInfo } from "@/types/multiplayerTypes";
 import { Wordmark } from "@/GameInterface/Components/Wordmark";
-import { PitchBackdrop } from "@/GameInterface/Components/PitchBackdrop";
 import { Button } from "@/GameInterface/ui/Button";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { useSocial } from "@/GameInterface/Social/useSocial";
 import { FriendsButton } from "@/GameInterface/Social/FriendsButton";
 import { navigate } from "@/GameInterface/router/navigation";
+import { TitleParts } from "@/GameInterface/ui/TitleParts";
+import { fetchAccountProfile } from "@/GameInterface/Account/accountApi";
+import { AccountAchievements, CareersTable, ProfileHeader, ProfileStats, TrophyCabinet } from "@/GameInterface/Account/AccountProfileBlocks";
+import { BadgePicker } from "@/GameInterface/Account/BadgePicker";
+import type { AccountProfileView } from "@/types/accountTypes";
 
 interface SaveEntry {
   id: string;
@@ -61,6 +65,8 @@ export function StartScreen() {
   const pendingOutdatedSave = saves.find((s) => s.id === pendingOutdatedId) ?? null;
   const [publicWorld, setPublicWorld] = useState<PublicWorldInfo | null>(null);
   const social = useSocial();
+  const [profile, setProfile] = useState<AccountProfileView | null>(null);
+  const [pickingBadges, setPickingBadges] = useState(false);
 
   function openChangelog() {
     setIsChangelogOpen(true);
@@ -75,6 +81,7 @@ export function StartScreen() {
       .then((r) => r.json())
       .then((data: SaveEntry[]) => setSaves(data))
       .catch(() => {});
+    void fetchAccountProfile().then(setProfile);
     void worldApi.publicInfo().then((r) => {
       if (r.ok) setPublicWorld(r.data);
     });
@@ -142,13 +149,8 @@ export function StartScreen() {
   const newGameClass =
     "flex h-10 w-full items-center justify-center rounded bg-primary text-sm font-semibold text-primary-foreground no-underline transition-colors";
 
-  return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background pb-14">
-      <PitchBackdrop />
-
-      <div className="relative w-full max-w-[440px] px-4">
-        <Wordmark size="lg" className="mb-8 block text-center" />
-
+  const newGameEl = (
+      <>
         {atLimit ? (
           <div aria-disabled className={`${newGameClass} cursor-not-allowed opacity-40`}>
             {t("startScreen.newGame")}
@@ -165,8 +167,32 @@ export function StartScreen() {
           <p className="mt-2 text-center text-sm text-muted-foreground">{t("common.saveLimitReached")}</p>
         )}
 
+      </>
+  );
+
+  return (
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-background pb-24">
+      <div className="flex h-14 items-center border-b border-border px-6">
+        <Wordmark size="sm" />
+      </div>
+
+      <div className="relative mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-6 py-5">
+        {profile && (
+          <>
+            <ProfileHeader view={profile} action={<div className="w-full sm:w-52">{newGameEl}</div>} />
+            <ProfileStats view={profile} />
+            <div className="grid items-start gap-6 lg:grid-cols-[1.15fr_1fr]">
+              <TrophyCabinet view={profile} />
+              <AccountAchievements view={profile} onPickBadges={() => setPickingBadges(true)} />
+            </div>
+          </>
+        )}
+        {!profile && <div className="w-full sm:w-52 self-end">{newGameEl}</div>}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="min-w-0">
         {publicWorld && (
-          <div className="mt-6 flex items-center gap-3 rounded-md border border-border bg-card py-3 pl-4">
+          <div className="mb-6 flex items-center gap-3 rounded-md border border-border bg-card py-3 pl-4">
             <Icon name="globe" size={16} className="shrink-0 text-chart-2" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-base font-semibold text-foreground tabular-nums">
@@ -196,8 +222,8 @@ export function StartScreen() {
 
         {social.worldInvites.length > 0 && (
           <>
-            <SectionTitle className="mt-8 mb-3">{t("world.invites.title")}</SectionTitle>
-            <ul className="m-0 list-none border-b border-border bg-transparent p-0">
+            <SectionTitle className="mb-3">{t("world.invites.title")}</SectionTitle>
+            <ul className="m-0 mb-6 list-none border-b border-border bg-transparent p-0">
               {social.worldInvites.map((inv) => (
                 <li key={inv.saveId} className="flex items-center gap-3 border-t border-border py-3">
                   <Icon name="users" size={16} className="shrink-0 text-chart-2" />
@@ -229,7 +255,7 @@ export function StartScreen() {
           </>
         )}
 
-        <SectionTitle className="mt-8 mb-3">{t("startScreen.savedGames")}</SectionTitle>
+        <SectionTitle className="mb-3"><TitleParts accent={t("account.saves.accent")}>{t("account.saves.main")}</TitleParts></SectionTitle>
         {leaveError && (
           <p role="alert" className="mb-3 text-sm text-destructive">
             {t(`world.errors.${leaveError}`)}
@@ -317,6 +343,14 @@ export function StartScreen() {
             ))}
           </ul>
         )}
+        </div>
+        {profile && (
+          <div className="min-w-0">
+            <SectionTitle className="mb-3"><TitleParts accent={t("account.allCareers.accent")}>{t("account.allCareers.main")}</TitleParts></SectionTitle>
+            <CareersTable view={profile} />
+          </div>
+        )}
+        </div>
       </div>
 
       <div className="absolute inset-x-6 bottom-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm text-muted-foreground">
@@ -352,6 +386,14 @@ export function StartScreen() {
 
       <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <ChangelogModal open={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
+      {profile && (
+        <BadgePicker
+          open={pickingBadges}
+          view={profile}
+          onClose={() => setPickingBadges(false)}
+          onSaved={(badges) => setProfile({ ...profile, badges })}
+        />
+      )}
       <ConfirmDialog
         open={pendingDeleteSave !== null}
         title={t("startScreen.deleteConfirmTitle")}

@@ -181,6 +181,8 @@ export async function removeSeat(
     const world = await service.getMeta(saveId);
     if (!world?.currentDate || !world.seats.includes(seatId)) throw new SeatError("notFound", `removeSeat: seat ${seatId} not in save ${saveId}`);
     const member = memberBySeat(saveId, seatId);
+    // The career stays in the account profile, marked as deleted.
+    await import("@/backend/account/accountWorld").then((m) => m.retireSeatCareer(saveId, seatId));
     // The owner hands the world over first (`transferOwnership`); the last seat deletes the world instead.
     const lastSeatKeepsWorld = isPublicWorld(world);
     if (member?.role === "owner" || (world.seats.length <= 1 && !lastSeatKeepsWorld)) throw new SeatError("ownerOrLast", `removeSeat: seat ${seatId} is the owner or the last seat`);

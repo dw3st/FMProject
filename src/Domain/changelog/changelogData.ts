@@ -31,6 +31,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.15",
+    date: "2026-11-18",
+    time: "00:00",
+    items: [
+      { tab: "general", pt: "Perfil da conta na tela inicial: títulos, temporadas, jogos, prêmios, acessos, demissões e cartões somando todas as suas carreiras, inclusive as de saves apagados.", en: "Account profile on the start screen: titles, seasons, matches, awards, promotions, sackings and cards across all your careers, deleted saves included." },
+      { tab: "general", pt: "40 conquistas da conta, com selos para mostrar no topo do perfil.", en: "40 account achievements, with badges to show at the top of the profile." },
+      { tab: "friends", pt: "Amigos: veja o perfil de um amigo pelo menu dele no painel.", en: "Friends: see a friend's profile from his menu in the panel." },
+      { tab: "friends", pt: "Liga de amigos: o apelido vem primeiro, com o técnico daquele save ao lado.", en: "Friends' league: the nickname comes first, with that save's manager next to it." },
+    ],
+    fixes: [
+      { tab: "general", pt: "Resumo da temporada: os destaques ficam alinhados com os quadros de cima.", en: "Season summary: the highlights line up with the panels above." },
+    ],
+  },
+  {
     version: "12.14.2",
     date: "2026-11-17",
     time: "21:39",

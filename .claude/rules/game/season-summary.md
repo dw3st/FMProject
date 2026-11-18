@@ -52,3 +52,7 @@ Sem efeito de partida: nada em `/test` nem `/lab`.
 - Destaques só de quem ainda está no clube (fora o artilheiro do registro); quem saiu livre na virada fica de fora.
 - Num clube assumido no meio da temporada, a tabela é do clube e o dinheiro e o mercado são da passagem do técnico.
 - Empréstimos recebidos não contam como contratação; a taxa deles entra no gasto.
+
+## Destaques numa faixa (12.15)
+
+Report do usuário. Os destaques do relatório ficam numa faixa só, com divisórias, em vez de 4 cartões soltos: as bordas de fora se alinham com os 3 quadros de cima.

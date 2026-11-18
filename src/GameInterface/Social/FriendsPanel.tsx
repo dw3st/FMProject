@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { FriendProfileModal } from "@/GameInterface/Account/FriendProfileModal";
 import { useTranslation } from "react-i18next";
 import { dmRoomParam } from "@/Domain/social/rooms";
 import { Icon } from "@/GameInterface/Icons";
@@ -246,6 +247,7 @@ function FriendRow({ friend }: { friend: FriendView }) {
   const s = useSocial();
   const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState<"unfriend" | "block" | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const room = dmRoomParam(friend.nickname);
   const unread = s.unread[room] ?? 0;
   const statusText =
@@ -301,7 +303,11 @@ function FriendRow({ friend }: { friend: FriendView }) {
         </button>
       </div>
       {menu && (
-        <div className="flex items-center gap-4 px-2 pb-2">
+        <div className="flex flex-wrap items-center gap-4 px-2 pb-2">
+          <Button variant="secondary" flush onClick={() => { setProfileOpen(true); setMenu(false); }}>
+            <Icon name="user" size={16} />
+            {t("account.open")}
+          </Button>
           <Button variant="secondary" flush onClick={() => void run("unfriend")}>
             {confirm === "unfriend" ? t("social.confirmUnfriend") : t("social.unfriend")}
           </Button>
@@ -311,6 +317,7 @@ function FriendRow({ friend }: { friend: FriendView }) {
           </Button>
         </div>
       )}
+      <FriendProfileModal nickname={profileOpen ? friend.nickname : null} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

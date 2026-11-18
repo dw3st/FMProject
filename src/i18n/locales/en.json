@@ -4149,6 +4149,10 @@
     "sponsor": {
       "main": "Sponsor",
       "accent": "Company"
+    },
+    "account": {
+      "main": "Your",
+      "accent": "profile"
     }
   },
   "jobs": {
@@ -8192,5 +8196,109 @@
       "challenger": "Challenger Cup",
       "final": "Final"
     }
+  },
+  "account": {
+    "since": "Account since {{date}}",
+    "careers_one": "{{count}} career",
+    "careers_other": "{{count}} careers",
+    "withFriends_one": "{{count}} with friends",
+    "withFriends_other": "{{count}} with friends",
+    "careersEmpty": "No career yet. Start a new game.",
+    "deleted": "Save deleted",
+    "mode": {
+      "solo": "Solo",
+      "friends": "With friends",
+      "public": "Public world"
+    },
+    "stats": {
+      "titles": "Titles",
+      "promotions": "Promotions",
+      "seasons": "Seasons",
+      "clubs": "Clubs",
+      "matches": "Matches",
+      "winPct": "Wins",
+      "awards": "Awards",
+      "sackings": "Sackings",
+      "cards": "Cards",
+      "achievements": "Achievements"
+    },
+    "trophies": {
+      "main": "Trophy",
+      "accent": "cabinet",
+      "league": "Leagues",
+      "cup": "Cups",
+      "continental": "Continental",
+      "national": "National team",
+      "promotion": "Promotions",
+      "worldBest": "World manager of the year",
+      "leagueBest": "League manager of the year"
+    },
+    "achievements": {
+      "main": "Account",
+      "accent": "achievements",
+      "count": "{{done}} of {{total}}",
+      "done": "Complete"
+    },
+    "saves": {
+      "main": "Your",
+      "accent": "saves"
+    },
+    "allCareers": {
+      "main": "All",
+      "accent": "careers"
+    },
+    "table": {
+      "manager": "Manager",
+      "clubs": "Clubs",
+      "seasons": "Seas.",
+      "titles": "Titles"
+    },
+    "track": {
+      "league_titles": "League titles",
+      "cups": "Domestic cups",
+      "continentals": "Continental titles",
+      "title_countries": "Countries won",
+      "title_saves": "Saves with a title",
+      "seasons": "Seasons",
+      "clubs": "Clubs managed",
+      "wins": "Wins",
+      "manager_awards": "Manager awards",
+      "promotions": "Promotions"
+    },
+    "single": {
+      "world_best": "World's best",
+      "national_title": "National team title",
+      "world_cup": "World Cup",
+      "friends_champion": "Champion with friends",
+      "up_and_champion": "Up and champion"
+    },
+    "secret": {
+      "treble": "Treble",
+      "two_continents": "Two continents",
+      "short_fuse": "Short fuse",
+      "wanderer": "Wanderer",
+      "phoenix": "Phoenix"
+    },
+    "badge": {
+      "league_titles": "Serial winner",
+      "cups": "Cup king",
+      "continentals": "Conqueror",
+      "title_countries": "Globetrotter",
+      "title_saves": "Born winner",
+      "seasons": "Veteran",
+      "clubs": "Well travelled",
+      "wins": "Winning machine",
+      "manager_awards": "Decorated",
+      "promotions": "Promotion expert"
+    },
+    "badges": {
+      "pick": "Pick badges",
+      "title": "Profile badges",
+      "hint": "Pick up to {{count}} badges. Each track with a gold gives one.",
+      "error": "Could not save the badges."
+    },
+    "open": "View profile",
+    "friendTitle": "{{nickname}}'s profile",
+    "loadFailed": "Could not open the profile."
   }
 }

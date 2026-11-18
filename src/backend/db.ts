@@ -157,5 +157,29 @@ export function migrateWorldSchema(database: Database): void {
   `);
 }
 
+
+/** Account profile (`docs/superpowers/specs/2026-11-18-account-profile-design.md`): one snapshot per career. Only adds. */
+export function migrateAccountSchema(database: Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS account_careers (
+      user_id    TEXT NOT NULL,
+      save_id    TEXT NOT NULL,
+      seat_id    TEXT NOT NULL,
+      data       TEXT NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted    INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, save_id, seat_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_account_careers_save ON account_careers(save_id);
+
+    CREATE TABLE IF NOT EXISTS account_profile (
+      user_id    TEXT PRIMARY KEY,
+      badges     TEXT NOT NULL DEFAULT '[]',
+      backfilled INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+}
+
 migrateSocialSchema(db);
 migrateWorldSchema(db);
+migrateAccountSchema(db);

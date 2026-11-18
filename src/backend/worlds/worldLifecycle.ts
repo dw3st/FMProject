@@ -75,6 +75,8 @@ export async function worldView(
 /** Deletes the world for everyone; the other members get `world_deleted`. */
 export async function deleteWorld(saveId: string, actorUserId: string, service: SaveService = defaultService): Promise<void> {
   const others = listSaveMembers(saveId).map((m) => m.userId).filter((u) => u !== actorUserId);
+  // The careers stay in the account profiles, marked as deleted.
+  await import("@/backend/account/accountWorld").then((m) => m.retireSaveCareers(saveId, service));
   await service.deleteSave(saveId);
   deleteSaveMembers(saveId);
   deleteWorldCode(saveId);

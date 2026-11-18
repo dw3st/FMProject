@@ -191,9 +191,10 @@ export function SeasonSummaryView({
         </div>
 
         {summary.highlights.length > 0 && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {summary.highlights.map((h) => (
-              <div key={h.kind} className="flex items-center gap-3 rounded-md border border-border bg-card/60 px-3 py-2.5 min-w-0">
+          // One strip with dividers: its edges line up with the three panels above (4 cards under 3 never would).
+          <div className="grid grid-cols-2 lg:grid-cols-4 rounded-md border border-border bg-card/60 divide-border lg:divide-x">
+            {summary.highlights.map((h, i) => (
+              <div key={h.kind} className={`flex items-center gap-3 px-4 py-3 min-w-0 ${i % 2 === 1 ? "border-l border-border lg:border-l-0" : ""} ${i >= 2 ? "border-t border-border lg:border-t-0" : ""}`}>
                 <PlayerFace playerId={h.playerId} nationality={h.nationality} clubColors={summary.clubColors} size={40} fallback={h.name.slice(0, 1)} />
                 <div className="flex flex-col min-w-0">
                   <span className={LABEL}>{t(`seasonSummary.highlight.${h.kind}`)}</span>

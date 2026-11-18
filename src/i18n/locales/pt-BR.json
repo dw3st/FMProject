@@ -4146,6 +4146,10 @@
     "sponsor": {
       "main": "Patrocinador",
       "accent": "Empresa"
+    },
+    "account": {
+      "main": "Seu",
+      "accent": "perfil"
     }
   },
   "jobs": {
@@ -8180,5 +8184,109 @@
       "challenger": "Copa Challenger",
       "final": "Final"
     }
+  },
+  "account": {
+    "since": "Conta desde {{date}}",
+    "careers_one": "{{count}} carreira",
+    "careers_other": "{{count}} carreiras",
+    "withFriends_one": "{{count}} com amigos",
+    "withFriends_other": "{{count}} com amigos",
+    "careersEmpty": "Nenhuma carreira ainda. Comece um jogo novo.",
+    "deleted": "Save apagado",
+    "mode": {
+      "solo": "Sozinho",
+      "friends": "Com amigos",
+      "public": "Mundo público"
+    },
+    "stats": {
+      "titles": "Títulos",
+      "promotions": "Acessos",
+      "seasons": "Temporadas",
+      "clubs": "Clubes",
+      "matches": "Jogos",
+      "winPct": "Vitórias",
+      "awards": "Prêmios",
+      "sackings": "Demissões",
+      "cards": "Cartões",
+      "achievements": "Conquistas"
+    },
+    "trophies": {
+      "main": "Sala de",
+      "accent": "troféus",
+      "league": "Ligas",
+      "cup": "Copas",
+      "continental": "Continentais",
+      "national": "Seleção",
+      "promotion": "Acessos",
+      "worldBest": "Melhor técnico do mundo",
+      "leagueBest": "Melhor técnico da liga"
+    },
+    "achievements": {
+      "main": "Conquistas da",
+      "accent": "conta",
+      "count": "{{done}} de {{total}}",
+      "done": "Completa"
+    },
+    "saves": {
+      "main": "Seus",
+      "accent": "saves"
+    },
+    "allCareers": {
+      "main": "Todas as",
+      "accent": "carreiras"
+    },
+    "table": {
+      "manager": "Técnico",
+      "clubs": "Clubes",
+      "seasons": "Temp.",
+      "titles": "Títulos"
+    },
+    "track": {
+      "league_titles": "Títulos de liga",
+      "cups": "Copas nacionais",
+      "continentals": "Títulos continentais",
+      "title_countries": "Países com título",
+      "title_saves": "Saves com título",
+      "seasons": "Temporadas",
+      "clubs": "Clubes treinados",
+      "wins": "Vitórias",
+      "manager_awards": "Prêmios de técnico",
+      "promotions": "Acessos"
+    },
+    "single": {
+      "world_best": "Melhor do mundo",
+      "national_title": "Título com seleção",
+      "world_cup": "Copa do Mundo",
+      "friends_champion": "Campeão com amigos",
+      "up_and_champion": "Subiu e ganhou"
+    },
+    "secret": {
+      "treble": "Tríplice coroa",
+      "two_continents": "Dois continentes",
+      "short_fuse": "Pavio curto",
+      "wanderer": "Andarilho",
+      "phoenix": "Fênix"
+    },
+    "badge": {
+      "league_titles": "Multicampeão",
+      "cups": "Rei das copas",
+      "continentals": "Conquistador",
+      "title_countries": "Cidadão do mundo",
+      "title_saves": "Vencedor nato",
+      "seasons": "Veterano",
+      "clubs": "Rodado",
+      "wins": "Máquina de vitórias",
+      "manager_awards": "Premiado",
+      "promotions": "Especialista em acesso"
+    },
+    "badges": {
+      "pick": "Escolher selos",
+      "title": "Selos do perfil",
+      "hint": "Escolha até {{count}} selos. Cada trilha com ouro dá um.",
+      "error": "Não deu para salvar os selos."
+    },
+    "open": "Ver perfil",
+    "friendTitle": "Perfil de {{nickname}}",
+    "loadFailed": "Não deu para abrir o perfil."
   }
 }
