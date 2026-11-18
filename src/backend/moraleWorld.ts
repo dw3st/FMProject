@@ -15,6 +15,9 @@ import type { MatchEvent } from "@/types/dayLogTypes";
 import type { RosterPlayer } from "@/types/playerTypes";
 import type { MarketState, SellCandidate } from "@/types/transferMarketTypes";
 
+/** Players up to this age may be free (not on the list but registered, `registration.md`): never excused. */
+const UNREGISTERED_MIN_AGE = 21;
+
 /** The human club's side of a played match: result (penalties decide a level knockout) and minutes. */
 export function clubMatchSummary(event: MatchEvent, clubId: string): ClubMatchSummary | null {
   const side = event.home === clubId ? "home" : event.away === clubId ? "away" : null;
@@ -91,6 +94,11 @@ export async function applyMoraleDay(
     bids.push({ playerId: b.playerId, clubName: b.clubName, stronger: buyer ? teamAvgRating(buyer) > avg : false });
   }
   const market = await service.getMarket(saveId, seatId);
+  // Not on the league list: he cannot play, so he does not ask for minutes (free youngsters are never on it).
+  const leagueList = squad.leagueSlug ? squad.registrations?.[squad.leagueSlug] : undefined;
+  const unregistered = leagueList
+    ? new Set(squad.players.filter((p) => p.age > UNREGISTERED_MIN_AGE && !leagueList.ids.includes(p.id)).map((p) => p.id))
+    : undefined;
   const out = moraleDay({
     squad,
     date: args.date,
@@ -100,6 +108,7 @@ export async function applyMoraleDay(
     sellList: market?.playerSellList ?? [],
     ...(args.unavailable ? { unavailable: args.unavailable } : {}),
     ...(args.seasonRolled ? { seasonRolled: true } : {}),
+    ...(unregistered && unregistered.size > 0 ? { unregistered } : {}),
     ...(args.directorContractTalk ? { directorContractTalk: args.directorContractTalk } : {}),
     // The manager's Motivation (`.claude/rules/game/achievements.md`).
     motivation: (await service.getAchievements(saveId, seatId)).attributes.motivation,

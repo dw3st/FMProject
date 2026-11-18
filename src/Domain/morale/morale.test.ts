@@ -196,6 +196,17 @@ describe("moraleDay", () => {
     expect(out.news.some((n) => n.kind === "talk" && n.playerId === "f0")).toBe(true);
   });
 
+  test("Monday: a player off the league list neither loses for minutes nor asks to talk (report 2026-11-18)", () => {
+    const sq = fullSquad();
+    sq.players = sq.players.map((p) =>
+      p.id === "f0" ? { ...p, morale: 38, moraleLog: { minutes: [0, 0, 0, 0, 0], trend: [], newMatches: 2 } } : p);
+    const out = moraleDay({ squad: sq, date: "2027-03-01", monday: true, matches: [], bids: [], sellList: [], newId, unregistered: new Set(["f0"]) });
+    const f0 = out.squad.players.find((x) => x.id === "f0")!;
+    // No minutes loss: 38 then +5% of (65 - 38).
+    expect(f0.morale).toBeCloseTo(39.4, 1);
+    expect(out.squad.moraleClub?.talks ?? []).toEqual([]);
+  });
+
   test("Monday: youth-competition minutes soften a rotation player's loss", () => {
     const run = (youthMinutes?: number[]) => {
       const sq = fullSquad();

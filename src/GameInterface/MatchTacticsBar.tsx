@@ -1,6 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { Icon } from "@/GameInterface/Icons";
-import { Button } from "@/GameInterface/ui/Button";
 import { getTacticalStyleMeta } from "@/types/tacticsTypes";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import { TACTIC_SHORTCUTS, shortcutReadyMinute, tacticShortcutSlots, type ShortcutUse } from "@/Domain/match/tacticShortcuts";
@@ -11,7 +9,7 @@ import type { LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
  * tactic changes, with the wait between two changes, and a shortcut to the heat map. Same height as the player band it
  * replaced, so the pitch does not move.
  */
-export function MatchTacticsBar({ presets, active, lastUse, minute, phase, blocked, heatmapOpen, onUse, onToggleHeatmap }: {
+export function MatchTacticsBar({ presets, active, lastUse, minute, phase, blocked, onUse }: {
   presets: LineupPresets | undefined;
   /** The shortcut in use (the last one applied and not changed by hand since). */
   active: LineupPresetKey | null;
@@ -20,9 +18,7 @@ export function MatchTacticsBar({ presets, active, lastUse, minute, phase, block
   phase: string;
   /** Why no change can be made now (manager sent off or suspended); null = allowed. */
   blocked: string | null;
-  heatmapOpen: boolean;
   onUse: (key: LineupPresetKey) => void;
-  onToggleHeatmap: () => void;
 }) {
   const { t } = useTranslation();
   const slots = tacticShortcutSlots(presets);
@@ -74,16 +70,6 @@ export function MatchTacticsBar({ presets, active, lastUse, minute, phase, block
           );
         })}
       </div>
-      <Button
-        variant="secondary"
-        className={`shrink-0 !px-3 border border-border ${heatmapOpen ? "!text-primary" : ""}`}
-        aria-pressed={heatmapOpen}
-        onClick={onToggleHeatmap}
-        title={t(heatmapOpen ? "match.heatmap.hide" : "match.heatmap.show")}
-      >
-        <Icon name="grid" size={16} />
-        {t("match.shortcuts.heatmap")}
-      </Button>
     </div>
   );
 }
