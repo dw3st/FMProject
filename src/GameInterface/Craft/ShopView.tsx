@@ -5,6 +5,8 @@ import { StepperField } from "@/GameInterface/ui/StepperField";
 import { Icon } from "@/GameInterface/Icons";
 import { StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
+import { CraftBanner } from "@/GameInterface/Craft/CraftBanner";
+import { newVisualOn } from "@/Domain/art/paintedFaces";
 import { buyMaterials, craftErrorKey } from "@/GameInterface/Craft/craftApi";
 import { useCraft } from "@/GameInterface/Craft/useCraft";
 import { materialTotal } from "@/Domain/craft/shortfall";
@@ -54,6 +56,11 @@ export function ShopView({ saveId, cart }: { saveId: string; cart: MaterialCount
 
   return (
     <div className="flex flex-col gap-4">
+      {newVisualOn() && (
+        <CraftBanner art="craft/shop-banner.webp">
+          <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("craft.tabs.shop")}</h2>
+        </CraftBanner>
+      )}
       {cart && Object.keys(cart).length > 0 && <p className="text-sm text-primary m-0">{t("craft.shop.fromWorks")}</p>}
       <StatsTable head={<>
         <StatsHead>{t("craft.shop.material")}</StatsHead>

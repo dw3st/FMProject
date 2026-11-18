@@ -6,6 +6,7 @@ import { StepperField } from "@/GameInterface/ui/StepperField";
 import { Icon } from "@/GameInterface/Icons";
 import { StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
+import { CraftBanner } from "@/GameInterface/Craft/CraftBanner";
 import { RecipeLine } from "@/GameInterface/Craft/RecipeLine";
 import { craftErrorKey, queueAction, queueComponent, upgradeWorkshop, type CraftView } from "@/GameInterface/Craft/craftApi";
 import { useCraft } from "@/GameInterface/Craft/useCraft";
@@ -41,7 +42,9 @@ export function WorkshopView({ saveId }: { saveId: string }) {
 function WorkshopHeader({ view }: { view: CraftView }) {
   const { t, i18n } = useTranslation();
   const speed = view.foremanSpeed.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const art = `craft/workshop-lv-${Math.min(5, Math.max(1, view.workshop))}.webp`;
   return (
+    <CraftBanner art={art}>
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div className="flex flex-col gap-1">
         <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("craft.workshop.title")}</h2>
@@ -53,6 +56,7 @@ function WorkshopHeader({ view }: { view: CraftView }) {
         <span className="text-muted-foreground">{t("craft.workshop.foreman", { stars: view.foremanStars, value: speed })}</span>
       </div>
     </div>
+    </CraftBanner>
   );
 }
 

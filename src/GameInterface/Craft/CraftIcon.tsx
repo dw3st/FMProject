@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import type { ComponentId, MaterialId } from "@/types/craftTypes";
 
-/** Placeholder tone per material / component (theme tokens only) until the painted icons (Task 14). */
+/** Tone of the drawn fallback per material / component (theme tokens only): old visual or the painted icon missing. */
 const TONE: Record<MaterialId | ComponentId, string> = {
   concrete: "bg-muted-foreground/25 text-foreground",
   steel: "bg-chart-1/25 text-chart-1",
@@ -20,12 +22,21 @@ const TONE: Record<MaterialId | ComponentId, string> = {
 };
 
 /**
- * Icon of a material or component. For now a coloured square with the initial; the painted icons
- * (craft plan, Task 14) replace the inside of this one component.
+ * Icon of a material or component: the painted icon (`craft/<id>.webp`, `GAME_ART_FILES`) with the new visual, else
+ * (or when the file fails to load) a coloured square with the initial.
  */
 export function CraftIcon({ kind, id, size = 24 }: { kind: "material" | "component"; id: MaterialId | ComponentId; size?: number }) {
   const { t } = useTranslation();
   const name = t(`craft.${kind}.${id}`);
+  const [failed, setFailed] = useState(false);
+  if (newVisualOn() && !failed) {
+    return (
+      <img
+        src={gameArtUrl(`craft/${id}.webp`)} alt="" aria-hidden draggable={false} onError={() => setFailed(true)}
+        className="inline-block shrink-0 object-contain select-none" style={{ width: size, height: size }}
+      />
+    );
+  }
   return (
     <span
       aria-hidden
