@@ -449,7 +449,7 @@ Só o clube humano (cada assento); a IA não tem craft. Lógica pura em `src/Dom
   a da obra é a média (≥ 1,5 Excelente, ≥ 0,75 Boa) e fica no item (`FacilityItem.quality`): desgaste × 0,85 (Boa) ou
   × 0,70 (Excelente). O +2% no efeito do Excelente ficou para a fase 2.
 - **Verba da diretoria:** no dia 1 de cada mês, materiais (os seis em partes iguais, fornecedor padrão) no valor de
-  receita × `allowanceShare(diretoria)`: 0 abaixo de 35, 1% até 50, linear até 3% em 85. Inbox `craft_allowance`.
+  receita × `allowanceShare(diretoria)`: 0 abaixo de 35, 0,3% até 50, linear até 1% em 85 (cerca de 4% a 12% da receita por ano; decisão do usuário, 2026-11-18: com 1% a 3% a verba passava do custo de uma temporada de obras). Inbox `craft_allowance`.
   Primeira leitura de um clube sem craft (save de antes, carreira nova, troca de clube): oficina 1 e 2% da receita em
   materiais.
 - **Inbox `facilities`:** `craft_allowance`, `craft_done` (peças prontas no dia), `built` (obra montada); a entrega

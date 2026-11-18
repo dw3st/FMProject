@@ -109,7 +109,7 @@ tempo na bancada ×1,15 / ×1 / ×0,85 em 1★ / 3★ / 5★ e o deslocamento de
 
 - As aprovações por obra, a parte paga pela diretoria e as parcelas mensais saem.
 - Verba mensal: no dia 1, um lote de materiais (mistura igual dos 6, fornecedor padrão) no valor de
-  `receita anual × f(diretoria)`, `f` = 0 abaixo de 35, linear de 1% em 50 a 3% em 85, 3% acima. Mensagem na caixa.
+  `receita anual × f(diretoria)`, `f` = 0 abaixo de 35, linear de 0,3% em 50 a 1% em 85, 1% acima (revisto em 2026-11-18, §15). Mensagem na caixa.
 - Desconto de 10% na loja com a diretoria em 70 ou mais.
 
 ## 8. Dados

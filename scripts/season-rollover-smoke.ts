@@ -983,9 +983,15 @@ try {
           const lineup = tacticsBefore?.lineup?.length === 11 ? tacticsBefore.lineup : regAuto(fresh, regFormation(tacticsBefore ?? { formation: meta.formation ?? "4-3-3" }), date);
           if (tacticsBefore && tacticsBefore.lineup?.length !== 11) await svc.saveTactics(saveId, { ...tacticsBefore, lineup }, seat0);
           const listNow = fresh.registrations![humanLeague]!.ids;
-          const starter = lineup.find((id) => listNow.includes(id) && fresh.players.find((p) => p.id === id)!.age > 21);
+          // A removal the rule refuses (e.g. the club's formed-player minimum) leaves him on the list: try the next one.
+          let starter: string | undefined;
+          for (const id of lineup) {
+            if (!listNow.includes(id) || !(fresh.players.find((p) => p.id === id)!.age > 21)) continue;
+            const put = await regCall("/api/saves/:saveId/registration/:competition", "PUT", leaguePath, { competition: humanLeague }, { ids: listNow.filter((x) => x !== id) });
+            if (put.status === 200) { starter = id; break; }
+          }
+          if (!starter) console.log("  inscrição: no starter could be taken off the list (every removal refused)");
           if (starter) {
-            await regCall("/api/saves/:saveId/registration/:competition", "PUT", leaguePath, { competition: humanLeague }, { ids: listNow.filter((id) => id !== starter) });
             const { apiRoutes } = await import("@/backend/routes");
             const res = await apiRoutes["/api/match-setup"](new Request(`http://localhost/api/match-setup?saveId=${saveId}`, { headers: { cookie: `fs_session=${regTrack.session}` } }));
             const body = (await res.json()) as { injuredReplaced?: { out: string; reason?: string }[] };

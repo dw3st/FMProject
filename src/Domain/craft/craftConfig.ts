@@ -63,7 +63,7 @@ export const CRAFT = {
   /** Foreman's bench speed: [1★, 3★, 5★] (`starCurve`); vacant = 2★. */
   FOREMAN_SPEED: [1.15, 1, 0.85] as [number, number, number],
   /** Monthly board allowance: share of the annual revenue by the board meter. */
-  ALLOWANCE: { NONE_BELOW: 35, LOW_AT: 50, LOW: 0.01, HIGH_AT: 85, HIGH: 0.03 },
+  ALLOWANCE: { NONE_BELOW: 35, LOW_AT: 50, LOW: 0.003, HIGH_AT: 85, HIGH: 0.01 },
   /** Stock given to a club the first time it gets the craft (old saves, new careers, a new club). */
   INITIAL_STOCK_SHARE: 0.02,
   /** Cancelling a started order or a running works gives back this share. */
