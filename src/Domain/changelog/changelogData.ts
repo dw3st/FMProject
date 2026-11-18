@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.18.2",
     date: "2026-11-18",
+    time: "14:20",
     items: [],
     fixes: [
       { tab: "squad", pt: "Dispensar um jogador ficou mais fácil: o botão de rescisão está na tabela do Elenco, mostra a multa antes de confirmar e só fica bloqueado com 14 jogadores ou menos, como nas vendas.", en: "Releasing a player is easier: the termination button is on the Squad table, shows the fee before you confirm and is only blocked at 14 players or fewer, as with sales." },
