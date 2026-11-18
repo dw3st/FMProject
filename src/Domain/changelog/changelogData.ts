@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.18.1",
     date: "2026-11-18",
+    time: "14:07",
     items: [],
     fixes: [
       { tab: "match", pt: "A partida ao vivo podia ficar com o campo todo verde, sem jogadores, nos jogos em casa com escudo na torcida.", en: "The live match could show an all-green pitch with no players in home games with the crest in the stands." },
