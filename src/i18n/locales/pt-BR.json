@@ -486,7 +486,8 @@
       "scout": "Olheiro-chefe",
       "fieldScout": "Olheiro de campo",
       "groundskeeper": "Jardineiro",
-      "youthCoach": "Treinador da base"
+      "youthCoach": "Treinador da base",
+      "foreman": "Mestre de obras"
     },
     "effects": {
       "assistant": "Evolução dos jogadores {{value}}",
@@ -499,7 +500,8 @@
       "scout": "Incerteza dos relatórios {{uncertainty}} · Conhecimento ganho {{gain}}",
       "fieldScout": "Conduz uma missão de observação",
       "groundskeeper": "Desgaste do gramado {{value}}",
-      "youthCoach": "Evolução da base {{value}}"
+      "youthCoach": "Evolução da base {{value}}",
+      "foreman": "Tempo na oficina {{value}}"
     },
     "errors": {
       "generic": "Não foi possível concluir.",

@@ -96,6 +96,7 @@ export function StaffScreen() {
       case "fieldScout": return t("staff.effects.fieldScout");
       case "groundskeeper": return t("staff.effects.groundskeeper", { value: pct(e.pitchWearMult) });
       case "youthCoach": return t("staff.effects.youthCoach", { value: pct(e.academyDevMult) });
+      case "foreman": return t("staff.effects.foreman", { value: pct(e.foremanSpeed) });
     }
   };
   const vacantEffect = (role: StaffRole): string | undefined =>
@@ -104,6 +105,7 @@ export function StaffScreen() {
       : role === "groundskeeper" ? t("staff.effects.groundskeeper", { value: pct(data.effects.pitchWearMult) })
       // No youth coach: the academy develops a little slower (the vacant stars are already in `academyDevMult`).
       : role === "youthCoach" ? t("staff.effects.youthCoach", { value: pct(data.effects.academyDevMult) })
+      : role === "foreman" ? t("staff.effects.foreman", { value: pct(data.effects.foremanSpeed) })
       : role === "coach" || role === "fieldScout" ? undefined
         : t("staff.vacantEffect");
 

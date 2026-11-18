@@ -61,6 +61,8 @@ export const STAFF = {
     coach: { LOW: 3, MEDIUM: 3, HIGH: 4, ELITE: 5 },
     /** Groundskeepers keep the pitches (`facilities.md`, Etapa 34): more of them at bigger clubs. */
     groundskeeper: { LOW: 1, MEDIUM: 1, HIGH: 2, ELITE: 2 },
+    /** The foreman runs the club workshop (`docs/superpowers/specs/2026-11-18-club-craft-design.md`): one. */
+    foreman: { LOW: 1, MEDIUM: 1, HIGH: 1, ELITE: 1 },
     fieldScout: 4,
     other: 1,
   },
@@ -71,7 +73,7 @@ export const STAFF = {
    */
   WAGE_ROLE_SHARE: {
     assistant: 0.18, scout: 0.18, fieldScout: 0.18, fitness: 0.126, goalkeeping: 0.072, coach: 0.072, medic: 0.072,
-    analyst: 0.054, groundskeeper: 0.018, youthCoach: 0.072,
+    analyst: 0.054, groundskeeper: 0.018, youthCoach: 0.072, foreman: 0.036,
   } satisfies Record<StaffRole, number>,
   /** Starting staff: implied stars of the tier +/- this (halves). */
   START_SPREAD_STARS: 0.5,
@@ -80,9 +82,9 @@ export const STAFF = {
     DIRECTOR_STAR_MARGIN: 0.5, SEVERANCE_SHARE: 0.5,
   },
   POOL: {
-    SIZE: 320,
+    SIZE: 335,
     BY_ROLE: {
-      coach: 90, assistant: 30, fitness: 30, goalkeeping: 30, medic: 25, analyst: 25, scout: 20, fieldScout: 35, groundskeeper: 15, youthCoach: 20,
+      coach: 90, assistant: 30, fitness: 30, goalkeeping: 30, medic: 25, analyst: 25, scout: 20, fieldScout: 35, groundskeeper: 15, youthCoach: 20, foreman: 15,
     } satisfies Record<StaffRole, number>,
     /** [stars low, stars high, share] - sampled per member. */
     STAR_BANDS: [[1, 2, 0.3], [2.5, 3, 0.4], [3.5, 4, 0.22], [4.5, 5, 0.08]],

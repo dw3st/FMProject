@@ -53,7 +53,7 @@ export const STAFF_GROUPS: { key: "command" | "training" | "health" | "scouting"
   { key: "training", roles: ["fitness", "goalkeeping", "coach", "youthCoach"] },
   { key: "health", roles: ["medic", "analyst"] },
   { key: "scouting", roles: ["scout", "fieldScout"] },
-  { key: "structure", roles: ["groundskeeper"] },
+  { key: "structure", roles: ["groundskeeper", "foreman"] },
 ];
 
 /** JSON call to the staff routes; `error` is the route's error code (`roleFull`, `noClub`, ...). */

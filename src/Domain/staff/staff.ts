@@ -1,4 +1,5 @@
 import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
+import { CRAFT } from "@/Domain/craft/craftConfig";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { STAFF_NAME_POOLS, STAFF_NATIONALITIES } from "@/Domain/staff/staffNames";
@@ -194,12 +195,26 @@ export interface StaffEffects {
    * the age decline. Vacant or away on a course = 2★. Clubs without staff (AI, no academy): 1.
    */
   academyDevMult: number;
+  /** Foreman: × bench days of the workshop (`foremanSpeedOf`); vacant = 2★. Clubs without staff: 1. */
+  foremanSpeed: number;
 }
 
 /** The youth coach's multiplier on the academy's growth (see `StaffEffects.academyDevMult`). */
 export function academyDevMultOf(squad: Squad): number {
   if (!squad.staff) return 1;
   return starCurve(effectiveStars(squad, "youthCoach"), STAFF.YOUTH_COACH_DEV);
+}
+
+/** The foreman's stars (vacant = 2★; no staff stored = the AI = neutral 3★). */
+export function foremanStarsOf(squad: Squad): number {
+  if (!squad.staff) return 3;
+  return effectiveStars(squad, "foreman");
+}
+
+/** Bench-time multiplier of the workshop (× days): `CRAFT.FOREMAN_SPEED` by the foreman's stars. */
+export function foremanSpeedOf(squad: Squad): number {
+  if (!squad.staff) return 1;
+  return starCurve(foremanStarsOf(squad), CRAFT.FOREMAN_SPEED);
 }
 
 /** Groundskeepers' multiplier on the pitches' wear (see `StaffEffects.pitchWearMult`). */
@@ -226,6 +241,7 @@ export function staffEffectsOf(squad: Squad): StaffEffects {
     scoutGainMult: scoutGainMultOf(scout),
     pitchWearMult: pitchWearMultOf(squad),
     academyDevMult: academyDevMultOf(squad),
+    foremanSpeed: foremanSpeedOf(squad),
   };
 }
 
@@ -275,6 +291,7 @@ export function signContract(
 /** How many professionals of `role` the club may employ (its natural tier). */
 export function roleLimit(squad: Squad, role: StaffRole): number {
   if (role === "coach") return STAFF.LIMITS.coach[financialTierOf(squad)];
+  if (role === "foreman") return STAFF.LIMITS.foreman[financialTierOf(squad)];
   if (role === "groundskeeper") return STAFF.LIMITS.groundskeeper[financialTierOf(squad)];
   if (role === "fieldScout") return STAFF.LIMITS.fieldScout;
   return STAFF.LIMITS.other;

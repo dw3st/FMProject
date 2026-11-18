@@ -5,7 +5,7 @@
 
 export type StaffRole =
   | "assistant" | "fitness" | "goalkeeping" | "coach" | "medic" | "analyst" | "scout" | "fieldScout" | "groundskeeper"
-  | "youthCoach";
+  | "youthCoach" | "foreman";
 
 /** Training areas: one per DP category (`DP_CATEGORIES`). */
 export type TrainingArea = "goalkeeping" | "defending" | "shooting" | "technical" | "passing" | "physical" | "setPieces";
@@ -13,7 +13,7 @@ export type TrainingArea = "goalkeeping" | "defending" | "shooting" | "technical
 /** The five field areas led by area coaches (Goleiros and Físico have their own coach). */
 export type CoachArea = "defending" | "shooting" | "technical" | "passing" | "setPieces";
 
-export type Specialty = TrainingArea | "general" | "medical" | "analysis" | "scouting" | "pitch" | "youth";
+export type Specialty = TrainingArea | "general" | "medical" | "analysis" | "scouting" | "pitch" | "youth" | "construction";
 
 /** 1..20 each; the stars are derived from them (no effect of their own). */
 export interface StaffAttributes {

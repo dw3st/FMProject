@@ -486,7 +486,8 @@
       "scout": "Chief scout",
       "fieldScout": "Field scout",
       "groundskeeper": "Groundskeeper",
-      "youthCoach": "Youth coach"
+      "youthCoach": "Youth coach",
+      "foreman": "Foreman"
     },
     "effects": {
       "assistant": "Player development {{value}}",
@@ -499,7 +500,8 @@
       "scout": "Report uncertainty {{uncertainty}} · Knowledge gained {{gain}}",
       "fieldScout": "Leads one scouting mission",
       "groundskeeper": "Pitch wear {{value}}",
-      "youthCoach": "Academy development {{value}}"
+      "youthCoach": "Academy development {{value}}",
+      "foreman": "Workshop bench time {{value}}"
     },
     "errors": {
       "generic": "Could not complete the action.",
