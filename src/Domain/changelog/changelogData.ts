@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.16",
     date: "2026-11-18",
+    time: "12:12",
     items: [
       { tab: "squad", pt: "Base: dispensar por nível ou por potencial e ligar a dispensa automática, que tira quem ficar abaixo agora e a cada virada de temporada.", en: "Academy: release by level or by potential, and turn on automatic release, which removes whoever is below it now and at every season rollover." },
     ],
