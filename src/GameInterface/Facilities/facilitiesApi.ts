@@ -46,6 +46,8 @@ export interface FacilitiesViewData {
   priceMult: number;
   /** Group levels 1..5 derived from the items (fractional). */
   levels: { comfort: number; training: number; academy: number };
+  /** Implied level 1..5 of the club's tier (absent: neutral 3). */
+  impliedLevel?: number;
   seatCost: number;
   revenue: number;
   balance: number;

@@ -194,6 +194,8 @@ async function facilitiesView(h: Human) {
     priceMult: comfortPriceMult(f),
     /** Group levels 1..5 derived from the items (fractional: the mean of the item levels / 2). */
     levels,
+    /** Implied level 1..5 of the club's tier (the academy and the physio's level count against it). */
+    impliedLevel: impliedLevel(h.squad),
     seatCost: ctx.seatCost,
     revenue,
     balance: h.squad.finances?.budget ?? 0,

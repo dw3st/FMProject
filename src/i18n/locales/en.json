@@ -4992,7 +4992,69 @@
     },
     "groupBusy": "{{group}}: works already under way. One works at a time in each area.",
     "groupWorks": "Works under way",
-    "slots": "Works under way: {{count}} of {{max}}"
+    "slots": "Works under way: {{count}} of {{max}}",
+    "map": {
+      "hint": "Click an item on the map to see its levels.",
+      "hintCards": "Pick an item to see its levels.",
+      "ready": "Ready to build",
+      "missing": "Missing components",
+      "condition": "Condition:",
+      "cond0": "good",
+      "cond1": "fair",
+      "cond2": "poor",
+      "level": "L{{level}}",
+      "badge": "{{item}}: level {{level}}, condition {{cond}}%",
+      "levelCond": "Level {{level}} of 10 · Condition {{cond}}%",
+      "recipeOf": "Recipe for level {{level}}",
+      "recipe": {
+        "repair": "Repair recipe",
+        "rebuild": "Rebuild recipe"
+      },
+      "maxLevel": "Top level and in perfect shape."
+    },
+    "benefit": {
+      "trainingDev": "Training development (training ground)",
+      "trainingInjury": "Training injuries (training ground)",
+      "recovery": "Recovery (training ground)",
+      "injuryDays": "Days out per injury",
+      "ticketPrice": "Ticket price",
+      "intakeLevel": "Intake level (academy)",
+      "promise": "Wonderkid chance (academy)",
+      "life": "Lasts until 40%",
+      "seasons_one": "{{value}} season",
+      "seasons_other": "{{value}} seasons"
+    },
+    "benefitShort": {
+      "trainingDev": "in training",
+      "trainingInjury": "training injuries",
+      "recovery": "recovery",
+      "injuryDays": "days out",
+      "ticketPrice": "ticket price",
+      "intakeLevel": "intake",
+      "promise": "wonderkid",
+      "life": "until 40%"
+    },
+    "track": {
+      "title": "Levels: {{item}}",
+      "level": "Level {{level}}",
+      "done": "Done",
+      "current": "Current",
+      "next": "Next",
+      "locked": "Locked",
+      "note": {
+        "training": "The training ground uses the mean of its five items: each level here counts a fifth.",
+        "academy": "The academy uses the mean of its two items, against the standard of the club's division.",
+        "seats": "Comfort is the stands' level divided by two.",
+        "stadiumPitch": "The level makes the pitch last longer in a normal season.",
+        "stadiumStructure": "The level makes the structure last longer in a normal season."
+      }
+    },
+    "stockStrip": {
+      "title": "Components in stock",
+      "workshop_one": "Workshop level {{level}} · {{count}} order queued",
+      "workshop_other": "Workshop level {{level}} · {{count}} orders queued",
+      "open": "Open the workshop"
+    }
   },
   "transferWindows": {
     "tab": "Windows",

@@ -4989,7 +4989,69 @@
     },
     "groupBusy": "{{group}}: já há uma obra em andamento. Uma obra por vez em cada área.",
     "groupWorks": "Obra em andamento",
-    "slots": "Obras em andamento: {{count}} de {{max}}"
+    "slots": "Obras em andamento: {{count}} de {{max}}",
+    "map": {
+      "hint": "Clique num item do mapa para ver os níveis.",
+      "hintCards": "Escolha um item para ver os níveis.",
+      "ready": "Pronto para montar",
+      "missing": "Falta componente",
+      "condition": "Condição:",
+      "cond0": "boa",
+      "cond1": "média",
+      "cond2": "ruim",
+      "level": "N{{level}}",
+      "badge": "{{item}}: nível {{level}}, condição {{cond}}%",
+      "levelCond": "Nível {{level}} de 10 · Condição {{cond}}%",
+      "recipeOf": "Receita do nível {{level}}",
+      "recipe": {
+        "repair": "Receita da reforma",
+        "rebuild": "Receita da reconstrução"
+      },
+      "maxLevel": "Nível máximo e em perfeito estado."
+    },
+    "benefit": {
+      "trainingDev": "Evolução no treino (CT)",
+      "trainingInjury": "Lesões no treino (CT)",
+      "recovery": "Recuperação (CT)",
+      "injuryDays": "Dias fora por lesão",
+      "ticketPrice": "Preço do ingresso",
+      "intakeLevel": "Nível da safra (base)",
+      "promise": "Chance de promessa (base)",
+      "life": "Dura até 40%",
+      "seasons_one": "{{value}} temporada",
+      "seasons_other": "{{value}} temporadas"
+    },
+    "benefitShort": {
+      "trainingDev": "no treino",
+      "trainingInjury": "lesões no treino",
+      "recovery": "na recuperação",
+      "injuryDays": "dias fora",
+      "ticketPrice": "no ingresso",
+      "intakeLevel": "na safra",
+      "promise": "de promessa",
+      "life": "até 40%"
+    },
+    "track": {
+      "title": "Níveis: {{item}}",
+      "level": "Nível {{level}}",
+      "done": "Feito",
+      "current": "Atual",
+      "next": "Próximo",
+      "locked": "Bloqueado",
+      "note": {
+        "training": "O CT usa a média dos cinco itens: cada nível deste item vale um quinto.",
+        "academy": "A base usa a média dos dois itens, contra o padrão da divisão do clube.",
+        "seats": "O conforto é o nível das arquibancadas dividido por dois.",
+        "stadiumPitch": "O nível faz o gramado durar mais numa temporada normal.",
+        "stadiumStructure": "O nível faz a estrutura durar mais numa temporada normal."
+      }
+    },
+    "stockStrip": {
+      "title": "Peças no estoque",
+      "workshop_one": "Oficina nível {{level}} · {{count}} na fila",
+      "workshop_other": "Oficina nível {{level}} · {{count}} na fila",
+      "open": "Abrir a oficina"
+    }
   },
   "transferWindows": {
     "tab": "Janelas",

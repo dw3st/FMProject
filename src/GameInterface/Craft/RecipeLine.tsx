@@ -20,6 +20,8 @@ export interface RecipeBuild {
 export interface CraftLinks {
   saveId: string;
   goToShop: (cart: MaterialCounts) => void;
+  /** Opens the workshop tab. */
+  openWorkshop?: () => void;
 }
 
 export const CraftLinksContext = createContext<CraftLinks | null>(null);
@@ -55,7 +57,7 @@ export function RecipeLine({ recipe, missing, locked = [] }: { recipe: Component
  * missing (queues the workshop) and Buy the missing materials (opens the shop with the cart).
  */
 export function BuildActions({
-  build, stock, workshop, blockedHint, pending, onBuild,
+  build, stock, workshop, blockedHint, pending, onBuild, hideRecipe = false,
 }: {
   build: RecipeBuild;
   stock: CraftStock | undefined;
@@ -64,6 +66,8 @@ export function BuildActions({
   blockedHint: string | null;
   pending: boolean;
   onBuild: () => void;
+  /** The recipe is drawn by the caller (Club map panel): only the hint and the buttons. */
+  hideRecipe?: boolean;
 }) {
   const { t } = useTranslation();
   const links = useContext(CraftLinksContext);
@@ -94,10 +98,12 @@ export function BuildActions({
   const ok = build.canBuild && blockedHint === null;
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("craft.recipe.title")}</span>
-        <RecipeLine recipe={build.recipe} missing={build.missing} locked={build.locked} />
-      </div>
+      {!hideRecipe && (
+        <div className="flex flex-col gap-2">
+          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("craft.recipe.title")}</span>
+          <RecipeLine recipe={build.recipe} missing={build.missing} locked={build.locked} />
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className={`text-sm flex items-center gap-1.5 ${ok ? "text-chart-2" : "text-muted-foreground"}`}>
           <Icon name={ok ? "check-circle" : "alert"} size={16} />

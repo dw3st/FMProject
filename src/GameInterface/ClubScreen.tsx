@@ -58,7 +58,11 @@ export function ClubScreen() {
 
   const saveId = session?.saveId;
   const links = useMemo<CraftLinks | null>(() => (saveId
-    ? { saveId, goToShop: (c: MaterialCounts) => { setCart(c); setTab("shop"); writeTab("shop"); } }
+    ? {
+      saveId,
+      goToShop: (c: MaterialCounts) => { setCart(c); setTab("shop"); writeTab("shop"); },
+      openWorkshop: () => { setTab("workshop"); writeTab("workshop"); },
+    }
     : null), [saveId]);
 
   return (

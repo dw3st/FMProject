@@ -176,6 +176,7 @@ export const GAME_ART_FILES: Record<string, string> = {
   "club/stadium-map-3.webp": "image/webp",
   "club/stadium-map-4.webp": "image/webp",
   "club/stadium-map-5.webp": "image/webp",
+  "club/club-map-1.webp": "image/webp",
   // Club screen (4.47.14): the painted ground by the stadium items' level, 1..5 (data_process/assets/club_stadium_levels.py).
   "craft/concrete.webp": "image/webp",
   "craft/steel.webp": "image/webp",
