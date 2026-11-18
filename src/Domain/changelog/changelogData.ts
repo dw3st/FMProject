@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.21.1",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "club", pt: "A tela do Clube foi reorganizada em abas. Escolha uma parte no mapa e veja ao lado o que falta para melhorar e os botões para fazer.", en: "The Club screen is split into tabs. Pick a part on the map and see next to it what is missing for the upgrade and the buttons to do it." },
+    ],
+  },
+  {
     version: "12.21",
     date: "2026-11-18",
     time: "19:20",
