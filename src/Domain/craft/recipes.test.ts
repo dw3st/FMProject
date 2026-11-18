@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { CRAFT } from "@/Domain/craft/craftConfig";
 import { componentValue, mixFor, recipeFor, recipeValue } from "@/Domain/craft/recipes";
 
 const R = 100_000_000;
 describe("craft recipes", () => {
   test("component value is the sum of its materials at the base price", () => {
     // beam = 3 steel + 1 concrete
-    expect(componentValue("beam", R)).toBe(Math.round(R * (3 * 0.00008 + 0.00003)));
+    expect(componentValue("beam", R)).toBe(Math.round(R * (3 * CRAFT.MATERIAL_SHARE.steel + CRAFT.MATERIAL_SHARE.concrete)));
   });
   test("mix by works", () => {
     expect(mixFor({ kind: "repair", item: "gym" })).toEqual({ gymKit: 2, beam: 1 });

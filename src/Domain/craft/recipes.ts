@@ -36,7 +36,8 @@ export function mixFor(w: { kind: FacilityKind | "workshop"; item?: FacilityItem
 export function recipeFor(w: { kind: FacilityKind | "workshop"; item?: FacilityItemId }, cost: number, revenue: number): ComponentCounts {
   const mix = mixFor(w);
   const unit = recipeValue(mix, revenue);
-  const units = unit > 0 ? Math.max(1, Math.round(cost / unit)) : 1;
+  // Exact (not rounded) number of mixes, each component rounded on its own: closer to the cost than whole mixes.
+  const units = unit > 0 ? Math.max(1, cost / unit) : 1;
   const out: ComponentCounts = {};
   for (const [id, n] of Object.entries(mix) as [ComponentId, number][]) out[id] = Math.max(1, Math.round(n * units));
   return out;

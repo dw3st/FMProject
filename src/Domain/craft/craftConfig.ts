@@ -7,9 +7,13 @@ export const COMPONENTS: readonly ComponentId[] = ["beam", "slab", "turfPanel", 
 export const QUALITIES: readonly CraftQuality[] = ["common", "good", "excellent"];
 
 export const CRAFT = {
-  /** Price of one unit of a material = annual revenue × share (decision 1 of the plan). */
+  /**
+   * Price of one unit of a material = annual revenue × share (decision 1 of the plan). ×1,5 of the first values after M1
+   * (`scripts/craft-measure.ts`): fewer units per works, so a 5000-seat stand is made in about the works time with a
+   * level-3 workshop, and the small repairs still cost within ±5% of the old quote.
+   */
   MATERIAL_SHARE: {
-    concrete: 0.00003, steel: 0.00008, wood: 0.00003, grass: 0.00006, fabric: 0.00003, electronics: 0.0001,
+    concrete: 4.5e-05, steel: 0.00012, wood: 4.5e-05, grass: 9e-05, fabric: 4.5e-05, electronics: 0.00015,
   } as Record<MaterialId, number>,
   /** Weekly price noise: base × (1 + NOISE × u), u in [−1, 1]. */
   PRICE_NOISE: 0.1,
