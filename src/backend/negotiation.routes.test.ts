@@ -65,7 +65,10 @@ describe("negotiation routes", () => {
     token = session.token;
     await ownSolo(saveId, user.id);
     const sq = await human();
-    await saveService.saveSquadById(saveId, { ...sq, players: sq.players.slice(0, 26), finances: { ...sq.finances!, budget: 2_000_000_000 } });
+    // A revenue basis no test wage reaches: the wage bill ceiling (`payrollCap`) is tested on its own.
+    await saveService.saveSquadById(saveId, {
+      ...sq, players: sq.players.slice(0, 26), finances: { ...sq.finances!, budget: 2_000_000_000 }, wageRevenueBasis: 1e13,
+    });
   }, 120_000);
 
   afterAll(async () => {

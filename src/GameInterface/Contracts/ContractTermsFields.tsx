@@ -137,7 +137,11 @@ export function SigningBonusField({ ask, rivals, bonus, onBonus, paidOn }: {
 /** Translated reason for a refused contract offer (`error` from the API). */
 export function useRefusalText() {
   const { t } = useTranslation();
-  return (error: string): string => {
+  return (error: string, extra?: { bill?: number; cap?: number }): string => {
+    // The wage bill ceiling (`finances.md` → "Teto da folha"): the bill the deal would leave and the cap.
+    if (error === "payrollCap") {
+      return t("contracts.refusal.payrollCap", { bill: formatWage(extra?.bill ?? 0), cap: formatWage(extra?.cap ?? 0) });
+    }
     const known = ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub", "poorFacilities", "recentlyRenewed", "noMoney"];
     return known.includes(error) ? t(`contracts.refusal.${error}`) : error;
   };

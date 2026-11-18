@@ -4117,7 +4117,8 @@
       "poorFacilities": "Too ambitious for a training ground in this state: he refuses.",
       "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
       "lowBonus": "The signing bonus is below what he asks.",
-      "noMoney": "The club balance does not cover the signing bonus."
+      "noMoney": "The club balance does not cover the signing bonus.",
+      "payrollCap": "The board will not let the wage bill pass 85% of the revenue: it would reach {{bill}} a week, the limit is {{cap}}."
     },
     "result": {
       "renewed": "Renewed",

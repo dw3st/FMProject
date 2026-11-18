@@ -138,7 +138,7 @@ import { buildNationalCoachMessage } from "@/Domain/inbox/nationalCoachMessage";
 import { managerNation } from "@/Domain/national/nationalCoach";
 import { applyHumanBroadcastingCredit, buildNextSeasonCalendar, runSeasonTransition } from "@/Domain/season/seasonTransition";
 import { clubRolloverOutcome, findDueRollovers, planCountryRollover, tierOfLeague } from "@/Domain/season/countryRollover";
-import { applyTierFinanceChange } from "@/Domain/advanceDay/tierFinances";
+import { applyTierFinanceChange, tierAdjustedCredits } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import {
   aiTransferBudgetOf, applyAITransferSpend, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
@@ -2523,7 +2523,9 @@ export async function advanceOneDay(
         }
 
         // Each human club's annual broadcasting goes onto its RESET squad (once: it is in one league).
-        const refs = applyHumanBroadcastingCredit(transition.squadsToSave, transition.humanBroadcastingCredit);
+        // At the tier of the season AHEAD: a promoted club is paid its new division's TV money, a relegated one the lower.
+        const tvCredits = tierAdjustedCredits(transition.humanBroadcastingCredit, plan.tierChanges);
+        const refs = applyHumanBroadcastingCredit(transition.squadsToSave, tvCredits);
         const table = standings[slug] ?? [];
         // Then every club reacts to its season: AI clubs get followers + financial tier + next
         // season's transfer budget; the human club only its followers. Every club with a final
@@ -2652,7 +2654,7 @@ export async function advanceOneDay(
             // both entries go onto the NEW season's file — same "+1" the next-season calendar
             // below uses for cal.meta.year.
             const newSeasonEntries: LedgerEntry[] = [];
-            const credit = transition.humanBroadcastingCredit[squad.id] ?? 0;
+            const credit = tvCredits[squad.id] ?? 0;
             if (credit > 0) {
               newSeasonEntries.push({
                 date: currentDate, kind: "broadcasting", amount: credit,
@@ -2961,6 +2963,7 @@ export async function advanceOneDay(
               start: closedState?.start ?? currentDate, end: closedState?.end ?? currentDate,
             },
             move: ds.rollover.move?.kind ?? null,
+            ...(plan.tierChanges[ds.clubId] ? { tierChange: plan.tierChanges[ds.clubId] } : {}),
             followers: ds.rollover.followersChange,
             season: archiveYear + 1,
             target: ds.board?.objective?.target ?? null,

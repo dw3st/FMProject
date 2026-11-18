@@ -17,7 +17,8 @@ import { freeSigningContext } from "@/backend/freeSigningWorld";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { addYearsIso } from "@/Domain/contracts/contracts";
 import { renewedContract } from "@/Domain/managers/managerContract";
-import { wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { clubWage, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { payrollCapRefusal } from "@/Domain/contracts/payrollCap";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { rebuyBlockedUntil } from "@/Domain/transfer/formerClub";
 
@@ -134,6 +135,14 @@ export const marketRoutes = {
         return json(status === 200
           ? { accepted: false, reason: answer.reason, preference: answer.preference, demand: answer.demand, bonusAsk: free.ask }
           : { error: answer.reason, demand: answer.demand, bonusAsk: free.ask }, status);
+      }
+      // The wage bill ceiling (`finances.md` → "Teto da folha"): today's bill plus the pre-contracts already signed.
+      {
+        const factor = wageFactorOf(human);
+        const leaving = loanedIn ? clubWage(loanedIn, factor) : 0;
+        const pending = signed.filter((p) => p.toClubId === human.id).reduce((sum, p) => sum + p.wage, 0);
+        const overCap = payrollCapRefusal(human, wage, { leaving, pending });
+        if (overCap) return json({ error: "payrollCap", ...overCap, bonusAsk: free.ask }, 409);
       }
       await saveService.saveMarket(saveId, {
         ...market,

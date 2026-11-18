@@ -25,6 +25,7 @@ import { preferredRival } from "@/Domain/negotiation/freeSigning";
 import { starterChance } from "@/Domain/negotiation/rivals";
 import { facilitiesAppeal } from "@/Domain/facilities/facilities";
 import { recordMoney } from "@/backend/FinancialService";
+import { payrollCapRefusal } from "@/Domain/contracts/payrollCap";
 
 /** The last club of a free agent (his latest history row), for the smaller-club rule (`personality.md`). */
 async function lastClubOf(saveId: string, player: RosterPlayer): Promise<Squad | null> {
@@ -144,6 +145,10 @@ export const contractRoutes = {
       if (!check.accepted) {
         return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
       }
+      // The club's wage bill ceiling (`finances.md` → "Teto da folha"): a raise past it is refused; keeping or
+      // lowering the wage always passes. A player out on loan is skipped (his wage is split with the borrower).
+      const overCap = out ? null : payrollCapRefusal(squad, wage, { leaving: player.contract?.wage ?? 0 });
+      if (overCap) return Response.json({ error: "payrollCap", ...overCap, demand: check.demand }, { status: 409 });
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);
@@ -309,6 +314,9 @@ export const contractRoutes = {
         });
         if (rival) return Response.json({ error: "prefersRival", rival: { clubName: rival.clubName }, demand: check.demand, bonusAsk: free.ask }, { status: 400 });
       }
+      // The wage bill ceiling (`finances.md` → "Teto da folha").
+      const overCap = payrollCapRefusal(squad, wage);
+      if (overCap) return Response.json({ error: "payrollCap", ...overCap, demand: check.demand, bonusAsk: free.ask }, { status: 409 });
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);

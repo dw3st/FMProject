@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Squad } from "@/types/playerTypes";
-import { applyTierFinanceChange, tierIncomeRatio } from "@/Domain/advanceDay/tierFinances";
+import { applyTierFinanceChange, tierAdjustedCredits, tierIncomeRatio } from "@/Domain/advanceDay/tierFinances";
 
 const squad = (fin?: Squad["finances"]): Squad => ({
   id: "s1", name: "S", colors: ["#000", "#fff"], money: 0, players: [], finances: fin,
@@ -38,5 +38,19 @@ describe("applyTierFinanceChange", () => {
     expect(applyTierFinanceChange(s, 2, 2)).toBe(s);
     const bare = squad();
     expect(applyTierFinanceChange(bare, 1, 2)).toBe(bare);
+  });
+});
+
+describe("tierAdjustedCredits", () => {
+  test("a promoted club is paid the new division's TV, matching the scaled broadcasting", () => {
+    // Série C → B (3 → 2): the bug paid 1.55M (the old division) instead of the new one.
+    const credits = tierAdjustedCredits({ a: 1_550_000, b: 2_000_000 }, { a: { from: 3, to: 2 } });
+    const promoted = applyTierFinanceChange(squad({ ...fin, broadcasting: 1_550_000 }), 3, 2);
+    expect(credits.a).toBe(promoted.finances!.broadcasting);
+    expect(credits.a).toBe(Math.round(1_550_000 * 0.35 / 0.12));
+    expect(credits.b).toBe(2_000_000);
+  });
+  test("a relegated club gets the lower division's TV, no windfall", () => {
+    expect(tierAdjustedCredits({ a: 100_000_000 }, { a: { from: 1, to: 2 } }).a).toBe(35_000_000);
   });
 });

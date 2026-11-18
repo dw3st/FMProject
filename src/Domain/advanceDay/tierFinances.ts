@@ -29,3 +29,19 @@ export function applyTierFinanceChange(squad: Squad, oldTier: number, newTier: n
   const commercial = Math.round(squad.finances.commercial * r);
   return { ...squad, finances: { ...squad.finances, broadcasting, commercial, total: broadcasting + commercial } };
 }
+
+/**
+ * The rollover TV credit of each human club for the season AHEAD: a club that changed division is paid at its new
+ * tier (the same `Math.round(broadcasting × ratio)` that `applyTierFinanceChange` writes), never the old one. Pure.
+ */
+export function tierAdjustedCredits(
+  credits: Readonly<Record<string, number>>,
+  tierChanges: Readonly<Record<string, { from: number; to: number }>>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [id, credit] of Object.entries(credits)) {
+    const tc = tierChanges[id];
+    out[id] = tc && tc.from !== tc.to ? Math.round(credit * tierIncomeRatio(tc.from, tc.to)) : credit;
+  }
+  return out;
+}

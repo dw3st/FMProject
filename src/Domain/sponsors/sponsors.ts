@@ -446,6 +446,18 @@ export function evaluateSponsorSeason(s: ClubSponsors, o: SponsorSeasonOutcome, 
   return { sponsors: { ...s, contracts, offers }, bonuses, renewals, left };
 }
 
+/**
+ * A club that changed division (`tierIncomeRatio(old, new)`): the fixed fee and bonus of every running contract and
+ * of every offer on the table move with its commercial base, both ways, so a promoted club stops being paid the lower
+ * division's money until each contract ends. Ratio 1 returns the same object. Pure.
+ */
+export function rescaleSponsorDeals(s: ClubSponsors, ratio: number): ClubSponsors {
+  if (ratio === 1 || !(ratio > 0)) return s;
+  const scale = <T extends { annual: number; bonus: number }>(x: T): T =>
+    ({ ...x, annual: roundSponsorMoney(x.annual * ratio), bonus: roundSponsorMoney(x.bonus * ratio) });
+  return { ...s, contracts: s.contracts.map(scale), offers: s.offers.map(scale) };
+}
+
 // ── Books (12.1): what each contract paid, and the finished contracts ─────────
 
 /** Finished contracts kept per club (the oldest leave). */

@@ -34,6 +34,8 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { contractEndFor, contractDemand, defaultSeasonEnd, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { payrollCapRefusal } from "@/Domain/contracts/payrollCap";
+import { clubWage, wageFactorOf } from "@/Domain/finance/wages";
 import { loadWindowContext, seatWindowRef, windowClosedResponse } from "@/backend/marketWindowWorld";
 import { prestigeOf, rollRivalFor } from "@/backend/rivalWorld";
 import { liveRivals, preferredClub, rivalFloor, starterChance } from "@/Domain/negotiation/rivals";
@@ -246,6 +248,16 @@ export const transferRoutes = {
         );
         if (!contractCheck.accepted) {
           return Response.json({ error: contractCheck.reason, demand: contractCheck.demand }, { status: 400 });
+        }
+        // The wage bill ceiling (`finances.md` → "Teto da folha"): what leaves with the deal (the swapped player, the
+        // share of a player already here on loan) comes off the bill first.
+        {
+          const factor = wageFactorOf(buyerSquad);
+          const leaving = buyerSquad.players
+            .filter((p) => p.id === swapId || (loanedIn && p.id === playerId))
+            .reduce((sum, p) => sum + clubWage(p, factor), 0);
+          const overCap = payrollCapRefusal(buyerSquad, contractWage, { leaving });
+          if (overCap) return Response.json({ error: "payrollCap", ...overCap, demand: contractCheck.demand }, { status: 409 });
         }
         const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
           ?? defaultSeasonEnd(meta.currentDate ?? new Date().toISOString().slice(0, 10));

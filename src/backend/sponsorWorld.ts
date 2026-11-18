@@ -9,13 +9,14 @@ import { playerCupSlug } from "@/backend/cupWorld";
 import { recordMoney } from "@/backend/FinancialService";
 import { sponsorCatalog } from "@/backend/sponsorCatalog";
 import { naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
+import { tierIncomeRatio } from "@/Domain/advanceDay/tierFinances";
 import { heatOf, seasonTrend, type FanbaseHeat, type TablePlace } from "@/Domain/fanbase/fanbase";
 import { managerReputation } from "@/Domain/jobs/jobs";
 import { licenceReputation } from "@/Domain/managers/courses";
 import { SPONSORS } from "@/Domain/sponsors/sponsorConfig";
 import {
   SPONSOR_SLOTS, aiBoards, aiSponsorsOf, campaignOf, contractBoards, contractMaster, evaluateSponsorSeason, generateOffers,
-  goalProgress, initialSponsors, masterOf, seasonBooks, slotFilled, sponsorAppeal, weeklySponsorIncome,
+  goalProgress, initialSponsors, masterOf, rescaleSponsorDeals, seasonBooks, slotFilled, sponsorAppeal, weeklySponsorIncome,
   type AiSponsors, type SponsorClubContext, type SponsorSeasonNow, type SponsorSeasonOutcome, type SponsorSeasonReview,
 } from "@/Domain/sponsors/sponsors";
 import { topPlayerCount, worldTopIds } from "@/Domain/squad/starLimit";
@@ -154,6 +155,8 @@ export interface SponsorRolloverArgs {
   /** The league season that just closed: its slug, final table and window. */
   closed: { leagueSlug: string; table: readonly StandingRow[]; start: string; end: string };
   move: "promoted" | "relegated" | null;
+  /** The club's tier change this rollover (pyramid tiers): running deals follow the commercial base. */
+  tierChange?: { from: number; to: number };
   followers: { before: number; after: number } | null;
   /** The new season: its ledger year (also the seed), the board's new target and meter. */
   season: number;
@@ -203,11 +206,12 @@ export async function sponsorRollover(
     followersGrowth: args.followers && args.followers.before > 0 ? (args.followers.after - args.followers.before) / args.followers.before : 0,
     attendanceAvg: closedAttendance,
   };
-  const review = evaluateSponsorSeason(squad.sponsors, outcome, ctx);
+  const before = args.tierChange ? rescaleSponsorDeals(squad.sponsors, tierIncomeRatio(args.tierChange.from, args.tierChange.to)) : squad.sponsors;
+  const review = evaluateSponsorSeason(before, outcome, ctx);
   const offers = generateOffers(catalog, ctx, review.sponsors);
   // The books (12.1): what each contract paid and how its goal went; the contracts that ended go to the history.
   const sponsors: ClubSponsors = seasonBooks(
-    squad.sponsors, review, { ...review.sponsors, offers: [...review.sponsors.offers, ...offers] }, outcome, args.date,
+    before, review, { ...review.sponsors, offers: [...review.sponsors.offers, ...offers] }, outcome, args.date,
   );
   await service.saveSquad(saveId, entry.leagueSlug, entry.stem, { ...squad, sponsors });
   // Bonuses: one ledger line each, in the new season (`recordMoney`: squad + ledger together).

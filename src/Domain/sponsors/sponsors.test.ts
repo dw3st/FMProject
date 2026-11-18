@@ -4,7 +4,7 @@ import { SPONSORS } from "@/Domain/sponsors/sponsorConfig";
 import {
   acceptOffer, aiBoards, aiSponsorsOf, campaignOf, companyEligible, contractBoards, contractMaster, declineOffer, eligibleCompanies,
   emptySponsors, evaluateSponsorSeason, expireOffers, generateOffers, goalMet, goalOptions, goalProgress, initialSponsors,
-  negotiateOffer, negotiationOutcome, offerValue, positionMiss, slotFree, sponsorAppeal, weeklyCommercialIncome, weeklySponsorIncome,
+  negotiateOffer, negotiationOutcome, offerValue, positionMiss, rescaleSponsorDeals, slotFree, sponsorAppeal, weeklyCommercialIncome, weeklySponsorIncome,
   type SponsorClubContext, type SponsorSeasonOutcome,
 } from "@/Domain/sponsors/sponsors";
 import { buildSponsorMessage, offersBySlot } from "@/Domain/sponsors/sponsorMessages";
@@ -530,5 +530,20 @@ describe("progress and messages", () => {
     expect(r.bonuses).toEqual([{ slot: "master", company: "Co g0", amount: 800_000, companyId: "g0" }]);
     expect(r.renewals).toEqual([{ slot: "master", company: "Co g0", annual: 5_720_000, companyId: "g0" }]);
     expect(r.left).toEqual([{ slot: "kit", company: "Co g0", reason: "missed", companyId: "g0" }]);
+  });
+});
+
+describe("rescaleSponsorDeals (tier change)", () => {
+  test("a promotion scales running contracts and table offers by the tier ratio", () => {
+    const s: ClubSponsors = { contracts: [contract({ annual: 400_000, bonus: 60_000 })], offers: [] };
+    const out = rescaleSponsorDeals(s, 0.35 / 0.12);
+    expect(out.contracts[0]!.annual).toBe(1_167_000);
+    expect(out.contracts[0]!.bonus).toBe(175_000);
+    expect(s.contracts[0]!.annual).toBe(400_000);
+  });
+  test("ratio 1 returns the same record; a relegation scales down", () => {
+    const s: ClubSponsors = { contracts: [contract({ annual: 1_000_000, bonus: 0 })], offers: [] };
+    expect(rescaleSponsorDeals(s, 1)).toBe(s);
+    expect(rescaleSponsorDeals(s, 0.35).contracts[0]!.annual).toBe(350_000);
   });
 });

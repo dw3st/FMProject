@@ -4114,7 +4114,8 @@
       "poorFacilities": "Ambicioso demais para um CT neste estado: recusa.",
       "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
       "lowBonus": "As luvas estão abaixo do que ele pede.",
-      "noMoney": "O saldo do clube não cobre as luvas."
+      "noMoney": "O saldo do clube não cobre as luvas.",
+      "payrollCap": "A diretoria não deixa a folha passar de 85% da receita: ela iria a {{bill}} por semana, o limite é {{cap}}."
     },
     "result": {
       "renewed": "Renovou",

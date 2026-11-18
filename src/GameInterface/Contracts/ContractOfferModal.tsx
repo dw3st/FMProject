@@ -83,11 +83,11 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
         body: JSON.stringify(mode === "sign" ? { wage, years, bonus } : { wage, years }),
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string; rival?: { clubName: string } };
+        const err = (await res.json().catch(() => ({}))) as { error?: string; rival?: { clubName: string }; bill?: number; cap?: number };
         const code = err.error ?? "generic";
         if (mode === "renew" && PLAYER_REFUSALS.has(code)) setOutcome({ kind: "refused", detail: refusalText(code) });
         else if (code === "prefersRival" && err.rival) setError(t("contracts.bonus.prefersRival", { club: err.rival.clubName }));
-        else setError(refusalText(code));
+        else setError(refusalText(code, err));
         return;
       }
       if (mode === "renew") {

@@ -93,20 +93,22 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     const club = await aiClub();
     const target = { ...midfielder(club), contract: { until: "2027-03-31", wage: 10_000 } };
     await saveService.saveSquadById(saveId, { ...club, players: club.players.map((p) => (p.id === target.id ? target : p)) });
+    // Well above his ask, still under the wage bill ceiling (`payrollCap`).
+    const wage = contractDemand(target, await human(), "2026-10-10") * 2;
     const post = (body: unknown) => route("/api/saves/:saveId/pre-contracts")(req(`/api/saves/${saveId}/pre-contracts`, "POST", { saveId }, body));
 
     const tooLow = await post({ playerId: target.id, fromSquadId: club.id, wage: 1, years: 2 });
     expect(tooLow.status).toBe(400);
     // A signing bonus below what he asks (4.47.9).
-    const noBonus = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2 });
+    const noBonus = await post({ playerId: target.id, fromSquadId: club.id, wage, years: 2 });
     expect(noBonus.status).toBe(400);
     expect(await noBonus.json()).toMatchObject({ error: "lowBonus" });
     const bonus = 900_000_000;
-    const ok = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2, bonus });
+    const ok = await post({ playerId: target.id, fromSquadId: club.id, wage, years: 2, bonus });
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ accepted: true });
     expect((await saveService.getMarket(saveId, meta.seatId))!.preContracts!.map((p) => p.playerId)).toEqual([target.id]);
-    const again = await post({ playerId: target.id, fromSquadId: club.id, wage: 5_000_000, years: 2, bonus });
+    const again = await post({ playerId: target.id, fromSquadId: club.id, wage, years: 2, bonus });
     expect(again.status).toBe(409);
     expect(await again.json()).toEqual({ error: "alreadySigned" });
 
@@ -116,7 +118,7 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
       unitIds: new Set([club.id]), date: "2027-05-20", humanClubId: meta.clubId,
     });
     expect(res.moves).toEqual([{ playerId: target.id, from: club.id, to: meta.clubId, fee: 0, kind: "pre_contract", date: "2027-05-20" }]);
-    expect((await human()).players.find((p) => p.id === target.id)?.contract?.wage).toBe(5_000_000);
+    expect((await human()).players.find((p) => p.id === target.id)?.contract?.wage).toBe(wage);
     expect((await human()).finances?.budget).toBe(budgetBefore - bonus);
     expect((await saveService.getSquadById(saveId, club.id))!.players.some((p) => p.id === target.id)).toBe(false);
     expect((await saveService.getMarket(saveId, meta.seatId))!.preContracts).toEqual([]);

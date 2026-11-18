@@ -266,10 +266,10 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, wage, years, bonus }),
       });
       const body = (await res.json().catch(() => ({}))) as {
-        error?: string; accepted?: boolean; reason?: string; rival?: { clubName: string }; roster?: number; preContracts?: number; max?: number;
+        error?: string; accepted?: boolean; reason?: string; rival?: { clubName: string }; roster?: number; preContracts?: number; max?: number; bill?: number; cap?: number;
       };
       if (!res.ok) {
-        if (body.error && ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities", "noMoney"].includes(body.error)) setContractError(refusalText(body.error));
+        if (body.error && ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities", "noMoney", "payrollCap"].includes(body.error)) setContractError(refusalText(body.error, body));
         else if (body.error === "squadFull" && body.preContracts) {
           setMessage(t("negotiation.preContract.squadFull", { roster: body.roster, count: body.preContracts, max: body.max }));
         } else setMessage(errorText(body.error));
@@ -312,12 +312,13 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
         preference?: { winner: string; clubName: string; reason: string };
         swapValue?: number;
         deferred?: { joinsOn: string };
+        bill?: number; cap?: number;
       };
       setSwapWorth(body.swapValue ?? null);
       setJoinsOn(body.deferred?.joinsOn ?? null);
       if (!res.ok) {
-        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities"].includes(body.error)) {
-          setContractError(refusalText(body.error));
+        if (body.error && ["lowWage", "tooManyYears", "invalidYears", "smallerClub", "poorFacilities", "payrollCap"].includes(body.error)) {
+          setContractError(refusalText(body.error, body));
         } else if (body.error === "windowClosed") {
           setMessage(windowClosedText(t, i18n.language, body.opensOn));
         } else {
