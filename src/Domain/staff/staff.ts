@@ -23,7 +23,8 @@ import { rangeMid, seenOverallRange, seenWageRange } from "@/Domain/scouting/see
 
 /** Piecewise-linear through `[rating 1, rating 5, rating 10]`. */
 function curve(rating: number, [atMin, atNeutral, atMax]: readonly [number, number, number]): number {
-  const r = clamp(rating, STAFF.MIN_RATING, STAFF.MAX_RATING);
+  // Below rating 1 (a 0.5★ professional, rating 0) the first segment goes on: a little worse than 1★.
+  const r = clamp(rating, 0, STAFF.MAX_RATING);
   if (r <= STAFF.NEUTRAL_RATING) {
     const t = (r - STAFF.MIN_RATING) / (STAFF.NEUTRAL_RATING - STAFF.MIN_RATING);
     return atMin + (atNeutral - atMin) * t;
@@ -47,13 +48,13 @@ export const scoutGainMultOf = (rating: number) => curve(rating, STAFF.SCOUT_GAI
 
 const roundHalf = (x: number) => Math.round(x * 2) / 2;
 
-/** Stars -> the old 1..10 rating (1★ 1, 3★ 5, 5★ 10): today's effects keep their curves. */
+/** Stars -> the old 1..10 rating (0.5★ 0, 1★ 1, 3★ 5, 5★ 10): today's effects keep their curves. */
 export function ratingFromStars(stars: number): number {
   const s = clamp(stars, STAFF.MIN_STARS, STAFF.MAX_STARS);
   return s <= 3 ? 1 + 2 * (s - 1) : 5 + 2.5 * (s - 3);
 }
 
-/** Piecewise-linear through `[1★, 3★, 5★]`. */
+/** Piecewise-linear through `[1★, 3★, 5★]` (0.5★ extends the first segment). */
 export function starCurve(stars: number, [at1, at3, at5]: readonly [number, number, number]): number {
   const s = clamp(stars, STAFF.MIN_STARS, STAFF.MAX_STARS);
   return s <= 3 ? at1 + ((at3 - at1) * (s - 1)) / 2 : at3 + ((at5 - at3) * (s - 3)) / 2;
@@ -67,9 +68,10 @@ export function areaScore(m: StaffMember, specialty: Specialty): number {
     + w.determination * a.determination + w.discipline * a.discipline + w.adaptability * a.adaptability;
 }
 
-/** 1..20 score -> stars to the half (score 10.5 = 3★). */
+/** 1..20 score -> stars to the half (score 10.5 = 3★); a score at the floor (every attribute about 1) is 0.5★. */
 export function starsFromScore(score: number): number {
-  return clamp(roundHalf(1 + (4 * (score - 1)) / 19), STAFF.MIN_STARS, STAFF.MAX_STARS);
+  if (score < STAFF.CHEAP.HALF_STAR_SCORE) return STAFF.MIN_STARS;
+  return clamp(roundHalf(1 + (4 * (score - 1)) / 19), 1, STAFF.MAX_STARS);
 }
 
 export const starsIn = (m: StaffMember, s: Specialty): number => starsFromScore(areaScore(m, s));
@@ -261,9 +263,13 @@ export function staffWeeklyWage(rating: number, clubFactor: number): number {
   return Math.round(weeklyWage(STAFF.WAGE_BASE + STAFF.WAGE_SLOPE * rating) * clubFactor * STAFF.WAGE_SHARE);
 }
 
-/** Weekly wage of a professional of `stars` in `role`: the staff curve × the role's share. */
+/**
+ * Weekly wage of a professional of `stars` in `role`: the staff curve × the role's share. A cheap one (1★ or less)
+ * asks at a club factor of at most `CHEAP.FACTOR_CAP`, so a small club can always afford him.
+ */
 export function staffWageFor(role: StaffRole, stars: number, clubFactor: number): number {
-  return Math.round(staffWeeklyWage(ratingFromStars(stars), clubFactor) * STAFF.WAGE_ROLE_SHARE[role]);
+  const factor = stars <= STAFF.CHEAP.MAX_STARS ? Math.min(clubFactor, STAFF.CHEAP.FACTOR_CAP) : clubFactor;
+  return Math.round(staffWeeklyWage(ratingFromStars(stars), factor) * STAFF.WAGE_ROLE_SHARE[role]);
 }
 
 /** Monday ledger line: the contracts' frozen wages. */
@@ -314,9 +320,12 @@ export function makeProfessional(
   let name = `${pool.first[Math.floor(rng() * pool.first.length)]!} ${pool.last[Math.floor(rng() * pool.last.length)]!}`;
   const drawn = origin ? drawStaffOrigin(origin.book, mulberry32(seedFrom(`staff-origin:${key}`)), origin.home) : null;
   if (drawn) ({ nationality, name } = drawn);
-  const level = 1 + (19 * (clamp(targetStars, STAFF.MIN_STARS, STAFF.MAX_STARS) - 1)) / 4; // score of the target
+  // Score of the target; a 1★ target never falls to the 0.5★ floor (`CHEAP.HALF_STAR_SCORE`).
+  const level = targetStars < 1 ? 1 : Math.max(1 + (19 * (clamp(targetStars, 1, STAFF.MAX_STARS) - 1)) / 4, STAFF.CHEAP.HALF_STAR_SCORE + 0.25);
   const attr = (x: number) => clamp(Math.round(x), STAFF.ATTR_MIN, STAFF.ATTR_MAX);
-  const noise = () => (rng() - 0.5) * 6;
+  // A 0.5★ target: every attribute at the floor (score 1).
+  const floor = targetStars < 1;
+  const noise = () => { const n = (rng() - 0.5) * 6; return floor ? -STAFF.ATTR_MAX : n; };
   const general = {
     determination: attr(level + noise()),
     discipline: attr(level + noise()),

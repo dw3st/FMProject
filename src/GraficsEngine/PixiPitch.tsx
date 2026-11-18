@@ -5528,6 +5528,9 @@ export function PixiPitch({
             looseBall: null,
             teamIntent,
           };
+        } else if (cmd.type === 'edit') {
+          stateRef.current = cmd.edit(stateRef.current);
+          gameBus.emit('stateChanged', stateRef.current);
         } else if (cmd.type === 'patchPlayers') {
           stateRef.current = { ...stateRef.current, players: cmd.players };
         } else if (cmd.type === 'varPatch') {

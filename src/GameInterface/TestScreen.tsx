@@ -2143,6 +2143,7 @@ export function TestScreen() {
         <SubstitutionPanel
           gameState={liveGameState}
           playerTeam="A"
+          roster={SQUADS[squadA]?.players}
           onQueueSub={sub => gameBus.emit('testCommand', { type: 'queueSub', team: 'A', outId: sub.outId, inId: sub.inId })}
           onSwapPositions={(aId, bId) => gameBus.emit('testCommand', { type: 'swapPositions', team: 'A', aId, bId })}
           onMoveToSlot={(id, slot) => gameBus.emit('testCommand', { type: 'moveToSlot', team: 'A', id, slot })}

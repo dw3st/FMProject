@@ -19,6 +19,8 @@ import { LiveTacticsPanel } from "@/GameInterface/Components/LiveTacticsPanel";
 import { InjuryVacancyPanel } from "@/GameInterface/Components/InjuryVacancyPanel";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { PanelBlock, PanelColumns } from "@/GameInterface/Components/SubsPanelLayout";
+import { overallAvg } from "@/Domain/playerRating";
+import { attrDisplay } from "@/Domain/attributes";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -125,7 +127,12 @@ export function SubstitutionPanel({
   const availableBench = bench.filter((p) => !queuedInIds.has(p.id));
 
   const xiAvg = averageRating(onPitch, ratings);
-  const benchAvg = averageRating(availableBench, ratings);
+  // The bench by OVR (0-100, as everywhere), not a raw 0-10 estimate from engine stats (tester report).
+  const benchOvrs = availableBench
+    .map((p) => roster?.find((r) => r.id === p.rosterId))
+    .filter((r): r is RosterPlayer => r !== undefined)
+    .map((r) => overallAvg(r));
+  const benchAvg = benchOvrs.length > 0 ? benchOvrs.reduce((a, b) => a + b, 0) / benchOvrs.length : null;
   const instrPlayer = instrSlot !== null ? onPitch.find((q) => q.slotIndex === instrSlot) : undefined;
   const instrTag = instrPlayer ? instructionShort(instrPlayer.instruction) : null;
 
@@ -162,8 +169,12 @@ export function SubstitutionPanel({
         <p className="m-0 text-sm tabular-nums text-muted-foreground">
           {t("substitutionPanel.xiAvg")} <span className={`font-semibold ${ratingTextClass10(xiAvg)}`}>{xiAvg.toFixed(1)}</span>
           <span className="mx-2 text-border">·</span>
-          {t("substitutionPanel.benchAvg")} <span className={`font-semibold ${ratingTextClass10(benchAvg)}`}>{benchAvg.toFixed(1)}</span>
-          <span className="mx-2 text-border">·</span>
+          {benchAvg !== null && (
+            <>
+              {t("substitutionPanel.benchAvg")} <span className={`font-semibold ${ratingTextClass10(benchAvg)}`}>{attrDisplay(benchAvg)}</span>
+              <span className="mx-2 text-border">·</span>
+            </>
+          )}
           <span className={subsRemaining - pendingCount > 0 ? "font-semibold text-primary" : ""}>
             {t("substitutionPanel.remaining", { remaining: subsRemaining - pendingCount })}
           </span>

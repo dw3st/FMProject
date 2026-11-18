@@ -18,8 +18,17 @@ import { PanelBlock, PanelColumns, PanelPitch, PitchMarker, energyBarClass } fro
 import { aptitudeFor, slotValue, type Aptitude } from "@/Domain/positions/positionAptitude";
 
 const APT_RANK: Record<Aptitude, number> = { natural: 3, apt: 2, training: 1, unsuitable: 0 };
+/** Aptitude colours of the position pitch (natural, adapted, needs training) and red for unsuitable. */
+const APT_TEXT: Record<Aptitude, string> = {
+  natural: "text-star-green",
+  apt: "text-star-green/70",
+  training: "text-chart-4",
+  unsuitable: "text-destructive",
+};
 import { PlayerTipBody, ROW_TIP_H, ROW_TIP_W } from "@/GameInterface/Components/PlayerTipBody";
 import type { RosterPlayer } from "@/types/playerTypes";
+import { overallAvg } from "@/Domain/playerRating";
+import { attrDisplay } from "@/Domain/attributes";
 
 export { PITCH_BOARD, PitchLinesVertical, energyBarClass } from "@/GameInterface/Components/SubsPanelLayout";
 
@@ -205,14 +214,7 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
   };
   const tipPoorFit = tipPlayer ? poorFit(tipPlayer, tipRole) : false;
   const tipMatchRating = tipPlayer ? ratings?.[tipPlayer.id] : undefined;
-  // A substitute with no minutes has no match rating: his level at his position (the number of his card).
   const benchRole = selectedStarter?.role;
-  const benchNumber = (p: GamePlayer): number => {
-    const live = ratings?.[p.id];
-    if (live !== undefined && !Number.isNaN(live)) return live;
-    const r = roster?.find((x) => x.id === p.rosterId);
-    return r ? slotValue(r, benchRole ?? gamePlayerNaturalRole(p)) : displayRating10(p, ratings);
-  };
   // With a starter picked, the bench lists who suits his position first (natural, then adapted), then the level
   // there, as on the Formation screen (tester report).
   const shownBench = useMemo(() => {
@@ -391,8 +393,22 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
             <p className="text-sm text-muted-foreground m-0">{t("substitutionPanel.noAvailable")}</p>
           ) : (
             <ul className="m-0 p-0 list-none flex flex-col divide-y divide-border/50 rounded-md border border-border overflow-hidden">
+              {/* Column header (tester report: OVR, fit for the picked slot, season, energy). */}
+              <li aria-hidden className="h-8 flex items-center gap-3 px-3 bg-secondary/30 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+                <span className="w-9 shrink-0">{t("substitutionPanel.colPos")}</span>
+                <span className="flex-1 min-w-0">{t("substitutionPanel.colPlayer")}</span>
+                <span className="w-10 shrink-0 text-right">{t("substitutionPanel.colOvr")}</span>
+                {benchRole && <span className="w-28 shrink-0 text-right truncate">{t("substitutionPanel.colAsRole", { role: roleAbbr(benchRole) })}</span>}
+                <span className="w-24 shrink-0 text-right">{t("substitutionPanel.colSeason")}</span>
+                <span className="w-28 shrink-0 text-right">{t("substitutionPanel.colEnergy")}</span>
+              </li>
               {shownBench.map((p) => {
-                const r10 = benchNumber(p);
+                const r = roster?.find((x) => x.id === p.rosterId);
+                const ovr10 = r ? overallAvg(r) : undefined;
+                const apt = r && benchRole ? aptitudeFor(r, benchRole) : undefined;
+                const atSlot = r && benchRole ? slotValue(r, benchRole) : undefined;
+                const apps = r?.seasonLog?.appearances ?? 0;
+                const seasonAvg = r?.seasonLog?.avgRating ?? 0;
                 const isSelected = selection?.kind === "bench" && selection.id === p.id;
                 const over = drag?.over === `bench:${p.id}`;
                 const settling = settlingLeft(p);
@@ -414,18 +430,44 @@ export function SubsPitchView({ gameState, playerTeam, ratings, onQueueSub, onSw
                       <span className={`w-9 shrink-0 font-display font-bold text-sm ${getDetailedPositionColor(natural)}`}>
                         {roleAbbr(natural)}
                       </span>
-                      <span className={`flex-1 min-w-0 text-sm font-semibold truncate ${isSelected ? "text-primary" : "text-foreground"}`}>{shirtName(p.name)}</span>
-                      {settling > 0 && (
-                        <span
-                          title={t("settling.left", { count: settling })}
-                          aria-label={t("settling.left", { count: settling })}
-                          className="shrink-0 rounded bg-chart-4/20 px-1 text-sm font-semibold leading-5 tabular-nums text-chart-4"
-                        >
-                          {settling}
+                      <span className="flex-1 min-w-0 flex items-center gap-2">
+                        <span className={`min-w-0 text-sm font-semibold truncate ${isSelected ? "text-primary" : "text-foreground"}`}>{shirtName(p.name)}</span>
+                        {settling > 0 && (
+                          <span
+                            title={t("settling.left", { count: settling })}
+                            aria-label={t("settling.left", { count: settling })}
+                            className="shrink-0 rounded bg-chart-4/20 px-1 text-sm font-semibold leading-5 tabular-nums text-chart-4"
+                          >
+                            {settling}
+                          </span>
+                        )}
+                        {isOneYellowFromBan(p.seasonYellows) && <BanRiskMark />}
+                      </span>
+                      <span className={`w-10 shrink-0 text-right text-sm font-black font-display tabular-nums ${ovr10 !== undefined ? ratingTextClass10(ovr10) : "text-muted-foreground"}`}>
+                        {ovr10 !== undefined ? attrDisplay(ovr10) : "—"}
+                      </span>
+                      {benchRole && (
+                        <span className="w-28 shrink-0 flex items-center justify-end gap-2 text-sm tabular-nums" title={apt ? t(`roles.aptitude.${apt}`) : undefined}>
+                          {apt ? (
+                            <>
+                              <span className={`font-semibold truncate ${APT_TEXT[apt]}`}>{t(`substitutionPanel.fitShort.${apt}`)}</span>
+                              <span className="font-bold text-foreground w-6 text-right">{atSlot !== undefined ? attrDisplay(atSlot) : ""}</span>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </span>
                       )}
-                      {isOneYellowFromBan(p.seasonYellows) && <BanRiskMark />}
-                      <span className={`text-sm font-black tabular-nums shrink-0 w-8 text-right ${ratingTextClass10(r10)}`}>{r10.toFixed(1)}</span>
+                      <span className="w-24 shrink-0 text-right text-sm tabular-nums">
+                        {apps > 0 ? (
+                          <>
+                            <span className={`font-bold ${ratingTextClass10(seasonAvg)}`}>{seasonAvg.toFixed(1)}</span>
+                            <span className="text-muted-foreground"> · {apps}</span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </span>
                       <span className="w-28 shrink-0">
                         <EnergyBar energy={p.energy} />
                       </span>

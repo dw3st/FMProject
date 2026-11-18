@@ -3212,7 +3212,7 @@
     "fitnessTitle": "Fôlego {{value}}",
     "title": "Substituições",
     "xiAvg": "Média XI",
-    "benchAvg": "Média banco",
+    "benchAvg": "OVR do banco",
     "remaining": "{{remaining}}/5 restantes",
     "pending": "{{count}} pendentes",
     "queuedTitle": "Trocas na fila (entram na próxima parada)",
@@ -3260,7 +3260,19 @@
     "tacticsHint": "Só nesta partida. A tática salva não muda.",
     "formationHint": "Escolha uma formação para ver; cada jogador vai para a vaga que combina com ele.",
     "instructionsHint": "Toque num jogador no campo para mudar a função dele nesta partida.",
-    "markingHint": "Até 2 jogadores seguem um adversário específico."
+    "markingHint": "Até 2 jogadores seguem um adversário específico.",
+    "colPos": "Pos",
+    "colPlayer": "Jogador",
+    "colOvr": "OVR",
+    "colAsRole": "Como {{role}}",
+    "colSeason": "Temporada",
+    "colEnergy": "Fôlego",
+    "fitShort": {
+      "natural": "Natural",
+      "apt": "Apto",
+      "training": "Treinar",
+      "unsuitable": "Inadequado"
+    }
   },
   "scoreBar": {},
   "matchOverlay": {

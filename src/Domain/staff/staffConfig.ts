@@ -34,8 +34,8 @@ export const STAFF = {
 
   // -- Coaching staff (Etapa 31a, `docs/superpowers/specs/2026-10-08-coaching-staff-design.md`) --
 
-  /** Stars 1..5, 3 neutral; displayed and stored to the half. */
-  MIN_STARS: 1,
+  /** Stars 0.5..5, 3 neutral; displayed and stored to the half. 0.5★ = every attribute at the floor (the cheap pros). */
+  MIN_STARS: 0.5,
   NEUTRAL_STARS: 3,
   MAX_STARS: 5,
   /** Stars of a vacant non-area role (= the old vacant rating 3). */
@@ -81,6 +81,13 @@ export const STAFF = {
     MIN_YEARS: 1, MAX_YEARS: 3, RENEW_WINDOW_DAYS: 60, DIRECTOR_YEARS: 2, DIRECTOR_MAX_AGE: 66,
     DIRECTOR_STAR_MARGIN: 0.5, SEVERANCE_SHARE: 0.5,
   },
+  /**
+   * Cheap professionals (tester report 2026-11-18: small clubs could not afford any staff). The free pool keeps
+   * `PER_ROLE` of them per role (`COACH` area coaches) at 0.5★ or 1★, and anyone of `MAX_STARS` or less asks a wage
+   * at a club factor of at most `FACTOR_CAP`: the player factor of a weak squad with good revenue goes up to 4 and
+   * made even a 1★ assistant cost 3% of the revenue (`scripts/staff-cheap-measure.ts`).
+   */
+  CHEAP: { MAX_STARS: 1, PER_ROLE: 3, COACH: 6, FACTOR_CAP: 0.5, HALF_STAR_SCORE: 1.25 },
   POOL: {
     SIZE: 335,
     BY_ROLE: {

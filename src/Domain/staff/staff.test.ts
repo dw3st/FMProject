@@ -3,7 +3,7 @@ import {
   areaMultsOf, developmentMultiplier, effectiveRating, effectiveStars, initialStaff, injuryMultiplier,
   makeProfessional, memberStars, obscurePlayer, ratingFromStars, recoveryMultiplier, resolveAreaAssignments,
   roleLimit, scoutGainMultOf, scoutUncertaintyMultOf, signContract, squadStaffWages, staffEffectsOf,
-  staffWageFor, staffWeeklyWage, starsFromScore,
+  staffWageFor, staffWeeklyWage, starCurve, starsFromScore,
 } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import type { StaffMember, StaffRecord } from "@/Domain/staff/staffTypes";
@@ -44,8 +44,25 @@ describe("stars", () => {
   });
   test("score 10.5 is 3 stars, extremes clamp", () => {
     expect(starsFromScore(10.5)).toBe(3);
-    expect(starsFromScore(1)).toBe(1);
+    expect(starsFromScore(1.5)).toBe(1);
+    expect(starsFromScore(1)).toBe(0.5);
     expect(starsFromScore(20)).toBe(5);
+  });
+  test("cheap professionals: 0.5★ a little worse than 1★, wage at a capped club factor", () => {
+    const half = pro("h", "assistant", 0.5);
+    expect(memberStars(half)).toBe(0.5);
+    for (const k of ["a", "b", "c", "d"]) expect(memberStars(pro(`one${k}`, "medic", 1))).toBe(1);
+    expect(ratingFromStars(0.5)).toBe(0);
+    expect(developmentMultiplier(0)).toBeLessThan(developmentMultiplier(1));
+    expect(developmentMultiplier(0)).toBeGreaterThan(0.85);
+    expect(starCurve(0.5, STAFF.AREA_MULT)).toBeLessThan(starCurve(1, STAFF.AREA_MULT));
+    expect(starCurve(0.5, STAFF.AREA_MULT)).toBeGreaterThan(STAFF.AREA_VACANT_MULT);
+    // A weak squad with good revenue has a high player factor: a cheap pro asks at most the factor-1 wage.
+    expect(staffWageFor("assistant", 1, 4)).toBe(staffWageFor("assistant", 1, STAFF.CHEAP.FACTOR_CAP));
+    expect(staffWageFor("assistant", 0.5, 4)).toBeLessThan(staffWageFor("assistant", 1, 4));
+    expect(staffWageFor("assistant", 1, 0.2)).toBe(staffWageFor("assistant", 1, 0.2));
+    expect(staffWageFor("assistant", 1, 0.2)).toBeLessThan(staffWageFor("assistant", 1, STAFF.CHEAP.FACTOR_CAP));
+    expect(staffWageFor("assistant", 1.5, 4)).toBe(Math.round(staffWeeklyWage(ratingFromStars(1.5), 4) * STAFF.WAGE_ROLE_SHARE.assistant));
   });
   test("a generated professional lands within half a star of the target", () => {
     for (const s of [1, 2, 3, 4, 5]) expect(Math.abs(memberStars(pro(`k${s}`, "medic", s)) - s)).toBeLessThanOrEqual(0.5);

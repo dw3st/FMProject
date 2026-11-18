@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { generatePool, refreshPool, returnToPool, searchPool, takeFromPool, topUpMissingRoles } from "@/Domain/staff/staffPool";
+import { cheapQuota, generatePool, hasCheapStaff, isCheapStaff, refreshPool, returnToPool, searchPool, takeFromPool, topUpCheapStaff, topUpMissingRoles } from "@/Domain/staff/staffPool";
+import { STAFF_ROLES } from "@/Domain/staff/staffTypes";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { memberStars } from "@/Domain/staff/staff";
 
@@ -91,5 +92,25 @@ describe("staff pool", () => {
     // One left of the role (the others were hired): no refill here, the rollover refresh does that.
     const oneLeft = { ...topped, members: topped.members.filter((m) => m.role !== "youthCoach" || m.id === added[0]!.id) };
     expect(topUpMissingRoles(oneLeft, "save1", "2028-04-01")).toBe(oneLeft);
+  });
+  test("cheap professionals: every role keeps its quota of 0.5★/1★, through refreshes, and old pools get them", () => {
+    const cheapOf = (members: typeof pool.members, role: string) => members.filter((m) => m.role === role && isCheapStaff(m));
+    for (const role of STAFF_ROLES) {
+      expect(cheapOf(pool.members, role).length).toBeGreaterThanOrEqual(cheapQuota(role));
+      expect(cheapOf(pool.members, role).some((m) => memberStars(m) === 0.5)).toBe(true);
+    }
+    let next = pool;
+    for (const d of ["2028-01-10", "2029-01-10", "2030-01-10"]) {
+      next = refreshPool(next, "save1", d.slice(0, 4), d);
+      expect(next.members.length).toBe(STAFF.POOL.SIZE);
+      for (const role of STAFF_ROLES) expect(cheapOf(next.members, role).length).toBeGreaterThanOrEqual(cheapQuota(role));
+    }
+    expect(hasCheapStaff(pool)).toBe(true);
+    expect(topUpCheapStaff(pool, "save1", "2027-03-01")).toBe(pool);
+    const old = { ...pool, members: pool.members.filter((m) => !isCheapStaff(m)) };
+    expect(hasCheapStaff(old)).toBe(false);
+    const topped = topUpCheapStaff(old, "save1", "2027-03-01");
+    for (const role of STAFF_ROLES) expect(cheapOf(topped.members, role).length).toBe(cheapQuota(role));
+    expect(new Set(topped.members.map((m) => m.id)).size).toBe(topped.members.length);
   });
 });

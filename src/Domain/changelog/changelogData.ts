@@ -31,6 +31,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.19.3",
+    date: "2026-11-18",
+    time: "18:00",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Na partida, um atalho de tática usado com o jogo rodando agora muda os jogadores de lugar, não só a formação; o mesmo vale para trocas de posição, instruções e marcação.", en: "In the match, a tactic shortcut used while the game runs now moves the players, not only the formation; the same goes for position swaps, instructions and marking." },
+      { tab: "match", pt: "No jogo entre técnicos, o aviso de pausa aparece sobre o campo e não encolhe mais a tela.", en: "In a match between managers, the pause notice shows over the pitch and no longer shrinks the screen." },
+    ],
+  },
+  {
+    version: "12.19.2",
+    date: "2026-11-18",
+    time: "17:30",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Substituições: cada reserva mostra o OVR, como ele joga na posição do titular escolhido, a nota da temporada e o fôlego.", en: "Substitutions: each substitute shows his OVR, how he fits the picked starter's position, his season rating and his energy." },
+      { tab: "staff", pt: "Comissão: a lista de livres sempre tem profissionais de meia e de 1 estrela, com salário que um clube pequeno consegue pagar.", en: "Staff: the free list always has half-star and one-star professionals, at wages a small club can pay." },
+    ],
+  },
+  {
     version: "12.19.1",
     date: "2026-11-18",
     time: "14:49",
