@@ -131,7 +131,7 @@ import { getBroadcastLine, onBroadcastLine } from "@/GameInterface/Broadcast/Bro
 import { Icon } from "@/GameInterface/Icons";
 import { MatchViewToggles } from "@/GameInterface/MatchViewToggles";
 import { MatchTacticsBar } from "@/GameInterface/MatchTacticsBar";
-import { savedSlotMoves, shortcutInstructions, shortcutLocked, type ShortcutUse } from "@/Domain/match/tacticShortcuts";
+import { presetInUse, savedSlotMoves, shortcutInstructions, shortcutLocked, type ShortcutUse } from "@/Domain/match/tacticShortcuts";
 import type { RosterPlayer } from "@/types/playerTypes";
 import { buildMetrics } from "@/GraficsEngine/pitchMetrics";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -597,6 +597,7 @@ export function MatchScreen() {
           myAxesOverrideRef.current = data.myTactics?.axesOverride;
           savedTacticsRef.current = { style, axesOverride: data.myTactics?.axesOverride };
           setPresets(data.myTactics?.lineupPresets);
+          setActiveShortcut(presetInUse(data.myTactics?.lineupPresets, data.myTactics?.formation ?? "", data.myLineup ?? []));
           setLiveTactics({ style, axesOverride: data.myTactics?.axesOverride });
           initRatings([]);
           initStats([]);

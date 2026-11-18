@@ -31,6 +31,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.20.2",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [
+      { tab: "squad", pt: "Na contratação e na renovação, um aviso quando a folha passa de 70% da receita do clube.", en: "When signing or renewing, a warning when the wage bill passes 70% of the club's revenue." },
+    ],
+    fixes: [
+      { tab: "staff", pt: "Clubes pequenos: o salário da comissão técnica agora acompanha a receita do clube. Os contratos caros de hoje baixam sozinhos.", en: "Small clubs: coaching staff wages now follow the club's revenue. Today's expensive contracts come down by themselves." },
+      { tab: "scout", pt: "A compensação por um jovem de fora não passa de 1,5% da receita do clube.", en: "The fee for a youngster from abroad never passes 1.5% of the club's revenue." },
+      { tab: "squad", pt: "Quem sobe da base assina o primeiro contrato com salário de base, não o de um titular.", en: "A player promoted from the academy signs his first contract on an academy wage, not a starter's." },
+      { tab: "match", pt: "Na partida, a tática salva que você escalou já aparece marcada desde o início.", en: "In the match, the saved tactic you picked is marked from kick-off." },
+    ],
+  },
+  {
     version: "12.20.1",
     date: "2026-11-18",
     time: "17:56",

@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   TACTIC_SHORTCUTS, shortcutInstructions, shortcutLocked, shortcutReadyMinute, tacticShortcutSlots,
-  savedSlotMoves,
-} from "@/Domain/match/tacticShortcuts";
+  savedSlotMoves, presetInUse } from "@/Domain/match/tacticShortcuts";
 
 const base = { formation: "4-3-3", lineup: [], savedOn: "2027-03-01" };
 
@@ -75,5 +74,16 @@ describe("savedSlotMoves", () => {
       else slot.set(m.id, m.slot);
     }
     expect([slot.get(1), slot.get(2), slot.get(3)]).toEqual([2, 3, 1]);
+  });
+});
+
+describe("presetInUse (report 40ba129f)", () => {
+  test("the saved line-up the match starts with is marked", () => {
+    const p = (formation: string, lineup: string[]) => ({ formation, lineup, savedOn: "2027-01-01" });
+    const presets = { A: p("4-3-3", ["a", "b", "c"]), B: p("4-4-2", ["c", "b", "a"]) };
+    expect(presetInUse(presets, "4-4-2", ["a", "b", "c"])).toBe("B");
+    expect(presetInUse(presets, "4-3-3", ["b", "a", "c", ""])).toBe("A");
+    expect(presetInUse(presets, "4-3-3", ["a", "b", "d"])).toBeNull();
+    expect(presetInUse(undefined, "4-3-3", ["a"])).toBeNull();
   });
 });

@@ -13,6 +13,19 @@ export const TACTIC_SHORTCUTS = {
 } as const;
 
 /** When the last shortcut was used: the displayed minute and the period it was in. */
+/**
+ * The saved line-up the match starts with (report 40ba129f): the first of A, B, C whose formation and eleven are the
+ * ones of the day (order of the ids does not matter), or null.
+ */
+export function presetInUse(presets: LineupPresets | undefined, formation: string, lineup: readonly string[]): LineupPresetKey | null {
+  const today = [...lineup].filter(Boolean).sort().join(",");
+  if (!today) return null;
+  for (const { key, preset } of tacticShortcutSlots(presets)) {
+    if (preset && preset.formation === formation && [...preset.lineup].filter(Boolean).sort().join(",") === today) return key;
+  }
+  return null;
+}
+
 export interface ShortcutUse {
   minute: number;
   phase: string;
