@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.19.3",
     date: "2026-11-18",
-    time: "18:00",
+    time: "15:51",
     items: [],
     fixes: [
       { tab: "match", pt: "Na partida, um atalho de tática usado com o jogo rodando agora muda os jogadores de lugar, não só a formação; o mesmo vale para trocas de posição, instruções e marcação.", en: "In the match, a tactic shortcut used while the game runs now moves the players, not only the formation; the same goes for position swaps, instructions and marking." },
