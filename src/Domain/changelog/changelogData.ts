@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.14.2",
     date: "2026-11-17",
-    time: "21:40",
+    time: "21:39"
     items: [],
     fixes: [
       { tab: "match", pt: "Jogo ao vivo entre técnicos: os pênaltis são sempre batidos e defendidos por cada um.", en: "Live game between managers: each manager always takes and saves his own penalties." },
