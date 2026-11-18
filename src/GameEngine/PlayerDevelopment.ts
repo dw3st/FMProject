@@ -48,7 +48,7 @@ export function decayDpScale(age: number): number {
 }
 
 /** Training-only: per-intensity fraction of BASE_DP earned per session. */
-const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
+export const TRAINING_DP_RATIO: Record<"light" | "normal" | "heavy", number> = {
   heavy:  0.25, // spec: 25% of a rating-6 match
   normal: 0.12,
   light:  0.05,
@@ -94,7 +94,7 @@ function performanceMultiplier(rating: number): number {
   return 0.0;
 }
 
-function ageGrowthMultiplier(age: number): number {
+export function ageGrowthMultiplier(age: number): number {
   if (age <= 18) return 0.9;
   if (age <= 21) return 0.75;
   if (age <= 25) return 0.6;
@@ -104,7 +104,7 @@ function ageGrowthMultiplier(age: number): number {
   return 0.0;
 }
 
-function ageDecayPerMatch(age: number): number {
+export function ageDecayPerMatch(age: number): number {
   if (age <= 27) return 0;
   if (age === 28) return 0.25;
   if (age === 29) return 0.5;
@@ -187,7 +187,7 @@ export function applyDevelopment(
  *  21..30    → half gain (BASE_DP/2 multiplier)
  *  > 30      → no gain
  */
-function trainingAgeFactor(age: number): number {
+export function trainingAgeFactor(age: number): number {
   if (age < 21)  return 1.0;
   if (age <= 30) return 0.5;
   return 0.0;

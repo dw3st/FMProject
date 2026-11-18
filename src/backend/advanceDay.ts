@@ -98,6 +98,7 @@ import {
 } from "@/Domain/advanceDay/matches";
 import { resolveSimModeForSeats } from "@/Domain/advanceDay/simMode";
 import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
+import { recordDevChanges, snapshotDevHistory, type DayDevChanges } from "@/Domain/development/devHistory";
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
@@ -1202,6 +1203,33 @@ export async function advanceOneDay(
               : { date: currentDate, kind: "returned", playerId: inj.playerId, playerName: inj.playerName },
         );
       }
+    }
+
+    // ── Development history of each seat's club (`.claude/rules/game/development.md` → "Tela de desenvolvimento") ──
+    // The day's attribute changes (matches and training) and, on Mondays, an OVR snapshot. Human clubs only.
+    const devMonday = new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1;
+    for (const ds of daySeats) {
+      if (!ds.clubId || !ds.entry) continue;
+      const day: DayDevChanges[] = [];
+      for (const event of dayEvents) {
+        if (event.kind === "match") {
+          const side = event.home === ds.clubId ? "home" : event.away === ds.clubId ? "away" : null;
+          if (!side) continue;
+          for (const dc of event.developmentChanges) {
+            if (event.playerTeams[dc.playerId] === side) day.push({ playerId: dc.playerId, changes: dc.changes, source: "match" });
+          }
+        } else if (event.kind === "training" && event.squadId === ds.clubId && "effects" in event) {
+          for (const eff of event.effects) {
+            if (eff.levelChanges?.length) day.push({ playerId: eff.playerId, changes: eff.levelChanges, source: "training" });
+          }
+        }
+      }
+      if (day.length === 0 && !devMonday) continue;
+      const base = squadWrites.get(ds.clubId)?.squad ?? (await saveService.getSquadById(saveId, ds.clubId));
+      if (!base) continue;
+      const logged = recordDevChanges(base, currentDate, day);
+      const next = devMonday ? snapshotDevHistory(logged, currentDate) : logged;
+      if (next !== base) squadWrites.set(ds.clubId, { league: ds.entry.leagueSlug, club: ds.entry.stem, squad: next });
     }
 
     // ── Write all squad updates in parallel ──────────────────────────────────
