@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.21.2",
     date: "2026-11-18",
-    time: "23:00",
+    time: "19:54",
     items: [],
     fixes: [
       { tab: "finances", pt: "Na subida de divisão, o dinheiro da TV já vem pela divisão nova (antes vinha pela antiga). Na queda, o mesmo.", en: "On promotion, TV money already comes at the new division's rate (it used to come at the old one). The same on relegation." },
