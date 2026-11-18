@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.19",
     date: "2026-11-18",
+    time: "14:32",
     items: [
       { tab: "squad", pt: "História do clube redesenhada: faixa com o estádio, os números do clube, sala de troféus com os troféus pintados, ídolos com a barra do próximo ídolo e recordes em cartões.", en: "Club history redesigned: a banner with the stadium, the club's numbers, a trophy room with painted trophies, idols with the next idol's progress bar and records as cards." },
       { tab: "club", pt: "Visão geral do clube, página do técnico e perfil do aposentado no mesmo visual: faixa, números e prateleira de troféus.", en: "Club overview, manager page and retired player profile in the same look: banner, numbers and trophy shelf." },
