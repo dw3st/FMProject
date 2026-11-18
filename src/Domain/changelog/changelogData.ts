@@ -31,6 +31,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.21.2",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "finances", pt: "Na subida de divisão, o dinheiro da TV já vem pela divisão nova (antes vinha pela antiga). Na queda, o mesmo.", en: "On promotion, TV money already comes at the new division's rate (it used to come at the old one). The same on relegation." },
+      { tab: "finances", pt: "Os patrocínios em andamento acompanham a divisão nova na subida.", en: "Running sponsor deals follow the new division on promotion." },
+      { tab: "market", pt: "Contratação ou renovação que levaria a folha acima de 85% da receita do clube é recusada.", en: "A signing or renewal that would take the wage bill above 85% of the club's revenue is refused." },
+    ],
+  },
+  {
     version: "12.21.1",
     date: "2026-11-18",
     time: "19:27",
