@@ -276,6 +276,11 @@ export interface MoraleDayInput {
   sellList: { playerId: string; requested?: boolean }[];
   /** Injured or suspended before today's matches: no window entry, no promise match for them. */
   unavailable?: ReadonlySet<string>;
+  /**
+   * Not on the club's league list (report 2026-11-18): he cannot play until the next deadline, so missing minutes
+   * never cost him morale and he never asks to talk about minutes or a chance.
+   */
+  unregistered?: ReadonlySet<string>;
   /** The human club's country rolled over today: the minutes windows start over. */
   seasonRolled?: boolean;
   /**
@@ -469,7 +474,7 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
     for (const p0 of [...players.values()]) {
       const status = statusOf(p0, suggested);
       const log = logOf(p0);
-      const excused = isInjured(p0, date) || isSuspended(p0);
+      const excused = isInjured(p0, date) || isSuspended(p0) || (input.unregistered?.has(p0.id) ?? false);
       // The window only counts again once new matches entered it (breaks, off-season: no change).
       const fresh = (log.newMatches ?? 0) > 0;
       // Personality: an ambitious player feels missing minutes more; every event × temperament.
@@ -493,7 +498,8 @@ export function moraleDay(input: MoraleDayInput): MoraleDayOutput {
       }
       // Talk triggers.
       if (weekCount >= MORALE.MAX_NEW_TALKS_PER_WEEK || hasOpenTalk(state, p.id) || quiet(p, date) || p.loan) continue;
-      const reason = talkReasonOf(p, status, date, state);
+      const raw = talkReasonOf(p, status, date, state);
+      const reason = input.unregistered?.has(p.id) && (raw === "minutes" || raw === "chance") ? null : raw;
       if (reason === "contract" && input.directorContractTalk) {
         const renews = input.directorContractTalk(p);
         const answered = withEventDelta(p, renews ? MORALE.PROMISE_MADE : MORALE.RENEWAL_REFUSED);

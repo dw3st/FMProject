@@ -58,7 +58,7 @@ export const QUICK_SIM_CONFIG = {
    * penalty-spot cross (Premier + Championship, AI formations: 3.794 → 3.482 goals).
    * 2026-11-09: refitted on 26 leagues (`analyze` section 8, "ratio+level+pace"); rms per league 7.8% → 4.2%.
    */
-  BASE_GOALS: 0.798,
+  BASE_GOALS: 0.735,
   HOME_ADVANTAGE: 1.026,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
@@ -159,7 +159,7 @@ export const QUICK_SIM_CONFIG = {
    * (they convert less). 4.41.51: 1.778 → 1.89, so the non-goal shots follow the engine (−2.2%) while
    * BASE_GOALS took the xG down 8.2%.
    */
-  SHOTS_PER_XG: 1.96,
+  SHOTS_PER_XG: 2.01,
   SHOTS_LEVEL_EXPONENT: -0.69,
 
   /**

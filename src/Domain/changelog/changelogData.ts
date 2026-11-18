@@ -43,9 +43,20 @@ export const changelog: ChangelogEntry[] = [
     ],
   },
   {
+    version: "12.19.4",
+    date: "2026-11-18",
+    time: "17:18",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "O goleiro que solta uma defesa ou espalma um cruzamento agora corre atrás da bola, em vez de ficar parado.", en: "A keeper who spills a save or flaps a cross now runs after the ball instead of standing still." },
+      { tab: "squad", pt: "Jogador não inscrito na liga não perde moral por falta de jogo nem pede conversa por minutos.", en: "A player not registered for the league no longer loses morale for missing games or asks to talk about minutes." },
+      { tab: "match", pt: "Na partida, o mapa de posse aparece uma vez só, no painel.", en: "In the match, the possession map shows only once, in the panel." },
+    ],
+  },
+  {
     version: "12.19.3",
     date: "2026-11-18",
-    time: "18:00",
+    time: "15:51",
     items: [],
     fixes: [
       { tab: "match", pt: "Na partida, um atalho de tática usado com o jogo rodando agora muda os jogadores de lugar, não só a formação; o mesmo vale para trocas de posição, instruções e marcação.", en: "In the match, a tactic shortcut used while the game runs now moves the players, not only the formation; the same goes for position swaps, instructions and marking." },

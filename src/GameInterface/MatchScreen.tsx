@@ -2415,9 +2415,7 @@ export function MatchScreen() {
               minute={matchMinute(gameState)}
               phase={gameState.matchPhase}
               blocked={managerOut ? t(managerOut === "banned" ? "complaint.banned" : "complaint.sentOff") : null}
-              heatmapOpen={heatmapOpen}
               onUse={handleTacticShortcut}
-              onToggleHeatmap={toggleHeatmap}
             />
             </div>
           )}

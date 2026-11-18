@@ -2520,6 +2520,11 @@ function keeperClaimsLooseBall(s: GameState, lb: NonNullable<GameState['looseBal
   return s;
 }
 
+/** The ball is loose and `p`, a keeper, was the last to touch it (spilled save, flapped cross). */
+function looseKeeper(s: GameState, p: GamePlayer): boolean {
+  return s.looseBall !== null && p.role === 'GK' && s.looseBall.fromPasserId === p.id;
+}
+
 function chaseSprintSpeed(p: GamePlayer): number {
   const wb = p.runtimeStats.withoutBall;
   return (
@@ -4061,7 +4066,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   }
 
   for (const p of s.players) {
-    const isBallHolder = p.id === s.ballHolderId;
+    // A keeper who spilled a save or flapped a cross is the last touch of the loose ball: he decides and runs like
+    // the others (report 2026-11-18: he stood still until someone else took it).
+    const isBallHolder = p.id === s.ballHolderId && !looseKeeper(s, p);
     const currentPath: DecisionPath = isBallHolder
       ? 'BALL_HOLDER'
       : p.team === holder.team
@@ -4168,7 +4175,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const markAssignments = assignMarkTargets(s.players, defendingTeam);
 
     const movedPlayers = s.players.map(player => {
-      if (player.id === s.ballHolderId) return player;
+      if (player.id === s.ballHolderId && !looseKeeper(s, player)) return player;
 
       // GK override: sprint to the ball's path (an advanced keeper does not run back to the line)
       if (s.shot !== null && player.role === 'GK') {
