@@ -5,7 +5,7 @@ import { PitchSurfaceSvg } from "@/GameInterface/Components/PitchSurfaceSvg";
 import { MOWING_PATTERNS, TURF_TYPES } from "@/Domain/facilities/turf";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { formatFee } from "@/Domain/money";
-import type { FacilitiesViewData } from "@/GameInterface/Facilities/facilitiesApi";
+import { forecastOf, type FacilitiesViewData } from "@/GameInterface/Facilities/facilitiesApi";
 import type { FacilityRequest, MowingPattern } from "@/types/facilityTypes";
 import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 
@@ -56,11 +56,11 @@ export function TurfCard({ data, ground, pending, onAsk, onMowing }: {
                 {q && (
                   <div className="text-sm tabular-nums text-muted-foreground">
                     {formatFee(q.cost)} · {t("facilities.weeks", { count: q.weeks })}
-                    {!q.forecast.approved && ` · ${t(`facilities.reason.${q.forecast.reason ?? "no_money"}`)}`}
+                    {!forecastOf(q).approved && ` · ${t(`facilities.reason.${forecastOf(q).reason ?? "no_money"}`)}`}
                   </div>
                 )}
               </div>
-              <Button disabled={!q || pending || stadiumBusy || !q.forecast.approved} onClick={() => onAsk({ kind: "turf", turf: tp })}>
+              <Button disabled={!q || pending || stadiumBusy || !forecastOf(q).approved} onClick={() => onAsk({ kind: "turf", turf: tp })}>
                 {t("facilities.turf.change")}
               </Button>
             </div>

@@ -3,20 +3,33 @@ import type { StandDepths } from "@/Domain/facilities/standDepth";
 import { useCallback, useEffect, useState } from "react";
 import type { AcademyEffects, ProjectQuote, TrainingGroundEffects } from "@/Domain/facilities/facilities";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
+import type { ComponentCounts, CraftStock } from "@/types/craftTypes";
 import type {
   BoardRefusal, ClubFacilities, FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest, MowingPattern, TurfType,
 } from "@/types/facilityTypes";
 
-/** What happens to a quote if requested now (`facilityRoutes.ts` → `forecast`). */
+/** What a quote asks from the stock (`facilityRoutes.ts` → `buildOf`, craft spec 2026-11-18). */
+export interface QuoteBuild {
+  recipe: ComponentCounts;
+  missing: ComponentCounts;
+  canBuild: boolean;
+}
+
+/** What happens to a quote if requested now. Until the craft screens (Task 13), derived from `build`. */
 export interface QuoteForecast {
   /** Small repair: paid now by the club, no board. */
   paidByClub: boolean;
   approved: boolean;
   boardShare?: number;
-  reason?: BoardRefusal;
+  reason?: BoardRefusal | "missing_components";
 }
 
-export type ItemQuote = ProjectQuote & { forecast: QuoteForecast };
+export type ItemQuote = ProjectQuote & { build?: QuoteBuild; forecast?: QuoteForecast };
+
+/** The quote's forecast: the old board one when present, else "can be built now" from the stock. */
+export function forecastOf(q: ItemQuote): QuoteForecast {
+  return q.forecast ?? { paidByClub: false, approved: q.build?.canBuild ?? false, ...(q.build?.canBuild ? {} : { reason: "missing_components" as const }) };
+}
 
 /** One facility item (`GET .../facilities` → `items`). */
 export interface FacilityItemView {
@@ -64,7 +77,9 @@ export interface FacilitiesViewData {
   items: FacilityItemView[];
   /** Big-match multiplier (derby, knockout) of each coming home game, by fixture id; absent = 1. */
   importanceByFixture?: Record<string, number>;
-  quotes: { comfort: ProjectQuote | null; training: ProjectQuote | null; academy: ProjectQuote | null };
+  quotes: { comfort: ItemQuote | null; training: ItemQuote | null; academy: ItemQuote | null };
+  /** The workshop's stock (craft). */
+  stock?: CraftStock;
   effects: {
     training: { current: TrainingGroundEffects; next: TrainingGroundEffects };
     academy: { current: AcademyEffects; next: AcademyEffects };
@@ -73,7 +88,7 @@ export interface FacilitiesViewData {
 
 export type RequestOutcome =
   | { approved: true; boardShare: number; project: FacilityProject; paidByClub?: boolean }
-  | { approved: false; reason: BoardRefusal | "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error"; group?: FacilityGroup };
+  | { approved: false; reason: BoardRefusal | "missing_components" | "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error"; group?: FacilityGroup };
 
 /** Facilities of the human club; `request` asks the board for a project and refreshes the view. */
 export function useFacilities(saveId: string | undefined, refreshKey?: string | null) {
@@ -100,6 +115,7 @@ export function useFacilities(saveId: string | undefined, refreshKey?: string | 
       });
       const body = await r.json().catch(() => ({})) as Record<string, unknown>;
       if (!r.ok) {
+        if (body.error === "missingComponents") return { approved: false, reason: "missing_components" };
         const reason = typeof body.error === "string" && ["busy", "maxLevel", "noClub", "invalidRequest"].includes(body.error) ? body.error : "error";
         const group = reason === "busy" && typeof body.group === "string" ? (body.group as FacilityGroup) : undefined;
         return {
@@ -108,6 +124,7 @@ export function useFacilities(saveId: string | undefined, refreshKey?: string | 
         };
       }
       if (body.view) setData(body.view as FacilitiesViewData);
+      if (body.built) return { approved: true, boardShare: 0, project: body.project as FacilityProject };
       return body.approved
         ? {
           approved: true, boardShare: body.boardShare as number, project: body.project as FacilityProject,

@@ -1,20 +1,21 @@
 import { stadiumLookOf } from "@/backend/stadiumData";
 import { standDepths } from "@/Domain/facilities/standDepth";
 import { randomUUID } from "node:crypto";
-import { SaveService, saveService, type SeatMeta } from "@/backend/SaveService";
-import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
-import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
-import { recordMoney } from "@/backend/FinancialService";
-import { logError } from "@/Logger";
+import { type SaveService, saveService, type SeatMeta } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { leagueTierOf, seatCostFor, withInitialFacilities } from "@/backend/facilityWorld";
 import { ensureCraft } from "@/backend/craftWorld";
 import {
-  academyEffectsAt, academyEffectsOf, boardDecision, busyGroups, groupBusy, impliedLevel, requestGroup, comfortPriceMult, committedSpend, effectiveCapacity, itemBusy,
-  payRepairNow, projectProgress, projectRunning, quoteProject, startProject, totalSeats, trainingEffectsAt, trainingGroundEffectsOf,
+  academyEffectsAt, academyEffectsOf, busyGroups, groupBusy, impliedLevel, requestGroup, comfortPriceMult, committedSpend, effectiveCapacity, itemBusy,
+  projectProgress, projectRunning, quoteProject, startCraftProject, totalSeats, trainingEffectsAt, trainingGroundEffectsOf,
   validSeats, weeklyUpkeep, withFacilities, type ProjectQuote,
 } from "@/Domain/facilities/facilities";
+import { CRAFT } from "@/Domain/craft/craftConfig";
+import { recipeFor } from "@/Domain/craft/recipes";
+import { shareOf } from "@/Domain/craft/recycle";
+import { addComponents, missingComponents, takeComponents, worksQuality } from "@/Domain/craft/stock";
+import type { ComponentCounts, ComponentId } from "@/types/craftTypes";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { TURF_TYPES, isTurfType, isMowingPattern } from "@/Domain/facilities/turf";
 import {
@@ -94,33 +95,23 @@ export function repairTargets(condition: number): { "25": number | null; "50": n
   return { "25": t25 < t50 ? t25 : null, "50": t50 < 100 ? t50 : null, "100": 100 };
 }
 
-interface MoneyContext { board: number; balance: number; revenue: number; committed: number }
-
-interface Forecast {
-  /** Small repair: paid now by the club (no board). */
-  paidByClub: boolean;
-  approved: boolean;
-  boardShare?: number;
-  reason?: string;
+/** What a quote asks from the stock (spec 2026-11-18-club-craft): the components, what is missing, and whether it can start now. */
+interface Build {
+  recipe: ComponentCounts;
+  missing: ComponentCounts;
+  canBuild: boolean;
 }
 
-/** What happens to a quote if requested now: paid by the club (small repair) or the board's decision. */
-function forecast(quote: ProjectQuote, args: MoneyContext): Forecast {
-  if (quote.small) {
-    return args.balance - args.committed >= quote.cost
-      ? { paidByClub: true, approved: true }
-      : { paidByClub: true, approved: false, reason: "no_money" };
-  }
-  const d = boardDecision({ ...args, cost: quote.cost });
-  return d.approved
-    ? { paidByClub: false, approved: true, boardShare: d.boardShare }
-    : { paidByClub: false, approved: false, reason: d.reason };
+function buildOf(quote: ProjectQuote, f: ClubFacilities, revenue: number): Build {
+  const recipe = recipeFor({ kind: quote.kind, ...(quote.item ? { item: quote.item } : {}) }, quote.cost, revenue);
+  const missing = missingComponents(f.craft!.stock, recipe);
+  return { recipe, missing, canBuild: Object.keys(missing).length === 0 };
 }
 
-/** Per-item view: level, condition, effects, works, and the quotes with what would happen. */
-function itemsView(f: ClubFacilities, date: string, money: MoneyContext) {
-  const ctx = { revenue: money.revenue, seatCost: 0 };
-  const withForecast = (q: ProjectQuote | null) => (q ? { ...q, forecast: forecast(q, money) } : null);
+/** Per-item view: level, condition, effects, works, and the quotes with the components each asks. */
+function itemsView(f: ClubFacilities, date: string, revenue: number) {
+  const ctx = { revenue, seatCost: 0 };
+  const withForecast = (q: ProjectQuote | null) => (q ? { ...q, build: buildOf(q, f, revenue) } : null);
   return FACILITY_ITEMS.map((id: FacilityItemId) => {
     const it = f.items[id];
     const condition = conditionOf(it);
@@ -141,23 +132,6 @@ function itemsView(f: ClubFacilities, date: string, money: MoneyContext) {
       },
     };
   });
-}
-
-/**
- * A small repair in its own buffered unit (squad and ledger line written together), flushed only
- * when the answer is ok.
- */
-async function inUnit(saveId: string, fn: (service: SaveService) => Promise<Response>): Promise<Response> {
-  const buffer = new BufferingSaveDAL(new FileSystemDAL());
-  const service = new SaveService(buffer);
-  try {
-    const res = await fn(service);
-    if (res.ok) await buffer.flush();
-    return res;
-  } catch (err) {
-    logError("facilities", `save ${saveId}: failed to pay a repair`, err);
-    return Response.json({ error: "failed to pay a repair" }, { status: 500 });
-  }
 }
 
 /**
@@ -196,9 +170,6 @@ async function facilitiesView(h: Human) {
   const revenue = wageRevenueBasisOf(h.squad);
   const ctx = { revenue, seatCost: await seatCostFor(saveService, h.meta.id, h.meta, h.ref.leagueSlug) };
   const state = (h.meta.activeLeagues ?? []).find((l) => l.leagueSlug === h.meta.leagueSlug);
-  const money = {
-    board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, revenue, committed: committedSpend(f),
-  };
   const nextLevel = (lv: number) => Math.min(FACILITIES.MAX_LEVEL, Math.floor(lv) + 1);
   const levels = { comfort: comfortLevel(f), training: groupLevel(f, "training"), academy: groupLevel(f, "academy") };
   const own = trainingGroundEffectsOf(h.squad);
@@ -237,22 +208,23 @@ async function facilitiesView(h: Human) {
     season: state ? { start: state.start, end: state.end } : null,
     /** The ground as the live match draws it (tester report): its name, shape and each stand's depth by its seats. */
     stadium: { name: h.squad.venue?.name ?? null, shape: stadiumLookOf(h.squad).shape, depths: standDepths(f.stands) },
-    items: itemsView(f, h.date, money),
+    items: itemsView(f, h.date, revenue),
+    /** The workshop's stock (craft): what the works are built from. */
+    stock: f.craft!.stock,
     /** Grass and mowing of the stadium pitch (spec 2026-10-16-pitch-types). */
     turf: f.items.stadiumPitch.turf ?? "natural",
     mowing: f.mowing ?? "stripes",
     /** The works to each grass (null: the current one), with what would happen if requested now. */
     turfQuotes: Object.fromEntries(TURF_TYPES.map((t) => {
       const q = quoteProject(f, { kind: "turf", turf: t }, ctx);
-      return [t, q ? { ...q, forecast: forecast(q, money) } : null];
+      return [t, q ? { ...q, build: buildOf(q, f, revenue) } : null];
     })),
     /** Big-match multiplier of each coming home game (`demandInput.importance` of that game). */
     importanceByFixture: await importanceByFixture(h),
-    quotes: {
-      comfort: quoteProject(f, { kind: "comfort" }, ctx),
-      training: quoteProject(f, { kind: "training" }, ctx),
-      academy: quoteProject(f, { kind: "academy" }, ctx),
-    },
+    quotes: Object.fromEntries((["comfort", "training", "academy"] as const).map((k) => {
+      const q = quoteProject(f, { kind: k }, ctx);
+      return [k, q ? { ...q, build: buildOf(q, f, revenue) } : null];
+    })) as Record<"comfort" | "training" | "academy", (ProjectQuote & { build: Build }) | null>,
     effects: {
       // Current: the group level with the condition of the items; next: the level the works reach.
       training: {
@@ -266,7 +238,7 @@ async function facilitiesView(h: Human) {
 
 /**
  * Club facilities (`.claude/rules/game/facilities.md`): the state with quotes, and project requests
- * the board decides. Owner only; requests under the save lock; no club → 409 `noClub`.
+ * built from the workshop's stock (craft). Owner only; requests under the save lock; no club → 409 `noClub`.
  */
 export const facilityRoutes = {
   "/api/saves/:saveId/facilities": async (req: Req) => {
@@ -298,7 +270,7 @@ export const facilityRoutes = {
     });
   },
 
-  /** `POST` a `FacilityRequest`: the board approves (project started) or refuses (reason). */
+  /** `POST` a `FacilityRequest`: takes the recipe from the stock and starts the works, or 409 `missingComponents`. */
   "/api/saves/:saveId/facilities/request": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);
@@ -326,46 +298,58 @@ export const facilityRoutes = {
         const maxed = request.kind === "upgrade" || !itemRequest;
         return Response.json({ error: maxed ? "maxLevel" : "invalidRequest" }, { status: 400 });
       }
-      // Small repair (at most 2% of the annual revenue): paid now from the balance, no board.
-      if (quote.small) {
-        if ((h.squad.finances?.budget ?? 0) - committedSpend(f) < quote.cost) {
-          return Response.json({ approved: false, reason: "no_money", view: await facilitiesView(h) });
-        }
-        return inUnit(saveId, async (service) => {
-          const paid = payRepairNow(f, quote, { id: `fac_${randomUUID()}`, date: h.date });
-          await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, withFacilities(h.squad, paid.facilities));
-          const season = (await service.getLeagueMeta(saveId, h.meta.leagueSlug))?.year ?? parseInt(h.date.slice(0, 4), 10);
-          const squad = await recordMoney(service, saveId, season, h.ref, paid.entry, auth.seatId);
-          const project = paid.facilities.projects.at(-1)!;
-          return Response.json({ approved: true, paidByClub: true, boardShare: 0, project, view: await facilitiesView({ ...h, squad }) });
-        });
-      }
       // One works at a time per group (stadium, training ground, academy) — #152.
       const group = requestGroup(request);
       if (groupBusy(f, group)) return Response.json({ error: "busy", group }, { status: 409 });
-      const decision = boardDecision({
-        board: h.meta.board?.board ?? BOARD_FANS.START, balance: h.squad.finances?.budget ?? 0, cost: quote.cost, revenue,
-        committed: committedSpend(f),
-      });
-      const what = {
-        facility: quote.kind, cost: quote.cost,
-        ...(quote.stand ? { stand: quote.stand, seats: quote.seats } : {}),
-        ...(quote.level !== undefined ? { level: quote.level } : {}),
-        ...(quote.item ? { item: quote.item } : {}),
-        ...(quote.turf ? { turf: quote.turf } : {}),
-      };
-      // A refusal is answered on screen only (no inbox line: the request was just made).
-      if (!decision.approved) {
-        return Response.json({ approved: false, reason: decision.reason, view: await facilitiesView(h) });
+      // Built from the stock (craft): every works takes its recipe now; no board, no money.
+      const b = buildOf(quote, f, revenue);
+      if (!b.canBuild) return Response.json({ error: "missingComponents", missing: b.missing }, { status: 409 });
+      const taken = takeComponents(f.craft!.stock, b.recipe)!;
+      const quality = worksQuality(taken.taken);
+      let stock = taken.stock;
+      // A rebuild gives back a quarter of the recipe of the old item (common quality).
+      if (quote.kind === "rebuild") {
+        for (const [id, n] of Object.entries(shareOf(b.recipe, CRAFT.REBUILD_RETURN)) as [ComponentId, number][]) {
+          stock = addComponents(stock, id, { common: n });
+        }
       }
-      const next = startProject(f, quote, { id: `fac_${randomUUID()}`, date: h.date, boardShare: decision.boardShare });
+      const next = startCraftProject({ ...f, craft: { ...f.craft!, stock } }, quote, {
+        id: `fac_${randomUUID()}`, date: h.date, components: b.recipe, quality,
+      });
       const squad = withFacilities(h.squad, next);
       await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, squad);
       const project = next.projects.at(-1)!;
       await emitInboxMessage(saveId, buildFacilityMessage({
-        date: h.date, kind: "approved", ...what, boardShare: decision.boardShare, end: project.end,
+        date: h.date, kind: "built", facility: quote.kind, end: project.end, quality,
+        ...(quote.item ? { item: quote.item } : {}), ...(quote.stand ? { stand: quote.stand, seats: quote.seats } : {}),
+        ...(quote.level !== undefined ? { level: quote.level } : {}),
       }), saveService, auth.seatId);
-      return Response.json({ approved: true, boardShare: decision.boardShare, project, view: await facilitiesView({ ...h, squad }) });
+      return Response.json({ built: true, quality, project, view: await facilitiesView({ ...h, squad }) });
+    });
+  },
+  /** `POST { projectId }`: stops a craft works and gives back half its components (common quality). */
+  "/api/saves/:saveId/facilities/cancel": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    let body: unknown;
+    try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
+    const id = (body as { projectId?: unknown } | null)?.projectId;
+    if (typeof id !== "string" || id.length === 0 || id.length > 100) return Response.json({ error: "invalidRequest" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const h = await loadHuman(saveId, auth.seatId);
+      if (h instanceof Response) return h;
+      const f = h.squad.facilities!;
+      // Only a works built from the stock: the old ones paid in instalments run to their end.
+      const p = f.projects.find((x) => x.id === id && x.craft);
+      if (!p) return Response.json({ error: "notFound" }, { status: 404 });
+      const back = shareOf(p.components ?? {}, CRAFT.CANCEL_RETURN);
+      let stock = f.craft!.stock;
+      for (const [cid, n] of Object.entries(back) as [ComponentId, number][]) stock = addComponents(stock, cid, { common: n });
+      const squad = withFacilities(h.squad, { ...f, projects: f.projects.filter((x) => x.id !== id), craft: { ...f.craft!, stock } });
+      await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, squad);
+      return Response.json({ returned: back, view: await facilitiesView({ ...h, squad }) });
     });
   },
 };

@@ -4753,7 +4753,8 @@
       "maxLevel": "Already at the top level.",
       "noClub": "You have no club.",
       "error": "Something went wrong.",
-      "invalidRequest": "That request is not possible for this item."
+      "invalidRequest": "That request is not possible for this item.",
+      "missing_components": "Missing components in the stock"
     },
     "kind": {
       "stand": "Stand expansion",

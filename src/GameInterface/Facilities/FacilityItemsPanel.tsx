@@ -7,7 +7,7 @@ import { formatEuros } from "@/Domain/money";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
 import type { FacilityGroup, FacilityProject, FacilityRequest } from "@/types/facilityTypes";
-import type { FacilitiesViewData, FacilityItemView, ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
+import { forecastOf, type FacilitiesViewData, type FacilityItemView, type ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
 import { FacilityItemArt, type ArtTone } from "@/GameInterface/Facilities/FacilityItemArt";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
@@ -255,7 +255,7 @@ function QuoteBlock({
   running?: FacilityProject; date: string;
 }) {
   const { t } = useTranslation();
-  const f = quote.forecast;
+  const f = forecastOf(quote);
   // A small repair is paid now and never waits for the group's works slot.
   const blocked = groupBusy && !f.paidByClub;
   const ok = f.approved && !blocked;

@@ -4750,7 +4750,8 @@
       "maxLevel": "Já está no nível máximo.",
       "noClub": "Você está sem clube.",
       "error": "Algo deu errado.",
-      "invalidRequest": "Esse pedido não é possível para este item."
+      "invalidRequest": "Esse pedido não é possível para este item.",
+      "missing_components": "Faltam componentes no estoque"
     },
     "kind": {
       "stand": "Ampliação de setor",
