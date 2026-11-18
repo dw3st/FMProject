@@ -262,6 +262,21 @@ export function titleGallery(seasons: ClubSeasonRow[]): { title: string; seasons
     .sort((a, b) => order(a.title) - order(b.title) || b.seasons.length - a.seasons.length || a.title.localeCompare(b.title));
 }
 
+/**
+ * The trophy room of the History tab (12.19): every competition won (promotions apart, gallery
+ * order) with the count, then the club's own competitions not won yet (`placeholders`, e.g. its
+ * league, its national cup, its continental cup) with 0, so an empty history still has a shelf.
+ */
+export function trophyShelf(
+  gallery: { title: string; seasons: string[] }[],
+  placeholders: readonly string[],
+): { title: string; count: number }[] {
+  const won = gallery.filter((g) => !g.title.startsWith("promotion:")).map((g) => ({ title: g.title, count: g.seasons.length }));
+  const seen = new Set(won.map((w) => w.title));
+  const empty = [...new Set(placeholders)].filter((p) => !seen.has(p)).map((title) => ({ title, count: 0 }));
+  return [...won, ...empty];
+}
+
 /** Top `n` players of the club by goals (then apps) or by apps (then goals). */
 export function topPlayers(
   scorers: Record<string, ClubScorer>, by: "goals" | "apps", n = 10,
@@ -318,6 +333,23 @@ export function clubLegends(
   }
   return out.sort((a, b) => (a.tier === b.tier ? 0 : a.tier === "legend" ? -1 : 1)
     || b.apps - a.apps || b.goals - a.goals || a.name.localeCompare(b.name));
+}
+
+/**
+ * The current player closest to becoming an idol by the games rule (`IDOL_APPS`): not an idol or
+ * legend yet, most games at the club (ties: goals, name). Null when nobody of the squad has a game.
+ */
+export function nextIdol(
+  scorers: Record<string, ClubScorer>,
+  current: ReadonlySet<string>,
+): { playerId: string; name: string; apps: number; target: number } | null {
+  let best: { playerId: string; s: ClubScorer } | null = null;
+  for (const [playerId, s] of Object.entries(scorers)) {
+    if (!current.has(playerId) || s.apps <= 0 || legendTier(s) !== null) continue;
+    if (!best || s.apps > best.s.apps || (s.apps === best.s.apps && (s.goals > best.s.goals
+      || (s.goals === best.s.goals && s.name.localeCompare(best.s.name) < 0)))) best = { playerId, s };
+  }
+  return best ? { playerId: best.playerId, name: best.s.name, apps: best.s.apps, target: CLUB_LEGENDS.IDOL_APPS } : null;
 }
 
 /** Facts and curiosities of the club (#151), from its seasons and players' totals. */

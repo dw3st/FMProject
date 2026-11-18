@@ -1,9 +1,9 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
-import { clubFacts, clubLegends, emptyClubHistory, titleGallery, topPlayers } from "@/Domain/clubHistory/clubHistory";
+import { clubFacts, clubLegends, emptyClubHistory, nextIdol, titleGallery, topPlayers, trophyShelf } from "@/Domain/clubHistory/clubHistory";
 import { seasonLabel } from "@/Domain/history/history";
 import type { ClubHistoryResponse } from "@/types/clubHistoryTypes";
-import { clubOverview } from "@/backend/clubOverviewWorld";
+import { clubOverview, clubStadiumLevel, clubTrophyPlaceholders } from "@/backend/clubOverviewWorld";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -70,18 +70,22 @@ export const clubHistoryRoutes = {
     const pastManagers = [...new Set([...fromPassages, ...history.seasons.map((s) => s.manager).filter((m): m is string => !!m)])]
       .filter((m) => m !== currentManager);
 
+    const gallery = titleGallery(history.seasons);
     const body: ClubHistoryResponse = {
       squadId, name: squad.name, colors: squad.colors, leagueSlug,
       venue: squad.venue ? { name: squad.venue.name, city: squad.venue.city, capacity: squad.venue.capacity } : null,
       manager: currentManager, pastManagers,
       since: history.seasons[0]?.season ?? currentSeason,
       seasons: history.seasons,
-      titles: titleGallery(history.seasons),
+      titles: gallery,
       topScorers: scorers.map(flag),
       topApps: apps.map(flag),
       legends: legends.map(flag),
       facts: clubFacts(history),
       records: history.records,
+      stadiumLevel: await clubStadiumLevel(squad, leagueSlug),
+      trophies: trophyShelf(gallery, await clubTrophyPlaceholders(leagueSlug)),
+      nextIdol: nextIdol(history.scorers, current),
     };
     return Response.json(body);
   },
