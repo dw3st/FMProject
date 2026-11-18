@@ -31,6 +31,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.20.1",
+    date: "2026-11-18",
+    time: "18:30",
+    items: [
+      { tab: "manager", pt: "Tela de demissão com uma cena pintada da saída do técnico.", en: "The sacking screen shows a painted scene of the manager leaving." },
+    ],
+    fixes: [
+      { tab: "club", pt: "Depois do último jogo da liga a diretoria não demite mais antes de avaliar a meta da temporada.", en: "After the last league match the board no longer sacks you before judging the season objective." },
+    ],
+  },
+  {
     version: "12.20",
     date: "2026-11-18",
     time: "17:33",
