@@ -3,6 +3,7 @@
  * and academy. Only the human club stores them (`Squad.facilities`); AI clubs use an implied level by
  * financial tier.
  */
+import type { ClubCraft, ComponentCounts, CraftQuality } from "@/types/craftTypes";
 
 export type StandId = "north" | "south" | "east" | "west";
 
@@ -32,6 +33,8 @@ export interface FacilityItem {
   alert?: 40 | 15;
   /** Stadium pitch only: the grass; absent = natural. */
   turf?: TurfType;
+  /** Quality of the last works (craft); absent = common. Good wears ×0,85, excellent ×0,70. */
+  quality?: "good" | "excellent";
 }
 
 export interface StadiumStand {
@@ -53,6 +56,12 @@ export interface FacilityProject {
   to?: number;
   /** Turf projects: the grass laid on completion. */
   turf?: TurfType;
+  /** Built from components (craft): no instalments, no board. */
+  craft?: true;
+  /** Components the works took (cancel gives half back). */
+  components?: ComponentCounts;
+  /** Quality the item gets on delivery. */
+  quality?: CraftQuality;
   /** Day the board approved it (first instalment due). */
   start: string;
   /** Completion day: the effect applies from this day on. */
@@ -122,6 +131,8 @@ export interface ClubFacilities {
   record?: { date: string; attendance: number; competition: string; opponentId: string };
   /** Mowing pattern of the stadium pitch (drawing only); absent = stripes. */
   mowing?: MowingPattern;
+  /** Craft (`docs/superpowers/specs/2026-11-18-club-craft-design.md`); absent until the first read sets it up. */
+  craft?: ClubCraft;
 }
 
 /** Body of `POST /api/saves/:id/facilities/request`. */

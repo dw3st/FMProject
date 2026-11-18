@@ -1,3 +1,4 @@
+import { CRAFT } from "@/Domain/craft/craftConfig";
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
 import { clamp } from "@/Domain/math";
 import { mulberry32, seedFrom } from "@/Domain/rng";
@@ -123,7 +124,7 @@ export function wearDay(items: FacilityItems, d: WearDayInput): { items: Facilit
     const it = items[id];
     if (!it) continue;
     const turf = id === "stadiumPitch" ? F.TURF.WEAR_MULT[it.turf ?? "natural"] : 1;
-    const dw = itemWearToday(id, it.level, d) * turf;
+    const dw = itemWearToday(id, it.level, d) * turf * CRAFT.QUALITY_WEAR[it.quality ?? "common"];
     if (dw > 0) worn[id] = { ...it, wear: it.wear + dw };
   }
   return crossings(worn);

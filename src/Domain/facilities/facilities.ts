@@ -12,6 +12,7 @@ import {
 } from "@/Domain/facilities/facilityItems";
 import { personalityOf } from "@/Domain/personality/personality";
 import { PERSONALITY } from "@/Domain/personality/personalityConfig";
+import type { ComponentCounts, CraftQuality } from "@/types/craftTypes";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type {
   AttendanceRow, BoardRefusal, ClubFacilities, CompletedFacilityProject, FacilityGroup, FacilityItemId, FacilityKind, FacilityProject,
@@ -523,6 +524,18 @@ export function startProject(
   return { ...f, projects: [...f.projects, project] };
 }
 
+/** A works built from components: no instalments and no board; delivers like the others. */
+export function startCraftProject(
+  f: ClubFacilities, quote: ProjectQuote,
+  args: { id: string; date: string; components: ComponentCounts; quality: CraftQuality },
+): ClubFacilities {
+  const started = startProject(f, quote, { id: args.id, date: args.date, boardShare: 0 });
+  const projects = started.projects.map((p) => (p.id === args.id
+    ? { ...p, instalments: 0, paid: 0, craft: true as const, components: args.components, quality: args.quality }
+    : p));
+  return { ...started, projects };
+}
+
 /**
  * A small repair (`quote.small`): paid now from the balance, in one `facilities` line, no board. The
  * project stays until its end (delivery, the works card) already paid.
@@ -599,6 +612,7 @@ export function advanceFacilities(f: ClubFacilities, date: string): FacilityDayR
       completed.push(p);
       if (p.kind === "stand" && p.stand && p.seats) {
         stands = stands.map((s) => (s.id === p.stand ? { ...s, seats: s.seats + p.seats! } : s));
+        if (p.quality && p.quality !== "common") items = { ...items, seats: { ...items.seats, quality: p.quality } };
       } else {
         items = applyCompletion(items, p);
       }
@@ -637,14 +651,26 @@ export function applyCompletion(items: ClubFacilities["items"], p: FacilityProje
     // The grass stays with the pitch through repairs and rebuilds; a turf works lays the new one.
     const turf = p.kind === "turf" ? p.turf : it.turf;
     // Repair: the target condition; rebuild / upgrade / turf: 100%. Warnings and the condemnation go.
-    return { ...items, [p.item]: { level, wear: wearFor(p.kind === "repair" ? p.to ?? 100 : 100), ...(turf ? { turf } : {}) } };
+    return {
+      ...items,
+      [p.item]: {
+        level, wear: wearFor(p.kind === "repair" ? p.to ?? 100 : 100),
+        ...(turf ? { turf } : {}),
+        ...(p.quality && p.quality !== "common" ? { quality: p.quality } : {}),
+      },
+    };
   }
   if (p.level === undefined) return items;
   const group = LEVEL_GROUP[p.kind];
   const ids = p.kind === "comfort" ? ["seats" as const] : group ? itemsOfGroup(group) : [];
   if (ids.length === 0) return items;
   const out = { ...items };
-  for (const id of ids) out[id] = { level: Math.min(F.ITEM_MAX_LEVEL, Math.max(out[id].level, 2 * p.level)), wear: 0 };
+  for (const id of ids) {
+    out[id] = {
+      level: Math.min(F.ITEM_MAX_LEVEL, Math.max(out[id].level, 2 * p.level)), wear: 0,
+      ...(p.quality && p.quality !== "common" ? { quality: p.quality } : {}),
+    };
+  }
   return out;
 }
 
