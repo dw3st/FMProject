@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.20.1",
     date: "2026-11-18",
-    time: "18:30",
+    time: "17:56",
     items: [
       { tab: "manager", pt: "Tela de demissão com uma cena pintada da saída do técnico.", en: "The sacking screen shows a painted scene of the manager leaving." },
     ],
