@@ -2788,7 +2788,13 @@
       "suspendedMatches_one": "Suspended for the next match",
       "suspendedMatches_other": "Suspended for the next {{count}} matches",
       "nationalDuty": "With the national team",
-      "needsRhythm": "Short of rhythm: fitness {{fitness}}"
+      "needsRhythm": "Short of rhythm: fitness {{fitness}}",
+      "unavailable": {
+        "loanedIn": "On loan from another club",
+        "tooOld": "Too old for a new contract",
+        "cooldown": "Renewed recently",
+        "notDue": "Contract still far from its end"
+      }
     },
     "home": {
       "nextMatch": "Next match",

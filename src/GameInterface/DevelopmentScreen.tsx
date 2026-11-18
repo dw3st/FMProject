@@ -268,21 +268,8 @@ export function DevelopmentScreen() {
                     }}
                   />
                   {factors && <GrowthFactorsPanel factors={factors} age={player.age} intensity={intensity} />}
-                  {session && (
-                    <IndividualTrainingPanel
-                      saveId={session.saveId}
-                      playerId={player.id}
-                      initial={squad.playerTraining?.[player.id]}
-                      onSaved={() => void refresh()}
-                    />
-                  )}
-                  {/* Where he plays naturally and where he needs to adapt (tester report), to pick a training position. */}
-                  {player.stats && (
-                    <div className="card-arcade rounded-md p-4">
-                      <PositionPitch aptitudes={positionAptitudes(player)} />
-                    </div>
-                  )}
                   <DevelopmentWarnings warnings={warnings} />
+                  <DevHistoryPanel history={player.devHistory} log={player.devLog} />
                 </div>
 
                 <div className="lg:col-span-2 space-y-6 phone:space-y-3">
@@ -292,7 +279,23 @@ export function DevelopmentScreen() {
                     potential={potential}
                     declining={factors?.phase === "declining"}
                   />
-                  <DevHistoryPanel history={player.devHistory} log={player.devLog} />
+                  {/* Training and positions side by side, so the middle column ends near the left one (tester report). */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 phone:gap-3 items-start">
+                    {session && (
+                      <IndividualTrainingPanel
+                        saveId={session.saveId}
+                        playerId={player.id}
+                        initial={squad.playerTraining?.[player.id]}
+                        onSaved={() => void refresh()}
+                      />
+                    )}
+                    {/* Where he plays naturally and where he needs to adapt (tester report), to pick a training position. */}
+                    {player.stats && (
+                      <div className="card-arcade rounded-md p-4">
+                        <PositionPitch aptitudes={positionAptitudes(player)} />
+                      </div>
+                    )}
+                  </div>
                   <DevelopmentExplanation explanation={explanation} roleFocus={roleFocus} />
                 </div>
               </div>

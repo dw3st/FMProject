@@ -3,7 +3,8 @@ import { summaryOf } from "@/Domain/personality/personality";
 import { addDays } from "@/Domain/dates";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { ATTENTION_BUTTON, AVAILABILITY_DOT, availabilityOf } from "@/GameInterface/statusColors";
-import { contractRenewalDue } from "@/Domain/contracts/contracts";
+import { contractRenewalDue, renewalAvailableOn } from "@/Domain/contracts/contracts";
+import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { useState, useMemo, useEffect } from "react";
 import { matchesCountryQuery } from "@/Domain/world/labels";
@@ -40,7 +41,24 @@ import { TalkModal } from "@/GameInterface/Morale/TalkModal";
 import { navigate } from "@/GameInterface/router/navigation";
 import { TerminateButton } from "@/GameInterface/Contracts/TerminateButton";
 
-type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; renewDue: boolean };
+type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; renewDue: boolean; renewBlock: RenewBlock | null };
+/** Why the renew slot is dimmed on a row of the own squad (tester report: every row shows the same slots). */
+type RenewBlock = "loanedIn" | "tooOld" | "cooldown" | "notDue";
+
+/** A slot of the action column that does not apply to this player: same size as the button, dimmed, not clickable. */
+function UnavailableAction({ icon, reason }: { icon: "tag" | "close" | "file-signature"; reason: string }) {
+  return (
+    <span
+      title={reason}
+      aria-label={reason}
+      aria-disabled="true"
+      onClick={(e) => e.stopPropagation()}
+      className="flex items-center justify-center w-9 h-8 border border-border rounded-lg text-muted-foreground bg-transparent opacity-30 cursor-not-allowed"
+    >
+      <Icon name={icon} className="w-4 h-4" />
+    </span>
+  );
+}
 
 /** Column key → the row field it sorts by (a text label sorts by the number behind it). */
 const SORT_FIELD: Record<string, string> = {
@@ -107,7 +125,8 @@ export function SquadRosterTable({
   ];
   // Own squad: Talk (or Answer, with an open request) beside Renew, icon buttons so the table fits without a
   // sideways scroll (tester report, 4.47.10); the label is in `title` and `aria-label`.
-  const gridTemplateColumns = [...columns.map((c) => c.width), "4rem", showMorale ? "9.5rem" : "7rem"].join(" ");
+  // Own squad: four fixed slots (sale, talk, release, renew) in the same order on every row, so the icons line up.
+  const gridTemplateColumns = [...columns.map((c) => c.width), "4rem", showMorale ? "11.75rem" : "7rem"].join(" ");
   const talkOf = (id: string) => squad.moraleClub?.talks.find((x) => x.playerId === id) ?? null;
   // Already talked (praise / demand works once per `PRAISE_EVERY_DAYS`): the button rests until then (user request, 4.47.11).
   const talkedRest = (id: string): { on: string; until: string } | null => {
@@ -126,6 +145,11 @@ export function SquadRosterTable({
       morale: moraleOf(p),
       flagCode: nationalityFlagCode(p.nationality),
       renewDue: showMorale && !!currentDate && contractRenewalDue(p, currentDate),
+      renewBlock: !showMorale || !currentDate || contractRenewalDue(p, currentDate) ? null
+        : p.loan ? "loanedIn"
+        : p.contract && renewalAvailableOn(p.contract, currentDate) ? "cooldown"
+        : p.age + 1 > CONTRACT_CONFIG.MAX_CONTRACT_AGE ? "tooOld"
+        : "notDue",
     }));
   }, [squad, leagueSlug, clubSlug, currentDate, showMorale]);
   const players = useMemo(
@@ -206,7 +230,7 @@ export function SquadRosterTable({
       <div className="overflow-x-auto flex-1 flex flex-col">
       {/* A fixed minimum, not min-w-max: with max-content the name column grew to the longest name and its badges
           and pushed the actions off the screen (tester report 2026-11-18); now the name truncates instead. */}
-      <div className={showMorale ? "min-w-[71rem]" : "min-w-[60rem]"}>
+      <div className={showMorale ? "min-w-[73rem]" : "min-w-[60rem]"}>
       <div
         className="grid items-center bg-muted/30 border-b border-border text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display overflow-y-hidden [scrollbar-gutter:stable]"
         style={{ gridTemplateColumns }}
@@ -301,8 +325,11 @@ export function SquadRosterTable({
             <div className="px-3 py-2.5 flex justify-center">
               <FitStatusIcon status={player.status} energy={player.energy} injury={player.injury} suspendedMatches={player.suspendedMatches} {...(player.nationalDutyUntil ? { nationalDutyUntil: player.nationalDutyUntil } : {})} />
             </div>
-            <div className="px-3 py-2.5 flex justify-center gap-2">
+            <div className={`px-3 py-2.5 flex justify-center ${showMorale ? "gap-1.5" : "gap-2"}`}>
               {/* Put him up for sale without leaving the squad (tester report, 8.8.7) */}
+              {showMorale && (!session || player.loan) && (
+                <UnavailableAction icon="tag" reason={t("dashboard.squadRosterTable.unavailable.loanedIn")} />
+              )}
               {showMorale && session && !player.loan && (
                 <button
                   type="button"
@@ -345,6 +372,9 @@ export function SquadRosterTable({
                 </button>
               )}
               {/* Release a player without leaving the squad (report 12.18) */}
+              {showMorale && (!session || player.loan) && (
+                <UnavailableAction icon="close" reason={t("dashboard.squadRosterTable.unavailable.loanedIn")} />
+              )}
               {showMorale && session && !player.loan && (
                 <TerminateButton compact saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => void refresh({ background: true })} />
               )}
@@ -358,7 +388,9 @@ export function SquadRosterTable({
                 >
                   <Icon name="file-signature" className="w-4 h-4" />
                 </button>
-              ) : showMorale ? null : (
+              ) : showMorale ? (
+                <UnavailableAction icon="file-signature" reason={t(`dashboard.squadRosterTable.unavailable.${player.renewBlock ?? "notDue"}`)} />
+              ) : (
               <button
                 type="button"
                 disabled={!!mySquadId && player.squadId === mySquadId}
