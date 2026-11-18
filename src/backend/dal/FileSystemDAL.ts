@@ -1,5 +1,6 @@
 import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import type { BetsState } from "@/types/betTypes";
+import type { CasinoState } from "@/types/casinoTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import type { SaveMeta } from "@/backend/SaveService";
@@ -682,6 +683,15 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSeatBets(saveId: string, seatId: string, state: BetsState): Promise<void> {
     const dir = seatDir(saveId, seatId);
     await writeJsonFile(dir, `${dir}/bets.json`, state);
+  }
+
+  async readSeatCasino(saveId: string, seatId: string): Promise<CasinoState | null> {
+    return readJsonFile<CasinoState>(`${seatDir(saveId, seatId)}/casino.json`);
+  }
+
+  async writeSeatCasino(saveId: string, seatId: string, state: CasinoState): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/casino.json`, state);
   }
 
   async readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null> {

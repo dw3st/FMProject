@@ -105,6 +105,10 @@ export interface SeatState {
   betNet?: number;
   betExact?: number;
   betLongshot?: boolean;
+  /** Payout minus stake of the casino (`.claude/rules/game/casino.md`); like `betNet`, never touches the earnings. */
+  casinoNet?: number;
+  /** Biggest single casino payout. */
+  casinoBiggestWin?: number;
   managerRenewal?: ManagerRenewalOffer;
   managerContractNotices?: string[];
   inboxPrefs?: InboxPrefs;
@@ -130,7 +134,7 @@ export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "youthCoachPlanned", "board", "press", "managerBan", "sackingEnabled",
-  "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerReactions", "managerStudies", "trustedStaff", "betNet", "betExact", "betLongshot", "managerRenewal",
+  "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerReactions", "managerStudies", "trustedStaff", "betNet", "betExact", "betLongshot", "casinoNet", "casinoBiggestWin", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites", "tacticLog",
 ] as const satisfies readonly (keyof SeatState)[];

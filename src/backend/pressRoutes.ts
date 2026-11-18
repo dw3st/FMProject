@@ -94,7 +94,7 @@ export const pressRoutes = {
       let banned = 0;
       if (out.attack) {
         if (out.attack.fined) {
-          const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await service.getBets(saveId, auth.seatId)));
+          const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await service.getBets(saveId, auth.seatId)), meta.casinoNet);
           fine = Math.min(wallet, Math.round(PRESS.ATTACK.FINE_WEEKS * (meta.managerContract?.wage ?? 0)));
         }
         if (out.attack.banned) banned = PRESS.ATTACK.BAN_MATCHES;

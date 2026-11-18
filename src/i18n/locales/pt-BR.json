@@ -5886,6 +5886,91 @@
     "currentTournament": "{{name}} em andamento até {{to}}",
     "noMatch": "Nenhuma seleção encontrada"
   },
+  "casino": {
+    "loadFailed": "Não foi possível abrir o cassino.",
+    "kpi": {
+      "wallet": "Sua carteira",
+      "net": "Resultado no cassino",
+      "lost": "Perda hoje",
+      "rounds": "Rodadas hoje"
+    },
+    "games": {
+      "classic": {
+        "name": "Máquina clássica",
+        "desc": "Três rolos, uma linha. O 7 triplo paga 500 vezes."
+      },
+      "stadium": {
+        "name": "Máquina Estádio",
+        "desc": "Cinco rolos, dez linhas. O escudo substitui qualquer símbolo."
+      },
+      "crash": {
+        "name": "Avião",
+        "desc": "O multiplicador sobe até o avião sumir. Retire antes."
+      }
+    },
+    "limitsLine": "Aposta de {{min}} a {{max}} (2% da carteira). Perda máxima no dia: 10% da carteira do início do dia.",
+    "stake": "Aposta",
+    "spin": "Girar",
+    "spins": "Giros",
+    "spinsN_one": "{{count}} giro",
+    "spinsN_other": "{{count}} giros",
+    "spinning": "Girando...",
+    "pickStake": "Escolha a aposta e gire.",
+    "won": "Ganhou {{value}} · {{x}}×",
+    "noWin": "Não foi dessa vez.",
+    "series": "{{done}} de {{total}} giros · ganhos {{value}}",
+    "classicLine": "Aposta de {{value}} na linha do meio.",
+    "stadiumLines": "Aposta de {{value}}: {{line}} em cada uma das 10 linhas.",
+    "paytable": "Prêmios",
+    "pays": "Paga",
+    "anyThird": "e qualquer outro",
+    "stadiumRules": "Três ou mais iguais seguidos a partir do primeiro rolo, numa das 10 linhas. O prêmio multiplica a aposta da linha.",
+    "symbol": {
+      "crest": "Escudo",
+      "trophy": "Taça",
+      "glove": "Luva",
+      "boot": "Chuteira",
+      "whistle": "Apito",
+      "card": "Cartões",
+      "ball": "Bola"
+    },
+    "recent": "Últimas jogadas",
+    "noHistory": "Nenhuma jogada ainda.",
+    "col": {
+      "game": "Jogo",
+      "stake": "Aposta",
+      "mult": "Multiplicador",
+      "payout": "Recebeu"
+    },
+    "crash": {
+      "bet": "Apostar",
+      "cashOut": "Retirar {{value}}",
+      "auto": "Retirar sozinho em",
+      "autoOff": "Desligado",
+      "idle": "Aposte para o avião decolar.",
+      "potential": "Retirando agora: {{value}}",
+      "flewAway": "Voou em {{x}}",
+      "flewShort": "voou em {{x}}",
+      "cashedAt": "Retirou em {{x}} · {{value}}",
+      "last": "Últimos voos",
+      "none": "Nenhum voo ainda.",
+      "rules": "O ponto em que o avião some é sorteado na aposta e só aparece no fim. Às vezes ele some logo na decolagem."
+    },
+    "errors": {
+      "generic": "Algo deu errado. Tente de novo.",
+      "invalidStake": "Aposta inválida.",
+      "stakeTooHigh": "A aposta passa de 2% da sua carteira.",
+      "dailyLossCap": "Você chegou à perda máxima de hoje. Volte amanhã.",
+      "roundsCap": "Você chegou ao limite de rodadas de hoje.",
+      "noMoney": "Dinheiro insuficiente na carteira.",
+      "roundOpen": "Já há um voo em andamento.",
+      "invalidMachine": "Máquina desconhecida.",
+      "invalidAuto": "A retirada automática precisa ser 1,01 ou mais.",
+      "noRound": "Esse voo já terminou.",
+      "noClub": "Sem clube.",
+      "lobby": "A liga ainda não começou."
+    }
+  },
   "achievements": {
     "decorStyle": {
       "colors": "Cores",
@@ -5940,7 +6025,8 @@
       "belongings": "Bens",
       "stadium": "Estádio",
       "reactions": "Reações",
-      "courses": "Cursos"
+      "courses": "Cursos",
+      "casino": "Cassino"
     },
     "loading": "Carregando conquistas…",
     "loadFailed": "Não foi possível carregar as conquistas.",

@@ -116,7 +116,7 @@ export const jobRoutes = {
       if (!meta.clubId || meta.unemployed) return Response.json({ error: "noClub" }, { status: 409 });
       // The release fee (half the wage of the weeks left, as an offer's compensation) from the manager's own money.
       const fee = compensationFee(meta.managerContract, meta.currentDate);
-      const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await saveService.getBets(saveId, auth.seatId)));
+      const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await saveService.getBets(saveId, auth.seatId)), meta.casinoNet);
       if (fee > wallet) return Response.json({ error: "noMoney", fee, wallet }, { status: 409 });
       const buffer = new BufferingSaveDAL(new FileSystemDAL());
       const service = new SaveService(buffer);

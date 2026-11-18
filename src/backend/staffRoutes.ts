@@ -52,7 +52,7 @@ async function human(saveId: string, seatId: string, service: SaveService = save
   if (!ref || !squad) return Response.json({ error: "squad not found" }, { status: 404 });
   const date = meta.currentDate ?? "";
   const seasonEnd = meta.activeLeagues?.find((l) => l.leagueSlug === ref.leagueSlug)?.end ?? date;
-  const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await service.getBets(saveId, seatId)));
+  const wallet = managerWallet(meta.managerEarnings, meta.managerSpent, meta.betNet, openTotal(await service.getBets(saveId, seatId)), meta.casinoNet);
   const chiefId = headOf(squad, "scout")?.id;
   const leading = new Set<string>();
   for (const m of (await service.getScouting(saveId, seatId)).missions) {

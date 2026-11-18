@@ -290,7 +290,7 @@ export const achievementRoutes = {
         paid += ACHIEVEMENTS.LEGEND_SPIN.REROLL_POINTS;
       } else if (!pendingTaken) {
         const meta = await saveService.getSeatMeta(saveId, auth.seatId);
-        const wallet = managerWallet(meta?.managerEarnings, meta?.managerSpent, meta?.betNet, openTotal(await saveService.getBets(saveId, auth.seatId)));
+        const wallet = managerWallet(meta?.managerEarnings, meta?.managerSpent, meta?.betNet, openTotal(await saveService.getBets(saveId, auth.seatId)), meta?.casinoNet);
         if (wallet < ACHIEVEMENTS.LEGEND_SPIN.REROLL_MONEY) return bad("noMoney", 409);
         await saveService.updateSeat(saveId, auth.seatId, { managerSpent: (meta?.managerSpent ?? 0) + ACHIEVEMENTS.LEGEND_SPIN.REROLL_MONEY });
       }

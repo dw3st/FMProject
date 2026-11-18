@@ -23,10 +23,11 @@ export interface BetSeat {
   managerEarnings?: number;
   managerSpent?: number;
   betNet?: number;
+  casinoNet?: number;
 }
 
 export function walletOf(seat: BetSeat, state: BetsState): number {
-  return managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(state));
+  return managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(state), seat.casinoNet);
 }
 
 /** Prices of one game, from the same expected goals the simulated matches use (automatic 4-3-3). */

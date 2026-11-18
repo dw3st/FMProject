@@ -26,6 +26,7 @@ import { DecorShopSection } from "@/GameInterface/Achievements/DecorShop";
 import { CoursesTab } from "@/GameInterface/Achievements/CoursesTab";
 import { ReactionsTab } from "@/GameInterface/Achievements/ReactionsTab";
 import { BetsTab } from "@/GameInterface/Achievements/BetsTab";
+import { CasinoTab } from "@/GameInterface/Achievements/Casino/CasinoTab";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
@@ -46,8 +47,8 @@ import {
 // The manager's screen (user request, option A, 8.9.36): profile, achievements, shop (points and money), bets.
 // The shop split into its own tabs (tester report, 8.9.38: one long page needed scrolling): players, legends, belongings.
 // The stadium decorations got their own tab (9.1.1, user request).
-type Tab = "profile" | "list" | "players" | "legends" | "belongings" | "stadium" | "reactions" | "courses" | "bets";
-const TABS: Tab[] = ["profile", "list", "players", "legends", "belongings", "stadium", "reactions", "courses", "bets"];
+type Tab = "profile" | "list" | "players" | "legends" | "belongings" | "stadium" | "reactions" | "courses" | "bets" | "casino";
+const TABS: Tab[] = ["profile", "list", "players", "legends", "belongings", "stadium", "reactions", "courses", "bets", "casino"];
 /** Links from before the regrouping. */
 const OLD_TABS: Record<string, Tab> = { manager: "profile", assets: "belongings", shop: "players" };
 const TIERS = ["bronze", "silver", "gold"] as const;
@@ -137,6 +138,7 @@ export function AchievementsScreen() {
         </div>
       )}
       {tab === "bets" && <BetsTab />}
+      {tab === "casino" && <CasinoTab />}
       {tab === "stadium" && <StadiumTab data={data} saveId={saveId} onChange={setData} />}
       {tab === "courses" && <CoursesTab />}
       {tab === "reactions" && <ReactionsTab />}

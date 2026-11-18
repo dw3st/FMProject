@@ -1,5 +1,6 @@
 import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import type { BetsState } from "@/types/betTypes";
+import type { CasinoState } from "@/types/casinoTypes";
 import { emptyBets } from "@/Domain/bets/bets";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
 import { initClubMorale } from "@/Domain/morale/morale";
@@ -404,6 +405,15 @@ export class SaveService {
 
   writeBets(saveId: string, state: BetsState, seatId: string): Promise<void> {
     return this.dal.writeSeatBets(saveId, seatId, state);
+  }
+
+  /** The seat's casino state (`.claude/rules/game/casino.md`); null before the first play. */
+  getCasino(saveId: string, seatId: string): Promise<CasinoState | null> {
+    return this.dal.readSeatCasino(saveId, seatId);
+  }
+
+  writeCasino(saveId: string, state: CasinoState, seatId: string): Promise<void> {
+    return this.dal.writeSeatCasino(saveId, seatId, state);
   }
 
   async getScouting(saveId: string, seatId: string): Promise<ScoutingState> {

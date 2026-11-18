@@ -5889,6 +5889,91 @@
     "currentTournament": "{{name}} under way until {{to}}",
     "noMatch": "No national team found"
   },
+  "casino": {
+    "loadFailed": "Could not open the casino.",
+    "kpi": {
+      "wallet": "Your wallet",
+      "net": "Casino result",
+      "lost": "Lost today",
+      "rounds": "Rounds today"
+    },
+    "games": {
+      "classic": {
+        "name": "Classic machine",
+        "desc": "Three reels, one line. Triple 7 pays 500 times."
+      },
+      "stadium": {
+        "name": "Stadium machine",
+        "desc": "Five reels, ten lines. The crest stands for any symbol."
+      },
+      "crash": {
+        "name": "Plane",
+        "desc": "The multiplier climbs until the plane flies away. Cash out first."
+      }
+    },
+    "limitsLine": "Stake from {{min}} to {{max}} (2% of the wallet). Daily loss cap: 10% of the wallet at the start of the day.",
+    "stake": "Stake",
+    "spin": "Spin",
+    "spins": "Spins",
+    "spinsN_one": "{{count}} spin",
+    "spinsN_other": "{{count}} spins",
+    "spinning": "Spinning...",
+    "pickStake": "Pick a stake and spin.",
+    "won": "Won {{value}} · {{x}}×",
+    "noWin": "Not this time.",
+    "series": "{{done}} of {{total}} spins · won {{value}}",
+    "classicLine": "Stake of {{value}} on the middle line.",
+    "stadiumLines": "Stake of {{value}}: {{line}} on each of the 10 lines.",
+    "paytable": "Paytable",
+    "pays": "Pays",
+    "anyThird": "and any other",
+    "stadiumRules": "Three or more alike in a row from the first reel, on one of the 10 lines. The prize multiplies the line stake.",
+    "symbol": {
+      "crest": "Crest",
+      "trophy": "Trophy",
+      "glove": "Glove",
+      "boot": "Boot",
+      "whistle": "Whistle",
+      "card": "Cards",
+      "ball": "Ball"
+    },
+    "recent": "Recent plays",
+    "noHistory": "No plays yet.",
+    "col": {
+      "game": "Game",
+      "stake": "Stake",
+      "mult": "Multiplier",
+      "payout": "Paid"
+    },
+    "crash": {
+      "bet": "Bet",
+      "cashOut": "Cash out {{value}}",
+      "auto": "Auto cash-out at",
+      "autoOff": "Off",
+      "idle": "Bet to make the plane take off.",
+      "potential": "Cashing out now: {{value}}",
+      "flewAway": "Flew away at {{x}}",
+      "flewShort": "flew at {{x}}",
+      "cashedAt": "Cashed out at {{x}} · {{value}}",
+      "last": "Last flights",
+      "none": "No flights yet.",
+      "rules": "The point where the plane flies away is drawn at the bet and only shown at the end. Sometimes it flies away at take-off."
+    },
+    "errors": {
+      "generic": "Something went wrong. Try again.",
+      "invalidStake": "Invalid stake.",
+      "stakeTooHigh": "The stake is over 2% of your wallet.",
+      "dailyLossCap": "You reached today's loss cap. Come back tomorrow.",
+      "roundsCap": "You reached today's round limit.",
+      "noMoney": "Not enough money in the wallet.",
+      "roundOpen": "A flight is already on.",
+      "invalidMachine": "Unknown machine.",
+      "invalidAuto": "The auto cash-out must be 1.01 or more.",
+      "noRound": "That flight is over.",
+      "noClub": "No club.",
+      "lobby": "The league has not started yet."
+    }
+  },
   "achievements": {
     "decorStyle": {
       "colors": "Colours",
@@ -5943,7 +6028,8 @@
       "belongings": "Belongings",
       "stadium": "Stadium",
       "reactions": "Reactions",
-      "courses": "Courses"
+      "courses": "Courses",
+      "casino": "Casino"
     },
     "loading": "Loading achievements…",
     "loadFailed": "Could not load the achievements.",

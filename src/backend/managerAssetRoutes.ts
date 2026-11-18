@@ -26,7 +26,7 @@ export const managerAssetRoutes = {
       const bets = await saveService.getBets(saveId, auth.seatId);
       return Response.json({
         owned,
-        wallet: managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets)),
+        wallet: managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets), seat.casinoNet),
         shop: SHOP_REACTION_IDS.map((id) => ({ id, ...SHOP_REACTIONS[id], owned: owned.includes(id) })),
       });
     }
@@ -38,7 +38,7 @@ export const managerAssetRoutes = {
       const seat = await saveService.getSeat(saveId, auth.seatId);
       if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
       const bets = await saveService.getBets(saveId, auth.seatId);
-      const refusal = reactionRefusal(seat.managerReactions, id, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets)));
+      const refusal = reactionRefusal(seat.managerReactions, id, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets), seat.casinoNet));
       if (refusal) return Response.json({ error: refusal }, { status: 409 });
       const managerReactions = [...(seat.managerReactions ?? []), id];
       const managerSpent = (seat.managerSpent ?? 0) + SHOP_REACTIONS[id].price!;
@@ -59,7 +59,7 @@ export const managerAssetRoutes = {
       const seat = await saveService.getSeat(saveId, auth.seatId);
       if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
       const bets = await saveService.getBets(saveId, auth.seatId);
-      const refusal = assetRefusal(seat.managerAssets, kind, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets)));
+      const refusal = assetRefusal(seat.managerAssets, kind, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets), seat.casinoNet));
       if (refusal) return Response.json({ error: refusal }, { status: 409 });
       const managerAssets = { ...seat.managerAssets, [kind]: (seat.managerAssets?.[kind] ?? 0) + 1 };
       const managerSpent = (seat.managerSpent ?? 0) + nextAssetPrice(seat.managerAssets, kind)!;
@@ -88,7 +88,7 @@ export const managerAssetRoutes = {
       if (!seat || !meta) return Response.json({ error: "save not found" }, { status: 404 });
       const date = meta.currentDate ?? "";
       const bets = await saveService.getBets(saveId, auth.seatId);
-      const wallet = managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets));
+      const wallet = managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets), seat.casinoNet);
       const courseKind = kind as CourseKind;
       const refusal = courseRefusal({
         kind: courseKind, ...(language ? { language } : {}), ...(replace ? { replace } : {}), studies: seat.managerStudies,
@@ -114,7 +114,7 @@ export const managerAssetRoutes = {
       const seat = await saveService.getSeat(saveId, auth.seatId);
       if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
       const bets = await saveService.getBets(saveId, auth.seatId);
-      const refusal = decorRefusal(seat.managerDecor, item, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets)));
+      const refusal = decorRefusal(seat.managerDecor, item, managerWallet(seat.managerEarnings, seat.managerSpent, seat.betNet, openTotal(bets), seat.casinoNet));
       if (refusal) return Response.json({ error: refusal }, { status: 409 });
       const managerDecor = [...(seat.managerDecor ?? []), item];
       const managerSpent = (seat.managerSpent ?? 0) + DECOR_ITEMS[item].price;

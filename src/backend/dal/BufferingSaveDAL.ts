@@ -1,5 +1,6 @@
 import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import type { BetsState } from "@/types/betTypes";
+import type { CasinoState } from "@/types/casinoTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
 import { runPool } from "@/backend/dal/pool";
@@ -520,6 +521,12 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   async writeSeatBets(saveId: string, seatId: string, state: BetsState): Promise<void> {
     this.buffer(`seatBets:${saveId}:${seatId}`, state, () => this.inner.writeSeatBets(saveId, seatId, state));
+  }
+  readSeatCasino(saveId: string, seatId: string): Promise<CasinoState | null> {
+    return this.readThrough(`seatCasino:${saveId}:${seatId}`, () => this.inner.readSeatCasino(saveId, seatId));
+  }
+  async writeSeatCasino(saveId: string, seatId: string, state: CasinoState): Promise<void> {
+    this.buffer(`seatCasino:${saveId}:${seatId}`, state, () => this.inner.writeSeatCasino(saveId, seatId, state));
   }
   readSeatScouting(saveId: string, seatId: string): Promise<ScoutingState | null> {
     return this.readThrough(`seatScouting:${saveId}:${seatId}`, () => this.inner.readSeatScouting(saveId, seatId));
