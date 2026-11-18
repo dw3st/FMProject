@@ -68,11 +68,13 @@ export function GrowthFactorsPanel({ factors, age, intensity }: {
       <ul className="m-0 p-0 list-none divide-y divide-border/50">
         {factors.factors.map((f, i) => (
           <li key={`${f.id}-${f.area ?? i}`} className="flex items-center gap-3 py-2">
-            <span className="flex-1 min-w-0 text-sm text-foreground truncate">{factorName(t, f, intensity)}</span>
-            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground shrink-0 phone:hidden">
-              {t(`${k}.scope.${f.scope}`)}
-            </span>
-            <span className={`text-sm font-bold tabular-nums w-20 text-right shrink-0 ${toneOf(f)}`}>
+            <div className="flex-1 min-w-0">
+              <span className="block text-sm text-foreground break-words">{factorName(t, f, intensity)}</span>
+              <span className="block font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
+                {t(`${k}.scope.${f.scope}`)}
+              </span>
+            </div>
+            <span className={`text-sm font-bold tabular-nums text-right shrink-0 whitespace-nowrap ${toneOf(f)}`}>
               {factorValue(t, f.mult)}
             </span>
           </li>
