@@ -3,7 +3,7 @@
  * left on it, by how much he matters to the squad, capped at half his market value. He leaves as a free agent. Pure.
  */
 import { MIN_BY_ROLE } from "@/Domain/contracts/freeAgents";
-import { getMainRole } from "@/Domain/roles";
+import { getMainRole, type MainRole } from "@/Domain/roles";
 import { suggestedStatuses } from "@/Domain/morale/morale";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { SquadStatus } from "@/types/moraleTypes";
@@ -17,6 +17,8 @@ export const TERMINATION = {
   VALUE_CAP: 0.5,
   /** Rounded to this (EUR). */
   ROUND: 1000,
+  /** A squad of this many or fewer cannot let anyone go (the sale rule). */
+  MIN_SQUAD: 14,
 } as const;
 
 const DAY_MS = 86_400_000;
@@ -50,11 +52,20 @@ export function terminationQuote(player: RosterPlayer, squad: Pick<Squad, "playe
   return { fee, weeksLeft, wagesLeft, share, status, capped };
 }
 
-/** True when letting `playerId` go leaves his line below the squad minimum. */
+/**
+ * True when letting `playerId` go is refused: the squad would keep 14 or fewer, the same rule as selling a player
+ * (`humanSaleBlocked`; report 12.18: the old line minimum blocked releasing a bad player at most clubs).
+ */
 export function terminationBreaksDepth(squad: Pick<Squad, "players">, playerId: string): boolean {
+  if (!squad.players.some((p) => p.id === playerId)) return false;
+  return squad.players.length <= TERMINATION.MIN_SQUAD;
+}
+
+/** His line after he leaves, when it drops below the usual minimum (a warning, not a refusal). */
+export function terminationThinLine(squad: Pick<Squad, "players">, playerId: string): { line: MainRole; left: number; min: number } | null {
   const player = squad.players.find((p) => p.id === playerId);
-  if (!player) return false;
+  if (!player) return null;
   const line = getMainRole(player.positions[0] ?? "");
   const left = squad.players.filter((p) => p.id !== playerId && getMainRole(p.positions[0] ?? "") === line).length;
-  return left < MIN_BY_ROLE[line];
+  return left < MIN_BY_ROLE[line] ? { line, left, min: MIN_BY_ROLE[line] } : null;
 }

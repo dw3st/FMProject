@@ -31,6 +31,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.18.2",
+    date: "2026-11-18",
+    time: "14:20",
+    items: [],
+    fixes: [
+      { tab: "squad", pt: "Dispensar um jogador ficou mais fácil: o botão de rescisão está na tabela do Elenco, mostra a multa antes de confirmar e só fica bloqueado com 14 jogadores ou menos, como nas vendas.", en: "Releasing a player is easier: the termination button is on the Squad table, shows the fee before you confirm and is only blocked at 14 players or fewer, as with sales." },
+    ],
+  },
+  {
+    version: "12.18.1",
+    date: "2026-11-18",
+    time: "14:07",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "A partida ao vivo podia ficar com o campo todo verde, sem jogadores, nos jogos em casa com escudo na torcida.", en: "The live match could show an all-green pitch with no players in home games with the crest in the stands." },
+    ],
+  },
+  {
     version: "12.18",
     date: "2026-11-18",
     time: "13:12",
