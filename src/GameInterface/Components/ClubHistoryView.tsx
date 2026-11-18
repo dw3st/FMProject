@@ -21,7 +21,7 @@ import { NameCell, NumberCell, RankCell, StatsCell, StatsHead, StatsRow, StatsTa
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 
 const RECORD_ORDER: ClubRecordKind[] = [
-  "biggestWin", "biggestLoss", "unbeaten", "recordSigning", "recordSale", "mostGoalsSeason", "highestFinish",
+  "biggestWin", "biggestLoss", "unbeaten", "recordSigning", "recordSale", "mostGoalsSeason",
 ];
 /** Records shown even before they exist (dimmed), so an empty history still has its cards. */
 const RECORD_PLACEHOLDERS: ClubRecordKind[] = ["biggestWin", "biggestLoss", "unbeaten", "recordSigning"];
@@ -326,9 +326,9 @@ function TopPlayersBlock({ data, leagueSlug }: { data: ClubHistoryResponse; leag
           }
         >
           {sorted.map((p, i) => (
-            <StatsRow key={p.playerId} highlight={p.current}>
+            <StatsRow key={p.playerId}>
               <RankCell rank={i + 1} />
-              <NameCell highlight={p.current} href={p.current ? playerHref(leagueSlug, data.squadId, p.playerId) : undefined}>
+              <NameCell href={p.current ? playerHref(leagueSlug, data.squadId, p.playerId) : undefined}>
                 <span className="truncate">{p.name}</span>
                 {p.retired && <span className="shrink-0 text-sm font-normal text-muted-foreground">· {t("clubHistory.retired")}</span>}
               </NameCell>
