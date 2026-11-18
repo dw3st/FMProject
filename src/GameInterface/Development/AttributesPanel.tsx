@@ -9,6 +9,7 @@ export interface DevAttribute {
   name: string;
   value: number;
   direction: AttrDirection;
+  /** Weight of the attribute in the player's position (`limited` = it counts little or nothing). */
   focus: AttrFocus;
   /** 0–1: how far the DP buffer is toward the next 0.1 step, i.e. the next display point (undefined = unknown) */
   progressPct?: number;
@@ -16,6 +17,12 @@ export interface DevAttribute {
 
 interface AttributesPanelProps {
   attributes: DevAttribute[];
+  /** OVR on the 0..10 scale. */
+  ovr: number;
+  /** Potential band on the 0..10 scale; null past the age of big growth (`potentialBand`). */
+  potential: [number, number] | null;
+  /** In the age decline the buffer reads as the margin before losing a point. */
+  declining: boolean;
 }
 
 /** Bar of an attribute on the 0..100 display scale, coloured by band. */
@@ -30,48 +37,70 @@ function AttributeBar({ display }: { display: number }) {
   );
 }
 
-export function AttributesPanel({ attributes }: AttributesPanelProps) {
+const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
+
+export function AttributesPanel({ attributes, ovr, potential, declining }: AttributesPanelProps) {
   const { t } = useTranslation();
+  const k = "developmentScreen.attributes";
   return (
     <div className="card-arcade rounded-md p-5">
-      <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">
-        {t("development.attributesTitle")}
-      </h3>
+      <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">{t(`${k}.title`)}</h3>
 
-      <div className="space-y-5">
+      <div className="flex flex-wrap items-end gap-6 mb-5">
+        <div>
+          <p className={`${LABEL} m-0`}>{t(`${k}.ovr`)}</p>
+          <p className={`font-display font-bold tabular-nums text-3xl leading-none m-0 mt-1 ${attributeTextClass(attrDisplay(ovr))}`}>
+            {attrDisplay(ovr)}
+          </p>
+        </div>
+        <div>
+          <p className={`${LABEL} m-0`}>{t(`${k}.potential`)}</p>
+          {potential ? (
+            <>
+              <p className="font-display font-bold tabular-nums text-3xl leading-none m-0 mt-1 text-foreground">
+                {attrDisplay(potential[0])}–{attrDisplay(potential[1])}
+              </p>
+              <p className="text-sm text-muted-foreground m-0 mt-1">{t(`${k}.potentialHint`)}</p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground m-0 mt-1">{t(`${k}.potentialDone`)}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 phone:grid-cols-2 gap-x-6 gap-y-4">
         {attributes.map((attr) => {
           const display = attrDisplay(attr.value);
+          const pct = Math.round(Math.min(1, attr.progressPct ?? 0) * 100);
           return (
             <div key={attr.name}>
-              <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center justify-between gap-3 mb-1.5">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-bold text-foreground truncate text-[13px] uppercase tracking-[0.08em] font-display">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`truncate ${attr.focus === "limited" ? "text-muted-foreground" : "text-foreground"} font-bold text-[13px] uppercase tracking-[0.08em] font-display`}>
                       {attr.name}
                     </span>
                     {attr.focus === "primary" && (
-                      <span className="text-sm px-2.5 py-0.5 rounded border border-primary/50 text-primary font-bold bg-transparent shrink-0">
+                      <span className="text-sm px-2 py-0.5 rounded border border-primary/50 text-primary font-bold shrink-0">
                         {t("development.attributesPrimary")}
                       </span>
                     )}
                     {attr.focus === "secondary" && (
-                      <span className="text-sm px-2.5 py-0.5 rounded border border-chart-3/50 text-chart-3 font-bold bg-transparent shrink-0">
+                      <span className="text-sm px-2 py-0.5 rounded border border-chart-3/50 text-chart-3 font-bold shrink-0">
                         {t("development.attributesSecondary")}
                       </span>
                     )}
                   </div>
-                  <span className="text-sm text-muted-foreground tabular-nums mt-0.5 block">
-                    {t("development.developmentProgress")}:{" "}
-                    {Math.round(Math.min(1, attr.progressPct ?? 0) * 100)}%
-                  </span>
+                  {attr.progressPct !== undefined && (
+                    <span className="text-sm text-muted-foreground tabular-nums block">
+                      {t(declining ? `${k}.toDrop` : `${k}.toNext`, { pct })}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className={`text-lg font-bold font-display tabular-nums ${attributeTextClass(display)}`}>
-                    {display}
-                  </span>
-                </div>
+                <span className={`text-lg font-bold font-display tabular-nums shrink-0 ${attributeTextClass(display)}`}>
+                  {display}
+                </span>
               </div>
-
               <AttributeBar display={display} />
             </div>
           );

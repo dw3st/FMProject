@@ -3502,6 +3502,75 @@
       "approachingPeak": "Approaching Peak",
       "atPeak": "At Peak",
       "declining": "Declining"
+    },
+    "factors": {
+      "title": "Where the growth comes from",
+      "hint": "Each line compares with a neutral club and player.",
+      "ageGrowing": "Age {{age}}: grows at {{pct}}% of the top pace",
+      "agePeak": "Age {{age}}: at his peak, grows little and starts to drop",
+      "ageDeclining": "Age {{age}}: declines a little every match",
+      "assistant": "Assistant manager {{stars}}★",
+      "assistantVacant": "Assistant manager: vacant",
+      "area": "{{area}} coach {{stars}}★",
+      "areaVacant": "{{area}}: no coach",
+      "trainingGround": "Training ground",
+      "matchGround": "Worn training ground",
+      "professionalism": "Professionalism",
+      "morale": "Morale",
+      "reborn": "Reborn star",
+      "managerYouth": "Manager's Youth attribute",
+      "eliteBrake": "High level: grows more slowly",
+      "intensity": "Training intensity: {{name}}",
+      "trainingAge": "Age in training",
+      "professionalismDecay": "Professionalism in the decline",
+      "noGain": "no gain",
+      "noEffect": "no effect",
+      "scope": {
+        "all": "matches and training",
+        "match": "matches only",
+        "training": "training only",
+        "decay": "decline"
+      },
+      "mainTitle": "Main factor",
+      "mainAge": "Age"
+    },
+    "history": {
+      "title": "Change history",
+      "ovrTitle": "OVR over the last weeks",
+      "changesTitle": "Latest changes",
+      "empty": "The history starts from now on.",
+      "noChanges": "No attribute change yet.",
+      "source": {
+        "match": "match",
+        "training": "training",
+        "age": "age"
+      },
+      "chartAria": "OVR by week, from {{from}} to {{to}}"
+    },
+    "attributes": {
+      "title": "All attributes and potential",
+      "toNext": "{{pct}}% to the next point",
+      "toDrop": "{{pct}}% of margin before losing a point",
+      "falling": "dropping",
+      "ovr": "OVR",
+      "potential": "Potential",
+      "potentialHint": "Range up to age 23",
+      "potentialDone": "Past the age of big growth"
+    },
+    "squadView": {
+      "title": "Squad overview",
+      "player": "Player",
+      "position": "Pos",
+      "age": "Age",
+      "ovr": "OVR",
+      "change": "4 weeks",
+      "phase": "Phase",
+      "main": "Main factor",
+      "phases": {
+        "growing": "Growing",
+        "peak": "At peak",
+        "declining": "Declining"
+      }
     }
   },
   "scout": {

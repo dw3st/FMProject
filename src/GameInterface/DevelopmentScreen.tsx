@@ -8,7 +8,14 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { PlayerProfile } from "@/GameInterface/Development/PlayerProfile";
 import { AttributesPanel } from "@/GameInterface/Development/AttributesPanel";
 import { PlayerSelector } from "@/GameInterface/Development/PlayerSelector";
-import { RecentTrend } from "@/GameInterface/Development/RecentTrend";
+import { GrowthFactorsPanel, factorName, factorValue } from "@/GameInterface/Development/GrowthFactorsPanel";
+import { DevHistoryPanel } from "@/GameInterface/Development/DevHistoryPanel";
+import { SquadDevelopmentTable, type SquadDevRow } from "@/GameInterface/Development/SquadDevelopmentTable";
+import { developmentFactors } from "@/Domain/development/developmentFactors";
+import { ovrChange } from "@/Domain/development/devHistory";
+import { potentialBand } from "@/Domain/youth/potential";
+import { attrDisplay } from "@/Domain/attributes";
+import { DEFAULT_TRAINING_INTENSITY, type TrainingIntensity } from "@/types/developmentTypes";
 import { DevelopmentExplanation } from "@/GameInterface/Development/DevelopmentExplanation";
 import { DevelopmentWarnings } from "@/GameInterface/Development/DevelopmentWarnings";
 import { DevelopmentTrainingConfig } from "@/GameInterface/Development/DevelopmentTrainingConfig";
@@ -20,7 +27,6 @@ import ROLES from "@/Data/roles.json";
 import type { AgePhase, DevStatus } from "@/GameInterface/Development/PlayerProfile";
 import type { DevAttribute, AttrFocus } from "@/GameInterface/Development/AttributesPanel";
 import type { PlayerOption } from "@/GameInterface/Development/PlayerSelector";
-import type { TrendDirection } from "@/GameInterface/Development/RecentTrend";
 import { positionLabel, roleForDevelopmentWeights } from "@/GameInterface/positionHelpers";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { compareSquadPositions } from "@/Domain/positions/positionSort";
@@ -47,9 +53,11 @@ function getDevStatus(age: number, progress: DevelopmentProgress | undefined): D
 const ALL_ATTR_IDS: AttributeId[] = [
   "passing", "vision", "finishing", "dribbling",
   "speed", "acceleration", "tackling", "pressing",
-  "stamina", "strength",
+  "stamina", "heading", "strength",
   "reflex", "jump",
 ];
+
+const FOCUS_ORDER: Record<AttrFocus, number> = { primary: 0, secondary: 1, limited: 2 };
 
 type RolesType = Record<string, { attrWeights?: Record<string, number> }>;
 
@@ -71,7 +79,7 @@ function getAttrDirection(
   progress: DevelopmentProgress | undefined,
   stat: AttributeId,
   value: number,
-): TrendDirection {
+): "up" | "stable" | "down" {
   if (!progress) return "stable";
   const dp = progress[stat as keyof DevelopmentProgress] ?? 0;
   if (dp < 0) return "down";
@@ -83,8 +91,7 @@ function getAttrDirection(
 function buildDevAttributes(player: RosterPlayer, nameOf: (id: string) => string): DevAttribute[] {
   const pos = roleForDevelopmentWeights(player.positions ?? []);
   const stats = player.stats as unknown as Record<string, number>;
-  const attrIds = getVisibleAttrs(pos);
-  return attrIds.map((id) => {
+  return ALL_ATTR_IDS.map((id) => {
     const value = stats[id] ?? 0;
     const dp    = player.progress?.[id as keyof DevelopmentProgress];
     const progressPct = dp !== undefined ? Math.max(0, dp) / dpRequired(value) : undefined;
@@ -95,7 +102,7 @@ function buildDevAttributes(player: RosterPlayer, nameOf: (id: string) => string
       focus: getAttrFocus(id, pos),
       progressPct,
     };
-  });
+  }).sort((a, b) => FOCUS_ORDER[a.focus] - FOCUS_ORDER[b.focus]);
 }
 
 function buildRoleFocus(player: RosterPlayer, nameOf: (id: string) => string): { primary: string[]; secondary: string[]; limited: string[] } {
@@ -138,16 +145,9 @@ function buildWarnings(player: RosterPlayer): string[] {
   return warnings;
 }
 
-function buildRecentForm(player: RosterPlayer): TrendDirection[] {
-  const status = getDevStatus(player.age, player.progress);
-  if (status === "improving") return ["up", "up", "stable", "up", "up"];
-  if (status === "declining") return ["down", "stable", "down", "down", "stable"];
-  return ["stable", "up", "stable", "stable", "stable"];
-}
-
 export function DevelopmentScreen() {
   const { t } = useTranslation();
-  const { squad, loading: saveLoading, session, refresh } = useGameSave();
+  const { squad, save, loading: saveLoading, session, refresh } = useGameSave();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
 
   useEffect(() => {
@@ -157,6 +157,8 @@ export function DevelopmentScreen() {
   }, [saveLoading, session]);
 
   const player = useMemo(() => squad?.players.find((p) => p.id === selectedPlayerId) ?? null, [squad, selectedPlayerId]);
+  const intensity: TrainingIntensity = save?.training_intensity ?? session?.training_intensity ?? DEFAULT_TRAINING_INTENSITY;
+  const today = save?.currentDate ?? session?.currentDate ?? "";
 
   const playerOptions = useMemo((): PlayerOption[] => {
     if (!squad) return [];
@@ -179,6 +181,30 @@ export function DevelopmentScreen() {
         || a.option.name.localeCompare(b.option.name))
       .map((e) => e.option);
   }, [squad]);
+
+  // The squad overview (all own players, in pitch order): OVR, 4-week change, phase and main growth factor.
+  const squadRows = useMemo((): SquadDevRow[] => {
+    if (!squad) return [];
+    const order = new Map(playerOptions.map((o, i) => [o.id, i]));
+    return squad.players.filter((p) => p.stats).map((p) => {
+      const f = developmentFactors(p, squad, intensity);
+      const change = today ? ovrChange(p.devHistory, p, today) : null;
+      const main = f.main
+        ? f.main.id === "age" ? factorName(t, f.main, intensity) : `${factorName(t, f.main, intensity)} ${factorValue(t, f.main.mult)}`
+        : "";
+      return {
+        id: p.id,
+        name: p.name,
+        position: preferredRole(p),
+        order: order.get(p.id) ?? 0,
+        age: p.age,
+        ovr: attrDisplay(overallAvg(p)),
+        change: change === null ? null : Math.round(change * 10),
+        phase: f.phase,
+        main,
+      };
+    }).sort((a, b) => a.order - b.order);
+  }, [squad, playerOptions, intensity, today, t]);
 
   useEffect(() => {
     if (playerOptions.length > 0 && !selectedPlayerId) {
@@ -209,7 +235,13 @@ export function DevelopmentScreen() {
   const roleFocus = buildRoleFocus(player, nameOf);
   const explanation = t(`developmentScreen.explanation.${buildExplanation(player)}`);
   const warnings = buildWarnings(player);
-  const recentForm = buildRecentForm(player);
+  const factors = player.stats ? developmentFactors(player, squad, intensity) : null;
+  const potential = player.stats && player.age <= 23 ? potentialBand(player) : null;
+
+  const selectAndScroll = (id: string) => {
+    setSelectedPlayerId(id);
+    document.getElementById("dev-player")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <ScreenContainer>
@@ -219,10 +251,10 @@ export function DevelopmentScreen() {
 
           <DevelopmentTrainingConfig />
 
-          <div className="flex flex-col xl:flex-row gap-6 xl:items-start">
+          <div id="dev-player" className="flex flex-col xl:flex-row gap-6 xl:items-start scroll-mt-16">
             <div className="flex-1 min-w-0 space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 phone:gap-3">
+                <div className="lg:col-span-1 space-y-6 phone:space-y-3">
                   <PlayerProfile
                     clubColors={squad.colors}
                     player={{
@@ -235,6 +267,7 @@ export function DevelopmentScreen() {
                       developmentStatus: devStatus,
                     }}
                   />
+                  {factors && <GrowthFactorsPanel factors={factors} age={player.age} intensity={intensity} />}
                   {session && (
                     <IndividualTrainingPanel
                       saveId={session.saveId}
@@ -249,12 +282,17 @@ export function DevelopmentScreen() {
                       <PositionPitch aptitudes={positionAptitudes(player)} />
                     </div>
                   )}
-                  <RecentTrend trend={recentForm} />
                   <DevelopmentWarnings warnings={warnings} />
                 </div>
 
-                <div className="lg:col-span-2 space-y-6">
-                  <AttributesPanel attributes={attributes} />
+                <div className="lg:col-span-2 space-y-6 phone:space-y-3">
+                  <AttributesPanel
+                    attributes={attributes}
+                    ovr={player.stats ? overallAvg(player) : 0}
+                    potential={potential}
+                    declining={factors?.phase === "declining"}
+                  />
+                  <DevHistoryPanel history={player.devHistory} log={player.devLog} />
                   <DevelopmentExplanation explanation={explanation} roleFocus={roleFocus} />
                 </div>
               </div>
@@ -269,6 +307,8 @@ export function DevelopmentScreen() {
               />
             </aside>
           </div>
+
+          <SquadDevelopmentTable rows={squadRows} selectedId={selectedPlayerId} onSelect={selectAndScroll} />
     </ScreenContainer>
   );
 }

@@ -3502,6 +3502,75 @@
       "approachingPeak": "Aproximando do Auge",
       "atPeak": "No Auge",
       "declining": "Declínio"
+    },
+    "factors": {
+      "title": "De onde vem a evolução",
+      "hint": "Cada linha compara com um clube e um jogador neutros.",
+      "ageGrowing": "Idade {{age}}: cresce a {{pct}}% do ritmo máximo",
+      "agePeak": "Idade {{age}}: no auge, cresce pouco e já começa a cair",
+      "ageDeclining": "Idade {{age}}: declínio a cada jogo",
+      "assistant": "Auxiliar técnico {{stars}}★",
+      "assistantVacant": "Auxiliar técnico: vago",
+      "area": "Treinador de {{area}} {{stars}}★",
+      "areaVacant": "{{area}}: sem treinador",
+      "trainingGround": "Centro de treinamento",
+      "matchGround": "Centro de treinamento gasto",
+      "professionalism": "Profissionalismo",
+      "morale": "Moral",
+      "reborn": "Craque renascido",
+      "managerYouth": "Atributo Base do técnico",
+      "eliteBrake": "Nível alto: evolui mais devagar",
+      "intensity": "Intensidade do treino: {{name}}",
+      "trainingAge": "Idade no treino",
+      "professionalismDecay": "Profissionalismo no declínio",
+      "noGain": "sem ganho",
+      "noEffect": "sem efeito",
+      "scope": {
+        "all": "jogos e treino",
+        "match": "só jogos",
+        "training": "só treino",
+        "decay": "declínio"
+      },
+      "mainTitle": "Principal fator",
+      "mainAge": "Idade"
+    },
+    "history": {
+      "title": "Histórico de mudanças",
+      "ovrTitle": "OVR nas últimas semanas",
+      "changesTitle": "Últimas mudanças",
+      "empty": "O histórico começa a partir de agora.",
+      "noChanges": "Nenhuma mudança de atributo ainda.",
+      "source": {
+        "match": "jogo",
+        "training": "treino",
+        "age": "idade"
+      },
+      "chartAria": "OVR por semana, de {{from}} a {{to}}"
+    },
+    "attributes": {
+      "title": "Todos os atributos e o potencial",
+      "toNext": "{{pct}}% até o próximo ponto",
+      "toDrop": "{{pct}}% de folga antes de perder um ponto",
+      "falling": "caindo",
+      "ovr": "OVR",
+      "potential": "Potencial",
+      "potentialHint": "Faixa até os 23 anos",
+      "potentialDone": "Já passou da idade de evoluir muito"
+    },
+    "squadView": {
+      "title": "Visão do elenco",
+      "player": "Jogador",
+      "position": "Pos",
+      "age": "Idade",
+      "ovr": "OVR",
+      "change": "4 semanas",
+      "phase": "Fase",
+      "main": "Principal fator",
+      "phases": {
+        "growing": "Crescendo",
+        "peak": "No auge",
+        "declining": "Em declínio"
+      }
     }
   },
   "scout": {
