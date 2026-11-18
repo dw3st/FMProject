@@ -72,6 +72,12 @@ describe("club history I/O and GET /api/saves/:saveId/clubs/:squadId/history", (
     expect(res.topScorers[0]).toMatchObject({ playerId: striker.id, goals: 30, current: true, retired: false });
     // Idols and legends (#151): since 8.0 an idol needs 150 games (or 100 with 40 goals): one season of 55 is not enough.
     expect(res.legends).toEqual([]);
+    // Hero, trophy room and next idol (12.19).
+    expect([1, 2, 3, 4, 5]).toContain(res.stadiumLevel);
+    expect(res.trophies[0]).toEqual({ title: "league:premier_league", count: 1 });
+    expect(res.trophies.map((x) => x.title)).toEqual(expect.arrayContaining(["cup:cup_england", "continental:ucl"]));
+    expect(res.trophies.filter((x) => x.title !== "league:premier_league").every((x) => x.count === 0)).toBe(true);
+    expect(res.nextIdol).toMatchObject({ playerId: striker.id, apps: 55, target: 150 });
     expect(res.facts).toMatchObject({ seasons: 1, titles: 1, leagueGoals: 60, topScorer: { playerId: striker.id, goals: 30 } });
 
     // A legend who left: 310 games at the club (legend from 300 since 8.0), not in the squad any more.

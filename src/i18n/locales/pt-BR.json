@@ -2960,7 +2960,9 @@
       "titles": "Títulos",
       "player": "Jogador",
       "apps": "Jogos",
-      "assists": "Assistências"
+      "assists": "Assistências",
+      "record": "V-E-D",
+      "recordHint": "Vitórias, empates, derrotas"
     },
     "promoted": "Subiu",
     "relegated": "Caiu",
@@ -3019,7 +3021,31 @@
       "goals": "{{league}} · {{season}}",
       "player": "{{name}}",
       "position": "{{position}}º"
-    }
+    },
+    "managerLine": "Técnico:",
+    "pastManagersLine": "Técnicos anteriores: {{names}}",
+    "strip": {
+      "seasons": "Temporadas",
+      "titles": "Títulos",
+      "promotions": "Acessos",
+      "bestFinish": "Melhor campanha",
+      "leagueGoals": "Gols na liga",
+      "idols": "Ídolos"
+    },
+    "relegationsCount_one": "{{count}} rebaixamento",
+    "relegationsCount_other": "{{count}} rebaixamentos",
+    "trophyRoom": "Sala de troféus",
+    "nextIdol": "Próximo ídolo:",
+    "nextIdolGames": "{{apps}} de {{target}} jogos",
+    "noNextIdol": "Ninguém mais do elenco está perto ainda.",
+    "noLegendsYet": "Nenhum ídolo ainda. Um jogador do elenco vira ídolo com jogos pelo clube.",
+    "firstSeason": "Primeira temporada em andamento",
+    "firstSeasonHint": "A tabela aparece quando a temporada terminar.",
+    "topPlayers": "Artilheiros e mais jogos",
+    "noPlayersYet": "Ninguém completou uma temporada pelo clube ainda.",
+    "notSet": "Ainda sem marca",
+    "gamesCount_one": "{{count}} jogo",
+    "gamesCount_other": "{{count}} jogos"
   },
   "youth": {
     "training": {
@@ -3480,6 +3506,75 @@
       "approachingPeak": "Aproximando do Auge",
       "atPeak": "No Auge",
       "declining": "Declínio"
+    },
+    "factors": {
+      "title": "De onde vem a evolução",
+      "hint": "Cada linha compara com um clube e um jogador neutros.",
+      "ageGrowing": "Idade {{age}}: cresce a {{pct}}% do ritmo máximo",
+      "agePeak": "Idade {{age}}: no auge, cresce pouco e já começa a cair",
+      "ageDeclining": "Idade {{age}}: declínio a cada jogo",
+      "assistant": "Auxiliar técnico {{stars}}★",
+      "assistantVacant": "Auxiliar técnico: vago",
+      "area": "Treinador de {{area}} {{stars}}★",
+      "areaVacant": "{{area}}: sem treinador",
+      "trainingGround": "Centro de treinamento",
+      "matchGround": "Centro de treinamento gasto",
+      "professionalism": "Profissionalismo",
+      "morale": "Moral",
+      "reborn": "Craque renascido",
+      "managerYouth": "Atributo Base do técnico",
+      "eliteBrake": "Nível alto: evolui mais devagar",
+      "intensity": "Intensidade do treino: {{name}}",
+      "trainingAge": "Idade no treino",
+      "professionalismDecay": "Profissionalismo no declínio",
+      "noGain": "sem ganho",
+      "noEffect": "sem efeito",
+      "scope": {
+        "all": "jogos e treino",
+        "match": "só jogos",
+        "training": "só treino",
+        "decay": "declínio"
+      },
+      "mainTitle": "Principal fator",
+      "mainAge": "Idade"
+    },
+    "history": {
+      "title": "Histórico de mudanças",
+      "ovrTitle": "OVR nas últimas semanas",
+      "changesTitle": "Últimas mudanças",
+      "empty": "O histórico começa a partir de agora.",
+      "noChanges": "Nenhuma mudança de atributo ainda.",
+      "source": {
+        "match": "jogo",
+        "training": "treino",
+        "age": "idade"
+      },
+      "chartAria": "OVR por semana, de {{from}} a {{to}}"
+    },
+    "attributes": {
+      "title": "Todos os atributos e o potencial",
+      "toNext": "{{pct}}% até o próximo ponto",
+      "toDrop": "{{pct}}% de folga antes de perder um ponto",
+      "falling": "caindo",
+      "ovr": "OVR",
+      "potential": "Potencial",
+      "potentialHint": "Faixa até os 23 anos",
+      "potentialDone": "Já passou da idade de evoluir muito"
+    },
+    "squadView": {
+      "title": "Visão do elenco",
+      "player": "Jogador",
+      "position": "Pos",
+      "age": "Idade",
+      "ovr": "OVR",
+      "change": "4 semanas",
+      "phase": "Fase",
+      "main": "Principal fator",
+      "phases": {
+        "growing": "Crescendo",
+        "peak": "No auge",
+        "declining": "Em declínio"
+      }
     }
   },
   "scout": {
@@ -3805,7 +3900,12 @@
         "retiredAt": "Aposentou com {{age}} anos em {{date}}",
         "lastLevel": "Último jogo",
         "peak": "Auge",
-        "national": "Seleção: {{apps}} jogos, {{goals}} gols"
+        "national": "Seleção: {{apps}} jogos, {{goals}} gols",
+        "apps": "Jogos",
+        "goals": "Gols",
+        "caps": "Seleção",
+        "capsGoals_one": "{{count}} gol",
+        "capsGoals_other": "{{count}} gols"
       },
       "mine": "Do meu clube",
       "all": "Todos",
@@ -3927,16 +4027,17 @@
       "title": "Rescindir com {{name}}?",
       "body": "Faltam {{weeks}} semanas de contrato ({{wages}} em salários). Pela importância dele no elenco, a multa é {{share}}% disso: {{fee}}. Ele sai livre na hora.",
       "bodyCapped": "Faltam {{weeks}} semanas de contrato ({{wages}} em salários). A multa fica no teto de metade do valor de mercado: {{fee}}. Ele sai livre na hora.",
-      "blocked": "Não dá para rescindir: a posição dele ficaria abaixo do mínimo do elenco.",
+      "blocked": "Não dá para rescindir: o elenco ficaria com 14 jogadores ou menos.",
       "confirm": "Rescindir",
       "errors": {
         "generic": "Não foi possível rescindir.",
         "onLoan": "Jogador emprestado não pode ser rescindido.",
         "noContract": "Ele não tem contrato em andamento.",
-        "squadDepth": "A posição dele ficaria abaixo do mínimo do elenco.",
+        "squadDepth": "O elenco ficaria com 14 jogadores ou menos.",
         "noClub": "Você está sem clube.",
         "lobby": "A liga ainda não começou."
-      }
+      },
+      "rowHint": "Dispensar o jogador (paga uma multa e ele sai livre)"
     },
     "renew": "Renovar",
     "renewTitle": "Renovar contrato",
@@ -7676,7 +7777,14 @@
     "noSeason": "A temporada ainda não começou.",
     "highlights": "Destaques do elenco",
     "fullSquad": "Ver o elenco inteiro ({{count}})",
-    "tabOverview": "Visão geral"
+    "tabOverview": "Visão geral",
+    "strip": {
+      "position": "Posição",
+      "points": "Pontos",
+      "played_one": "{{count}} jogo",
+      "played_other": "{{count}} jogos",
+      "titles": "Títulos"
+    }
   },
   "managerPage": {
     "belongings": "Bens",

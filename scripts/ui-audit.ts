@@ -77,6 +77,12 @@ export const ENTRY_TITLE_FILES = [
 /** Justified exceptions: file + rule + a substring of the offending source line. */
 export const ALLOWLIST: { file: string; rule: string; match: string; reason: string }[] = [
   {
+    file: "src/GameInterface/Components/ProfileHero.tsx",
+    rule: "decorative",
+    match: "bg-gradient-to-r from-card via-card/80 to-card/10",
+    reason: "Shade over the painted scene of the profile banner: keeps the name readable on the picture (not a button or text style)",
+  },
+  {
     file: "src/GameInterface/Dashboard/PlayerCard.tsx",
     rule: "inline-font",
     match: "fontSize={fs}",

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { stadiumArtFile } from "@/Domain/facilities/stadiumArt";
 import { formatEurosDetailed } from "@/Domain/money";
 import { toDisplayPlayer } from "@/Domain/scout/displayPlayer";
@@ -16,6 +15,10 @@ import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import type { ClubOverview } from "@/types/clubOverviewTypes";
 import { SponsorPlate } from "@/GameInterface/Sponsors/SponsorPlate";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { ProfileHero } from "@/GameInterface/Components/ProfileHero";
+import { StatStrip, type StatItem } from "@/GameInterface/Components/StatStrip";
+import { TrophyShelf, trophyKindOf } from "@/GameInterface/Components/TrophyShelf";
 import type { LeagueData, Squad } from "@/types/playerTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
@@ -58,7 +61,6 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
   const [reload, setReload] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [artFailed, setArtFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -111,8 +113,54 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
   const appliedHere = data.application?.squadId === squad.id;
   const canApply = !!job && job.level !== null && job.blocked === null && !data.application;
   const m = data.money;
+  const strip: StatItem[] = [
+    {
+      key: "position", label: t("clubOverview.strip.position"), value: data.season ? `${data.season.position}º` : "-",
+      detail: data.season ? name(data.leagueSlug) : undefined,
+    },
+    {
+      key: "points", label: t("clubOverview.strip.points"), value: data.season?.points ?? 0, tone: "primary",
+      detail: data.season ? t("clubOverview.strip.played", { count: data.season.played }) : undefined,
+    },
+    {
+      key: "form", label: t("clubOverview.form"),
+      value: data.season && data.season.form.length > 0 ? (
+        <span className="inline-flex gap-1">
+          {data.season.form.map((r, i) => (
+            <span key={i} className={r === "W" ? "text-star-green" : r === "L" ? "text-destructive" : "text-muted-foreground"}>{t(`clubOverview.result.${r}`)}</span>
+          ))}
+        </span>
+      ) : "-",
+    },
+    {
+      key: "titles", label: t("clubOverview.strip.titles"), value: data.trophies.reduce((a, x) => a + x.count, 0),
+      tone: data.trophies.some((x) => x.count > 0) ? "gold" : undefined,
+    },
+    ...(m ? [
+      { key: "tier", label: t("clubOverview.tier"), value: m.tier ? t(`leagues.finances.tiers.${m.tier}`) : "-", tone: "gold" as const },
+      { key: "popularity", label: t("clubOverview.popularity"), value: `${Math.round(m.popularity)}%` },
+    ] : []),
+  ];
 
   return (
+    <div className="flex flex-col gap-6">
+    <div className="flex flex-col">
+      <ProfileHero
+        attached
+        art={stadiumArtFile(data.stadium.level)}
+        visual={(
+          <ClubLogo logoUrl={squadLogoUrl(squad.id)} primaryColor={squad.colors[0]} secondaryColor={squad.colors[1]}
+            className="w-24 h-24 phone:w-16 phone:h-16" imgClassName="w-full h-full object-contain" />
+        )}
+        eyebrow={name(data.leagueSlug)}
+        title={squad.name}
+        lines={[
+          data.venue ? `${data.venue.name} · ${t("clubOverview.capacity", { city: data.venue.city, seats: data.venue.capacity.toLocaleString(i18n.language) })}` : null,
+          data.manager ? <>{t("clubHistory.managerLine")} <a href={managerHref(data.manager.id)} className="font-semibold text-foreground no-underline hover:text-primary">{data.manager.name}</a></> : null,
+        ]}
+      />
+      <StatStrip attached items={strip} />
+    </div>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] items-start">
       <div className="flex flex-col gap-6 min-w-0">
         <Card>
@@ -200,17 +248,10 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
 
         <Card>
           <SectionTitle>{t("clubOverview.honours")}</SectionTitle>
-          {data.titles.length === 0 ? (
+          {data.trophies.length === 0 ? (
             <p className="text-sm text-muted-foreground m-0">{t("clubOverview.noTitles")}</p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {data.titles.slice(0, 6).map((g) => (
-                <div key={g.title} className="flex flex-col">
-                  <span className="font-display font-bold text-3xl tabular-nums text-chart-4">{g.count}</span>
-                  <span className="text-sm text-muted-foreground">{titleName(g.title)}</span>
-                </div>
-              ))}
-            </div>
+            <TrophyShelf items={data.trophies.map((x) => ({ key: x.title, kind: trophyKindOf(x.title), count: x.count, label: titleName(x.title) }))} />
           )}
           {data.legends.length > 0 && (
             <p className="text-sm m-0">
@@ -225,10 +266,6 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
 
       <div className="flex flex-col gap-6 min-w-0">
         <Card className="p-0 overflow-hidden">
-          {newVisualOn() && !artFailed && (
-            <img src={gameArtUrl(stadiumArtFile(data.stadium.level))} alt="" aria-hidden onError={() => setArtFailed(true)}
-              className="w-full aspect-[960/330] object-cover select-none pointer-events-none" draggable={false} />
-          )}
           <div className="px-5 pb-5 pt-4 flex flex-col gap-3">
             <span className={LABEL}>{t("clubOverview.stadium")}</span>
             <span className="font-display font-black uppercase text-2xl leading-none">{data.venue?.name ?? t("clubOverview.stadium")}</span>
@@ -243,32 +280,7 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
           </div>
         </Card>
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <Card>
-            <SectionTitle>{t("clubOverview.season")}</SectionTitle>
-            {data.season ? (
-              <>
-                <div className="flex items-baseline gap-3">
-                  <span className="font-display font-black text-4xl tabular-nums leading-none">{data.season.position}º</span>
-                  <span className="text-sm text-muted-foreground">
-                    {t("clubOverview.table", { league: name(data.leagueSlug), points: data.season.points, played: data.season.played })}
-                  </span>
-                </div>
-                {data.season.form.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className={LABEL}>{t("clubOverview.form")}</span>
-                    {data.season.form.map((r, i) => (
-                      <span key={i} className={`inline-flex w-7 h-7 items-center justify-center rounded border text-sm font-semibold ${
-                        r === "W" ? "border-primary text-primary bg-primary/10" : r === "L" ? "border-destructive text-destructive bg-destructive/10" : "border-border text-muted-foreground"}`}>
-                        {t(`clubOverview.result.${r}`)}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : <p className="text-sm text-muted-foreground m-0">{t("clubOverview.noSeason")}</p>}
-          </Card>
-
+        <div className="grid gap-6">
           <Card>
             <SectionTitle>{t("clubOverview.highlights")}</SectionTitle>
             <ul className="flex flex-col gap-2 m-0 p-0 list-none">
@@ -287,6 +299,7 @@ export function ClubOverviewView({ saveId, squad, onSquadTab }: { saveId: string
           </Card>
         </div>
       </div>
+    </div>
     </div>
   );
 }

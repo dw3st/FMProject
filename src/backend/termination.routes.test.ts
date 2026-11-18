@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
-import { terminationQuote, terminationBreaksDepth, TERMINATION } from "@/Domain/contracts/termination";
+import { terminationQuote, terminationBreaksDepth, terminationThinLine, TERMINATION } from "@/Domain/contracts/termination";
 import type { RosterPlayer } from "@/types/playerTypes";
 
 describe("friendly termination", () => {
@@ -19,6 +19,10 @@ describe("friendly termination", () => {
     expect(capped.fee).toBe(50_000);
     expect(terminationQuote({ ...p, contract: undefined } as RosterPlayer, { players: [p] }, "2027-06-30", 1)).toBeNull();
     expect(terminationBreaksDepth({ players: [p] }, "a")).toBe(true);
+    const fifteen = Array.from({ length: 15 }, (_, i) => ({ ...p, id: `p${i}`, positions: [i === 0 ? "Forward" : "Defender"] }) as RosterPlayer);
+    expect(terminationBreaksDepth({ players: fifteen }, "p0")).toBe(false);
+    expect(terminationThinLine({ players: fifteen }, "p0")).toEqual({ line: "Forward", left: 0, min: 4 });
+    expect(terminationBreaksDepth({ players: fifteen.slice(0, 14) }, "p0")).toBe(true);
   });
 
   test("route: quote, terminate, free agent, ledger; depth refusal", async () => {
@@ -44,7 +48,7 @@ describe("friendly termination", () => {
     expect(target).toBeDefined();
     const quote = await (await call(target.id, "GET")).json() as { fee: number; blocked: boolean };
     expect(quote.fee).toBeGreaterThanOrEqual(0);
-    if (mids.length - 1 < 7) {
+    if (before.players.length <= 14) {
       expect((await call(target.id, "POST")).status).toBe(409);
     } else {
       expect(quote.blocked).toBe(false);

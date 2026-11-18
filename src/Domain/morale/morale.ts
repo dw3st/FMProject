@@ -223,9 +223,11 @@ export function initClubMorale(squad: Squad): Squad {
 
 /** A player leaving the human club (or a club becoming AI) drops every morale field. */
 export function stripPlayerMorale<P extends RosterPlayer>(p: P): P {
-  if (p.morale === undefined && p.squadStatus === undefined && p.moraleLog === undefined && p.mentoring === undefined) return p;
+  // The development history is human-club data too (`development.md` → "Tela de desenvolvimento"): it leaves with him.
+  if (p.morale === undefined && p.squadStatus === undefined && p.moraleLog === undefined && p.mentoring === undefined
+    && p.devHistory === undefined && p.devLog === undefined) return p;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { morale: _m, squadStatus: _s, moraleLog: _l, mentoring: _w, ...rest } = p;
+  const { morale: _m, squadStatus: _s, moraleLog: _l, mentoring: _w, devHistory: _h, devLog: _d, ...rest } = p;
   return rest as P;
 }
 

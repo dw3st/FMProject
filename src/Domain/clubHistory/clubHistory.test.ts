@@ -3,7 +3,7 @@ import type { Fixture } from "@/types/calendarTypes";
 import type { StandingRow } from "@/types/playerTypes";
 import {
   CLUB_LEGENDS, applySeason, applyTransfer, clubFacts, clubLegends, clubMatchesOf, emptyClubHistory, legendTier, longestUnbeaten,
-  titleGallery, topPlayers,
+  nextIdol, titleGallery, topPlayers, trophyShelf,
   type ClubMatch, type ClubSeasonInput,
 } from "@/Domain/clubHistory/clubHistory";
 
@@ -184,5 +184,39 @@ describe("legends and facts (#151)", () => {
     expect(f.mostApps).toMatchObject({ playerId: "p2", apps: 102 });
     expect(clubFacts(emptyClubHistory("A"))).toMatchObject({ seasons: 0, titles: 0 });
     expect(clubFacts(emptyClubHistory("A")).bestSeason).toBeUndefined();
+  });
+});
+
+describe("nextIdol", () => {
+  test("the current player with the most games who is not an idol yet", () => {
+    const scorers = {
+      idol: { name: "Already", goals: 10, apps: 160, assists: 0 },
+      gone: { name: "Gone", goals: 3, apps: 140, assists: 0 },
+      a: { name: "Alves", goals: 20, apps: 118, assists: 0 },
+      b: { name: "Brito", goals: 5, apps: 118, assists: 0 },
+      c: { name: "Costa", goals: 1, apps: 12, assists: 0 },
+    };
+    const current = new Set(["idol", "a", "b", "c"]);
+    expect(nextIdol(scorers, current)).toEqual({ playerId: "a", name: "Alves", apps: 118, target: CLUB_LEGENDS.IDOL_APPS });
+    expect(nextIdol({}, current)).toBeNull();
+    expect(nextIdol(scorers, new Set(["idol", "x"]))).toBeNull();
+  });
+});
+
+describe("trophyShelf", () => {
+  test("won competitions first, then the club's own not won yet with 0, promotions apart", () => {
+    const gallery = [
+      { title: "league:serie_c", seasons: ["2028"] },
+      { title: "cup:cup_brazil", seasons: ["2028", "2029"] },
+      { title: "promotion:serie_c", seasons: ["2028"] },
+    ];
+    expect(trophyShelf(gallery, ["league:serie_b", "cup:cup_brazil", "continental:lib", "league:serie_a", "continental:lib"])).toEqual([
+      { title: "league:serie_c", count: 1 },
+      { title: "cup:cup_brazil", count: 2 },
+      { title: "league:serie_b", count: 0 },
+      { title: "continental:lib", count: 0 },
+      { title: "league:serie_a", count: 0 },
+    ]);
+    expect(trophyShelf([], [])).toEqual([]);
   });
 });

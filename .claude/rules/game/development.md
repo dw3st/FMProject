@@ -441,3 +441,14 @@ Soak (`debug/soak-dev2.log`, mundo inteiro, mediana do OVR × 10):
 | Depois | 33,8 | 34,0 | 34,2 | 34,4 | 103 (87 no início) |
 
 Limitação: a faixa de 33–34 anos sobe em 2028 (31,2 → 34,7), provável efeito de quem se aposenta (os fracos param primeiro).
+
+## Tela de desenvolvimento (12.19)
+
+Report do usuário ("poucas informações, confuso"). Quatro blocos novos na tela Desenvolvimento:
+
+- **De onde vem a evolução** (`GrowthFactorsPanel`): `developmentFactors(player, squad, intensidade)` (`src/Domain/development/developmentFactors.ts`, puro, com teste) lê as mesmas funções do avanço do dia: idade (`ageGrowthMultiplier`, `ageDecayPerMatch` × `decayDpScale`, exportados de `PlayerDevelopment.ts`), auxiliar (`staffEffectsOf().devMult` e as estrelas), as duas áreas de treino que mais pesam na posição natural (`areaMultsOf`, `areaStars`), CT (`trainingGroundEffectsOf`: `devMult` no treino, `matchDevMult` nos jogos), profissionalismo (DP e declínio), moral (`shieldedMoraleDpMult`), renascido, atributo Base do técnico, freio de elite, intensidade do treino (`TRAINING_DP_RATIO` contra o normal) e a idade no treino (`trainingAgeFactor`). Cada fator vira uma porcentagem contra o neutro (`factorPercent`); auxiliar, áreas e intensidade sempre aparecem, os outros só quando mexem. Fase: crescendo (sem declínio por idade), no auge (cresce e já cai), em declínio (não cresce mais). Fator principal: o mais longe do neutro; em declínio, a idade.
+- **Histórico de mudanças** (`DevHistoryPanel`): só do clube humano. `RosterPlayer.devHistory` (OVR toda segunda, as últimas 26) e `RosterPlayer.devLog` (as últimas 30 mudanças de atributo, com data e origem), gravados pelo avanço do dia (`src/Domain/development/devHistory.ts`, bloco antes da gravação dos elencos em `advanceDay.ts`) a partir dos `developmentChanges` dos jogos do clube e dos `levelChanges` do treino. Regra da origem: subida no jogo = `match`, no treino = `training`, toda queda = `age` (só o declínio por idade tira atributo). Jogos de base e de seleção não entram. Saem com o jogador do clube humano e do clube que vira IA (`stripPlayerMorale`) e dos kits (`stripHumanOnly`). Sem histórico: "o histórico começa a partir de agora".
+- **Todos os atributos e o potencial** (`AttributesPanel`): os 13 atributos (Principal e Secundário pelos pesos da posição, os outros apagados), "N% até o próximo ponto" (em declínio, "N% de folga antes de perder um ponto"), OVR e a faixa de potencial (`potentialBand`, até 23 anos). Sem projeção de OVR da próxima temporada: não há função pura que a dê (o potencial é uma faixa até os 23).
+- **Visão do elenco** (`SquadDevelopmentTable`): o elenco todo, ordenável (`useTableSort`): posição, idade, OVR, variação de 4 semanas (`ovrChange`, contra a foto mais antiga dentro de 28 dias), fase e fator principal. Clicar escolhe o jogador.
+
+O cartão de forma recente (`RecentTrend`, setas inventadas) saiu.

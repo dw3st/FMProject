@@ -254,7 +254,20 @@ export interface RosterPlayer {
    * the academy, an accepted reborn). Counts as formed at the club (`.claude/rules/game/registration.md`).
    */
   academyOf?: string;
+  /** Human club only: OVR every Monday, the last 26 weeks (`src/Domain/development/devHistory.ts`). */
+  devHistory?: DevHistoryPoint[];
+  /** Human club only: the last 30 attribute changes with their source (`devHistory.ts`). */
+  devLog?: DevLogEntry[];
 }
+
+/** One weekly OVR snapshot (0..10 scale). */
+export interface DevHistoryPoint { date: string; ovr: number }
+
+/** Where an attribute change came from: a match, a training session, or the age decline. */
+export type DevLogSource = "match" | "training" | "age";
+
+/** One attribute change of a day (`delta` in tenths of the 0..10 scale). */
+export interface DevLogEntry { date: string; stat: string; delta: number; source: DevLogSource }
 
 /** The 14 detailed positions (`src/Data/roles.json`). */
 export type DetailedRole =

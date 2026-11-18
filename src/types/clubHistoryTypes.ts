@@ -142,4 +142,10 @@ export interface ClubHistoryResponse {
   legends: ClubLegend[];
   facts: ClubFacts;
   records: ClubRecords;
+  /** Painted ground 1..5 behind the hero banner (`stadiumArtLevel` of the stadium items, 12.19). */
+  stadiumLevel: 1 | 2 | 3 | 4 | 5;
+  /** Trophy room (`trophyShelf`): titles won (promotions apart), then the club's competitions not won yet with 0. */
+  trophies: { title: string; count: number }[];
+  /** The current player closest to the idol rule by games (`nextIdol`), null when none. */
+  nextIdol: { playerId: string; name: string; apps: number; target: number } | null;
 }

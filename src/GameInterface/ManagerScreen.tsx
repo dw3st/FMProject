@@ -10,6 +10,9 @@ import { autoBioText } from "@/GameInterface/managerBio";
 import { AwardBadge } from "@/GameInterface/Awards/AwardBadge";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
+import { ProfileHero } from "@/GameInterface/Components/ProfileHero";
+import { StatStrip } from "@/GameInterface/Components/StatStrip";
+import { TrophyShelf, trophyKindOf } from "@/GameInterface/Components/TrophyShelf";
 import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
@@ -143,49 +146,46 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
     <ScreenContainer>
       <ScreenTitle accent={accent}>{main}</ScreenTitle>
 
-      <div className="flex flex-wrap items-center gap-5">
-        <ManagerFaceImage manager={data} clubColors={data.clubColors} size={96} />
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <span className="text-sm text-muted-foreground">
-            {[data.nationality, data.isPlayer ? t("managerPage.you") : data.human ? null : t("managerPage.ai")].filter(Boolean).join(" · ")}
-            {data.human && <span className="ml-2"><HumanBadge nickname={data.human} /></span>}
-          </span>
-          {fameBand(data.assets, data.decor) > 0 && (
-            <span className="text-sm text-muted-foreground">{t("fame.label")}: <span className="font-semibold text-chart-4">{t(`fame.band.${fameBand(data.assets, data.decor)}`)}</span></span>
-          )}
-          {legendaryCount(data.assets) > 0 && (
-            <span className="flex items-center gap-1.5 text-sm font-semibold text-star-gold">
-              <Icon name="crown" size={16} />{t("fame.legendary", { count: legendaryCount(data.assets) })}
-            </span>
-          )}
-          {data.squadId ? (
-            <span className="flex items-center gap-2 min-w-0">
-              <ClubLogo logoUrl={squadLogoUrl(data.squadId)} className="w-6 h-6 shrink-0" imgClassName="w-full h-full object-contain" />
-              {currentHref
-                ? <a href={currentHref} className="font-semibold text-primary no-underline hover:underline truncate">{data.clubName}</a>
-                : <span className="font-semibold truncate">{data.clubName}</span>}
-              {data.interim && <span className="text-sm text-muted-foreground">· {t("statsScreen.managers.interim")}</span>}
-            </span>
-          ) : <span className="text-sm text-muted-foreground">{t("statsScreen.managers.noClub")}</span>}
-        </div>
+      <div className="flex flex-col">
+        <ProfileHero
+          attached
+          visual={<ManagerFaceImage manager={data} clubColors={data.clubColors} size={96} />}
+          eyebrow={[data.nationality, data.isPlayer ? t("managerPage.you") : data.human ? null : t("managerPage.ai")].filter(Boolean).join(" · ") || undefined}
+          title={data.name}
+          lines={[
+            data.squadId ? (
+              <span className="flex items-center gap-2 min-w-0">
+                <ClubLogo logoUrl={squadLogoUrl(data.squadId)} className="w-6 h-6 shrink-0" imgClassName="w-full h-full object-contain" />
+                {currentHref
+                  ? <a href={currentHref} className="font-semibold text-primary no-underline hover:underline truncate">{data.clubName}</a>
+                  : <span className="font-semibold text-foreground truncate">{data.clubName}</span>}
+                {data.interim && <span>· {t("statsScreen.managers.interim")}</span>}
+              </span>
+            ) : t("statsScreen.managers.noClub"),
+            data.human ? <HumanBadge nickname={data.human} /> : null,
+            fameBand(data.assets, data.decor) > 0
+              ? <>{t("fame.label")}: <span className="font-semibold text-chart-4">{t(`fame.band.${fameBand(data.assets, data.decor)}`)}</span></>
+              : null,
+            legendaryCount(data.assets) > 0 ? (
+              <span className="flex items-center gap-1.5 font-semibold text-star-gold">
+                <Icon name="crown" size={16} />{t("fame.legendary", { count: legendaryCount(data.assets) })}
+              </span>
+            ) : null,
+          ]}
+        />
+        <StatStrip
+          attached
+          items={[
+            { key: "points", label: t("managerPage.stat.points"), value: data.points, tone: "primary" },
+            { key: "rank", label: t("managerPage.stat.rank"), value: t("managerPage.rankOf", { rank: data.rank, total: data.total }) },
+            { key: "titles", label: t("managerPage.stat.titles"), value: data.titles.length, tone: data.titles.length > 0 ? "gold" : undefined },
+            { key: "awards", label: t("managerPage.stat.awards"), value: data.awards?.length ?? 0, tone: (data.awards?.length ?? 0) > 0 ? "gold" : undefined },
+            { key: "seasons", label: t("managerPage.stat.seasons"), value: seasons },
+          ]}
+        />
       </div>
       {/* His own bio, else one written from his record (8.9.40). */}
       <p className="text-sm text-foreground m-0 max-w-3xl whitespace-pre-line">{data.bio ?? data.profile?.bio ?? autoBioFull}</p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {([
-          ["points", String(data.points)],
-          ["rank", t("managerPage.rankOf", { rank: data.rank, total: data.total })],
-          ["titles", String(data.titles.length)],
-          ["awards", String(data.awards?.length ?? 0)],
-          ["seasons", String(seasons)],
-        ] as const).map(([k, v]) => (
-          <div key={k} className="rounded-md border border-border bg-card px-4 py-3">
-            <p className={LABEL}>{t(`managerPage.stat.${k}`)}</p>
-            <p className="font-display font-bold text-3xl leading-none tabular-nums m-0 mt-1.5">{v}</p>
-          </div>
-        ))}
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] items-start">
         <div className="flex flex-col gap-6 min-w-0">
@@ -226,15 +226,23 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
           <section className="rounded-md border border-border bg-card p-5 flex flex-col gap-3">
             <SectionTitle>{t("managerPage.honours")}</SectionTitle>
             {titleGroups.length === 0 && (data.awards?.length ?? 0) === 0 && <p className="text-sm text-muted-foreground m-0">{t("managerPage.noHonours")}</p>}
-            {titleGroups.length > 0 && (
-              <div className="grid grid-cols-2 gap-4">
-                {titleGroups.slice(0, 6).map((g) => (
-                  <div key={g.kind + g.competition} className="flex flex-col">
-                    <span className="font-display font-bold text-3xl tabular-nums text-chart-4">{g.count}</span>
-                    <span className="text-sm text-muted-foreground">{titleLabel(g.kind, g.competition)}</span>
-                  </div>
+            {titleGroups.some((g) => g.kind !== "promotion") && (
+              <TrophyShelf
+                items={titleGroups.filter((g) => g.kind !== "promotion").slice(0, 6).map((g) => ({
+                  key: g.kind + g.competition, kind: trophyKindOf(`${g.kind}:${g.competition}`), count: g.count, label: titleLabel(g.kind, g.competition),
+                }))}
+              />
+            )}
+            {titleGroups.some((g) => g.kind === "promotion") && (
+              <ul className="m-0 p-0 list-none flex flex-col gap-1">
+                {titleGroups.filter((g) => g.kind === "promotion").map((g) => (
+                  <li key={g.kind + g.competition} className="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
+                    <Icon name="trend-up" size={16} className="text-star-green shrink-0" />
+                    <span className="text-foreground">{titleLabel(g.kind, g.competition)}</span>
+                    {g.count > 1 && <span>×{g.count}</span>}
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
             {data.awards && data.awards.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">

@@ -42,6 +42,9 @@ describe("GET /api/saves/:saveId/clubs/:squadId/overview (8.9.30)", () => {
       expect(v).toBeLessThanOrEqual(100);
     }
     expect(body.stadium.level).toBeGreaterThanOrEqual(1);
+    // Trophy room (12.19): the club's league, cup and continental cup, none won yet.
+    expect(body.trophies.map((x) => x.title)).toEqual(["league:premier_league", "cup:cup_england", "continental:ucl"]);
+    expect(body.trophies.every((x) => x.count === 0)).toBe(true);
 
     const own = (await (await call("33")).json()) as ClubOverview;
     expect(own.job?.blocked).toBe("own");

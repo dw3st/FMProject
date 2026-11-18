@@ -38,6 +38,7 @@ import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
 import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { TalkModal } from "@/GameInterface/Morale/TalkModal";
 import { navigate } from "@/GameInterface/router/navigation";
+import { TerminateButton } from "@/GameInterface/Contracts/TerminateButton";
 
 type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; renewDue: boolean };
 
@@ -342,6 +343,10 @@ export function SquadRosterTable({
                 >
                   <Icon name="talk" className="w-4 h-4" />
                 </button>
+              )}
+              {/* Release a player without leaving the squad (report 12.18) */}
+              {showMorale && session && !player.loan && (
+                <TerminateButton compact saveId={session.saveId} playerId={player.id} playerName={player.name} onDone={() => void refresh({ background: true })} />
               )}
               {player.renewDue ? (
                 <button

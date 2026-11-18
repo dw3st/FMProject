@@ -30,6 +30,8 @@ export interface ClubOverview {
   } | null;
   season: { position: number; size: number; played: number; points: number; form: ("W" | "D" | "L")[] } | null;
   titles: { title: string; count: number }[];
+  /** Trophy room (12.19): titles won (promotions apart), then the club's competitions not won yet with 0. */
+  trophies: { title: string; count: number }[];
   legends: { playerId: string; name: string; tier: "legend" | "idol" }[];
   /**
    * Master (shirt) sponsor (`.claude/rules/game/sponsors.md`): a human club's contract (null while the slot is

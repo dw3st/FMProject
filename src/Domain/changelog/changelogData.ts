@@ -31,6 +31,36 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.19",
+    date: "2026-11-18",
+    time: "14:32",
+    items: [
+      { tab: "squad", pt: "História do clube redesenhada: faixa com o estádio, os números do clube, sala de troféus com os troféus pintados, ídolos com a barra do próximo ídolo e recordes em cartões.", en: "Club history redesigned: a banner with the stadium, the club's numbers, a trophy room with painted trophies, idols with the next idol's progress bar and records as cards." },
+      { tab: "club", pt: "Visão geral do clube, página do técnico e perfil do aposentado no mesmo visual: faixa, números e prateleira de troféus.", en: "Club overview, manager page and retired player profile in the same look: banner, numbers and trophy shelf." },
+      { tab: "development", pt: "Desenvolvimento: \"De onde vem a evolução\" mostra o peso de cada fator (auxiliar, treinadores, centro de treinamento, idade, profissionalismo) no crescimento do jogador.", en: "Development: \"Where the growth comes from\" shows how much each factor (assistant, coaches, training ground, age, professionalism) weighs on the player's growth." },
+      { tab: "development", pt: "Desenvolvimento: histórico do OVR por semana e as últimas mudanças de atributo, com a origem (jogo, treino ou idade).", en: "Development: weekly OVR history and the latest attribute changes, with their source (match, training or age)." },
+      { tab: "development", pt: "Desenvolvimento: os 13 atributos com quanto falta para o próximo ponto, o potencial e uma tabela do elenco com a variação de 4 semanas e a fase de cada jogador.", en: "Development: all 13 attributes with how far the next point is, the potential, and a squad table with the 4-week change and each player's phase." },
+    ],
+  },
+  {
+    version: "12.18.2",
+    date: "2026-11-18",
+    time: "14:20",
+    items: [],
+    fixes: [
+      { tab: "squad", pt: "Dispensar um jogador ficou mais fácil: o botão de rescisão está na tabela do Elenco, mostra a multa antes de confirmar e só fica bloqueado com 14 jogadores ou menos, como nas vendas.", en: "Releasing a player is easier: the termination button is on the Squad table, shows the fee before you confirm and is only blocked at 14 players or fewer, as with sales." },
+    ],
+  },
+  {
+    version: "12.18.1",
+    date: "2026-11-18",
+    time: "14:07",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "A partida ao vivo podia ficar com o campo todo verde, sem jogadores, nos jogos em casa com escudo na torcida.", en: "The live match could show an all-green pitch with no players in home games with the crest in the stands." },
+    ],
+  },
+  {
     version: "12.18",
     date: "2026-11-18",
     time: "13:12",

@@ -1,24 +1,41 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTableSort } from "@/GameInterface/ui/tableSort";
 import { useTranslation } from "react-i18next";
 import type { LeagueData } from "@/types/playerTypes";
 import type {
-  ClubFacts, ClubHistoryResponse, ClubLegend, ClubRecordBroken, ClubRecordKind, ClubTopPlayer,
+  ClubHistoryResponse, ClubLegend, ClubRecordBroken, ClubRecordKind, ClubSeasonRow, ClubTopPlayer,
 } from "@/types/clubHistoryTypes";
 import { competitionName } from "@/Domain/world/labels";
 import { CLUB_LEGENDS } from "@/Domain/clubHistory/clubHistory";
-import { Panel } from "@/GameInterface/ui/Panel";
+import { newVisualOn } from "@/Domain/art/paintedFaces";
+import { stadiumArtFile } from "@/Domain/facilities/stadiumArt";
 import { Icon } from "@/GameInterface/Icons";
+import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
+import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
+import { PlayerFace, playerInitials } from "@/GameInterface/Components/PlayerFace";
+import { LegendLaurel } from "@/GameInterface/Components/LegendLaurel";
+import { ProfileHero } from "@/GameInterface/Components/ProfileHero";
+import { InfoCard, StatStrip, type StatTone } from "@/GameInterface/Components/StatStrip";
+import { TrophyShelf, trophyKindOf } from "@/GameInterface/Components/TrophyShelf";
 import { NameCell, NumberCell, RankCell, StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 
 const RECORD_ORDER: ClubRecordKind[] = [
-  "biggestWin", "biggestLoss", "mostGoalsSeason", "highestFinish", "unbeaten", "recordSigning", "recordSale",
+  "biggestWin", "biggestLoss", "unbeaten", "recordSigning", "recordSale", "mostGoalsSeason",
 ];
+/** Records shown even before they exist (dimmed), so an empty history still has its cards. */
+const RECORD_PLACEHOLDERS: ClubRecordKind[] = ["biggestWin", "biggestLoss", "unbeaten", "recordSigning"];
+const RECORD_TONE: Partial<Record<ClubRecordKind, StatTone>> = { biggestWin: "good", biggestLoss: "bad" };
+
+const playerHref = (leagueSlug: string, squadId: string, playerId: string) =>
+  `/player/${encodeURIComponent(leagueSlug)}/${encodeURIComponent(squadId)}/${encodeURIComponent(playerId)}`;
+
+const isTrophy = (title: string) => !title.startsWith("promotion:");
 
 /**
- * Club history and records (`.claude/rules/game/club-history.md`): titles, seasons, top scorers and
- * appearances, records. Any club of the save; the data starts when the career began.
+ * Club history and records (`.claude/rules/game/club-history.md`, layout 12.19 "Galeria"): the banner with the
+ * stadium, the headline numbers, the trophy room, idols and legends, seasons, top players and records. Any club of
+ * the save; the data starts when the career began, and every block has its own empty look.
  */
 export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: string; squadId: string; leagueSlug: string }) {
   const { t, i18n } = useTranslation();
@@ -44,13 +61,6 @@ export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: strin
       .catch(() => setLeagues([]));
   }, []);
 
-  const seasonRows = useMemo(() => [...(data?.seasons ?? [])].reverse(), [data]);
-  const { sorted: seasonsNewestFirst, head } = useTableSort(seasonRows, {
-    season: (s) => s.season, league: (s) => competitionName(s.league, leagues, i18n.language),
-    position: (s) => (s.position === null || s.position === undefined ? null : -s.position), played: (s) => s.played,
-    won: (s) => s.won, drawn: (s) => s.drawn, lost: (s) => s.lost, goals: (s) => s.gf - s.ga, points: (s) => s.points,
-    topScorer: (s) => s.topScorer?.goals ?? null, titles: (s) => s.titles.length || null,
-  });
   if (failed) return <p className="text-sm text-muted-foreground m-0">{t("clubHistory.loadFailed")}</p>;
   if (!data) return <p className="text-sm text-muted-foreground m-0">{t("clubHistory.loading")}</p>;
 
@@ -59,282 +69,303 @@ export function ClubHistoryView({ saveId, squadId, leagueSlug }: { saveId: strin
     const [kind, slug = ""] = title.split(":");
     return kind === "promotion" ? t("clubHistory.promotion", { league: name(slug) }) : name(slug);
   };
-  const records = RECORD_ORDER
-    .filter((k) => data.records[k])
-    .map((k) => ({ kind: k, value: data.records[k] }) as ClubRecordBroken);
+  const f = data.facts;
+  const best = data.records.highestFinish;
+  const venue = data.venue
+    ? [data.venue.name, data.venue.city, data.venue.capacity > 0 ? t("clubHistory.capacity", { seats: data.venue.capacity.toLocaleString(i18n.language) }) : null]
+      .filter(Boolean).join(" · ")
+    : null;
 
   return (
-    <div className="flex flex-col gap-6 overflow-y-auto">
-      <div className="flex flex-wrap gap-x-10 gap-y-3">
-        {data.venue && (
-          <div>
-            <Caption>{t("clubHistory.stadium")}</Caption>
-            <p className="m-0 text-sm text-foreground">
-              {data.venue.name}
-              <span className="text-muted-foreground tabular-nums">
-                {data.venue.city ? ` · ${data.venue.city}` : ""}
-                {data.venue.capacity > 0 ? ` · ${t("clubHistory.capacity", { seats: data.venue.capacity.toLocaleString(i18n.language) })}` : ""}
-              </span>
-            </p>
-          </div>
-        )}
-        {data.manager && (
-          <div>
-            <Caption>{t("clubHistory.manager")}</Caption>
-            <p className="m-0 text-sm text-foreground">{data.manager}</p>
-          </div>
-        )}
-        {data.pastManagers.length > 0 && (
-          <div>
-            <Caption>{t("clubHistory.pastManagers")}</Caption>
-            <p className="m-0 text-sm text-foreground">{data.pastManagers.join(", ")}</p>
-          </div>
-        )}
-      </div>
-      {data.since && <p className="m-0 text-sm text-muted-foreground">{t("clubHistory.since", { season: data.since })}</p>}
-
-      <Panel title={t("clubHistory.titles")}>
-        {data.titles.length === 0 ? (
-          <p className="text-sm text-muted-foreground m-0">{t("clubHistory.noTitles")}</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {data.titles.map((g) => (
-              <div key={g.title} className="flex items-start gap-3 rounded-md border border-border p-3">
-                <Icon name={g.title.startsWith("promotion") ? "arrow-up-right" : "trophy"} size={20} className="text-chart-4 shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <p className="m-0 font-semibold text-foreground truncate">
-                    {titleName(g.title)}
-                    <span className="ml-2 font-display font-bold tabular-nums text-primary">×{g.seasons.length}</span>
-                  </p>
-                  <p className="m-0 text-sm text-muted-foreground tabular-nums">{g.seasons.join(", ")}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
-
-      <LegendsPanel legends={data.legends} squadId={data.squadId} leagueSlug={leagueSlug} />
-
-      {data.facts.seasons > 0 && <FactsPanel facts={data.facts} leagueName={name} />}
-
-      <Panel title={t("clubHistory.seasons")}>
-        {seasonsNewestFirst.length === 0 ? (
-          <p className="text-sm text-muted-foreground m-0">{t("clubHistory.empty")}</p>
-        ) : (
-          <StatsTable
-            head={
-              <>
-                <StatsHead sort={head("season")}>{t("clubHistory.col.season")}</StatsHead>
-                <StatsHead sort={head("league")}>{t("clubHistory.col.league")}</StatsHead>
-                <StatsHead align="center" sort={head("position")}>{t("clubHistory.col.position")}</StatsHead>
-                <StatsHead align="center" sort={head("played")}>{t("clubHistory.col.played")}</StatsHead>
-                <StatsHead align="center" sort={head("won")}>{t("clubHistory.col.won")}</StatsHead>
-                <StatsHead align="center" sort={head("drawn")}>{t("clubHistory.col.drawn")}</StatsHead>
-                <StatsHead align="center" sort={head("lost")}>{t("clubHistory.col.lost")}</StatsHead>
-                <StatsHead align="center" sort={head("goals")}>{t("clubHistory.col.goals")}</StatsHead>
-                <StatsHead align="center" sort={head("points")}>{t("clubHistory.col.points")}</StatsHead>
-                <StatsHead sort={head("topScorer")}>{t("clubHistory.col.topScorer")}</StatsHead>
-                <StatsHead sort={head("titles")}>{t("clubHistory.col.titles")}</StatsHead>
-              </>
-            }
-          >
-            {seasonsNewestFirst.map((s) => (
-              <StatsRow key={`${s.season}-${s.league}`}>
-                <StatsCell className="tabular-nums whitespace-nowrap text-muted-foreground">{s.season}</StatsCell>
-                <StatsCell className="font-semibold text-foreground max-w-[14rem] truncate">{name(s.league)}</StatsCell>
-                <StatsCell align="center" className="whitespace-nowrap tabular-nums font-bold">
-                  {s.position ?? "-"}
-                  {s.move && (
-                    <span className="ml-1 inline-flex align-middle" title={t(`clubHistory.${s.move}`)} aria-label={t(`clubHistory.${s.move}`)}>
-                      <Icon
-                        name={s.move === "promoted" ? "arrow-up-right" : "arrow-down-left"}
-                        size={16}
-                        className={s.move === "promoted" ? "text-primary" : "text-destructive"}
-                      />
-                    </span>
-                  )}
-                </StatsCell>
-                <NumberCell>{s.played}</NumberCell>
-                <NumberCell>{s.won}</NumberCell>
-                <NumberCell>{s.drawn}</NumberCell>
-                <NumberCell>{s.lost}</NumberCell>
-                <NumberCell>{s.gf}:{s.ga}</NumberCell>
-                <NumberCell strong>{s.points}</NumberCell>
-                <StatsCell className="text-sm text-muted-foreground whitespace-nowrap">
-                  {s.topScorer ? <><span className="text-foreground">{s.topScorer.name}</span> <span className="tabular-nums">({s.topScorer.goals})</span></> : "-"}
-                </StatsCell>
-                <StatsCell className="text-sm text-muted-foreground">{s.titles.map(titleName).join(", ")}</StatsCell>
-              </StatsRow>
-            ))}
-          </StatsTable>
-        )}
-      </Panel>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <TopTable title={t("clubHistory.topScorers")} rows={data.topScorers} by="goals" squadId={data.squadId} leagueSlug={leagueSlug} />
-        <TopTable title={t("clubHistory.topApps")} rows={data.topApps} by="apps" squadId={data.squadId} leagueSlug={leagueSlug} />
+    <div className="flex flex-col gap-6 overflow-y-auto pb-2">
+      <div className="flex flex-col">
+        <ProfileHero
+          attached
+          art={stadiumArtFile(data.stadiumLevel)}
+          visual={(
+            <ClubLogo
+              logoUrl={squadLogoUrl(data.squadId)} primaryColor={data.colors[0]} secondaryColor={data.colors[1]}
+              className="w-24 h-24 phone:w-16 phone:h-16" imgClassName="w-full h-full object-contain"
+            />
+          )}
+          eyebrow={data.since ? t("clubHistory.since", { season: data.since }) : undefined}
+          title={data.name}
+          lines={[
+            venue,
+            data.manager ? <>{t("clubHistory.managerLine")} <span className="font-semibold text-foreground">{data.manager}</span></> : null,
+            data.pastManagers.length > 0 ? <span className="block truncate">{t("clubHistory.pastManagersLine", { names: data.pastManagers.join(", ") })}</span> : null,
+          ]}
+        />
+        <StatStrip
+          attached
+          items={[
+            { key: "seasons", label: t("clubHistory.strip.seasons"), value: f.seasons },
+            { key: "titles", label: t("clubHistory.strip.titles"), value: f.titles, tone: f.titles > 0 ? "gold" : undefined },
+            {
+              key: "promotions", label: t("clubHistory.strip.promotions"), value: f.promotions, tone: f.promotions > 0 ? "good" : undefined,
+              detail: f.relegations > 0 ? t("clubHistory.relegationsCount", { count: f.relegations }) : undefined,
+            },
+            {
+              key: "best", label: t("clubHistory.strip.bestFinish"),
+              value: best ? t("clubHistory.factDetail.position", { position: best.position }) : "-",
+              detail: best ? name(best.league) : undefined,
+            },
+            { key: "goals", label: t("clubHistory.strip.leagueGoals"), value: f.leagueGoals },
+            { key: "idols", label: t("clubHistory.strip.idols"), value: data.legends.length, tone: data.legends.length > 0 ? "gold" : undefined },
+          ]}
+        />
       </div>
 
-      <Panel title={t("clubHistory.records")}>
-        {records.length === 0 ? (
-          <p className="text-sm text-muted-foreground m-0">{t("clubHistory.noRecords")}</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {records.map((r) => {
-              const x = clubRecordTexts(r, t, name);
-              return (
-                <div key={r.kind} className="rounded-md border border-border p-4">
-                  <Caption>{x.label}</Caption>
-                  <p className="m-0 font-display font-bold tabular-nums text-3xl leading-none text-foreground">{x.value}</p>
-                  <p className="m-0 mt-2 text-sm text-muted-foreground">{x.detail}</p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Panel>
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <section className="flex flex-col gap-3 min-w-0">
+          <SectionTitle>{t("clubHistory.trophyRoom")}</SectionTitle>
+          {data.trophies.length === 0 ? (
+            <p className="text-sm text-muted-foreground m-0">{t("clubHistory.noTitles")}</p>
+          ) : (
+            <TrophyShelf items={data.trophies.map((x) => ({ key: x.title, kind: trophyKindOf(x.title), count: x.count, label: titleName(x.title) }))} />
+          )}
+          <Promotions titles={data.titles} label={titleName} />
+        </section>
+        <LegendsBlock data={data} leagueSlug={leagueSlug} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2 items-start">
+        <SeasonsBlock seasons={data.seasons} leagueName={name} titleName={titleName} />
+        <TopPlayersBlock data={data} leagueSlug={leagueSlug} />
+      </div>
+
+      <RecordsBlock data={data} leagueName={name} />
     </div>
   );
 }
 
-/** Label-style caption above a value (not tied to a form field). */
-function Caption({ children }: { children: ReactNode }) {
-  return <p className="m-0 mb-1 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{children}</p>;
-}
-
-function TopTable({ title, rows, by, squadId, leagueSlug }: {
-  title: string; rows: ClubTopPlayer[]; by: "goals" | "apps"; squadId: string; leagueSlug: string;
-}) {
-  const { t } = useTranslation();
-  const ranked = useMemo(() => rows.map((p, i) => ({ ...p, rank: i + 1 })), [rows]);
-  const { sorted, head } = useTableSort(ranked, {
-    rank: (p) => -p.rank, player: (p) => p.name, goals: (p) => p.goals, apps: (p) => p.apps, assists: (p) => p.assists,
-  });
+/** Promotions are not trophies: one line under the shelf. */
+function Promotions({ titles, label }: { titles: ClubHistoryResponse["titles"]; label: (title: string) => string }) {
+  const promos = titles.filter((g) => !isTrophy(g.title));
+  if (promos.length === 0) return null;
   return (
-    <Panel title={title}>
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground m-0">{t("clubHistory.nobody")}</p>
-      ) : (
-        <StatsTable
-          head={
-            <>
-              <StatsHead align="center" sort={head("rank")}>#</StatsHead>
-              <StatsHead sort={head("player")}>{t("clubHistory.col.player")}</StatsHead>
-              <StatsHead align="center" sort={head("apps")}>{t("clubHistory.col.apps")}</StatsHead>
-              <StatsHead align="center" sort={head("goals")}>{t("clubHistory.col.goals")}</StatsHead>
-              <StatsHead align="center" sort={head("assists")}>{t("clubHistory.col.assists")}</StatsHead>
-            </>
-          }
-        >
-          {sorted.map((p) => (
-            <StatsRow key={p.playerId} highlight={p.current}>
-              <RankCell rank={p.rank} />
-              <NameCell
-                highlight={p.current}
-                href={p.current ? `/player/${encodeURIComponent(leagueSlug)}/${encodeURIComponent(squadId)}/${encodeURIComponent(p.playerId)}` : undefined}
-              >
-                <span className="truncate">{p.name}</span>
-                {p.retired && <span className="shrink-0 rounded border border-border px-2 py-0.5 text-sm font-normal text-muted-foreground">{t("clubHistory.retired")}</span>}
-              </NameCell>
-              <NumberCell strong={by === "apps"}>{p.apps}</NumberCell>
-              <NumberCell strong={by === "goals"}>{p.goals}</NumberCell>
-              <NumberCell>{p.assists}</NumberCell>
-            </StatsRow>
-          ))}
-        </StatsTable>
-      )}
-    </Panel>
+    <ul className="m-0 p-0 list-none flex flex-wrap gap-x-5 gap-y-1">
+      {promos.map((g) => (
+        <li key={g.title} className="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
+          <Icon name="trend-up" size={16} className="text-star-green shrink-0" />
+          <span className="text-foreground">{label(g.title)}</span> {g.seasons.join(", ")}
+        </li>
+      ))}
+    </ul>
   );
 }
 
-/** Idols and legends of the club (#151): rule from the games, goals, titles and awards at it. */
-function LegendsPanel({ legends, squadId, leagueSlug }: { legends: ClubLegend[]; squadId: string; leagueSlug: string }) {
+/** Idols and legends (#151) as rows, then the player of the squad closest to becoming one. */
+function LegendsBlock({ data, leagueSlug }: { data: ClubHistoryResponse; leagueSlug: string }) {
   const { t } = useTranslation();
   const L = CLUB_LEGENDS;
+  const art = newVisualOn();
+  const next = data.nextIdol;
   return (
-    <Panel title={t("clubHistory.legends")}>
-      <p className="m-0 mb-3 text-sm text-muted-foreground">
+    <section className="flex flex-col gap-3 min-w-0">
+      <SectionTitle>{t("clubHistory.legends")}</SectionTitle>
+      <div className="rounded-md border border-border bg-card divide-y divide-border/60 overflow-hidden">
+        {data.legends.map((p) => <LegendRow key={p.playerId} p={p} squadId={data.squadId} leagueSlug={leagueSlug} art={art} />)}
+        <div className="flex items-center gap-4 px-4 py-3.5">
+          <span className="w-16 h-16 shrink-0 rounded-full border-2 border-border bg-secondary/40 flex items-center justify-center font-display font-bold text-2xl text-muted-foreground" aria-hidden>?</span>
+          {next ? (
+            <div className="flex flex-col gap-2 min-w-0 flex-1">
+              <p className="m-0 text-sm text-muted-foreground">
+                {t("clubHistory.nextIdol")}{" "}
+                <a href={playerHref(leagueSlug, data.squadId, next.playerId)} className="font-semibold text-foreground no-underline hover:text-primary">{next.name}</a>
+                <span className="tabular-nums"> · {t("clubHistory.nextIdolGames", { apps: next.apps, target: next.target })}</span>
+              </p>
+              <span className="block h-1.5 rounded bg-border overflow-hidden max-w-64" aria-hidden>
+                <span className="block h-full bg-primary" style={{ width: `${Math.min(100, Math.round((next.apps / next.target) * 100))}%` }} />
+              </span>
+            </div>
+          ) : (
+            <p className="m-0 text-sm text-muted-foreground">{data.legends.length === 0 ? t("clubHistory.noLegendsYet") : t("clubHistory.noNextIdol")}</p>
+          )}
+        </div>
+      </div>
+      <p className="m-0 text-sm text-muted-foreground">
         {t("clubHistory.legendsAbout", {
           idolApps: L.IDOL_APPS, idolWith: L.IDOL_APPS_WITH, idolGoals: L.IDOL_GOALS, idolTitles: L.IDOL_TITLES, idolAwards: L.IDOL_AWARDS,
           legendApps: L.LEGEND_APPS, legendWith: L.LEGEND_APPS_WITH, legendGoals: L.LEGEND_GOALS,
           legendTitles: L.LEGEND_TITLES, legendAwards: L.LEGEND_AWARDS,
         })}
       </p>
-      {legends.length === 0 ? (
-        <p className="text-sm text-muted-foreground m-0">{t("clubHistory.noLegends")}</p>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {legends.map((p) => {
-            const status = p.current ? "current" : p.retired ? "retired" : "left";
-            const legend = p.tier === "legend";
-            const href = p.current
-              ? `/player/${encodeURIComponent(leagueSlug)}/${encodeURIComponent(squadId)}/${encodeURIComponent(p.playerId)}`
-              : undefined;
-            return (
-              <div key={p.playerId}
-                className={`flex items-start gap-3 rounded-md border p-3 ${legend ? "border-chart-4/60" : "border-border"}`}>
-                <Icon name={legend ? "crown" : "star-filled"} size={20} className={`shrink-0 mt-0.5 ${legend ? "text-chart-4" : "text-primary"}`} />
-                <div className="min-w-0 flex flex-col gap-0.5">
-                  {href ? (
-                    <a href={href} className="font-semibold text-foreground truncate hover:text-primary">{p.name}</a>
-                  ) : (
-                    <span className="font-semibold text-foreground truncate">{p.name}</span>
-                  )}
-                  <span className={`font-display font-bold uppercase tracking-[0.08em] text-[13px] ${legend ? "text-chart-4" : "text-primary"}`}>
-                    {t(`clubHistory.tier.${p.tier}`)} · {t(`clubHistory.status.${status}`)}
-                  </span>
-                  <span className="text-sm text-muted-foreground tabular-nums">
-                    {t("clubHistory.legendLine", { apps: p.apps, goals: p.goals, titles: p.titles ?? 0 })}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </Panel>
+    </section>
   );
 }
 
-/** Facts and curiosities (#151), derived from the seasons and the players' totals at the club. */
-function FactsPanel({ facts, leagueName }: { facts: ClubFacts; leagueName: (slug: string) => string }) {
+function LegendRow({ p, squadId, leagueSlug, art }: { p: ClubLegend; squadId: string; leagueSlug: string; art: boolean }) {
   const { t } = useTranslation();
-  const cards: { key: string; value: string; detail?: string }[] = [
-    { key: "seasons", value: String(facts.seasons) },
-    { key: "titles", value: String(facts.titles) },
-    { key: "moves", value: `${facts.promotions} / ${facts.relegations}` },
-    { key: "leagueGoals", value: String(facts.leagueGoals) },
-  ];
-  if (facts.bestSeason) {
-    cards.push({
-      key: "bestSeason", value: facts.bestSeason.position !== null ? t("clubHistory.factDetail.position", { position: facts.bestSeason.position }) : "-",
-      detail: `${leagueName(facts.bestSeason.league)} · ${t("clubHistory.factDetail.points", { points: facts.bestSeason.points, season: facts.bestSeason.season })}`,
-    });
-  }
-  if (facts.mostTeamGoals) {
-    cards.push({
-      key: "mostTeamGoals", value: String(facts.mostTeamGoals.goals),
-      detail: t("clubHistory.factDetail.goals", { league: leagueName(facts.mostTeamGoals.league), season: facts.mostTeamGoals.season }),
-    });
-  }
-  if (facts.topScorer) {
-    cards.push({ key: "topScorer", value: String(facts.topScorer.goals), detail: t("clubHistory.factDetail.player", { name: facts.topScorer.name }) });
-  }
-  if (facts.mostApps) {
-    cards.push({ key: "mostApps", value: String(facts.mostApps.apps), detail: t("clubHistory.factDetail.player", { name: facts.mostApps.name }) });
-  }
+  const status = p.current ? "current" : p.retired ? "retired" : "left";
+  const legend = p.tier === "legend";
   return (
-    <Panel title={t("clubHistory.facts")}>
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <div key={c.key} className="rounded-md border border-border p-4 min-w-0">
-            <Caption>{t(`clubHistory.fact.${c.key}`)}</Caption>
-            <p className="m-0 font-display font-bold tabular-nums text-3xl leading-none text-foreground">{c.value}</p>
-            {c.detail && <p className="m-0 mt-2 text-sm text-muted-foreground truncate">{c.detail}</p>}
-          </div>
-        ))}
+    <div className="flex items-center gap-4 px-4 py-3.5">
+      <PlayerFace playerId={p.playerId} size={64} fallback={playerInitials(p.name)} ringClassName={legend ? "border-2 border-star-gold" : "border-2 border-primary"} />
+      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+        <span className="flex items-center gap-2 min-w-0">
+          {p.current
+            ? <a href={playerHref(leagueSlug, squadId, p.playerId)} className="font-semibold text-foreground truncate no-underline hover:text-primary">{p.name}</a>
+            : <span className="font-semibold text-foreground truncate">{p.name}</span>}
+          <span className={`inline-flex items-center gap-1 shrink-0 text-sm font-semibold ${legend ? "text-star-gold" : "text-primary"}`}>
+            <Icon name={legend ? "crown" : "star-filled"} size={16} />{t(`clubHistory.tier.${p.tier}`)}
+          </span>
+        </span>
+        <span className="text-sm text-muted-foreground tabular-nums truncate">
+          {t("clubHistory.legendLine", { apps: p.apps, goals: p.goals, titles: p.titles ?? 0 })} · {t(`clubHistory.status.${status}`)}
+        </span>
       </div>
-    </Panel>
+      {art && <LegendLaurel size={48} className={legend ? "" : "opacity-50"} />}
+    </div>
+  );
+}
+
+function SeasonsBlock({ seasons, leagueName, titleName }: {
+  seasons: ClubSeasonRow[]; leagueName: (slug: string) => string; titleName: (title: string) => string;
+}) {
+  const { t } = useTranslation();
+  const rows = useMemo(() => [...seasons].reverse(), [seasons]);
+  const { sorted, head } = useTableSort(rows, {
+    season: (s) => s.season, league: (s) => leagueName(s.league),
+    position: (s) => (s.position === null || s.position === undefined ? null : -s.position),
+    record: (s) => s.won, points: (s) => s.points, topScorer: (s) => s.topScorer?.goals ?? null,
+    titles: (s) => s.titles.filter(isTrophy).length || null,
+  });
+  return (
+    <section className="flex flex-col gap-3 min-w-0">
+      <SectionTitle>{t("clubHistory.seasons")}</SectionTitle>
+      {rows.length === 0 ? (
+        <div className="rounded-md border border-border bg-card px-5 py-6 flex items-center gap-4">
+          <Icon name="calendar" size={28} className="text-muted-foreground shrink-0" />
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="font-display font-bold uppercase text-base leading-none text-foreground">{t("clubHistory.firstSeason")}</span>
+            <span className="text-sm text-muted-foreground">{t("clubHistory.firstSeasonHint")}</span>
+          </div>
+        </div>
+      ) : (
+        <StatsTable
+          head={
+            <>
+              <StatsHead sort={head("season")}>{t("clubHistory.col.season")}</StatsHead>
+              <StatsHead sort={head("league")}>{t("clubHistory.col.league")}</StatsHead>
+              <StatsHead align="center" sort={head("position")}>{t("clubHistory.col.position")}</StatsHead>
+              <StatsHead align="center" sort={head("record")} title={t("clubHistory.col.recordHint")}>{t("clubHistory.col.record")}</StatsHead>
+              <StatsHead align="center" sort={head("points")}>{t("clubHistory.col.points")}</StatsHead>
+              <StatsHead sort={head("topScorer")}>{t("clubHistory.col.topScorer")}</StatsHead>
+              <StatsHead sort={head("titles")}>{t("clubHistory.col.titles")}</StatsHead>
+            </>
+          }
+        >
+          {sorted.map((s) => {
+            const won = s.titles.filter(isTrophy);
+            return (
+              <StatsRow key={`${s.season}-${s.league}`}>
+                <StatsCell className="tabular-nums whitespace-nowrap text-muted-foreground">{s.season}</StatsCell>
+                <StatsCell className="font-semibold text-foreground max-w-[12rem] truncate">{leagueName(s.league)}</StatsCell>
+                <StatsCell align="center" className="whitespace-nowrap">
+                  <span className={`inline-flex min-w-9 h-7 px-1.5 items-center justify-center rounded font-display font-bold tabular-nums ${
+                    s.position === 1 ? "bg-star-gold/20 text-star-gold" : "bg-secondary text-foreground"}`}>
+                    {s.position !== null ? t("clubHistory.factDetail.position", { position: s.position }) : "-"}
+                  </span>
+                  {s.move && (
+                    <span className="ml-1 inline-flex align-middle" title={t(`clubHistory.${s.move}`)} aria-label={t(`clubHistory.${s.move}`)}>
+                      <Icon name={s.move === "promoted" ? "trend-up" : "trend-down"} size={16} className={s.move === "promoted" ? "text-star-green" : "text-destructive"} />
+                    </span>
+                  )}
+                </StatsCell>
+                <NumberCell>{s.won}-{s.drawn}-{s.lost}</NumberCell>
+                <NumberCell strong>{s.points}</NumberCell>
+                <StatsCell className="text-sm text-muted-foreground whitespace-nowrap">
+                  {s.topScorer ? <><span className="text-foreground">{s.topScorer.name}</span> <span className="tabular-nums">· {s.topScorer.goals}</span></> : "-"}
+                </StatsCell>
+                <StatsCell className="whitespace-nowrap">
+                  {won.length === 0 ? <span className="text-muted-foreground">-</span> : (
+                    <span className="inline-flex items-center gap-1" title={won.map(titleName).join(", ")}>
+                      {won.map((x) => <Icon key={x} name="trophy" size={18} className={trophyKindOf(x) === "continental" ? "text-chart-2" : "text-star-gold"} />)}
+                    </span>
+                  )}
+                </StatsCell>
+              </StatsRow>
+            );
+          })}
+        </StatsTable>
+      )}
+    </section>
+  );
+}
+
+/** Top scorers and appearances in one table (the union of both top 10s), by goals first; the headers sort. */
+function TopPlayersBlock({ data, leagueSlug }: { data: ClubHistoryResponse; leagueSlug: string }) {
+  const { t } = useTranslation();
+  const rows = useMemo(() => {
+    const seen = new Map<string, ClubTopPlayer>();
+    for (const p of [...data.topScorers, ...data.topApps]) if (!seen.has(p.playerId)) seen.set(p.playerId, p);
+    return [...seen.values()];
+  }, [data]);
+  const { sorted, head } = useTableSort(rows, {
+    player: (p) => p.name, goals: (p) => p.goals, apps: (p) => p.apps, assists: (p) => p.assists,
+  }, { key: "goals", dir: "desc" });
+  return (
+    <section className="flex flex-col gap-3 min-w-0">
+      <SectionTitle>{t("clubHistory.topPlayers")}</SectionTitle>
+      {rows.length === 0 ? (
+        <div className="rounded-md border border-border bg-card px-5 py-6 flex items-center gap-4">
+          <Icon name="users" size={28} className="text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground">{t("clubHistory.noPlayersYet")}</span>
+        </div>
+      ) : (
+        <StatsTable
+          head={
+            <>
+              <StatsHead align="center">#</StatsHead>
+              <StatsHead sort={head("player")}>{t("clubHistory.col.player")}</StatsHead>
+              <StatsHead align="center" sort={head("goals")}>{t("clubHistory.col.goals")}</StatsHead>
+              <StatsHead align="center" sort={head("apps")}>{t("clubHistory.col.apps")}</StatsHead>
+              <StatsHead align="center" sort={head("assists")}>{t("clubHistory.col.assists")}</StatsHead>
+            </>
+          }
+        >
+          {sorted.map((p, i) => (
+            <StatsRow key={p.playerId}>
+              <RankCell rank={i + 1} />
+              <NameCell href={p.current ? playerHref(leagueSlug, data.squadId, p.playerId) : undefined}>
+                <span className="truncate">{p.name}</span>
+                {p.retired && <span className="shrink-0 text-sm font-normal text-muted-foreground">· {t("clubHistory.retired")}</span>}
+              </NameCell>
+              <NumberCell strong>{p.goals}</NumberCell>
+              <NumberCell>{p.apps}</NumberCell>
+              <NumberCell>{p.assists}</NumberCell>
+            </StatsRow>
+          ))}
+        </StatsTable>
+      )}
+    </section>
+  );
+}
+
+/** Records as cards; the main ones are shown dimmed before they exist. */
+function RecordsBlock({ data, leagueName }: { data: ClubHistoryResponse; leagueName: (slug: string) => string }) {
+  const { t } = useTranslation();
+  const kinds = RECORD_ORDER.filter((k) => data.records[k] || RECORD_PLACEHOLDERS.includes(k));
+  const most = data.facts.mostTeamGoals;
+  return (
+    <section className="flex flex-col gap-3">
+      <SectionTitle>{t("clubHistory.records")}</SectionTitle>
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {kinds.map((k) => {
+          const value = data.records[k];
+          if (!value) return <InfoCard key={k} dim label={t(`clubHistory.record.${k}`)} value="-" detail={t("clubHistory.notSet")} />;
+          const x = clubRecordTexts({ kind: k, value } as ClubRecordBroken, t, leagueName);
+          const shown = k === "unbeaten" ? t("clubHistory.gamesCount", { count: data.records.unbeaten!.matches }) : x.value;
+          return <InfoCard key={k} label={x.label} value={shown} detail={x.detail} tone={RECORD_TONE[k]} />;
+        })}
+        {most && (
+          <InfoCard
+            label={t("clubHistory.fact.mostTeamGoals")} value={most.goals}
+            detail={t("clubHistory.factDetail.goals", { league: leagueName(most.league), season: most.season })}
+          />
+        )}
+      </div>
+    </section>
   );
 }

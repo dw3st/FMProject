@@ -125,3 +125,16 @@ inteiro (elencos, livres, aposentados); o campeão tem o título da liga.
 ## Visão geral do clube (8.9.31)
 
 Report de tester, opção A do mock. Aba Visão geral na página de qualquer clube que não é o seu (a primeira; `?tab=` escolhe outra), `Components/ClubOverviewView.tsx` sobre `GET /api/saves/:id/clubs/:squadId/overview` (`clubOverview`, `src/backend/clubOverviewWorld.ts`, tipo `ClubOverview`): técnico (rosto, desde quando, interino), situação do cargo e meta pela mesma regra de Cargos (`jobPosts`, que passou a devolver `target`) com o botão Candidatar-se; estádio (pintura pelo nível, capacidade e a condição de gramado, arquibancadas e estrutura: os itens do clube humano, ou os de largada da IA por receita e tier, `startingFacilities`, com o gramado da IA do dia); dinheiro da IA (`buildClubFinanceRows`; nada de um clube humano); temporada (posição, pontos, forma); 5 destaques pelo nível visto (links para a ficha); títulos e lendas (link pelo `/where`). A ficha de um jogador que saiu do clube do link procura onde ele joga (`/players/:id/where`) e abre lá.
+
+## Visual da história (12.19)
+
+Mock aprovado pelo usuário ("opção A · Galeria"). A aba História (`ClubHistoryView`) virou uma galeria:
+
+- **Faixa do clube** (`ProfileHero`): a pintura do estádio atrás (`club/stadium-lv-{1..5}.webp`, nível pela média dos itens do estádio, `clubStadiumLevel` em `clubOverviewWorld.ts`, só com o visual novo), escudo, nome, "Histórico desde", estádio, técnico e técnicos anteriores; sem a pintura, o mesmo desenho num cartão liso.
+- **Números** (`StatStrip`): temporadas, títulos, acessos (com os rebaixamentos), melhor campanha, gols na liga, ídolos.
+- **Sala de troféus** (`TrophyShelf`, troféus pintados `season/trophy-*.webp` ou o ícone sem o visual novo): os títulos ganhos e, apagados com 0, a liga do clube, a copa do país, a continental do continente (Europa e América do Sul) e a liga de nível 1 do país (`clubTrophyPlaceholders`, `trophyShelf`). Os acessos ficam numa linha abaixo.
+- **Ídolos e lendas** com rosto, coroa ou estrela e a coroa de louros; abaixo, o próximo ídolo (`nextIdol`: o jogador do elenco com mais jogos que ainda não é ídolo, contra `IDOL_APPS`).
+- **Temporadas** (posição em selo, dourado no 1º; seta de acesso/queda; V-E-D; pontos; artilheiro; ícones de título) e **Artilheiros e mais jogos** numa tabela só (os dois top 10 juntos, ordenável).
+- **Recordes** em cartões (vitória verde, derrota vermelha); os principais aparecem apagados antes de existirem.
+- Rota: `ClubHistoryResponse` ganhou `stadiumLevel`, `trophies` e `nextIdol`; `ClubOverview` ganhou `trophies`.
+- O mesmo padrão (faixa, números, estante de troféus) vale na Visão geral do clube, na página do técnico (`ManagerScreen`, sem pintura) e no perfil do aposentado (`RetiredProfile`, sem pintura). A sombra sobre a pintura é exceção registrada no `ui-audit` (`ALLOWLIST`).

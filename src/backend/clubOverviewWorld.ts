@@ -4,13 +4,46 @@ import { jobPosts } from "@/backend/jobPostsWorld";
 import { masterSponsorOf } from "@/backend/sponsorWorld";
 import { clubCountryResolver } from "@/backend/matchCrowd";
 import { buildClubFinanceRows } from "@/Domain/aiFinance/financeRows";
-import { clubLegends, emptyClubHistory, titleGallery } from "@/Domain/clubHistory/clubHistory";
+import { clubLegends, emptyClubHistory, titleGallery, trophyShelf } from "@/Domain/clubHistory/clubHistory";
+import { getCountries, topLeagueOf } from "@/backend/continentalWorld";
+import { competitionsOf } from "@/Domain/continental/competitions";
+import { cupSlugOf } from "@/Domain/cups/cupIds";
 import { conditionOf } from "@/Domain/facilities/facilityItems";
 import { livingFacilities } from "@/Domain/facilities/facilities";
 import { matchPitch } from "@/Domain/facilities/pitch";
 import { STADIUM_ART_ITEMS, stadiumArtLevel } from "@/Domain/facilities/stadiumArt";
 import type { ClubOverview } from "@/types/clubOverviewTypes";
 import type { Squad } from "@/types/playerTypes";
+
+/** The club's stadium items: its own (a human club) or the ones it would start with (an AI club). */
+async function stadiumItemsOf(squad: Squad, leagueSlug: string) {
+  return livingFacilities(squad)?.items ?? (await startingFacilities(squad, leagueSlug)).items;
+}
+
+/** Painted ground 1..5 of a club (`stadiumArtLevel` of its stadium items), for the club page heroes. */
+export async function clubStadiumLevel(squad: Squad, leagueSlug: string): Promise<1 | 2 | 3 | 4 | 5> {
+  const items = await stadiumItemsOf(squad, leagueSlug);
+  return stadiumArtLevel(STADIUM_ART_ITEMS.map((id) => items[id].level));
+}
+
+/**
+ * The competitions a club plays for (the History trophy room, 12.19): its league, the top league of its country, its
+ * national cup and its continent's main cup (Europe and South America only), as gallery titles.
+ */
+export async function clubTrophyPlaceholders(leagueSlug: string): Promise<string[]> {
+  const { getLeagueData, getPyramids } = await import("@/backend/advanceDay");
+  const catalog = await getLeagueData();
+  const country = catalog.find((l) => l.slug === leagueSlug)?.country;
+  if (!leagueSlug) return [];
+  const out = [`league:${leagueSlug}`];
+  if (!country) return out;
+  const top = topLeagueOf(country, catalog, await getPyramids());
+  out.push(`cup:${cupSlugOf(country)}`);
+  const continent = (await getCountries())[country]?.continent;
+  if (continent === "Europe" || continent === "South America") out.push(`continental:${competitionsOf(continent)[0]!.slug}`);
+  if (top && top !== leagueSlug) out.push(`league:${top}`);
+  return out;
+}
 
 /**
  * Overview of any club for the club page (tester report, 8.9.30): manager and job security with the application,
@@ -25,7 +58,7 @@ export async function clubOverview(service: SaveService, saveId: string, meta: S
   const human = humanIds.has(squad.id);
 
   // Stadium: the club's own items (a human club) or its starting items, the pitch of today's home match.
-  const items = livingFacilities(squad)?.items ?? (await startingFacilities(squad, leagueSlug)).items;
+  const items = await stadiumItemsOf(squad, leagueSlug);
   const window = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === leagueSlug);
   const pitch = Math.round(matchPitch(squad, {}, window, date).condition);
   const stadium = {
@@ -71,6 +104,7 @@ export async function clubOverview(service: SaveService, saveId: string, meta: S
     },
     season: st ? { position: at + 1, size: table.length, played: st.mp, points: st.pts, form: st.form.slice(-5) } : null,
     titles: titleGallery(history.seasons).map((g) => ({ title: g.title, count: g.seasons.length })),
+    trophies: trophyShelf(titleGallery(history.seasons), await clubTrophyPlaceholders(leagueSlug)),
     legends: clubLegends(history.scorers).slice(0, 3).map((l) => ({ playerId: l.playerId, name: l.name, tier: l.tier })),
     // Only the name: another human club's contract values stay private.
     masterSponsor: await masterSponsorOf(service, saveId, squad, meta.activeLeagues, date),
