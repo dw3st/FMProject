@@ -1,3 +1,4 @@
+import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import type { BetsState } from "@/types/betTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
@@ -571,6 +572,12 @@ export class BufferingSaveDAL implements ISaveDAL {
   }
   readSeatPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]> {
     return this.readThrough(`seatPending:${saveId}:${seatId}`, () => this.inner.readSeatPendingSummary(saveId, seatId));
+  }
+  readSeatSeasonReports(saveId: string, seatId: string): Promise<SeasonSummary[]> {
+    return this.readThrough(`seatReports:${saveId}:${seatId}`, () => this.inner.readSeatSeasonReports(saveId, seatId));
+  }
+  async writeSeatSeasonReports(saveId: string, seatId: string, reports: SeasonSummary[]): Promise<void> {
+    this.buffer(`seatReports:${saveId}:${seatId}`, reports, () => this.inner.writeSeatSeasonReports(saveId, seatId, reports));
   }
   async writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void> {
     this.buffer(`seatPending:${saveId}:${seatId}`, days, () => this.inner.writeSeatPendingSummary(saveId, seatId, days));

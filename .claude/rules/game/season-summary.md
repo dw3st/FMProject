@@ -56,3 +56,12 @@ Sem efeito de partida: nada em `/test` nem `/lab`.
 ## Destaques numa faixa (12.15)
 
 Report do usuário. Os destaques do relatório ficam numa faixa só, com divisórias, em vez de 4 cartões soltos: as bordas de fora se alinham com os 3 quadros de cima.
+
+## Resumos guardados (12.15)
+
+Report do usuário: um técnico fechou a janela e não tinha como rever o resumo. Cada resumo fica congelado no arquivo `seats/<assento>/seasonReports.json` (até 60, os mais novos primeiro; `keptSeasonReport`, `src/backend/seasonSummaryRoutes.ts`). Ele é gravado em três momentos:
+- na primeira vez que o resumo é aberto;
+- no fim do dia em que a temporada do assento acaba (`captureSeasonReports`, no `runBufferedDay`);
+- quando alguém abre a lista.
+
+`GET /api/saves/:saveId/season-reports` lista o resumo da última temporada (`lastSeason`) e as temporadas do histórico dos clubes da carreira assinadas com o nome do técnico. Uma temporada que faltar é montada e guardada nessa hora. Telas: o bloco Temporadas (`Components/SeasonReportsSection.tsx`), na aba Perfil de "Seu técnico" e na página do próprio técnico (`/manager/:id`), com o botão Ver resumo. Um resumo montado depois do fato não tem a meta da diretoria (só a última temporada a tem), e os destaques dele só incluem quem ainda está no clube.

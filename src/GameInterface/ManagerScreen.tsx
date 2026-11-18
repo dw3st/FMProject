@@ -1,3 +1,4 @@
+import { SeasonReportsSection } from "@/GameInterface/Components/SeasonReportsSection";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { groupAwards } from "@/Domain/awards/awardGroups";
@@ -245,6 +246,8 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
             )}
           </section>
         </div>
+
+        {data.isPlayer && session && <SeasonReportsSection saveId={session.saveId} leagues={leagues} />}
 
         <section className="flex flex-col gap-2.5 min-w-0">
           <SectionTitle>{t("statsScreen.managers.career")}</SectionTitle>

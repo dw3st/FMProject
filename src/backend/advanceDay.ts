@@ -347,6 +347,8 @@ export async function runBufferedDay(
   if (outcome.standingsChanged) notifyWorld(saveId, { type: "world_members", saveId });
   // The account profile keeps a snapshot of each career (never fails the day).
   await import("@/backend/account/accountWorld").then((m) => m.syncSaveCareers(saveId));
+  // The end-of-season report of a seat is kept for its manager page.
+  await import("@/backend/seasonSummaryRoutes").then((m) => m.captureSeasonReports(saveId));
   return outcome;
 }
 

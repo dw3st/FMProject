@@ -3669,7 +3669,16 @@
       "apps_one": "{{count}} jogo",
       "apps_other": "{{count}} jogos"
     },
-    "continue": "Continuar"
+    "continue": "Continuar",
+    "history": {
+      "title": "Temporadas",
+      "season": "Temporada",
+      "club": "Clube",
+      "position": "Posição",
+      "points": "Pontos",
+      "titles": "Títulos",
+      "open": "Ver resumo"
+    }
   },
   "seasonNotice": {
     "formerClub": "Sua temporada no {{club}}:",

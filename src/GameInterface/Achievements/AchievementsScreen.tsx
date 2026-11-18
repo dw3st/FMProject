@@ -1,3 +1,4 @@
+import { SeasonReportsSection } from "@/GameInterface/Components/SeasonReportsSection";
 import { ACHIEVEMENTS } from "@/Domain/achievements/achievementsConfig";
 import { RetiredList } from "@/GameInterface/StatsScreen";
 import type { LeagueData } from "@/types/playerTypes";
@@ -132,6 +133,7 @@ export function AchievementsScreen() {
             <SectionTitle>{t("achievements.tabs.manager")}</SectionTitle>
             <ManagerTab data={data} />
           </section>
+          <ProfileSeasons saveId={saveId} />
         </div>
       )}
       {tab === "bets" && <BetsTab />}
@@ -668,4 +670,13 @@ function ShopHistory({ history }: { history: AchievementsData["shop"]["history"]
       )}
     </section>
   );
+}
+
+/** The end-of-season reports the manager can reopen (`.claude/rules/game/season-summary.md`). */
+function ProfileSeasons({ saveId }: { saveId: string }) {
+  const [leagues, setLeagues] = useState<LeagueData[]>([]);
+  useEffect(() => {
+    void fetch("/api/leagues").then((r) => (r.ok ? r.json() : [])).then((d: LeagueData[]) => setLeagues(Array.isArray(d) ? d : [])).catch(() => setLeagues([]));
+  }, []);
+  return <SeasonReportsSection saveId={saveId} leagues={leagues} />;
 }

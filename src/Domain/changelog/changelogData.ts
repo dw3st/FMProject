@@ -37,6 +37,7 @@ export const changelog: ChangelogEntry[] = [
     items: [
       { tab: "general", pt: "Perfil da conta na tela inicial: títulos, temporadas, jogos, prêmios, acessos, demissões e cartões somando todas as suas carreiras, inclusive as de saves apagados.", en: "Account profile on the start screen: titles, seasons, matches, awards, promotions, sackings and cards across all your careers, deleted saves included." },
       { tab: "general", pt: "40 conquistas da conta, com selos para mostrar no topo do perfil.", en: "40 account achievements, with badges to show at the top of the profile." },
+      { tab: "manager", pt: "Seu técnico: os resumos de fim de temporada ficam guardados e podem ser abertos de novo, no Perfil e na página do técnico.", en: "Your manager: the end-of-season reports are kept and can be opened again, in the Profile and on the manager page." },
       { tab: "friends", pt: "Amigos: veja o perfil de um amigo pelo menu dele no painel.", en: "Friends: see a friend's profile from his menu in the panel." },
       { tab: "friends", pt: "Liga de amigos: o apelido vem primeiro, com o técnico daquele save ao lado.", en: "Friends' league: the nickname comes first, with that save's manager next to it." },
     ],

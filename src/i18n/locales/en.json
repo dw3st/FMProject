@@ -3672,7 +3672,16 @@
       "apps_one": "{{count}} game",
       "apps_other": "{{count}} games"
     },
-    "continue": "Continue"
+    "continue": "Continue",
+    "history": {
+      "title": "Seasons",
+      "season": "Season",
+      "club": "Club",
+      "position": "Position",
+      "points": "Points",
+      "titles": "Titles",
+      "open": "View report"
+    }
   },
   "seasonNotice": {
     "formerClub": "Your season with {{club}}:",

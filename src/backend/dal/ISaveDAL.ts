@@ -1,3 +1,4 @@
+import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import type { BetsState } from "@/types/betTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import type { SaveMeta } from "@/backend/SaveService";
@@ -175,6 +176,9 @@ export interface ISaveDAL {
   writeSeatLiveRecording(saveId: string, seatId: string, file: LiveRecordingFile | null): Promise<void>;
   readSeatPendingSummary(saveId: string, seatId: string): Promise<PendingDay[]>;
   writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void>;
+  /** End-of-season reports kept for the manager page (`.claude/rules/game/season-summary.md`). */
+  readSeatSeasonReports(saveId: string, seatId: string): Promise<SeasonSummary[]>;
+  writeSeatSeasonReports(saveId: string, seatId: string, reports: SeasonSummary[]): Promise<void>;
   /** Removes the seat's folder (`seats/{seatId}/`): every file of that manager. */
   deleteSeat(saveId: string, seatId: string): Promise<void>;
 }

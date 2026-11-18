@@ -1,3 +1,4 @@
+import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import type { BetsState } from "@/types/betTypes";
 import type { NewsItem } from "@/types/newsTypes";
 import type { ISaveDAL, SquadFile } from "@/backend/dal/ISaveDAL";
@@ -748,6 +749,16 @@ export class FileSystemDAL implements ISaveDAL {
   async writeSeatPendingSummary(saveId: string, seatId: string, days: PendingDay[]): Promise<void> {
     const dir = seatDir(saveId, seatId);
     await writeJsonFile(dir, `${dir}/pendingSummary.json`, days);
+    bumpSaveDataVersion(saveId);
+  }
+
+  async readSeatSeasonReports(saveId: string, seatId: string): Promise<SeasonSummary[]> {
+    return (await readJsonFile<SeasonSummary[]>(`${seatDir(saveId, seatId)}/seasonReports.json`)) ?? [];
+  }
+
+  async writeSeatSeasonReports(saveId: string, seatId: string, reports: SeasonSummary[]): Promise<void> {
+    const dir = seatDir(saveId, seatId);
+    await writeJsonFile(dir, `${dir}/seasonReports.json`, reports);
     bumpSaveDataVersion(saveId);
   }
 

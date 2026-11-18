@@ -1,3 +1,4 @@
+import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import type { BetsState } from "@/types/betTypes";
 import { emptyBets } from "@/Domain/bets/bets";
 import { isYouthCompSlug } from "@/Domain/youthComps/youthCompIds";
@@ -430,6 +431,14 @@ export class SaveService {
   async appendPendingDay(saveId: string, seatId: string, day: PendingDay, max: number): Promise<void> {
     const days = await this.dal.readSeatPendingSummary(saveId, seatId);
     await this.dal.writeSeatPendingSummary(saveId, seatId, trimPendingSummary([...days, day], max));
+  }
+
+  getSeasonReports(saveId: string, seatId: string): Promise<SeasonSummary[]> {
+    return this.dal.readSeatSeasonReports(saveId, seatId);
+  }
+
+  writeSeasonReports(saveId: string, seatId: string, reports: SeasonSummary[]): Promise<void> {
+    return this.dal.writeSeatSeasonReports(saveId, seatId, reports);
   }
 
   clearPendingSummary(saveId: string, seatId: string): Promise<void> {

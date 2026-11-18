@@ -1,5 +1,7 @@
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
+import { withSaveLock } from "@/backend/saveLock";
+import { logError } from "@/Logger";
 import { buildSeasonSummary } from "@/Domain/season/seasonSummary";
 import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 
@@ -46,6 +48,63 @@ export async function seasonSummaryFor(saveId: string, seatId: string, year: num
   });
 }
 
+/** Reports kept per seat: the newest first, at most this many. */
+const MAX_REPORTS = 60;
+const sameReport = (r: SeasonSummary, year: number, clubId: string) => r.year === year && r.clubId === clubId;
+
+/** The stored report of a season, or a fresh one stored on the way (a report is frozen once seen). */
+export async function keptSeasonReport(saveId: string, seatId: string, year: number, clubId: string): Promise<SeasonSummary | null> {
+  const stored = await saveService.getSeasonReports(saveId, seatId);
+  const hit = stored.find((r) => sameReport(r, year, clubId));
+  if (hit) return hit;
+  const fresh = await seasonSummaryFor(saveId, seatId, year, clubId);
+  if (!fresh || !fresh.table) return fresh;
+  const next = [fresh, ...stored].sort((a, b) => b.year - a.year).slice(0, MAX_REPORTS);
+  await saveService.writeSeasonReports(saveId, seatId, next);
+  return fresh;
+}
+
+/**
+ * The seasons the seat managed to the end: the last one (`lastSeason`) and every club-history row signed with his
+ * manager's name at a club of his career. Each is stored the first time it is listed.
+ */
+export async function seatSeasonReports(saveId: string, seatId: string): Promise<SeasonSummary[]> {
+  const seat = await saveService.getSeat(saveId, seatId);
+  if (!seat) return [];
+  const stored = await saveService.getSeasonReports(saveId, seatId);
+  const wanted: { year: number; clubId: string }[] = [];
+  if (seat.lastSeason) wanted.push({ year: seat.lastSeason.year, clubId: seat.lastSeason.clubId });
+  const record = (await saveService.getManagers(saveId)).find((m) => m.seatId === seatId);
+  if (record) {
+    for (const squadId of new Set((record.clubs ?? []).map((c) => c.squadId).filter(Boolean))) {
+      const history = await saveService.getClubHistory(saveId, squadId);
+      for (const row of history?.seasons ?? []) {
+        const year = Number(row.season.slice(0, 4));
+        if (row.manager === record.name && Number.isInteger(year)) wanted.push({ year, clubId: squadId });
+      }
+    }
+  }
+  for (const w of wanted) {
+    if (stored.some((r) => sameReport(r, w.year, w.clubId))) continue;
+    await keptSeasonReport(saveId, seatId, w.year, w.clubId);
+  }
+  return (await saveService.getSeasonReports(saveId, seatId)).sort((a, b) => b.year - a.year);
+}
+
+/** After a day: freeze the report of every seat whose season just ended (never fails the day). */
+export async function captureSeasonReports(saveId: string): Promise<void> {
+  try {
+    for (const { seatId, seat } of await saveService.listSeats(saveId)) {
+      const last = seat.lastSeason;
+      if (!last) continue;
+      const stored = await saveService.getSeasonReports(saveId, seatId);
+      if (!stored.some((r) => sameReport(r, last.year, last.clubId))) await keptSeasonReport(saveId, seatId, last.year, last.clubId);
+    }
+  } catch (err) {
+    logError("season-summary", `failed to keep the season reports of save ${saveId}`, err);
+  }
+}
+
 /** End-of-season report (`.claude/rules/game/season-summary.md`). */
 export const seasonSummaryRoutes = {
   /** `GET ?year=YYYY[&club=<squadId>]` — the seat's season at that club (default: its club now). */
@@ -61,8 +120,17 @@ export const seasonSummaryRoutes = {
     if (!seat) return Response.json({ error: "save not found" }, { status: 404 });
     const clubId = url.searchParams.get("club") ?? seat.clubId;
     if (!SQUAD_ID.test(clubId)) return Response.json({ error: "club not found" }, { status: 404 });
-    const summary = await seasonSummaryFor(saveId, auth.seatId, year, clubId);
+    const summary = await withSaveLock(saveId, () => keptSeasonReport(saveId, auth.seatId, year, clubId));
     if (!summary) return Response.json({ error: "club not found" }, { status: 404 });
     return Response.json(summary);
+  },
+  /** `GET` — every season report the seat can reopen, the newest first (the manager page). */
+  "/api/saves/:saveId/season-reports": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const reports = await withSaveLock(saveId, () => seatSeasonReports(saveId, auth.seatId));
+    return Response.json({ reports });
   },
 };

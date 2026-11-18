@@ -69,6 +69,26 @@ describe("GET /api/saves/:saveId/season-summary", () => {
     expect(empty.money.income).toBe(0);
     expect(empty.objective).toBeUndefined();
 
+    // Kept for the manager page: the last season, plus an older one signed with his name; frozen once seen.
+    const record = (await saveService.getManagers(saveId)).find((m) => m.seatId === seatId)!;
+    const history = (await saveService.getClubHistory(saveId, "33"))!;
+    await saveService.writeClubHistory(saveId, {
+      ...history,
+      seasons: [{ season: "2025-26", league: "premier_league", tier: 1, position: 8, played: 38, won: 14, drawn: 10, lost: 14,
+        gf: 50, ga: 50, points: 52, titles: [], manager: record.name }, ...history.seasons],
+    });
+    const listHandler = apiRoutes["/api/saves/:saveId/season-reports" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
+    const list = async (token = session.token) => listHandler(Object.assign(
+      new Request(`http://localhost/api/saves/${saveId}/season-reports`, { headers: { cookie: `fs_session=${token}` } }),
+      { params: { saveId } },
+    ));
+    const kept = (await (await list()).json()) as { reports: SeasonSummary[] };
+    expect(kept.reports.map((r) => r.season)).toEqual(["2026-27", "2025-26"]);
+    await saveService.writeClubHistory(saveId, { ...history, seasons: [] });
+    const again = (await (await list()).json()) as { reports: SeasonSummary[] };
+    expect(again.reports.map((r) => r.table?.position)).toEqual([3, 8]);
+    expect((await list(other.session.token)).status).toBe(404);
+
     expect((await call("")).status).toBe(400);
     expect((await call("?year=abc")).status).toBe(400);
     expect((await call("?year=2026&club=nope")).status).toBe(404);
