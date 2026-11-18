@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.15",
     date: "2026-11-18",
-    time: "00:00",
+    time: "11:56",
     items: [
       { tab: "general", pt: "Perfil da conta na tela inicial: títulos, temporadas, jogos, prêmios, acessos, demissões e cartões somando todas as suas carreiras, inclusive as de saves apagados.", en: "Account profile on the start screen: titles, seasons, matches, awards, promotions, sackings and cards across all your careers, deleted saves included." },
       { tab: "general", pt: "40 conquistas da conta, com selos para mostrar no topo do perfil.", en: "40 account achievements, with badges to show at the top of the profile." },
