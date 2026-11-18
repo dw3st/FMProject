@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.19.1",
     date: "2026-11-18",
+    time: "14:49",
     items: [],
     fixes: [
       { tab: "match", pt: "No jogo entre técnicos, abrir as Substituições usa uma das 3 pausas e fechar retoma o jogo.", en: "In a match between managers, opening Subs uses one of the 3 pauses and closing it resumes the match." },
