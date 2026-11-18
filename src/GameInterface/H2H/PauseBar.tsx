@@ -22,7 +22,7 @@ export function PauseBar({ pause, mySide, names, onResume }: {
     return () => clearInterval(id);
   }, []);
   return (
-    <div role="status" className="flex items-center justify-center gap-3 px-4 py-2 border-b border-border bg-chart-4/10">
+    <div role="status" className="flex items-center justify-center gap-3 px-4 py-2 rounded-lg border border-chart-4/40 bg-background/90 shadow-lg whitespace-nowrap">
       <Icon name="pause" size={16} className="text-chart-4" />
       <span className="text-sm font-semibold text-foreground tabular-nums">
         {t("h2h.pausedBy", { name: names[pause.by], time: pauseClock(pause.until, now) })}

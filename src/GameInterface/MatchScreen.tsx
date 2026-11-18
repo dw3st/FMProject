@@ -1613,35 +1613,44 @@ export function MatchScreen() {
     setGameState((prev) => (prev ? { ...prev, pendingSubsA: prev.pendingSubsA.filter((s) => s.outId !== outId) } : prev));
   }
 
+  /**
+   * A live edit of the match (positions, instructions, formation, marking). Applied by the pitch to its own state: the
+   * React copy runs behind the simulation, and an edit made on it while the match runs lost every player field
+   * (report 2026-11-18: a tactic shortcut changed the shape but not the players).
+   */
+  function editMatch(edit: (s: GameState) => GameState) {
+    gameBus.emit("testCommand", { type: "edit", edit });
+  }
+
   /** Two starters swap positions (#115): no substitution used, only this match. */
   function handleSwapPositions(aId: number, bId: number) {
     if (h2hMode) { sendH2H({ kind: "swap", aId, bId }); return; }
-    setGameState((prev) => (prev ? swapPlayerPositions(prev, "A", aId, bId) : prev));
+    editMatch((s) => swapPlayerPositions(s, "A", aId, bId));
   }
 
   /** A starter moves to an empty slot (after a red card or an injury): no substitution used, only this match. */
   function handleMoveToSlot(id: number, slot: number) {
     if (h2hMode) { sendH2H({ kind: "move", id, slot }); return; }
-    setGameState((prev) => (prev ? moveToEmptySlot(prev, "A", id, slot) : prev));
+    editMatch((s) => moveToEmptySlot(s, "A", id, slot));
   }
 
   /** #140: bench player `inId` takes the slot an injured player left (uses a substitution). */
   function handleFillVacancy(injuredId: number, inId: number) {
     // H2H: the server's queue fills the injury vacancy of that player.
     if (h2hMode) { sendH2H({ kind: "sub", outId: injuredId, inId }); return; }
-    setGameState((prev) => (prev ? fillInjuryVacancy(prev, "A", injuredId, inId) : prev));
+    editMatch((s) => fillInjuryVacancy(s, "A", injuredId, inId));
   }
 
   /** Live instruction change (player instructions): only this match, never saved. */
   function handleInstruction(slot: number, instruction: SlotInstruction | null) {
     if (h2hMode) { sendH2H({ kind: "instruction", slot, instruction }); return; }
-    setGameState((prev) => (prev ? applyPlayerInstruction(prev, "A", slot, instruction) : prev));
+    editMatch((s) => applyPlayerInstruction(s, "A", slot, instruction));
   }
 
   /** Live man-marking (targets are opponents on the pitch, engine ids). */
   function handleManMarks(marks: { markerSlot: number; targetId: number }[]) {
     if (h2hMode) { sendH2H({ kind: "marks", marks }); return; }
-    setGameState((prev) => (prev ? setManMarks(prev, "A", marks) : prev));
+    editMatch((s) => setManMarks(s, "A", marks));
   }
 
   /**
@@ -1669,8 +1678,7 @@ export function MatchScreen() {
       }
     } else {
       const formation = userFormations.find((u) => u.id === `user:${key}`)?.formation ?? formationForSimId(preset.formation);
-      setGameState((prev) => {
-        if (!prev) return prev;
+      editMatch((prev) => {
         let next = changeFormation(prev, "A", formation);
         instructions.forEach((instruction, slot) => { next = applyPlayerInstruction(next, "A", slot, instruction); });
         // Each starter to the slot the saved line-up gives him (report 2026-11-16).
@@ -1700,8 +1708,7 @@ export function MatchScreen() {
       if (cmd) sendH2H(cmd);
       return;
     }
-    setGameState((prev) => {
-      if (!prev) return prev;
+    editMatch((prev) => {
       const newFormation = userFormations.find((u) => u.id === formationId)?.formation ?? formationForSimId(formationId);
       return changeFormation(prev, "A", newFormation);
     });
@@ -2228,21 +2235,6 @@ export function MatchScreen() {
         </div>
       </header>
 
-      {h2hMode && h2h.pause && (
-        <PauseBar pause={h2h.pause} mySide={mySide} names={{ A: sideName("A"), B: sideName("B") }} onResume={() => h2h.resume()} />
-      )}
-      {opponentAway && (
-        <div role="status" className="flex items-center justify-center gap-2 px-4 py-2 border-b border-border bg-secondary/30 text-sm font-semibold text-foreground">
-          <Icon name="alert" size={16} className="text-chart-4" />
-          {t("h2h.opponentAway", { name: sideName(otherH2HSide) })}
-        </div>
-      )}
-      {h2hMode && h2h.closed && (
-        <div role="status" className="flex items-center justify-center px-4 py-2 border-b border-border bg-destructive/10 text-sm font-semibold text-foreground">
-          {t(`h2h.closed.${h2h.closed}`)}
-        </div>
-      )}
-
       {/* The match being played here (vs another manager) is never shown as a friend's game. */}
       {/* Inside the game frame the radio goes in the frame's footer (8.8.10); on its own page, above the pitch. */}
       {liveTarget && (() => {
@@ -2258,9 +2250,26 @@ export function MatchScreen() {
         );
         return radioSlot ? createPortal(strip, radioSlot) : strip;
       })()}
-      {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). */}
+      {/* Friends' popups (messages, results, live goals) land here, over the top of the pitch (`ChatPopups`). The pause
+          and the two-manager notices float there too: a bar above the pitch shrank it (report 2026-11-18). */}
       <div className="relative z-50">
-        <div id={MATCH_POPUPS_ID} className="absolute left-1/2 -translate-x-1/2 top-2 pointer-events-none" />
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 flex flex-col items-center gap-2">
+          {h2hMode && h2h.pause && (
+            <PauseBar pause={h2h.pause} mySide={mySide} names={{ A: sideName("A"), B: sideName("B") }} onResume={() => h2h.resume()} />
+          )}
+          {opponentAway && (
+            <div role="status" className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border bg-background/90 shadow-lg text-sm font-semibold text-foreground whitespace-nowrap">
+              <Icon name="alert" size={16} className="text-chart-4" />
+              {t("h2h.opponentAway", { name: sideName(otherH2HSide) })}
+            </div>
+          )}
+          {h2hMode && h2h.closed && (
+            <div role="status" className="flex items-center justify-center px-4 py-2 rounded-lg border border-destructive/40 bg-background/90 shadow-lg text-sm font-semibold text-foreground whitespace-nowrap">
+              {t(`h2h.closed.${h2h.closed}`)}
+            </div>
+          )}
+          <div id={MATCH_POPUPS_ID} className="pointer-events-none" />
+        </div>
       </div>
 
       {/* Main Match View */}

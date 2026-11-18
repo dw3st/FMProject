@@ -339,6 +339,8 @@ export interface GameEvents {
     | { type: 'movePlayer';    id: number; x: number; y: number }
     | { type: 'giveBall';      id: number }
     | { type: 'patchPlayers';  players: import('@/GameEngine/types').GamePlayer[] }
+    /** A live match edit from the match screen (tactics, positions, instructions): applied to the pitch's own state, never to a stale React copy. */
+    | { type: 'edit'; edit: (s: import('@/GameEngine/types').GameState) => import('@/GameEngine/types').GameState }
     | { type: 'triggerPhase';  phase: 'halfTime' | 'matchEnd' | 'endPeriod' }
     | { type: 'setTeamIntent'; team: import('@/GameEngine/types').TeamId; intent: import('@/GameEngine/types').TeamIntent }
     /** Player instructions (`/test`): one slot's role variant / pressing, live. */
