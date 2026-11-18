@@ -307,13 +307,18 @@ export function signContract(
   };
 }
 
-/** How many professionals of `role` the club may employ (its natural tier). */
-export function roleLimit(squad: Squad, role: StaffRole): number {
+/** How many professionals of `role` the club may employ by its natural tier alone. */
+export function tierRoleLimit(squad: Squad, role: StaffRole): number {
   if (role === "coach") return STAFF.LIMITS.coach[financialTierOf(squad)];
   if (role === "foreman") return STAFF.LIMITS.foreman[financialTierOf(squad)];
   if (role === "groundskeeper") return STAFF.LIMITS.groundskeeper[financialTierOf(squad)];
   if (role === "fieldScout") return STAFF.LIMITS.fieldScout;
   return STAFF.LIMITS.other;
+}
+
+/** How many professionals of `role` the club may employ: the tier limit plus the places the board granted. */
+export function roleLimit(squad: Squad, role: StaffRole): number {
+  return tierRoleLimit(squad, role) + (squad.staff?.extraSlots?.[role] ?? 0);
 }
 
 // -- Generation -------------------------------------------------------------

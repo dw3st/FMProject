@@ -266,3 +266,9 @@ Report de tester: clubes pequenos não conseguiam contratar comissão pelo salá
 | Um de cada função a 1★, pior clube LOW | 17,1% (Floresta, €25.153) | 5,6% (Dinamo Vologda, €3.184) |
 | Um de cada função a 0,5★, pior clube LOW | — | 3,4% |
 | Floresta: auxiliar 1★ | €4.413 | €559 |
+
+## Tela por função e vaga pela diretoria (12.x)
+
+Pedido do usuário (e report de tester, como no Football Manager). A aba Comissão mostra os grupos lado a lado numa grade de 6 colunas (Comando e Saúde e análise numa linha; Treino; Olheiros e Estrutura na última) e, em cada grupo, um bloco por função (`Staff/StaffRoleBlock.tsx`): ícone da função (`ROLE_ICON`, cor do grupo em `STAFF_GROUPS.tone`), nome, "Vagas: N de M", Buscar (com vaga) ou Pedir vaga (no limite), e os profissionais em cartões compactos; as vagas livres viram um cartão tracejado com a quantidade. Função com 3 ou mais profissionais ocupa a linha inteira. No topo, profissionais, vagas livres e de confiança.
+
+Pedir vaga (`src/Domain/staff/slotRequest.ts`, `STAFF.SLOT_REQUEST`, com teste): numa função no limite, a diretoria aprova com o medidor da diretoria do assento em 60 ou mais e o saldo do clube (`finances.budget`) zero ou mais: +1 vaga, até +2 além do limite do tier. Gravado em `StaffRecord.extraSlots`, somado por `roleLimit` (`tierRoleLimit` é o limite só do tier); some com a comissão quando o clube troca de mãos. Recusa (`board_low`, `negative_balance`, `max_reached`) grava `StaffRecord.slotRefusedOn[função]` e a função espera 30 dias. `POST /api/saves/:id/staff/slot-request { role }` (guarda de lobby): 200 `{ approved, extra, limit, view }`, 409 com o motivo (também `cooldown` e `notFull`, sem gravar) e a visão nova, 400 `invalidRole`. `GET /staff` devolve em `limits[função].request` `{ canAsk, extra, cooldownUntil?, blocked? }`. Testes: `src/Domain/staff/slotRequest.test.ts`, `src/backend/staffSlot.routes.test.ts`.

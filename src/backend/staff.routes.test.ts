@@ -56,10 +56,10 @@ describe("staff routes", () => {
       expect(roles.filter((x) => x === r)).toHaveLength(1);
     }
     const coachMax = roleLimit(saved, "coach");
-    expect(view.limits.coach).toEqual({ used: coachMax, max: coachMax });
-    expect(view.limits.fieldScout).toEqual({ used: 0, max: 4 });
+    expect(view.limits.coach).toMatchObject({ used: coachMax, max: coachMax });
+    expect(view.limits.fieldScout).toMatchObject({ used: 0, max: 4 });
     expect(view.members.length).toBe(9 + coachMax);
-    expect(view.limits.youthCoach).toEqual({ used: 1, max: 1 });
+    expect(view.limits.youthCoach).toMatchObject({ used: 1, max: 1 });
     expect(typeof view.effects.academyDevMult).toBe("number");
     expect(view.areas).toHaveLength(7);
     expect(view.weeklyTotal).toBe(squadStaffWages(saved.staff));

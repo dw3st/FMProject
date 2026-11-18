@@ -19,6 +19,7 @@ import { openTotal } from "@/Domain/bets/bets";
 import { renewedContract, severanceOf } from "@/Domain/staff/staffContracts";
 import { POOL_PAGE, returnToPool, searchPool, takeFromPool, isStaffPoolSort, type StaffPoolQuery } from "@/Domain/staff/staffPool";
 import { STAFF } from "@/Domain/staff/staffConfig";
+import { decideSlotRequest, slotRequestState } from "@/Domain/staff/slotRequest";
 import {
   COACH_AREAS, STAFF_ROLES, isCoachArea, isStaffRole, type CoachArea, type StaffMember, type StaffRecord, type StaffRole,
 } from "@/Domain/staff/staffTypes";
@@ -108,7 +109,8 @@ export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string;
     areaAssignments: staff.areaAssignments ?? {},
     limits: Object.fromEntries(STAFF_ROLES.map((r) => [r, {
       used: staff.members.filter((m) => m.role === r).length, max: roleLimit(squad, r),
-    }])) as Record<StaffRole, { used: number; max: number }>,
+      ...(ctx ? { request: slotRequestState(squad, r, ctx.date) } : {}),
+    }])) as Record<StaffRole, { used: number; max: number; request?: ReturnType<typeof slotRequestState> }>,
     effects: staffEffectsOf(squad),
     weeklyTotal: squadStaffWages(staff),
   };
@@ -360,6 +362,32 @@ export const staffRoutes = {
       };
       await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       return Response.json(staffView(next, h));
+    });
+  },
+
+  /**
+   * `POST { role }` - asks the board for one more place in a role at its limit (`slotRequest.ts`): 200
+   * `{ approved: true, extra, limit, view }`, or 409 with the reason (`board_low`, `negative_balance`, `max_reached`,
+   * `cooldown`, `notFull`). A refusal of the board is stored (the role waits 30 days).
+   */
+  "/api/saves/:saveId/staff/slot-request": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = await readJson(req);
+    if (!body || typeof body.role !== "string" || !isStaffRole(body.role)) return Response.json({ error: "invalidRole" }, { status: 400 });
+    const role = body.role;
+    return withSaveLock(saveId, async () => {
+      const h = await human(saveId, auth.seatId);
+      if (h instanceof Response) return h;
+      const answer = decideSlotRequest({ squad: h.squad, role, date: h.date, board: h.meta.board?.board });
+      const next: Squad = answer.staff ? { ...h.squad, staff: answer.staff } : h.squad;
+      if (answer.staff) await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
+      if (!answer.approved) {
+        return Response.json({ error: answer.reason, view: staffView(next, h) }, { status: 409 });
+      }
+      return Response.json({ approved: true, extra: answer.extra, limit: roleLimit(next, role), view: staffView(next, h) });
     });
   },
 

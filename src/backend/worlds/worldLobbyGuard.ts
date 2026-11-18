@@ -25,6 +25,7 @@ export const LOBBY_GUARDED_PATHS = [
   "/api/saves/:saveId/staff/renew",
   "/api/saves/:saveId/staff/trusted",
   "/api/saves/:saveId/staff/course",
+  "/api/saves/:saveId/staff/slot-request",
   "/api/saves/:saveId/facilities/request",
   "/api/saves/:saveId/facilities/cancel",
   "/api/saves/:saveId/craft/buy",

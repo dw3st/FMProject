@@ -95,6 +95,12 @@ export const STAFF = {
    */
   REVENUE_CAP: { SHARE: 0.05, ROLE_SUM: 1.03, MIN_STARS: 0.5, FLOOR: 150 },
   CHEAP: { MAX_STARS: 1, PER_ROLE: 3, COACH: 6, FACTOR_CAP: 0.5, HALF_STAR_SCORE: 1.25 },
+  /**
+   * Asking the board for one more place in a role at its limit (user request, 12.x): approved with the board
+   * meter at `MIN_BOARD` or more and a balance of zero or more, up to `MAX_EXTRA` places per role over the tier
+   * limit; a refusal blocks that role for `COOLDOWN_DAYS`.
+   */
+  SLOT_REQUEST: { MIN_BOARD: 60, MAX_EXTRA: 2, COOLDOWN_DAYS: 30 },
   POOL: {
     SIZE: 335,
     BY_ROLE: {

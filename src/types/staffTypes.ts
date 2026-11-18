@@ -77,4 +77,8 @@ export interface StaffRecord {
   members: StaffMember[];
   /** Coach areas the user assigned by hand (area -> member id); the rest is automatic. */
   areaAssignments?: Partial<Record<CoachArea, string>>;
+  /** Extra places the board granted per role, on top of the tier limit (`slotRequest.ts`). */
+  extraSlots?: Partial<Record<StaffRole, number>>;
+  /** Per role, the last day the board refused a place (no new request for `SLOT_REQUEST.COOLDOWN_DAYS`). */
+  slotRefusedOn?: Partial<Record<StaffRole, string>>;
 }

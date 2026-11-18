@@ -2,6 +2,8 @@ import type { StaffEffects } from "@/Domain/staff/staff";
 import type { StaffPoolItem } from "@/Domain/staff/staffPool";
 import type { CoachArea, Specialty, StaffMember, StaffRole, TrainingArea } from "@/Domain/staff/staffTypes";
 import type { CourseRefusal } from "@/Domain/staff/trustedStaff";
+import type { SlotRequestState } from "@/Domain/staff/slotRequest";
+import type { IconName } from "@/GameInterface/Icons";
 
 /** A member of the club's staff as `GET /api/saves/:id/staff` sends it (`staffView`, `src/backend/staffRoutes.ts`). */
 export interface StaffMemberView extends StaffMember {
@@ -33,7 +35,8 @@ export interface StaffData {
   members: StaffMemberView[];
   areas: StaffAreaView[];
   areaAssignments: Partial<Record<CoachArea, string>>;
-  limits: Record<StaffRole, { used: number; max: number }>;
+  /** Per role: places taken, the limit, and whether the board can be asked for one more (`slotRequest.ts`). */
+  limits: Record<StaffRole, { used: number; max: number; request?: SlotRequestState }>;
   effects: StaffEffects;
   weeklyTotal: number;
   /** The manager's trusted professionals: how many of the places are taken. */
@@ -47,24 +50,33 @@ export interface StaffPoolPage {
   items: StaffPoolItem[];
 }
 
-/** Display order of the roles and their groups on the staff screen (spec §7). */
-export const STAFF_GROUPS: { key: "command" | "training" | "health" | "scouting" | "structure"; roles: StaffRole[] }[] = [
-  { key: "command", roles: ["assistant"] },
-  { key: "training", roles: ["fitness", "goalkeeping", "coach", "youthCoach"] },
-  { key: "health", roles: ["medic", "analyst"] },
-  { key: "scouting", roles: ["scout", "fieldScout"] },
-  { key: "structure", roles: ["groundskeeper", "foreman"] },
+/**
+ * Display order of the roles and their groups on the staff screen (spec §7). `tone` colours the icons of the
+ * group (theme tokens only). Roles that take several people come last in their group (they span the row).
+ */
+export const STAFF_GROUPS: { key: "command" | "training" | "health" | "scouting" | "structure"; tone: string; roles: StaffRole[] }[] = [
+  { key: "command", tone: "text-primary", roles: ["assistant"] },
+  { key: "health", tone: "text-chart-5", roles: ["medic", "analyst"] },
+  { key: "training", tone: "text-chart-2", roles: ["fitness", "goalkeeping", "youthCoach", "coach"] },
+  { key: "scouting", tone: "text-chart-4", roles: ["scout", "fieldScout"] },
+  { key: "structure", tone: "text-chart-3", roles: ["groundskeeper", "foreman"] },
 ];
 
+/** One icon per role (staff screen, role headers). */
+export const ROLE_ICON: Record<StaffRole, IconName> = {
+  assistant: "clipboard", fitness: "activity", goalkeeping: "shield", coach: "tactics", youthCoach: "sprout",
+  medic: "heart-pulse", analyst: "stats", scout: "binoculars", fieldScout: "eye", groundskeeper: "sun", foreman: "hard-hat",
+};
+
 /** JSON call to the staff routes; `error` is the route's error code (`roleFull`, `noClub`, ...). */
-export async function staffCall<T>(url: string, method: "GET" | "POST" | "PUT" = "GET", body?: unknown): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
+export async function staffCall<T>(url: string, method: "GET" | "POST" | "PUT" = "GET", body?: unknown): Promise<{ ok: true; data: T } | { ok: false; error: string; body?: unknown }> {
   try {
     const res = await fetch(url, {
       method,
       ...(body !== undefined ? { headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}),
     });
     const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-    if (!res.ok || !json) return { ok: false, error: json?.error ?? "generic" };
+    if (!res.ok || !json) return { ok: false, error: json?.error ?? "generic", body: json };
     return { ok: true, data: json };
   } catch {
     return { ok: false, error: "generic" };

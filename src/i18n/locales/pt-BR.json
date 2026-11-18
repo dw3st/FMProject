@@ -522,7 +522,10 @@
       "tooSoon": "Ele fez um curso há menos de um ano.",
       "contractEnds": "O contrato dele acaba antes do fim do curso. Renove primeiro.",
       "onMission": "Ele está numa missão de observação.",
-      "noMoney": "Sua carteira não cobre o curso."
+      "noMoney": "Sua carteira não cobre o curso.",
+      "invalidRole": "Função desconhecida.",
+      "cooldown": "A diretoria recusou há pouco. Espere para pedir de novo.",
+      "notFull": "A função ainda tem vaga livre."
     },
     "expiring": {
       "card": "Contrato acaba em {{days}} dias",
@@ -552,6 +555,28 @@
     },
     "scouts": {
       "fireConfirmBody": "Ele sai com multa de {{amount}} (metade do contrato restante) e volta à lista de livres; a missão dele é cancelada."
+    },
+    "slots": "Vagas: {{used}} de {{max}}",
+    "vacantSlots_one": "1 vaga livre",
+    "vacantSlots_other": "{{count}} vagas livres",
+    "summary": {
+      "hired": "Profissionais",
+      "open": "Vagas livres",
+      "trusted": "De confiança"
+    },
+    "slotRequest": {
+      "ask": "Pedir vaga",
+      "help": "Pede à diretoria mais uma vaga. Ela aceita com o medidor em 60 ou mais e o saldo sem dívida, até 2 além do limite. Uma recusa espera 30 dias.",
+      "granted_one": "1 aberta pela diretoria",
+      "granted_other": "{{count}} abertas pela diretoria",
+      "cooldown": "Pedir de novo a partir de {{date}}",
+      "maxReached": "Limite da diretoria",
+      "approved": "A diretoria abriu mais uma vaga: {{role}}, agora {{max}}.",
+      "refused": {
+        "board_low": "A diretoria recusou a vaga ({{role}}): o medidor está abaixo de 60. Peça de novo em {{days}} dias.",
+        "negative_balance": "A diretoria recusou a vaga ({{role}}): o saldo está negativo. Peça de novo em {{days}} dias.",
+        "max_reached": "A diretoria já abriu duas vagas a mais ({{role}})."
+      }
     }
   },
   "staffPool": {

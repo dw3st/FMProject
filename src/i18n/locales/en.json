@@ -522,7 +522,10 @@
       "tooSoon": "He took a course less than a year ago.",
       "contractEnds": "His contract ends before the course does. Renew it first.",
       "onMission": "He is on a scouting mission.",
-      "noMoney": "Your wallet does not cover the course."
+      "noMoney": "Your wallet does not cover the course.",
+      "invalidRole": "Unknown role.",
+      "cooldown": "The board refused recently. Wait to ask again.",
+      "notFull": "The role still has a free place."
     },
     "expiring": {
       "card": "Contract ends in {{days}} days",
@@ -552,6 +555,28 @@
     },
     "scouts": {
       "fireConfirmBody": "He leaves with a severance of {{amount}} (half his remaining contract) and goes back to the free pool; his mission is cancelled."
+    },
+    "slots": "Places: {{used}} of {{max}}",
+    "vacantSlots_one": "1 place free",
+    "vacantSlots_other": "{{count}} places free",
+    "summary": {
+      "hired": "Professionals",
+      "open": "Free places",
+      "trusted": "Trusted"
+    },
+    "slotRequest": {
+      "ask": "Ask for a place",
+      "help": "Ask the board for one more place. It agrees with its meter at 60 or more and the balance not negative, up to 2 over the limit. A refusal waits 30 days.",
+      "granted_one": "1 granted by the board",
+      "granted_other": "{{count}} granted by the board",
+      "cooldown": "Ask again from {{date}}",
+      "maxReached": "Board limit reached",
+      "approved": "The board approved one more place: {{role}}, now {{max}}.",
+      "refused": {
+        "board_low": "The board refused a new place ({{role}}): its meter is below 60. Ask again in {{days}} days.",
+        "negative_balance": "The board refused a new place ({{role}}): the balance is negative. Ask again in {{days}} days.",
+        "max_reached": "The board has already granted two extra places ({{role}})."
+      }
     }
   },
   "staffPool": {
