@@ -474,7 +474,8 @@
       "analysis": "Análise",
       "scouting": "Observação",
       "pitch": "Gramado",
-      "youth": "Base"
+      "youth": "Base",
+      "construction": "Construção"
     },
     "roles": {
       "assistant": "Auxiliar técnico",

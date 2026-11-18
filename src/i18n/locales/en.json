@@ -474,7 +474,8 @@
       "analysis": "Analysis",
       "scouting": "Scouting",
       "pitch": "Pitch",
-      "youth": "Youth"
+      "youth": "Youth",
+      "construction": "Construction"
     },
     "roles": {
       "assistant": "Assistant coach",

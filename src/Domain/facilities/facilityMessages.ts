@@ -76,7 +76,7 @@ export function buildFacilityMessage(args: {
     : args.kind === "condemned" ? `Condition ${pct}: closed until rebuilt`
     : args.kind === "turf_changed" ? `The stadium pitch has ${args.turf ?? ""} grass, at 100%`
     : args.kind === "craft_allowance" ? `Materials worth ${formatEurosText(args.cost ?? 0)}`
-    : args.kind === "craft_done" ? Object.entries(args.components ?? {}).map(([c, n]) => `${n} ${c}`).join(", ")
+    : args.kind === "craft_done" ? Object.entries(args.components ?? {}).map(([c, n]) => `${c} × ${n}`).join(", ")
     : args.kind === "built" ? `Quality: ${args.quality ?? "common"}`
     : args.kind === "repaired" ? `Condition ${pct}${args.level !== undefined ? `, level ${args.level} of 10` : ""}`
     : `${args.attendance ?? 0} fans`;

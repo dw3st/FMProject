@@ -612,7 +612,8 @@ export function advanceFacilities(f: ClubFacilities, date: string): FacilityDayR
       completed.push(p);
       if (p.kind === "stand" && p.stand && p.seats) {
         stands = stands.map((s) => (s.id === p.stand ? { ...s, seats: s.seats + p.seats! } : s));
-        if (p.quality && p.quality !== "common") items = { ...items, seats: { ...items.seats, quality: p.quality } };
+        const { quality: _old, ...seats } = items.seats;
+        items = { ...items, seats: p.quality && p.quality !== "common" ? { ...seats, quality: p.quality } : seats };
       } else {
         items = applyCompletion(items, p);
       }
@@ -668,6 +669,7 @@ export function applyCompletion(items: ClubFacilities["items"], p: FacilityProje
   for (const id of ids) {
     out[id] = {
       level: Math.min(F.ITEM_MAX_LEVEL, Math.max(out[id].level, 2 * p.level)), wear: 0,
+      ...(out[id].turf ? { turf: out[id].turf } : {}),
       ...(p.quality && p.quality !== "common" ? { quality: p.quality } : {}),
     };
   }

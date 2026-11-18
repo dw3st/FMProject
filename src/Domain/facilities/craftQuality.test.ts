@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { wearDay } from "@/Domain/facilities/facilityItems";
-import { applyCompletion } from "@/Domain/facilities/facilities";
+import { advanceFacilities, applyCompletion } from "@/Domain/facilities/facilities";
 import type { ClubFacilities, FacilityProject } from "@/types/facilityTypes";
 
 type Items = ClubFacilities["items"];
@@ -24,5 +24,22 @@ describe("craft quality on items", () => {
     expect(applyCompletion(items(), p).seats.quality).toBe("good");
     const { quality: _q, craft: _c, ...plain } = p;
     expect(applyCompletion(items("excellent"), plain as FacilityProject).seats.quality).toBeUndefined();
+  });
+  test("a stand works sets the seats' quality from the works and clears it without one", () => {
+    const f = { stands: [{ id: "north", seats: 1000 }], items: items("excellent"), projects: [], completed: [] } as unknown as ClubFacilities;
+    const stand = { id: "s", kind: "stand", stand: "north", seats: 500, start: "2027-01-01", end: "2027-01-02", cost: 0, boardShare: 0, instalments: 0, paid: 0 } as FacilityProject;
+    const withGood = advanceFacilities({ ...f, projects: [{ ...stand, craft: true, quality: "good" }] }, "2027-01-02").facilities;
+    expect(withGood.items.seats.quality).toBe("good");
+    const common = advanceFacilities({ ...f, projects: [{ ...stand, craft: true, quality: "common" }] }, "2027-01-02").facilities;
+    expect(common.items.seats.quality).toBeUndefined();
+    const old = advanceFacilities({ ...f, projects: [stand] }, "2027-01-02").facilities;
+    expect(old.items.seats.quality).toBeUndefined();
+    expect(old.stands[0]!.seats).toBe(1500);
+  });
+  test("group works keep the grass of the pitches they touch", () => {
+    const base = items();
+    const it = { ...base, trainingPitches: { ...base.trainingPitches, turf: "hybrid" as const } };
+    const p = { id: "t", kind: "training", level: 4, start: "2027-01-01", end: "2027-01-02", cost: 0, boardShare: 0, instalments: 0, paid: 0 } as FacilityProject;
+    expect(applyCompletion(it, p).trainingPitches.turf).toBe("hybrid");
   });
 });
