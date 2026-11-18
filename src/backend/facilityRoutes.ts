@@ -122,6 +122,7 @@ function itemsView(f: ClubFacilities, date: string, revenue: number) {
     const targets = repairTargets(condition);
     return {
       id, group: ITEM_GROUP[id], level: it.level, condition, condemned: it.condemned === true,
+      quality: it.quality ?? null,
       effects: itemEffects(id, condition),
       project: project ? { ...project, progress: projectProgress(project, date) } : null,
       quotes: {
@@ -198,7 +199,7 @@ async function facilitiesView(h: Human) {
     balance: h.squad.finances?.budget ?? 0,
     board: h.meta.board?.board ?? BOARD_FANS.START,
     weeklyUpkeep: weeklyUpkeep(h.squad, revenue),
-    /** Groups with a works running (one at a time per group; small repairs paid now do not count). */
+    /** Groups with a works running (one at a time per group; every works built from the stock counts). */
     busyGroups: busyGroups(f),
     /** The club's share still to pay on running works (the board counts it against the balance). */
     committed: committedSpend(f),

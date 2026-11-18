@@ -152,6 +152,9 @@ import {
   ShoppingCart,
   KeyRound,
   GraduationCap,
+  Hammer,
+  Package,
+  Store,
 } from "lucide-react";
 import { useId, type SVGProps } from "react";
 
@@ -346,6 +349,9 @@ export type IconName =
   | "cart"
   | "key"
   | "graduation-cap"
+  | "hammer"
+  | "package"
+  | "store"
 ;
 
 type IconComponent = React.ComponentType<SVGProps<SVGSVGElement>>;
@@ -539,6 +545,10 @@ const ICON_MAP: Record<IconName, IconComponent> = {
   "cart": ShoppingCart,
   "key": KeyRound,
   "graduation-cap": GraduationCap,
+  // Club craft (workshop, stock, shop).
+  "hammer": Hammer,
+  "package": Package,
+  "store": Store,
 };
 
 export interface IconProps {

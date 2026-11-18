@@ -1,11 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { Button } from "@/GameInterface/ui/Button";
 import { PitchSurfaceSvg } from "@/GameInterface/Components/PitchSurfaceSvg";
 import { MOWING_PATTERNS, TURF_TYPES } from "@/Domain/facilities/turf";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
-import { formatFee } from "@/Domain/money";
-import { forecastOf, type FacilitiesViewData } from "@/GameInterface/Facilities/facilitiesApi";
+import type { FacilitiesViewData } from "@/GameInterface/Facilities/facilitiesApi";
+import { BuildActions } from "@/GameInterface/Craft/RecipeLine";
 import type { FacilityRequest, MowingPattern } from "@/types/facilityTypes";
 import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 
@@ -49,20 +48,21 @@ export function TurfCard({ data, ground, pending, onAsk, onMowing }: {
         {TURF_TYPES.filter((tp) => tp !== data.turf).map((tp) => {
           const q = data.turfQuotes[tp];
           return (
-            <div key={tp} className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-semibold">{t(`facilities.turf.type.${tp}`)}</div>
-                <div className="text-sm text-muted-foreground">{t(`facilities.turf.about.${tp}`)}</div>
-                {q && (
-                  <div className="text-sm tabular-nums text-muted-foreground">
-                    {formatFee(q.cost)} · {t("facilities.weeks", { count: q.weeks })}
-                    {!forecastOf(q).approved && ` · ${t(`facilities.reason.${forecastOf(q).reason ?? "no_money"}`)}`}
-                  </div>
-                )}
+            <div key={tp} className="flex flex-col gap-3 rounded-md border border-border p-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-semibold">{t(`facilities.turf.type.${tp}`)}</div>
+                  <div className="text-sm text-muted-foreground">{t(`facilities.turf.about.${tp}`)}</div>
+                </div>
+                {q && <span className="text-sm tabular-nums text-muted-foreground">{t("facilities.weeks", { count: q.weeks })}</span>}
               </div>
-              <Button disabled={!q || pending || stadiumBusy || !forecastOf(q).approved} onClick={() => onAsk({ kind: "turf", turf: tp })}>
-                {t("facilities.turf.change")}
-              </Button>
+              {q && (
+                <BuildActions
+                  build={q.build} stock={data.stock} workshop={data.facilities.craft?.workshop ?? 1}
+                  blockedHint={stadiumBusy ? t("facilities.groupBusy", { group: t("facilities.items.group.stadium") }) : null}
+                  pending={pending} onBuild={() => onAsk({ kind: "turf", turf: tp })}
+                />
+              )}
             </div>
           );
         })}

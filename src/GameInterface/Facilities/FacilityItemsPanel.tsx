@@ -3,11 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
 import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { formatEuros } from "@/Domain/money";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
 import type { FacilityGroup, FacilityProject, FacilityRequest } from "@/types/facilityTypes";
-import { forecastOf, type FacilitiesViewData, type FacilityItemView, type ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
+import type { FacilitiesViewData, FacilityItemView, ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
+import { BuildActions } from "@/GameInterface/Craft/RecipeLine";
+import type { CraftStock } from "@/types/craftTypes";
 import { FacilityItemArt, type ArtTone } from "@/GameInterface/Facilities/FacilityItemArt";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
@@ -44,15 +45,18 @@ function modesOf(item: FacilityItemView): Mode[] {
 /**
  * Club → "Facilities in detail" (#132, `.claude/rules/game/facilities.md`): the ten items drawn as
  * cards by group (stadium, training ground, academy) with level ("N of 10") and condition; picking
- * one opens its panel with the drawing, the repair / rebuild / upgrade quotes and what the board
- * would say. One works at a time per group (#152); a small repair paid now does not count.
+ * one opens its panel with the drawing, the repair / rebuild / upgrade quotes and the components each
+ * takes from the stock (craft). One works at a time per group (#152); every works built from the stock
+ * takes the slot (only an old repair paid in money, from before the craft, did not).
  */
 export function FacilityItemsPanel({
-  data, pending, onAsk,
+  data, pending, onAsk, onCancel,
 }: {
   data: FacilitiesViewData;
   pending: boolean;
   onAsk: (req: FacilityRequest) => Promise<void>;
+  /** Stops a works built from the stock (half the components back). */
+  onCancel: (projectId: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
@@ -94,6 +98,7 @@ export function FacilityItemsPanel({
             {open && (
               <ItemDetail key={open.id} item={open} groupBusy={busy.has(g)} pending={pending}
                 running={runningWorksOf(data.facilities.projects, g)} date={data.date}
+                stock={data.stock} workshop={data.facilities.craft?.workshop ?? 1} onCancel={onCancel}
                 onClose={() => setSelected(null)}
                 onConfirm={async (req) => { await onAsk(req); setSelected(null); }} />
             )}
@@ -118,7 +123,11 @@ function ItemCard({ item, selected, onSelect }: { item: FacilityItemView; select
         selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-muted-foreground"}`}
     >
       <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} level={item.level} />
-      <span className="font-semibold text-foreground truncate">{t(`facilities.item.${item.id}`)}</span>
+      <span className="flex items-baseline justify-between gap-2 min-w-0">
+        <span className="font-semibold text-foreground truncate">{t(`facilities.item.${item.id}`)}</span>
+        {item.quality && <QualityBadge quality={item.quality} />}
+      </span>
+      <span className="text-sm text-muted-foreground">{t(`craft.improves.${item.id}`)}</span>
       <span className="flex flex-col gap-1">
         <span className="flex items-center justify-between gap-2">
           <span className={LABEL}>{t("facilities.items.level")}</span>
@@ -167,6 +176,12 @@ function ConditionLine({ item }: { item: FacilityItemView }) {
   );
 }
 
+/** Quality of the last works (craft): good wears less, excellent even less. */
+function QualityBadge({ quality }: { quality: "good" | "excellent" }) {
+  const { t } = useTranslation();
+  return <span className="text-sm font-semibold text-primary shrink-0">{t(`craft.quality.${quality}`)}</span>;
+}
+
 function ItemLevelMarks({ level }: { level: number }) {
   return (
     <span className="flex gap-0.5" aria-hidden>
@@ -177,12 +192,13 @@ function ItemLevelMarks({ level }: { level: number }) {
   );
 }
 
-/** The item's panel: the drawing, the works it can get, cost, duration and the forecast. */
+/** The item's panel: the drawing, the works it can get, duration and the components it takes. */
 function ItemDetail({
-  item, groupBusy, pending, onClose, onConfirm, running, date,
+  item, groupBusy, pending, onClose, onConfirm, onCancel, running, date, stock, workshop,
 }: {
   item: FacilityItemView; groupBusy: boolean; pending: boolean; running?: FacilityProject; date: string;
-  onClose: () => void; onConfirm: (req: FacilityRequest) => Promise<void>;
+  stock: CraftStock | undefined; workshop: number;
+  onClose: () => void; onConfirm: (req: FacilityRequest) => Promise<void>; onCancel: (projectId: string) => Promise<void>;
 }) {
   const { t, i18n } = useTranslation();
   const modes = modesOf(item);
@@ -204,16 +220,25 @@ function ItemDetail({
       </div>
       <div className="flex flex-col gap-4 min-w-0">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t(`facilities.item.${item.id}`)}</h3>
+          <div className="flex flex-col gap-1 min-w-0">
+            <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t(`facilities.item.${item.id}`)}</h3>
+            <span className="text-sm text-muted-foreground">
+              {t(`craft.improves.${item.id}`)}
+              {item.quality ? ` · ${t("craft.qualityOf", { quality: t(`craft.quality.${item.quality}`) })}` : ""}
+            </span>
+          </div>
           <Button variant="secondary" flush onClick={onClose} aria-label={t("common.close")}>
             <Icon name="close" size={16} />
           </Button>
         </div>
         {item.project ? (
-          <p className="text-sm text-muted-foreground m-0 tabular-nums">
-            {t(`facilities.kind.${item.project.kind}`)} · {t("facilities.projects.delivery", { date: formatGameDate(item.project.end, i18n.language) })}
-            {" · "}{Math.round(item.project.progress * 100)}%
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground m-0 tabular-nums">
+              {t(`facilities.kind.${item.project.kind}`)} · {t("facilities.projects.delivery", { date: formatGameDate(item.project.end, i18n.language) })}
+              {" · "}{Math.round(item.project.progress * 100)}%
+            </p>
+            {item.project.craft && <CancelWorks pending={pending} onCancel={() => onCancel(item.project!.id)} />}
+          </div>
         ) : mode === null ? (
           <p className="text-sm text-muted-foreground m-0">{t("facilities.items.full")}</p>
         ) : (
@@ -236,7 +261,7 @@ function ItemDetail({
             )}
             {quote && (
               <QuoteBlock item={item} mode={mode} quote={quote} groupBusy={groupBusy} pending={pending}
-                running={running} date={date}
+                running={running} date={date} stock={stock} workshop={workshop}
                 onConfirm={() => void onConfirm(mode === "repair"
                   ? { kind: "repair", item: item.id, to: quote.to ?? 100 }
                   : { kind: mode, item: item.id })} />
@@ -249,48 +274,44 @@ function ItemDetail({
 }
 
 function QuoteBlock({
-  item, mode, quote, groupBusy, pending, onConfirm, running, date,
+  item, mode, quote, groupBusy, pending, onConfirm, running, date, stock, workshop,
 }: {
   item: FacilityItemView; mode: Mode; quote: ItemQuote; groupBusy: boolean; pending: boolean; onConfirm: () => void;
-  running?: FacilityProject; date: string;
+  running?: FacilityProject; date: string; stock: CraftStock | undefined; workshop: number;
 }) {
   const { t } = useTranslation();
-  const f = forecastOf(quote);
-  // A small repair is paid now and never waits for the group's works slot.
-  const blocked = groupBusy && !f.paidByClub;
-  const ok = f.approved && !blocked;
-  const hint = blocked
-    ? t("facilities.groupBusy", { group: t(`facilities.items.group.${item.group}`) })
-    : f.approved
-      ? f.paidByClub
-        ? t("facilities.items.paidByClub")
-        : f.boardShare && f.boardShare > 0
-          ? t("facilities.preview.funded", { pct: Math.round(f.boardShare * 100) })
-          : t("facilities.preview.approve")
-      : t(`facilities.reason.${f.reason ?? "no_money"}`);
   return (
     <>
       <p className="text-sm text-muted-foreground m-0">
         {t(`facilities.items.about${mode[0]!.toUpperCase()}${mode.slice(1)}`, { level: quote.level ?? item.level })}
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Figure label={t("facilities.cost")} value={formatEuros(quote.cost)} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: quote.weeks })} />
         <Figure label={t("facilities.items.condition")} value={`${Math.round(item.condition)}% → ${quote.to ?? 100}%`} />
         <Figure label={t("facilities.items.level")} value={quote.level !== undefined ? `${item.level} → ${quote.level}` : String(item.level)} />
       </div>
-      {blocked && running && <RunningWorks project={running} date={date} />}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className={`text-sm flex items-center gap-1.5 ${ok ? "text-chart-2" : "text-muted-foreground"}`}>
-          <Icon name={ok ? "check-circle" : "alert"} size={16} />
-          {hint}
-        </span>
-        <Button onClick={onConfirm} disabled={pending || !ok}>
-          <Icon name="building" size={16} />
-          {f.paidByClub ? t("facilities.items.confirmPay") : t("facilities.ask")}
-        </Button>
-      </div>
+      {groupBusy && running && <RunningWorks project={running} date={date} />}
+      <BuildActions
+        build={quote.build} stock={stock} workshop={workshop} pending={pending} onBuild={onConfirm}
+        blockedHint={groupBusy ? t("facilities.groupBusy", { group: t(`facilities.items.group.${item.group}`) }) : null}
+      />
     </>
+  );
+}
+
+/** "Cancel works" with an inline confirmation: half the components go back to the stock. */
+export function CancelWorks({ pending, onCancel }: { pending: boolean; onCancel: () => Promise<void> }) {
+  const { t } = useTranslation();
+  const [asking, setAsking] = useState(false);
+  if (!asking) {
+    return <Button variant="danger" onClick={() => setAsking(true)} disabled={pending}>{t("craft.cancelWorks")}</Button>;
+  }
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <span className="text-sm text-muted-foreground">{t("craft.cancelConfirm")}</span>
+      <Button variant="danger" onClick={() => { setAsking(false); void onCancel(); }} disabled={pending}>{t("craft.cancelWorks")}</Button>
+      <Button variant="secondary" onClick={() => setAsking(false)}>{t("craft.keep")}</Button>
+    </span>
   );
 }
 

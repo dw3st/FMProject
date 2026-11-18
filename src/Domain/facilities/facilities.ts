@@ -481,7 +481,7 @@ export function requestGroup(req: FacilityRequest): FacilityGroup {
 
 /**
  * One works at a time per group (stadium, training ground, academy) — at most 3 in all (#152). A
- * small repair paid now (`paidNow`) never takes the slot.
+ * works built from the stock (craft) takes the slot; only an old repair paid in money (`paidNow`) did not.
  */
 export function groupBusy(f: ClubFacilities, group: FacilityGroup): boolean {
   return f.projects.some((p) => !p.paidNow && projectGroup(p) === group);

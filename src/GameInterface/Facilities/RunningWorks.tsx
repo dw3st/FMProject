@@ -12,7 +12,7 @@ export function projectLabel(p: FacilityProject, t: TFn, nf: (n: number) => stri
   return t("facilities.projects.level", { what: t(`facilities.kind.${p.kind}`), level: p.level });
 }
 
-/** The works that holds the area's slot (a small repair paid now never does). */
+/** The works that holds the area's slot: every works built from the stock (only an old repair paid in money, from before the craft, did not). */
 export function runningWorksOf(projects: FacilityProject[], group: FacilityGroup): FacilityProject | undefined {
   return projects.find((p) => !p.paidNow && projectGroup(p) === group);
 }

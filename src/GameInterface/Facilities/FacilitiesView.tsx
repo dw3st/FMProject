@@ -7,7 +7,7 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { formatEuros } from "@/Domain/money";
 import { competitionName } from "@/Domain/world/labels";
 import {
-  attendanceOf, boardDecision, projectProgress, seasonFraction, standUnderWorks, standWeeks,
+  attendanceOf, projectProgress, seasonFraction, standUnderWorks, standWeeks,
 } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import type { Fixture } from "@/types/calendarTypes";
@@ -15,7 +15,12 @@ import type { LeagueData } from "@/types/playerTypes";
 import type { FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
 import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/GameInterface/Facilities/facilitiesApi";
 import { TurfCard } from "@/GameInterface/Facilities/TurfCard";
-import { FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
+import { CancelWorks, FacilityItemsPanel } from "@/GameInterface/Facilities/FacilityItemsPanel";
+import { BuildActions, type RecipeBuild } from "@/GameInterface/Craft/RecipeLine";
+import { CRAFT } from "@/Domain/craft/craftConfig";
+import { recipeFor } from "@/Domain/craft/recipes";
+import { missingComponents } from "@/Domain/craft/stock";
+import type { ComponentId } from "@/types/craftTypes";
 import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
 import { RunningWorks, projectLabel, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
@@ -25,7 +30,7 @@ import { STADIUM_ART_ITEMS, stadiumArtFile, stadiumArtLevel, stadiumMapFile } fr
  * Club → facilities (#120, `.claude/rules/game/facilities.md`): the stadium drawn from above (stands
  * coloured by occupancy), the expansion panel, attendance per home game against capacity and
  * demand, training ground and academy cards, the ten items in detail, works in progress. Every
- * request goes to the board, except a small repair (paid by the club).
+ * works is built from the workshop's stock (craft, spec 2026-11-18): no board approval, no money.
  */
 export function FacilitiesView({
   saveId, squadId, fixtures, leagues, currentDate,
@@ -37,10 +42,10 @@ export function FacilitiesView({
   currentDate: string | null;
 }) {
   const { t, i18n } = useTranslation();
-  const { data, error, request, setMowing } = useFacilities(saveId, currentDate);
+  const { data, error, request, cancel, setMowing } = useFacilities(saveId, currentDate);
   const [selected, setSelected] = useState<StandId | null>(null);
   const [seats, setSeats] = useState<number>(5000);
-  const [outcome, setOutcome] = useState<{ kind: FacilityKind; result: RequestOutcome } | null>(null);
+  const [outcome, setOutcome] = useState<{ kind: FacilityKind; result: RequestOutcome } | { cancelled: boolean } | null>(null);
   const [pending, setPending] = useState(false);
 
   const seasonGames = useMemo(() => buildSeasonGames(data, fixtures, squadId, currentDate), [data, fixtures, squadId, currentDate]);
@@ -61,6 +66,13 @@ export function FacilitiesView({
     setPending(true);
     const result = await request(req);
     setOutcome({ kind: req.kind, result });
+    setPending(false);
+  };
+
+  const stop = async (projectId: string) => {
+    setPending(true);
+    const ok = await cancel(projectId);
+    setOutcome({ cancelled: ok });
     setPending(false);
   };
 
@@ -145,9 +157,9 @@ export function FacilitiesView({
         </section>
       </div>
 
-      <FacilityItemsPanel data={data} pending={pending} onAsk={ask} />
+      <FacilityItemsPanel data={data} pending={pending} onAsk={ask} onCancel={stop} />
 
-      <ProjectsList data={data} nf={nf} />
+      <ProjectsList data={data} nf={nf} pending={pending} onCancel={stop} />
     </div>
   );
 }
@@ -363,7 +375,7 @@ function StandPanel({
 }) {
   const { t } = useTranslation();
   const current = data.facilities.stands.find((s) => s.id === stand)?.seats ?? 0;
-  const cost = seats * data.seatCost;
+  const cost = Math.round(seats * data.seatCost);
   const weeks = standWeeks(seats);
   const options = Array.from({ length: (FACILITIES.SEATS_MAX - FACILITIES.SEATS_MIN) / FACILITIES.SEATS_STEP + 1 }, (_, i) => {
     const n = FACILITIES.SEATS_MIN + i * FACILITIES.SEATS_STEP;
@@ -375,19 +387,20 @@ function StandPanel({
         <h3 className="font-display font-black uppercase text-xl leading-none m-0">
           {t("facilities.stand.expand", { stand: t(`facilities.stand.${stand}`) })}
         </h3>
-        <p className="text-sm text-muted-foreground mt-1 mb-0 tabular-nums">{t("facilities.stand.current", { seats: nf(current) })}</p>
+        <p className="text-sm text-muted-foreground mt-1 mb-0 tabular-nums">
+          {t("facilities.stand.current", { seats: nf(current) })} · {t("craft.improves.stand", { seats: nf(seats) })}
+        </p>
       </div>
       <div className="flex flex-col gap-2">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("facilities.stand.seats")}</span>
         <OptionChips options={options} value={String(seats)} onChange={(k) => onSeats(Number(k))} aria-label={t("facilities.stand.seats")} />
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        <Figure label={t("facilities.cost")} value={formatEuros(cost)} />
+      <div className="grid grid-cols-2 gap-3">
         <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: weeks })} />
         <Figure label={t("facilities.stand.newCapacity")} value={nf(data.capacity + seats)} />
       </div>
       <p className="text-sm text-muted-foreground m-0">{t("facilities.stand.halfDuringWorks")}</p>
-      <AskRow data={data} cost={cost} busy={busy} pending={pending} onAsk={onAsk} group="stadium" />
+      <WorksBuild data={data} build={standBuild(data, cost)} busy={busy} pending={pending} onAsk={onAsk} group="stadium" />
     </div>
   );
 }
@@ -401,34 +414,29 @@ function Figure({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Board preview + the request button. */
-function AskRow({ data, cost, busy, pending, onAsk, disabled, group }: {
-  data: FacilitiesViewData; cost: number; busy: boolean; pending: boolean; onAsk: () => void; disabled?: boolean;
+/** What a stand expansion takes from the stock: priced like the server's quote (seats × seat cost), its mix. */
+function standBuild(data: FacilitiesViewData, cost: number): RecipeBuild {
+  const recipe = recipeFor({ kind: "stand" }, cost, data.revenue);
+  const missing = data.stock ? missingComponents(data.stock, recipe) : recipe;
+  const workshop = data.facilities.craft?.workshop ?? 1;
+  const locked = (Object.keys(recipe) as ComponentId[]).filter((id) => CRAFT.RECIPES[id].minLevel > workshop);
+  return { recipe, missing, locked, canBuild: Object.keys(missing).length === 0 };
+}
+
+/** The works' recipe and the Build button (the area's running works above it). */
+function WorksBuild({ data, build, busy, pending, onAsk, group }: {
+  data: FacilitiesViewData; build: RecipeBuild; busy: boolean; pending: boolean; onAsk: () => void;
   group: "stadium" | "training" | "academy";
 }) {
   const { t } = useTranslation();
-  const preview = boardDecision({ board: data.board, balance: data.balance, cost, revenue: data.revenue, committed: data.committed });
-  const hint = busy
-    ? t("facilities.groupBusy", { group: t(`facilities.items.group.${group}`) })
-    : preview.approved
-      ? preview.boardShare > 0
-        ? t("facilities.preview.funded", { pct: Math.round(preview.boardShare * 100) })
-        : t("facilities.preview.approve")
-      : t(`facilities.reason.${preview.reason}`);
   const running = busy ? runningWorksOf(data.facilities.projects, group) : undefined;
   return (
     <div className="flex flex-col gap-3">
-    {running && <RunningWorks project={running} date={data.date} />}
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <span className={`text-sm flex items-center gap-1.5 ${!busy && preview.approved ? "text-chart-2" : "text-muted-foreground"}`}>
-        <Icon name={!busy && preview.approved ? "check-circle" : "alert"} size={16} />
-        {hint}
-      </span>
-      <Button onClick={onAsk} disabled={busy || pending || disabled}>
-        <Icon name="building" size={16} />
-        {t("facilities.ask")}
-      </Button>
-    </div>
+      {running && <RunningWorks project={running} date={data.date} />}
+      <BuildActions
+        build={build} stock={data.stock} workshop={data.facilities.craft?.workshop ?? 1} pending={pending} onBuild={onAsk}
+        blockedHint={busy ? t("facilities.groupBusy", { group: t(`facilities.items.group.${group}`) }) : null}
+      />
     </div>
   );
 }
@@ -482,11 +490,8 @@ function LevelBlock({
       </div>
       {quote && (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <Figure label={t("facilities.cost")} value={formatEuros(quote.cost)} />
-            <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: quote.weeks })} />
-          </div>
-          <AskRow data={data} cost={quote.cost} busy={busy} pending={pending} onAsk={onAsk}
+          <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: quote.weeks })} />
+          <WorksBuild data={data} build={quote.build} busy={busy} pending={pending} onAsk={onAsk}
             group={kind === "comfort" ? "stadium" : kind} />
         </>
       )}
@@ -514,25 +519,38 @@ function academyText(e: FacilitiesViewData["effects"]["academy"]["current"], t: 
   });
 }
 
-function OutcomeNotice({ outcome, onClose }: { outcome: { kind: FacilityKind; result: RequestOutcome }; onClose: () => void }) {
+function OutcomeNotice({ outcome, onClose }: {
+  outcome: { kind: FacilityKind; result: RequestOutcome } | { cancelled: boolean }; onClose: () => void;
+}) {
   const { t, i18n } = useTranslation();
-  const r = outcome.result;
-  const ok = r.approved;
-  const what = r.approved && r.project.item
-    ? `${t(`facilities.kind.${outcome.kind}`)}: ${t(`facilities.item.${r.project.item}`)}`
-    : t(`facilities.kind.${outcome.kind}`);
-  const text = r.approved
-    ? t("facilities.outcome.approved", { what, date: formatGameDate(r.project.end, i18n.language) })
-      + (r.paidByClub ? ` ${t("facilities.items.paidByClub")}` : "")
-      + (r.boardShare > 0 ? ` ${t("facilities.preview.funded", { pct: Math.round(r.boardShare * 100) })}` : "")
-    : r.reason === "busy" && r.group
-      ? t("facilities.groupBusy", { group: t(`facilities.items.group.${r.group}`) })
-      : t(`facilities.reason.${r.reason}`);
+  let ok: boolean;
+  let title: string;
+  let text: string;
+  if ("cancelled" in outcome) {
+    ok = outcome.cancelled;
+    title = ok ? t("craft.cancelWorks") : t("craft.outcome.refusedTitle");
+    text = ok ? t("craft.cancelDone") : t("craft.errors.generic");
+  } else {
+    const r = outcome.result;
+    ok = r.built;
+    title = ok ? t("craft.outcome.builtTitle") : t("craft.outcome.refusedTitle");
+    if (r.built) {
+      const what = r.project.item
+        ? `${t(`facilities.kind.${outcome.kind}`)}: ${t(`facilities.item.${r.project.item}`)}`
+        : t(`facilities.kind.${outcome.kind}`);
+      text = `${t("facilities.outcome.approved", { what, date: formatGameDate(r.project.end, i18n.language) })} ${
+        t("craft.outcome.quality", { quality: t(`craft.quality.${r.quality}`) })}`;
+    } else if (r.reason === "busy" && r.group) {
+      text = t("facilities.groupBusy", { group: t(`facilities.items.group.${r.group}`) });
+    } else {
+      text = r.reason === "missing_components" ? t("craft.errors.missingComponents") : t(`facilities.reason.${r.reason}`);
+    }
+  }
   return (
     <div className={`card-arcade rounded-md p-4 border flex items-start gap-3 ${ok ? "border-chart-2/50 bg-chart-2/10" : "border-destructive/50 bg-destructive/10"}`}>
       <Icon name={ok ? "check-circle" : "alert"} size={20} className={ok ? "text-chart-2 shrink-0" : "text-destructive shrink-0"} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground m-0">{ok ? t("facilities.outcome.approvedTitle") : t("facilities.outcome.refusedTitle")}</p>
+        <p className="text-sm font-semibold text-foreground m-0">{title}</p>
         <p className="text-sm text-muted-foreground mt-0.5 mb-0">{text}</p>
       </div>
       <Button variant="secondary" flush onClick={onClose} aria-label={t("common.close")}>
@@ -620,7 +638,9 @@ function Legend({ swatch, label }: { swatch: React.ReactNode; label: string }) {
 
 // ── Works in progress ────────────────────────────────────────────────────────
 
-function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) => string }) {
+function ProjectsList({ data, nf, pending, onCancel }: {
+  data: FacilitiesViewData; nf: (n: number) => string; pending: boolean; onCancel: (projectId: string) => Promise<void>;
+}) {
   const { t, i18n } = useTranslation();
   const projects = data.facilities.projects;
   return (
@@ -642,9 +662,12 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-sm font-semibold text-foreground">{what}</span>
               <span className="text-sm text-muted-foreground tabular-nums">
-                {t("facilities.projects.delivery", { date: formatGameDate(p.end, i18n.language) })} · {formatEuros(p.cost)}
-                {p.boardShare > 0 ? ` · ${t("facilities.preview.funded", { pct: Math.round(p.boardShare * 100) })}` : ""}
-                {paidNow ? ` · ${t("facilities.items.paidByClub")}` : ""}
+                {t("facilities.projects.delivery", { date: formatGameDate(p.end, i18n.language) })}
+                {/* A works built from the stock costs no money; an old one shows what it cost and who paid. */}
+                {p.craft
+                  ? ` · ${t("craft.recipe.fromStock")}${p.quality ? ` · ${t(`craft.quality.${p.quality}`)}` : ""}`
+                  : ` · ${formatEuros(p.cost)}${p.boardShare > 0 ? ` · ${t("facilities.preview.funded", { pct: Math.round(p.boardShare * 100) })}` : ""}${
+                    paidNow ? ` · ${t("facilities.items.paidByClub")}` : ""}`}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -652,6 +675,7 @@ function ProjectsList({ data, nf }: { data: FacilitiesViewData; nf: (n: number) 
                 <div className="h-full bg-primary rounded" style={{ width: `${Math.round(progress * 100)}%` }} />
               </div>
               <span className="text-sm tabular-nums text-muted-foreground w-12 text-right">{Math.round(progress * 100)}%</span>
+              {p.craft && <CancelWorks pending={pending} onCancel={() => onCancel(p.id)} />}
             </div>
           </div>
         );

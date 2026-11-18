@@ -3,9 +3,9 @@ import type { StandDepths } from "@/Domain/facilities/standDepth";
 import { useCallback, useEffect, useState } from "react";
 import type { AcademyEffects, ProjectQuote, TrainingGroundEffects } from "@/Domain/facilities/facilities";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
-import type { ComponentCounts, ComponentId, CraftStock } from "@/types/craftTypes";
+import type { ComponentCounts, ComponentId, CraftQuality, CraftStock } from "@/types/craftTypes";
 import type {
-  BoardRefusal, ClubFacilities, FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest, MowingPattern, TurfType,
+  ClubFacilities, FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest, MowingPattern, TurfType,
 } from "@/types/facilityTypes";
 
 /** What a quote asks from the stock (`facilityRoutes.ts` → `buildOf`, craft spec 2026-11-18). */
@@ -17,21 +17,7 @@ export interface QuoteBuild {
   canBuild: boolean;
 }
 
-/** What happens to a quote if requested now. Until the craft screens (Task 13), derived from `build`. */
-export interface QuoteForecast {
-  /** Small repair: paid now by the club, no board. */
-  paidByClub: boolean;
-  approved: boolean;
-  boardShare?: number;
-  reason?: BoardRefusal | "missing_components";
-}
-
-export type ItemQuote = ProjectQuote & { build?: QuoteBuild; forecast?: QuoteForecast };
-
-/** The quote's forecast: the old board one when present, else "can be built now" from the stock. */
-export function forecastOf(q: ItemQuote): QuoteForecast {
-  return q.forecast ?? { paidByClub: false, approved: q.build?.canBuild ?? false, ...(q.build?.canBuild ? {} : { reason: "missing_components" as const }) };
-}
+export type ItemQuote = ProjectQuote & { build: QuoteBuild };
 
 /** One facility item (`GET .../facilities` → `items`). */
 export interface FacilityItemView {
@@ -40,6 +26,8 @@ export interface FacilityItemView {
   level: number;
   condition: number;
   condemned: boolean;
+  /** Quality of the last works built from the stock; null = common. */
+  quality: "good" | "excellent" | null;
   effects: ItemEffect[];
   project: (FacilityProject & { progress: number }) | null;
   quotes: {
@@ -89,10 +77,15 @@ export interface FacilitiesViewData {
 }
 
 export type RequestOutcome =
-  | { approved: true; boardShare: number; project: FacilityProject; paidByClub?: boolean }
-  | { approved: false; reason: BoardRefusal | "missing_components" | "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error"; group?: FacilityGroup };
+  | { built: true; project: FacilityProject; quality: CraftQuality }
+  | {
+    built: false;
+    reason: "missing_components" | "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error";
+    group?: FacilityGroup;
+    missing?: ComponentCounts;
+  };
 
-/** Facilities of the human club; `request` asks the board for a project and refreshes the view. */
+/** Facilities of the human club; `request` builds a works from the stock, `cancel` stops one; both refresh the view. */
 export function useFacilities(saveId: string | undefined, refreshKey?: string | null) {
   const [data, setData] = useState<FacilitiesViewData | null>(null);
   const [error, setError] = useState(false);
@@ -108,7 +101,7 @@ export function useFacilities(saveId: string | undefined, refreshKey?: string | 
   }, [saveId, refreshKey]);
 
   const request = useCallback(async (req: FacilityRequest): Promise<RequestOutcome> => {
-    if (!saveId) return { approved: false, reason: "error" };
+    if (!saveId) return { built: false, reason: "error" };
     try {
       const r = await fetch(`/api/saves/${saveId}/facilities/request`, {
         method: "POST",
@@ -117,25 +110,35 @@ export function useFacilities(saveId: string | undefined, refreshKey?: string | 
       });
       const body = await r.json().catch(() => ({})) as Record<string, unknown>;
       if (!r.ok) {
-        if (body.error === "missingComponents") return { approved: false, reason: "missing_components" };
+        if (body.error === "missingComponents") {
+          return { built: false, reason: "missing_components", missing: (body.missing ?? {}) as ComponentCounts };
+        }
         const reason = typeof body.error === "string" && ["busy", "maxLevel", "noClub", "invalidRequest"].includes(body.error) ? body.error : "error";
         const group = reason === "busy" && typeof body.group === "string" ? (body.group as FacilityGroup) : undefined;
         return {
-          approved: false, reason: reason as "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error",
+          built: false, reason: reason as "busy" | "maxLevel" | "noClub" | "invalidRequest" | "error",
           ...(group ? { group } : {}),
         };
       }
       if (body.view) setData(body.view as FacilitiesViewData);
-      if (body.built) return { approved: true, boardShare: 0, project: body.project as FacilityProject };
-      return body.approved
-        ? {
-          approved: true, boardShare: body.boardShare as number, project: body.project as FacilityProject,
-          ...(body.paidByClub ? { paidByClub: true } : {}),
-        }
-        : { approved: false, reason: body.reason as BoardRefusal };
+      return { built: true, project: body.project as FacilityProject, quality: (body.quality ?? "common") as CraftQuality };
     } catch {
-      return { approved: false, reason: "error" };
+      return { built: false, reason: "error" };
     }
+  }, [saveId]);
+
+  /** Stops a works built from the stock; half its components go back. */
+  const cancel = useCallback(async (projectId: string): Promise<boolean> => {
+    if (!saveId) return false;
+    try {
+      const r = await fetch(`/api/saves/${saveId}/facilities/cancel`, {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ projectId }),
+      });
+      if (!r.ok) return false;
+      const body = await r.json() as { view?: FacilitiesViewData };
+      if (body.view) setData(body.view);
+      return true;
+    } catch { return false; }
   }, [saveId]);
 
   const setMowing = useCallback(async (mowing: MowingPattern): Promise<boolean> => {
@@ -151,5 +154,5 @@ export function useFacilities(saveId: string | undefined, refreshKey?: string | 
     } catch { return false; }
   }, [saveId]);
 
-  return { data, error, request, setMowing };
+  return { data, error, request, cancel, setMowing };
 }
