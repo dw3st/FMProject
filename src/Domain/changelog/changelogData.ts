@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.17",
     date: "2026-11-18",
+    time: "12:54",
     items: [
       { tab: "scout", pt: "Olheiro: o filtro Aceitam empréstimo mostra quem vem pagando até 0, 25, 50, 75 ou 100% do salário, sem taxa.", en: "Scout: the Accept a loan filter shows who comes paying up to 0, 25, 50, 75 or 100% of the wage, with no fee." },
       { tab: "market", pt: "Empréstimo: um jogador bem abaixo da média do elenco sai pagando pouco ou nada do salário.", en: "Loans: a player well below the squad average goes for little or none of his wage." },
