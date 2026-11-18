@@ -15,7 +15,7 @@ import { LEAGUE_SCHEDULE_CONFIGS } from "@/Domain/season/leagueScheduleConfig";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import type { SeasonArchive, LeagueDateIndex, LeagueSeasonMeta, RoundFixtures, LeagueSeasonState, Fixture } from "@/types/calendarTypes";
-import { generatePool, topUpMissingRoles, type StaffPool } from "@/Domain/staff/staffPool";
+import { generatePool, hasCheapStaff, topUpCheapStaff, topUpMissingRoles, type StaffPool } from "@/Domain/staff/staffPool";
 import { STAFF_ROLES } from "@/Domain/staff/staffTypes";
 import type { RefereePool, RefereeSeasonArchive, RefereeState } from "@/types/refereeTypes";
 import type { NationalCompetition, NationalState } from "@/types/nationalTypes";
@@ -328,10 +328,12 @@ export class SaveService {
   async getStaffPool(saveId: string, date: string): Promise<StaffPool> {
     const pool = await this.dal.readStaffPool(saveId);
     if (pool) {
-      // A pool written before a role existed (the youth coach, 12.1) gets that role's quota once.
-      if (STAFF_ROLES.every((role) => pool.members.some((m) => m.role === role))) return pool;
+      // A pool written before a role existed (the youth coach, 12.1) gets that role's quota once, and one written
+      // before the cheap professionals (12.19.2) gets those.
+      if (STAFF_ROLES.every((role) => pool.members.some((m) => m.role === role)) && hasCheapStaff(pool)) return pool;
       const { getStaffNameBook: book } = await import("@/backend/staffNameBook");
-      const topped = topUpMissingRoles(pool, saveId, date, await book());
+      const names = await book();
+      const topped = topUpCheapStaff(topUpMissingRoles(pool, saveId, date, names), saveId, date, names);
       await this.dal.writeStaffPool(saveId, topped);
       return topped;
     }

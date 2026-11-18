@@ -36,8 +36,9 @@ export function sampleStars(rng: () => number): number {
 
 function fillRoles(members: StaffMember[], saveId: string, season: string, date: string, tag: string, book?: StaffNameBook): StaffMember[] {
   const rng = mulberry32(seedFrom(`staff-pool:${saveId}:${season}${tag}`));
-  const ids = new Set(members.map((m) => m.id));
-  const out = [...members];
+  // The cheap professionals first, inside each role's quota: the pool keeps its size.
+  const out = withCheapStaff([...members], saveId, date, `${season}${tag}`, book);
+  const ids = new Set(out.map((m) => m.id));
   for (const role of STAFF_ROLES) {
     let have = out.filter((m) => m.role === role).length;
     for (let i = 0; have < STAFF.POOL.BY_ROLE[role]; i++) {
@@ -50,6 +51,46 @@ function fillRoles(members: StaffMember[], saveId: string, season: string, date:
   }
   return out;
 }
+
+/** How many cheap professionals (`STAFF.CHEAP`) the free pool keeps of `role`. */
+export const cheapQuota = (role: StaffRole): number => (role === "coach" ? STAFF.CHEAP.COACH : STAFF.CHEAP.PER_ROLE);
+
+/** True when `m` asks the cheap wage (1★ or less). */
+export const isCheapStaff = (m: StaffMember): boolean => memberStars(m) <= STAFF.CHEAP.MAX_STARS;
+
+/**
+ * Tops every role up to its cheap quota with professionals of 0.5★ and 1★ (alternating), deterministic by save,
+ * tag and role, listed since `date`. They come on top of `POOL.BY_ROLE`. Returns the same array when nothing lacks.
+ */
+function withCheapStaff(members: StaffMember[], saveId: string, date: string, tag: string, book?: StaffNameBook): StaffMember[] {
+  const ids = new Set(members.map((m) => m.id));
+  let out = members;
+  for (const role of STAFF_ROLES) {
+    let have = members.filter((m) => m.role === role && isCheapStaff(m)).length;
+    for (let i = 0; have < cheapQuota(role) && i < 100; i++) {
+      const m = makeProfessional(`${saveId}:pool:cheap:${tag}:${role}:${i}`, role, i % 2 === 0 ? 0.5 : 1, book ? { book } : undefined);
+      if (ids.has(m.id) || !isCheapStaff(m)) continue;
+      ids.add(m.id);
+      if (out === members) out = [...members];
+      out.push({ ...m, since: date });
+      have++;
+    }
+  }
+  return out;
+}
+
+/**
+ * Tops the cheap quota of every role up (a pool written before 12.19.2, or one whose cheap professionals were all
+ * hired). The tag carries the date and the pool size, so a later top-up never redraws the id of one already hired.
+ */
+export function topUpCheapStaff(pool: StaffPool, saveId: string, date: string, book?: StaffNameBook): StaffPool {
+  const members = withCheapStaff(pool.members, saveId, date, `t${date}:${pool.members.length}`, book);
+  return members === pool.members ? pool : { ...pool, members };
+}
+
+/** True when every role has at least one cheap professional (the read of the pool tops it up otherwise). */
+export const hasCheapStaff = (pool: StaffPool): boolean =>
+  STAFF_ROLES.every((role) => pool.members.some((m) => m.role === role && isCheapStaff(m)));
 
 /** `book`: nationalities and names from the world's players (`staffOrigin.ts`); absent = the built-in pools. */
 export function generatePool(saveId: string, season: string, date: string, book?: StaffNameBook): StaffPool {

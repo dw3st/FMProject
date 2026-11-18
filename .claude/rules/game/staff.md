@@ -246,3 +246,22 @@ Pedido do usuário. No fim de cada dia, o treinador da base no comando já monta
 ## Curso do treinador da base (12.6)
 
 O treinador da base pode fazer o curso sem estar na comissão de confiança (`courseRefusal`, `courseOffer` em `GET /staff`); as demais regras do curso valem. Ver `youth.md` → "Treinador da base na aba, metas e indicações".
+
+## Profissionais baratos (12.19.2)
+
+Report de tester: clubes pequenos não conseguiam contratar comissão pelo salário. Causa: o salário pedido é a curva da comissão × o fator de salário dos jogadores do clube, e esse fator chega a 4 num elenco fraco com receita boa (Série C: Floresta, Ituano). Lá até um auxiliar de 1★ pedia 3% da receita, e um de cada função a 1★ passava da margem do clube (~15% da receita).
+
+- **0,5★** (`STAFF.MIN_STARS` 0,5): todo atributo no piso (nota de área abaixo de `CHEAP.HALF_STAR_SCORE` 1,25 = 0,5★; um alvo de 1★ nunca cai a 0,5★). `ratingFromStars(0,5)` = 0 e as curvas seguem o primeiro trecho: um pouco pior que 1★ (auxiliar ×0,875 contra ×0,9; área ×0,625 contra ×0,7, ainda acima da área vaga ×0,4).
+- **Salário:** quem tem 1★ ou menos pede com o fator do clube limitado a `CHEAP.FACTOR_CAP` (0,5), em `staffWageFor` (busca, contratação, renovação). Clube de fator baixo paga como antes.
+- **Lista de livres:** cada função guarda `CHEAP.PER_ROLE` (3; treinadores `CHEAP.COACH` 6) profissionais de 0,5★ e 1★, dentro da cota de `POOL.BY_ROLE` (o tamanho não muda), na geração e em toda renovação da lista. Uma lista sem nenhum barato numa função (gravada antes, ou com todos contratados) é completada na leitura (`topUpCheapStaff`, ids pela data e pelo tamanho da lista).
+- **Vaga continua 2★** nas funções que não são área (auxiliar, médico, analista, olheiro-chefe, base): ali um 0,5★ ou 1★ rende menos que deixar vago; vale a pena nas áreas (treinadores, goleiros, físico), no jardineiro (sem nenhum ×1,6) e nos olheiros de campo (uma missão cada). Decisão: não mexer na vaga.
+
+`bun scripts/staff-cheap-measure.ts 10` (mundo base, clubes LOW com o maior salário de comissão sobre a receita):
+
+| | antes | depois |
+|---|---|---|
+| Auxiliar 1★, maior parte da receita semanal (LOW) | 3,0% (Floresta, €4.413 de €146.737) | 1,0% (Dinamo Vologda) |
+| Auxiliar 1★, mediana LOW | 0,23% | 0,21% |
+| Um de cada função a 1★, pior clube LOW | 17,1% (Floresta, €25.153) | 5,6% (Dinamo Vologda, €3.184) |
+| Um de cada função a 0,5★, pior clube LOW | — | 3,4% |
+| Floresta: auxiliar 1★ | €4.413 | €559 |
