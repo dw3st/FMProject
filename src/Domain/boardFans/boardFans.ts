@@ -334,7 +334,10 @@ export function reviewBoardStatus(
       s = rest;
     }
   }
-  if (opts.sackingEnabled && s.board < st.SACK) return { state: s, messages: ["sacked"], sacked: "board" };
+  // Past the last league match the season review (objective first) decides, not the daily review (report
+  // 2026-11-18: a manager who met the objective was sacked a week before the rollover evaluated it).
+  const seasonOver = left !== undefined && left <= 0;
+  if (opts.sackingEnabled && s.board < st.SACK && !seasonOver) return { state: s, messages: ["sacked"], sacked: "board" };
 
   // The deadline is the next ULTIMATUM_MATCHES league matches, fewer near the end of the season (the points scale
   // with them); with fewer than ULTIMATUM_MIN_MATCHES left there is none: the season review decides.

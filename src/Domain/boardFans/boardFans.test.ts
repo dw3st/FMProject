@@ -288,6 +288,13 @@ describe("reviewBoardStatus", () => {
     expect(clamped.sacked).toBeNull();
     expect(clamped.state.ultimatum?.matchesLeft).toBe(2);
   });
+  test("past the last league match the daily review never sacks: the season review decides (report 2026-11-18)", () => {
+    const review = (board: number, left?: number) =>
+      reviewBoardStatus(base({ board, warned: true }), { sackingEnabled: true, date: "d", ...(left !== undefined ? { leagueMatchesLeft: left } : {}) });
+    expect(review(13, 0).sacked).toBeNull();
+    expect(review(13, 1).sacked).toBe("board");
+    expect(review(13).sacked).toBe("board");
+  });
   test("praise once above 80", () => {
     const r = reviewBoardStatus(base({ board: 81 }), { sackingEnabled: true, date: "d" });
     expect(r.messages).toEqual(["praise"]);
