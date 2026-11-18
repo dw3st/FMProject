@@ -1,3 +1,5 @@
+import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { LOAN_SHARES } from "@/Domain/scout/scoutFilterState";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SelectListbox, formSelectBoxClass } from "@/GameInterface/Components/SelectListbox";
@@ -216,6 +218,20 @@ export function ScoutFilters({
           <Toggle on={!!filters.onlyLoanable} icon="handshake" tone="text-chart-4" title={t("scout.filters.loanableHint")} onClick={() => setFilters({ ...filters, onlyLoanable: !filters.onlyLoanable })}>{t("scout.filters.loanableOnly")}</Toggle>
           <Toggle on={!!filters.onlyAffordable} icon="wallet" tone="text-chart-5" title={t("scout.filters.affordableHint")} onClick={() => setFilters({ ...filters, onlyAffordable: !filters.onlyAffordable })}>{t("scout.filters.affordableOnly")}</Toggle>
         </ChipGroup>
+        {filters.onlyLoanable && (
+          <div className="flex flex-col gap-2">
+            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("scout.filters.loanShareLabel")}</span>
+            <OptionChips
+              options={[{ key: "any", label: t("scout.filters.loanShareAny") }, ...LOAN_SHARES.map((v) => ({ key: String(v), label: `${v}%` }))]}
+              value={filters.loanMaxShare === undefined ? "any" : String(filters.loanMaxShare)}
+              onChange={(k) => {
+                const { loanMaxShare: _drop, ...rest } = filters;
+                setFilters(k === "any" ? rest : { ...rest, loanMaxShare: Number(k) });
+              }}
+            />
+            <p className="text-sm text-muted-foreground m-0">{t("scout.filters.loanShareHint")}</p>
+          </div>
+        )}
         <ChipGroup label={t("scout.filters.groups.kind")} hint={t("scout.filters.kindHint")}>
           <Toggle on={!!filters.onlyTop25} icon="star-filled" tone="text-star-gold" onClick={() => setFilters({ ...filters, onlyTop25: !filters.onlyTop25 })}>{t("scout.filters.top25")}</Toggle>
           <Toggle on={!!filters.onlyInForm} icon="star-filled" tone="text-star-blue" onClick={() => setFilters({ ...filters, onlyInForm: !filters.onlyInForm })}>{t("scout.filters.inForm")}</Toggle>

@@ -169,7 +169,12 @@ const SLOT_ORDER: readonly SponsorSlot[] = ["master", "kit", "board"];
  * Finances → Sponsors (`.claude/rules/game/sponsors.md`): the weekly income and the club's appeal, then each slot with
  * its contract or, while it is free, the offers on the table (accept, negotiate once, decline).
  */
-export function SponsorsPanel({ saveId, onChanged }: { saveId: string; onChanged?: () => void }) {
+export function SponsorsPanel({ saveId, onChanged, onView }: {
+  saveId: string;
+  onChanged?: () => void;
+  /** Called with every view the panel shows (the first-choice window watches the master and kit slots). */
+  onView?: (view: SponsorsView) => void;
+}) {
   const { t } = useTranslation();
   const [view, setView] = useState<SponsorsView | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -187,6 +192,7 @@ export function SponsorsPanel({ saveId, onChanged }: { saveId: string; onChanged
     return () => { cancelled = true; };
   }, [saveId, t]);
   useEffect(() => load(), [load]);
+  useEffect(() => { if (view) onView?.(view); }, [view, onView]);
 
   async function act(offer: Offer, action: SponsorOfferAction) {
     setBusy(true);

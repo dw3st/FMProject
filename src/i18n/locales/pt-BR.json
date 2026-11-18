@@ -3509,7 +3509,10 @@
       "inForm": "Grande fase",
       "prodigy": "Prodígio",
       "created": "Criados por técnicos",
-      "legends": "Lendas"
+      "legends": "Lendas",
+      "loanShareLabel": "Pagando do salário no máximo",
+      "loanShareAny": "Qualquer",
+      "loanShareHint": "Só quem o clube empresta sem taxa, com você pagando até essa parte do salário."
     },
     "attributeFilters": {
       "attributes": "Filtros de atributos",
@@ -8114,6 +8117,14 @@
         "relegated": "Saiu com o rebaixamento",
         "club_left": "O técnico deixou o clube"
       }
+    },
+    "choice": {
+      "title": "Escolha seus patrocinadores",
+      "hint": "O clube começa sem patrocínio: escolha o patrocinador máster e o fornecedor de material para ter receita. As placas podem esperar; se você não escolher, o diretor fecha quando a proposta vencer.",
+      "missing": "Falta escolher: {{slots}}.",
+      "ready": "Máster e material escolhidos.",
+      "director": "O diretor escolhe",
+      "continue": "Continuar"
     }
   },
   "study": {

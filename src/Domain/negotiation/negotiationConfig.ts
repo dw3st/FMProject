@@ -137,7 +137,7 @@ export const NEGOTIATION = {
      */
     SHARE_BASE: 0.75,
     SHARE_SLOPE: 0.5,
-    SHARE_MIN: 0.4,
+    SHARE_MIN: 0,
     SHARE_MAX: 1,
     /** A player above the squad average also costs value × this × strength per season. */
     FEE_PER_STRENGTH: 0.04,

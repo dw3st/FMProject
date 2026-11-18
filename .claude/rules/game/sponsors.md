@@ -194,3 +194,7 @@ Limitações:
 ## Histórico na troca de clube (12.1.1)
 
 Pedido do usuário. Quando o técnico sai do clube (troca, demissão, fim de contrato, saída do mundo), `releaseHumanClub` grava `Squad.sponsorHistory` = os contratos já encerrados mais os que estavam em vigor, fechados como `club_left` na data (`historyOnClubLeft`, `sponsors.ts`). O clube da IA não usa o campo; a página da empresa lê dele ("Quem já patrocinou"). Quando um técnico assume o clube, `createClubSponsors` leva a lista para `sponsors.history` do registro novo e apaga o campo. Saídas anteriores à 12.1.1 não deixaram registro.
+
+## Escolha obrigatória na carreira nova (12.17)
+
+Report de tester. `SponsorChoiceModal` (`Sponsors/SponsorChoiceModal.tsx`), aberto pelo Painel enquanto o máster ou o fornecedor de material estiver vazio com propostas na mesa (`sponsorChoicePending`): mostra o `SponsorsPanel` e só fecha com os dois assinados; "O diretor escolhe" aceita a proposta de maior fixo de cada vaga que falta. As placas ficam para o diretor no vencimento.

@@ -30,8 +30,31 @@ import { RUNTIME_DATA_DIR } from "@/backend/runtimeDir";
 import { runPool } from "@/backend/dal/pool";
 import { bumpSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { fixedPlayerName, withFixedPlayerNames } from "@/Domain/world/playerNames";
+import { leagueNationality, withDefaultNationality } from "@/Domain/world/defaultNationality";
+import { fileURLToPath } from "url";
 
 const SAVES_DIR = `${RUNTIME_DATA_DIR}/saves`;
+/** League slug → the nationality its players without one get (`defaultNationality.ts`), read once per process. */
+let leagueNationalities: Map<string, string | null> | null = null;
+async function nationalityOfLeague(slug: string): Promise<string | null> {
+  if (!leagueNationalities) {
+    leagueNationalities = new Map();
+    try {
+      const file = Bun.file(`${fileURLToPath(new URL("../../Data", import.meta.url))}/leagueData.json`);
+      if (await file.exists()) {
+        for (const l of (await file.json()) as { slug?: string; country?: string }[]) {
+          if (l.slug) leagueNationalities.set(l.slug, leagueNationality(l.country));
+        }
+      }
+    } catch { /* no league data: nothing filled */ }
+  }
+  return leagueNationalities.get(slug) ?? null;
+}
+/** A squad as read from disk: name fixes and the league nationality for players without one. */
+async function readFixes(raw: Squad, leagueSlug: string): Promise<Squad> {
+  return withDefaultNationality(withFixedPlayerNames(raw), await nationalityOfLeague(leagueSlug));
+}
+
 
 /** Max squad files parsed in parallel by listSquadFiles / listAllSquads. */
 const SQUAD_READ_CONCURRENCY = 32;
@@ -364,7 +387,7 @@ export class FileSystemDAL implements ISaveDAL {
     // Inject leagueSlug from the path — squad files don't store it, but downstream
     // (resolveSquadId, transfer persistence) relies on it. Mirrors listAllSquads.
     const raw = (await file.json()) as Squad;
-    return { ...withFixedPlayerNames(raw), leagueSlug };
+    return { ...(await readFixes(raw, leagueSlug)), leagueSlug };
   }
 
   async writeSquad(saveId: string, leagueSlug: string, clubSlug: string, squad: Squad): Promise<void> {
@@ -443,7 +466,7 @@ export class FileSystemDAL implements ISaveDAL {
         if ((e as NodeJS.ErrnoException).code === "ENOENT") return;
         throw e;
       }
-      files[i] = { leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...withFixedPlayerNames(raw), leagueSlug } };
+      files[i] = { leagueSlug, clubSlug: file.replace(/\.json$/i, ""), squad: { ...(await readFixes(raw, leagueSlug)), leagueSlug } };
     });
     return files.filter((f): f is SquadFile => f !== undefined);
   }

@@ -6,6 +6,9 @@ import type { ScoutGrade } from "@/types/scoutingTypes";
  * exponentially with the rating (`Player.valueMillions`), and the middle of a little-known star's value range can
  * pass any round number.
  */
+/** The wage shares of the loan filter (tester report 2026-11-18). */
+export const LOAN_SHARES: readonly number[] = [0, 25, 50, 75, 100];
+
 export const PRICE_FILTER_NO_LIMIT_M = 1000;
 
 export interface ScoutFilterState {
@@ -42,6 +45,8 @@ export interface ScoutFilterState {
   onlyPreContract?: boolean;
   /** Only AI clubs' players their club would loan out (`loanAvailability`, on the server; tester report, 4.47.12). */
   onlyLoanable?: boolean;
+  /** With "accept a loan": only who goes paying at most this % of the wage (0, 25, 50, 75, 100); absent = any. */
+  loanMaxShare?: number;
   /**
    * Kind of player (tester report, 9.0), any ticked one passes: top 25 of the world (gold star), great form (blue),
    * prodigy (green), made in the achievements shop, a legend back in the game.

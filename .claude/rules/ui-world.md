@@ -218,3 +218,7 @@ O pacote fica na raiz do repositório, fora do git e da imagem Docker (`.gitigno
 Técnicos da IA, comissão e árbitros gerados (homens) usam um rosto pintado do avatar (`faces/coaches/<combo>.webp`):
 `personCombo(id, nacionalidade, idade)` (`src/Domain/art/personCombo.ts`) sorteia a combinação pelo id, a pele pela região
 da nacionalidade e cabelo, careca e óculos pela idade; `personFaceUrl` usa o pintado quando existe. Árbitras ficam no SVG.
+
+## Nacionalidade que falta (12.17)
+
+Report de tester (jogadores do Maringá sem bandeira). 1524 dos 36521 jogadores do mundo base não têm nacionalidade (265 só no Brasileirão C). Na leitura do save (`FileSystemDAL`, junto das correções de nome) quem não tem recebe o país da liga do clube (`withDefaultNationality`, `leagueNationality`: grafia do `leagueData` → a dos jogadores, USA = United States, Czech Republic = Czechia, Turkey = Türkiye; país sem bandeira não preenche). As regras de inscrição já contavam esses jogadores como domésticos. Livres e aposentados sem nacionalidade continuam sem.

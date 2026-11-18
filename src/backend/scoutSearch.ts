@@ -1,5 +1,5 @@
 import { computeStars } from "@/Domain/world/stars";
-import { loanAvailability } from "@/Domain/negotiation/loans";
+import { loanAvailability, minLoanWageShare } from "@/Domain/negotiation/loans";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import { saveService } from "@/backend/SaveService";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
@@ -9,7 +9,7 @@ import {
   type ScoutQuery, type ScoutSearchResponse,
 } from "@/Domain/scout/scoutQuery";
 import { ATTRIBUTE_LIST } from "@/Domain/attributes";
-import { createDefaultScoutFilters } from "@/Domain/scout/scoutFilterState";
+import { createDefaultScoutFilters, LOAN_SHARES } from "@/Domain/scout/scoutFilterState";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { scoutRowExtras, type BuyerContext } from "@/Domain/scout/scoutInterest";
 import { aiClubFinance, naturalFinancialTier, tierIndex } from "@/Domain/aiFinance/aiClubFinance";
@@ -69,7 +69,7 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
   const buyer = viewer?.ownClubId ? buyerContext(squads, viewer.ownClubId) : null;
   // Interest and "fits the budget" (#123): computed here, on what the user sees of each player.
   const preContractIds = buyer ? await preContractIdsOf(saveId, squads) : new Set<string>();
-  const loanableIds = buyer ? await loanableIdsOf(saveId, squads, market, viewer?.ownClubId ?? "") : new Set<string>();
+  const loanableIds = buyer ? await loanableIdsOf(saveId, squads, market, viewer?.ownClubId ?? "") : new Map<string, number>();
   const scouting = await saveService.getScouting(saveId, seatId);
   // The world's stars (public): the kind-of-player filters (9.0).
   const stars = computeStars(squads);
@@ -84,7 +84,7 @@ async function buildScoutIndex(saveId: string, seatId: string, key: string): Pro
       const extras = scoutRowExtras(r, buyer, weeklyWage);
       if (extras) row = { ...row, ...extras };
       if (preContractIds.has(r.id)) row = { ...row, preContract: true };
-      if (loanableIds.has(r.id)) row = { ...row, loanable: true };
+      if (loanableIds.has(r.id)) row = { ...row, loanable: true, loanShare: loanableIds.get(r.id)! };
     }
     const star = stars?.[r.id];
     if (star) row = { ...row, star };
@@ -164,15 +164,15 @@ export function startersOf(saveId: string, date: string, squad: Squad): Set<stri
   return ids;
 }
 
-async function loanableIdsOf(saveId: string, squads: Squad[], market: { profiles?: Record<string, { sellList?: { playerId: string }[] }> } | null | undefined, ownClubId: string): Promise<Set<string>> {
+async function loanableIdsOf(saveId: string, squads: Squad[], market: { profiles?: Record<string, { sellList?: { playerId: string }[] }> } | null | undefined, ownClubId: string): Promise<Map<string, number>> {
   const [humans, meta] = await Promise.all([saveService.humanClubIds(saveId), saveService.getMeta(saveId)]);
   const date = meta?.currentDate ?? "";
-  const ids = new Set<string>();
+  const ids = new Map<string, number>();
   for (const squad of squads) {
     if (humans.has(squad.id) || squad.id === ownClubId) continue;
     const listed = new Set((market?.profiles?.[squad.id]?.sellList ?? []).map((c) => c.playerId));
     const starterIds = startersOf(saveId, date, squad);
-    for (const p of squad.players) if (loanAvailability(p, squad, { starterIds, listed: listed.has(p.id) }) === null) ids.add(p.id);
+    for (const p of squad.players) if (loanAvailability(p, squad, { starterIds, listed: listed.has(p.id) }) === null) ids.set(p.id, minLoanWageShare(p, squad));
   }
   return ids;
 }
@@ -281,6 +281,7 @@ export function parseScoutQuery(body: unknown): ScoutQuery {
       onlyAffordable: f.onlyAffordable === true,
       onlyPreContract: f.onlyPreContract === true,
       onlyLoanable: f.onlyLoanable === true,
+      ...(LOAN_SHARES.includes(f.loanMaxShare as number) ? { loanMaxShare: f.loanMaxShare as number } : {}),
       onlyTop25: f.onlyTop25 === true,
       onlyInForm: f.onlyInForm === true,
       onlyProdigy: f.onlyProdigy === true,

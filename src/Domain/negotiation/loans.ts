@@ -67,6 +67,17 @@ function loanMinimum(player: RosterPlayer, parent: Squad, weeks: number): number
   return L.WAGE_WEIGHT * share * wageTotal + valuePart;
 }
 
+/**
+ * The least share of the wage (0..1, above 1 = only with a loan fee) the parent club accepts with no fee; the same
+ * for any length, since both parts grow with the weeks (scout filter, tester report 2026-11-18).
+ */
+export function minLoanWageShare(player: RosterPlayer, parent: Squad): number {
+  const wage = currentWage(player, wageFactorOf(parent));
+  const min = loanMinimum(player, parent, 1);
+  if (wage <= 0) return min <= 0 ? 0 : Infinity;
+  return min / (L.WAGE_WEIGHT * wage);
+}
+
 export type LoanResponse =
   | { kind: "accept" }
   | { kind: "counter"; wageShare: number; fee: number }

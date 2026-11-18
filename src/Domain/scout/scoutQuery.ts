@@ -126,7 +126,8 @@ export function filterScoutPlayers(
       const ok = (filters.onlyFree && player.free === true)
         || (filters.onlyForSale && !player.free && sellListedIds.has(player.id))
         || (filters.onlyPreContract && player.preContract === true)
-        || (filters.onlyLoanable && player.loanable === true);
+        || (filters.onlyLoanable && player.loanable === true
+          && (filters.loanMaxShare === undefined || (player.loanShare ?? Infinity) * 100 <= filters.loanMaxShare + 1e-9));
       if (!ok) return false;
     } else if (player.free) return false;
     // Kind of player (9.0): any ticked one passes.

@@ -39,6 +39,11 @@
     "note": "triado antes de 16/11",
     "on": "2026-11-17"
   },
+  "53506888": {
+    "status": "done",
+    "note": "12.17",
+    "on": "2026-11-18"
+  },
   "56406883": {
     "status": "done",
     "note": "triado antes de 16/11",
@@ -1544,6 +1549,11 @@
     "note": "12.6 a 12.8.3",
     "on": "2026-11-17"
   },
+  "74915c99": {
+    "status": "done",
+    "note": "12.17",
+    "on": "2026-11-18"
+  },
   "74953caa": {
     "status": "done",
     "note": "triado antes de 16/11",
@@ -2268,6 +2278,11 @@
     "status": "done",
     "note": "triado antes de 16/11",
     "on": "2026-11-17"
+  },
+  "ae7a4e9a": {
+    "status": "done",
+    "note": "12.17",
+    "on": "2026-11-18"
   },
   "aed9a706": {
     "status": "done",

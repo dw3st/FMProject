@@ -4,6 +4,7 @@ import type { FanbaseRow } from "@/Domain/fanbase/fanbase";
 import { setWatchTarget, watchTarget } from "@/GameInterface/Watch/watchWindow";
 import type { AchievementsData } from "@/GameInterface/Achievements/achievementsApi";
 import { RenewalPopup } from "@/GameInterface/Components/RenewalPopup";
+import { SponsorChoiceModal } from "@/GameInterface/Sponsors/SponsorChoiceModal";
 import { clubCardAchievements, type ClubCardAchievements } from "@/GameInterface/Dashboard/HomeCards";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -342,6 +343,9 @@ export function DashboardScreen() {
     <ScreenContainer>
       {session?.saveId && (
         <RenewalPopup saveId={session.saveId} renewal={save?.managerRenewal} currentDate={currentDate} onAnswered={() => void refresh()} />
+      )}
+      {session?.saveId && squad && (
+        <SponsorChoiceModal saveId={session.saveId} sponsors={squad.sponsors} onDone={() => void refresh()} />
       )}
       <ScreenTitle subtitle={subtitle || undefined} accent={t("screenTitles.dashboard.accent")}>
         {t("screenTitles.dashboard.main")}

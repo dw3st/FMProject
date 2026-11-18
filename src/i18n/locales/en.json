@@ -3509,7 +3509,10 @@
       "inForm": "Great form",
       "prodigy": "Prodigy",
       "created": "Created by managers",
-      "legends": "Legends"
+      "legends": "Legends",
+      "loanShareLabel": "Paying of the wage at most",
+      "loanShareAny": "Any",
+      "loanShareHint": "Only players their club lends with no fee, with you paying up to this share of the wage."
     },
     "attributeFilters": {
       "attributes": "Attribute filters",
@@ -8126,6 +8129,14 @@
         "relegated": "Left with the relegation",
         "club_left": "The manager left the club"
       }
+    },
+    "choice": {
+      "title": "Choose your sponsors",
+      "hint": "The club starts with no sponsorship: pick the main sponsor and the kit supplier to earn income. The boards can wait; if you do not pick, the director signs when the offer expires.",
+      "missing": "Still to pick: {{slots}}.",
+      "ready": "Main sponsor and kit supplier chosen.",
+      "director": "Let the director pick",
+      "continue": "Continue"
     }
   },
   "study": {

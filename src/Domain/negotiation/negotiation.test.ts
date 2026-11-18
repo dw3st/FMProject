@@ -7,7 +7,7 @@ import {
   sellOnShare, sellOnValueFraction, talkGate, parseSellOnPct,
 } from "@/Domain/negotiation/negotiation";
 import {
-  dueLoans, outgoingLoanCount, loanAvailability, loanUntil, parentLoanWages, respondToLoanRequest, squadsAfterLoanEnd, squadsAfterLoanStart,
+  dueLoans, outgoingLoanCount, loanAvailability, minLoanWageShare, loanUntil, parentLoanWages, respondToLoanRequest, squadsAfterLoanEnd, squadsAfterLoanStart,
 } from "@/Domain/negotiation/loans";
 import { buildAiTransferBid, generateBidsForHuman, liveBids } from "@/Domain/negotiation/bids";
 import { saleContext, squadsAfterAcceptedTransfer } from "@/Domain/transfer/transferAcceptance";
@@ -207,6 +207,17 @@ describe("loans", () => {
     const s = respondToLoanRequest({ ...base, player: star, parent: withStar, wageShare: 1, fee: 0 });
     expect(s.kind).toBe("counter");
     if (s.kind === "counter") expect(s.fee).toBeGreaterThan(0);
+  });
+  test("the least wage share: a weak player goes for nothing, the found share is accepted with no fee", () => {
+    const parent = squad("p");
+    const weak = { ...player("weak", 1, 26, "CM"), squadId: "p" };
+    const withWeak = { ...parent, players: [...parent.players, weak] };
+    expect(minLoanWageShare(weak, withWeak)).toBe(0);
+    const target = parent.players.find((p) => p.id === "pcm3")!;
+    const share = minLoanWageShare(target, parent);
+    expect(share).toBeGreaterThan(0);
+    const base = { player: target, parent, weeks: 20, starterIds: new Set<string>(), listed: true, fee: 0 };
+    expect(respondToLoanRequest({ ...base, wageShare: Math.min(1, share + 0.001) }).kind).toBe("accept");
   });
   test("start and end move the player and mark the history row", () => {
     const parent = squad("p");
