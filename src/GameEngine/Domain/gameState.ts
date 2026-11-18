@@ -37,7 +37,8 @@ import {
   type StaminaAction,
 } from '@/GameEngine/Domain/RuntimeLineup';
 import { evaluatePassLanes } from '@/GameEngine/Domain/PassLanes';
-import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
+import { PASS_CONFIG, PASS_YARDS_PER_SEC } from '@/GameEngine/Configs/PassConfig';
+import { predictBallPoint } from '@/GameEngine/Domain/BallPrediction';
 import {
   THROUGH_BALL_CONFIG,
   CHASE_LOOSE_BALL_WEIGHT_ATTACK,
@@ -4366,6 +4367,8 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   {
     const markAssignments = assignMarkTargets(s.players, defendingTeam);
     const moveLog = newMoveLog();
+    // The defending shape reads where the ball is going (`BallPrediction.ts`, `COHESION.PREDICT_S`).
+    const shapeBallPos = predictBallPoint(s, ballPos);
 
     const movedPlayers = s.players.map(player => {
       if (player.id === s.ballHolderId && !looseKeeper(s, player)) return player;
@@ -4488,7 +4491,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       } else {
         const committedMarkId = decision?.type === 'track_mark' ? decision.markTargetId : undefined;
         const markTargetId = committedMarkId ?? markAssignments.get(player.id);
-        target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime);
+        target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime, shapeBallPos);
       }
 
       // Man-marker with his team on the ball: he stays home on his man (`stayHomeTarget`).
@@ -5001,7 +5004,6 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   const activePass = s.pass!;
 
   // Speed scales with distance so longer passes take proportionally more time.
-  const PASS_YARDS_PER_SEC = 28;
   const aerialPass = isAerialKind(activePass.kind);
   const yardsPerSec = aerialPass ? AERIAL_CONFIG.AERIAL_YARDS_PER_SEC : PASS_YARDS_PER_SEC;
   const distanceSpeed = activePass.distance > 0

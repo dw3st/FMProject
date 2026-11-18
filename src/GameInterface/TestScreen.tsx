@@ -1807,6 +1807,7 @@ export function TestScreen() {
               { key: 'aerial'                as const, label: 'Aerial',        color: 'text-teal-300'    },
               { key: 'keeper'                as const, label: 'Keeper',        color: 'text-lime-300'    },
               { key: 'kinematics'            as const, label: 'Kinematics',    color: 'text-orange-300'  },
+              { key: 'cohesion'              as const, label: 'Cohesion',      color: 'text-amber-300'   },
               { key: 'setPieces'             as const, label: 'Set pieces',    color: 'text-lime-300'    },
               { key: 'instructions'          as const, label: 'Instructions',  color: 'text-sky-300'     },
             ] as const

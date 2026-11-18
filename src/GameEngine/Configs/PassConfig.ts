@@ -7,6 +7,9 @@
  * Source of truth: .claude/rules/game-engine/pass.md
  */
 
+/** Flight speed of a ground pass (yards per real second); a longer pass takes proportionally longer. */
+export const PASS_YARDS_PER_SEC = 28;
+
 export const PASS_CONFIG = {
   /** Minimum total score a candidate must reach to be considered a good pass. */
   MIN_PASS_SCORE: 0.39,

@@ -36,6 +36,7 @@ import { getPressingStyleOverride } from '@/GameEngine/Configs/IntentConfig';
 import { sampleCellSumExcluding, type CrowdGrid, type GridMatrix } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 import { keeperDefendingTarget } from '@/GameEngine/Domain/Keeper';
+import { COHESION, COHESION_LINE_ROLES } from '@/GameEngine/Configs/CohesionConfig';
 import type { PressingStyle } from '@/types/tacticsTypes';
 
 const PITCH_CENTER_Y = 37;
@@ -1249,6 +1250,59 @@ export function evaluateDefensiveDecision(
   }
 }
 
+// ── Line cohesion ──────────────────────────────────────────────────────────────
+
+export interface CohesionPull {
+  /** The back-line partner he is pulled toward. */
+  partnerId: number;
+  /** Lateral gap (yards) between his target and the partner. */
+  gap: number;
+  /** Signed lateral pull added to his target (yards, + = toward larger y). */
+  pull: number;
+  /** The two are each other's nearest partner (each closes half the excess). */
+  mutual: boolean;
+}
+
+/** Same-team back-liners in the same line as `player` (within LINE_DEPTH along the pitch). */
+function linePartners(player: GamePlayer, allPlayers: GamePlayer[]): GamePlayer[] {
+  return allPlayers.filter(p => p.id !== player.id && p.team === player.team
+    && COHESION_LINE_ROLES.has(p.role) && Math.abs(p.x - player.x) <= COHESION.LINE_DEPTH);
+}
+
+function nearestLateral(y: number, partners: GamePlayer[]): GamePlayer | null {
+  let best: GamePlayer | null = null;
+  let bestGap = Infinity;
+  for (const q of partners) {
+    const g = Math.abs(q.y - y);
+    if (g < bestGap) { bestGap = g; best = q; }
+  }
+  return best;
+}
+
+/**
+ * Line cohesion (FM's defensive manager): a back-liner whose target leaves more than
+ * `COHESION.MAX_GAP` yards laterally to his nearest line partner is pulled toward him by the
+ * excess — half of it when the two are each other's nearest, so each closes half — capped at
+ * `MAX_PULL`. Lateral only: it never takes him behind (or ahead of) the line. `null` = no pull.
+ */
+export function lineCohesionPull(
+  player: GamePlayer,
+  target: { x: number; y: number },
+  allPlayers: GamePlayer[],
+): CohesionPull | null {
+  if (!COHESION.ENABLED || !COHESION_LINE_ROLES.has(player.role)) return null;
+  const partners = linePartners(player, allPlayers);
+  const partner = nearestLateral(target.y, partners);
+  if (!partner) return null;
+  const gap = Math.abs(partner.y - target.y);
+  const excess = gap - COHESION.MAX_GAP;
+  if (excess <= 0) return null;
+  const back = nearestLateral(partner.y, linePartners(partner, allPlayers));
+  const mutual = back?.id === player.id;
+  const size = Math.min(COHESION.MAX_PULL, excess * COHESION.STRENGTH * (mutual ? 0.5 : 1));
+  return { partnerId: partner.id, gap, pull: Math.sign(partner.y - target.y) * size, mutual };
+}
+
 // ── Main exported function ─────────────────────────────────────────────────────
 
 export function computeDefensivePosition(
@@ -1259,6 +1313,8 @@ export function computeDefensivePosition(
   ballHolderId: number,
   playerDecision: string | undefined,
   markTargetId: number | undefined,
+  /** Ball point the shape anchor reads (the predicted ball, `BallPrediction.ts`); default the real ball. */
+  shapeBallPos: { x: number; y: number } = ballPos,
 ): { x: number; y: number } {
   const bounds   = defensiveBoundsOf(player);
   const cfg      = getDefenseConfig(player.team);
@@ -1273,7 +1329,7 @@ export function computeDefensivePosition(
 
   // Tackle path: keep shape anchor (tackle movement handled by gameState)
   if (playerDecision === 'tackle') {
-    const anchor = computeDefensiveShapeAnchor(player, ballPos, formation, cfg);
+    const anchor = computeDefensiveShapeAnchor(player, shapeBallPos, formation, cfg);
     return {
       x: Math.max(bounds.minX, Math.min(bounds.maxX, anchor.x)),
       y: Math.max(bounds.minY, Math.min(bounds.maxY, anchor.y)),
@@ -1283,7 +1339,7 @@ export function computeDefensivePosition(
   // Intent was already decided (and cached) in evaluateDefensiveDecision()
   // during the decision phase — we just read it here for positioning.
   const intent      = _intentCache[player.id] ?? 'hold_shape';
-  const shapeAnchor = computeDefensiveShapeAnchor(player, ballPos, formation, cfg);
+  const shapeAnchor = computeDefensiveShapeAnchor(player, shapeBallPos, formation, cfg);
 
   const ballHolder = allPlayers.find(p => p.id === ballHolderId) ?? null;
   const markTarget = markTargetId !== undefined
@@ -1306,6 +1362,13 @@ export function computeDefensivePosition(
     );
     rawX = intercept.x;
     rawY = intercept.y;
+  }
+
+  // Line cohesion: a zonal back-liner (holding shape or tracking a mark, never a man-marker) keeps
+  // his nearest line partner within MAX_GAP yards laterally.
+  if ((intent === 'hold_shape' || intent === 'track_mark') && player.manMarkTargetId === undefined) {
+    const c = lineCohesionPull(player, { x: rawX, y: rawY }, allPlayers);
+    if (c) rawY += c.pull;
   }
 
   // Soft bounds: active engagement intents (track_mark / step_into_carry_lane)

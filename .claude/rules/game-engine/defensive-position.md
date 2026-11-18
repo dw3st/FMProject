@@ -280,3 +280,27 @@ The tick a through / high / loose ball is collected, the chasers of the side tha
 
 `computeGKSemicirclePosition` saiu: o goleiro usa `keeperDefendingTarget` (`Domain/Keeper.ts`: arco, saída no 1 contra 1) e,
 com o próprio time com a bola, `keeperAttackingTarget`. Ver `.claude/rules/game-engine/keeper.md`.
+
+## Cohesão da linha e bola prevista (inspirado no FM)
+
+`Configs/CohesionConfig.ts` (`COHESION`), `Domain/BallPrediction.ts` (`predictBallPoint`), `lineCohesionPull` em `DefensivePositioning.ts`.
+
+- **Bola prevista:** a âncora da forma defensiva (deslocamento lateral do bloco, profundidade da linha, bloqueio do corredor) lê onde a bola vai estar daqui a `PREDICT_S` (0,4 s reais): a corrida do portador que conduz (`carry`: velocidade de condução), o voo do passe ou da bola alta, o rolar da bola solta (com a desaceleração), no máximo `PREDICT_MAX_YDS` (12) à frente. Chute no ar, portador parado ou sem portador: a bola real. Desarme, pressão, marcação e corredor de condução seguem a bola real. Calculada uma vez por tick em `gameState.ts` e passada a `computeTargetPosition` (`shapeBallPos`). A intenção defensiva (decisão) não muda.
+- **Cohesão:** um defensor da linha (CB, LB, RB, LWB, RWB) em `hold_shape` ou `track_mark` (nunca o marcador individual) cujo alvo fica a mais de `MAX_GAP` (14) jardas, de lado, do parceiro de linha mais perto (outro defensor a até `LINE_DEPTH` 10 jardas ao longo do campo) é puxado para ele pelo excesso × `STRENGTH` (1), pela metade quando os dois são o mais perto um do outro, no máximo `MAX_PULL` (4) jardas. Só lateral: nunca o leva para trás nem à frente da linha. Os limites da vaga (ou o campo, nas intenções de engajamento) continuam valendo.
+- **Por que não os 5 m do FM:** a linha do motor fica a 9–15 jardas entre parceiros (`bun scripts/line-gaps-probe.ts`: vão médio 11,8, 25% acima de 15). Com 5,5 todo par era puxado, o zagueiro ia para o lateral (o mais perto dele) e abria o meio: o buraco cresceu e os gols subiram 15%. Com a previsão em 0,6 s sozinha os gols caíram 8% (a linha recuava cedo demais a cada condução).
+- `/test`: overlay **Cohesion** (anel ciano = bola prevista, linha âmbar = par esticado e o puxão) e o cenário `defensive-cohesion`. `/lab`: nada novo (o buraco por tick custaria ~1000 contas por tick em toda partida). `COHESION_OVERRIDES` (JSON) nos workers de `ball-cluster.ts` e `ai-formation-goals.ts`; `SEED_RANDOM=1` no `ball-cluster.ts` semeia o `Math.random` por jogo (braços pareados).
+
+Medição (`SEED_RANDOM=1 bun scripts/ball-cluster.ts --leagues premier_league,of_championship --modes ai --engine 800 --offset 1000`, antes = `{"ENABLED":false}`; por jogo, os dois times; buraco = maior vão do lado do gol e células abertas, só com a bola dominada):
+
+| | Premier antes | depois | Championship antes | depois |
+|---|---|---|---|---|
+| Gols | 1,94 | 1,96 | 1,68 | 1,75 |
+| Chutes | 5,53 | 5,50 | 5,16 | 5,22 |
+| Passes | 51,8 | 49,6 | 47,5 | 46,2 |
+| Defensores a ≤ 8 jd da bola | 0,960 | 0,962 | 1,025 | 1,020 |
+| Buraco: maior vão (jd) | 38,34 | 38,30 | 38,91 | 38,84 |
+| Buraco: células abertas | 23,21 | 23,17 | 23,38 | 23,36 |
+
+As duas ligas somadas: gols +2,5%, chutes +0,3%. O buraco diminui pouco (o maior vão é quase sempre uma célula de canto perto da própria linha de fundo, que a linha não cobre), mas na mesma direção nas três amostras (400 jogos, 400 com outra configuração e 800). Variantes de 400 jogos, gols somados contra o antes: só a previsão 0,6 s −8%; só a cohesão 5,5 +15%; as duas (5,5 / 0,6) +5%; 14 / 0,6 +9%; 10 / 0,6 +4% (buraco maior); 14 / 0,4 +3% (escolhida).
+
+Sem semente (`bun scripts/ai-formation-goals.ts --engine 800 --modes ai --quick 0`, antes com `COHESION_OVERRIDES='{"ENABLED":false}'`): Premier 2,042 → 1,949 gols, 5,56 → 5,70 chutes; Championship 1,594 → 1,699, 5,16 → 5,29; somadas gols +0,3%, chutes +2,5%. Dentro de ±5%: quickSim não recalibrado. Matriz de formações não refeita.

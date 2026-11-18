@@ -7,6 +7,13 @@ import { formationForSimId } from "@/Domain/matchFormations";
 import { loadLeagueAt88, pairAt, type Mode } from "@/../scripts/ai-formation-goals-shared";
 import { emptyClusterTotals, type ClusterTotals } from "@/../scripts/ball-cluster-shared";
 import type { GameState, TeamId } from "@/GameEngine/types";
+import { COHESION } from "@/GameEngine/Configs/CohesionConfig";
+import { mulberry32 } from "@/Domain/rng";
+
+// Measurement switches: COHESION_OVERRIDES='{"ENABLED":false}' runs the engine before the line cohesion;
+// SEED_RANDOM=1 seeds Math.random per match (same seed in both arms → paired comparison).
+if (process.env.COHESION_OVERRIDES) Object.assign(COHESION, JSON.parse(process.env.COHESION_OVERRIDES));
+const seedRandom = process.env.SEED_RANDOM === "1";
 
 interface Input { league: string; mode: Mode; matches: number; offset: number }
 
@@ -64,6 +71,7 @@ self.onmessage = (e: MessageEvent<Input>) => {
   const t = emptyClusterTotals();
   for (let m = 0; m < matches; m++) {
     const { home, away, date } = pairAt(squads, offset + m);
+    if (seedRandom) Math.random = mulberry32(90_000 + offset + m);
     const fH = mode === "main" ? formationForSimId("4-3-3") : aiMatchFormation(home, away, date).formation;
     const fA = mode === "main" ? formationForSimId("4-3-3") : aiMatchFormation(away, home, date).formation;
     const r = simulateMatch(home, away, fH, fA,

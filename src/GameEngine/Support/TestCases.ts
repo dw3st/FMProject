@@ -465,6 +465,25 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'defensive-cohesion',
+    name:        'Defence — Line Cohesion and the Predicted Ball',
+    description: 'Team A carries down the right while the back four of team B is stretched (a 20-yd hole between the CBs). The block reads the ball 0.4 s ahead, and each back-liner more than 14 yd from his nearest line partner is pulled toward him (`CohesionConfig.ts`). Toggle "Cohesion": the cyan ring is the predicted ball, the amber lines the stretched pairs with the pull.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'RW',  62, 62, WINGER),     // carrier, running down the right
+        makePlayer('Santos',   'A', 'ST',  70, 36, STRIKER),
+        makePlayer('Reyes',    'A', 'CAM', 60, 42, MIDFIELDER),
+        makePlayer('Moreau',   'B', 'LB',  82, 62, DEFENDER),
+        makePlayer('Silva',    'B', 'CB',  84, 48, DEFENDER),
+        makePlayer('Okeke',    'B', 'CB',  84, 28, DEFENDER),
+        makePlayer('Diallo',   'B', 'RB',  82, 12, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 110, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'cross-to-box',
     name:        'Aerial — Cross to the Box',
     description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',

@@ -24,6 +24,7 @@ import { computeDefensivePosition } from '@/GameEngine/Domain/DefensivePositioni
  * @param playerDecision  Current decision type for this player — pressing defenders skip lane gravity.
  * @param offsideLine     Pre-computed offside line X for this player's team (null = not enough defenders).
  * @param markTargetId    Pre-assigned opponent id for marking (defending only, from 1:1 assignment).
+ * @param shapeBallPos    Ball point the defensive shape anchor reads (predicted ball); default `ballPos`.
  */
 export function computeTargetPosition(
   player: GamePlayer,
@@ -36,8 +37,9 @@ export function computeTargetPosition(
   offsideLine?: number | null,
   markTargetId?: number,
   possessionTime?: number,
+  shapeBallPos?: { x: number; y: number },
 ): { x: number; y: number } {
   return phase === 'defending'
-    ? computeDefensivePosition(player, ballPos, allPlayers, formation, ballHolderId ?? -1, playerDecision, markTargetId)
+    ? computeDefensivePosition(player, ballPos, allPlayers, formation, ballHolderId ?? -1, playerDecision, markTargetId, shapeBallPos ?? ballPos)
     : computeAttackingPosition(player, ballPos, allPlayers, formation, offsideLine ?? null, possessionTime ?? 0);
 }

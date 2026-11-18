@@ -56,7 +56,7 @@ import {
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute } from "@/GameEngine/Domain/gameState";
+import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute, getBallPos } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
@@ -101,7 +101,8 @@ import type { TeamId } from "@/GameEngine/types";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
-import { assignMarkTargets } from "@/GameEngine/Domain/DefensivePositioning";
+import { assignMarkTargets, lineCohesionPull } from "@/GameEngine/Domain/DefensivePositioning";
+import { predictBallPoint } from "@/GameEngine/Domain/BallPrediction";
 import {
   computeCrowdGrid,
   attackingTeam,
@@ -413,6 +414,8 @@ export interface DebugOverlays {
   keeper:                boolean;
   /** Player kinematics (`kinematics.md`): velocity vectors (0.6 s ahead) and a ring on a player losing speed to a sharp turn. */
   kinematics:            boolean;
+  /** Defensive cohesion (`CohesionConfig.ts`): the predicted ball the block reads, and back-line pairs stretched past MAX_GAP. */
+  cohesion:              boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -428,6 +431,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   instructions:          true,
   keeper:                false,
   kinematics:            false,
+  cohesion:              false,
 };
 
 interface Props {
@@ -4972,6 +4976,25 @@ export function PixiPitch({
                 // Ring grows with the speed lost to the turn (×0.9 → small, ×0.4 → large).
                 passLinesGfx.circle(sx, sy, (1 + 3 * (1 - k.turn)) * m.scale).stroke({ width: 2, color: 0xf97316, alpha: 0.9 });
               }
+            }
+          }
+          // ── Defensive cohesion — predicted ball + stretched back-line pairs ──
+          if (ovl.cohesion && ballHolder) {
+            const st = stateRef.current;
+            const real = getBallPos(st);
+            const pred = predictBallPoint(st, real);
+            const rp = toPixel(real.x, real.y), pp = toPixel(pred.x, pred.y);
+            passLinesGfx.moveTo(rp.px, rp.py).lineTo(pp.px, pp.py).stroke({ width: 1, color: 0x22d3ee, alpha: 0.6 });
+            passLinesGfx.circle(pp.px, pp.py, 5).stroke({ width: 2, color: 0x22d3ee, alpha: 0.9 });
+            for (const p of st.players) {
+              if (p.team === ballHolder.team) continue;
+              const c = lineCohesionPull(p, { x: p.x, y: p.y }, st.players);
+              if (!c) continue;
+              const mate = st.players.find(q => q.id === c.partnerId);
+              if (!mate) continue;
+              const a = toPixel(p.x, p.y), b = toPixel(mate.x, mate.y), t = toPixel(p.x, p.y + c.pull);
+              passLinesGfx.moveTo(a.px, a.py).lineTo(b.px, b.py).stroke({ width: 1, color: 0xfbbf24, alpha: 0.45 });
+              passLinesGfx.moveTo(a.px, a.py).lineTo(t.px, t.py).stroke({ width: 3, color: 0xfbbf24, alpha: 0.9 });
             }
           }
 

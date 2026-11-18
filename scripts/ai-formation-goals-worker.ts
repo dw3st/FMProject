@@ -4,9 +4,12 @@ import { aiMatchFormation, autoLineupForFormationWithFitness } from "@/Domain/ad
 import { formationForSimId } from "@/Domain/matchFormations";
 import { loadLeagueAt88, pairAt, type Mode, type GoalTotals } from "@/../scripts/ai-formation-goals-shared";
 import { KEEPER_CONFIG } from "@/GameEngine/Configs/KeeperConfig";
+import { COHESION } from "@/GameEngine/Configs/CohesionConfig";
 
 // Measurement switch: KEEPER_OVERRIDES='{"HIGH_REACH":10}' compares keeper settings without editing the config.
 if (process.env.KEEPER_OVERRIDES) Object.assign(KEEPER_CONFIG, JSON.parse(process.env.KEEPER_OVERRIDES));
+// COHESION_OVERRIDES='{"ENABLED":false}' runs the engine before the defensive line cohesion.
+if (process.env.COHESION_OVERRIDES) Object.assign(COHESION, JSON.parse(process.env.COHESION_OVERRIDES));
 
 interface Input { league: string; mode: Mode; matches: number; offset: number }
 
