@@ -36,6 +36,7 @@ export const changelog: ChangelogEntry[] = [
     items: [
       { tab: "scout", pt: "Olheiro: o filtro Aceitam empréstimo mostra quem vem pagando até 0, 25, 50, 75 ou 100% do salário, sem taxa.", en: "Scout: the Accept a loan filter shows who comes paying up to 0, 25, 50, 75 or 100% of the wage, with no fee." },
       { tab: "market", pt: "Empréstimo: um jogador bem abaixo da média do elenco sai pagando pouco ou nada do salário.", en: "Loans: a player well below the squad average goes for little or none of his wage." },
+      { tab: "formation", pt: "Assistente escala por fôlego: você escolhe abaixo de que fôlego ele poupa o titular, de 50% a 90%.", en: "Assistant fitness rotation: you pick below which fitness he rests a starter, from 50% to 90%." },
       { tab: "finances", pt: "Carreira nova: uma janela pede para escolher o patrocinador máster e o fornecedor de material, ou deixar o diretor escolher.", en: "New career: a window asks you to pick the main sponsor and the kit supplier, or let the director pick." },
     ],
     fixes: [

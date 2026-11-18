@@ -1054,7 +1054,9 @@
         "far_post": "Far post",
         "short": "Short"
       }
-    }
+    },
+    "rotationFitness": "Rest who is below",
+    "rotationFitnessHint": "Outfield starters with fitness below {{value}}% are swapped when a better-rested reserve is on the bench. The keeper only below 60%."
   },
   "formations": {
     "presets": {

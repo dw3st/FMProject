@@ -60,6 +60,7 @@ import {
   withoutUnregisteredStarters,
   buildSlotAlignedLineup,
   remapLineupToFormation,
+  ROTATION_FITNESS_OPTIONS,
 } from "@/Domain/lineupHelpers";
 import { isSuspended, isUnavailable } from "@/Domain/discipline/discipline";
 import { Icon } from "@/GameInterface/Icons";
@@ -196,6 +197,7 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<{ slot: CustomFormationSlot; playerId: string }[] | null>(null);
   const [assistantRotation, setAssistantRotation] = useState(false);
+  const [rotationFitness, setRotationFitness] = useState(75);
   const [updating, setUpdating] = useState(false);
   const [tacticsUpdating, setTacticsUpdating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -262,6 +264,7 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
         setCustomFormation(t.customFormation ?? null);
         setAxesOverride(t.axesOverride);
         setAssistantRotation(t.assistantRotation === true);
+        setRotationFitness(t.assistantRotationFitness ?? 75);
         setLineupPresets(t.lineupPresets ?? {});
         if (national) setNatCurrent({ formation: t.formation, tactical_style: t.tactical_style });
         else mergeSession({
@@ -626,6 +629,22 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
       if (!res.ok) setAssistantRotation(!next);
     } catch {
       setAssistantRotation(!next);
+    }
+  }
+
+  async function handleRotationFitness(next: number) {
+    if (!session) return;
+    const before = rotationFitness;
+    setRotationFitness(next);
+    try {
+      const res = await fetch(tacticsUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assistantRotationFitness: next }),
+      });
+      if (!res.ok) setRotationFitness(before);
+    } catch {
+      setRotationFitness(before);
     }
   }
 
@@ -1052,7 +1071,8 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
           />
 
           {/* Assistant rotation (club only) */}
-          {!national && <label className="card-arcade rounded-md p-5 flex items-center justify-between gap-4 cursor-pointer">
+          {!national && <div className="card-arcade rounded-md p-5 flex flex-col gap-4">
+          <label className="flex items-center justify-between gap-4 cursor-pointer">
             <span>
               <span className="block font-display font-bold text-sm uppercase tracking-[0.08em] text-primary">
                 {t("tactics.assistantRotation")}
@@ -1065,7 +1085,17 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
               checked={assistantRotation}
               onChange={(e) => handleAssistantRotation(e.target.checked)}
             />
-          </label>}
+          </label>
+          <div className="flex flex-col gap-2">
+            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("tactics.rotationFitness")}</span>
+            <OptionChips
+              options={ROTATION_FITNESS_OPTIONS.map((v) => ({ key: String(v), label: `${v}%` }))}
+              value={String(rotationFitness)}
+              onChange={(k) => void handleRotationFitness(Number(k))}
+            />
+            <span className="text-sm text-muted-foreground">{t("tactics.rotationFitnessHint", { value: rotationFitness })}</span>
+          </div>
+          </div>}
 
           {session && squad && <SetPieceTakersPanel saveId={session.saveId} players={squad.players} url={tacticsUrl} />}
 

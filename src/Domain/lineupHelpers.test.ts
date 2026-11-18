@@ -382,6 +382,12 @@ describe("suggestRotation", () => {
     expect(suggestRotation(stSlot, ["s"], [tired("s"), fresh("b")])).toEqual([{ out: "s", in: "b" }]);
   });
 
+  test("the manager's threshold decides who counts as tired", () => {
+    const s = makePlayer({ id: "s", name: "s", positions: ["ST"], seasonLog: makeSeasonLog({ fitness: 55 }) });
+    expect(suggestRotation(stSlot, ["s"], [s, fresh("b")], undefined, undefined, 50)).toEqual([]);
+    expect(suggestRotation(stSlot, ["s"], [s, fresh("b")], undefined, undefined, 60)).toEqual([{ out: "s", in: "b" }]);
+  });
+
   test("GK exempt above 60 and without a bench keeper at 85+", () => {
     const mid = makePlayer({ id: "g", name: "g", positions: ["GK"], seasonLog: makeSeasonLog({ fitness: 65 }) });
     expect(suggestRotation(gkSlot, ["g"], [mid, fresh("gb", "GK")])).toEqual([]);

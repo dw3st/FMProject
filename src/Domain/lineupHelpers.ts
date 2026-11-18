@@ -151,6 +151,8 @@ export function remapLineupToFormation(
 
 /** Fitness below this (0..100) makes a starter (from the plain `autoFillLineup`) a swap candidate. */
 const TIRED_FITNESS_THRESHOLD = 75;
+/** The fitness thresholds the manager can pick for the assistant (tester report 2026-11-18). */
+export const ROTATION_FITNESS_OPTIONS: readonly number[] = [50, 60, 65, 70, 75, 80, 85, 90];
 
 /**
  * A bench player must reach this fraction of the tired starter's fitness-adjusted value to take
@@ -253,6 +255,8 @@ export function suggestRotation(
   players: RosterPlayer[],
   date?: string,
   registered?: Set<string>,
+  /** Outfield threshold chosen by the manager (absent = 75); the keeper's never goes above his own (60). */
+  fitnessThreshold?: number,
 ): { out: string; in: string }[] {
   const pool = eligiblePool(players, date, registered);
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -268,7 +272,8 @@ export function suggestRotation(
     const role = slots[i]!.role;
     const isGK = role === "GK";
     const fitness = starter.seasonLog?.fitness ?? DEFAULT_FITNESS;
-    const tiredThreshold = isGK ? GK_TIRED_FITNESS_THRESHOLD : TIRED_FITNESS_THRESHOLD;
+    const outfield = fitnessThreshold ?? TIRED_FITNESS_THRESHOLD;
+    const tiredThreshold = isGK ? Math.min(GK_TIRED_FITNESS_THRESHOLD, outfield) : outfield;
     if (fitness >= tiredThreshold) continue;
 
     const roleMain = getMainRole(role);

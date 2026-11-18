@@ -407,3 +407,7 @@ Cada assento folga nos próprios `restDays`; um clube da IA folga na véspera e 
 ## Véspera dos jogos (8.7.21)
 
 Report de tester. `SeatState.matchEve` ("rest" padrão, "training"): chave no calendário da semana do Painel; `PATCH /api/saves/:id/match-eve { eve }` aplica `applyMatchEve` (`generateRestDays.ts`, com teste) às vésperas de todos os jogos futuros do clube (liga, copa, continental), sem mexer nos outros dias. Na virada, um assento com "training" recebe as folgas semeadas sem as vésperas.
+
+## Limiar do assistente (12.17)
+
+Report do usuário. `TacticsSave.assistantRotationFitness` (`ROTATION_FITNESS_OPTIONS`: 50, 60, 65, 70, 75, 80, 85, 90; ausente = 75; `PUT /tactics` recusa outro valor): abaixo desse fôlego um titular de linha entra na troca do assistente (`suggestRotation(..., fitnessThreshold)`, via `resolveUserLineup` no avanço do dia e no `match-setup`); o goleiro usa o menor entre 60 e esse valor. A razão de valor do reserva (`BENCH_SWAP_RATIO`) não muda, e a IA continua em 75. Tela: chips "Poupar quem estiver abaixo de" no cartão do assistente, na Formação.

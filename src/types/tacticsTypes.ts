@@ -241,6 +241,8 @@ export interface TacticsSave {
   lineup: string[];
   /** When true the assistant rests tired starters automatically (default false). */
   assistantRotation?: boolean;
+  /** Fitness below which the assistant rests an outfield starter (`ROTATION_FITNESS_OPTIONS`); absent = 75. */
+  assistantRotationFitness?: number;
   /** Set-piece takers (player ids); a missing duty = automatic (`set-pieces-play.md` §4). */
   setPieceTakers?: SetPieceTakersSave;
   /**

@@ -228,6 +228,7 @@ export async function matchSetupFor(
   }
   const resolved = resolveUserLineup(mySquad, resolvedMyFormation, myTactics.lineup ?? [], matchDate, {
     assistantRotation: myTactics.assistantRotation,
+    fitness: myTactics.assistantRotationFitness,
     override: save.rotationOverride,
   }, myReg);
   myTactics = { ...myTactics, lineup: resolved.lineup };

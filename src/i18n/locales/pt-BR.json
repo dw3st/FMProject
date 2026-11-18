@@ -1054,7 +1054,9 @@
         "far_post": "Segundo pau",
         "short": "Curto"
       }
-    }
+    },
+    "rotationFitness": "Poupar quem estiver abaixo de",
+    "rotationFitnessHint": "Titulares de linha com fôlego abaixo de {{value}}% entram na troca quando há um reserva melhor descansado. O goleiro só abaixo de 60%."
   },
   "formations": {
     "presets": {

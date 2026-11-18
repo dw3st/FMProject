@@ -69,7 +69,7 @@ export function resolveUserLineup(
   formation: Formation,
   savedLineup: string[],
   date?: string,
-  rotation?: { assistantRotation?: boolean; override?: RotationOverride | null },
+  rotation?: { assistantRotation?: boolean; fitness?: number; override?: RotationOverride | null },
   registration?: MatchRegistration,
 ): {
   lineup: string[];
@@ -113,7 +113,7 @@ export function resolveUserLineup(
     pool = new Set(poolPlayers.map((p) => p.id));
   }
 
-  const suggestions = suggestRotation(slots, fixed, poolPlayers, date);
+  const suggestions = suggestRotation(slots, fixed, poolPlayers, date, undefined, rotation?.fitness);
   const override = rotation?.override?.date === date ? rotation.override : null;
   let applied: { out: string; in: string }[] = [];
   let pending = suggestions;
@@ -272,7 +272,7 @@ export function computeMatchSimulationLineups(
     ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
     ...userInstructions(userFormation, t, matchMarking, date),
   };
-  const rot = { assistantRotation: t.assistantRotation, override: rotationOverride };
+  const rot = { assistantRotation: t.assistantRotation, fitness: t.assistantRotationFitness, override: rotationOverride };
 
   if (fixture.home === playerSquadId) {
     const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date, rot, registration?.home);
@@ -399,7 +399,7 @@ export function computeSeatedMatchLineups(
       ...userInstructions(formation, t, side.matchMarking, date),
     };
     const user = resolveUserLineup(
-      squad, formation, t.lineup ?? [], date, { assistantRotation: t.assistantRotation, override: side.rotationOverride }, reg,
+      squad, formation, t.lineup ?? [], date, { assistantRotation: t.assistantRotation, fitness: t.assistantRotationFitness, override: side.rotationOverride }, reg,
     );
     return { formation, tactics, user };
   };

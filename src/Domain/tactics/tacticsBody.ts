@@ -9,6 +9,7 @@ import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
 import { lastLineupKey } from "@/Domain/tactics/lastLineups";
+import { ROTATION_FITNESS_OPTIONS } from "@/Domain/lineupHelpers";
 import type { Formation } from "@/GameEngine/types";
 import type { TacticsSave } from "@/types/tacticsTypes";
 
@@ -35,6 +36,11 @@ export function mergeTacticsBody(existing: TacticsSave, body: Partial<TacticsSav
     const parsed = parseSetPieceTakers(body.setPieceTakers);
     if (!parsed) return { ok: false, error: "invalid set-piece takers" };
     setPieceTakers = Object.keys(parsed).length ? parsed : undefined;
+  }
+  let rotationFitness = existing.assistantRotationFitness;
+  if (body.assistantRotationFitness !== undefined) {
+    if (!ROTATION_FITNESS_OPTIONS.includes(body.assistantRotationFitness)) return { ok: false, error: "invalid rotation fitness" };
+    rotationFitness = body.assistantRotationFitness;
   }
   const formationId = body.formation ?? existing.formation;
   if (formationId === CUSTOM_FORMATION_ID && !customFormation) {
@@ -69,6 +75,7 @@ export function mergeTacticsBody(existing: TacticsSave, body: Partial<TacticsSav
     tactical_style: body.tactical_style ?? existing.tactical_style,
     lineup,
     assistantRotation: body.assistantRotation ?? existing.assistantRotation ?? false,
+    ...(rotationFitness !== undefined ? { assistantRotationFitness: rotationFitness } : {}),
     ...(customFormation ? { customFormation } : {}),
     ...(axesOverride ? { axesOverride } : {}),
     ...(setPieceTakers ? { setPieceTakers } : {}),
