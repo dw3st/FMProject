@@ -14,6 +14,7 @@ import type { RosterPlayer } from "@/types/playerTypes";
 import type { YouthFocus, YouthTrainingPlan } from "@/types/youthTrainingTypes";
 import type { TrainingIntensity } from "@/types/developmentTypes";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { Chip } from "@/GameInterface/ui/Chip";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TickBox } from "@/GameInterface/ui/TickBox";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
@@ -40,6 +41,8 @@ interface YouthData {
   coach?: boolean;
   /** The youth coach card (null: no youth coach at the club). */
   coachCard?: YouthCoachCardData | null;
+  /** The automatic release rule (null: off). */
+  autoRelease?: { by: "level" | "potential"; below: number } | null;
 }
 
 const FOCI: YouthFocus[] = ["balanced", "technical", "physical", "passing", "shooting", "defending", "goalkeeping", "setPieces"];
@@ -55,6 +58,10 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
   const [confirmRelease, setConfirmRelease] = useState<string | null>(null);
   /** Release by a criterion: the top of the potential range, on the 0-10 scale the table shows. */
   const [minPotential, setMinPotential] = useState("7.0");
+  /** What the release rule looks at: the top of the potential range, or the current level. */
+  const [releaseBy, setReleaseBy] = useState<"potential" | "level">("potential");
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [autoReleasedNames, setAutoReleasedNames] = useState<string[]>([]);
   const [confirmMany, setConfirmMany] = useState(false);
   /** Players ticked for a release together (report 2026-11-16). */
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -90,6 +97,27 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
     } finally {
       setBusy(null);
       setConfirmRelease(null);
+    }
+  }
+
+  /** Turns the automatic rule on (with the current criterion) or off; who is below it leaves now. */
+  async function setAutoRelease(on: boolean, by: "potential" | "level", below: number) {
+    if (!saveId) return;
+    setAutoBusy(true);
+    setConfirmMany(false);
+    try {
+      const res = await fetch(`/api/saves/${saveId}/youth/auto-release`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rule: on ? { by, below } : null }),
+      });
+      if (!res.ok) { setError(t("youth.actionFailed")); return; }
+      const body = (await res.json()) as YouthData & { released: string[] };
+      setData(body);
+      setAutoReleasedNames(body.released);
+      if (body.released.length > 0) void refresh();
+    } finally {
+      setAutoBusy(false);
     }
   }
 
@@ -174,7 +202,10 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
 
   const full = data.squadSize >= data.squadLimit;
   const cut = Number(minPotential.replace(",", "."));
-  const below = Number.isFinite(cut) ? data.youth.filter((r) => r.potential.high < cut) : [];
+  const valueOf = (r: YouthRow) => Math.round((releaseBy === "level" ? r.overall : r.potential.high) * 10) / 10;
+  const validCut = Number.isFinite(cut) && cut >= 0 && cut <= 10;
+  const below = validCut ? data.youth.filter((r) => !r.player.reborn && !isCreatedPlayer(r.player.id) && valueOf(r) < cut) : [];
+  const auto = data.autoRelease ?? null;
   const inAcademy = new Set(data.youth.map((r) => r.player.id));
   const pickedIds = [...picked].filter((id) => inAcademy.has(id));
   const toggle = (id: string, on: boolean) => {
@@ -400,9 +431,15 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
           </div>
           {notFit.length > 0 && <Notice kind="warning">{t("youth.pick.notFit", { count: notFit.length, names: notFit.join(", ") })}</Notice>}
           <DataTable columns={columns} rows={data.youth} rowKey={(r) => r.player.id} />
-          <section className="flex flex-col gap-2">
-            <label htmlFor="youth-min-potential" className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.bulk.label")}</label>
+          <section className="flex flex-col gap-3">
+            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("youth.bulk.label")}</span>
             <div className="flex flex-wrap items-center gap-3">
+              <OptionChips
+                options={[{ key: "potential", label: t("youth.bulk.byPotential") }, { key: "level", label: t("youth.bulk.byLevel") }]}
+                value={releaseBy}
+                onChange={(k) => { setReleaseBy(k as "potential" | "level"); setConfirmMany(false); }}
+              />
+              <label htmlFor="youth-min-potential" className="text-sm text-muted-foreground">{t("youth.bulk.below")}</label>
               <input
                 id="youth-min-potential"
                 inputMode="decimal"
@@ -422,6 +459,23 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
               )}
             </div>
             {below.length > 0 && <p className="text-sm text-muted-foreground m-0">{below.map((r) => r.player.name).join(", ")}</p>}
+            <div className="flex flex-wrap items-center gap-3">
+              <Chip
+                selected={auto !== null}
+                disabled={autoBusy || (auto === null && !validCut)}
+                onClick={() => void setAutoRelease(auto === null, releaseBy, Math.round(cut * 10) / 10)}
+              >
+                {t("youth.bulk.auto")}
+              </Chip>
+              <span className="text-sm text-muted-foreground">
+                {auto
+                  ? t(auto.by === "level" ? "youth.bulk.autoOnLevel" : "youth.bulk.autoOnPotential", { value: auto.below.toFixed(1) })
+                  : t("youth.bulk.autoHint")}
+              </span>
+            </div>
+            {autoReleasedNames.length > 0 && (
+              <Notice kind="info">{t("youth.bulk.autoReleased", { count: autoReleasedNames.length, names: autoReleasedNames.join(", ") })}</Notice>
+            )}
           </section>
         </>
       )}

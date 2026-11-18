@@ -3049,9 +3049,18 @@
     "release": "Dispensar",
     "confirmRelease": "Confirmar dispensa",
     "bulk": {
-      "label": "Dispensar quem tem potencial máximo abaixo de",
+      "label": "Dispensar jogadores da base",
       "release_one": "Dispensar {{count}} jogador",
-      "release_other": "Dispensar {{count}} jogadores"
+      "release_other": "Dispensar {{count}} jogadores",
+      "byPotential": "Potencial máximo",
+      "byLevel": "Nível atual",
+      "below": "abaixo de",
+      "auto": "Dispensar automaticamente",
+      "autoHint": "Com a regra ligada, quem ficar abaixo dela sai agora e a cada virada de temporada.",
+      "autoOnPotential": "Ligado: sai quem tem potencial máximo abaixo de {{value}}, agora e a cada virada de temporada.",
+      "autoOnLevel": "Ligado: sai quem tem nível abaixo de {{value}}, agora e a cada virada de temporada.",
+      "autoReleased_one": "{{count}} jogador dispensado pela regra: {{names}}.",
+      "autoReleased_other": "{{count}} jogadores dispensados pela regra: {{names}}."
     },
     "cancel": "Cancelar",
     "pick": {
@@ -7983,7 +7992,8 @@
       },
       "promotion": "Subir de divisão",
       "followers_growth": "Seguidores crescerem {{pct}}%",
-      "attendance": "Público médio de {{avg}}"
+      "attendance": "Público médio de {{avg}}",
+      "league_title": "Ser campeão da liga"
     },
     "progress": {
       "met": "dentro da meta",

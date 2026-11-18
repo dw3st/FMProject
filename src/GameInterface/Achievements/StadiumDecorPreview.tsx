@@ -9,7 +9,7 @@ const H = 260;
 /** A home end stand on the left of a small pitch: the same geometry the match draws the decorations with. */
 const STAND = { outer: { x: 0, y: 0, w: W, h: H }, inner: { x: 112, y: 20, w: W - 112, h: H - 40 }, thickness: { top: 20, bottom: 20, left: 112, right: 0 } };
 const FAN_COLORS = ["#c9ced6", "#8a93a3", "#5b6474", "#d9c7a7"];
-const CREST_SIZE = 64;
+const CREST_SIZE = 128;
 
 const toHex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 

@@ -997,7 +997,7 @@ export function PixiPitch({
         crestTexture?.destroy(true);
         crestTexture = null;
         if (st.homeCrest && !st.neutral) {
-          void loadCrestCanvas(st.homeCrest, 64).then((canvas) => {
+          void loadCrestCanvas(st.homeCrest, 128).then((canvas) => {
             if (!canvas || bake !== crestBake || disposed) return;
             crestTexture = Texture.from(canvas);
             rebuildCrests();
@@ -1070,7 +1070,7 @@ export function PixiPitch({
           if (decor.mosaic && decor.owned?.includes("goalFlash")) goalFlashRect = standSideRects(stand).find((r) => r.side === homeSide) ?? null;
           // The crest mosaic reads the club crest's pixels (8.9.10): drawn again when it arrives.
           if (decor.mosaic && decor.pattern === "crest" && st.homeCrest) {
-            void loadCrestCanvas(st.homeCrest, 64).then((canvas) => {
+            void loadCrestCanvas(st.homeCrest, 128).then((canvas) => {
               if (!canvas || bake !== crestBake || disposed) return;
               const data = canvas.getContext("2d")?.getImageData(0, 0, canvas.width, canvas.height).data;
               if (data) drawHomeDecor({ size: canvas.width, data });

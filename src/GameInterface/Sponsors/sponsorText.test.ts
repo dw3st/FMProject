@@ -9,6 +9,7 @@ const t = (key: string, opts?: Record<string, unknown>) => (opts ? `${key} ${JSO
 describe("sponsor texts", () => {
   test("every goal in words", () => {
     expect(sponsorGoalText({ kind: "league_position", max: 4 }, t, "en")).toBe('sponsors.goal.league_position {"count":4,"ordinal":true}');
+    expect(sponsorGoalText({ kind: "league_position", max: 1 }, t, "en")).toBe("sponsors.goal.league_title");
     expect(sponsorGoalText({ kind: "continental" }, t, "en")).toBe("sponsors.goal.continental");
     expect(sponsorGoalText({ kind: "cup_stage", stage: "qf" }, t, "en")).toBe("sponsors.goal.cup_stage.qf");
     expect(sponsorGoalText({ kind: "promotion" }, t, "en")).toBe("sponsors.goal.promotion");

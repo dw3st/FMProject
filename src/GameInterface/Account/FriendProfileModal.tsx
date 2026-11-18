@@ -43,7 +43,7 @@ export function FriendProfileModal({ nickname, onClose }: { nickname: string | n
           <>
             <ProfileHeader view={view} />
             <ProfileStats view={view} />
-            <div className="grid items-start gap-6 lg:grid-cols-[1.15fr_1fr]">
+            <div className="grid items-start gap-6 lg:grid-cols-2">
               <TrophyCabinet view={view} />
               <AccountAchievements view={view} />
             </div>

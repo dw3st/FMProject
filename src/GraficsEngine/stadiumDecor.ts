@@ -17,10 +17,14 @@ export interface DecorRect { x: number; y: number; w: number; h: number; tone: "
 export interface CrestPixels { size: number; data: Uint8ClampedArray }
 
 /** Cells across the end stand; rows follow so the cells stay square. */
-const MOSAIC_COLS = 16;
+const BASE_COLS = 16;
 const MOSAIC_ALPHA = 0.85;
-/** The crest motif is CREST_CELLS × CREST_CELLS cells. */
-const CREST_CELLS = 14;
+/**
+ * The club crest is drawn twice as fine (report: the 14-cell crest looked blotchy): CREST_COLS across the stand,
+ * CREST_FINE_CELLS square, each cell the average colour of its block of crest pixels.
+ */
+const CREST_COLS = 32;
+const CREST_FINE_CELLS = 28;
 
 type Cell = "main" | "second" | "lift" | number;
 
@@ -28,13 +32,21 @@ type Cell = "main" | "second" | "lift" | number;
 function motif(pattern: MosaicPattern, crest: CrestPixels | null, titleStars = 0): Cell[][] {
   if (pattern === "crest" && crest) {
     const out: Cell[][] = [];
-    for (let r = 0; r < CREST_CELLS; r++) {
+    const n = CREST_FINE_CELLS;
+    for (let r = 0; r < n; r++) {
       const row: Cell[] = [];
-      for (let c = 0; c < CREST_CELLS; c++) {
-        const x = Math.min(crest.size - 1, Math.floor(((c + 0.5) / CREST_CELLS) * crest.size));
-        const y = Math.min(crest.size - 1, Math.floor(((r + 0.5) / CREST_CELLS) * crest.size));
-        const i = (y * crest.size + x) * 4;
-        row.push(crest.data[i + 3]! < 128 ? "main" : (crest.data[i]! << 16) | (crest.data[i + 1]! << 8) | crest.data[i + 2]!);
+      const y0 = Math.floor((r / n) * crest.size), y1 = Math.max(y0 + 1, Math.floor(((r + 1) / n) * crest.size));
+      for (let c = 0; c < n; c++) {
+        const x0 = Math.floor((c / n) * crest.size), x1 = Math.max(x0 + 1, Math.floor(((c + 1) / n) * crest.size));
+        let rs = 0, gs = 0, bs = 0, as = 0, count = 0;
+        for (let y = y0; y < Math.min(y1, crest.size); y++) {
+          for (let x = x0; x < Math.min(x1, crest.size); x++) {
+            const i = (y * crest.size + x) * 4, a = crest.data[i + 3]!;
+            rs += crest.data[i]! * a; gs += crest.data[i + 1]! * a; bs += crest.data[i + 2]! * a; as += a; count++;
+          }
+        }
+        if (count === 0 || as / count < 128) { row.push("main"); continue; }
+        row.push((Math.round(rs / as) << 16) | (Math.round(gs / as) << 8) | Math.round(bs / as));
       }
       out.push(row);
     }
@@ -46,6 +58,7 @@ function motif(pattern: MosaicPattern, crest: CrestPixels | null, titleStars = 0
 
 /** The mosaic cells of the end stand `r`. */
 export function mosaicCells(r: SideRect, decor: Pick<StadiumDecor, "pattern" | "titleStars">, crest: CrestPixels | null = null): DecorRect[] {
+  const MOSAIC_COLS = decor.pattern === "crest" && crest ? CREST_COLS : BASE_COLS;
   const cell = r.w / MOSAIC_COLS;
   const rows = Math.max(1, Math.round(r.h / cell));
   const ch = r.h / rows;

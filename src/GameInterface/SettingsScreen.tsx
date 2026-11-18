@@ -155,7 +155,7 @@ export function SettingsOverlay({ open, onClose, onExitToMenu }: SettingsOverlay
             }))}
           />
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-y-auto pr-1">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-y-auto rounded-md border border-border bg-card p-6 phone:p-4">
             <h2 className="font-display font-black uppercase text-xl leading-none m-0 phone:hidden">
               {t(`settings.sections.${section}`)}
             </h2>

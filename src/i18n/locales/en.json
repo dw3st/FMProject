@@ -3049,9 +3049,18 @@
     "release": "Release",
     "confirmRelease": "Confirm release",
     "bulk": {
-      "label": "Release whoever has a top potential below",
+      "label": "Release academy players",
       "release_one": "Release {{count}} player",
-      "release_other": "Release {{count}} players"
+      "release_other": "Release {{count}} players",
+      "byPotential": "Top potential",
+      "byLevel": "Current level",
+      "below": "below",
+      "auto": "Release automatically",
+      "autoHint": "With the rule on, whoever is below it leaves now and at every season rollover.",
+      "autoOnPotential": "On: players with top potential below {{value}} leave, now and at every season rollover.",
+      "autoOnLevel": "On: players with a level below {{value}} leave, now and at every season rollover.",
+      "autoReleased_one": "{{count}} player released by the rule: {{names}}.",
+      "autoReleased_other": "{{count}} players released by the rule: {{names}}."
     },
     "cancel": "Cancel",
     "pick": {
@@ -7989,7 +7998,8 @@
       },
       "promotion": "Win promotion",
       "followers_growth": "Followers growing {{pct}}%",
-      "attendance": "Average home crowd of {{avg}}"
+      "attendance": "Average home crowd of {{avg}}",
+      "league_title": "Win the league"
     },
     "progress": {
       "met": "inside the goal",

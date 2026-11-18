@@ -31,6 +31,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.16",
+    date: "2026-11-18",
+    items: [
+      { tab: "squad", pt: "Base: dispensar por nível ou por potencial e ligar a dispensa automática, que tira quem ficar abaixo agora e a cada virada de temporada.", en: "Academy: release by level or by potential, and turn on automatic release, which removes whoever is below it now and at every season rollover." },
+    ],
+    fixes: [
+      { tab: "general", pt: "Tela inicial: troféus e saves numa coluna, conquistas e carreiras na outra, alinhados.", en: "Start screen: trophies and saves in one column, achievements and careers in the other, aligned." },
+      { tab: "finances", pt: "Patrocínio: a meta de primeiro lugar aparece como ser campeão da liga.", en: "Sponsors: a first-place goal reads as winning the league." },
+      { tab: "general", pt: "Configurações: a seção aberta fica num cartão, com mais contraste.", en: "Settings: the open section sits on a card, with more contrast." },
+      { tab: "match", pt: "Mosaico do escudo na torcida com o dobro de detalhe.", en: "The crest mosaic in the crowd has twice the detail." },
+    ],
+  },
+  {
     version: "12.15",
     date: "2026-11-18",
     time: "11:56",

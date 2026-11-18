@@ -1,3 +1,4 @@
+import { autoReleased, parseAutoRelease } from "@/Domain/youth/autoRelease";
 import { recordPromotion } from "@/Domain/achievements/progress";
 import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
@@ -92,6 +93,7 @@ function youthView(squad: Squad, meta: Pick<SeatMeta, "responsibilities" | "yout
     // The youth coach looks after the academy's training (`youthCoach.ts`): the screen says so.
     coach: youthByCoach(meta?.responsibilities) && youthCoachOnDuty(squad),
     coachCard: coachCard(squad, meta),
+    autoRelease: squad.youthAutoRelease ?? null,
   };
 }
 
@@ -189,6 +191,35 @@ export const youthRoutes = {
   },
 
   /** `POST { ids }` - dismiss several academy players at once; they join the free-agent pool. 400 `invalidIds`. */
+  /**
+   * `PUT { rule: { by, below } | null }` - the academy's release rule (tester report 2026-11-18): saved, and who is
+   * below it leaves now; at every rollover the rule runs again. `{ released, ...youthView }`. 400 `invalidRule`.
+   */
+  "/api/saves/:saveId/youth/auto-release": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "PUT") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const body = (await req.json().catch(() => undefined)) as { rule?: unknown } | undefined;
+    const rule = parseAutoRelease(body?.rule);
+    if (rule === "invalid") return Response.json({ error: "invalidRule" }, { status: 400 });
+    return withSaveLock(saveId, async () => {
+      const found = await loadHumanSquad(saveId, auth.seatId);
+      if (!found) return Response.json({ error: "squad not found" }, { status: 404 });
+      const { squad, meta } = found;
+      const leaving = autoReleased(squad.youth ?? [], rule);
+      const ids = new Set(leaving.map((p) => p.id));
+      const { youthAutoRelease: _old, ...rest } = squad;
+      const next: Squad = { ...rest, ...(rule ? { youthAutoRelease: rule } : {}), youth: (squad.youth ?? []).filter((p) => !ids.has(p.id)) };
+      await saveService.saveSquad(saveId, found.ref.leagueSlug, found.ref.clubSlug, next);
+      if (leaving.length > 0) {
+        const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
+        await saveService.writeFreeAgents(saveId, [...(await saveService.getFreeAgents(saveId)), ...leaving.map((p) => toFreeAgent(p, date))]);
+      }
+      return Response.json({ released: leaving.map((p) => p.name), ...youthView(next, meta) });
+    });
+  },
+
   "/api/saves/:saveId/youth/release-many": async (req: Req) => {
     const saveId = req.params.saveId!;
     const auth = requireSeat(req, saveId);

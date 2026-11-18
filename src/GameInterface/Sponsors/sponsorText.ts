@@ -10,7 +10,8 @@ const pct = (fraction: number) => Math.round(fraction * 100);
 /** The goal in the player's words ("Finish 4th or better"). */
 export function sponsorGoalText(goal: SponsorGoal, t: T, lang: string): string {
   switch (goal.kind) {
-    case "league_position": return t("sponsors.goal.league_position", { count: goal.max, ordinal: true });
+    case "league_position":
+      return goal.max === 1 ? t("sponsors.goal.league_title") : t("sponsors.goal.league_position", { count: goal.max, ordinal: true });
     case "continental": return t("sponsors.goal.continental");
     case "cup_stage": return t(`sponsors.goal.cup_stage.${goal.stage}`);
     case "promotion": return t("sponsors.goal.promotion");

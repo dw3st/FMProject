@@ -38,6 +38,7 @@ import type { FreeAgent, LeagueData, LeagueTeam, LeagueZone, Squad, StandingRow 
 import { CONTRACT_CONFIG } from "@/Domain/contracts/contractConfig";
 import { processContractExpiries } from "@/Domain/contracts/expiry";
 import { processYouthRollover, setAcademyNameBook } from "@/Domain/youth/youth";
+import { autoReleased } from "@/Domain/youth/autoRelease";
 import { getStaffNameBook } from "@/backend/staffNameBook";
 import { buildWorldLevels, expireOffers, processRetirements, retireFreeAgents } from "@/Domain/retirement/retirement";
 import { overallAvg } from "@/Domain/playerRating";
@@ -2847,7 +2848,15 @@ export async function advanceOneDay(
         if (!nextEnd) continue;
         for (const sq of await saveService.getSquadsInLeague(saveId, slug)) {
           const ds = seatOf.get(sq.id);
-          const res = processYouthRollover({ saveId, squad: sq, year: state.year, nextSeasonEnd: nextEnd, isHuman: !!ds });
+          const rolled = processYouthRollover({ saveId, squad: sq, year: state.year, nextSeasonEnd: nextEnd, isHuman: !!ds });
+          // The manager's release rule: who is below it leaves with the ones who turned 19.
+          const ruled = ds ? autoReleased(rolled.squad.youth ?? [], rolled.squad.youthAutoRelease) : [];
+          const ruledIds = new Set(ruled.map((p) => p.id));
+          const res = ruled.length === 0 ? rolled : {
+            ...rolled,
+            squad: { ...rolled.squad, youth: (rolled.squad.youth ?? []).filter((p) => !ruledIds.has(p.id)) },
+            autoReleased: [...rolled.autoReleased, ...ruled],
+          };
           await saveService.saveSquadById(saveId, res.squad);
           if (!ds) continue;
           youthReleased = youthReleased.concat(res.autoReleased.map((p) => toFreeAgent(p, currentDate)));

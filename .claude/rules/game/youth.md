@@ -189,3 +189,7 @@ Report do usuário. A tabela da base tem uma caixa de marcar por jovem, "Selecio
 ## Promover e dispensar em lote (12.12)
 
 Report de tester. `POST /youth/promote-many { ids }` (até 50, a regra do promover sozinho, na ordem até o teto de 36; devolve `promoted` e `skipped`); a aba Base tem a barra de seleção (Promover N, Dispensar N, Selecionar todos).
+
+## Dispensa automática (12.16)
+
+Report de tester. `Squad.youthAutoRelease { by: "level" | "potential", below }` (só o clube humano, `src/Domain/youth/autoRelease.ts`, com teste): `PUT /api/saves/:id/youth/auto-release { rule | null }` grava a regra e manda aos livres, na hora, quem está abaixo (nível atual ou o topo do potencial, arredondados a uma casa como na tela); na virada do país do clube, depois da safra, a regra roda de novo e os dispensados entram na mesma mensagem `released`. Renascidos e jogadores criados nunca saem pela regra. Tela: aba Base, bloco "Dispensar jogadores da base" (critério em chips, valor, dispensar agora e o chip "Dispensar automaticamente"). 400 `invalidRule`.

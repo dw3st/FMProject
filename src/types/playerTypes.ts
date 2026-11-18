@@ -393,6 +393,8 @@ export interface Squad {
   youth?: RosterPlayer[];
   /** Academy training plan (human club only, `src/Domain/youth/youthTraining.ts`); absent = normal, balanced. */
   youthTraining?: import("@/types/youthTrainingTypes").YouthTrainingPlan;
+  /** Academy release rule of the human club (`@/Domain/youth/autoRelease`). */
+  youthAutoRelease?: import("@/Domain/youth/autoRelease").YouthAutoRelease;
   /** Development goals of academy players by id (human club only, `src/Domain/youth/youthGoals.ts`). */
   youthGoals?: Record<string, import("@/types/youthTrainingTypes").YouthGoal>;
   /** First-team individual training (human club only): focus and training position per player id. */

@@ -181,15 +181,14 @@ export function StartScreen() {
           <>
             <ProfileHeader view={profile} action={<div className="w-full sm:w-52">{newGameEl}</div>} />
             <ProfileStats view={profile} />
-            <div className="grid items-start gap-6 lg:grid-cols-[1.15fr_1fr]">
-              <TrophyCabinet view={profile} />
-              <AccountAchievements view={profile} onPickBadges={() => setPickingBadges(true)} />
-            </div>
           </>
         )}
         {!profile && <div className="w-full sm:w-52 self-end">{newGameEl}</div>}
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        {/* Two equal columns, each a stack: trophies and saves on the left, achievements and careers on the right. */}
+        <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-6">
+        {profile && <TrophyCabinet view={profile} />}
         <div className="min-w-0">
         {publicWorld && (
           <div className="mb-6 flex items-center gap-3 rounded-md border border-border bg-card py-3 pl-4">
@@ -344,10 +343,14 @@ export function StartScreen() {
           </ul>
         )}
         </div>
+        </div>
         {profile && (
-          <div className="min-w-0">
-            <SectionTitle className="mb-3"><TitleParts accent={t("account.allCareers.accent")}>{t("account.allCareers.main")}</TitleParts></SectionTitle>
-            <CareersTable view={profile} />
+          <div className="flex min-w-0 flex-col gap-6">
+            <AccountAchievements view={profile} onPickBadges={() => setPickingBadges(true)} />
+            <div className="min-w-0">
+              <SectionTitle className="mb-3"><TitleParts accent={t("account.allCareers.accent")}>{t("account.allCareers.main")}</TitleParts></SectionTitle>
+              <CareersTable view={profile} />
+            </div>
           </div>
         )}
         </div>
