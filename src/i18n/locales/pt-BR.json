@@ -2957,7 +2957,9 @@
       "titles": "Títulos",
       "player": "Jogador",
       "apps": "Jogos",
-      "assists": "Assistências"
+      "assists": "Assistências",
+      "record": "V-E-D",
+      "recordHint": "Vitórias, empates, derrotas"
     },
     "promoted": "Subiu",
     "relegated": "Caiu",
@@ -3016,7 +3018,31 @@
       "goals": "{{league}} · {{season}}",
       "player": "{{name}}",
       "position": "{{position}}º"
-    }
+    },
+    "managerLine": "Técnico:",
+    "pastManagersLine": "Técnicos anteriores: {{names}}",
+    "strip": {
+      "seasons": "Temporadas",
+      "titles": "Títulos",
+      "promotions": "Acessos",
+      "bestFinish": "Melhor campanha",
+      "leagueGoals": "Gols na liga",
+      "idols": "Ídolos"
+    },
+    "relegationsCount_one": "{{count}} rebaixamento",
+    "relegationsCount_other": "{{count}} rebaixamentos",
+    "trophyRoom": "Sala de troféus",
+    "nextIdol": "Próximo ídolo:",
+    "nextIdolGames": "{{apps}} de {{target}} jogos",
+    "noNextIdol": "Ninguém mais do elenco está perto ainda.",
+    "noLegendsYet": "Nenhum ídolo ainda. Um jogador do elenco vira ídolo com jogos pelo clube.",
+    "firstSeason": "Primeira temporada em andamento",
+    "firstSeasonHint": "A tabela aparece quando a temporada terminar.",
+    "topPlayers": "Artilheiros e mais jogos",
+    "noPlayersYet": "Ninguém completou uma temporada pelo clube ainda.",
+    "notSet": "Ainda sem marca",
+    "gamesCount_one": "{{count}} jogo",
+    "gamesCount_other": "{{count}} jogos"
   },
   "youth": {
     "training": {

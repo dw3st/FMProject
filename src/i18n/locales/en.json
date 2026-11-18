@@ -2957,7 +2957,9 @@
       "titles": "Titles",
       "player": "Player",
       "apps": "Apps",
-      "assists": "Assists"
+      "assists": "Assists",
+      "record": "W-D-L",
+      "recordHint": "Won, drawn, lost"
     },
     "promoted": "Promoted",
     "relegated": "Relegated",
@@ -3016,7 +3018,31 @@
       "goals": "{{league}} · {{season}}",
       "player": "{{name}}",
       "position": "#{{position}}"
-    }
+    },
+    "managerLine": "Manager:",
+    "pastManagersLine": "Former managers: {{names}}",
+    "strip": {
+      "seasons": "Seasons",
+      "titles": "Titles",
+      "promotions": "Promotions",
+      "bestFinish": "Best finish",
+      "leagueGoals": "League goals",
+      "idols": "Idols"
+    },
+    "relegationsCount_one": "{{count}} relegation",
+    "relegationsCount_other": "{{count}} relegations",
+    "trophyRoom": "Trophy room",
+    "nextIdol": "Next idol:",
+    "nextIdolGames": "{{apps}} of {{target}} games",
+    "noNextIdol": "Nobody else in the squad is close yet.",
+    "noLegendsYet": "No idol yet. A player of the squad becomes one with games at the club.",
+    "firstSeason": "First season in progress",
+    "firstSeasonHint": "The table fills in when the season ends.",
+    "topPlayers": "Top scorers and appearances",
+    "noPlayersYet": "Nobody has played a finished season for the club yet.",
+    "notSet": "Not set yet",
+    "gamesCount_one": "{{count}} game",
+    "gamesCount_other": "{{count}} games"
   },
   "youth": {
     "training": {
