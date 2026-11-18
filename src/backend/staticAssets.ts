@@ -211,6 +211,10 @@ export const GAME_ART_FILES: Record<string, string> = {
   "season/banner-title.webp": "image/webp",
   "season/banner-good.webp": "image/webp",
   "season/banner-bad.webp": "image/webp",
+  // Sacking screen (12.20.1): three painted scenes, one drawn per sacking (data_process/assets/fired_mock.py).
+  "fired/fired-office.webp": "image/webp",
+  "fired/fired-press.webp": "image/webp",
+  "fired/fired-tunnel.webp": "image/webp",
   "formation/pitch-board.webp": "image/webp",
   // Match sounds (leva 3), made with Stable Audio Open on the local ComfyUI (data_process/assets/audio); the ball strike
   // is a real recording (Freesound 555042, bittermelonheart, CC0). Cached forever: a changed sound gets a new file name.

@@ -5,6 +5,8 @@ import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { competitionName } from "@/Domain/world/labels";
 import { daysBetween } from "@/Domain/dates";
 import type { LeagueData } from "@/types/playerTypes";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
+import { firedSceneFile } from "@/Domain/jobs/firedScene";
 
 /**
  * The news of the sacking (`.claude/rules/game/board-fans.md`, `.claude/rules/game/jobs.md`): the
@@ -44,12 +46,20 @@ export function FiredScreen() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="relative z-10 max-w-2xl w-full">
-        <div className="card-arcade rounded-md border-2 border-destructive/50 p-8 text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center border border-destructive">
-              <Icon name="xcircle" size={32} className="text-destructive" />
+        <div className="card-arcade rounded-md border-2 border-destructive/50 p-8 text-center space-y-6 overflow-hidden">
+          {newVisualOn() ? (
+            // A painted scene of the departure, one drawn per sacking (user request 2026-11-18), fading into the card.
+            <div className="relative -mx-8 -mt-8 h-56 md:h-64">
+              <img src={gameArtUrl(firedSceneFile(ended.date, ended.clubName))} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card" />
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center border border-destructive">
+                <Icon name="xcircle" size={32} className="text-destructive" />
+              </div>
+            </div>
+          )}
 
           <div>
             <h1 className="font-display font-black uppercase tracking-tight text-3xl md:text-4xl leading-none m-0 text-destructive">
