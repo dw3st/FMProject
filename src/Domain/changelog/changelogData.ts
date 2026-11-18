@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.19.2",
+    date: "2026-11-18",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Substituições: cada reserva mostra o OVR, como ele joga na posição do titular escolhido, a nota da temporada e o fôlego.", en: "Substitutions: each substitute shows his OVR, how he fits the picked starter's position, his season rating and his energy." },
+      { tab: "staff", pt: "Comissão: a lista de livres sempre tem profissionais de meia e de 1 estrela, com salário que um clube pequeno consegue pagar.", en: "Staff: the free list always has half-star and one-star professionals, at wages a small club can pay." },
+    ],
+  },
+  {
     version: "12.19.1",
     date: "2026-11-18",
     time: "14:49",
