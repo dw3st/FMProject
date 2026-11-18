@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.18",
     date: "2026-11-18",
+    time: "13:12",
     items: [
       { tab: "formation", pt: "Táticas da sua conta: guarde uma escalação salva na conta com o botão de nuvem e use em qualquer save, sem copiar código.", en: "Tactics in your account: keep a saved line-up in your account with the cloud button and use it in any save, no code to copy." },
     ],
