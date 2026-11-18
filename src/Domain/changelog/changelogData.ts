@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.21",
     date: "2026-11-18",
-    time: "23:00",
+    time: "19:20",
     items: [
       { tab: "staff", pt: "A Equipe técnica foi reorganizada: cada função com seu ícone, quantas vagas estão ocupadas e as vagas livres à vista.", en: "The coaching staff screen is reorganised: each role with its icon, how many places are taken and the free places in sight." },
       { tab: "staff", pt: "Com a função cheia, peça uma vaga a mais à diretoria. Ela aprova com a confiança em 60 ou mais e o caixa positivo, até 2 vagas extras por função.", en: "With a role full, ask the board for one more place. It agrees with its confidence at 60 or more and a positive balance, up to 2 extra places per role." },
