@@ -338,6 +338,8 @@ export function MatchScreen() {
   /** Possession heat map, filled on every emitted state (drawing only). */
   const heatmapRef = useRef<HeatmapAcc | null>(createPossessionHeatmap());
   const [showSubPanel, setShowSubPanel] = useState(false);
+  // The two-manager match: the pause the panel itself asked for (resumed when it closes).
+  const subsPauseRef = useRef(false);
   /** Whether closing the substitution panel resumes play: only when the panel paused a running match. */
   const panelPauseRef = useRef<PanelPause>(NO_PANEL_PAUSE);
   const showSubPanelRef = useRef(false);
@@ -1564,7 +1566,10 @@ export function MatchScreen() {
 
   function handleOpenSubPanel() {
     if (h2hMode) {
-      // The match keeps going (a pause is the pause button's, counted).
+      // Opening the panel uses one of the counted pauses when one is left (report: managers expected it to pause, as
+      // in the solo match); closing it resumes that pause. With none left the match keeps going.
+      subsPauseRef.current = !h2h.pause && myPausesLeft > 0 && isLivePhase(gameState?.matchPhase ?? "preMatch");
+      if (subsPauseRef.current) h2h.requestPause();
       showSubPanelRef.current = true;
       setShowSubPanel(true);
       return;
@@ -1578,6 +1583,8 @@ export function MatchScreen() {
   // A match the user paused by hand (e.g. at a goal) stays paused when the panel closes (tester report).
   function handleCloseSubPanel() {
     if (h2hMode) {
+      if (subsPauseRef.current && h2h.pause?.by === mySide) h2h.resume();
+      subsPauseRef.current = false;
       showSubPanelRef.current = false;
       setShowSubPanel(false);
       return;
@@ -2119,8 +2126,8 @@ export function MatchScreen() {
                     active={String(myH2HSpeed)}
                     onChange={(k) => h2h.setSpeed(Number(k) as H2HSpeed)}
                   />
-                  {/* The friend's choice, always (tester report 1d681768): the match runs at the lower of the two. */}
-                  <span className={`text-sm whitespace-nowrap tabular-nums phone:hidden ${h2hSpeed !== myH2HSpeed ? "text-chart-4" : "text-muted-foreground"}`}>
+                  {/* The friend's choice, always (tester report 1d681768), in red (report 78da65cb): the match runs at the lower of the two. */}
+                  <span className={`text-sm whitespace-nowrap tabular-nums font-semibold phone:hidden text-destructive`}>
                     {t("h2h.speed.waiting", { name: sideName(otherH2HSide), speed: h2h.room?.sides[otherH2HSide].speed ?? 1 })}
                   </span>
                 </span>

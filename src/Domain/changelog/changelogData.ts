@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.19.1",
+    date: "2026-11-18",
+    time: "14:49",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "No jogo entre técnicos, abrir as Substituições usa uma das 3 pausas e fechar retoma o jogo.", en: "In a match between managers, opening Subs uses one of the 3 pauses and closing it resumes the match." },
+      { tab: "match", pt: "No jogo entre técnicos, a velocidade escolhida pelo outro técnico aparece em vermelho.", en: "In a match between managers, the other manager's chosen speed shows in red." },
+      { tab: "development", pt: "Desenvolvimento: as colunas foram reorganizadas e terminam na mesma altura, sem o vazio no meio.", en: "Development: the columns were rearranged and end at the same height, with no empty gap in the middle." },
+      { tab: "squad", pt: "Elenco: os botões da coluna Ação ficam sempre no mesmo lugar; o que não vale para o jogador aparece apagado, com o motivo.", en: "Squad: the Action column buttons always sit in the same place; what does not apply to a player shows dimmed, with the reason." },
+    ],
+  },
+  {
     version: "12.19",
     date: "2026-11-18",
     time: "14:32",

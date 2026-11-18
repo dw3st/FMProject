@@ -2791,7 +2791,13 @@
       "suspendedMatches_one": "Suspenso para o próximo jogo",
       "suspendedMatches_other": "Suspenso pelos próximos {{count}} jogos",
       "nationalDuty": "Na seleção",
-      "needsRhythm": "Precisa de ritmo: fôlego {{fitness}}"
+      "needsRhythm": "Precisa de ritmo: fôlego {{fitness}}",
+      "unavailable": {
+        "loanedIn": "Emprestado de outro clube",
+        "tooOld": "Sem idade para um novo contrato",
+        "cooldown": "Renovado há pouco",
+        "notDue": "Contrato ainda longe do fim"
+      }
     },
     "home": {
       "nextMatch": "Próximo jogo",
