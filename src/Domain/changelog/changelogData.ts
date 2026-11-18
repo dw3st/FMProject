@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.20.3",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "scout", pt: "Olheiro: a nota em faixa e o interesse do jogador não quebram mais em duas linhas.", en: "Scouting: the rating range and the player's interest no longer wrap onto two lines." },
+    ],
+  },
+  {
     version: "12.20.2",
     date: "2026-11-18",
     time: "18:52",
