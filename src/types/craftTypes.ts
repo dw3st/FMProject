@@ -20,6 +20,8 @@ export interface CraftJob {
   qty: number;
   /** Share (0..1) of the materials that came from the good supplier. */
   goodShare: number;
+  /** Good-supplier units taken per material (for refunds). */
+  goodTaken: MaterialCounts;
   /** Bench days the order takes (fixed when it is queued). */
   days: number;
   startedOn?: string;

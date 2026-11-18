@@ -6,7 +6,7 @@ import { clamp } from "@/Domain/math";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { ClubCraft, ComponentCounts, ComponentId, CraftJob, CraftQuality, MaterialCounts, MaterialId } from "@/types/craftTypes";
 
-export interface WorkshopCtx { saveId: string; foremanStars: number; foremanSpeed: number }
+export interface WorkshopCtx { saveId: string; clubId?: string; foremanStars: number; foremanSpeed: number }
 
 export const newCraft = (): ClubCraft => ({ workshop: 1, stock: emptyStock(), queue: [], nextId: 1 });
 export const benchCount = (level: number): number => 1 + clamp(level, 1, CRAFT.MAX_LEVEL);
@@ -31,7 +31,7 @@ export function enqueue(c: ClubCraft, req: { component: ComponentId; qty: number
   const taken = takeMaterials(c.stock, materialsFor(req.component, req.qty));
   if (!taken) return { error: "missingMaterials" };
   const job: CraftJob = {
-    id: `job_${c.nextId}`, component: req.component, qty: req.qty, goodShare: taken.goodShare,
+    id: `job_${c.nextId}`, component: req.component, qty: req.qty, goodShare: taken.goodShare, goodTaken: taken.good,
     days: jobDays(req.component, req.qty, c.workshop, ctx.foremanSpeed),
   };
   return { craft: { ...c, stock: taken.stock, queue: [...c.queue, job], nextId: c.nextId + 1 } };
@@ -53,12 +53,11 @@ export function cancelJob(c: ClubCraft, id: string): ClubCraft | null {
   const share = job.startedOn ? CRAFT.CANCEL_RETURN : 1;
   const back: MaterialCounts = {};
   for (const [m, n] of Object.entries(materialsFor(job.component, job.qty)) as [MaterialId, number][]) back[m] = Math.floor(n * share);
-  const good = Math.round(job.goodShare * 1000) / 1000;
   let stock = c.stock;
   const goodPart: MaterialCounts = {};
   const stdPart: MaterialCounts = {};
   for (const [m, n] of Object.entries(back) as [MaterialId, number][]) {
-    goodPart[m] = Math.round(n * good);
+    goodPart[m] = Math.min(n, Math.floor((job.goodTaken[m] ?? 0) * share));
     stdPart[m] = n - goodPart[m]!;
   }
   stock = addMaterials(addMaterials(stock, "standard", stdPart), "good", goodPart);
@@ -82,7 +81,7 @@ export function advanceQueue(c: ClubCraft, date: string, ctx: WorkshopCtx): { cr
   for (const job of c.queue) {
     if (job.doneOn && job.doneOn <= date) {
       const q = { common: 0, good: 0, excellent: 0 };
-      for (let u = 0; u < job.qty; u++) q[rollQuality(`craft:${ctx.saveId}:${job.id}:${u}`, job.goodShare, { foremanStars: ctx.foremanStars, level: c.workshop })]++;
+      for (let u = 0; u < job.qty; u++) q[rollQuality(`craft:${ctx.saveId}:${ctx.clubId ? ctx.clubId + ":" : ""}${job.id}:${u}`, job.goodShare, { foremanStars: ctx.foremanStars, level: c.workshop })]++;
       stock = addComponents(stock, job.component, q);
       done[job.component] = (done[job.component] ?? 0) + job.qty;
     } else left.push(job);

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { addMaterials } from "@/Domain/craft/stock";
 import { advanceQueue, benchCount, cancelJob, enqueue, jobDays, moveJob, newCraft, rollQuality } from "@/Domain/craft/workshop";
 
-const ctx = { saveId: "s1", foremanStars: 3, foremanSpeed: 1 };
+const ctx = { saveId: "s1", clubId: "c1", foremanStars: 3, foremanSpeed: 1 };
 function withSteel(n: number) {
   const c = newCraft();
   return { ...c, stock: addMaterials(addMaterials(c.stock, "standard", { steel: n * 3 }), "standard", { concrete: n }) };
@@ -48,6 +48,19 @@ describe("workshop", () => {
     const cancelled = cancelJob(c, a!.id)!;
     expect(cancelled.queue).toHaveLength(1);
     expect(cancelled.stock.materials.steel.standard).toBe(15);
+  });
+  test("cancel returns exactly the good units taken", () => {
+    let s = addMaterials(newCraft().stock, "good", { steel: 2 });
+    s = addMaterials(s, "standard", { steel: 1, concrete: 1 });
+    const r = enqueue({ ...newCraft(), stock: s }, { component: "beam", qty: 1 }, ctx);
+    if ("error" in r) throw new Error(r.error);
+    const back = cancelJob(r.craft, r.craft.queue[0]!.id)!;
+    expect(back.stock.materials.steel).toEqual({ standard: 1, good: 2 });
+    expect(back.stock.materials.concrete).toEqual({ standard: 1, good: 0 });
+    const started = advanceQueue(r.craft, "2027-03-01", ctx).craft;
+    const half = cancelJob(started, started.queue[0]!.id)!;
+    expect(half.stock.materials.steel.good).toBeLessThanOrEqual(2);
+    expect(half.stock.materials.steel.good + half.stock.materials.steel.standard).toBe(1);
   });
   test("quality draw is deterministic and gets better with the foreman", () => {
     const q1 = rollQuality(`s1:j1`, 0, { foremanStars: 3, level: 1 });

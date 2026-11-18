@@ -19,9 +19,10 @@ export function addMaterials(s: CraftStock, supplier: Supplier, add: MaterialCou
 }
 
 /** Takes the materials (standard first); null when short. `goodShare` = good units / all units taken. */
-export function takeMaterials(s: CraftStock, need: MaterialCounts): { stock: CraftStock; goodShare: number } | null {
+export function takeMaterials(s: CraftStock, need: MaterialCounts): { stock: CraftStock; goodShare: number; good: MaterialCounts } | null {
   const materials = { ...s.materials };
   let good = 0;
+  const goodBy: MaterialCounts = {};
   let all = 0;
   for (const [m, n] of Object.entries(need) as [keyof MaterialCounts, number][]) {
     if (!n) continue;
@@ -30,9 +31,10 @@ export function takeMaterials(s: CraftStock, need: MaterialCounts): { stock: Cra
     const fromStd = Math.min(have.standard, n);
     materials[m] = { standard: have.standard - fromStd, good: have.good - (n - fromStd) };
     good += n - fromStd;
+    if (n - fromStd > 0) goodBy[m] = n - fromStd;
     all += n;
   }
-  return { stock: { ...s, materials }, goodShare: all > 0 ? good / all : 0 };
+  return { stock: { ...s, materials }, goodShare: all > 0 ? good / all : 0, good: goodBy };
 }
 
 export function addComponents(s: CraftStock, id: ComponentId, add: Partial<Record<CraftQuality, number>>): CraftStock {
