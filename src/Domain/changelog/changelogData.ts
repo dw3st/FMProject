@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.20",
     date: "2026-11-18",
-    time: "18:00",
+    time: "17:33",
     items: [
       { tab: "club", pt: "Oficina do clube: as obras agora são montadas com componentes que você fabrica com materiais comprados na loja.", en: "Club workshop: works are now built with components you make from materials bought in the shop." },
       { tab: "club", pt: "A diretoria manda materiais todo mês, e com a diretoria contente a loja dá desconto.", en: "The board sends materials every month, and a happy board gets you a shop discount." },
