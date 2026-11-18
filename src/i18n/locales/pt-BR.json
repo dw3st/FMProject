@@ -3923,16 +3923,17 @@
       "title": "Rescindir com {{name}}?",
       "body": "Faltam {{weeks}} semanas de contrato ({{wages}} em salários). Pela importância dele no elenco, a multa é {{share}}% disso: {{fee}}. Ele sai livre na hora.",
       "bodyCapped": "Faltam {{weeks}} semanas de contrato ({{wages}} em salários). A multa fica no teto de metade do valor de mercado: {{fee}}. Ele sai livre na hora.",
-      "blocked": "Não dá para rescindir: a posição dele ficaria abaixo do mínimo do elenco.",
+      "blocked": "Não dá para rescindir: o elenco ficaria com 14 jogadores ou menos.",
       "confirm": "Rescindir",
       "errors": {
         "generic": "Não foi possível rescindir.",
         "onLoan": "Jogador emprestado não pode ser rescindido.",
         "noContract": "Ele não tem contrato em andamento.",
-        "squadDepth": "A posição dele ficaria abaixo do mínimo do elenco.",
+        "squadDepth": "O elenco ficaria com 14 jogadores ou menos.",
         "noClub": "Você está sem clube.",
         "lobby": "A liga ainda não começou."
-      }
+      },
+      "rowHint": "Dispensar o jogador (paga uma multa e ele sai livre)"
     },
     "renew": "Renovar",
     "renewTitle": "Renovar contrato",

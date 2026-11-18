@@ -15,7 +15,7 @@ import { HUMAN_MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { buildContractMessage, buildPlayerMessage, emitInboxMessage } from "@/Domain/inbox/inboxEvents";
 import { afterRenewal, moraleBand, moraleDemandMult, refusesRenewal } from "@/Domain/morale/morale";
-import { terminationBreaksDepth, terminationQuote } from "@/Domain/contracts/termination";
+import { terminationBreaksDepth, terminationQuote, terminationThinLine } from "@/Domain/contracts/termination";
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { ledgerSeason } from "@/backend/staffRoutes";
 import { freeSigningContext } from "@/backend/freeSigningWorld";
@@ -60,7 +60,7 @@ export const contractRoutes = {
   /**
    * Friendly termination (tester suggestion). `GET` quotes it (`{ fee, weeksLeft, wagesLeft, share, status, capped,
    * blocked }`), `POST` does it: the fee leaves the club's balance (ledger `wages`, stage `termination`) and the player
-   * leaves as a free agent. 400 `onLoan` / `noContract`, 409 `squadDepth` (his line would drop below the minimum).
+   * leaves as a free agent. 400 `onLoan` / `noContract`, 409 `squadDepth` (the squad would keep 14 or fewer); `thin` warns when his line drops below its minimum.
    */
   "/api/saves/:saveId/players/:playerId/terminate": async (req: Request & { params: Record<string, string> }) => {
     const saveId = req.params.saveId!;
@@ -80,7 +80,7 @@ export const contractRoutes = {
       const quote = terminationQuote(player, squad, date, playerMarketValue(player));
       if (!quote) return Response.json({ error: "noContract" }, { status: 400 });
       const blocked = terminationBreaksDepth(squad, playerId);
-      if (req.method === "GET") return Response.json({ ...quote, blocked });
+      if (req.method === "GET") return Response.json({ ...quote, blocked, thin: terminationThinLine(squad, playerId) });
       if (blocked) return Response.json({ error: "squadDepth" }, { status: 409 });
       await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, { ...squad, players: squad.players.filter((p) => p.id !== playerId) });
       if (quote.fee > 0) {
