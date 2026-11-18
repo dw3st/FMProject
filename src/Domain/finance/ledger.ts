@@ -57,6 +57,7 @@ export interface LedgerEntry {
     clubName?: string;
     playerName?: string;
     /** Facilities lines: the project kind ("stand", "comfort", "training", "academy"). */
+    /** The project kind, or "materials" for the club workshop (`docs/superpowers/specs/2026-11-18-club-craft-design.md`). */
     facility?: string;
     /** Stand projects: which stand. */
     stand?: string;

@@ -3394,7 +3394,8 @@
       "legendHire": "Lenda de volta à base: {{player}}",
       "signingBonus": "Luvas: {{player}}",
       "playerBonus": "Bônus por desafio",
-      "deferredRefund": "Devolução: {{player}}"
+      "deferredRefund": "Devolução: {{player}}",
+      "craftMaterials": "Materiais da oficina"
     },
     "seasonBasis": "Temporada até agora",
     "clubChange": "Troca de clube",
@@ -4804,7 +4805,10 @@
         "worn": "Desgastado: {{what}}",
         "condemned": "Interditado: {{what}}",
         "repaired": "Obra concluída: {{what}}",
-        "turf_changed": "Grama nova instalada"
+        "turf_changed": "Grama nova instalada",
+        "craft_allowance": "Materiais da diretoria",
+        "craft_done": "Oficina: componentes prontos",
+        "built": "Obra iniciada: {{what}}"
       },
       "approved": "A diretoria aprovou {{what}} ({{cost}}). Pronta em {{date}}; paga em parcelas mensais.",
       "approvedFunded": "A diretoria aprovou {{what}} ({{cost}}) e paga {{pct}}% com verba própria. Pronta em {{date}}; paga em parcelas mensais.",
@@ -4817,7 +4821,10 @@
       "condemned": "{{what}} caiu para {{condition}}% e foi interditado. Só a reconstrução o recupera.",
       "repaired": "{{what}} voltou a {{condition}}%.",
       "upgraded": "{{what}} agora é nível {{level}} de 10, a 100%.",
-      "turf_changed": "O gramado do estádio agora tem {{turf}}, a 100%."
+      "turf_changed": "O gramado do estádio agora tem {{turf}}, a 100%.",
+      "craft_allowance": "A diretoria mandou {{cost}} em materiais para o estoque.",
+      "craft_done": "A oficina terminou {{components}}.",
+      "built": "{{what}} está em obra, com componentes de qualidade {{quality}}."
     },
     "item": {
       "stadiumPitch": "Gramado do estádio",
@@ -8336,5 +8343,22 @@
     "open": "Ver perfil",
     "friendTitle": "Perfil de {{nickname}}",
     "loadFailed": "Não deu para abrir o perfil."
+  },
+  "craft": {
+    "component": {
+      "beam": "Viga",
+      "slab": "Laje",
+      "turfPanel": "Placa de grama",
+      "seat": "Cadeira",
+      "floodlight": "Refletor",
+      "gymKit": "Kit de academia",
+      "medKit": "Kit médico",
+      "furniture": "Mobiliário"
+    },
+    "quality": {
+      "common": "Comum",
+      "good": "Boa",
+      "excellent": "Excelente"
+    }
   }
 }

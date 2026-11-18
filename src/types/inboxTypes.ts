@@ -1,4 +1,5 @@
 import type { StaffRole } from "@/types/staffTypes";
+import type { ComponentCounts, CraftQuality } from "@/types/craftTypes";
 import type { ContinentalSlug, ContinentalStageName, IccMatchName } from "@/types/calendarTypes";
 import type { BoardMessageKind, SackReason, SeasonObjective } from "@/types/boardTypes";
 import type { JobOffer } from "@/types/jobTypes";
@@ -382,7 +383,7 @@ export interface SponsorInboxMessage extends InboxMessageBase {
  */
 export interface FacilityInboxMessage extends InboxMessageBase {
   category: "facilities";
-  kind: "approved" | "refused" | "completed" | "attendance_record" | "worn" | "condemned" | "repaired" | "turf_changed";
+  kind: "approved" | "refused" | "completed" | "attendance_record" | "worn" | "condemned" | "repaired" | "turf_changed" | "craft_allowance" | "craft_done" | "built";
   facility?: FacilityKind;
   stand?: StandId;
   seats?: number;
@@ -403,6 +404,10 @@ export interface FacilityInboxMessage extends InboxMessageBase {
   condition?: number;
   /** turf_changed: the grass laid. */
   turf?: TurfType;
+  /** craft_done: the components the workshop finished. */
+  components?: ComponentCounts;
+  /** built: the quality the works will deliver. */
+  quality?: CraftQuality;
 }
 
 /**

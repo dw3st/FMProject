@@ -3394,7 +3394,8 @@
       "legendHire": "Legend back to the academy: {{player}}",
       "signingBonus": "Signing bonus: {{player}}",
       "playerBonus": "Challenge bonus",
-      "deferredRefund": "Refund: {{player}}"
+      "deferredRefund": "Refund: {{player}}",
+      "craftMaterials": "Materials for the workshop"
     },
     "seasonBasis": "Season to date",
     "clubChange": "Club change",
@@ -4807,7 +4808,10 @@
         "worn": "Worn: {{what}}",
         "condemned": "Closed: {{what}}",
         "repaired": "Works finished: {{what}}",
-        "turf_changed": "New grass laid"
+        "turf_changed": "New grass laid",
+        "craft_allowance": "Materials from the board",
+        "craft_done": "Workshop: components ready",
+        "built": "Works started: {{what}}"
       },
       "approved": "The board approved {{what}} ({{cost}}). Ready on {{date}}; paid in monthly instalments.",
       "approvedFunded": "The board approved {{what}} ({{cost}}) and pays {{pct}}% itself. Ready on {{date}}; paid in monthly instalments.",
@@ -4820,7 +4824,10 @@
       "condemned": "{{what}} is down to {{condition}}% and has been closed. Only a rebuild brings it back.",
       "repaired": "{{what}} is back to {{condition}}%.",
       "upgraded": "{{what}} is now level {{level}} of 10, at 100%.",
-      "turf_changed": "The stadium pitch now has {{turf}}, at 100%."
+      "turf_changed": "The stadium pitch now has {{turf}}, at 100%.",
+      "craft_allowance": "The board sent materials worth {{cost}} to the stock.",
+      "craft_done": "The workshop finished {{components}}.",
+      "built": "{{what}} is under way, with {{quality}} quality components."
     },
     "item": {
       "stadiumPitch": "Stadium pitch",
@@ -8348,5 +8355,22 @@
     "open": "View profile",
     "friendTitle": "{{nickname}}'s profile",
     "loadFailed": "Could not open the profile."
+  },
+  "craft": {
+    "component": {
+      "beam": "Beam",
+      "slab": "Slab",
+      "turfPanel": "Turf panel",
+      "seat": "Seat",
+      "floodlight": "Floodlight",
+      "gymKit": "Gym kit",
+      "medKit": "Medical kit",
+      "furniture": "Furniture"
+    },
+    "quality": {
+      "common": "Common",
+      "good": "Good",
+      "excellent": "Excellent"
+    }
   }
 }

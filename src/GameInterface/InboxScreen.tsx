@@ -552,6 +552,9 @@ function facilityTexts(
     reason: message.reason ? t(`facilities.reason.${message.reason}`) : "",
     condition: Math.round(message.condition ?? 0), level: message.level ?? "",
     turf: message.turf ? t(`facilities.turf.type.${message.turf}`).toLowerCase() : "",
+    components: Object.entries(message.components ?? {})
+      .map(([id, n]) => `${n} ${t(`craft.component.${id}`).toLowerCase()}`).join(", "),
+    quality: t(`craft.quality.${message.quality ?? "common"}`).toLowerCase(),
   };
   const body = message.kind === "approved" && (message.boardShare ?? 0) > 0
     ? t("facilities.inbox.approvedFunded", vars)

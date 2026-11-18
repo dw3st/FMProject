@@ -60,6 +60,8 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
         : null;
     case "facilities":
     case "board_funding":
+      // Materials bought for the club workshop (craft): one line, no project kind.
+      if (ref?.facility === "materials") return { key: "craftMaterials" };
       // `.claude/rules/game/facilities.md`: the project kind (and stand) of an instalment; item
       // projects name the item (a small repair is one line paid at once).
       if (ref?.facility && ref.item && ITEM_KEY[ref.facility]) {
