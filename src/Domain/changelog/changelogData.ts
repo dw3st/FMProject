@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.22",
     date: "2026-11-18",
-    time: "23:00",
+    time: "20:11",
     items: [
       { tab: "manager", pt: "Cassino do técnico, em Seu técnico: máquina clássica, máquina Estádio com 10 linhas e o Avião, em que o multiplicador sobe até o avião sumir. Usa o dinheiro do técnico, nunca o do clube.", en: "Manager casino, in Your manager: classic machine, Stadium machine with 10 lines and the Plane, where the multiplier climbs until the plane flies away. It uses the manager's money, never the club's." },
       { tab: "manager", pt: "Limites do cassino: aposta até 2% da carteira, perda de no máximo 10% por dia de jogo e 100 rodadas por dia.", en: "Casino limits: stakes up to 2% of the wallet, at most 10% lost per game day and 100 rounds a day." },
