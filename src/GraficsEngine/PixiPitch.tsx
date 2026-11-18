@@ -999,7 +999,12 @@ export function PixiPitch({
         if (st.homeCrest && !st.neutral) {
           void loadCrestCanvas(st.homeCrest, 128).then((canvas) => {
             if (!canvas || bake !== crestBake || disposed) return;
-            crestTexture = Texture.from(canvas);
+            // Its own copy: the loaded canvas is cached and shared (the tunnel crest mat uses the same one, 12.16),
+            // and Texture.from(canvas) would hand both the same texture, which the next re-bake destroys.
+            const own = document.createElement("canvas");
+            own.width = canvas.width; own.height = canvas.height;
+            own.getContext("2d")?.drawImage(canvas, 0, 0);
+            crestTexture = new Texture({ source: new CanvasSource({ resource: own }) });
             rebuildCrests();
           });
         }
