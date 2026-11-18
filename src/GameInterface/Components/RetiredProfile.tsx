@@ -8,6 +8,8 @@ import { nationalityDisplayName } from "@/Domain/world/labels";
 import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { CareerTable } from "@/GameInterface/Components/CareerTable";
+import { ProfileHero } from "@/GameInterface/Components/ProfileHero";
+import { StatStrip } from "@/GameInterface/Components/StatStrip";
 import { getDetailedPositionColor } from "@/GameInterface/positionHelpers";
 import { attributeBarClass, attributeTextClass } from "@/GameInterface/scoreColors";
 import type { LeagueData, RetiredPlayer, RosterPlayer } from "@/types/playerTypes";
@@ -46,35 +48,40 @@ export function RetiredProfile({ saveId, retiredId, leagues }: { saveId: string;
   const peak = rec.peakLevel !== undefined ? attrDisplay(rec.peakLevel) : null;
   const flag = nationalityFlagCode(rec.nationality);
   const nation = rec.nationality ? nationalityDisplayName(rec.nationality, i18n.language, t) : null;
+  const careerApps = (rec.history ?? []).reduce((a, r) => a + r.apps, 0);
+  const careerGoals = (rec.history ?? []).reduce((a, r) => a + r.goals, 0);
   const retiredOn = new Date(`${rec.retiredOn}T12:00:00Z`).toLocaleDateString(i18n.language, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
 
   return (
     <div className="flex flex-col gap-4 py-2">
-      <div className="flex flex-wrap items-center gap-4">
-        <PlayerFace playerId={rec.id} nationality={rec.nationality} size={64} fallback={rec.name.slice(0, 1)} />
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className="font-display font-black uppercase text-xl leading-none truncate">{rec.name}</span>
-          <span className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {flag && <Flag code={flag} />}
-            {nation && <span>{nation}</span>}
-            <span className={`font-bold ${getDetailedPositionColor(role)}`}>{t(`roles.detailedAbbr.${role}`, { defaultValue: role })}</span>
-            <span>{t(rec.preferredFoot === "left" ? "dashboard.playerCard.leftFoot" : "dashboard.playerCard.rightFoot")}</span>
-            <span className="tabular-nums">{t("statsScreen.retired.profile.retiredAt", { age: rec.age, date: retiredOn })}</span>
-            {rec.clubName && <span>{rec.clubName}</span>}
-          </span>
-        </div>
-        <div className="flex gap-6 ml-auto">
-          <div className="flex flex-col items-end">
-            <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("statsScreen.retired.profile.lastLevel")}</span>
-            <span className={`font-display font-bold tabular-nums text-2xl ${attributeTextClass(overall)}`}>{overall}</span>
-          </div>
-          {peak !== null && (
-            <div className="flex flex-col items-end">
-              <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("statsScreen.retired.profile.peak")}</span>
-              <span className={`font-display font-bold tabular-nums text-2xl ${attributeTextClass(peak)}`}>{peak}</span>
-            </div>
-          )}
-        </div>
+      <div className="flex flex-col">
+        <ProfileHero
+          attached
+          visual={<PlayerFace playerId={rec.id} nationality={rec.nationality} size={64} fallback={rec.name.slice(0, 1)} />}
+          eyebrow={t("statsScreen.retired.profile.retiredAt", { age: rec.age, date: retiredOn })}
+          title={rec.name}
+          lines={[
+            <span className="flex flex-wrap items-center gap-2">
+              {flag && <Flag code={flag} />}
+              {nation && <span>{nation}</span>}
+              <span className={`font-bold ${getDetailedPositionColor(role)}`}>{t(`roles.detailedAbbr.${role}`, { defaultValue: role })}</span>
+              <span>{t(rec.preferredFoot === "left" ? "dashboard.playerCard.leftFoot" : "dashboard.playerCard.rightFoot")}</span>
+              {rec.clubName && <span>{rec.clubName}</span>}
+            </span>,
+          ]}
+        />
+        <StatStrip
+          attached
+          items={[
+            { key: "last", label: t("statsScreen.retired.profile.lastLevel"), value: <span className={attributeTextClass(overall)}>{overall}</span> },
+            ...(peak !== null ? [{ key: "peak", label: t("statsScreen.retired.profile.peak"), value: <span className={attributeTextClass(peak)}>{peak}</span> }] : []),
+            { key: "apps", label: t("statsScreen.retired.profile.apps"), value: careerApps },
+            { key: "goals", label: t("statsScreen.retired.profile.goals"), value: careerGoals, tone: "primary" as const },
+            ...(rec.national && rec.national.caps > 0
+              ? [{ key: "caps", label: t("statsScreen.retired.profile.caps"), value: rec.national.caps, detail: t("statsScreen.retired.profile.capsGoals", { count: rec.national.goals }) }]
+              : []),
+          ]}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-2">
@@ -92,11 +99,6 @@ export function RetiredProfile({ saveId, retiredId, leagues }: { saveId: string;
         })}
       </div>
 
-      {rec.national && rec.national.caps > 0 && (
-        <p className="text-sm text-muted-foreground m-0 tabular-nums">
-          {t("statsScreen.retired.profile.national", { apps: rec.national.caps, goals: rec.national.goals })}
-        </p>
-      )}
 
       <CareerTable rows={rec.history ?? []} leagues={leagues} />
     </div>

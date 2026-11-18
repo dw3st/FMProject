@@ -3830,7 +3830,12 @@
         "retiredAt": "Retired at {{age}} on {{date}}",
         "lastLevel": "Last game",
         "peak": "Peak",
-        "national": "National team: {{apps}} games, {{goals}} goals"
+        "national": "National team: {{apps}} games, {{goals}} goals",
+        "apps": "Games",
+        "goals": "Goals",
+        "caps": "Caps",
+        "capsGoals_one": "{{count}} goal",
+        "capsGoals_other": "{{count}} goals"
       },
       "mine": "My club",
       "all": "All",
@@ -7694,7 +7699,14 @@
     "noSeason": "The season has not started yet.",
     "highlights": "Squad highlights",
     "fullSquad": "See the whole squad ({{count}})",
-    "tabOverview": "Overview"
+    "tabOverview": "Overview",
+    "strip": {
+      "position": "Position",
+      "points": "Points",
+      "played_one": "{{count}} game",
+      "played_other": "{{count}} games",
+      "titles": "Titles"
+    }
   },
   "managerPage": {
     "belongings": "Belongings",

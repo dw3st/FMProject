@@ -3827,7 +3827,12 @@
         "retiredAt": "Aposentou com {{age}} anos em {{date}}",
         "lastLevel": "Último jogo",
         "peak": "Auge",
-        "national": "Seleção: {{apps}} jogos, {{goals}} gols"
+        "national": "Seleção: {{apps}} jogos, {{goals}} gols",
+        "apps": "Jogos",
+        "goals": "Gols",
+        "caps": "Seleção",
+        "capsGoals_one": "{{count}} gol",
+        "capsGoals_other": "{{count}} gols"
       },
       "mine": "Do meu clube",
       "all": "Todos",
@@ -7691,7 +7696,14 @@
     "noSeason": "A temporada ainda não começou.",
     "highlights": "Destaques do elenco",
     "fullSquad": "Ver o elenco inteiro ({{count}})",
-    "tabOverview": "Visão geral"
+    "tabOverview": "Visão geral",
+    "strip": {
+      "position": "Posição",
+      "points": "Pontos",
+      "played_one": "{{count}} jogo",
+      "played_other": "{{count}} jogos",
+      "titles": "Títulos"
+    }
   },
   "managerPage": {
     "belongings": "Bens",
