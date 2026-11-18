@@ -7464,7 +7464,8 @@
       "simulate": "Simulate",
       "start": "Start",
       "ready": "Ready",
-      "noMatch": "There is no live match against another manager today."
+      "noMatch": "There is no live match against another manager today.",
+      "penaltiesManual": "Penalties: in games between managers, each takes and saves his own."
     },
     "invite": {
       "popup": "{{name}} is waiting for you for the live match",

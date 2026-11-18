@@ -226,6 +226,9 @@ describe("h2h rooms (live match between two managers)", () => {
     const pending = { kind: "match", team: "A", takerId, keeperId };
     const results = () => sockA.sent.filter((e) => e.type === "h2h_penalty_result").length;
     // Both automatic: resolved at once by the assistant, applied after the animation.
+    // Between two managers both sides start manual (12.14.2); the test switches them to automatic.
+    setH2HPenalty2d(saveId, match.id, "A", false);
+    setH2HPenalty2d(saveId, match.id, "B", false);
     const before = results();
     engine!.deliver({ type: "event", name: "penaltyPending", payload: pending });
     expect(results()).toBe(before + 1);

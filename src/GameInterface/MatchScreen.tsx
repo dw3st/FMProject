@@ -2119,11 +2119,10 @@ export function MatchScreen() {
                     active={String(myH2HSpeed)}
                     onChange={(k) => h2h.setSpeed(Number(k) as H2HSpeed)}
                   />
-                  {h2hSpeed !== myH2HSpeed && (
-                    <span className="text-sm text-muted-foreground whitespace-nowrap phone:hidden">
-                      {t("h2h.speed.waiting", { name: sideName(otherH2HSide), speed: h2hSpeed })}
-                    </span>
-                  )}
+                  {/* The friend's choice, always (tester report 1d681768): the match runs at the lower of the two. */}
+                  <span className={`text-sm whitespace-nowrap tabular-nums phone:hidden ${h2hSpeed !== myH2HSpeed ? "text-chart-4" : "text-muted-foreground"}`}>
+                    {t("h2h.speed.waiting", { name: sideName(otherH2HSide), speed: h2h.room?.sides[otherH2HSide].speed ?? 1 })}
+                  </span>
                 </span>
               </>
             ) : (

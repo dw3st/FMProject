@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.14.2",
+    date: "2026-11-17",
+    time: "21:40",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Jogo ao vivo entre técnicos: os pênaltis são sempre batidos e defendidos por cada um.", en: "Live game between managers: each manager always takes and saves his own penalties." },
+      { tab: "match", pt: "Jogo ao vivo entre técnicos: a velocidade que o amigo escolheu fica sempre ao lado da sua.", en: "Live game between managers: the speed your friend picked is always shown next to yours." },
+    ],
+  },
+  {
     version: "12.14.1",
     date: "2026-11-17",
     time: "21:08",

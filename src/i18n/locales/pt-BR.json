@@ -7461,7 +7461,8 @@
       "simulate": "Simular",
       "start": "Começar",
       "ready": "Pronto",
-      "noMatch": "Hoje não há jogo ao vivo contra outro técnico."
+      "noMatch": "Hoje não há jogo ao vivo contra outro técnico.",
+      "penaltiesManual": "Pênaltis: nos jogos entre técnicos, cada um bate e defende os seus."
     },
     "invite": {
       "popup": "{{name}} está te esperando para o jogo ao vivo",

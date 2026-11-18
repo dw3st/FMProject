@@ -434,7 +434,8 @@ async function join(ws: SocialSocket, saveId: string, fixtureId: string): Promis
         lastSnapshotAt: 0,
         live: null,
         names: new Map(),
-        penalty2d: { A: false, B: false },
+        // Between two managers every penalty is taken by hand (tester report 7a7b4e23, 12.14.2).
+        penalty2d: { A: true, B: true },
         penalty: null,
         complaints: { A: noComplaints(), B: noComplaints() },
         strictness: null,
@@ -530,7 +531,8 @@ function ready(ws: SocialSocket, penalty2d: boolean): void {
   const rec = recOf(ws);
   const side = rec && sideOfSocket(rec, ws);
   if (!rec || !side || rec.starting) return;
-  if (rec.room.phase === "lobby") rec.penalty2d = { ...rec.penalty2d, [side]: penalty2d };
+  // The choice no longer matters between two managers: both take their penalties by hand.
+  void penalty2d;
   const change = setReady(rec.room, side);
   if (change.start) {
     // Kept in the lobby until the match is built (a failure closes the room).
