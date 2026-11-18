@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.19.2",
     date: "2026-11-18",
+    time: "17:30",
     items: [],
     fixes: [
       { tab: "match", pt: "Substituições: cada reserva mostra o OVR, como ele joga na posição do titular escolhido, a nota da temporada e o fôlego.", en: "Substitutions: each substitute shows his OVR, how he fits the picked starter's position, his season rating and his energy." },
