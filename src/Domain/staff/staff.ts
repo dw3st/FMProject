@@ -11,7 +11,7 @@ import {
 import { DP_CATEGORIES, type DPCategory } from "@/GameEngine/PlayerDevelopment";
 import { contractEndFor } from "@/Domain/contracts/contracts";
 import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
-import { weeklyWage, wageFactorOf } from "@/Domain/finance/wages";
+import { weeklyWage, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { ScoutView } from "@/types/scoutingTypes";
@@ -267,9 +267,22 @@ export function staffWeeklyWage(rating: number, clubFactor: number): number {
  * Weekly wage of a professional of `stars` in `role`: the staff curve × the role's share. A cheap one (1★ or less)
  * asks at a club factor of at most `CHEAP.FACTOR_CAP`, so a small club can always afford him.
  */
-export function staffWageFor(role: StaffRole, stars: number, clubFactor: number): number {
+export function staffWageFor(role: StaffRole, stars: number, clubFactor: number, revenue?: number): number {
   const factor = stars <= STAFF.CHEAP.MAX_STARS ? Math.min(clubFactor, STAFF.CHEAP.FACTOR_CAP) : clubFactor;
-  return Math.round(staffWeeklyWage(ratingFromStars(stars), factor) * STAFF.WAGE_ROLE_SHARE[role]);
+  const wage = Math.round(staffWeeklyWage(ratingFromStars(stars), factor) * STAFF.WAGE_ROLE_SHARE[role]);
+  return revenue === undefined ? wage : Math.min(wage, staffRevenueCap(role, stars, revenue));
+}
+
+/** The most a professional of `role` and `stars` asks at a club of `revenue` a year (`STAFF.REVENUE_CAP`). */
+export function staffRevenueCap(role: StaffRole, stars: number, revenue: number): number {
+  const c = STAFF.REVENUE_CAP;
+  const share = (c.SHARE * STAFF.WAGE_ROLE_SHARE[role]) / c.ROLE_SUM;
+  return Math.max(c.FLOOR, Math.round((revenue / 52) * share * (Math.max(c.MIN_STARS, stars) / 3)));
+}
+
+/** What a club pays its staff with: its player wage factor and its annual revenue. */
+export function staffPayOf(squad: Squad): { clubFactor: number; revenue: number } {
+  return { clubFactor: wageFactorOf(squad), revenue: wageRevenueBasisOf(squad) };
 }
 
 /** Monday ledger line: the contracts' frozen wages. */
@@ -281,14 +294,14 @@ export function squadStaffWages(staff: StaffRecord | undefined, date?: string): 
 /** Signs `m` for `years` seasons: the wage is frozen at the club's factor of the signing day. */
 export function signContract(
   m: StaffMember,
-  a: { date: string; seasonEnd: string; years: number; clubFactor: number },
+  a: { date: string; seasonEnd: string; years: number; clubFactor: number; revenue?: number },
 ): StaffMember {
   const { since: _since, ...rest } = m;
   return {
     ...rest,
     contract: {
       until: contractEndFor(a.date, a.seasonEnd, a.years),
-      wage: staffWageFor(m.role, memberStars(m), a.clubFactor),
+      wage: staffWageFor(m.role, memberStars(m), a.clubFactor, a.revenue),
       signed: a.date,
     },
   };
@@ -358,7 +371,7 @@ export function initialStaff(
   key: string, squad: Squad, at: { date: string; seasonEnd: string }, origin?: { book: StaffNameBook; home?: string },
 ): StaffRecord {
   const implied = impliedStars(squad);
-  const factor = wageFactorOf(squad);
+  const pay = staffPayOf(squad);
   const members: StaffMember[] = [];
   for (const role of STAFF_ROLES) {
     if (role === "fieldScout") continue;
@@ -370,7 +383,7 @@ export function initialStaff(
       const span = STAFF.CONTRACT.MAX_YEARS - STAFF.CONTRACT.MIN_YEARS + 1;
       const years = STAFF.CONTRACT.MIN_YEARS + Math.floor(rng() * span);
       const m = makeProfessional(`${key}:start:${role}:${i}`, role, implied + delta, origin);
-      members.push(signContract(m, { ...at, years, clubFactor: factor }));
+      members.push(signContract(m, { ...at, years, ...pay }));
     }
   }
   return { members };

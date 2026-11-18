@@ -1,3 +1,4 @@
+import { squadWeeklyWages, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { managerDemandCtx } from "@/backend/managerDemand";
 import { releaseToFreePool } from "@/backend/playerRelease";
 import { arriving } from "@/Domain/settling/settling";
@@ -242,6 +243,8 @@ export const contractRoutes = {
     return Response.json({
       demand: b.demand,
       ...parts,
+      // The club's weekly wage bill and revenue (report 2026-11-18): the window warns past PAYROLL_WARN_SHARE.
+      payroll: { bill: squadWeeklyWages(mine.players, wageFactorOf(mine)), weeklyRevenue: Math.round(wageRevenueBasisOf(mine) / 52) },
       ...(aiSeller && !player.loan ? { clause: releaseClause(player) } : {}),
       ...(b.negotiation !== 1 ? { negotiation: b.negotiation } : {}),
       ...(b.fame !== 1 ? { fame: b.fame } : {}),

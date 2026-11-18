@@ -174,12 +174,12 @@ export const POOL_PAGE = { DEFAULT: 50, MAX: 100 } as const;
 
 /** Filter, sort and page the pool; the asking wage is what the user's club would pay (its wage factor). */
 /** With `date`, scouts also carry their strongest country (`strongCountry`). */
-export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number, date?: string): { total: number; items: StaffPoolItem[] } {
+export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number, date?: string, revenue?: number): { total: number; items: StaffPoolItem[] } {
   const items: StaffPoolItem[] = pool.members
     .map((m) => {
       const stars = memberStars(m);
       return {
-        ...m, stars, askingWage: staffWageFor(m.role, stars, clubFactor),
+        ...m, stars, askingWage: staffWageFor(m.role, stars, clubFactor, revenue),
         ...(date && isScoutRole(m.role) ? { strongCountry: strongCountry(m, date) } : {}),
       };
     })

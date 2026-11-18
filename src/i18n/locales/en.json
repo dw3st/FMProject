@@ -4072,6 +4072,7 @@
     "askingLine": "He asks for {{wage}} a week. He refuses anything below that.",
     "belowRefuses": "Below {{wage}} a week, he refuses.",
     "billLine": "Club wage bill: {{before}} → {{after}} a week.",
+    "payrollWarning": "With this contract the wage bill is {{share}}% of the club's revenue ({{revenue}} a week). Above 70% the balance usually goes into the red.",
     "asking": "Asking",
     "perWeek": "per week",
     "loadingDemand": "Checking what the player asks…",

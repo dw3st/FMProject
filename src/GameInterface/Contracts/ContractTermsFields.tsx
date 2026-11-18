@@ -34,7 +34,12 @@ export interface ContractDemandInfo {
   /** A fee-free arrival (pre-contract, free agent; 4.47.9): the signing bonus he asks, EUR, and the clubs also after him. */
   bonusAsk?: number;
   rivals?: string[];
+  /** The club's weekly wage bill and revenue: a warning past `PAYROLL_WARN_SHARE` (report 2026-11-18). */
+  payroll?: { bill: number; weeklyRevenue: number };
 }
+
+/** The wage bill above this share of the revenue gets a warning in the contract windows. */
+export const PAYROLL_WARN_SHARE = 0.7;
 
 /** The personality lines explaining a demand ("Loyal to the club: −7%"). */
 function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | undefined }) {
@@ -204,6 +209,14 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand, info
           </select>
         </label>
       </div>
+      {info?.payroll && info.payroll.weeklyRevenue > 0 && (info.payroll.bill - (info.currentWage ?? 0) + shownWage) > info.payroll.weeklyRevenue * PAYROLL_WARN_SHARE && (
+        <p className="text-sm text-chart-4 m-0 tabular-nums">
+          {t("contracts.payrollWarning", {
+            share: Math.round(((info.payroll.bill - (info.currentWage ?? 0) + shownWage) / info.payroll.weeklyRevenue) * 100),
+            revenue: formatWage(info.payroll.weeklyRevenue),
+          })}
+        </p>
+      )}
       {((askingShown && demand !== null) || wageBill !== undefined) && (
         <p className="text-sm text-muted-foreground m-0 tabular-nums">
           {askingShown && demand !== null ? t("contracts.belowRefuses", { wage: formatWageFull(demand) }) : ""}

@@ -9,7 +9,7 @@ import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
 import {
   areaMultsOf, areaStars, headOf, memberStars, resolveAreaAssignments, roleLimit, signContract, squadStaffWages,
-  staffEffectsOf, starsIn, STAFF_AREAS_PER_COACH,
+  staffEffectsOf, staffPayOf, starsIn, STAFF_AREAS_PER_COACH,
 } from "@/Domain/staff/staff";
 import {
   TRUSTED, coursePriceOf, courseRefusal, courseSpecialty, setTrusted, startStaffCourse, trustedOf,
@@ -27,7 +27,6 @@ import {
   countryBand, countryKnowledgeOf, isScoutRole, strongCountry,
 } from "@/Domain/scouting/countryKnowledge";
 import countriesRaw from "@/Data/countries.json";
-import { wageFactorOf } from "@/Domain/finance/wages";
 import { daysBetween } from "@/Domain/dates";
 import type { Squad } from "@/types/playerTypes";
 
@@ -117,7 +116,7 @@ export function staffView(squad: Squad, ctx?: { date: string; seasonEnd: string;
 
 function memberOffer(squad: Squad, m: StaffMember, ctx: { date: string; seasonEnd: string }) {
   const renewals = ([1, 2, 3] as const)
-    .map((years) => ({ years, c: renewedContract(m, { ...ctx, years, clubFactor: wageFactorOf(squad) }) }))
+    .map((years) => ({ years, c: renewedContract(m, { ...ctx, years, ...staffPayOf(squad) }) }))
     .filter((r) => r.c !== null);
   // Inside the renewal window the staff sheet says so (tester report, 10.7).
   const left = m.contract ? daysBetween(ctx.date, m.contract.until) : null;
@@ -238,8 +237,8 @@ export const staffRoutes = {
       const pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
       // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.
       const h = await human(saveId, auth.seatId);
-      const factor = h instanceof Response ? 1 : wageFactorOf(h.squad);
-      return Response.json(searchPool(pool, q, factor, meta.currentDate ?? undefined));
+      const pay = h instanceof Response ? { clubFactor: 1, revenue: undefined } : staffPayOf(h.squad);
+      return Response.json(searchPool(pool, q, pay.clubFactor, meta.currentDate ?? undefined, pay.revenue));
     });
   },
 
@@ -277,7 +276,7 @@ export const staffRoutes = {
       if (staff.members.filter((m) => m.role === role).length >= roleLimit(h.squad, role)) {
         return Response.json({ error: "roleFull" }, { status: 409 });
       }
-      const signed = signContract(taken.member, { date: h.date, seasonEnd: h.seasonEnd, years, clubFactor: wageFactorOf(h.squad) });
+      const signed = signContract(taken.member, { date: h.date, seasonEnd: h.seasonEnd, years, ...staffPayOf(h.squad) });
       let next: Squad = { ...h.squad, staff: { ...staff, members: [...staff.members, signed] } };
       await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       let nextPool = taken.pool;
@@ -353,7 +352,7 @@ export const staffRoutes = {
       const staff = h.squad.staff ?? { members: [] };
       const member = staff.members.find((m) => m.id === memberId);
       if (!member) return Response.json({ error: "notYourStaff" }, { status: 404 });
-      const contract = renewedContract(member, { date: h.date, seasonEnd: h.seasonEnd, years, clubFactor: wageFactorOf(h.squad) });
+      const contract = renewedContract(member, { date: h.date, seasonEnd: h.seasonEnd, years, ...staffPayOf(h.squad) });
       if (!contract) return Response.json({ error: "tooManyYears" }, { status: 400 });
       const next: Squad = {
         ...h.squad,

@@ -78,6 +78,9 @@ export const SCOUTING = {
   PROSPECT_DAYS: 30,
   /** Training compensation by the financial tier of the country's top league (× own wage factor). */
   PROSPECT_FEE: { LOW: 50_000, MEDIUM: 120_000, HIGH: 250_000, ELITE: 400_000 } as const,
+  /** The fee never passes this share of the buying club's annual revenue (report 2026-11-18: Brusque paid 9% per prospect). */
+  PROSPECT_FEE_REVENUE_SHARE: 0.015,
+  PROSPECT_FEE_FLOOR: 10_000,
 
   // ── Money ────────────────────────────────────────────────────────────────
   /** Weekly travel per active mission, share of the annual revenue / 52 (player missions: half). */

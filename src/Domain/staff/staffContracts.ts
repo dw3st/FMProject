@@ -1,6 +1,6 @@
 import { addYearsIso } from "@/Domain/contracts/contracts";
 import { daysBetween } from "@/Domain/dates";
-import { memberStars, staffWageFor } from "@/Domain/staff/staff";
+import { memberStars, staffRevenueCap, staffWageFor } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import type { StaffContract, StaffMember, StaffRecord } from "@/Domain/staff/staffTypes";
 
@@ -22,13 +22,14 @@ export function severanceOf(m: StaffMember, date: string): number {
 /** `years` more from the current end, the total at most MAX_YEARS seasons from this season's end; null = too long. */
 export function renewedContract(
   m: StaffMember,
-  a: { date: string; seasonEnd: string; years: number; clubFactor: number },
+  a: { date: string; seasonEnd: string; years: number; clubFactor: number; revenue?: number },
 ): StaffContract | null {
   if (!m.contract || !Number.isInteger(a.years) || a.years < C.MIN_YEARS || a.years > C.MAX_YEARS) return null;
   const until = addYearsIso(m.contract.until, a.years);
   const base = a.date > a.seasonEnd ? addYearsIso(a.seasonEnd, 1) : a.seasonEnd;
   if (until > addYearsIso(base, C.MAX_YEARS - 1)) return null;
-  const wage = Math.max(m.contract.wage, staffWageFor(m.role, memberStars(m), a.clubFactor));
+  let wage = Math.max(m.contract.wage, staffWageFor(m.role, memberStars(m), a.clubFactor, a.revenue));
+  if (a.revenue !== undefined) wage = Math.min(wage, staffRevenueCap(m.role, memberStars(m), a.revenue));
   return { until, wage, signed: a.date };
 }
 
@@ -50,13 +51,18 @@ export interface StaffContractNews {
  */
 export function staffContractDay(a: {
   staff: StaffRecord; date: string; monday: boolean; seasonEnd: string;
-  directorHandles: boolean; impliedStars: number; clubFactor: number;
+  directorHandles: boolean; impliedStars: number; clubFactor: number; revenue?: number;
 }): { staff: StaffRecord; left: StaffMember[]; news: StaffContractNews[] } {
   const news: StaffContractNews[] = [];
   const left: StaffMember[] = [];
   const kept: StaffMember[] = [];
   const tag = (m: StaffMember) => ({ id: m.id, name: m.name, role: m.role });
-  for (const m of a.staff.members) {
+  for (const raw of a.staff.members) {
+    // A contract above what the club's revenue allows is lowered to it (report 2026-11-18: the starting staff of a
+    // small club cost half its revenue). Only ever down: nobody's wage goes up here.
+    const capped = a.revenue !== undefined && raw.contract
+      ? Math.min(raw.contract.wage, staffRevenueCap(raw.role, memberStars(raw), a.revenue)) : undefined;
+    const m = raw.contract && capped !== undefined && capped < raw.contract.wage ? { ...raw, contract: { ...raw.contract, wage: capped } } : raw;
     const c = m.contract;
     if (c && a.date > c.until) {
       left.push(m);
@@ -75,7 +81,7 @@ export function staffContractDay(a: {
       continue;
     }
     const next = directorRenews(m, a.impliedStars)
-      ? renewedContract(m, { date: a.date, seasonEnd: a.seasonEnd, years: C.DIRECTOR_YEARS, clubFactor: a.clubFactor })
+      ? renewedContract(m, { date: a.date, seasonEnd: a.seasonEnd, years: C.DIRECTOR_YEARS, clubFactor: a.clubFactor, revenue: a.revenue })
       : null;
     if (next) {
       kept.push({ ...m, contract: next });

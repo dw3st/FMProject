@@ -87,6 +87,13 @@ export const STAFF = {
    * at a club factor of at most `FACTOR_CAP`: the player factor of a weak squad with good revenue goes up to 4 and
    * made even a 1★ assistant cost 3% of the revenue (`scripts/staff-cheap-measure.ts`).
    */
+  /**
+   * Ceiling of a professional's wage by the club's revenue (report 2026-11-18: Brusque, Série C, paid 52% of its revenue
+   * to the starting staff, priced like 44-rated players). A role's wage is at most annual revenue / 52 × REVENUE_SHARE ×
+   * its WAGE_ROLE_SHARE × stars / 3: a full staff at the implied stars costs about 5% of the revenue, one star more costs
+   * more. Big clubs never reach it.
+   */
+  REVENUE_CAP: { SHARE: 0.05, ROLE_SUM: 1.03, MIN_STARS: 0.5, FLOOR: 150 },
   CHEAP: { MAX_STARS: 1, PER_ROLE: 3, COACH: 6, FACTOR_CAP: 0.5, HALF_STAR_SCORE: 1.25 },
   POOL: {
     SIZE: 335,

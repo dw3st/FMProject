@@ -174,8 +174,8 @@ import { coachCallUpsToday, coachMondaySquad } from "@/backend/youthCoachWorld";
 import { settleGoals } from "@/Domain/youth/youthGoals";
 import { competitionName } from "@/Domain/world/labels";
 import type { GateKind } from "@/Domain/finance/gate";
-import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageFactorOf, wageRevenueBasisOf } from "@/Domain/finance/wages";
-import { impliedStars, staffEffectsOf } from "@/Domain/staff/staff";
+import { carryForwardWageFactor, clubAnnualRevenue, clubWageFactor, pullWageFactorToTarget, squadCurveBill, wageRevenueBasisOf } from "@/Domain/finance/wages";
+import { impliedStars, staffEffectsOf, staffPayOf } from "@/Domain/staff/staff";
 import { isContinentalSlug, competitionsOf, continentalClubIds } from "@/Domain/continental/competitions";
 import { withAggregate } from "@/Domain/continental/knockout";
 import { addPendingTitle, closeSeasonForPlayers, seasonLabel } from "@/Domain/history/history";
@@ -3473,7 +3473,7 @@ export async function advanceOneDay(
           seasonEnd: updatedActiveLeagues.find((l) => l.leagueSlug === homeSlug)?.end ?? currentDate,
           directorHandles: directorInChargeOf(ds),
           impliedStars: impliedStars(humanForStaff),
-          clubFactor: wageFactorOf(humanForStaff),
+          ...staffPayOf(humanForStaff),
         });
         let staff = r.staff;
         ds.staffNews = r.news;

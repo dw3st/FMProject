@@ -3,7 +3,7 @@ import {
   areaMultsOf, developmentMultiplier, effectiveRating, effectiveStars, initialStaff, injuryMultiplier,
   makeProfessional, memberStars, obscurePlayer, ratingFromStars, recoveryMultiplier, resolveAreaAssignments,
   roleLimit, scoutGainMultOf, scoutUncertaintyMultOf, signContract, squadStaffWages, staffEffectsOf,
-  staffWageFor, staffWeeklyWage, starCurve, starsFromScore,
+  staffWageFor, staffWeeklyWage, starCurve, starsFromScore, staffRevenueCap,
 } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import type { StaffMember, StaffRecord } from "@/Domain/staff/staffTypes";
@@ -268,5 +268,15 @@ describe("youth coach (12.1)", () => {
     expect(coaches).toHaveLength(1);
     expect(coaches[0]!.attributes.knowledge.youth).toBeGreaterThan(0);
     expect(coaches[0]!.contract).toBeDefined();
+  });
+});
+
+describe("revenue ceiling (report 2026-11-18)", () => {
+  test("a small club's professional never asks more than its revenue allows; a big club is untouched", () => {
+    const small = 3_120_000, big = 400_000_000;
+    const capped = staffWageFor("assistant", 2.5, 1.11, small);
+    expect(capped).toBeLessThanOrEqual(staffRevenueCap("assistant", 2.5, small));
+    expect(staffWageFor("assistant", 2.5, 1.11, big)).toBe(staffWageFor("assistant", 2.5, 1.11));
+    expect(staffWageFor("assistant", 4, 1.11, small)).toBeGreaterThan(staffWageFor("assistant", 2, 1.11, small));
   });
 });

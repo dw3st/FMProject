@@ -467,8 +467,10 @@ export function shortlistAlerts(prev: ShortlistStatus | undefined, now: Shortlis
 }
 
 /** Training compensation of a prospect from a country whose top league is of `tier`. */
-export function prospectFee(tier: FinancialTier, ownWageFactor: number): number {
-  return Math.round(S.PROSPECT_FEE[tier] * ownWageFactor / 1000) * 1000;
+export function prospectFee(tier: FinancialTier, ownWageFactor: number, ownRevenue?: number): number {
+  const fee = S.PROSPECT_FEE[tier] * ownWageFactor;
+  const capped = ownRevenue === undefined ? fee : Math.min(fee, Math.max(S.PROSPECT_FEE_FLOOR, ownRevenue * S.PROSPECT_FEE_REVENUE_SHARE));
+  return Math.round(capped / 1000) * 1000;
 }
 
 /**

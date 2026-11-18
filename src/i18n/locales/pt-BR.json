@@ -4069,6 +4069,7 @@
     "askingLine": "Ele pede {{wage}} por semana. Abaixo disso, recusa.",
     "belowRefuses": "Abaixo de {{wage}} por semana, ele recusa.",
     "billLine": "Folha do clube: {{before}} → {{after}} por semana.",
+    "payrollWarning": "Com este contrato a folha fica em {{share}}% da receita do clube ({{revenue}} por semana). Acima de 70% o caixa costuma ficar no vermelho.",
     "asking": "Pede",
     "perWeek": "por semana",
     "loadingDemand": "Verificando o que o jogador pede…",

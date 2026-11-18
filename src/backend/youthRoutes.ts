@@ -6,7 +6,7 @@ import { withSaveLock } from "@/backend/saveLock";
 import { HUMAN_MAX_SQUAD, toFreeAgent } from "@/Domain/contracts/freeAgents";
 import { humanRosterSize } from "@/backend/negotiationWorld";
 import { overallAvg } from "@/Domain/playerRating";
-import { wageFactorOf, playerWeeklyWage } from "@/Domain/finance/wages";
+import { firstProWage } from "@/Domain/contracts/firstContract";
 import { potentialBand } from "@/Domain/youth/youth";
 import { DEFAULT_YOUTH_PLAN, parsePlayerTraining, parseYouthPlan, TRAINING_POSITIONS, youthTrendDelta } from "@/Domain/youth/youthTraining";
 import { managerSavesPlan, youthCoachOnDuty } from "@/Domain/youth/youthCoach";
@@ -28,11 +28,11 @@ function parseIds(body: unknown): string[] | null {
   return [...new Set(ids as string[])];
 }
 
-/** An academy player in the first team: new wage from the curve, the base contract's end, arrival from the academy. */
+/** An academy player in the first team: first professional wage (`firstProWage`), the base contract's end, arrival from the academy. */
 function promotedPlayer(squad: Squad, player: RosterPlayer & { contract: NonNullable<RosterPlayer["contract"]> }, date: string): RosterPlayer {
   return {
     ...player,
-    contract: { until: player.contract.until, wage: playerWeeklyWage(player, wageFactorOf(squad)) },
+    contract: { until: player.contract.until, wage: firstProWage(squad, player) },
     arrival: { squadId: squad.id, kind: "academy", on: date },
   };
 }

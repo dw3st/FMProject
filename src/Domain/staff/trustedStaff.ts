@@ -1,10 +1,9 @@
 import { addDays, daysBetween } from "@/Domain/dates";
-import { memberStars, roleLimit, signContract, starsFromScore, starsIn, areaScore } from "@/Domain/staff/staff";
+import { memberStars, roleLimit, signContract, staffPayOf, starsFromScore, starsIn, areaScore } from "@/Domain/staff/staff";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import {
   COACH_AREAS, ROLE_SPECIALTY, type Specialty, type StaffMember, type StaffRecord,
 } from "@/Domain/staff/staffTypes";
-import { wageFactorOf } from "@/Domain/finance/wages";
 import type { Squad } from "@/types/playerTypes";
 
 /**
@@ -138,7 +137,7 @@ export function joinNewClub(
   squad: Squad, staff: StaffRecord, incoming: StaffMember[], at: { date: string; seasonEnd: string },
 ): StaffRecord {
   let members = [...staff.members];
-  const factor = wageFactorOf(squad);
+  const pay = staffPayOf(squad);
   for (const raw of incoming) {
     const m = settleCourses([raw], at.date).members[0]!;
     const same = members.filter((x) => x.role === m.role);
@@ -147,7 +146,7 @@ export function joinNewClub(
       if (!out) continue;
       members = members.filter((x) => x.id !== out.id);
     }
-    members.push(signContract(m, { ...at, years: TRUSTED.NEW_CLUB_YEARS, clubFactor: factor }));
+    members.push(signContract(m, { ...at, years: TRUSTED.NEW_CLUB_YEARS, ...pay }));
   }
   const ids = new Set(members.map((m) => m.id));
   const areaAssignments = staff.areaAssignments
