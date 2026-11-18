@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.20.2",
     date: "2026-11-18",
-    time: "23:00",
+    time: "18:52",
     items: [
       { tab: "squad", pt: "Na contratação e na renovação, um aviso quando a folha passa de 70% da receita do clube.", en: "When signing or renewing, a warning when the wage bill passes 70% of the club's revenue." },
     ],
