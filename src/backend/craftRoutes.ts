@@ -166,16 +166,21 @@ export const craftRoutes = {
     });
   }),
 
-  /** `POST { component, qty }`: a new order on the queue (materials taken from the stock now). */
+  /**
+   * `POST { component, qty, goodShare? }`: a new order on the queue (materials taken from the stock now). `goodShare`
+   * (0..1) is the share of good-supplier materials to use; absent = the good ones first.
+   */
   "/api/saves/:saveId/craft/queue": route("POST", async (req, saveId, seatId) => {
     const body = await readBody(req);
     if (!isComponent(body?.component) || typeof body!.qty !== "number") return Response.json({ error: "invalidQty" }, { status: 400 });
+    const gs = body!.goodShare;
+    if (gs !== undefined && (typeof gs !== "number" || !(gs >= 0 && gs <= 1))) return Response.json({ error: "invalidQty" }, { status: 400 });
     const component = body!.component as ComponentId;
     const qty = body!.qty as number;
     return withSaveLock(saveId, async () => {
       const c = await loadClub(saveId, seatId);
       if (c instanceof Response) return c;
-      const r = enqueue(c.squad.facilities!.craft!, { component, qty }, ctxOf(saveId, c));
+      const r = enqueue(c.squad.facilities!.craft!, { component, qty, ...(gs !== undefined ? { goodShare: gs as number } : {}) }, ctxOf(saveId, c));
       if ("error" in r) return Response.json({ error: r.error }, { status: r.error === "locked" || r.error === "invalidQty" ? 400 : 409 });
       const next = await save(saveId, c, withFacilities(c.squad, { ...c.squad.facilities!, craft: r.craft }));
       return Response.json(view(saveId, next));
@@ -192,7 +197,10 @@ export const craftRoutes = {
       if (c instanceof Response) return c;
       const craft = c.squad.facilities!.craft!;
       const jobId = req.params.jobId!;
-      if (!craft.queue.some((j) => j.id === jobId)) return Response.json({ error: "notFound" }, { status: 404 });
+      const job = craft.queue.find((j) => j.id === jobId);
+      if (!job) return Response.json({ error: "notFound" }, { status: 404 });
+      // Finished on its day (the day advance has not handed it to the stock yet): nothing to cancel.
+      if (action === "cancel" && job.doneOn && job.doneOn <= c.date) return Response.json({ error: "done" }, { status: 409 });
       const r = action === "cancel" ? cancelJob(craft, jobId) : moveJob(craft, jobId, action);
       if (!r) return Response.json({ error: "cannotMove" }, { status: 409 });
       const next = await save(saveId, c, withFacilities(c.squad, { ...c.squad.facilities!, craft: r }));

@@ -4,6 +4,16 @@ import { saveService } from "@/backend/SaveService";
 import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { MATERIALS } from "@/Domain/craft/craftConfig";
+import { deleteSaveMembers } from "@/backend/auth/saveOwnership";
+import { addSeat } from "@/backend/seats";
+import { callApi, createMultiWorld } from "@/backend/worlds/worldTestUtils";
+import type { Squad } from "@/types/playerTypes";
+
+async function editHuman(saveId: string, clubId: string, fn: (s: Squad) => Squad) {
+  const entry = (await saveService.getSquadIndex(saveId)).byId(clubId)!;
+  const sq = (await saveService.getSquad(saveId, entry.leagueSlug, entry.stem))!;
+  await saveService.saveSquad(saveId, entry.leagueSlug, entry.stem, fn(sq));
+}
 
 /** Workshop, shop and stock routes (spec 2026-11-18-club-craft). */
 describe("craft routes", () => {
@@ -105,4 +115,86 @@ describe("craft routes", () => {
     expect(none.status).toBe(409);
     expect(((await none.json()) as any).error).toBe("noClub");
   }, 120_000);
+});
+
+describe("craft routes: good supplier share, done jobs, recycle limits, lobby, seats", () => {
+  const created: string[] = [];
+  afterAll(async () => {
+    for (const id of created) { deleteSaveMembers(id); await saveService.deleteSave(id).catch(() => {}); }
+  }, 120_000);
+
+  test("goodShare, cancel of a done job, recycle at level 1 and on a busy item, a second seat", async () => {
+    const a = devAutoLogin("craft-a@test.local");
+    const b = devAutoLogin("craft-b@test.local");
+    const meta = await saveService.createSave({
+      leagueSlug: "premier_league", leagueName: "Premier League",
+      clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
+    });
+    const saveId = meta.id;
+    created.push(saveId);
+    await ownSolo(saveId, a.user.id);
+    const p = { saveId };
+    const post = (route: string, token: string, body?: unknown, params: Record<string, string> = {}) =>
+      callApi("POST", `/api/saves/:saveId/craft${route}`, token, { params: { ...p, ...params }, body });
+
+    // Good steel in the stock next to the initial standard one.
+    expect((await post("/buy", a.session.token, { items: [{ material: "steel", supplier: "good", qty: 9 }] })).status).toBe(200);
+    // goodShare 0: standard first; 1: good first; absent: good first (bought on purpose).
+    const zero = await post("/queue", a.session.token, { component: "beam", qty: 1, goodShare: 0 });
+    expect(zero.status).toBe(200);
+    expect(zero.json.queue[0].goodShare).toBe(0);
+    const one = await post("/queue", a.session.token, { component: "beam", qty: 1, goodShare: 1 });
+    expect(one.json.queue[1].goodShare).toBeCloseTo(3 / 4);
+    expect(one.json.stock.materials.steel.good).toBe(6);
+    const auto = await post("/queue", a.session.token, { component: "beam", qty: 1 });
+    expect(auto.json.queue[2].goodShare).toBeCloseTo(3 / 4);
+    expect(auto.json.stock.materials.steel.good).toBe(3);
+    for (const bad of [-0.1, 1.5, "half"]) {
+      expect((await post("/queue", a.session.token, { component: "beam", qty: 1, goodShare: bad })).status).toBe(400);
+    }
+
+    // A job finished on its day cannot be cancelled any more.
+    const date = (await saveService.getMeta(saveId))!.currentDate!;
+    await editHuman(saveId, "33", (sq) => ({
+      ...sq, facilities: { ...sq.facilities!, craft: { ...sq.facilities!.craft!, queue: sq.facilities!.craft!.queue.map((j, i) => (i === 0 ? { ...j, startedOn: date, doneOn: date } : j)) } },
+    }));
+    const doneId = zero.json.queue[0].id as string;
+    expect(await post(`/queue/:jobId`, a.session.token, { action: "cancel" }, { jobId: doneId })).toMatchObject({ status: 409, json: { error: "done" } });
+
+    // Recycle: level 1 → 400 minLevel; an item with a works running → 409 busy.
+    await editHuman(saveId, "33", (sq) => ({
+      ...sq, facilities: {
+        ...sq.facilities!,
+        items: { ...sq.facilities!.items, gym: { ...sq.facilities!.items.gym, level: 1 } },
+        projects: [{ id: "fac_t", kind: "repair", item: "pool", to: 100, start: date, end: "2099-01-01", cost: 0, boardShare: 0, instalments: 0, paid: 0, craft: true }],
+      },
+    }));
+    expect(await post("/recycle", a.session.token, { item: "gym" })).toMatchObject({ status: 400, json: { error: "minLevel" } });
+    expect(await post("/recycle", a.session.token, { item: "pool" })).toMatchObject({ status: 409, json: { error: "busy" } });
+
+    // A second seat sees and changes only its own club's stock.
+    const seatB = (await addSeat(saveId, {
+      userId: b.user.id, clubId: "40", manager: { name: "Técnico B", nationalityIso: "br", backgroundId: "former-player" },
+    })).seatId;
+    expect(seatB).toBeTruthy();
+    const aStock = (await saveService.getSquadById(saveId, "33"))!.facilities!.craft!.stock;
+    const bView = await callApi("GET", "/api/saves/:saveId/craft", b.session.token, { params: p });
+    expect(bView.status).toBe(200);
+    expect(bView.json.queue).toEqual([]);
+    expect(bView.json.stock.materials.steel.good).toBe(0);
+    expect((await post("/buy", b.session.token, { items: [{ material: "steel", supplier: "good", qty: 4 }] })).status).toBe(200);
+    expect(await post(`/queue/:jobId`, b.session.token, { action: "cancel" }, { jobId: one.json.queue[1].id })).toMatchObject({ status: 404 });
+    expect((await saveService.getSquadById(saveId, "33"))!.facilities!.craft!.stock).toEqual(aStock);
+    expect((await saveService.getSquadById(saveId, "40"))!.facilities!.craft!.stock.materials.steel.good).toBe(4);
+  }, 300_000);
+
+  test("a world in the lobby cannot buy", async () => {
+    const owner = devAutoLogin("craft-lobby@test.local");
+    const saveId = (await createMultiWorld(owner.session.token)).json.id as string;
+    created.push(saveId);
+    const r = await callApi("POST", "/api/saves/:saveId/craft/buy", owner.session.token, {
+      params: { saveId }, body: { items: [{ material: "steel", supplier: "good", qty: 1 }] },
+    });
+    expect(r).toMatchObject({ status: 409, json: { error: "lobby" } });
+  }, 300_000);
 });

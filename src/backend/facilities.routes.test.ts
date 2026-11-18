@@ -99,6 +99,7 @@ describe("facilities routes", () => {
     expect(refusedBody.error).toBe("missingComponents");
     const recipe = refusedBody.missing as ComponentCounts;
     expect(recipeTotal(recipe)).toBeGreaterThan(0);
+    expect(refusedBody.locked).toEqual([]);
     expect((await saveService.getSquadById(saveId, "33"))!.facilities!.projects).toHaveLength(0);
 
     // The recipe in the stock (all excellent): built, the stock loses it, no money moves.
@@ -199,6 +200,10 @@ describe("facility item requests", () => {
     expect(pitchView.quotes.repair["100"].forecast).toBeUndefined();
     expect(pitchView.quotes.rebuild).toBeNull();
     expect(pitchView.quotes.upgrade.build.recipe).toBeDefined();
+    // The gym's recipe needs gym kits, which a level-1 workshop cannot make yet.
+    const gymView = view.items.find((i: any) => i.id === "gym");
+    if (gymView.quotes.upgrade) expect(gymView.quotes.upgrade.build.locked).toContain("gymKit");
+    expect(pitchView.quotes.repair["100"].build.locked).toEqual([]);
     expect(view.quotes.training.build.recipe).toBeDefined();
     expect(view.levels.training).toBeGreaterThan(0);
 

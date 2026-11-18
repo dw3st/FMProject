@@ -3,7 +3,7 @@ import type { StandDepths } from "@/Domain/facilities/standDepth";
 import { useCallback, useEffect, useState } from "react";
 import type { AcademyEffects, ProjectQuote, TrainingGroundEffects } from "@/Domain/facilities/facilities";
 import type { ItemEffect } from "@/Domain/facilities/facilityItems";
-import type { ComponentCounts, CraftStock } from "@/types/craftTypes";
+import type { ComponentCounts, ComponentId, CraftStock } from "@/types/craftTypes";
 import type {
   BoardRefusal, ClubFacilities, FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest, MowingPattern, TurfType,
 } from "@/types/facilityTypes";
@@ -12,6 +12,8 @@ import type {
 export interface QuoteBuild {
   recipe: ComponentCounts;
   missing: ComponentCounts;
+  /** Recipe components the workshop cannot make yet. */
+  locked: ComponentId[];
   canBuild: boolean;
 }
 

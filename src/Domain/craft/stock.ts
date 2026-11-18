@@ -18,8 +18,14 @@ export function addMaterials(s: CraftStock, supplier: Supplier, add: MaterialCou
   return { ...s, materials };
 }
 
-/** Takes the materials (standard first); null when short. `goodShare` = good units / all units taken. */
-export function takeMaterials(s: CraftStock, need: MaterialCounts): { stock: CraftStock; goodShare: number; good: MaterialCounts } | null {
+/**
+ * Takes the materials; null when short. With `goodShare` (0..1) up to ceil(goodShare × n) good units of each
+ * material come first, the rest standard first; without it the good units come first (the player bought them
+ * on purpose). The result's `goodShare` = good units / all units taken.
+ */
+export function takeMaterials(
+  s: CraftStock, need: MaterialCounts, goodShare?: number,
+): { stock: CraftStock; goodShare: number; good: MaterialCounts } | null {
   const materials = { ...s.materials };
   let good = 0;
   const goodBy: MaterialCounts = {};
@@ -28,10 +34,13 @@ export function takeMaterials(s: CraftStock, need: MaterialCounts): { stock: Cra
     if (!n) continue;
     const have = materials[m];
     if (have.standard + have.good < n) return null;
-    const fromStd = Math.min(have.standard, n);
-    materials[m] = { standard: have.standard - fromStd, good: have.good - (n - fromStd) };
-    good += n - fromStd;
-    if (n - fromStd > 0) goodBy[m] = n - fromStd;
+    const wantGood = goodShare === undefined ? n : Math.ceil(Math.max(0, Math.min(1, goodShare)) * n);
+    const first = Math.min(have.good, wantGood);
+    const fromStd = Math.min(have.standard, n - first);
+    const fromGood = n - fromStd;
+    materials[m] = { standard: have.standard - fromStd, good: have.good - fromGood };
+    good += fromGood;
+    if (fromGood > 0) goodBy[m] = fromGood;
     all += n;
   }
   return { stock: { ...s, materials }, goodShare: all > 0 ? good / all : 0, good: goodBy };

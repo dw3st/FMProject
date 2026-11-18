@@ -99,13 +99,16 @@ export function repairTargets(condition: number): { "25": number | null; "50": n
 interface Build {
   recipe: ComponentCounts;
   missing: ComponentCounts;
+  /** Components of the recipe the workshop cannot make yet (their minimum level is above the workshop's). */
+  locked: ComponentId[];
   canBuild: boolean;
 }
 
 function buildOf(quote: ProjectQuote, f: ClubFacilities, revenue: number): Build {
   const recipe = recipeFor({ kind: quote.kind, ...(quote.item ? { item: quote.item } : {}) }, quote.cost, revenue);
   const missing = missingComponents(f.craft!.stock, recipe);
-  return { recipe, missing, canBuild: Object.keys(missing).length === 0 };
+  const locked = (Object.keys(recipe) as ComponentId[]).filter((id) => CRAFT.RECIPES[id].minLevel > f.craft!.workshop);
+  return { recipe, missing, locked, canBuild: Object.keys(missing).length === 0 };
 }
 
 /** Per-item view: level, condition, effects, works, and the quotes with the components each asks. */
@@ -303,7 +306,7 @@ export const facilityRoutes = {
       if (groupBusy(f, group)) return Response.json({ error: "busy", group }, { status: 409 });
       // Built from the stock (craft): every works takes its recipe now; no board, no money.
       const b = buildOf(quote, f, revenue);
-      if (!b.canBuild) return Response.json({ error: "missingComponents", missing: b.missing }, { status: 409 });
+      if (!b.canBuild) return Response.json({ error: "missingComponents", missing: b.missing, locked: b.locked }, { status: 409 });
       const taken = takeComponents(f.craft!.stock, b.recipe)!;
       const quality = worksQuality(taken.taken);
       let stock = taken.stock;

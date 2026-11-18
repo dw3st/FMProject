@@ -24,11 +24,12 @@ export function materialsFor(component: ComponentId, qty: number): MaterialCount
 
 export type EnqueueError = "locked" | "invalidQty" | "queueFull" | "missingMaterials";
 
-export function enqueue(c: ClubCraft, req: { component: ComponentId; qty: number }, ctx: WorkshopCtx): { craft: ClubCraft } | { error: EnqueueError } {
+export function enqueue(c: ClubCraft, req: { component: ComponentId; qty: number; goodShare?: number }, ctx: WorkshopCtx): { craft: ClubCraft } | { error: EnqueueError } {
   if (!Number.isInteger(req.qty) || req.qty < 1 || req.qty > 500) return { error: "invalidQty" };
   if (CRAFT.RECIPES[req.component].minLevel > c.workshop) return { error: "locked" };
   if (c.queue.length >= CRAFT.MAX_QUEUE) return { error: "queueFull" };
-  const taken = takeMaterials(c.stock, materialsFor(req.component, req.qty));
+  if (req.goodShare !== undefined && !(req.goodShare >= 0 && req.goodShare <= 1)) return { error: "invalidQty" };
+  const taken = takeMaterials(c.stock, materialsFor(req.component, req.qty), req.goodShare);
   if (!taken) return { error: "missingMaterials" };
   const job: CraftJob = {
     id: `job_${c.nextId}`, component: req.component, qty: req.qty, goodShare: taken.goodShare, goodTaken: taken.good,

@@ -20,6 +20,7 @@ describe("workshop", () => {
     const c = withSteel(5);
     expect(enqueue(c, { component: "beam", qty: 6 }, ctx)).toEqual({ error: "missingMaterials" });
     expect(enqueue(c, { component: "gymKit", qty: 1 }, ctx)).toEqual({ error: "locked" });
+    expect(enqueue(c, { component: "beam", qty: 1, goodShare: 2 }, ctx)).toEqual({ error: "invalidQty" });
     const r = enqueue(c, { component: "beam", qty: 5 }, ctx);
     if ("error" in r) throw new Error(r.error);
     expect(r.craft.stock.materials.steel.standard).toBe(0);
