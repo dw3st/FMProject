@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.20",
+    date: "2026-11-18",
+    time: "18:00",
+    items: [
+      { tab: "club", pt: "Oficina do clube: as obras agora são montadas com componentes que você fabrica com materiais comprados na loja.", en: "Club workshop: works are now built with components you make from materials bought in the shop." },
+      { tab: "club", pt: "A diretoria manda materiais todo mês, e com a diretoria contente a loja dá desconto.", en: "The board sends materials every month, and a happy board gets you a shop discount." },
+      { tab: "club", pt: "Peças bem feitas deixam a obra melhor: as instalações gastam mais devagar.", en: "Well-made parts make better works: the facilities wear more slowly." },
+      { tab: "club", pt: "Mapa do clube: veja o nível e o estado de cada instalação e o que cada nível dá.", en: "Club map: see each facility's level and condition, and what each level gives." },
+      { tab: "staff", pt: "Mestre de obras na comissão: a oficina trabalha mais rápido e faz peças melhores.", en: "Foreman on the staff: the workshop works faster and makes better parts." },
+    ],
+  },
+  {
     version: "12.19.3",
     date: "2026-11-18",
     time: "18:00",
