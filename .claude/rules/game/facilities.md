@@ -95,6 +95,10 @@ demanda; últimas 80) e o recorde (`facilities.record`). Recorde batido (havendo
 
 ## Diretoria e dinheiro
 
+> **Histórico (até o craft, 12.20).** Aprovação da diretoria, parte paga por ela e parcelas mensais valem só para as
+> obras em andamento de um save de antes, que terminam pela regra antiga. Toda obra nova é montada com componentes:
+> seção "Craft (fase 1)" no fim.
+
 - O jogador pede (`POST .../facilities/request` com `{ kind: "stand", stand, seats }` ou
   `{ kind: "comfort" | "training" | "academy" }`, sempre o próximo nível). Uma obra por tipo ao mesmo tempo
   (409 `busy`); nível 5 → 400 `maxLevel`; corpo inválido → 400; desempregado → 409 `noClub`; dono do save; trava do save.
@@ -234,15 +238,15 @@ Um item que aparece com 100% (condição arredondada, a partir de 99,5) não tem
 `valor = receita × VALUE_SHARE[item] × nível / 6`; reforma = valor × Δcondição/100 × 0,6; reconstrução = valor;
 melhoria = valor(nível + 1) × 0,6 × tamanho(nível + 1). Prazos: reforma = ⌈REPAIR_WEEKS × Δcondição/100 × tamanho(nível)⌉
 (mínimo 1), reconstrução = ⌈REBUILD_WEEKS × tamanho(nível)⌉, melhoria = ⌈REBUILD_WEEKS × 0,6 × tamanho(nível + 1)⌉, com
-`tamanho(n) = worksSizeFactor(n) = 0,4 + 0,1 × n` (`FACILITIES.WORKS`; 1 no nível 6, 1,4 no 10, 0,6 no 2; #152). **Reforma pequena** (≤ 2% da receita anual, `SMALL_REPAIR_SHARE` — decisão do
-usuário: quase toda reforma é pequena) é paga na hora (`payRepairNow` + `recordMoney`, uma linha `facilities` com
+`tamanho(n) = worksSizeFactor(n) = 0,4 + 0,1 × n` (`FACILITIES.WORKS`; 1 no nível 6, 1,4 no 10, 0,6 no 2; #152). **Reforma pequena** (histórico, antes do craft: ≤ 2% da receita anual, `SMALL_REPAIR_SHARE`) era paga na hora (`payRepairNow` + `recordMoney`, uma linha `facilities` com
 `ref.facility = "repair"`, num `BufferingSaveDAL` da requisição), sem diretoria; `no_money` se o saldo menos o
-comprometido não cobre. Reforma grande, reconstrução e melhoria passam pelo `boardDecision` com parcelas mensais.
+comprometido não cobre; reforma grande, reconstrução e melhoria passavam pelo `boardDecision` com parcelas mensais.
+Desde o craft os custos e prazos acima continuam a base da receita de cada obra (seção "Craft").
 Um projeto por item (`itemBusy`; obra de grupo ocupa o grupo, 409 `busy`); 400 `invalidRequest` (pedido impossível
 para o item) ou `maxLevel` (melhoria no nível 10). Entrega: condição no alvo, `condemned`/`alert` saem, inbox
 `repaired` (melhoria: `upgraded`). Extrato: `facilityRepair/Rebuild/Upgrade` e `boardFundingItem` com o item.
 `GET .../facilities` traz `items` (nível, condição, efeitos, obra, cotações de reforma +25/+50/100%, reconstrução e
-melhoria, cada uma com `forecast`: pago pelo clube ou a previsão da diretoria).
+melhoria, cada uma com `build`: receita, o que falta, componentes travados e `canBuild`; o antigo `forecast` saiu).
 
 ### Contratação
 
@@ -415,3 +419,71 @@ Pedido do usuário. `MowingPattern` ganhou `diamond` (losango, casas compridas n
 ## Mapa do clube e trilha de níveis (craft)
 
 Mocks B + A aprovados em 2026-11-18. A aba Instalações do Clube abre com `ClubFacilitiesHub` (`Facilities/ClubFacilitiesHub.tsx`): o complexo pintado (`club/club-map-1.webp`, `GAME_ART_FILES`; posições dos itens e setores em `Facilities/clubMapLayout.ts`, em pixels da imagem 1600 × 700) com o nível de cada item ("N7"), o "+" (verde = a melhoria dá para montar com o estoque; âmbar = faltam componentes; nenhum = nível 10, item ou área em obra) e o ponto de condição (verde ≥ 70, âmbar 40–69, vermelho < 40); ao lado o painel do item (receita do próximo nível com os ícones, o ganho atual → próximo, prazo, Montar / Fabricar / Comprar, e Reformar / Reconstruir); abaixo a trilha 1..10 do item (Feito, Atual, Próximo, Bloqueado), os cartões das três áreas e as peças no estoque. Sem o visual novo, os cartões das áreas ficam no lugar do mapa. Os números da trilha vêm de `itemLevelBenefit` (`src/Domain/facilities/levelBenefit.ts`, com teste): itens do CT e da base mostram o que o grupo ganha com o item naquele nível (média dos itens); arquibancadas o preço do ingresso; gramado e estrutura só duram mais (temporadas até 40%). A rota devolve `impliedLevel`. O desenho do estádio (setores, ampliação, conforto, grama, público, CT e base, obras) continua abaixo.
+
+## Craft (fase 1, 12.20)
+
+Spec: `docs/superpowers/specs/2026-11-18-club-craft-design.md`. Plano: `docs/superpowers/plans/2026-11-18-club-craft.md`.
+Só o clube humano (cada assento); a IA não tem craft. Lógica pura em `src/Domain/craft/` (constantes `CRAFT`,
+`craftConfig.ts`), E/S em `src/backend/craftWorld.ts`, rotas em `src/backend/craftRoutes.ts` e `facilityRoutes.ts`.
+
+- **Materiais (6)** comprados na loja: concreto, aço, madeira, grama, tecido, eletrônicos; fornecedor padrão ou bom
+  (+15%), guardados separados. Preço de uma unidade = **receita anual × `MATERIAL_SHARE`** (não euros fixos: um clube
+  pequeno e um grande pedem números parecidos de peças), × (1 ± 10%) sorteado por save, material e segunda-feira
+  (`weekPrice`); −10% com a diretoria em 70 ou mais. A compra é uma linha `facilities` com `ref.facility = "materials"`
+  (`craftMaterials`), por `recordMoney`.
+- **Componentes (8)** feitos na oficina com materiais: viga, laje, placa de grama, assento, refletor (oficina 2),
+  aparelho de academia e kit médico (oficina 3), móvel. Valor de referência = materiais × preço base.
+- **Receita de uma obra** (`recipeFor`): a mistura do tipo de obra (`STAND_MIX`, `ITEM_MIX`, obras de grupo = soma dos
+  itens) escalada ao custo da cotação de sempre (`quoteProject`) e arredondada por componente, no mínimo 1 de cada.
+  Montar (`POST .../facilities/request`) tira a receita do estoque e começa a obra no prazo de sempre; 409
+  `missingComponents { missing, locked }` sem as peças, `busy` como antes. **Sem diretoria, sem parcelas.** Uma obra por
+  área continua. Cancelar (`POST .../facilities/cancel`) devolve metade (qualidade Comum); a reconstrução devolve 25%
+  da receita; desmontar um nível (`craft/recycle`) devolve 40% e baixa o item um nível.
+- **Oficina** (`craft.workshop`, 1..5, sem desgaste, fora dos itens): `1 + nível` bancadas, fila de até 10 pedidos
+  (até 500 unidades cada). Um pedido de `qty` unidades leva `⌈dias × qty / 5 × (1 − 0,1 × (nível − 1)) × mestre⌉` dias
+  (lote de 5, `CRAFT.LOT`). Os materiais saem ao entrar na fila; cancelar devolve tudo antes de começar e metade depois.
+  A fila anda no avanço do dia (todo dia). Melhorar a oficina consome componentes (`WORKSHOP_MIX`, custo
+  `WORKSHOP_COST` da receita) e sobe na hora.
+- **Mestre de obras** (`foreman`, `staff.md`): tempo × 1,15 / 1 / 0,85 (1★ / 3★ / 5★), vaga = 2★.
+- **Qualidade** por componente (Comum, Bom, Excelente), sorteada pelo mestre, nível da oficina e fração de material bom;
+  a da obra é a média (≥ 1,5 Excelente, ≥ 0,75 Boa) e fica no item (`FacilityItem.quality`): desgaste × 0,85 (Boa) ou
+  × 0,70 (Excelente). O +2% no efeito do Excelente ficou para a fase 2.
+- **Verba da diretoria:** no dia 1 de cada mês, materiais (os seis em partes iguais, fornecedor padrão) no valor de
+  receita × `allowanceShare(diretoria)`: 0 abaixo de 35, 1% até 50, linear até 3% em 85. Inbox `craft_allowance`.
+  Primeira leitura de um clube sem craft (save de antes, carreira nova, troca de clube): oficina 1 e 2% da receita em
+  materiais.
+- **Inbox `facilities`:** `craft_allowance`, `craft_done` (peças prontas no dia), `built` (obra montada); a entrega
+  continua `completed` / `repaired` / `upgraded`.
+
+| Rota | Faz |
+|---|---|
+| `GET /api/saves/:id/craft` | Estoque, oficina, fila (dias restantes), loja (preço da semana e da anterior, desconto), verba, receitas, melhoria da oficina |
+| `POST …/craft/buy { items }` | Até 12 linhas, até 10 000 por linha; 400 `invalidOrder` |
+| `POST …/craft/queue { component, qty, goodShare? }` | 400 `locked` / `invalidQty`; 409 `queueFull` / `missingMaterials` |
+| `POST …/craft/queue/:jobId { action }` | `up`, `down`, `cancel` |
+| `POST …/craft/workshop` | Melhora a oficina com o estoque (409 `missingComponents`, 400 `maxLevel`) |
+| `POST …/craft/recycle { item }` | Desmonta um nível (400 `minLevel`, 409 `busy`) |
+
+Todas com `requireSeat`, escrita com `withSaveLock` e guarda de lobby. **Telas:** a aba Clube tem `SegmentedTabs`
+Instalações · Oficina · Estoque · Loja (`Craft/*`); Instalações abre no mapa do clube (seção acima) e cada obra mostra a
+receita (tem / falta), Montar, Fabricar o que falta e Comprar os materiais que faltam (abre a Loja com o carrinho).
+Ícones pintados dos materiais e componentes e faixas da oficina por nível. `/test`, `/lab`: nada (o motor não lê o craft).
+
+**Medição M1** (`bun scripts/craft-measure.ts`, os 40 clubes da Premier e do Brasileirão, preço base, fornecedor padrão):
+valor da receita ÷ custo antigo, média por tipo de obra entre 0,995 e 1,024 (reforma 1,023, mín. 0,85 máx. 1,48: uma
+reforma pequena pede pelo menos 1 de cada componente). Para caber no prazo da obra, `MATERIAL_SHARE` ficou ×1,5 dos
+valores iniciais (peças mais caras, menos peças) e o arredondamento passou a ser por componente, não por mistura inteira.
+Tempo de fabricação ÷ prazo da obra (mediana, oficina 1 / 3): arquibancada +1000 lugares 0,64 / 0,39 (198 peças); +5000
+lugares 1,41 / 0,85 (995 peças; 12 de 40 clubes mais lentos que a obra na oficina 3: o lugar custa euros fixos, caro para
+um clube pequeno); conforto 0,61 / 0,49; CT 0,28; base 0,30; reforma, reconstrução e melhoria 0,1–0,15. Arsenal: conforto
+220 assentos + 73 móveis. Verba com a diretoria em 60: ~19% da receita por ano, contra ~12% de obras numa temporada
+típica (estimativa do script).
+
+**Testes:** `bun test src/Domain/craft/<arquivo>` (um por vez), `src/backend/craft.routes.test.ts`,
+`src/backend/craft.advanceDay.test.ts`, `src/backend/facilities.routes.test.ts`. Smoke (`season-rollover-smoke.ts`,
+"Instalações"): a arquibancada de +1000 lugares e uma reforma do gramado a 100% pelo caminho novo
+(`scripts/smoke/craftBuild.ts`: pedir → 409 → comprar os materiais → fila → pedir de novo), cada compra uma linha
+`materials` igual ao total cobrado, cada pedido sai da fila no dia certo, nenhuma parcela nem verba da diretoria em dinheiro.
+
+**Limitações:** a IA não fabrica; o preço da semana não reage às compras; não há componente pronto na loja; o cartão
+Obras do Painel ainda não mostra a fila da oficina.

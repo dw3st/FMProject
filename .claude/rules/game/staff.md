@@ -28,6 +28,7 @@ Spec: `docs/superpowers/specs/2026-10-08-coaching-staff-design.md` (Etapa 31a, v
 | Olheiro-chefe | `scout` | `scouting` | Incerteza ×1,3 / ×1 / ×0,75; ganho das missões ×0,7 / ×1 / ×1,4 (`scouting.md`) | 1 |
 | Olheiro de campo | `fieldScout` | `scouting` | Uma missão cada | 4 (`STAFF.LIMITS.fieldScout`) |
 | Jardineiro | `groundskeeper` | `pitch` | Desgaste dos gramados do clube ×1,3 / ×1 / ×0,75 (× 0,9 por jardineiro a mais; sem nenhum ×1,6; base pela metade) — `StaffEffects.pitchWearMult`, `facilities.md` (5.1) | LOW 1 · MEDIUM 1 · HIGH 2 · ELITE 2 |
+| Mestre de obras | `foreman` | (oficina) | Tempo na bancada da oficina ×1,15 / ×1 / ×0,85; qualidade das peças +0,1 por estrela acima de 3 (`facilities.md` → "Craft") | 1 |
 
 Limite pelo tier natural do clube (`roleLimit`, `financialTierOf`), lido na hora: acima dele, 409 `roleFull`; se o
 tier cair, ninguém é demitido.
@@ -91,8 +92,8 @@ tier cair, ninguém é demitido.
 - `saves/{id}/staffPool.json` = `{ season, refreshedOn, members }` (sem contrato, com `since`), DAL
   `readStaffPool`/`writeStaffPool` (bufferizado). Gerada no `createSave` e, se faltar, na primeira leitura
   (`SaveService.getStaffPool`; a rota `GET /staff/pool` lê sob `withSaveLock`).
-- 300 profissionais determinísticos por save (coach 90, assistant 30, fitness 30, goalkeeping 30, medic 25, analyst
-  25, scout 20, fieldScout 35, groundskeeper 15); estrelas 1–2★ 30%, 2,5–3★ 40%, 3,5–4★ 22%, 4,5–5★ 8%.
+- 335 profissionais determinísticos por save (coach 90, assistant 30, fitness 30, goalkeeping 30, medic 25, analyst
+  25, scout 20, fieldScout 35, groundskeeper 15, youthCoach 20, foreman 15); estrelas 1–2★ 30%, 2,5–3★ 40%, 3,5–4★ 22%, 4,5–5★ 8%.
 - Na virada do país do clube do jogador (`refreshPool`): sai quem tem 68+ e 1/3 dos que estão há mais tempo; entram
   novos até 300 (semente `save:temporada`, ids com a data); todos envelhecem 1 ano. Uma vez por data de virada
   (`refreshedOn`; a geração grava o dia): numa troca entre ligas de calendários diferentes, a virada do país do clube

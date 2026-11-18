@@ -175,3 +175,14 @@ Sem efeito de partida direto; a qualidade só muda desgaste e o multiplicador do
 - A IA não fabrica nada: a qualidade é só do clube humano.
 - O preço da semana não reage às compras.
 - Componentes comprados prontos não existem (só materiais).
+
+## 15. Ajustes na implementação
+
+- §3: o preço base de um material é `receita anual × share` (`CRAFT.MATERIAL_SHARE`), não euros fixos; ×1,5 dos
+  primeiros valores depois da M1 (menos peças por obra, para caber no prazo).
+- §2: a receita arredonda cada componente sobre o número exato de misturas (não sobre misturas inteiras).
+- §4: o tempo da tabela é por lote de 5 unidades; a oficina fica em `craft.workshop` (sem desgaste, fora dos itens).
+- §6: Excelente só no desgaste nesta fase (o +2% no efeito fica para a fase 2).
+- Materiais reservados ao entrar na fila.
+- M1 e tamanhos: `.claude/rules/game/facilities.md` → "Craft (fase 1)". A verba do §7 dá ~19% da receita por ano com a
+  diretoria em 60, acima das obras de uma temporada típica (~12%): a calibrar com o usuário.

@@ -37,6 +37,7 @@ import { rankManagers } from "@/Domain/managers/managers";
 import { comfortLevelPriceMult, comfortPriceMult } from "@/Domain/facilities/facilities";
 import { comfortLevel } from "@/Domain/facilities/facilityItems";
 import { firstHomePitch, pitchRolloverPairs, type PitchByYear } from "@/../scripts/smoke/aiPitchRollover";
+import { craftBuildStep, newCraftBuild, type CraftBuild, type CraftCtx } from "@/../scripts/smoke/craftBuild";
 import { FACILITY_ITEMS, conditionOf, itemsOfGroup, wearFor } from "@/Domain/facilities/facilityItems";
 
 // Windows-safe default for the runtime dir; must be set before backend modules load.
@@ -217,8 +218,8 @@ try {
   const wearTrack = {
     demandFacilities: 0, session: "",
     prev: new Map<string, number>(), outOfRange: [] as string[], rose: [] as string[], samples: 0,
-    forcedOn: null as string | null, wornSeen: false, repairAsked: false, repairStatus: 0,
-    repairPaid: false, repairCost: 0, repairLine: 0, repairFunding: 0, repairedSeen: false, repairedCondition: 0,
+    forcedOn: null as string | null, wornSeen: false,
+    repairBuild: null as CraftBuild | null, repairedSeen: false, repairedCondition: 0,
     // AI home pitch by club and league year: first and last home game of each season. The run ends at
     // the player's rollover, before any rolled league plays its new season, so the first home game of
     // the new season is computed at the rollover from the new calendar (`aiPitchNext`).
@@ -226,49 +227,48 @@ try {
     aiPitchNext: 0,
   };
 
-  // Instalações (`.claude/rules/game/facilities.md`): a happy board (forced to 90 for the request,
-  // then put back) approves a +1000-seat stand, funding part of it; it finishes within the run.
+  // Instalações (`.claude/rules/game/facilities.md`, craft): a +1000-seat stand built through the craft path —
+  // the materials of what is missing bought in the shop, the components made on the workshop, the works asked
+  // again when the queue is done (`scripts/smoke/craftBuild.ts`); it finishes within the run.
   // Big matches (Etapa 38): on the day of a home cup knockout tie, demand of the logged row ÷ the
   // demand of the same day without the big-match multiplier (same fans, followers, tier, phase).
   const cupImportance: { date: string; ratio: number; expected: number }[] = [];
-  const facTrack: { approved: boolean; projectId: string | null; cost: number; boardShare: number; seatsBefore: number } = {
-    approved: false, projectId: null, cost: 0, boardShare: 0, seatsBefore: 0,
+  const facTrack: { build: CraftBuild; seatsBefore: number } = {
+    build: newCraftBuild("stand", { kind: "stand", stand: "east", seats: 1000 }), seatsBefore: 0,
+  };
+  const craftCtx = async (played: string | null): Promise<CraftCtx> => {
+    const { apiRoutes } = await import("@/backend/routes");
+    const sid = saveId!;
+    const mc = (await soloMeta(sid, plain()))!;
+    const year = (await plain().getLeagueMeta(sid, mc.leagueSlug))?.year ?? 0;
+    return {
+      saveId: sid, session: wearTrack.session, today: mc.currentDate!, played, routes: apiRoutes,
+      ledgerOf: async (d) => (await plain().getLedger(sid, year, seat0)).filter((e) => e.date === d),
+    };
   };
   {
-    const { apiRoutes } = await import("@/backend/routes");
     const { devAutoLogin } = await import("@/backend/auth/AuthService");
     const { ownSolo } = await import("@/backend/testing/seatFixtures");
     const { recordMoney } = await import("@/backend/FinancialService");
     // The save has a single owner row: this user is reused by the reborn/negotiation/jobs sections below.
     const { user, session } = devAutoLogin("smoke-reborn@test.local");
     await ownSolo(saveId, user.id);
+    wearTrack.session = session.token;
     const m = (await soloMeta(saveId, plain()))!;
     const sq = (await plain().getSquadById(saveId, playerSquadId))!;
     facTrack.seatsBefore = sq.venue?.capacity ?? 0;
-    // Enough cash for any seat price (<= EUR 6k x 1000), recorded through the ledger like any money.
+    // Enough cash for the stand's materials (<= EUR 6k x 1000), recorded through the ledger like any money.
     if ((sq.finances?.budget ?? 0) < 6_000_000) {
       const e = index0.byId(playerSquadId)!;
       await recordMoney(plain(), saveId, (await plain().getLeagueMeta(saveId, PLAYER_LEAGUE))!.year,
         { leagueSlug: e.leagueSlug, clubSlug: e.stem },
         { date: m.currentDate!, kind: "board_funding", amount: 6_000_000, label: "Smoke: facilities funding", ref: { facility: "stand" } }, seat0);
     }
-    const boardBefore = m.board!;
-    await updateSolo(saveId, { board: { ...boardBefore, board: 90 } }, plain());
-    const handler = apiRoutes["/api/saves/:saveId/facilities/request" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
-    const res = await handler(Object.assign(
-      new Request(`http://localhost/api/saves/${saveId}/facilities/request`, {
-        method: "POST", headers: { cookie: `fs_session=${session.token}`, "content-type": "application/json" },
-        body: JSON.stringify({ kind: "stand", stand: "east", seats: 1000 }),
-      }),
-      { params: { saveId } },
-    ));
-    const body = await res.json() as { approved?: boolean; boardShare?: number; project?: { id: string; cost: number } };
-    await updateSolo(saveId, { board: boardBefore }, plain());
-    facTrack.approved = res.status === 200 && body.approved === true;
-    facTrack.projectId = body.project?.id ?? null;
-    facTrack.cost = body.project?.cost ?? 0;
-    facTrack.boardShare = body.boardShare ?? 0;
-    console.log(`Instalações: +1000 seats requested → ${res.status} ${JSON.stringify({ approved: body.approved, boardShare: body.boardShare, cost: facTrack.cost })}\n`);
+    await craftBuildStep(facTrack.build, await craftCtx(null));
+    const b = facTrack.build;
+    console.log(`Instalações: +1000 seats → ${b.status} (${b.queuedUnits} components queued, materials €${b.purchases.reduce((t, p) => t + p.total, 0)}${b.error ? `, ${b.error}` : ""})
+`);
+    const { apiRoutes } = await import("@/backend/routes");
 
     // Instalações vivas: the training ground forced to 20% makes a signing ask more (the `demand`
     // route of a player of another club); the squad is restored right after.
@@ -287,7 +287,6 @@ try {
     ));
     wearTrack.demandFacilities = ((await dRes.json()) as { facilities?: number }).facilities ?? 0;
     await plain().saveSquad(saveId, e0.leagueSlug, e0.stem, own);
-    wearTrack.session = session.token;
     console.log(`Instalações vivas: demand of ${target.name} with the training ground at 20% → facilities ×${wearTrack.demandFacilities}\n`);
   }
 
@@ -1130,26 +1129,21 @@ try {
         // budget check reads the balance before the day).
         const next = (await soloMeta(saveId, plain()))!;
         const rollingSoon = (next.activeLeagues ?? []).some((l) => playerCountrySlugs.has(l.leagueSlug) && next.currentDate! >= l.end);
-        if (wearTrack.wornSeen && !wearTrack.repairAsked && !rollingSoon) {
-          wearTrack.repairAsked = true;
-          const { apiRoutes } = await import("@/backend/routes");
-          const handler = apiRoutes["/api/saves/:saveId/facilities/request" as keyof typeof apiRoutes] as (r: Request) => Promise<Response>;
-          const res = await handler(Object.assign(
-            new Request(`http://localhost/api/saves/${saveId}/facilities/request`, {
-              method: "POST", headers: { cookie: `fs_session=${wearTrack.session}`, "content-type": "application/json" },
-              body: JSON.stringify({ kind: "repair", item: "stadiumPitch", to: 100 }),
-            }),
-            { params: { saveId } },
-          ));
-          const body = await res.json() as { approved?: boolean; paidByClub?: boolean; project?: { cost: number } };
-          wearTrack.repairStatus = res.status;
-          wearTrack.repairPaid = body.approved === true && body.paidByClub === true;
-          wearTrack.repairCost = body.project?.cost ?? 0;
-          const year = (await plain().getLeagueMeta(saveId, next.leagueSlug))?.year ?? 0;
-          const lines = (await plain().getLedger(saveId, year, seat0)).filter((e) => e.date === next.currentDate && e.ref?.item === "stadiumPitch");
-          wearTrack.repairLine = lines.filter((e) => e.kind === "facilities" && e.ref?.facility === "repair").reduce((t, e) => t - e.amount, 0);
-          wearTrack.repairFunding = lines.filter((e) => e.kind === "board_funding").length;
-          console.log(`  Instalações vivas: repair of the stadium pitch → ${res.status} ${JSON.stringify(body.approved)} paid by the club ${String(body.paidByClub)} (${wearTrack.repairCost})`);
+        // Craft path (spec 2026-11-18-club-craft): the stand of the start, then a repair of the stadium pitch to
+        // 100% once it is worn (it waits for the stand, one works per area). Never asked on a rollover day of the
+        // player's leagues (the rollover budget check reads the balance before the day).
+        if (wearTrack.wornSeen && !wearTrack.repairBuild) {
+          wearTrack.repairBuild = newCraftBuild("repair", { kind: "repair", item: "stadiumPitch", to: 100 });
+        }
+        if (!rollingSoon) {
+          const cc = await craftCtx(date);
+          await craftBuildStep(facTrack.build, cc);
+          if (wearTrack.repairBuild) {
+            const was = wearTrack.repairBuild.status;
+            await craftBuildStep(wearTrack.repairBuild, cc);
+            const rb = wearTrack.repairBuild;
+            if (rb.status !== was) console.log(`  Instalações: repair of the stadium pitch → ${rb.status} (${rb.queuedUnits} components queued${rb.error ? `, ${rb.error}` : ""})`);
+          }
         }
         const repaired = inboxW.find((m) => m.kind === "repaired" && m.item === "stadiumPitch");
         if (repaired && !wearTrack.repairedSeen) {
@@ -2453,21 +2447,30 @@ try {
   {
     const human = (await plain().getSquadById(saveId, playerSquadId))!;
     const f = human.facilities;
-    check(facTrack.approved, "instalações: the board approved the +1000-seat stand (board forced to 90)");
-    check(!!f && f.completed.some((c) => c.id === facTrack.projectId),
+    const sb = facTrack.build;
+    const projectId = sb.project?.id ?? null;
+    check(sb.status === "built" && sb.queuedUnits > 0,
+      `instalações: the +1000-seat stand built from the stock (${sb.status}, ${sb.queuedUnits} components made${sb.error ? `, ${sb.error}` : ""})`);
+    check(!!f && f.completed.some((c) => c.id === projectId),
       `instalações: the project finished within the run (completed: ${f?.completed.map((c) => c.id).join(", ") ?? "none"})`);
     check((human.venue?.capacity ?? 0) === facTrack.seatsBefore + 1000,
       `instalações: venue capacity ${facTrack.seatsBefore} → ${human.venue?.capacity} (+1000)`);
-    const done = f?.completed.find((c) => c.id === facTrack.projectId);
+    const done = f?.completed.find((c) => c.id === projectId);
     const rowsAfter = (f?.attendance ?? []).filter((r) => done && r.date > done.date);
     check(rowsAfter.length > 0 && rowsAfter.every((r) => r.capacity === facTrack.seatsBefore + 1000),
       `instalações: ${rowsAfter.length} home game(s) after the works used the new capacity`);
     check((f?.attendance ?? []).every((r) => r.attendance <= r.capacity), "instalações: attendance never above the capacity");
-    const paid = allLedgerEntries.filter((e) => e.kind === "facilities" && e.ref?.facility === "stand").reduce((s, e) => s - e.amount, 0);
-    const funded = allLedgerEntries.filter((e) => e.kind === "board_funding" && e.label !== "Smoke: facilities funding").reduce((s, e) => s + e.amount, 0);
-    check(paid === facTrack.cost, `instalações: instalments sum to the cost (${paid} == ${facTrack.cost})`);
-    check(funded === Math.round(facTrack.cost * facTrack.boardShare),
-      `instalações: board funding ${funded} == ${Math.round(facTrack.boardShare * 100)}% of the cost`);
+    // Craft: every purchase is one "materials" ledger line of the charged total; every order left the queue on its day;
+    // no works of the run is paid in instalments or funded by the board.
+    const builds = [sb, ...(wearTrack.repairBuild ? [wearTrack.repairBuild] : [])];
+    const purchases = builds.flatMap((x) => x.purchases);
+    check(purchases.length > 0 && purchases.every((p) => p.total > 0 && p.ledger === p.total),
+      `instalações (craft): ${purchases.length} purchase(s), each one "materials" line = the charged total (${purchases.map((p) => `${p.ledger}/${p.total}`).join(", ")})`);
+    const wrong = builds.flatMap((x) => x.wrongDay);
+    check(wrong.length === 0 && builds.every((x) => x.finishedJobs > 0),
+      `instalações (craft): ${builds.reduce((t, x) => t + x.finishedJobs, 0)} order(s) left the queue on their done day (${wrong.slice(0, 3).join("; ")})`);
+    const instalments = allLedgerEntries.filter((e) => (e.kind === "facilities" && e.ref?.facility !== "materials") || (e.kind === "board_funding" && e.label !== "Smoke: facilities funding"));
+    check(instalments.length === 0, `instalações (craft): no instalment or board funding line (${instalments.length})`);
     // League gates match the logged attendance (x comfort price).
     const priceMult = f ? comfortPriceMult(f) : 1;
     const byDate = new Map((f?.attendance ?? []).map((r) => [`${r.date}:${r.competition}`, r]));
@@ -2483,10 +2486,9 @@ try {
       `instalações vivas: every item in 0..100 on ${wearTrack.samples} days (${wearTrack.outOfRange.slice(0, 3).join("; ")})`);
     check(wearTrack.rose.length === 0, `instalações vivas: no item went up outside a delivery (${wearTrack.rose.slice(0, 3).join("; ")})`);
     check(wearTrack.wornSeen, `instalações vivas: the stadium pitch forced to 45% on ${wearTrack.forcedOn} crossed 40% → "worn"`);
-    check(wearTrack.repairStatus === 200 && wearTrack.repairPaid,
-      `instalações vivas: small repair to 100% approved and paid by the club (${wearTrack.repairStatus})`);
-    check(wearTrack.repairCost > 0 && wearTrack.repairLine === wearTrack.repairCost && wearTrack.repairFunding === 0,
-      `instalações vivas: one "facilities" repair line = the cost (${wearTrack.repairLine} == ${wearTrack.repairCost}), no board funding`);
+    const rb = wearTrack.repairBuild;
+    check(!!rb && rb.status === "built" && rb.queuedUnits > 0 && rb.purchases.length > 0,
+      `instalações vivas: repair of the stadium pitch to 100% built from the stock (${rb?.status ?? "not asked"}, ${rb?.queuedUnits ?? 0} components, waited ${rb?.busyDays ?? 0} day(s) for the stand${rb?.error ? `, ${rb.error}` : ""})`);
     check(wearTrack.repairedSeen && wearTrack.repairedCondition >= 99,
       `instalações vivas: delivered → "repaired", condition ${wearTrack.repairedCondition.toFixed(1)}%`);
     const aiRoll = pitchRolloverPairs(wearTrack.aiPitch);
