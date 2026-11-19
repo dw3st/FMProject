@@ -159,6 +159,8 @@ Dentro do aceite (±5%, ≥ 90% `open`, elenco igual). O MEDIUM já fica abaixo 
   só a liga.
 - **Transferência dentro da mesma liga:** só a linha do clube na virada conta; os jogos divididos em duas linhas podem
   não alcançar o mínimo.
+- **Gol da temporada (reforma do motor, etapa 1):** só os jogos de clubes com assento rodam no motor e gravam gols, então
+  os candidatos de uma liga são os gols dos jogos dos clubes humanos dela; numa liga sem assento não há gol da temporada.
 - **Gol da temporada:** liga seguida só por parte da temporada sorteia entre os gols do período seguido; a lista da
   partida ao vivo vem do cliente e só é validada por consistência.
 - **Mundial e ano civil:** uma liga de ano civil que virasse depois de 31/12 entraria no ano seguinte (não acontece hoje).

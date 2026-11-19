@@ -91,12 +91,13 @@ import { addDays, addOneDay } from "@/Domain/dates";
 import { DAY_LOG_COMPACT_LOOKBACK_DAYS, DAY_LOG_COMPACT_PER_DAY, DAY_LOG_KEEP_DAYS, DAY_LOG_KEEP_FULL_DAYS, pruneDayLog, slimDayLog } from "@/Domain/advanceDay/dayLogCompaction";
 import { isGroupWorld } from "@/Domain/groupAdvance/groupAdvance";
 import {
-  buildMatchEvent,
+  type MatchSimResult,
   buildMatchEventFromRecording,
   buildQuickMatchEvent,
   type PlayedMatchRecording,
 } from "@/Domain/advanceDay/matches";
-import { resolveSimModeForSeats } from "@/Domain/advanceDay/simMode";
+import { resolveSimMode } from "@/Domain/advanceDay/simMode";
+import { runFullMatch } from "@/backend/matchPool";
 import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
 import { recordDevChanges, snapshotDevHistory, type DayDevChanges } from "@/Domain/development/devHistory";
 import { isMentalKey } from "@/Domain/mental/mental";
@@ -605,10 +606,8 @@ export async function advanceOneDay(
       for (const p of humanReg?.players ?? []) if (isUnavailable(p, currentDate)) ds.moraleUnavailable.add(p.id);
     }
 
-    // Cup ties run in the full engine only when a club of a seat's league is involved.
-    const humanLeagueClubs = new Set(
-      daySeats.flatMap((ds) => (ds.clubId ? index.inLeague(ds.meta.leagueSlug).map((t) => t.squadId) : [])),
-    );
+    // Clubs with a human seat: only their matches run in the full engine (`resolveSimMode`).
+    const seatClubs = new Set(daySeats.flatMap((ds) => (ds.clubId ? [ds.clubId] : [])));
     // The seat of each human club; the live recordings not yet taken by a match (a leftover is the national game).
     const seatOf = seatByClub(daySeats);
     const pending = new Map(Object.entries(recordings));
@@ -650,6 +649,24 @@ export async function advanceOneDay(
     // Group updates per league for round file writes
     const roundUpdates = new Map<string, Map<number, Fixture[]>>();
 
+    // The day's club matches in fixture order (engine rebuild, stage 1): a full-engine one is running in the match
+    // pool, the others are already resolved; their effects (squads, events, inbox, round) apply in this order, so the
+    // pool never changes what the day writes. A fixture of a club with a queued match first waits for the queue
+    // (a club with two games on a day reads the squad of the first).
+    const matchQueue: { result: MatchSimResult | Promise<MatchSimResult>; apply: (r: MatchSimResult) => void }[] = [];
+    const queuedClubs = new Set<string>();
+    const enqueueMatch = (clubs: readonly string[], result: MatchSimResult | Promise<MatchSimResult>, apply: (r: MatchSimResult) => void) => {
+      // A day that fails before the queue drains drops the result; never an unhandled rejection.
+      if (result instanceof Promise) result.catch(() => {});
+      matchQueue.push({ result, apply });
+      for (const c of clubs) queuedClubs.add(c);
+    };
+    const drainMatches = async () => {
+      for (const q of matchQueue) q.apply(await q.result);
+      matchQueue.length = 0;
+      queuedClubs.clear();
+    };
+
     for (const [leagueSlug, roundNumbers] of activeRoundsForDate.entries()) {
       // Load all relevant round files for this league
       const roundDataArray = await Promise.all(
@@ -680,6 +697,7 @@ export async function advanceOneDay(
             continue;
           }
 
+          if (queuedClubs.has(rawFixture.home) || queuedClubs.has(rawFixture.away)) await drainMatches();
           // A club already updated earlier today (any competition) reads its chained, in-memory
           // squad instead of the stale on-disk snapshot — see the `squadWrites` comment above.
           // This should never happen (the calendar is built to avoid same-day double-booking),
@@ -821,53 +839,52 @@ export async function advanceOneDay(
               }, registration).study;
               if (study) r.event = { ...r.event, study };
             }
-            dayEvents.push(r.event);
-            const complained = recording.complaintMorale === true;
-            const backed = (sq: Squad) => (complained && sq.id === recSeat.clubId ? afterManagerComplaint(sq) : sq);
-            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: backed(r.updatedHome) });
-            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: backed(r.updatedAway) });
-            recSeat.managerCards = sanitizeManagerCards(recording.managerCards);
-            // A live match between two managers (9.6.5): the away manager's cards, kept by the server.
-            if (awaySeat && awaySeat !== recSeat) awaySeat.managerCards = sanitizeManagerCards(recording.awayManagerCards);
-            teamsPlayingToday.add(fixture.home);
-            teamsPlayingToday.add(fixture.away);
-            for (const inj of r.injuriesApplied) {
-              injuryInboxEvents.push({
-                kind: "injured",
-                squadId: inj.team === "home" ? fixture.home : fixture.away,
-                playerId: inj.playerId,
-                playerName: inj.playerName,
-                severity: inj.severity,
-                returnDate: inj.returnDate,
-              });
-            }
-            for (const sus of r.suspensionsApplied) {
-              injuryInboxEvents.push({ kind: "suspended", ...sus });
-            }
-            for (const playerId of r.healedPlayerIds) {
-              const onHome = homeSquad.players.some((p) => p.id === playerId);
-              const squadId = onHome ? fixture.home : fixture.away;
-              const roster = onHome ? homeSquad : awaySquad;
-              const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
-              injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
-            }
+            enqueueMatch([fixture.home, fixture.away], r, (r) => {
+              dayEvents.push(r.event);
+              const complained = recording.complaintMorale === true;
+              const backed = (sq: Squad) => (complained && sq.id === recSeat.clubId ? afterManagerComplaint(sq) : sq);
+              squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: backed(r.updatedHome) });
+              squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: backed(r.updatedAway) });
+              recSeat.managerCards = sanitizeManagerCards(recording.managerCards);
+              // A live match between two managers (9.6.5): the away manager's cards, kept by the server.
+              if (awaySeat && awaySeat !== recSeat) awaySeat.managerCards = sanitizeManagerCards(recording.awayManagerCards);
+              teamsPlayingToday.add(fixture.home);
+              teamsPlayingToday.add(fixture.away);
+              for (const inj of r.injuriesApplied) {
+                injuryInboxEvents.push({
+                  kind: "injured",
+                  squadId: inj.team === "home" ? fixture.home : fixture.away,
+                  playerId: inj.playerId,
+                  playerName: inj.playerName,
+                  severity: inj.severity,
+                  returnDate: inj.returnDate,
+                });
+              }
+              for (const sus of r.suspensionsApplied) {
+                injuryInboxEvents.push({ kind: "suspended", ...sus });
+              }
+              for (const playerId of r.healedPlayerIds) {
+                const onHome = homeSquad.players.some((p) => p.id === playerId);
+                const squadId = onHome ? fixture.home : fixture.away;
+                const roster = onHome ? homeSquad : awaySquad;
+                const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
+                injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
+              }
 
-            const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
-            if (idx !== -1) updatedFixtures[idx] = {
-              ...updatedFixtures[idx]!, played: true, result: r.event.score,
-              ...(r.event.decider ? { decider: r.event.decider } : {}),
-            };
-            pending.delete(recSeat.seatId);
+              const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
+              if (idx !== -1) updatedFixtures[idx] = {
+                ...updatedFixtures[idx]!, played: true, result: r.event.score,
+                ...(r.event.decider ? { decider: r.event.decider } : {}),
+              };
+              pending.delete(recSeat.seatId);
+            });
           } else {
             const sim = computeSeatedMatchLineups(fixture, homeSquad, awaySquad, {
               ...(homeSeat ? { home: humanSide(homeSeat) } : {}),
               ...(awaySeat ? { away: humanSide(awaySeat) } : {}),
             }, registration);
-            const mode = homeSeat || awaySeat
-              ? "full"
-              : isKnockoutComp(leagueSlug)
-                ? (humanLeagueClubs.has(fixture.home) || humanLeagueClubs.has(fixture.away) ? "full" : "fast")
-                : resolveSimModeForSeats(leagueSlug, daySeats.map((ds) => ds.meta));
+            // Full engine only for a match of a seat's club (engine rebuild, stage 1); the rest goes to the quickSim.
+            const mode = resolveSimMode(fixture.home, fixture.away, seatClubs);
             // Pitch of the home stadium (`src/Domain/facilities/pitch.ts`): human club, its stadium pitch; AI, tier and season.
             const pitch = matchPitch(homeSquad, fixture, activeLeagues.find((l) => l.leagueSlug === homeEntry.leagueSlug), currentDate);
             const pitchCondition = pitch.condition;
@@ -879,45 +896,49 @@ export async function advanceOneDay(
             const aiMorale = homeSeat && !awaySeat
               ? { away: await aiMoraleOf(fixture.away) }
               : awaySeat && !homeSeat ? { home: await aiMoraleOf(fixture.home) } : undefined;
-            const r = mode === "full"
-              ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather, ...(aiMorale ? { aiMorale } : {}) })
+            // A full-engine match goes to the match pool (`matchPool.ts`) and the loop goes on; its effects apply in
+            // fixture order (`enqueueMatch`), so the day ends as in series.
+            const result = mode === "full"
+              ? runFullMatch({ fixture, home: homeSquad, away: awaySquad, sim: { ...sim, pitchCondition, turf, referee, weather, ...(aiMorale ? { aiMorale } : {}) } })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather });
-            if (sim.study && mode === "full") r.event = { ...r.event, study: sim.study };
-            registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
-            dayEvents.push(r.event);
-            // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
-            const homeOut = sim.aiFormations.home ? { ...r.updatedHome, aiFormation: sim.aiFormations.home } : r.updatedHome;
-            const awayOut = sim.aiFormations.away ? { ...r.updatedAway, aiFormation: sim.aiFormations.away } : r.updatedAway;
-            squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: homeOut });
-            squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: awayOut });
-            teamsPlayingToday.add(fixture.home);
-            teamsPlayingToday.add(fixture.away);
-            for (const inj of r.injuriesApplied) {
-              injuryInboxEvents.push({
-                kind: "injured",
-                squadId: inj.team === "home" ? fixture.home : fixture.away,
-                playerId: inj.playerId,
-                playerName: inj.playerName,
-                severity: inj.severity,
-                returnDate: inj.returnDate,
-              });
-            }
-            for (const sus of r.suspensionsApplied) {
-              injuryInboxEvents.push({ kind: "suspended", ...sus });
-            }
-            for (const playerId of r.healedPlayerIds) {
-              const onHome = homeSquad.players.some((p) => p.id === playerId);
-              const squadId = onHome ? fixture.home : fixture.away;
-              const roster = onHome ? homeSquad : awaySquad;
-              const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
-              injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
-            }
+            enqueueMatch([fixture.home, fixture.away], result, (r) => {
+              if (sim.study && mode === "full") r.event = { ...r.event, study: sim.study };
+              registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
+              dayEvents.push(r.event);
+              // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
+              const homeOut = sim.aiFormations.home ? { ...r.updatedHome, aiFormation: sim.aiFormations.home } : r.updatedHome;
+              const awayOut = sim.aiFormations.away ? { ...r.updatedAway, aiFormation: sim.aiFormations.away } : r.updatedAway;
+              squadWrites.set(rawFixture.home, { league: homeEntry.leagueSlug, club: homeEntry.stem, squad: homeOut });
+              squadWrites.set(rawFixture.away, { league: awayEntry.leagueSlug, club: awayEntry.stem, squad: awayOut });
+              teamsPlayingToday.add(fixture.home);
+              teamsPlayingToday.add(fixture.away);
+              for (const inj of r.injuriesApplied) {
+                injuryInboxEvents.push({
+                  kind: "injured",
+                  squadId: inj.team === "home" ? fixture.home : fixture.away,
+                  playerId: inj.playerId,
+                  playerName: inj.playerName,
+                  severity: inj.severity,
+                  returnDate: inj.returnDate,
+                });
+              }
+              for (const sus of r.suspensionsApplied) {
+                injuryInboxEvents.push({ kind: "suspended", ...sus });
+              }
+              for (const playerId of r.healedPlayerIds) {
+                const onHome = homeSquad.players.some((p) => p.id === playerId);
+                const squadId = onHome ? fixture.home : fixture.away;
+                const roster = onHome ? homeSquad : awaySquad;
+                const playerName = roster.players.find((p) => p.id === playerId)?.name ?? playerId;
+                injuryInboxEvents.push({ kind: "returned", squadId, playerId, playerName });
+              }
 
-            const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
-            if (idx !== -1) updatedFixtures[idx] = {
-              ...updatedFixtures[idx]!, played: true, result: r.event.score,
-              ...(r.event.decider ? { decider: r.event.decider } : {}),
-            };
+              const idx = updatedFixtures.findIndex((f) => f.id === fixture.id);
+              if (idx !== -1) updatedFixtures[idx] = {
+                ...updatedFixtures[idx]!, played: true, result: r.event.score,
+                ...(r.event.decider ? { decider: r.event.decider } : {}),
+              };
+            });
           }
         }
 
@@ -926,6 +947,8 @@ export async function advanceOneDay(
         roundUpdates.get(leagueSlug)!.set(roundNum, updatedFixtures);
       }
     }
+
+    await drainMatches();
 
     // A recording no club fixture took may be the human manager's national game (Etapa 41b): the national day
     // below takes it, or the day fails.

@@ -66,6 +66,10 @@ válidos, nunca a própria liga, sem duplicata, no máximo 3. Não existe seçã
 Configurações — o `SettingsOverlay` não tem sessão de save; seguir é uma estrela no cabeçalho da
 Classificação (`LeagueTableScreen.tsx`), onde a liga já está selecionada.
 
+Desde a reforma do motor (etapa 1) seguir uma liga não muda como ela é simulada: toda liga roda no quickSim, e só os
+jogos dos clubes com assento vão ao motor completo (`resolveSimMode`). O selo "Simulada" da Classificação saiu (valeria
+para todas); a janela de um jogo sem detalhe diz que o detalhe dos jogadores só existe nos jogos dos clubes humanos.
+
 ## Mapa-múndi do novo jogo
 
 `src/GameInterface/NewGame/WorldMap.tsx` no passo de país do `NewGameWizard` (só a partir de `xl`,

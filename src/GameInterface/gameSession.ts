@@ -27,7 +27,7 @@ export interface GameSession {
   currentDate?: string;
   min_energy_to_train?: number;
   training_intensity?: TrainingIntensity;
-  /** Leagues (besides the player's own) resolved by the full engine. Max 3 — see simMode.ts. */
+  /** Leagues (besides the player's own) the manager follows (star on the league table). Max 3; display only, never the sim mode. */
   followedLeagues?: string[];
   /** Multiplayer part 3: the world advances by the group (no Continuar, no fast-forward). */
   groupAdvance?: boolean;

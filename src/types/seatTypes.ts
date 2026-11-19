@@ -60,7 +60,7 @@ export interface SeatState {
   training_intensity?: TrainingIntensity;
   /** Style the seat's club drills on training days; absent = the tactics style. */
   style_focus?: FamiliarityKey;
-  /** Leagues (besides the seat's own) resolved by the full engine. Max 3 — see simMode.ts. */
+  /** Leagues (besides the seat's own) the manager follows (star on the league table). Max 3; display only, never the sim mode. */
   followedLeagues?: string[];
   /** Rest days of the seat's club (pre-seeded around its matches, toggled by the player). */
   restDays?: string[];

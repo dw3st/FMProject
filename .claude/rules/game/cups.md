@@ -145,6 +145,9 @@ copa inteira do país do jogador no motor completo): ~40 jogos no motor completo
 O clube do próprio jogador sempre joga no motor completo (`userPlays`), como qualquer jogo de liga
 dele.
 
+**Reforma do motor (etapa 1):** a regra acima saiu. Só o jogo de um clube com assento vai ao motor completo; os demais
+jogos de copa, mesmo com clubes da liga do jogador, usam o quickSim (`resolveSimMode`, `non-player-games.md`).
+
 ## Recusa de gravação de mata-mata indecisa
 
 Uma partida do jogador registrada pelo front (`playedMatchOverride`) para uma fixture `knockout`

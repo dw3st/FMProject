@@ -17,6 +17,10 @@
  *   --seats N   N human seats (multiplayer part 1): the first on the Premier League, the others (`addSeat`) on
  *               the first club of La Liga, Bundesliga, Serie A, Ligue 1 — each in the full engine
  *
+ * Only the seats' matches run in the full engine (engine rebuild, stage 1), in the match pool (`matchPool.ts`):
+ * `full` = pool jobs of the day, `fullMatch` = engine time in this thread (`MATCH_WORKERS=0`), `poolBusy` = engine time
+ * summed over the workers (overlaps the day's wall time). `FULL_DURATION=1` reaches the workers through the env.
+ *
  * Timing is instrumented inside this script only: engine / quickSim / training /
  * market / standings functions are wrapped via `mock.module` before the backend is
  * imported, and the DAL is wrapped in a counting proxy. No engine code is changed.
@@ -84,6 +88,7 @@ const { RUNTIME_DATA_DIR } = await import("@/backend/runtimeDir");
 const { advanceOneDay } = await import("@/backend/advanceDay");
 const { applyRandomStartKit } = await import("@/backend/startKits");
 const { applyBroadcasting } = await import("@/backend/FinancialService");
+const { matchPoolStats } = await import("@/backend/matchPool");
 type ISaveDAL = import("@/backend/dal/ISaveDAL").ISaveDAL;
 
 // ── Counting DAL proxy ────────────────────────────────────────────────────────
@@ -220,6 +225,7 @@ async function runDays(saveId: string, buffered: boolean): Promise<DayRow[]> {
   for (let d = 0; d < DAYS; d++) {
     const date = (await plain.getMeta(saveId))?.currentDate ?? "?";
     resetCounters();
+    const pool0 = matchPoolStats();
     const t0 = performance.now();
     let flushMs = 0;
     let outcome: Awaited<ReturnType<typeof advanceOneDay>>;
@@ -239,11 +245,12 @@ async function runDays(saveId: string, buffered: boolean): Promise<DayRow[]> {
     if (!outcome.ok) throw new Error(`advanceOneDay failed on ${date}: ${outcome.status} ${outcome.error}`);
     const events = (outcome.payload.events as Array<{ kind: string }>) ?? [];
     const fullMs = timers.fullMatch?.ms ?? 0;
+    const pool1 = matchPoolStats();
     rows.push({
       date,
       ms,
       exFullMs: ms - fullMs,
-      full: timers.fullMatch?.calls ?? 0,
+      full: pool1.jobs - pool0.jobs,
       fast: timers.fastMatch?.calls ?? 0,
       reads: io.squadReads,
       misses: io.squadReadMisses,
@@ -254,6 +261,7 @@ async function runDays(saveId: string, buffered: boolean): Promise<DayRow[]> {
       profile: {
         flush: flushMs,
         fullMatch: fullMs,
+        poolBusy: pool1.busyMs - pool0.busyMs,
         fastMatch: timers.fastMatch?.ms ?? 0,
         training: (timers.training?.ms ?? 0) + (timers.rest?.ms ?? 0),
         marketTick: timers.marketTick?.ms ?? 0,
@@ -308,7 +316,7 @@ function printTable(title: string, rows: DayRow[]): void {
     if (rs.length === 0) continue;
     const parts = keys.map((k) => `${k} ${avg(rs.map((r) => r.profile[k]!)).toFixed(0)}`);
     // flush I/O is already counted in the io* buckets (the flush writes go through the counting DAL).
-    const accounted = avg(rs.map((r) => keys.reduce((s, k) => (k === "flush" ? s : s + r.profile[k]!), 0)));
+    const accounted = avg(rs.map((r) => keys.reduce((s, k) => (k === "flush" || k === "poolBusy" ? s : s + r.profile[k]!), 0)));
     parts.push(`unaccounted ${(avg(rs.map((r) => r.ms)) - accounted).toFixed(0)}`);
     console.log(`  ${label}: ${parts.join(" | ")}`);
   }

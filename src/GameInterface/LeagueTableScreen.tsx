@@ -20,7 +20,7 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world/labels";
-import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
+import { MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
 import { updateFollowedLeagues } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -780,10 +780,6 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
         ? t("leagues.unfollowLeague")
         : t("leagues.followLeague");
 
-  const simMode = session
-    ? resolveSimMode(activeSlug, { leagueSlug: session.leagueSlug, followedLeagues })
-    : "full";
-
   const handleToggleFollow = async () => {
     if (!session || followDisabled) return;
     const previous = followedLeagues;
@@ -868,14 +864,6 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
                 className={isFollowed ? "text-chart-4" : "text-muted-foreground"}
               />
             </button>
-            {simMode === "fast" && (
-              <span
-                title={t("leagues.simulatedBadgeTooltip")}
-                className="shrink-0 inline-flex items-center gap-1 rounded-full border border-chart-4/40 bg-chart-4/10 px-2.5 py-1.5 text-sm font-bold text-chart-4"
-              >
-                {t("leagues.simulatedBadge")}
-              </span>
-            )}
             {session?.saveId && (
               <ClubSearch
                 saveId={session.saveId}
