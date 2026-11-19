@@ -44,7 +44,7 @@ describe("goal of the season candidates", () => {
     expect(await saveService.listSeasonGoalFiles(id)).toEqual([{ league: "premier_league", year: 2026 }]);
   });
 
-  test("a round of the player's league (full engine) writes only its own file", async () => {
+  test("a round of the player's league (the seat's match in the full engine) writes only its own file", async () => {
     const meta = await saveService.createSave({
       leagueSlug: "premier_league", leagueName: "Premier League",
       clubId: "33", clubName: "Test", clubColors: ["#000000", "#ffffff"],
