@@ -13,6 +13,7 @@ import "react-json-view-lite/dist/index.css";
 
 const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   decision:     "text-cyan-400",
+  ball:         "text-amber-200",
   tackle:       "text-orange-400",
   interception: "text-yellow-400",
   pass:         "text-blue-400",

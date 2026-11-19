@@ -621,6 +621,57 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'ball-3d-long-ball',
+    name:        'Ball 3D — long ball, bounce, out of play',
+    description: 'A long ball by a centre-back (45 yd) toward the right corner with nobody near the landing point (stage 3, `ball-3d.md`): it flies on a real parabola (the peak follows from the flight time the engine gives it), lands, bounces lower each time, rolls and goes out of play. Toggle "Ball 3D": the predicted path, the peak and the landing point; the ball and its shadow on the pitch show the height. Debug log "ball".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Costa',    'A', 'CB',   40, 37, DEFENDER),
+        makePlayer('Santos',   'A', 'ST',   70, 30, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   72, 26, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      const toX = 98, toY = 68;
+      return {
+        ...st,
+        pass: {
+          fromId: 1, toId: null, toX, toY, kind: 'long_ball', t: 0, distance: Math.hypot(toX - 40, toY - 37),
+          receiverOffside: false, intendedRunnerId: null,
+        },
+      };
+    },
+  },
+
+  {
+    id:          'ball-3d-high-loose',
+    name:        'Ball 3D — loose ball above the reach of a player',
+    description: 'A loose ball 3.5 yd up, dropping onto a midfielder (stage 3, `ball-3d.md`): above his reach (2.4 yd, a keeper 3 yd) he cannot play it; he collects it once it falls under his head, or after the bounce. Toggle "Ball 3D".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CM',   60, 37, MIDFIELDER),
+        makePlayer('Mensah',   'B', 'CM',   66, 40, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      const loose = {
+        x: 60.3, y: 37, vx: 0.5, vy: 0, startTime: 0, fromPasserId: 2, fromTeamLastTouch: 'B' as const,
+        intendedRunnerId: null, receiverOffside: false, source: 'clearance' as const,
+      };
+      return {
+        ...st,
+        ballHolderId: 2,
+        looseBall: loose,
+        ball: {
+          x: loose.x, y: loose.y, z: 3.5, vx: 0.5, vy: 0, vz: 0, phase: 'loose' as const,
+          key: `l:0:2:clearance`, kind: 'loose' as const, team: 'B' as const,
+          peak: 3.5, air: 0, elapsed: 0, bounces: 0, distance: 0,
+        },
+      };
+    },
+  },
+
+  {
     id:          'cross-to-box',
     name:        'Aerial — Cross to the Box',
     description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',

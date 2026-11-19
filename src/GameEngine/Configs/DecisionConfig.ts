@@ -60,6 +60,9 @@ export interface DecisionFlags {
   SHOT_LIMIT: boolean;
   /** Stage 4b: tactic axes move the engine gently (width damped, mentality on the carry threshold). */
   TACTIC_DAMP: boolean;
+  /** Stage 3 of the rebuild (`ball-3d.md`): the ball is a 3D object (height, flight, bounce, roll); passes, shots and
+   *  loose balls move it physically; a loose ball above a player's reach can't be collected. */
+  BALL_3D: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -87,6 +90,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   SHORT_STEPS: true,
   SHOT_LIMIT: true,
   TACTIC_DAMP: true,
+  BALL_3D: true,
 };
 
 /**

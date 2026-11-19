@@ -628,7 +628,7 @@ export interface BackLineState {
  * `state.pass` is null during this phase. `ballHolderId` continues to reference
  * the last toucher (the passer) for stat attribution and team-with-ball checks.
  */
-interface LooseBallState {
+export interface LooseBallState {
   /** Where the ball is right now (yards). Updated each tick when velocity > 0. */
   x: number;
   y: number;
@@ -659,6 +659,35 @@ interface LooseBallState {
   offsideIds?: number[];
   /** Stage 4: why it runs loose (absent = the older causes, e.g. a through ball landing on target). */
   cause?: LooseBallCause;
+}
+
+/** Which part of the play the 3D ball belongs to. */
+export type BallPhase = 'held' | 'pass' | 'shot' | 'loose';
+/** Kind of flight, for the statistics (`ballFlight` event). */
+export type BallFlightKind = 'ground' | 'lofted' | 'cross' | 'corner' | 'long_ball' | 'clearance' | 'shot' | 'header' | 'loose';
+
+export interface BallState {
+  x: number; y: number; z: number;
+  /** Velocity, yards per second of the sim step. */
+  vx: number; vy: number; vz: number;
+  phase: BallPhase;
+  /** The pass / shot / loose ball this ball belongs to (`syncBall` starts a new flight when it changes). */
+  key: string;
+  kind: BallFlightKind;
+  /** Team that last played it. */
+  team: TeamId | null;
+  /** Highest point (yd), seconds above `AIR_Z`, seconds since the phase started, bounces. */
+  peak: number;
+  air: number;
+  elapsed: number;
+  bounces: number;
+  /** Guided flights: the profile and the height it lands at. */
+  profile?: 'air' | 'ground';
+  arriveZ?: number;
+  /** Horizontal distance of the flight at launch (yd). */
+  distance: number;
+  /** The phase that ended this tick (set on the tick it ended): its kind, peak and the height it ended at (yd). */
+  ended?: { kind: BallFlightKind; phase: BallPhase; peak: number; z: number };
 }
 
 export interface ShotState {
@@ -766,6 +795,11 @@ export interface GameState {
    * toucher only.
    */
   looseBall: LooseBallState | null;
+  /**
+   * The 3D ball (stage 3, `Domain/Ball3D.ts`, `.claude/rules/game-engine/ball-3d.md`): kept in step with `pass`,
+   * `shot` and `looseBall` by `syncBall` after every tick (the loose ball moves it itself). Absent with `BALL_3D` off.
+   */
+  ball?: BallState;
   /** Stage 4 (`movement.md`): each side's back line while it defends (robust mean + hold / step-up / drop). */
   backLine?: Partial<Record<TeamId, BackLineState>>;
   score: { A: number; B: number };

@@ -1,5 +1,9 @@
-/** Illustrative height of the ball (yards) for drawing a raised ball and its ground shadow. */
+/**
+ * Height of the ball (yards) for drawing a raised ball and its ground shadow. With the 3D ball (stage 3, `ball-3d.md`)
+ * it is the real height `state.ball.z`; without it, the illustrative arcs below.
+ */
 import { clamp } from "@/Domain/math";
+import { BALL_PHYSICS } from "@/GameEngine/Configs/BallPhysicsConfig";
 import { BALL_HEIGHT } from "@/GraficsEngine/pitchStyle";
 import type { GameState } from "@/GameEngine/types";
 
@@ -34,7 +38,8 @@ function heightAt(state: Pick<GameState, "pass" | "shot">, t: number): number {
 }
 
 /** Height of the ball right now: high passes and shots arc, long passes lift a little, the rest rolls. */
-export function ballHeight(state: Pick<GameState, "pass" | "shot">): number {
+export function ballHeight(state: Pick<GameState, "pass" | "shot"> & { ball?: GameState["ball"] }): number {
+  if (state.ball) return state.ball.z;
   return heightAt(state, state.shot ? state.shot.t : state.pass ? state.pass.t : 0);
 }
 
@@ -42,8 +47,22 @@ export function ballHeight(state: Pick<GameState, "pass" | "shot">): number {
  * Height between two sim steps: on the same flight the progress is blended and the arc read there (a true parabola
  * at 60 fps, not straight pieces between 0.2 s samples); otherwise a plain blend of the two heights.
  */
-export function ballHeightBetween(prev: Pick<GameState, "pass" | "shot">, cur: Pick<GameState, "pass" | "shot">, alpha: number): number {
+export function ballHeightBetween(
+  prev: Pick<GameState, "pass" | "shot"> & { ball?: GameState["ball"] },
+  cur: Pick<GameState, "pass" | "shot"> & { ball?: GameState["ball"] },
+  alpha: number,
+): number {
   const a = clamp(alpha, 0, 1);
+  const pb = prev.ball, cb = cur.ball;
+  if (pb && cb) {
+    // The same flight with no bounce in between: the real parabola at the frame's time; else a plain blend.
+    const span = cb.elapsed - pb.elapsed;
+    if (pb.key === cb.key && pb.phase === cb.phase && cb.bounces === pb.bounces && span > 0) {
+      const tau = a * span;
+      return Math.max(0, pb.z + pb.vz * tau - 0.5 * BALL_PHYSICS.GRAVITY * tau * tau);
+    }
+    return pb.z + (cb.z - pb.z) * a;
+  }
   if (prev.shot && cur.shot && prev.shot.shooterId === cur.shot.shooterId && prev.shot.toY === cur.shot.toY) {
     return heightAt(cur, prev.shot.t + (cur.shot.t - prev.shot.t) * a);
   }
