@@ -466,11 +466,25 @@ export function shortlistAlerts(prev: ShortlistStatus | undefined, now: Shortlis
   return out;
 }
 
-/** Training compensation of a prospect from a country whose top league is of `tier`. */
-export function prospectFee(tier: FinancialTier, ownWageFactor: number, ownRevenue?: number): number {
-  const fee = S.PROSPECT_FEE[tier] * ownWageFactor;
+/**
+ * Quality factor of a prospect's fee: the mean of his real level and the top of his potential band (what decides
+ * his worth; the screen shows the scout's band), squared on a 0..1 scale between `MIN` and `MAX`.
+ */
+export function prospectQualityMult(player: RosterPlayer): number {
+  const q = S.PROSPECT_FEE_QUALITY;
+  const score = (overallAvg(player) + potentialBand(player)[1]) / 2;
+  const t = clamp((score - q.LOW) / (q.HIGH - q.LOW), 0, 1);
+  return q.MIN + (q.MAX - q.MIN) * t * t;
+}
+
+/**
+ * Training compensation of a prospect from a country whose top league is of `tier`: the tier's fee × own wage
+ * factor, × the prospect's quality (`prospectQualityMult`) when `player` is given, capped by the buyer's revenue.
+ */
+export function prospectFee(tier: FinancialTier, ownWageFactor: number, ownRevenue?: number, player?: RosterPlayer): number {
+  const fee = S.PROSPECT_FEE[tier] * ownWageFactor * (player ? prospectQualityMult(player) : 1);
   const capped = ownRevenue === undefined ? fee : Math.min(fee, Math.max(S.PROSPECT_FEE_FLOOR, ownRevenue * S.PROSPECT_FEE_REVENUE_SHARE));
-  return Math.round(capped / 1000) * 1000;
+  return Math.max(player ? S.PROSPECT_FEE_MIN : 0, Math.round(capped / 1000) * 1000);
 }
 
 /**
@@ -485,7 +499,8 @@ export function generateProspects(args: {
   week: string;
   topLeagueSquads: Squad[];
   nextSeasonEnd: string;
-  fee: number;
+  /** The fee of each prospect: a number (the same for all) or one by prospect (`prospectFee` with the player). */
+  fee: number | ((player: RosterPlayer) => number);
   /** The seat whose mission found them (multi worlds); absent = solo (the draw of before). */
   seatId?: string;
 }): ScoutProspect[] {
@@ -506,7 +521,8 @@ export function generateProspects(args: {
   return intake.slice(0, count).map((p, i) => {
     const id = `${tag}_${i}`;
     const player: RosterPlayer = { ...p, id, squadId: "", nationality: args.country, overallAvg: undefined };
-    return { player, country: args.country, expires: addDays(args.week, S.PROSPECT_DAYS), reportId: "", fee: args.fee };
+    const fee = typeof args.fee === "function" ? args.fee(player) : args.fee;
+    return { player, country: args.country, expires: addDays(args.week, S.PROSPECT_DAYS), reportId: "", fee };
   });
 }
 

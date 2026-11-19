@@ -2,7 +2,7 @@ import { playerMissionWeeks, playerWeeklyGain } from "@/Domain/scouting/missions
 import { describe, expect, test } from "bun:test";
 import {
   addProspects, advanceScoutingWeek, capReports, allowedWeeks, buildReport, countryVisits, generateProspects, gradeOf, isGem, missionCost,
-  missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, pruneProspects, recordRecommendations, regradeReport, relativeNote,
+  missionPool, monthlyRecommendations, observedPerWeek, pickObserved, prospectFee, prospectQualityMult, pruneProspects, recordRecommendations, regradeReport, relativeNote,
   shortlistAlerts, starterLineAverages, type PoolEntry, type ViewerContext,
 } from "@/Domain/scouting/missions";
 import { emptyScoutingState, RECOMMENDATION_ORIGIN, type ScoutAssignment, type ScoutReport } from "@/types/scoutingTypes";
@@ -263,6 +263,27 @@ describe("prospects", () => {
     expect(r.state.reports[0]!.prospectId).toBe("pr");
     expect(r.news[0]!.kind).toBe("prospect");
     expect(pruneProspects(r.state, "2027-04-01").prospects).toHaveLength(0);
+  });
+  test("the fee follows the prospect's level and potential (report 2026-11-19)", () => {
+    const weak = player("w", 1.5, 17);
+    const good = player("g", 4, 16);
+    const star = player("s", 5.5, 16);
+    expect(prospectQualityMult(weak)).toBeCloseTo(SCOUTING.PROSPECT_FEE_QUALITY.MIN, 2);
+    expect(prospectQualityMult(star)).toBeCloseTo(SCOUTING.PROSPECT_FEE_QUALITY.MAX, 2);
+    const fee = (p: RosterPlayer) => prospectFee("MEDIUM", 1, undefined, p);
+    expect(fee(weak)).toBeLessThan(fee(good));
+    expect(fee(good)).toBeLessThan(fee(star));
+    expect(fee(weak)).toBeLessThanOrEqual(20_000);
+    expect(fee(star)).toBeGreaterThan(120_000);
+    // The buyer's revenue still caps it, and a fee is never below the minimum.
+    expect(prospectFee("ELITE", 1, 1_000_000, star)).toBe(15_000);
+    expect(prospectFee("LOW", 0.1, undefined, weak)).toBe(SCOUTING.PROSPECT_FEE_MIN);
+    // Each generated prospect gets his own fee.
+    const ps = Array.from({ length: 30 }, (_, w) => generateProspects({
+      saveId: "q", country: "Spain", week: `2027-0${1 + (w % 9)}-1${w % 10}`, topLeagueSquads: [top],
+      nextSeasonEnd: "2027-06-01", fee: (p) => prospectFee("MEDIUM", 1, undefined, p),
+    })).flat();
+    for (const p of ps) expect(p.fee).toBe(prospectFee("MEDIUM", 1, undefined, p.player));
   });
   test("starter line averages use the top of each line", () => {
     const sq: Squad = { ...top, players: [player("g1", 7, 25, "GK"), player("g2", 3, 25, "GK"), ...top.players.filter((p) => p.positions[0] !== "GK")] };
