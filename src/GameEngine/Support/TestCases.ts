@@ -130,6 +130,9 @@ function buildState(players: GamePlayer[], ballHolderId: number): GameState {
     presentationCountdown: 0,
     possessionTime:        0,
     lastPasserId:          null,
+    cards:                 [],
+    injuries:              [],
+    substitutions:         [],
     teamIntent:            { A: 'balanced', B: 'balanced' },
   } as GameState;
 }
