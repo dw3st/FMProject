@@ -109,6 +109,12 @@ export interface Variant {
    */
   temperament?: number;
   /**
+   * The holder's mind (`decisions.md` -> phase 3): `holder` turns the HOLDER flag of the match on or off (variant A, the
+   * home side, sets it; absent = the default), `mental` forces this side's decisions / composure / flair / anticipation
+   * (0..10; absent = each player's own).
+   */
+  decisions?: { holder?: boolean; mental?: number };
+  /**
    * The manager's Discipline attribute 1..20 of this side (`.claude/rules/game/achievements.md`): fouls and cards
    * × (1 − 5% t) in the engine and the quickSim. Absent = no attribute (neutral, like the AI).
    */
@@ -311,6 +317,15 @@ export interface TeamRawStats {
   offBallEntropySum: number;
   defenseEntropySum: number;
   holderPressureSum: number;
+  /** Holder mind (`decisions.md` -> phase 3), summed across games: decisions, off-argmax picks, windows, lapses,
+   * releases, decisions at high pressure and the releases among them. */
+  holderMindDecisions: number;
+  holderOffArgmax: number;
+  holderWindows: number;
+  holderLapses: number;
+  holderReleases: number;
+  holderHighPressure: number;
+  holderReleasesHigh: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -493,6 +508,12 @@ export interface PerMatchView {
   offBallNearTiePct: number;
   defenseNearTiePct: number;
   avgHolderPressure: number;
+  /** Holder mind (`decisions.md` -> phase 3): off-argmax picks (% of decisions), lapses (% of windows), releases (% of
+   * decisions, and % at high pressure). */
+  holderOffArgmaxPct: number;
+  holderLapsePct: number;
+  holderReleasePct: number;
+  holderReleaseHighPct: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -633,6 +654,12 @@ export interface VariantSummary {
   offBallNearTiePct: number;
   defenseNearTiePct: number;
   avgHolderPressure: number;
+  /** Holder mind (`decisions.md` -> phase 3): off-argmax picks (% of decisions), lapses (% of windows), releases (% of
+   * decisions, and % at high pressure). */
+  holderOffArgmaxPct: number;
+  holderLapsePct: number;
+  holderReleasePct: number;
+  holderReleaseHighPct: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

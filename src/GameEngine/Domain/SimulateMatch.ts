@@ -11,6 +11,7 @@
  */
 
 import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
+import { setTeamMentalOverride } from '@/GameEngine/Configs/MentalMatchConfig';
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
 import { setDecisionFlags } from '@/GameEngine/Configs/DecisionConfig';
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
@@ -119,6 +120,11 @@ export interface SimulateMatchOptions {
    * (derived from his id). Always set or cleared here.
    */
   temperament?: { A?: number; B?: number };
+  /**
+   * Mental level 0..10 per side (`MentalMatchConfig`): every player of the side plays with that decisions / composure /
+   * flair / anticipation. Absent = each player's own. Lab and effect-size measurements (`decisions.md`).
+   */
+  mental?: { A?: number; B?: number };
   /**
    * Called with the state after every tick (diagnostics only — `scripts/formation-matrix.ts`, the
    * lab's formation matrix). Must not mutate the state.
@@ -264,6 +270,8 @@ export function simulateMatch(
   setTeamMoraleOverride('B', options.morale?.B);
   setTeamTemperamentOverride('A', options.temperament?.A);
   setTeamTemperamentOverride('B', options.temperament?.B);
+  setTeamMentalOverride('A', options.mental?.A);
+  setTeamMentalOverride('B', options.mental?.B);
 
   // Build state — skip preMatch presentation so the loop starts in firstHalf
   let s: GameState = {

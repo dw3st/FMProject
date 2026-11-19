@@ -4,6 +4,34 @@ import type { GameState, TeamId, SetPieceGoalKind } from '@/GameEngine/types';
 export type CornerSource = 'save' | 'deflection' | 'cross_block' | 'cross_clearance' | 'tackle' | 'loose' | 'other';
 
 /** Payload of the three decision telemetry events. */
+/** What the ball holder's mind did on one fresh decision (`decisions.md` → phase 3; `HOLDER` on only). */
+export interface HolderMindEvent {
+  playerId: number;
+  team: TeamId;
+  /** A new window was rolled. */
+  fresh: boolean;
+  lapse: boolean;
+  release: boolean;
+  /** Open pass options (pass score ≥ `HOLDER_MIND.OPEN_PASS`). */
+  openOptions: number;
+  /** Metres to the centre of the goal he attacks. */
+  distM: number;
+  simple: boolean;
+  widen: number;
+  longShotRange: number;
+  mood: 'good' | 'normal' | 'bad';
+  pressure: number;
+  pN: number;
+  /** Rolls on FM's 100 scale. */
+  rolls: { decisions: number; composure: number; flair: number };
+  sigma: number;
+  trueScores: Record<string, number>;
+  perceived: Record<string, number>;
+  trueBest: string;
+  picked: string;
+  offArgmax: boolean;
+}
+
 export interface DecisionTelemetryEvent {
   playerId: number;
   team: TeamId;
@@ -198,6 +226,7 @@ export interface GameEvents {
    * unscored early returns (tackle range, recovery, keeper) emit nothing.
    */
   holderDecision:    DecisionTelemetryEvent;
+  holderMind:        HolderMindEvent;
   offBallDecision:   DecisionTelemetryEvent;
   defensiveDecision: DecisionTelemetryEvent;
 

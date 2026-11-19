@@ -223,6 +223,10 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     offBallNearTiePct: pct(t.offBallNearTies, t.offBallDecisions),
     defenseNearTiePct: pct(t.defenseNearTies, t.defenseDecisions),
     avgHolderPressure: r2(t.holderPressureSum / Math.max(1, t.holderDecisions)),
+    holderOffArgmaxPct: pct(t.holderOffArgmax, t.holderMindDecisions),
+    holderLapsePct: pct(t.holderLapses, t.holderWindows),
+    holderReleasePct: pct(t.holderReleases, t.holderMindDecisions),
+    holderReleaseHighPct: pct(t.holderReleasesHigh, t.holderHighPressure),
     avgCorners: r2(t.corners / matches),
     avgThrowIns: r2(t.throwIns / matches),
     avgSetPieceRoutines: r2(t.setPieceRoutines / matches),
@@ -261,7 +265,7 @@ function emptyTotals(): VariantTotals {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
-    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
@@ -346,6 +350,13 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.offBallEntropySum += src.offBallEntropySum;
   dst.defenseEntropySum += src.defenseEntropySum;
   dst.holderPressureSum += src.holderPressureSum;
+  dst.holderMindDecisions += src.holderMindDecisions;
+  dst.holderOffArgmax += src.holderOffArgmax;
+  dst.holderWindows += src.holderWindows;
+  dst.holderLapses += src.holderLapses;
+  dst.holderReleases += src.holderReleases;
+  dst.holderHighPressure += src.holderHighPressure;
+  dst.holderReleasesHigh += src.holderReleasesHigh;
   dst.corners               += src.corners;
   dst.throwIns              += src.throwIns;
   dst.setPieceRoutines              += src.setPieceRoutines;
@@ -443,6 +454,10 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     offBallNearTiePct: pct(totals.offBallNearTies, totals.offBallDecisions),
     defenseNearTiePct: pct(totals.defenseNearTies, totals.defenseDecisions),
     avgHolderPressure: r2(totals.holderPressureSum / Math.max(1, totals.holderDecisions)),
+    holderOffArgmaxPct: pct(totals.holderOffArgmax, totals.holderMindDecisions),
+    holderLapsePct: pct(totals.holderLapses, totals.holderWindows),
+    holderReleasePct: pct(totals.holderReleases, totals.holderMindDecisions),
+    holderReleaseHighPct: pct(totals.holderReleasesHigh, totals.holderHighPressure),
     avgCorners: r2(totals.corners / games),
     avgThrowIns: r2(totals.throwIns / games),
     avgSetPieceRoutines: r2(totals.setPieceRoutines / games),

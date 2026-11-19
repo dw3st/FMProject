@@ -1,13 +1,13 @@
-# Decision telemetry (FM-style decisions, phase 2)
+# Decisions (FM-style decisions, phases 2–3)
 
-Spec: `docs/superpowers/specs/2026-11-18-fm-style-decisions-design.md` (§5–7). Phase 2 is **instrumentation only**: no
-decision changes, no die is drawn. Phases 3–5 (holder gates and noise, off-ball and defence noise, release) will be
-measured against the baseline below.
+Spec: `docs/superpowers/specs/2026-11-18-fm-style-decisions-design.md` (§3, §5–7). Phase 2 is the telemetry (no dice).
+Phase 3 is the ball holder's mind (`HOLDER`, **on by default**), section "Phase 3" below. Phases 4–5 (off-ball and
+defence noise, release) are measured against the same baseline.
 
 ## Flags (`src/GameEngine/Configs/DecisionConfig.ts`)
 
-- `DECISION_FLAGS`: `HOLDER`, `OFFBALL`, `DEFENSE`, `ANTICIPATION_PRESS`, `SECOND_PRESSER`, `DISCIPLINE_LAG`,
-  `CONSISTENCY_CAP`, all `false`. Nothing reads them yet.
+- `DECISION_FLAGS`: `HOLDER` (on, phase 3), `OFFBALL`, `DEFENSE`, `ANTICIPATION_PRESS`, `SECOND_PRESSER`,
+  `DISCIPLINE_LAG`, `CONSISTENCY_CAP` (off).
 - `DECISION_OVERRIDES='{"HOLDER":true}'` (env, read once at load) sets the base flags; `simulateMatch(..., { decisions })`
   sets them per match (always reset to the base when absent, nothing leaks).
 - `DECISION_TELEMETRY`: pressure constants, bucket thresholds, near-tie margin.
@@ -97,8 +97,86 @@ final·high·central (2.31) and final·low·central (2.15). Defence is most dete
 81–88%, H 0.53–0.70). Off-ball is almost flat across buckets (1.16–1.37). The argmax is always the choice today
 (off-argmax 0%: the holder's low-score fallback never fired in 400 matches).
 
+## Phase 3: the ball holder's mind (`HOLDER`, on by default)
+
+Code: `Domain/HolderMind.ts` (rules), `Infrastructure/ActionOutcomes.ts` (`mentalRoll`, `gaussianDraw`, `lapseScale`),
+`DecisionTree.ts` (`holderMind` inside `decideBallHolder`), constants `HOLDER_MIND` (`DecisionConfig.ts`,
+`HOLDER_MIND_OVERRIDES` env for tuning). Calibrated on FM27 live values read by the coordinator (pressure deciles, the
+"must act" verdict, lapse rates).
+
+- **Profile** (`GamePlayer.mental`, `MentalMatchConfig.ts`): decisions, composure, flair, anticipation (roster / 10,
+  derived when missing), hidden consistency (`consistencyOf`) and the mood fixed at kickoff,
+  `clamp(0.5·moraleFactor + 0.5·form, −1, 1)`, form = `clamp((mean recent rating − 6.6)/0.8, −1, 1)`; good ≥ 0.35, bad
+  ≤ −0.35. `simulateMatch(..., { mental: { A, B } })` forces a side (0..10). Off for the keeper, set-piece takers and
+  under the one-on-one gate (their rules are unchanged).
+- **Window**: every 4 decision ticks (0.8 s), re-rolled for a new holder (`GamePlayer.decisionNoise`, cleared off the
+  ball). Rolls on FM's 1..100 scale = roster × 10: normal U·(a+2), good max(U1,U2)·(a+2), bad U1·U2·(a+2). Form window
+  s = (whole game seconds mod 15) + 35: at or above it a roll is ≥ 1 (never a lapse); below it the decisions roll ÷
+  fatigue `1 + 4·(1 − energy/100)²·(1.5 − consistency)` under `LAPSE_ROLL` (4) is a **lapse** (every perceived score ×
+  U(0.55, 1) for the window). FM's zero roll is `LAPSE_ROLL` 1; 4 brings the average lapse share to FM27's ~4%.
+- **Perceived scores**: `s + bias + σ·z` (z held for the window), σ = 0.005 + 0.02·(1 − test),
+  test = (decisions stretched to the world, `fmScale`: roster 6.5 = 100) × (0.4 + 0.6·roll/(a+2)). An option with a
+  gated score 0 stays 0. The design's σ 0.01 + 0.09 cost ~30% of the goals (42% of the decisions are near-ties).
+- **Release under pressure** (composure): pN = clamp(P/60, 0, 1); fires when
+  `pN·100 − composureRoll/2 > D·4·(1 + 6n)/10·(1 + w)`, D metres to goal, n open passes (pass score ≥ 0.5). FM's binary
+  reads `D·k/(5n+10)`, but its live rates (1–2% with an open option, the verdict mostly without one) need the bar to grow
+  with n. Effect (FM27: escape carry ×8, long ball ×2.6, rarely a short pass): no dribble, carry × 1.3, long ball × 1.3,
+  pass × 0.6.
+- **Facing away** (last movement > 112° from the goal, speed ≥ 0.5 yd/s): w = min(pN·10 + 10, 12)%: the release bar ×
+  (1 + w) and a backward / lateral pass (progress ≤ 0.6) × (1 + w).
+- **Simple-minded** (decisions roll < 8): through ball only with a race ≥ 0.5 s, no cross nor long ball beyond 30 m,
+  dribble only with carryBias ≥ 0.6.
+- **Long-shot range** 27 + 22·((flair + composure rolls)/2)/100 yd (≤ 49): no shot from beyond.
+- **Flair bias** 0.03·clamp((flairRoll − 14)/14, −1, 1) on dribble, through ball and a shot from beyond 20 yd.
+- Off: no die, nothing reads the profile (`HolderMind.engine.test.ts`; seeded baseline identical to phase 2).
+
+Events and stats: `holderMind` (rolls, σ, gates, mood, pressure, open options, true vs perceived scores, pick).
+`Statistics` team counters `holderMindDecisions`, `holderOffArgmax`, `holderWindows`, `holderLapses`, `holderReleases`,
+`holderHighPressure`, `holderReleasesHigh`, `holderPanics` (a lapse window rolled at pN ≥ 0.55), `holderSimple`;
+`getLastHolderMind(id)`. `/lab`: `Variant.decisions` (`mental` 0..10 per side, `holder` on/off from variant A), rows
+"Holder off-argmax%", "Holder lapses%", "Holder release%", "Release% (high P)". `/test`: Mind block in Decision Scores,
+scenarios `decision-iq` (8 vs 3) and `tired-lapse`. Scripts: `decision-baseline.ts` (`--mental 8,3 --same`, mind
+tallies, release by P band and n), `decision-release-tune.ts` (release grid against FM27).
+
+### Measurements (2026-11-18)
+
+`decision-baseline.ts 200 <league> --chunks 4`, seed 9000 (balanced, AI formations, fitness 88); off =
+`DECISION_OVERRIDES='{"HOLDER":false}'`, which reproduces the phase-2 baseline exactly (1.930 / 5.42, same mix).
+
+| | premier off | premier on | championship off | championship on |
+|---|---|---|---|---|
+| Goals / shots / xG | 1.930 / 5.42 / 3.03 | 2.050 / 5.63 / 3.15 | 1.600 / 5.08 / 2.86 | 1.605 / 5.08 / 2.83 |
+| Passes (completed %) | 47.2 (94.6%) | 49.1 (94.8%) | 43.9 (94.3%) | 49.4 (94.6%) |
+| Turnovers | 20.8 | 22.1 | 20.5 | 21.1 |
+| Holder entropy (team-match) | 1.487 | 1.522 | 1.420 | 1.491 |
+| Off-argmax (mind / telemetry) | 0% | 13.7% / 12.9% | 0% | 14.3% / 13.5% |
+| Lapse (% of decisions) | — | 4.0% | — | 9.7% |
+| Simple-minded | — | 16.9% | — | 19.8% |
+| Release (all / pN ≥ 0.55) | — | 8.7% / 17.1% | — | 9.5% / 18.2% |
+| Release n = 0 / n ≥ 1 | — | 66% / 1.1% | — | 69% / 1.2% |
+| Release by raw P 0–9 / 10–19 / 20–29 / 30–39 / 40–79 / 80+ | — | 0.1 / 4.7 / 16.5 / 19.5 / 17.5 / 15.0% | — | 0.1 / 5.1 / 16.2 / 20.6 / 18.7 / 15.5% |
+| Pick after a release | — | carry 80 · through 13 · cross 5 · shoot 1 · pass 1% | — | same |
+
+FM27 targets: release 15% overall, 96% of them without an open pass, mostly an escape carry then a long ball; lapse
+~4% per decision (~1% elite). Ours: the release share is lower (~9%) because only 12% of our holder decisions have no
+open pass; high-pressure decisions here usually still have one. The long ball is rarely available when released.
+
+World volume (`ai-formation-goals.ts --engine 800 --chunks 4 --modes ai --quick 0`): premier_league 2.031 → 2.053
+goals (+1.1%), 5.60 → 5.73 shots (+2.3%); of_championship 1.583 → 1.603 (+1.3%), 5.02 → 5.10 (+1.6%). The quickSim
+does not change, so its gap to the engine widens by the same ~1.2%; not recalibrated (end of the decision work).
+
+M4 effect size (same club, mental 8 vs 3, sides swapped every other match, 400 matches each): seed 9000 V−D +3.5 pp,
+seed 12000 −1.3 pp, pooled +1.1 pp (±3); control 3 vs 3 (200): −3.0 pp. The holder mind alone does not reach the
++3..+6 pp target: off-ball, defence (phase 4) and the consistency cap (phase 5) add the rest of the mental layer.
+
+Tuning history: σ 0.01 + 0.09 (design): 1.35 goals / 3.96 shots (−30%), off-argmax 34%; noise off: 2.01 (gates alone
+cost nothing). σ 0.005 + 0.02 kept. Release `D·k/(5n+10)` with k = 40: 1.3% with no open pass, 12% with one (the
+opposite of FM27): reformulated.
+
 ## Limitations
 
-- The pressure scale is raw FM; phase 3 must normalise it before using §3's thresholds.
+- The pressure scale is raw FM; phase 3 normalises it (pN = P/60) for its gates.
+- Holder mind: the lapse share doubles in weak leagues (9.7% in the Championship); the facing direction is the last
+  movement (no body orientation); the mental effect size of the holder alone is ~+1 pp.
 - Shot pressure reads the shooter's last holder decision (set-piece shots and shots after a foul have none).
 - Entropy depends on the bucket grid; compare runs only with the same `PRESSURE_HIGH` and channel split.

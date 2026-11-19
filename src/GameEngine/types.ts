@@ -468,6 +468,39 @@ export interface GamePlayer {
   instruction?: import('@/types/tacticsTypes').SlotInstruction;
   /** Engine id of the opponent this player man-marks (`GameState.manMarks`). Absent = zonal. */
   manMarkTargetId?: number;
+  /**
+   * Mental attributes (0..1, roster / 10), hidden consistency and the mood fixed at kickoff (`decisions.md` → phase 3).
+   * Absent (hand-built test players) = the holder mind uses `DEFAULT_MENTAL`.
+   */
+  mental?: PlayerMental;
+  /** The holder mind's rolls and noise, held for `HOLDER_MIND.WINDOW_TICKS` while he keeps the ball. Absent off the ball. */
+  decisionNoise?: HolderMindState;
+}
+
+/** A player's mental profile in a match (`GamePlayer.mental`). */
+export interface PlayerMental {
+  decisions: number;
+  composure: number;
+  flair: number;
+  anticipation: number;
+  /** Hidden 0..1 (`consistencyOf`). */
+  consistency: number;
+  /** −1..1: half morale, half recent form, fixed at kickoff. */
+  mood: number;
+}
+
+/** One holder-mind window (`Domain/HolderMind.ts`). Rolls on FM's 100 scale; `z` / `lapseMul` per action slot. */
+export interface HolderMindState {
+  /** Decision ticks left in this window. */
+  ticks: number;
+  dec: number;
+  comp: number;
+  flair: number;
+  lapse: boolean;
+  /** σ of the perceived scores this window. */
+  sigma: number;
+  z: number[];
+  lapseMul: number[];
 }
 
 /** A side's game plan against a manager it studied (`.claude/rules/game/study.md`). */

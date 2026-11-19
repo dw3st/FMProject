@@ -17,6 +17,12 @@
  */
 
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
+import { DECISION_FLAGS, HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
+import { holderPressure } from '@/GameEngine/Domain/Pressure';
+import {
+  DEFAULT_MENTAL, HOLDER_ACTIONS, argmaxIndex, distToGoalM, facingAwayWiden, flairBias, longShotRange,
+  moodBand, normalisedPressure, perceiveScores, releaseFires, rollMindWindow, setHolderMind, simpleMinded,
+} from '@/GameEngine/Domain/HolderMind';
 import type { GamePlayer, SetPiece, SetPieceRoutine, TeamIntent } from '@/GameEngine/types';
 
 const PITCH_CENTER_Y = PITCH_WIDTH / 2;
@@ -439,6 +445,8 @@ interface ActionScore {
   toY?: number;
   shootBreakdown?:   ShootBreakdown;
   passBreakdown?:    PassActionBreakdown;
+  /** Pass: teammates with a pass score >= `HOLDER_MIND.OPEN_PASS` (the release gate's n). */
+  openCount?: number;
   carryBreakdown?:   CarryActionBreakdown | null;
   dribbleBreakdown?: DribbleBreakdown;
 }
@@ -524,8 +532,10 @@ function evalPass(
   const roleBias = engineOf(player).passBias * getTeamPassConfig(player.team).ROLE_BIAS_WEIGHT;
   const raw      = Math.max(0, best.quality + roleBias);
   const score    = compress(raw, PASS_STRONG_RAW);
+  let openCount = 0;
+  for (const l of lanes) if (l.score >= HOLDER_MIND.OPEN_PASS) openCount++;
   return {
-    type: 'pass', score, targetId: best.toId,
+    type: 'pass', score, targetId: best.toId, openCount,
     passBreakdown: breakdown
       ? { toId: best.toId, roleBias, rawScore: raw, ...breakdown }
       : {
@@ -599,19 +609,19 @@ function evalThroughBall(
     cells = enumerateCandidateCells(player, allPlayers, crowdGrid, offsideLine);
   }
   const best = allow === null ? cells[0] : cells.find(c => allow(c.x, c.y, c.components.bestAttackerId));
-  if (!best) {
-    return { action: { type: 'through_ball', score: 0 }, cells };
-  }
+  return { action: throughBallAction(player, best), cells };
+}
+
+/** The through-ball ActionScore of one candidate cell (score 0 without one). */
+function throughBallAction(player: GamePlayer, best: ReturnType<typeof enumerateCandidateCells>[number] | undefined): ActionScore {
+  if (!best) return { type: 'through_ball', score: 0 };
   const score = compress(best.score + (best.score > 0 ? getTeamPassConfig(player.team).THROUGH_BALL_BONUS : 0), THROUGH_BALL_STRONG_RAW);
   return {
-    action: {
-      type: 'through_ball',
-      score,
-      cellX: best.x,
-      cellY: best.y,
-      intendedRunnerId: best.components.bestAttackerId,
-    },
-    cells,
+    type: 'through_ball',
+    score,
+    cellX: best.x,
+    cellY: best.y,
+    intendedRunnerId: best.components.bestAttackerId,
   };
 }
 
@@ -626,14 +636,16 @@ function evalCross(
 ): { action: ActionScore; targets: ReturnType<typeof evaluateCrossTargets> } {
   const targets = evaluateCrossTargets(player, allPlayers);
   const best = allow === null ? targets[0] : targets.find(t => allow(t.x, t.y, t.bestAttackerId ?? null));
-  if (!best || best.raw <= 0) return { action: { type: 'cross', score: 0 }, targets };
+  return { action: crossAction(best), targets };
+}
+
+/** The cross ActionScore of one target (score 0 without one or with raw <= 0). */
+function crossAction(best: ReturnType<typeof evaluateCrossTargets>[number] | undefined): ActionScore {
+  if (!best || best.raw <= 0) return { type: 'cross', score: 0 };
   return {
-    action: {
-      type: 'cross',
-      score: compress(best.raw, AERIAL_CONFIG.CROSS_STRONG_RAW),
-      toX: best.x, toY: best.y, intendedRunnerId: best.bestAttackerId,
-    },
-    targets,
+    type: 'cross',
+    score: compress(best.raw, AERIAL_CONFIG.CROSS_STRONG_RAW),
+    toX: best.x, toY: best.y, intendedRunnerId: best.bestAttackerId,
   };
 }
 
@@ -734,12 +746,80 @@ function oneOnOneGate(
   };
 }
 
+/**
+ * The holder's mind over the seven true action scores (`decisions.md` -> phase 3): the window's rolls (re-rolled when
+ * `decisionNoise` ran out), the gates (release under pressure, simple-minded, long-shot range, facing away) and the
+ * perceived scores. Returns the action the holder picks; hands the window and what happened to `setHolderMind`.
+ */
+function holderMind(
+  player: GamePlayer,
+  allPlayers: GamePlayer[],
+  actions: ActionScore[],
+  cells: ReturnType<typeof enumerateCandidateCells>,
+  targets: ReturnType<typeof evaluateCrossTargets>,
+  lb: ActionScore,
+  matchTime: number,
+): { best: ActionScore; release: boolean } {
+  const M = HOLDER_MIND;
+  const mental = player.mental ?? DEFAULT_MENTAL;
+  const prev = player.decisionNoise;
+  const fresh = !prev || prev.ticks <= 0;
+  const st = fresh ? rollMindWindow(mental, player.energy, matchTime) : prev;
+
+  const pressure = holderPressure(player.x, player.y, allPlayers.filter(o => o.team !== player.team));
+  const pN = normalisedPressure(pressure);
+  const widen = facingAwayWiden(player, pN);
+  const distM = distToGoalM(player.x, player.y, player.attackDir);
+  const pass = actions[2]!;
+  const release = releaseFires(pN, st.comp, distM, pass.openCount ?? 0, widen);
+  const simple = simpleMinded(st);
+  const range = longShotRange(st);
+  const shotYd = distM / 0.9144;
+
+  const options = actions.slice();
+  const gated = options.map(a => a.score);
+  if (shotYd > range) gated[0] = 0;
+  // Released: escape with the ball or go long, rarely the short pass (FM27), never the dribble.
+  if (release) {
+    gated[1] = gated[1]! * M.RELEASE_CARRY_MULT;
+    gated[3] = 0;
+    gated[6] = gated[6]! * M.RELEASE_LONG_MULT;
+    gated[2] = gated[2]! * M.RELEASE_PASS_MULT;
+  }
+  if (simple) {
+    if (engineOf(player).carryBias < M.SIMPLE_DRIBBLE_BIAS) gated[3] = 0;
+    const tb = throughBallAction(player, cells.find(c => c.components.raceMargin >= M.SIMPLE_RACE_S));
+    options[4] = tb; gated[4] = tb.score;
+    const maxYd = M.SIMPLE_MAX_AERIAL_M / 0.9144;
+    const cr = crossAction(targets.find(t => Math.hypot(t.x - player.x, t.y - player.y) <= maxYd));
+    options[5] = cr; gated[5] = cr.score;
+    if (lb.score > 0 && Math.hypot((lb.toX ?? player.x) - player.x, (lb.toY ?? player.y) - player.y) > maxYd) gated[6] = 0;
+  }
+  if (widen > 0 && (pass.passBreakdown?.progressScore ?? 1) <= M.BACK_PASS_PROGRESS) gated[2] = gated[2]! * (1 + widen);
+  const fb = flairBias(st);
+  const bias = [shotYd > M.LONG_SHOT_FROM_YD ? fb : 0, 0, 0, fb, fb, 0, 0];
+  const perceived = perceiveScores(gated, bias, st);
+  const idx = argmaxIndex(perceived);
+  const pick = { ...options[idx]!, score: perceived[idx]! };
+
+  setHolderMind({
+    state: st, fresh, pressure, pN, release, openOptions: pass.openCount ?? 0, distM, simple, widen, longShotRange: range,
+    mood: moodBand(mental.mood),
+    trueScores: Object.fromEntries(HOLDER_ACTIONS.map((k, i) => [k, actions[i]!.score])),
+    perceived: Object.fromEntries(HOLDER_ACTIONS.map((k, i) => [k, perceived[i]!])),
+    trueBest: HOLDER_ACTIONS[argmaxIndex(actions.map(a => a.score))]!,
+    picked: HOLDER_ACTIONS[idx]!,
+  });
+  return { best: pick, release };
+}
+
 function decideBallHolder(
   player: GamePlayer,
   allPlayers: GamePlayer[],
   crowdGrid: CrowdGrid | null,
   intent: TeamIntent,
   tbCachedCells: ReturnType<typeof enumerateCandidateCells> | null = null,
+  mind: { matchTime: number } | null = null,
 ): PlayerDecision {
   // Exclude recovering opponents — they are stumbling and pose no real threat to the carrier.
   const opponents         = allPlayers.filter(p => p.team !== player.team && !isPlayerInRecovery(p));
@@ -762,7 +842,13 @@ function decideBallHolder(
   const lb = evalLongBall(player, allPlayers);
   const actions: ActionScore[] = [sh, ca, ps, dr, tb, cr, lb];
 
-  const best = actions.reduce((a, b) => b.score > a.score ? b : a);
+  let best = actions.reduce((a, b) => b.score > a.score ? b : a);
+  // The holder's mind (phase 3, `decisions.md`): rolls, gates and perceived scores. Off for the keeper, a set-piece
+  // taker (`mind` null) and under the one-on-one gate, which keep their rules.
+  if (mind && DECISION_FLAGS.HOLDER && player.role !== 'GK' && !gate) {
+    const r = holderMind(player, allPlayers, actions, tbResult.cells, crResult.targets, lb, mind.matchTime);
+    best = r.best;
+  }
 
   // Decision telemetry (`decisions.md`): the score vector, only while somebody listens.
   if (decisionCaptureOn()) {
@@ -923,6 +1009,7 @@ export function decide(
   crowdGrid: CrowdGrid | null = null,
   teamIntent: { A: TeamIntent; B: TeamIntent } = { A: 'balanced', B: 'balanced' },
   tbCachedCells: ReturnType<typeof enumerateCandidateCells> | null = null,
+  matchTime = 0,
 ): PlayerDecision {
 
   // ── With ball — unified scoring ─────────────────────────────────────────
@@ -942,7 +1029,7 @@ export function decide(
       }
       return { type: 'pass' };
     }
-    return decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells);
+    return decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells, { matchTime });
   }
 
   // ── Attacking teammate (off-ball) ───────────────────────────────────────

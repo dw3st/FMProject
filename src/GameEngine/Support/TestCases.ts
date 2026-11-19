@@ -596,6 +596,35 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'decision-iq',
+    name:        '11v11 — Decision IQ: sharp (8) vs simple (3)',
+    description: 'Same roster both sides; Team A plays with decisions / composure / flair / anticipation 8, Team B with 3 (`decisions.md` → phase 3). Select a holder: the Mind block of the Decision Scores panel shows the rolls, σ, the gates (release, simple-minded, lapse) and the true vs perceived scores. Team B picks away from the true best far more often.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamRedPlayers), f433);
+      const lvl = (p: GamePlayer): GamePlayer => {
+        const v = p.team === 'A' ? 0.8 : 0.3;
+        return { ...p, mental: { ...(p.mental ?? { consistency: 0.5, mood: 0 }), decisions: v, composure: v, flair: v, anticipation: v } as NonNullable<GamePlayer['mental']> };
+      };
+      return { ...base, players: base.players.map(lvl), benchA: base.benchA.map(lvl), benchB: base.benchB.map(lvl) };
+    },
+  },
+
+  {
+    id:          'tired-lapse',
+    name:        '11v11 — Tired, inconsistent side lapses',
+    description: 'Team A at 35 energy with decisions 1.5 and consistency 0.1: the decisions roll falls below the form window and the fatigue term (1 + 4·(1 − energy/100)²·(1.5 − consistency)) turns many windows into lapses (every perceived score × U(0.55, 1)). Watch the Mind block (lapse) and the holder picks.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = applyFatigue(base, 'A', 35, FITNESS.LOAD_HIGH);
+      const low = (p: GamePlayer): GamePlayer => p.team !== 'A' ? p
+        : { ...p, mental: { decisions: 0.15, composure: 0.15, flair: 0.2, anticipation: 0.15, consistency: 0.1, mood: -0.5 } };
+      return { ...tired, players: tired.players.map(low), benchA: tired.benchA.map(low) };
+    },
+  },
+
+  {
     id:          'strict-referee',
     name:        '11v11 — Strict referee (+1)',
     description: 'A referee at rigor +1 (`.claude/rules/game/referees.md`): every foul chance x1.08, yellow per foul x1.15, straight red x1.25 (÷ the card normaliser). The Referee selector overrides it (Off = no referee). Watch the foul/card log entries (`refMult`) and the Energy panel header (`ref s`).',

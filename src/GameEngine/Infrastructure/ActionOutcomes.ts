@@ -531,3 +531,30 @@ export function resolveInterception(
   const success      = Math.random() < chance;
   return { success, chance };
 }
+
+// ── Holder mind dice (`decisions.md` → phase 3) ──────────────────────────────
+
+export type MoodBand = 'good' | 'normal' | 'bad';
+
+/**
+ * FM's mental roll on the 1..100 scale: U·(a + plus) in a normal mood, max(U1, U2)·(a + plus) in a good one,
+ * U1·U2·(a + plus) in a bad one. Raw (not floored): the caller applies the form window (lapse or floor at 1).
+ */
+export function mentalRoll(a100: number, mood: MoodBand, plus: number): number {
+  const u = mood === 'good' ? Math.max(Math.random(), Math.random())
+    : mood === 'bad' ? Math.random() * Math.random()
+    : Math.random();
+  return u * (a100 + plus);
+}
+
+/** A standard normal draw (Box–Muller, two uniforms). */
+export function gaussianDraw(): number {
+  const u = Math.max(1e-12, Math.random());
+  const v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+/** The score multiplier of one option during a lapse: U(min, 1). */
+export function lapseScale(min: number): number {
+  return min + (1 - min) * Math.random();
+}

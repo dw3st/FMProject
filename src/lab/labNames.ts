@@ -38,7 +38,9 @@ export function variantAutoLabel(v: Variant): string {
   const withNew = v.newcomers ? `${withFam} · new ${v.newcomers}` : withFam;
   const withMor0 = v.morale === undefined ? withNew : `${withNew} · mor ${v.morale}`;
   const withMor1 = v.temperament === undefined ? withMor0 : `${withMor0} · tmp ${v.temperament}`;
-  const withMor2 = v.managerDiscipline === undefined ? withMor1 : `${withMor1} · disc ${v.managerDiscipline}`;
+  const withMor1b = v.decisions?.mental === undefined ? withMor1 : `${withMor1} · mental ${v.decisions.mental}`;
+  const withMor1c = v.decisions?.holder === false ? `${withMor1b} · mind off` : withMor1b;
+  const withMor2 = v.managerDiscipline === undefined ? withMor1c : `${withMor1c} · disc ${v.managerDiscipline}`;
   const withMor = v.pitchCondition === undefined || v.pitchCondition === 90 ? withMor2 : `${withMor2} · pitch ${v.pitchCondition}%`;
   const withTurf = !v.turf || v.turf === "natural" ? withMor : `${withMor} · turf ${v.turf}`;
   const withWeather0 = !v.weather ? withTurf : `${withTurf} · ${v.weather}`;

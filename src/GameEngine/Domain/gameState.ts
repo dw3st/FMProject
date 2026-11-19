@@ -15,6 +15,8 @@ import {
 import type { CornerSource } from '@/GameEngine/Infrastructure/EventBus';
 import { kickOrder, resolvePenaltyShootout, penaltyChance, shootoutDecided, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
 import { holderPressure } from '@/GameEngine/Domain/Pressure';
+import { takeHolderMind } from '@/GameEngine/Domain/HolderMind';
+import { matchMentalOf } from '@/GameEngine/Configs/MentalMatchConfig';
 import { argmaxAndMargin, setDecisionCapture, situationBucket, takeCapture, type CapturedDecision } from '@/GameEngine/Domain/DecisionTelemetry';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import { outfieldNearBall } from '@/GameEngine/Domain/BallCluster';
@@ -302,6 +304,7 @@ function buildGamePlayerForSlot(
     morale:           matchMoraleOf(team, rp.morale),
     ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
     temperament:      matchTemperamentOf(team, rp),
+    mental:           matchMentalOf(team, rp),
   };
 }
 
@@ -376,6 +379,7 @@ function buildTeam(
       morale:           matchMoraleOf(team, rp.morale),
       ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
       temperament:      matchTemperamentOf(team, rp),
+      mental:           matchMentalOf(team, rp),
     });
   }
 
@@ -4146,6 +4150,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   // Path changes (e.g. possession switch) always force a fresh decision immediately.
   const newDecisions: Record<number, PlayerDecision> = {};
   const updatedMemory: Record<number, import('./DecisionTree').DecisionMemory> = {};
+  const updatedNoise = new Map<number, import('@/GameEngine/types').HolderMindState>();
 
   // Through ball in flight OR loose ball sitting? Chasers stay PINNED to
   // chase_loose_ball — without this, decide() runs fresh next tick and replaces
@@ -4236,8 +4241,25 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       p, holder, isBallHolder, inFlight, s.players, offsideLine, s.possessionTime,
       s.setPiece, crowdGrid, s.teamIntent,
       isBallHolder ? tbCachedCells : null,
+      s.matchTime,
     );
     newDecisions[p.id] = fresh;
+    if (isBallHolder) {
+      // The holder's mind window (phase 3, `decisions.md`): kept while he keeps the ball, one tick spent per decision.
+      const m = takeHolderMind();
+      if (m) {
+        updatedNoise.set(p.id, { ...m.state, ticks: m.state.ticks - dt / DECISION_REF_DT });
+        if (gameBus.has('holderMind')) {
+          gameBus.emit('holderMind', {
+            playerId: p.id, team: p.team, fresh: m.fresh, lapse: m.state.lapse, release: m.release, openOptions: m.openOptions, distM: m.distM, simple: m.simple,
+            widen: m.widen, longShotRange: m.longShotRange, mood: m.mood, pressure: m.pressure, pN: m.pN,
+            rolls: { decisions: m.state.dec, composure: m.state.comp, flair: m.state.flair }, sigma: m.state.sigma,
+            trueScores: m.trueScores, perceived: m.perceived, trueBest: m.trueBest, picked: m.picked,
+            offArgmax: m.picked !== m.trueBest,
+          });
+        }
+      }
+    }
     updatedMemory[p.id] = { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
     if (telemetry) {
       const cap = takeCapture();
@@ -4249,10 +4271,13 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   if (telemetry) setDecisionCapture(false);
 
   // Apply new memory to player objects
-  const playersWithMemory = s.players.map(p => ({
-    ...p,
-    decisionMemory: updatedMemory[p.id] ?? p.decisionMemory,
-  }));
+  const playersWithMemory = s.players.map(p => {
+    const next = { ...p, decisionMemory: updatedMemory[p.id] ?? p.decisionMemory };
+    const noise = updatedNoise.get(p.id);
+    if (noise) next.decisionNoise = noise;
+    else if (next.decisionNoise) delete next.decisionNoise; // a new holder (or a set-piece taker) starts a fresh window
+    return next;
+  });
 
   s = { ...s, decisions: newDecisions, players: playersWithMemory };
 

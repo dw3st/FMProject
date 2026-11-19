@@ -1,15 +1,15 @@
 /**
  * FM-style decisions (`docs/superpowers/specs/2026-11-18-fm-style-decisions-design.md`, `.claude/rules/game-engine/decisions.md`).
  *
- * Phase 2 (instrumentation): every behaviour flag below is OFF and nothing in the engine reads them yet — they are the
- * switches later phases plug into (§5). A flag off makes no `Math.random` call, so a match is game-for-game identical
- * with a fixed engine seed. The telemetry (decision events, pressure, situation buckets) is pure and draws no dice.
+ * Phase 2 added the telemetry (pure, no dice). Phase 3 (`HOLDER`, on by default) is the ball holder's mind: mental
+ * rolls, gates, perceived scores (`HOLDER_MIND`, `Domain/HolderMind.ts`). A flag off makes no `Math.random` call, so a
+ * match is game-for-game identical to the engine without it with a fixed engine seed.
  *
  * Overrides: `DECISION_OVERRIDES='{"HOLDER":true}'` (env, read once at load, scripts and workers) and
  * `simulateMatch(..., { decisions: { HOLDER: true } })` (per match; reset to the base flags when absent).
  */
 
-/** Behaviour switches of the decision layer (phases 3–5). All false in phase 2. */
+/** Behaviour switches of the decision layer (phases 3–5). Phase 3 turns `HOLDER` on; the others stay off. */
 export interface DecisionFlags {
   /** Ball holder: gates, attribute test noise, lapses (§3). */
   HOLDER: boolean;
@@ -28,7 +28,7 @@ export interface DecisionFlags {
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
-  HOLDER: false,
+  HOLDER: true,
   OFFBALL: false,
   DEFENSE: false,
   ANTICIPATION_PRESS: false,
@@ -63,6 +63,90 @@ export const DECISION_TELEMETRY = {
   /** Decisions whose top two scores differ by less than this count as near-ties. */
   NEAR_TIE: 0.05,
 } as const;
+
+/**
+ * The ball holder's mind (phase 3, `HOLDER`; `.claude/rules/game-engine/decisions.md`). Attributes are read on FM's
+ * 1..100 scale stretched to our world (`a = clamp(mental / MENTAL_TOP) × 100`); every gate compares a ROLL, never the
+ * raw attribute.
+ */
+export const HOLDER_MIND = {
+  /** Mental value (0..1) that maps to FM's 100: the world's top (roster 6.5). */
+  MENTAL_TOP: 0.65,
+  /** Rolls, noise and lapse are held this many decision ticks (0.8 s), re-rolled for a new holder. */
+  WINDOW_TICKS: 4,
+  /** Roll = U·(a + ROLL_PLUS) (normal mood); good mood max(U1, U2), bad U1·U2. */
+  ROLL_PLUS: 2,
+  /** FM's form window s = tick mod SPAN + BASE (100 scale): below it a roll < 1 is a lapse, at or above it the roll is ≥ 1. */
+  FORM_WINDOW_BASE: 35,
+  FORM_WINDOW_SPAN: 15,
+  /** Tired players lapse more: the decisions roll is divided by 1 + LAPSE_FATIGUE·(1 − energy/100)²·(1.5 − consistency). */
+  LAPSE_FATIGUE: 4,
+  /** Below the form window a decisions roll under LAPSE_ROLL (after the fatigue division) is a lapse (FM: 1, a zero
+   * roll; raised so the average lapse share per decision is FM27's ~4%, ~1% for the elite). */
+  LAPSE_ROLL: 4,
+  /** On a lapse each perceived score × U(LAPSE_MIN, 1). */
+  LAPSE_MIN: 0.55,
+  /** Perceived score s + σ·z, σ = SIGMA_MIN + SIGMA_SPAN·(1 − test), test = (fmScale(decisions)/100)·(0.4 + 0.6·T).
+   * The design's 0.01 + 0.09 cost ~30% of the goals (most players sit low; near-ties are 42% of the decisions). */
+  SIGMA_MIN: 0.005,
+  SIGMA_SPAN: 0.02,
+  /** Mood = clamp(0.5·moraleFactor + 0.5·form, −1, 1): good ≥ MOOD_GOOD, bad ≤ MOOD_BAD. */
+  MOOD_GOOD: 0.35,
+  MOOD_BAD: -0.35,
+  /** Form = clamp((mean recent rating − FORM_REF) / FORM_SPAN, −1, 1); no ratings = 0. */
+  FORM_REF: 6.6,
+  FORM_SPAN: 0.8,
+  /** pN = clamp(P / PRESSURE_NORM, 0, 1) (P = FM's raw pressure scalar, `Pressure.ts`). */
+  PRESSURE_NORM: 60,
+  /** High pressure for the statistics (release rate, panic). */
+  HIGH_PRESSURE: 0.55,
+  /**
+   * Release under pressure (composure gate): no carry nor dribble when pN·100 − C/2 > D·RELEASE_K·(1 + OPEN_WEIGHT·n)/10,
+   * C the composure roll, D metres to goal, n open pass options (pass score ≥ OPEN_PASS). Tuned on FM27's live rates
+   * (`decision-release-tune.ts`): ~1–2% with an open option, most decisions without one.
+   */
+  RELEASE_K: 4,
+  OPEN_WEIGHT: 6,
+  /**
+   * What a release does (FM27: after "must act now" the holder mostly escapes with the ball, ×8, then goes long, ×2.6,
+   * rarely a short pass): no dribble, carry × RELEASE_CARRY_MULT, long ball × RELEASE_LONG_MULT, pass × RELEASE_PASS_MULT.
+   */
+  RELEASE_CARRY_MULT: 1.3,
+  RELEASE_LONG_MULT: 1.3,
+  RELEASE_PASS_MULT: 0.6,
+  OPEN_PASS: 0.5,
+  /** Facing away from goal (> FACING_AWAY_DEG between movement and goal): the release window × (1 + w) and a
+   * backward or lateral pass (progress ≤ BACK_PASS_PROGRESS) × (1 + w), w = min(pN·10 + 10, 12)%. */
+  FACING_AWAY_DEG: 112,
+  FACING_MIN_SPEED: 0.5,
+  BACK_PASS_PROGRESS: 0.6,
+  /** Simple-minded: decisions roll < SIMPLE_ROLL → through ball only with race ≥ SIMPLE_RACE_S, no cross or long ball
+   * beyond SIMPLE_MAX_AERIAL_M metres, dribble only with carryBias ≥ SIMPLE_DRIBBLE_BIAS. */
+  SIMPLE_ROLL: 8,
+  SIMPLE_RACE_S: 0.5,
+  SIMPLE_MAX_AERIAL_M: 30,
+  SIMPLE_DRIBBLE_BIAS: 0.6,
+  /** Long-shot range (yd) = BASE + SPAN·((flairRoll + composureRoll)/2)/100, ≤ MAX. */
+  LONG_SHOT_BASE_YD: 27,
+  LONG_SHOT_SPAN_YD: 22,
+  LONG_SHOT_MAX_YD: 49,
+  /** Flair bias FLAIR_BIAS·clamp((flairRoll − FLAIR_CENTER)/FLAIR_CENTER, −1, 1) on dribble, through ball and a shot from
+   * beyond LONG_SHOT_FROM_YD. FLAIR_CENTER ≈ the median normal roll of the world (flair 2.6 → U·28). */
+  FLAIR_BIAS: 0.03,
+  FLAIR_CENTER: 14,
+  LONG_SHOT_FROM_YD: 20,
+};
+
+/** `HOLDER_MIND_OVERRIDES='{"RELEASE_K":50}'` (env, read once at load): tuning runs. */
+try {
+  const raw = typeof process !== 'undefined' ? process.env?.HOLDER_MIND_OVERRIDES : undefined;
+  if (raw) {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    for (const k of Object.keys(HOLDER_MIND) as (keyof typeof HOLDER_MIND)[]) {
+      if (typeof parsed[k] === 'number') (HOLDER_MIND as Record<string, number>)[k] = parsed[k] as number;
+    }
+  }
+} catch { /* ignore a malformed override */ }
 
 function readEnvOverrides(): Partial<DecisionFlags> {
   try {

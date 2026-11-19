@@ -69,3 +69,9 @@ bun test src/Domain/mental src/backend/dal/mental.dal.test.ts src/GameEngine/Dom
 
 - O renascido e o jogador gerado usam o id novo no sorteio `g`; o mesmo jogador tem sempre os mesmos valores.
 - A personalidade com crescimento do auxiliar (`personalityGrowth`) muda a derivação enquanto as chaves não forem gravadas.
+
+## O motor lê (fase 3)
+
+Desde a fase 3 das decisões o portador da bola usa decisão, calma e ousadia (e a consistência escondida) nas rolagens da
+"mente" (`HOLDER`, ligado por padrão): ver `.claude/rules/game-engine/decisions.md` → "Phase 3". A antecipação ainda não é
+lida. Com `HOLDER` desligado a partida continua a mesma, sorteio a sorteio (`HolderMind.engine.test.ts`).

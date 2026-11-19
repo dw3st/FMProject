@@ -14,7 +14,8 @@
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import type { SetPieceGoalKind, TeamId } from '@/GameEngine/types';
 import { BALL_CLUSTER_CONFIG } from '@/GameEngine/Domain/BallCluster';
-import type { DecisionTelemetryEvent } from '@/GameEngine/Infrastructure/EventBus';
+import type { DecisionTelemetryEvent, HolderMindEvent } from '@/GameEngine/Infrastructure/EventBus';
+import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
 import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
 
@@ -194,6 +195,21 @@ export interface TeamStats extends PlayerStats {
   /** Sum of the pressure at the holder's last decision before each shot, and how many shots had one. */
   shotPressureSum: number;
   shotPressureCount: number;
+  /**
+   * The holder's mind (`decisions.md` → phase 3, `holderMind`): decisions it ran on, picks away from the true argmax,
+   * windows rolled, windows with a lapse, decisions under the release gate, decisions at high pressure
+   * (pN ≥ `HOLDER_MIND.HIGH_PRESSURE`) and the releases among them, panics (a lapse window rolled at high pressure),
+   * simple-minded decisions.
+   */
+  holderMindDecisions: number;
+  holderOffArgmax: number;
+  holderWindows: number;
+  holderLapses: number;
+  holderReleases: number;
+  holderHighPressure: number;
+  holderReleasesHigh: number;
+  holderPanics: number;
+  holderSimple: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -279,12 +295,16 @@ type TeamFlags = {
   studyPlans: number;
   holderNearTies: number; offBallNearTies: number; defenseNearTies: number;
   holderPressureSum: number; shotPressureSum: number; shotPressureCount: number;
+  holderMindDecisions: number; holderOffArgmax: number; holderWindows: number; holderLapses: number;
+  holderReleases: number; holderHighPressure: number; holderReleasesHigh: number; holderPanics: number; holderSimple: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
   ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0,
   holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0,
   holderPressureSum: 0, shotPressureSum: 0, shotPressureCount: 0,
+  holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0,
+  holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, holderPanics: 0, holderSimple: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -314,6 +334,7 @@ const playerMix = new Map<number, Record<Family, Map<string, number>>>();
 let lastHolder: { playerId: number; pressure: number } | null = null;
 /** Last decision event of each player (`/test` DebugPanel). */
 const lastDecision = new Map<number, DecisionTelemetryEvent>();
+const lastMind = new Map<number, HolderMindEvent>();
 
 /** Players currently man-marked (refreshed by every `manMarkTick`; cleared at `initStats`). */
 let markedNow = new Set<number>();
@@ -577,6 +598,27 @@ function onDecision(e: DecisionTelemetryEvent): void {
   lastDecision.set(e.playerId, e);
 }
 
+// ── Holder mind (`decisions.md` → phase 3) ─────────────────────────────────────
+gameBus.on('holderMind', e => {
+  const f = teamFlags[e.team];
+  f.holderMindDecisions++;
+  if (e.offArgmax) f.holderOffArgmax++;
+  if (e.release) f.holderReleases++;
+  if (e.simple) f.holderSimple++;
+  const high = e.pN >= HOLDER_MIND.HIGH_PRESSURE;
+  if (high) { f.holderHighPressure++; if (e.release) f.holderReleasesHigh++; }
+  if (e.fresh) {
+    f.holderWindows++;
+    if (e.lapse) { f.holderLapses++; if (high) f.holderPanics++; }
+  }
+  lastMind.set(e.playerId, e);
+});
+
+/** The last holder-mind event of a player this match (`/test`). */
+export function getLastHolderMind(playerId: number): HolderMindEvent | undefined {
+  return lastMind.get(playerId);
+}
+
 let decisionUnsubs: (() => void)[] = [];
 /**
  * Decision telemetry listeners on (default) or off. Off = the engine emits no decision event at all (nobody listens),
@@ -653,6 +695,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();
   lastDecision.clear();
+  lastMind.clear();
   lastHolder = null;
   for (const { id, team } of players) {
     store.set(id, emptyStats());

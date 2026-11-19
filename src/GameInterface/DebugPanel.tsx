@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { onDebugLog, getDebugLog } from "@/GameEngine/Support/DebugLog";
 import type { DebugEntry } from "@/GameEngine/Support/DebugLog";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
-import type { GameEvents, DecisionTelemetryEvent } from "@/GameEngine/Infrastructure/EventBus";
+import type { GameEvents, DecisionTelemetryEvent, HolderMindEvent } from "@/GameEngine/Infrastructure/EventBus";
 import { bucketName } from "@/GameEngine/Domain/DecisionTelemetry";
 import { DECISION_TELEMETRY } from "@/GameEngine/Configs/DecisionConfig";
 import type { GameState } from "@/GameEngine/types";
@@ -208,6 +208,7 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
 
           {/* ── Last decision telemetry event of the selected player (or the holder) — `decisions.md` ── */}
           <DecisionTelemetryBlock playerId={selectedPlayerId ?? ballHolderId ?? null} />
+          <HolderMindBlock playerId={selectedPlayerId ?? ballHolderId ?? null} />
 
           {/* ── Ball holder view ── */}
           {rightPanelMode === 'holder' && (scores ? (
@@ -568,6 +569,47 @@ function DecisionTelemetryBlock({ playerId }: { playerId: number | null }) {
         <span className="ml-2">{bucketName(ev.bucket)}</span>
         <span className="ml-2">P {ev.pressure.toFixed(1)}</span>
       </div>
+    </div>
+  );
+}
+
+/** Last `holderMind` of a player (`decisions.md` → phase 3): mood, rolls, gates, true vs perceived scores. */
+function HolderMindBlock({ playerId }: { playerId: number | null }) {
+  const lastRef = useRef(new Map<number, HolderMindEvent>());
+  const idRef = useRef(playerId);
+  const [ev, setEv] = useState<HolderMindEvent | null>(null);
+  useEffect(() => {
+    idRef.current = playerId;
+    setEv(playerId != null ? lastRef.current.get(playerId) ?? null : null);
+  }, [playerId]);
+  useEffect(() => gameBus.on('holderMind', (e) => {
+    lastRef.current.set(e.playerId, e);
+    if (e.playerId === idRef.current) setEv(e);
+  }), []);
+  if (!ev) return null;
+  const gates = [ev.release && 'release', ev.simple && 'simple', ev.lapse && 'lapse', ev.widen > 0 && `facing-away +${Math.round(ev.widen * 100)}%`]
+    .filter(Boolean).join(' · ') || 'none';
+  const rows = Object.keys(ev.trueScores).sort((a, b) => (ev.perceived[b] ?? 0) - (ev.perceived[a] ?? 0));
+  return (
+    <div className="space-y-0.5 pb-1.5 border-b border-white/5">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-bold tracking-widest uppercase text-fuchsia-300/80">Mind · {ev.mood}</span>
+        <span className={`text-[10px] font-bold ${ev.offArgmax ? 'text-amber-400' : 'text-foreground'}`}>{ev.picked}</span>
+      </div>
+      <div className="text-[9px] tabular-nums text-muted-foreground/70">
+        rolls dec {ev.rolls.decisions.toFixed(0)} · comp {ev.rolls.composure.toFixed(0)} · flair {ev.rolls.flair.toFixed(0)} · σ {ev.sigma.toFixed(3)}
+      </div>
+      <div className="text-[9px] tabular-nums text-muted-foreground/70">
+        pN {ev.pN.toFixed(2)} · open {ev.openOptions} · range {ev.longShotRange.toFixed(0)} yd · gates {gates}
+      </div>
+      <div className="grid grid-cols-3 text-[9px] tabular-nums text-muted-foreground/60"><span>action</span><span className="text-right">true</span><span className="text-right">seen</span></div>
+      {rows.map(k => (
+        <div key={k} className={`grid grid-cols-3 text-[9px] tabular-nums ${k === ev.picked ? 'text-foreground' : 'text-muted-foreground/70'}`}>
+          <span>{k}{k === ev.trueBest ? ' *' : ''}</span>
+          <span className="text-right">{(ev.trueScores[k] ?? 0).toFixed(3)}</span>
+          <span className="text-right">{(ev.perceived[k] ?? 0).toFixed(3)}</span>
+        </div>
+      ))}
     </div>
   );
 }

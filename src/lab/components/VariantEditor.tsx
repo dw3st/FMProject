@@ -249,6 +249,31 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
       </div>
 
       <div className="flex items-center gap-2 text-xs">
+        <span className="text-white/50 w-20" title="Mental level (decisions, composure, flair, anticipation) of the whole side, 0..10; 0 = each player's own">Mental</span>
+        <input
+          type="range"
+          min={0}
+          max={10}
+          step={0.5}
+          value={variant.decisions?.mental ?? 0}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            patch({ decisions: { ...variant.decisions, mental: v === 0 ? undefined : v } });
+          }}
+          className="flex-1"
+        />
+        <span className="text-white/80 w-14 text-right">{variant.decisions?.mental ?? "own"}</span>
+        <label className="flex items-center gap-1 text-white/60" title="Holder mind (rolls, gates, perceived scores); variant A sets it for the match">
+          <input
+            type="checkbox"
+            checked={variant.decisions?.holder !== false}
+            onChange={(e) => patch({ decisions: { ...variant.decisions, holder: e.target.checked ? undefined : false } })}
+          />
+          mind
+        </label>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
         <span className="text-white/50 w-20" title="Pitch condition of the match (variant A, the home side, sets it); injury risk of both sides below 40%; 90 = default">Pitch</span>
         <input
           type="range"
