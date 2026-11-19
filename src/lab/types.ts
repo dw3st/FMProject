@@ -339,6 +339,9 @@ export interface TeamRawStats {
   ballsOutOfPlay: number;
   deflections: number;
   shotsBlocked: number;
+  /** Stage 6 (`xg.md`): shots with xG ≥ 0.15 / ≥ 0.30, summed across games. */
+  chances: number;
+  clearChances: number;
   heavyTouches: number;
   lineStepUps: number;
   lineDrops: number;
@@ -551,6 +554,9 @@ export interface PerMatchView {
   avgBallsOutOfPlay: number;
   avgDeflections: number;
   avgShotsBlocked: number;
+  /** Stage 6 (`xg.md`): chances (xG ≥ 0.15) and clear-cut chances (≥ 0.30) per match. */
+  avgChances: number;
+  avgClearChances: number;
   avgHeavyTouches: number;
   avgLineStepUps: number;
   avgLineDrops: number;
@@ -719,6 +725,9 @@ export interface VariantSummary {
   avgBallsOutOfPlay: number;
   avgDeflections: number;
   avgShotsBlocked: number;
+  /** Stage 6 (`xg.md`): chances (xG ≥ 0.15) and clear-cut chances (≥ 0.30) per match. */
+  avgChances: number;
+  avgClearChances: number;
   avgHeavyTouches: number;
   avgLineStepUps: number;
   avgLineDrops: number;

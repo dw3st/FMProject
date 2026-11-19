@@ -49,7 +49,9 @@ describe("referee in the engine", () => {
     for (let i = 0; i < 8; i++) {
       const count = (s: number) => {
         const r = seeded(100 + i, () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, { tactics: TACTICS, referee: ref(s) }));
-        return r.teamStats.A.fouls + r.teamStats.B.fouls + 4 * r.cards.length;
+        // Stage 6 (FM xG): ~7 fouls a match, so a card weighted ×4 is mostly noise in 8 matches; fouls and cards count
+        // the same (both rise with the strictness: `Fouls.test.ts` checks the rolls themselves).
+        return r.teamStats.A.fouls + r.teamStats.B.fouls + r.cards.length;
       };
       strict += count(1);
       lenient += count(-1);

@@ -275,6 +275,8 @@ export interface GameEvents {
         xgFloor:     number;
         intentBonus: number;
         score:       number;
+        /** Stage 6 (`xg.md`): the FM xG model of the shot (with `FM_XG`). */
+        fm?: { model: string; features: Record<string, number>; availableM: number; coveredM: number; inTriangle: number };
       };
       pass: {
         toId:               number | null;

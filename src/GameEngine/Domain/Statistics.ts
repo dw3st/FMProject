@@ -18,6 +18,7 @@ import type { DecisionTelemetryEvent, HolderMindEvent } from '@/GameEngine/Infra
 import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
 import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
+import { isChance, isClearChance } from '@/GameEngine/Domain/FmXg';
 
 /** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
 export interface GoalLogEntry {
@@ -48,6 +49,9 @@ export interface PlayerStats {
   tackles:         number;
   /** Accumulated expected goals from all shots taken. */
   xg:              number;
+  /** Stage 6 (`xg.md`): shots with xG ≥ 0.15 (chance) and ≥ 0.30 (clear-cut chance). */
+  chances:         number;
+  clearChances:    number;
   dribblesWon:     number;
   dribblesLost:    number;
   // ── Through-ball family (kept distinct from passes — failure modes differ) ──
@@ -263,6 +267,8 @@ function emptyStats(): PlayerStats {
     interceptions:   0,
     tackles:         0,
     xg:              0,
+    chances:         0,
+    clearChances:    0,
     dribblesWon:     0,
     dribblesLost:    0,
     throughBallsAttempted:    0,
@@ -414,6 +420,8 @@ gameBus.on('passCompleted', e => {
 gameBus.on('passFailed',    e => { get(e.player).passesFailed++;    notify(); });
 gameBus.on('shot',          e => {
   const s = get(e.player); s.shots++; s.xg += e.xg;
+  if (isChance(e.xg)) s.chances++;
+  if (isClearChance(e.xg)) s.clearChances++;
   if (lastHolder && lastHolder.playerId === e.player) {
     const team = playerTeam.get(e.player);
     if (team) { teamFlags[team].shotPressureSum += lastHolder.pressure; teamFlags[team].shotPressureCount++; }
@@ -815,6 +823,8 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.interceptions   += stats.interceptions;
     result.tackles         += stats.tackles;
     result.xg              += stats.xg;
+    result.chances         += stats.chances;
+    result.clearChances    += stats.clearChances;
     result.dribblesWon     += stats.dribblesWon;
     result.dribblesLost    += stats.dribblesLost;
     result.throughBallsAttempted    += stats.throughBallsAttempted;

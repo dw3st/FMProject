@@ -116,6 +116,8 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Rolled out of play", key: "avgBallsOutOfPlay" },
     { stat: "Deflected passes", key: "avgDeflections" },
     { stat: "Shots blocked", key: "avgShotsBlocked" },
+    { stat: "Chances (xG ≥ 0.15)", key: "avgChances" },
+    { stat: "Clear-cut chances (xG ≥ 0.30)", key: "avgClearChances" },
     { stat: "Heavy touches", key: "avgHeavyTouches" },
     { stat: "Line step-ups", key: "avgLineStepUps" },
     { stat: "Line drops", key: "avgLineDrops" },

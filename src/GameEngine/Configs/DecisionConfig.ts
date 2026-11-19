@@ -60,6 +60,8 @@ export interface DecisionFlags {
   SHOT_LIMIT: boolean;
   /** Stage 4b: tactic axes move the engine gently (width damped, mentality on the carry threshold). */
   TACTIC_DAMP: boolean;
+  /** Stage 6 (`xg.md`): the shot's xG is the FM logistic model (stats, the shot decision, the resolution input). */
+  FM_XG: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -87,6 +89,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   SHORT_STEPS: true,
   SHOT_LIMIT: true,
   TACTIC_DAMP: true,
+  FM_XG: true,
 };
 
 /**

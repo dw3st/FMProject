@@ -327,3 +327,9 @@ miss); nothing about the outcome changes. Without the new visual or the backdrop
 taker (`KICK_WINDOW_S` 6 s) and the keeper (`DIVE_WINDOW_S` 4 s); out of time the taker's area is the AI's (`aiKick`),
 the keeper stays in the middle. The deadline is fixed once per kick (a ref), so a parent re-render never restarts it.
 Same screen solo and between two managers (the server's `H2H.PENALTY_CHOICE_S` 20 s only covers an absent side).
+
+## xG do FM (etapa 6, `feat/engine-fm`)
+
+Com `DECISION_FLAGS.FM_XG` (ligado) o `xg` de todo chute (estatística, nota de chutar, entrada do `resolveShot`) vem
+da regressão logística do FM (`Domain/FmXg.ts`, `Domain/ShotXg.ts`), não do `computeXG` acima. A resolução ainda sorteia
+sobre esse xG até a etapa 7 (chute pela trajetória). Ver `.claude/rules/game-engine/xg.md`.

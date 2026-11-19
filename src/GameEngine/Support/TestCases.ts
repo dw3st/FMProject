@@ -281,6 +281,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-xg-blocked',
+    name:        'FM xG — shot through bodies',
+    description: 'Stage 6 (`xg.md`): a striker 16 yd out, central, with a CB 3 yd in front of him on the shot line, a second CB near the six-yard box and the keeper on his line. The FM xG sees both CBs and the keeper in the shooter–posts triangle (between 3/22, the near CB pushes "occl" toward 1, the visible goal drops). Select him: Decision Scores → Shoot shows the FM model and the seven features; the "shot" debug line repeats them when he shoots. Move the near CB off the line and the xG jumps.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Santos',   'A', 'ST',   99, 37, STRIKER),
+        makePlayer('Garcia',   'A', 'CAM',  92, 28, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB',  102, 37.4, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  109, 39, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'lone-dribbler',
     name:        'Lone forward — dribble or keep it?',
     description: 'A target man with poor dribbling (3) holds the ball 35 yd out with a CB in front of him and no teammate within 15 yd; his midfielder is 25 yd behind. Tester report (10.7): alone, he no longer takes the defender on (`LONE_DRIBBLE`, the dribble line of Decision Scores shows "alone ×0"); he carries, shoots or plays it back. Swap him for a skilful dribbler and he goes at the CB.',

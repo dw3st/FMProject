@@ -259,6 +259,22 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
                           <span className="ml-2">press {b.pressure.toFixed(2)}</span>
                           <span className="ml-2">thr {b.threshold.toFixed(2)}</span>
                         </div>
+                        {/* Stage 6 (`xg.md`): the FM xG model and its seven features. */}
+                        {b.fm && (
+                          <div className="text-[9px] tabular-nums text-muted-foreground/70">
+                            <div>FM xG {b.xg.toFixed(3)} · {b.fm.model} · {b.xg >= 0.3 ? "clear-cut" : b.xg >= 0.15 ? "chance" : "—"}</div>
+                            <div className="grid grid-cols-2 gap-x-2">
+                              <BdItem label="dist"    value={b.fm.features.distance ?? 0} />
+                              <BdItem label="occl"    value={b.fm.features.occluding ?? 0} />
+                              <BdItem label="between" value={b.fm.features.between ?? 0} />
+                              <BdItem label="angle"   value={b.fm.features.angleLocation ?? 0} />
+                              <BdItem label="facing"  value={b.fm.features.angleFacing ?? 0} />
+                              <BdItem label="height"  value={b.fm.features.height ?? 0} />
+                              <BdItem label="visible" value={b.fm.features.fraction ?? 0} />
+                            </div>
+                            <div className="text-muted-foreground/50">in triangle {b.fm.inTriangle} · goal covered {b.fm.coveredM.toFixed(1)} / {b.fm.availableM.toFixed(1)} m</div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
