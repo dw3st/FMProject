@@ -61,6 +61,8 @@ const CATEGORY_TOPIC: Record<InboxCategory, InboxTopic> = {
 const KIND_TOPIC: Record<string, InboxTopic> = {
   "transfer:bid": "actions",
   "transfer:loan_bid": "actions",
+  "transfer:loan_renewal_in": "actions",
+  "transfer:loan_renewal_out": "actions",
   "transfer:rival_bid": "actions",
   // An offer from another human manager (multiplayer part 4): it may need an answer.
   "transfer:seat_offer": "actions",

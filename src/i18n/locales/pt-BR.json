@@ -2365,6 +2365,8 @@
       "subject": {
         "bid": "{{club}} fez proposta por {{player}}",
         "loan_bid": "{{club}} quer {{player}} emprestado",
+        "loan_renewal_in": "{{club}} propõe renovar o empréstimo de {{player}}",
+        "loan_renewal_out": "{{club}} quer ficar com {{player}} emprestado",
         "loan_back": "{{player}} voltou ao {{club}}",
         "loan_home": "{{player}} voltou do {{club}}",
         "sell_on": "Cláusula de venda: {{player}}",
@@ -2383,6 +2385,8 @@
       "body": {
         "bid": "O {{club}} oferece {{fee}} por {{player}}.",
         "loan_bid": "O {{club}} quer {{player}} emprestado e pagaria {{share}}% do salário.",
+        "loan_renewal_in": "O {{club}} empresta {{player}} por mais uma temporada, até {{until}}. Você paga {{share}}% do salário.",
+        "loan_renewal_out": "O {{club}} quer ficar com {{player}} emprestado por mais uma temporada, até {{until}}, pagando {{share}}% do salário.",
         "loan_back": "O empréstimo de {{player}} acabou e ele voltou ao {{club}}.",
         "loan_home": "O empréstimo de {{player}} ao {{club}} acabou. Ele voltou ao seu elenco.",
         "sell_on": "{{player}} foi vendido pelo {{club}}. Sua cláusula de venda rendeu {{fee}}.",
@@ -4534,6 +4538,10 @@
     }
   },
   "negotiation": {
+    "loanRenewal": {
+      "offered": "Renovação oferecida","closed": "Esta proposta está encerrada.","renewed": "Empréstimo renovado.","rejected": "Proposta recusada: ele volta no fim do empréstimo.",
+      "noMoney": "Dinheiro insuficiente para a taxa do empréstimo.","until": "Nova data de volta","fee": "Taxa do empréstimo","deadline": "Responda até {{date}}.","accept": "Aceitar","reject": "Recusar"
+    },
     "situation": {
       "label": "Situação",
       "thinAfter": {

@@ -129,6 +129,8 @@ import { pruneTalks } from "@/Domain/negotiation/negotiation";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { loanRenewalNews, offerLoanRenewals } from "@/backend/loanRenewalWorld";
+import { liveLoanRenewals } from "@/Domain/negotiation/loanRenewal";
 import { liveBids } from "@/Domain/negotiation/bids";
 import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { dropNeverPlayed, freeAgentTick, idleVeterans, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
@@ -2037,6 +2039,14 @@ export async function advanceOneDay(
             });
           }
         }
+        // Loans of the seat's club ending soon: one offer to renew for a season (12.29, `negotiation.md`).
+        if (market.loans?.length) {
+          const renewals = await offerLoanRenewals(saveService, saveId, ds.meta, market, currentDate, {
+            humanClubs, squadOf: (id) => squadsNow.find((sq) => sq.id === id),
+          });
+          market = renewals.market;
+          ds.deferred.negotiation.push(...renewals.news);
+        }
         market = { ...market, talks: pruneTalks(market.talks, currentDate) };
         // A closed window ends the seat's open conversations (bans stay).
         if (!windows.seat(ds.seatId).today.open && market.talks) {
@@ -3714,6 +3724,11 @@ export async function advanceOneDay(
           ...(bid.until ? { until: bid.until } : {}),
           expires: bid.expires,
         }), saveService, ds.seatId);
+      }
+      // Loan renewal offers still open keep their message too (12.29).
+      const freshRenewals = new Set(ds.deferred.negotiation.map((n) => n.offerId).filter(Boolean));
+      for (const offer of liveLoanRenewals(mkB?.loanRenewals, mkB?.loans, currentDate)) {
+        if (!freshRenewals.has(offer.id)) await emitInboxMessage(saveId, buildTransferNegotiationMessage(loanRenewalNews(offer)), saveService, ds.seatId);
       }
     }
     for (const ds of daySeats) {

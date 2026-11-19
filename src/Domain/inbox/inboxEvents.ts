@@ -662,6 +662,8 @@ export function buildTransferNegotiationMessage(args: {
     : kind === "deferred_cancelled" ? `Transfer fell through: ${playerName}`
     : kind === "bid" ? `${clubName} bid for ${playerName}`
     : kind === "loan_bid" ? `${clubName} want ${playerName} on loan`
+    : kind === "loan_renewal_in" ? `${clubName} offer to extend ${playerName}'s loan`
+    : kind === "loan_renewal_out" ? `${clubName} want to keep ${playerName} on loan`
     : kind === "loan_back" ? `${playerName} returned to ${clubName}`
     : kind === "loan_home" ? `${playerName} is back from ${clubName}`
     : `Sell-on clause: ${playerName}`;
@@ -669,6 +671,7 @@ export function buildTransferNegotiationMessage(args: {
     ...fields,
     id: kind === "seat_offer" ? `transfer-seat_offer-${args.offerId}-${args.offerAction}-${historyLength ?? 0}`
       : kind === "bid" || kind === "loan_bid" ? `transfer-${kind}-${args.bidId}`
+      : kind === "loan_renewal_in" || kind === "loan_renewal_out" ? `transfer-${kind}-${args.offerId}`
       : kind.startsWith("window_") ? `transfer-${date}-${kind}-${args.country ?? ""}`
       : `transfer-${date}-${kind}-${args.playerId}-${randomUUID()}`,
     createdAt: date,

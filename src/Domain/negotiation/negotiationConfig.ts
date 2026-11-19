@@ -148,4 +148,17 @@ export const NEGOTIATION = {
     /** Share of the wage AI borrowers offer: MIN..1 in steps of 0.1. */
     BID_MIN_SHARE: 0.5,
   },
+
+  /** Renewing a loan for one more season (12.29, `.claude/rules/game/negotiation.md` → "Renovação de empréstimo"). */
+  LOAN_RENEWAL: {
+    /** The offer comes this many days before the loan ends, and can be answered until the day before. */
+    LEAD_DAYS: 14,
+    /** The contract must run at least this many days past the current return date. */
+    MIN_CONTRACT_EXTRA_DAYS: 60,
+    /** Out on loan: the borrower asks to keep him when he played this share of its matches, or rated this well. */
+    MIN_APPS_SHARE: 0.4,
+    MIN_RATING: 6.8,
+    /** Fewest matches for a rating to count. */
+    MIN_RATED_APPS: 5,
+  },
 } as const;

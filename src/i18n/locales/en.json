@@ -2368,6 +2368,8 @@
       "subject": {
         "bid": "{{club}} bid for {{player}}",
         "loan_bid": "{{club}} want {{player}} on loan",
+        "loan_renewal_in": "{{club}} offer to extend {{player}}'s loan",
+        "loan_renewal_out": "{{club}} want to keep {{player}} on loan",
         "loan_back": "{{player}} went back to {{club}}",
         "loan_home": "{{player}} is back from {{club}}",
         "sell_on": "Sell-on clause: {{player}}",
@@ -2386,6 +2388,8 @@
       "body": {
         "bid": "{{club}} offer {{fee}} for {{player}}.",
         "loan_bid": "{{club}} want {{player}} on loan and would pay {{share}}% of his wage.",
+        "loan_renewal_in": "{{club}} would lend {{player}} for one more season, until {{until}}. You pay {{share}}% of his wage.",
+        "loan_renewal_out": "{{club}} want to keep {{player}} on loan for one more season, until {{until}}, paying {{share}}% of his wage.",
         "loan_back": "The loan of {{player}} ended and he went back to {{club}}.",
         "loan_home": "The loan of {{player}} at {{club}} ended. He is back in your squad.",
         "sell_on": "{{player}} was sold by {{club}}. Your sell-on clause paid {{fee}}.",
@@ -4540,6 +4544,10 @@
     }
   },
   "negotiation": {
+    "loanRenewal": {
+      "offered": "Renewal offered","closed": "This offer is closed.","renewed": "Loan renewed.","rejected": "Offer turned down: he goes back at the end of the loan.",
+      "noMoney": "Not enough money for the loan fee.","until": "New return date","fee": "Loan fee","deadline": "Answer by {{date}}.","accept": "Accept","reject": "Turn down"
+    },
     "situation": {
       "label": "Situation",
       "thinAfter": {

@@ -282,7 +282,17 @@ Report do usuário. A proposta da IA e a proposta entre técnicos mostram no top
 
 Report de tester. `LOAN.SHARE_MIN` 0,4 → 0: a parte do salário que o clube de origem quer cobrir é `0,75 + 0,5 × força relativa` sem piso (1,5 abaixo da média do elenco = 0; 1 abaixo = 25%; o médio continua 75%). Só muda o que o humano paga ao pedir emprestado (a IA não empresta à IA). `minLoanWageShare(player, parent)` (`loans.ts`, com teste) dá a menor parte aceita sem taxa (igual para qualquer duração; acima de 1 = só com taxa); a busca do olheiro guarda em `DisplayPlayer.loanShare`, e com "Aceitam empréstimo" ligado os chips "Pagando do salário no máximo" (Qualquer, 0, 25, 50, 75, 100%, `loanMaxShare`, `LOAN_SHARES`) filtram.
 
-## Livre sem luvas (12.28.5)
+## Livre sem luvas (12.29)
 
 Report de jogadores. A seção "Luvas e disputa de quem chega sem taxa" (8.7.9) vale agora só para o pré-contrato: `signingBonusAsk(..., "free")` é 0 (`BONUS_SHARE_FREE` saiu), o livre não tem o prêmio de salário e pede menos com o tempo sem clube (`contracts.md` → "Jogador livre sem luvas"). Os rivais de um livre oferecem luvas 0, e a escolha fica no `preferenceScore` (o termo das luvas empata). A janela do livre mostra só os clubes rivais, sem o campo de luvas.
+
+## Renovação de empréstimo (12.29)
+
+Pedido do usuário. Lógica pura em `src/Domain/negotiation/loanRenewal.ts` (`NEGOTIATION.LOAN_RENEWAL`, com teste), E/S em `src/backend/loanRenewalWorld.ts`. Todo dia, no mercado de cada assento (`offerLoanRenewals`), cada empréstimo do clube humano com um clube da IA do outro lado, a até `LEAD_DAYS` (14) dias da volta, é olhado uma vez (`ActiveLoan.renewalOffered`); o contrato tem de passar da volta em `MIN_CONTRACT_EXTRA_DAYS` (60) e a data nova é um ano depois, nunca além do contrato (`renewedUntil`).
+
+- **Emprestado ao humano:** o clube dono oferece se ainda o emprestaria (`loanAvailability`, com ele de volta no elenco): os mesmos termos se ainda cobrem o mínimo do dono para a temporada nova, senão a contraproposta de `respondToLoanRequest` (parte do salário maior ou taxa).
+- **Emprestado pelo humano:** o clube da IA pede para ficar com ele se ele jogou bem (titular do XI automático, `MIN_APPS_SHARE` 40% dos jogos do clube ou nota `MIN_RATING` 6,8 em `MIN_RATED_APPS` 5 jogos, pelo `loanReport`), ainda tem `cover_need` na linha dele e a folha comporta a parte dele; mesma parte do salário, sem taxa.
+- `market.loanRenewals` (`LoanRenewalOffer`), inbox `transfer` / `loan_renewal_in` / `loan_renewal_out` (tópico `actions`), reenviada depois do `clearInbox` da virada enquanto vale. Vale até a véspera da volta. `POST /api/saves/:id/loan-renewals/:offerId { action: accept | reject }` (guarda de lobby; 409 `offerClosed`, `noMoney` sem saldo para a taxa): aceitar estende `ActiveLoan` e `RosterPlayer.loan` (data, parte, taxa paga ao dono) e ele não volta; recusar ou deixar vencer = volta na data como sempre. Não depende da janela.
+- Telas: `LoanRenewalCard` na caixa de entrada (Aceitar/Recusar); Elenco → Emprestados e a aba de negociações mostram "Renovação oferecida" na data de volta (`GET /negotiation` → `loanRenewals`).
+- IA × IA e empréstimos entre técnicos humanos não mudam. Testes: `bun test src/Domain/negotiation/loanRenewal.test.ts src/backend/loanRenewal.routes.test.ts`.
 

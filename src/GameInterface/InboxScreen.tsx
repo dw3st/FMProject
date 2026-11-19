@@ -24,12 +24,13 @@ import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
 import { NationalCoachInboxBody, nationalCoachSubject } from "@/GameInterface/National/NationalCoachInboxBody";
 import i18next from "@/i18n/i18n";
 import { BidCard } from "@/GameInterface/Negotiation/BidCard";
+import { LoanRenewalCard } from "@/GameInterface/Negotiation/LoanRenewalCard";
 import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
 import { useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { PlayerTalkBody } from "@/GameInterface/Morale/PlayerTalkBody";
 import { PlayerNameText } from "@/GameInterface/Inbox/PlayerNameText";
 import { PressInboxBody } from "@/GameInterface/Press/PressInboxBody";
-import type { MarketBid } from "@/types/transferMarketTypes";
+import type { LoanRenewalOffer, MarketBid } from "@/types/transferMarketTypes";
 import { clubRecordTexts } from "@/GameInterface/clubRecordText";
 import { ScoutingInboxBody, scoutingTexts } from "@/GameInterface/Scouting/scoutingText";
 import { AwardsInboxBody, awardsTexts } from "@/GameInterface/Awards/AwardsInboxBody";
@@ -1306,6 +1307,9 @@ function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, {
   const { session, refresh } = useGameSave();
   const [bid, setBid] = useState<MarketBid | null | undefined>(undefined);
   const isBid = message.kind === "bid" || message.kind === "loan_bid";
+  // An offer to renew a loan (12.29): the live card while it is open.
+  const isRenewal = (message.kind === "loan_renewal_in" || message.kind === "loan_renewal_out") && !!message.offerId;
+  const [renewal, setRenewal] = useState<LoanRenewalOffer | null | undefined>(undefined);
   const saveId = session?.saveId;
   // An offer between managers (multiplayer part 4): the live card while it is still open.
   const isSeatOffer = message.kind === "seat_offer" && !!message.offerId;
@@ -1324,11 +1328,23 @@ function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, {
       .catch(() => { if (alive) setBid(null); });
     return () => { alive = false; };
   }, [isBid, saveId, message.bidId]);
+  useEffect(() => {
+    if (!isRenewal || !saveId) return;
+    let alive = true;
+    void fetch(`/api/saves/${saveId}/negotiation`)
+      .then((r) => (r.ok ? r.json() : { loanRenewals: [] }))
+      .then((body: { loanRenewals?: LoanRenewalOffer[] }) => {
+        if (alive) setRenewal((body.loanRenewals ?? []).find((o) => o.id === message.offerId) ?? null);
+      })
+      .catch(() => { if (alive) setRenewal(null); });
+    return () => { alive = false; };
+  }, [isRenewal, saveId, message.offerId]);
   const vars = transferVars(message);
   return (
     <div className="space-y-4">
       <p className="text-sm text-foreground m-0">{t(transferTextKey(message, "body"), vars)}</p>
       {isBid && saveId && bid !== undefined && <BidCard key={message.id} saveId={saveId} bid={bid} onAnswered={() => void refresh()} />}
+      {isRenewal && saveId && renewal !== undefined && <LoanRenewalCard key={message.id} saveId={saveId} offer={renewal} onAnswered={() => void refresh()} />}
       {seatShown && saveId && <SeatOfferCard key={message.id} saveId={saveId} offer={seatOffer} onChanged={() => void refresh()} />}
     </div>
   );

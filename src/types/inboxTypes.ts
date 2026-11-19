@@ -297,7 +297,9 @@ export interface TransferInboxMessage extends InboxMessageBase {
     // A fee transfer agreed with the window closed joined, or fell through (fee refunded)
     | "deferred_joined" | "deferred_cancelled"
     // Offers between two human seats (multiplayer part 4, `.claude/rules/game/multiplayer.md`)
-    | "seat_offer";
+    | "seat_offer"
+    // Renewing a loan for one more season (12.29): the parent of a player on loan here / the borrower of one of ours
+    | "loan_renewal_in" | "loan_renewal_out";
   /** "" for the window news. */
   playerId: string;
   playerName: string;
@@ -318,7 +320,7 @@ export interface TransferInboxMessage extends InboxMessageBase {
   /** pre_contract: weekly wage and seasons agreed. */
   wage?: number;
   years?: number;
-  /** seat_offer: the offer, what just happened, its kind and whose turn it is now. */
+  /** seat_offer: the offer, what just happened, its kind and whose turn it is now. loan_renewal_*: the offer id. */
   offerId?: string;
   offerAction?: "offer" | "counter" | "accept" | "reject" | "withdraw" | "expired" | "closed";
   offerKind?: "transfer" | "loan";
