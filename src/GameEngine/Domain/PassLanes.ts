@@ -16,7 +16,7 @@
  *   - PixiPitch.tsx          → debug overlay (green = open, red = below threshold)
  */
 
-import type { GamePlayer, GameState, TeamIntent } from '@/GameEngine/types';
+import type { GamePlayer, GameState, TeamId, TeamIntent } from '@/GameEngine/types';
 import { normalizeGamePlayers } from '@/GameEngine/Domain/RuntimeLineup';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { getTeamPassConfig, getTeamWidth } from '@/GameEngine/Configs/AttackConfig';
@@ -287,15 +287,24 @@ export interface PassBreakdown {
   score:              number;
 }
 
+/** The holder's team pass weights with the team intent applied (what `scorePassToReceiverBreakdown` reads). */
+export type PassCfg = ReturnType<typeof getTeamPassConfig> & ReturnType<typeof applyPassIntent>;
+
+/** `PassCfg` of a team and intent — built once by callers that score many targets for the same holder. */
+export function passCfgFor(team: TeamId, intent: TeamIntent): PassCfg {
+  const baseCfg = getTeamPassConfig(team);
+  return { ...baseCfg, ...applyPassIntent(baseCfg, intent) };
+}
+
 export function scorePassToReceiverBreakdown(
   holder:    GamePlayer,
   receiver:  GamePlayer,
   opponents: GamePlayer[],
   intent:    TeamIntent = 'balanced',
   pressure?: number,
+  passCfg?:  PassCfg,
 ): PassBreakdown {
-  const baseCfg     = getTeamPassConfig(holder.team);
-  const cfg         = { ...baseCfg, ...applyPassIntent(baseCfg, intent) };
+  const cfg         = passCfg ?? passCfgFor(holder.team, intent);
   const widthTactic = getTeamWidth(holder.team);
 
   const laneScore          = getLaneScore(holder, receiver, opponents, widthTactic);

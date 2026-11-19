@@ -18,7 +18,8 @@
 
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
-import { etaTo as kinEta } from '@/GameEngine/Domain/Kinematics';
+import { accelAt, timeToCover } from '@/GameEngine/Domain/Kinematics';
+import { KINEMATICS_CONFIG } from '@/GameEngine/Configs/KinematicsConfig';
 import type { GamePlayer, GameState, TeamId } from '@/GameEngine/types';
 import {
   CELL_W, CELL_H, GRID_COLS, GRID_ROWS,
@@ -86,14 +87,39 @@ function effectiveSprintSpeed(p: GamePlayer): number {
 }
 
 /**
- * Seconds for a player to reach a cell at sprint speed (straight-line), from his current velocity with the kinematic
- * layer (`kinematics.md`: a runner already going that way gets there sooner than one standing).
+ * A chaser precomputed once per enumeration (stage 2, cost): position, sprint speed, acceleration attribute and the
+ * velocity that counts (only while he is where his last step ended — a teleport leaves him standing).
  */
-function etaToCell(p: GamePlayer, cx: number, cy: number): number {
-  const dist  = Math.hypot(cx - p.x, cy - p.y);
-  const speed = effectiveSprintSpeed(p);
-  if (speed < 0.01) return Infinity;
-  return kinEta(p, p.runtimeStats.withoutBall.acceleration, cx, cy, dist, speed);
+interface Chaser { p: GamePlayer; x: number; y: number; vx: number; vy: number; speed: number; accel: number }
+
+function chaserOf(p: GamePlayer): Chaser {
+  const moving = p.vel && p.kin && p.kin.x === p.x && p.kin.y === p.y;
+  return {
+    p, x: p.x, y: p.y, vx: moving ? p.vel!.x : 0, vy: moving ? p.vel!.y : 0,
+    speed: effectiveSprintSpeed(p), accel: p.runtimeStats.withoutBall.acceleration,
+  };
+}
+
+/**
+ * Seconds for a chaser to reach a cell at sprint speed (straight-line), from his current velocity with the kinematic
+ * layer (`kinematics.md`: a runner already going that way gets there sooner than one standing). Same arithmetic as
+ * `Kinematics.etaTo` on the precomputed chaser, so the result is bit-identical. Returns Infinity without computing
+ * when the cell is farther than `bound` seconds even at top speed (the ETA is never below dist / top speed).
+ */
+function etaToCell(c: Chaser, cx: number, cy: number, bound = Infinity): number {
+  const vTop = c.speed;
+  if (vTop < 0.01) return Infinity;
+  const dx = cx - c.x;
+  const dy = cy - c.y;
+  if (bound !== Infinity) {
+    const reach = bound * vTop * (1 + 1e-9) + 1e-9;
+    if (dx * dx + dy * dy > reach * reach) return Infinity;
+  }
+  const dist = Math.hypot(dx, dy);
+  if (!KINEMATICS_CONFIG.ENABLED) return dist / vTop;
+  const v0 = dist > 0.01 ? Math.max(0, (c.vx * dx + c.vy * dy) / dist) : 0;
+  const a = accelAt((Math.min(v0, vTop) + vTop) / 2, c.accel, KINEMATICS_CONFIG);
+  return timeToCover(dist, v0, vTop, a);
 }
 
 // ── Phase 2 score components ──────────────────────────────────────────────────
@@ -144,6 +170,24 @@ function goalThreatScore(holder: GamePlayer, cx: number, cy: number): number {
   // regardless of angle). With this form the byline corner ≈ 0, the penalty spot
   // ≈ 0.7, and a square ball across the open goal mouth ≈ 1.0.
   return angleFac * (0.4 + 0.6 * proximity);
+}
+
+/**
+ * `goalThreatScore` of every cell centre, per attack direction (stage 2, cost): a pure function of the cell, built once.
+ */
+const GOAL_THREAT_TABLE: { [dir: number]: Float64Array } = {};
+
+function goalThreatOfCell(attackDir: 1 | -1, c: number, r: number): number {
+  let t = GOAL_THREAT_TABLE[attackDir];
+  if (!t) {
+    t = new Float64Array(GRID_ROWS * GRID_COLS);
+    const probe = { attackDir } as GamePlayer;
+    for (let rr = 0; rr < GRID_ROWS; rr++) {
+      for (let cc = 0; cc < GRID_COLS; cc++) t[rr * GRID_COLS + cc] = goalThreatScore(probe, (cc + 0.5) * CELL_W, (rr + 0.5) * CELL_H);
+    }
+    GOAL_THREAT_TABLE[attackDir] = t;
+  }
+  return t[r * GRID_COLS + c]!;
 }
 
 /**
@@ -209,15 +253,34 @@ function laneRiskPenalty(
   if (lenSq < 1) return 0;
   const blockR = PASS_CONFIG.BLOCK_RADIUS;
   const clearR = PASS_CONFIG.CLEAR_RADIUS;
-  let minPerp = Infinity;
+  // Squared perpendicular distances first; `Math.hypot` only for the ones that can be the minimum (same result).
+  let minSq = Infinity;
   for (const opp of opponents) {
     if (opp.role === 'GK') continue;
     const ox = opp.x - holder.x;
     const oy = opp.y - holder.y;
     const t  = (ox * vx + oy * vy) / lenSq;
     if (t < 0.1 || t > 1.0) continue;
-    const perp = Math.hypot(ox - t * vx, oy - t * vy);
-    if (perp < minPerp) minPerp = perp;
+    const px = ox - t * vx;
+    const py = oy - t * vy;
+    const sq = px * px + py * py;
+    if (sq < minSq) minSq = sq;
+  }
+  let minPerp = Infinity;
+  if (minSq !== Infinity) {
+    const limit = minSq * (1 + 1e-9) + 1e-12;
+    for (const opp of opponents) {
+      if (opp.role === 'GK') continue;
+      const ox = opp.x - holder.x;
+      const oy = opp.y - holder.y;
+      const t  = (ox * vx + oy * vy) / lenSq;
+      if (t < 0.1 || t > 1.0) continue;
+      const px = ox - t * vx;
+      const py = oy - t * vy;
+      if (px * px + py * py > limit) continue;
+      const perp = Math.hypot(px, py);
+      if (perp < minPerp) minPerp = perp;
+    }
   }
   if (minPerp === Infinity) return 0;
   // ramp from 1 at blockR → 0 at clearR (the inverse of getLaneScore)
@@ -244,9 +307,10 @@ function offsideRiskPenalty(
 
 /** Per-team list cached across Phase 1 → Phase 2 to avoid re-filtering. */
 interface TeamSlice {
-  attackers: GamePlayer[];   // attacking team minus holder, minus GK
+  attackers: Chaser[];   // attacking team minus holder, minus GK
   defenders: GamePlayer[];   // defending team minus GK
   defendersAll: GamePlayer[]; // includes GK — used for lane risk
+  defenderChasers: Chaser[];
   oppMatrix: GridMatrix | null;
   crowdMatrix: GridMatrix | null;
   defOutfieldMatrix: GridMatrix | null;
@@ -255,9 +319,10 @@ interface TeamSlice {
 function buildTeamSlice(holder: GamePlayer, allPlayers: GamePlayer[], grid: CrowdGrid | null): TeamSlice {
   const myTeam: TeamId = holder.team;
   return {
-    attackers:  allPlayers.filter(p => p.team === myTeam && p.id !== holder.id && p.role !== 'GK'),
+    attackers:  allPlayers.filter(p => p.team === myTeam && p.id !== holder.id && p.role !== 'GK').map(chaserOf),
     defenders:  allPlayers.filter(p => p.team !== myTeam && p.role !== 'GK'),
     defendersAll: allPlayers.filter(p => p.team !== myTeam),
+    defenderChasers: allPlayers.filter(p => p.team !== myTeam).map(chaserOf),
     oppMatrix:  grid ? (myTeam === 'A' ? grid.teamB : grid.teamA) : null,
     crowdMatrix: grid ? grid.crowd : null,
     defOutfieldMatrix: grid ? (myTeam === 'A' ? grid.teamBOutfield : grid.teamAOutfield) : null,
@@ -283,6 +348,7 @@ export function enumerateCandidateCells(
       (THROUGH_BALL_CONFIG.VISION_HORIZON_MAX - THROUGH_BALL_CONFIG.VISION_HORIZON_MIN);
 
   const survivors: CandidateCell[] = [];
+  const skillScore = passerSkillScore(holder);
 
   // Skip the outermost cell ring on every side — a through ball that lands in
   // the boundary cells almost always drifts out of bounds (touchline → throw-in,
@@ -320,11 +386,11 @@ export function enumerateCandidateCells(
       for (const a of slice.attackers) {
         const runnerForwardProgress = (cx - a.x) * holder.attackDir;
         if (runnerForwardProgress < THROUGH_BALL_CONFIG.MIN_RUNNER_FORWARD_PROGRESS) continue;
-        const eta = etaToCell(a, cx, cy);
+        const eta = etaToCell(a, cx, cy, bestAttackerEta);
         if (eta < bestAttackerEta) {
           bestAttackerEta = eta;
-          bestAttackerId  = a.id;
-          bestAttacker    = a;
+          bestAttackerId  = a.p.id;
+          bestAttacker    = a.p;
         }
       }
       // No attacker has a forward run available — defenders are higher than
@@ -336,19 +402,18 @@ export function enumerateCandidateCells(
       let bestDefenderEta = Infinity;
       // Include GK in the race — the GK will sweep balls played into their range,
       // so a deep cell isn't "free" just because no outfield defender can reach it.
-      for (const d of slice.defendersAll) {
-        const eta = etaToCell(d, cx, cy);
+      for (const d of slice.defenderChasers) {
+        const eta = etaToCell(d, cx, cy, bestDefenderEta);
         if (eta < bestDefenderEta) {
           bestDefenderEta = eta;
-          bestDefenderId  = d.id;
+          bestDefenderId  = d.p.id;
         }
       }
 
       const raceMargin = bestDefenderEta - bestAttackerEta;
       const raceScore  = bestAttacker ? raceMarginScore(raceMargin) : 0;
       const spaceScore = slice.crowdMatrix ? spaceQualityScore(slice.crowdMatrix, cx, cy) : 0.5;
-      const goalScore  = goalThreatScore(holder, cx, cy);
-      const skillScore = passerSkillScore(holder);
+      const goalScore  = goalThreatOfCell(holder.attackDir, c, r);
       const pathScore  = slice.defOutfieldMatrix
         ? pathClearScoreForCell(cx, cy, holder.attackDir, slice.defOutfieldMatrix)
         : 0.5;

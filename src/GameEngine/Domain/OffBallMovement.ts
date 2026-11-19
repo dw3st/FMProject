@@ -2,7 +2,7 @@ import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import type { GamePlayer, PlayerRole, TeamIntent } from '@/GameEngine/types';
 import type { PlayerDecision } from '@/GameEngine/Domain/DecisionTree';
-import { scorePassQuality } from '@/GameEngine/Domain/PassLanes';
+import { scorePassQuality, scorePassToReceiverBreakdown, passCfgFor, type PassCfg } from '@/GameEngine/Domain/PassLanes';
 import { engineOf, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
 import { blockShiftX, attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { applyOffBallIntent } from '@/GameEngine/Configs/IntentConfig';
@@ -80,6 +80,26 @@ interface OffBallContext {
   buildUpTactic:    'possession' | 'balanced' | 'direct';
   widthTactic:      'narrow' | 'normal' | 'wide';
   attackDir:        number;
+  /**
+   * Per-evaluation constants of the cell scoring (stage 2, cost), built on first use: the sliding-block shift, the
+   * hold_space slot, and a synthetic receiver reused for every cell (only x/y change), the holder's pressure and pass
+   * config. Same values the per-cell calls computed before.
+   */
+  cellCache?: CellCache;
+}
+
+interface CellCache {
+  shiftX: number;
+  slot: { x: number; y: number } | null;
+  synthetic: GamePlayer | null;
+  pressure: number | undefined;
+  passCfg: PassCfg | null;
+}
+
+function cellCacheOf(ctx: OffBallContext): CellCache {
+  return ctx.cellCache ??= {
+    shiftX: blockShiftX(ctx.player, ctx.ballHolder), slot: null, synthetic: null, pressure: undefined, passCfg: null,
+  };
 }
 
 function buildContext(
@@ -341,14 +361,15 @@ function scoreCell(
   const separation   = Math.max(0, 1 - teammatesNear / OFF_BALL_CONFIG.SEPARATION_NORM_PLAYERS);
   const markFreedom  = Math.max(0, 1 - opponentsNear / OFF_BALL_CONFIG.MARK_NORM_PLAYERS);
 
-  const roleFitPen   = getRoleFitPenalty(ctx.player, target, blockShiftX(ctx.player, ctx.ballHolder)) * OFF_BALL_CONFIG.ROLE_FIT_WEIGHT;
+  const cache        = cellCacheOf(ctx);
+  const roleFitPen   = getRoleFitPenalty(ctx.player, target, cache.shiftX) * OFF_BALL_CONFIG.ROLE_FIT_WEIGHT;
   const offsidePen   = getOffsidePenalty(target, ctx);
   const sameRolePen  = sameRolePenalty(target, ctx);
 
   switch (intent) {
     case 'offer_support': {
       // Pass quality from holder to this cell — the dominant signal here.
-      const passQ = scorePassToCell(ctx.ballHolder, target, ctx.opponents, ctx.intent);
+      const passQ = scorePassToCell(ctx.ballHolder, target, ctx.opponents, ctx.intent, cache);
       return passQ        * OFF_BALL_CONFIG.SUPPORT_PASS_W
            + markFreedom  * OFF_BALL_CONFIG.SUPPORT_MARK_W
            + separation   * OFF_BALL_CONFIG.SUPPORT_SEP_W
@@ -359,7 +380,7 @@ function scoreCell(
 
     case 'hold_space': {
       // Ball-independent: stay in role zone, away from teammates.
-      const slot         = attackingAnchor(ctx.player.basePosition, ctx.player, ctx.ballHolder);
+      const slot         = cache.slot ??= attackingAnchor(ctx.player.basePosition, ctx.player, ctx.ballHolder);
       const slotDx       = target.x - slot.x;
       const slotDy       = target.y - slot.y;
       const slotDist     = Math.sqrt(slotDx * slotDx + slotDy * slotDy);
@@ -398,20 +419,23 @@ function scorePassToCell(
   target:    { x: number; y: number },
   opponents: GamePlayer[],
   intent:    TeamIntent,
+  cache:     CellCache,
 ): number {
   // Synthetic receiver inheriting from team data — only x/y differ from the
   // evaluating player. firstTouch defaults to a neutral 0.5 so cells aren't
-  // scored as if a worldclass receiver lives there.
-  const synthetic = {
+  // scored as if a worldclass receiver lives there. Built once per evaluation and moved to each cell.
+  const synthetic = cache.synthetic ??= {
     ...from,
-    x: target.x,
-    y: target.y,
     runtimeStats: {
       ...from.runtimeStats,
       withBall: { ...from.runtimeStats.withBall, firstTouch: 0.5 },
     },
   } as GamePlayer;
-  return scorePassQuality(from, synthetic, opponents, intent);
+  synthetic.x = target.x;
+  synthetic.y = target.y;
+  if (DECISION_FLAGS.PASS_ERROR && cache.pressure === undefined) cache.pressure = holderPressure(from.x, from.y, opponents);
+  const cfg = cache.passCfg ??= passCfgFor(from.team, intent);
+  return scorePassToReceiverBreakdown(from, synthetic, opponents, intent, cache.pressure, cfg).quality;
 }
 
 // ── Fallback ──────────────────────────────────────────────────────────────────

@@ -53,9 +53,12 @@ export interface CrowdGrid {
   teamBOutfield: GridMatrix;
 }
 
+/** A zero row copied per matrix row (`slice` is a plain copy; cheaper than `new Array().fill(0)` 200 times a tick). */
+const ZERO_ROW: number[] = new Array<number>(GRID_COLS).fill(0);
+
 function createMatrix(): GridMatrix {
   const m: GridMatrix = new Array(GRID_ROWS);
-  for (let r = 0; r < GRID_ROWS; r++) m[r] = new Array<number>(GRID_COLS).fill(0);
+  for (let r = 0; r < GRID_ROWS; r++) m[r] = ZERO_ROW.slice();
   return m;
 }
 
@@ -120,11 +123,12 @@ export function computeCrowdGrid(state: GameState): CrowdGrid {
       if (p.role !== 'GK') applyInfluence(teamBOutfield, col, row);
     }
   }
-  const crowd = createMatrix();
+  const crowd: GridMatrix = new Array(GRID_ROWS);
   for (let r = 0; r < GRID_ROWS; r++) {
-    for (let c = 0; c < GRID_COLS; c++) {
-      crowd[r]![c] = teamA[r]![c]! + teamB[r]![c]!;
-    }
+    const a = teamA[r]!, b = teamB[r]!;
+    const row = new Array<number>(GRID_COLS);
+    for (let c = 0; c < GRID_COLS; c++) row[c] = a[c]! + b[c]!;
+    crowd[r] = row;
   }
   return { teamA, teamB, crowd, teamAOutfield, teamBOutfield };
 }
