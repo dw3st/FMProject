@@ -130,8 +130,13 @@ const OFFSIDE_CONFIG = {
 const PRESS_INTERCEPT_MAX_LOOKAHEAD = 14;
 
 // ── Tune match duration here ──────────────────────────────────────────────────
-/** Real-world seconds per half. 150 = 2.5 min/half → 5 min total match. */
-const REAL_HALF_DURATION = 150;
+/**
+ * Experimental (measurement only, off by default): `FULL_DURATION=1` (env, read once at load, scripts and workers)
+ * makes the physical time of every period the real game time (TIME_SCALE 1, ~93 min of physics a match).
+ */
+export const FULL_DURATION = typeof process !== 'undefined' && process.env?.FULL_DURATION === '1';
+/** Real-world seconds per half. 150 = 2.5 min/half → 5 min total match (2700 with `FULL_DURATION`). */
+const REAL_HALF_DURATION = FULL_DURATION ? 2700 : 150;
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Game-seconds per real-second: 45 game-minutes / REAL_HALF_DURATION. */
