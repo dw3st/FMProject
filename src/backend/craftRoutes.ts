@@ -17,11 +17,12 @@ import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import { addDays, daysBetween } from "@/Domain/dates";
 import { itemBusy, itemValue, withFacilities, worksSizeFactor } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
-import { isFacilityItemId } from "@/Domain/facilities/facilityItems";
+import { FACILITY_ITEMS, isFacilityItemId } from "@/Domain/facilities/facilityItems";
 import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { foremanSpeedOf, foremanStarsOf } from "@/Domain/staff/staff";
 import { logError } from "@/Logger";
-import type { ComponentId, MaterialId, Supplier } from "@/types/craftTypes";
+import type { ComponentCounts, ComponentId, MaterialId, Supplier } from "@/types/craftTypes";
+import type { FacilityItemId } from "@/types/facilityTypes";
 import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -83,6 +84,9 @@ function view(saveId: string, c: Club) {
     allowance: Math.round(revenue * allowanceShare(c.board)),
     balance: c.squad.finances?.budget ?? 0,
     recipes: COMPONENTS.map((id) => ({ component: id, ...CRAFT.RECIPES[id], locked: CRAFT.RECIPES[id].minLevel > craft.workshop })),
+    /** What recycling each item above level 1 would give back (the Recycle cards show it). */
+    recycle: Object.fromEntries(FACILITY_ITEMS.filter((id) => (c.squad.facilities!.items[id]?.level ?? 1) > 1)
+      .map((id) => [id, recycleBack(c.squad, id)])) as Partial<Record<FacilityItemId, ComponentCounts>>,
     upgrade: craft.workshop < CRAFT.MAX_LEVEL
       ? { level: craft.workshop + 1, recipe: recipeFor({ kind: "workshop" }, revenue * CRAFT.WORKSHOP_COST[craft.workshop + 1]!, revenue) }
       : null,

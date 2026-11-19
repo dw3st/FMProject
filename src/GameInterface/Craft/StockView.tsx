@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
-import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Icon } from "@/GameInterface/Icons";
 import { StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
@@ -11,7 +10,9 @@ import { CraftLinksContext } from "@/GameInterface/Craft/RecipeLine";
 import { NewOrder } from "@/GameInterface/Craft/WorkshopView";
 import { makeState } from "@/Domain/craft/craftHelp";
 import { useCraft } from "@/GameInterface/Craft/useCraft";
-import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
+import { useFacilities, type FacilityItemView } from "@/GameInterface/Facilities/facilitiesApi";
+import { FacilityItemArt } from "@/GameInterface/Facilities/FacilityItemArt";
+import { conditionTone } from "@/GameInterface/Facilities/FacilityItemsPanel";
 import { COMPONENTS, MATERIALS } from "@/Domain/craft/craftConfig";
 import { formatEuros } from "@/Domain/money";
 import type { ComponentCounts, ComponentId } from "@/types/craftTypes";
@@ -21,7 +22,6 @@ import type { FacilityItemId } from "@/types/facilityTypes";
 const OUTLINE = "!border !border-solid !border-border !bg-card !text-foreground hover:!border-primary";
 /** A button that fits a row of the narrow stock column. */
 const ROW_BUTTON = "!h-8 !px-3 whitespace-nowrap";
-const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
 /**
  * Club → Stock: materials (by supplier, with this week's value), components (by quality) with "Make" on each one (opens
@@ -156,17 +156,12 @@ export function StockView({ saveId, stacked = false }: { saveId: string; stacked
           <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("craft.stock.recycle")}</h3>
           <span className="text-sm text-muted-foreground">{t("craft.stock.recycleHint")}</span>
         </div>
-        <span className={LABEL}>{t("craft.stock.item")}</span>
-        <OptionChips
-          options={items.map((it) => ({
-            key: it.id,
-            label: t("craft.stock.itemLevel", { item: t(`facilities.item.${it.id}`), level: it.level }),
-            disabled: it.level <= 1 || it.project !== null,
-          }))}
-          value={item}
-          onChange={(k) => { setItem(k); setAsking(false); setReturned(null); }}
-          aria-label={t("craft.stock.item")}
-        />
+        <div role="group" aria-label={t("craft.stock.item")} className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
+          {items.map((it) => (
+            <RecycleCard key={it.id} item={it} back={view.recycle?.[it.id]} selected={item === it.id}
+              onSelect={() => { setItem(item === it.id ? null : it.id); setAsking(false); setReturned(null); }} />
+          ))}
+        </div>
         {actionError && <p className="text-sm text-destructive m-0">{t(craftErrorKey(actionError))}</p>}
         {returned && <p className="text-sm text-chart-2 m-0">{t("craft.stock.recycleDone", { list: list(returned) || "—" })}</p>}
         {picked && (
@@ -189,5 +184,48 @@ export function StockView({ saveId, stacked = false }: { saveId: string; stacked
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * One item of Recycle (report 2026-11-19: the plain chip list): the item's picture, "Level N → N−1" and what it gives
+ * back. Unavailable (level 1, works under way) greyed out with the reason in the title; selected with the primary border.
+ */
+function RecycleCard({ item, back, selected, onSelect }: {
+  item: FacilityItemView; back: ComponentCounts | undefined; selected: boolean; onSelect: () => void;
+}) {
+  const { t } = useTranslation();
+  const reason = item.level <= 1 ? t("craft.stock.recycleMin") : item.project !== null ? t("craft.stock.recycleBusy") : null;
+  const tone = conditionTone(item.condition, item.condemned);
+  const gives = (Object.entries(back ?? {}) as [ComponentId, number][]).filter(([, n]) => n > 0);
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={reason !== null}
+      aria-pressed={selected}
+      title={reason ?? undefined}
+      className={`flex flex-col gap-2 rounded-md border bg-card p-3 text-left transition-colors min-w-0 ${
+        reason ? "opacity-45 cursor-not-allowed border-border"
+          : selected ? "border-primary ring-1 ring-primary cursor-pointer" : "border-border hover:border-muted-foreground cursor-pointer"}`}
+    >
+      <FacilityItemArt id={item.id} tone={tone.art} closed={item.condemned} works={item.project !== null} level={item.level} />
+      <span className="font-semibold text-foreground leading-tight line-clamp-2">{t(`facilities.item.${item.id}`)}</span>
+      <span className="text-sm text-muted-foreground tabular-nums">
+        {reason ?? t("craft.stock.levelDown", { from: item.level, to: item.level - 1 })}
+      </span>
+      {!reason && (
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm tabular-nums">
+          {gives.length === 0 ? (
+            <span className="text-muted-foreground">{t("craft.stock.givesNothing")}</span>
+          ) : gives.map(([id, n]) => (
+            <span key={id} className="flex items-center gap-1 text-chart-2" title={t(`craft.component.${id}`)}>
+              <CraftIcon kind="component" id={id} />
+              <span className="font-semibold">+{n}</span>
+            </span>
+          ))}
+        </span>
+      )}
+    </button>
   );
 }

@@ -8892,7 +8892,11 @@
       "recycleConfirm": "Baixar {{item}} para o nível {{level}}?",
       "confirm": "Reciclar",
       "recycleDone": "Voltou ao estoque: {{list}}.",
-      "itemLevel": "{{item}} · nível {{level}}"
+      "itemLevel": "{{item}} · nível {{level}}",
+      "levelDown": "Nível {{from}} → {{to}}",
+      "recycleMin": "Já está no nível 1",
+      "recycleBusy": "Obra em andamento",
+      "givesNothing": "Não devolve componentes"
     },
     "shop": {
       "material": "Material",

@@ -8907,7 +8907,11 @@
       "recycleConfirm": "Take {{item}} down to level {{level}}?",
       "confirm": "Recycle",
       "recycleDone": "Back to the stock: {{list}}.",
-      "itemLevel": "{{item}} · level {{level}}"
+      "itemLevel": "{{item}} · level {{level}}",
+      "levelDown": "Level {{from}} → {{to}}",
+      "recycleMin": "Already at level 1",
+      "recycleBusy": "Works under way",
+      "givesNothing": "Gives nothing back"
     },
     "shop": {
       "material": "Material",
