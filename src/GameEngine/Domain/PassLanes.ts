@@ -348,13 +348,17 @@ export function scorePassToReceiverBreakdown(
   const riskMult = DECISION_FLAGS.PASS_ERROR
     ? Math.max(0, 1 - FM_NUMBERS.RISK_WEIGHT * passLossEstimate(holder, receiver, pressure ?? holderPressure(holder.x, holder.y, opponents)))
     : 1;
-  const qualityRaw = (baseScore + playerModifier + tacticalModifier + passTargetBonus) * riskMult;
+  // The risk picks the receiver; only RISK_IN_ACTION of it reaches the pass-vs-carry balance (a pass is no less
+  // attractive than before, the holder just aims it at a safer teammate).
+  const plain = baseScore + playerModifier + tacticalModifier + passTargetBonus;
+  const qualityRaw = plain * (1 - FM_NUMBERS.RISK_IN_ACTION * (1 - riskMult));
+  const selectRaw = plain * riskMult;
   return {
     laneScore, progressScore, receiverSpaceScore,
     distancePenalty, goalProximityBonus, visionRangePenalty,
     baseScore, playerModifier, tacticalModifier, passTargetBonus, receiverRoleBonus,
     quality: Math.max(0, qualityRaw),
-    score:   Math.max(0, qualityRaw + receiverRoleBonus),
+    score:   Math.max(0, selectRaw + receiverRoleBonus),
   };
 }
 

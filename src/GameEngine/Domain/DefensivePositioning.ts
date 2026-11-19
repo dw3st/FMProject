@@ -1472,7 +1472,7 @@ export function computeDefensivePosition(
       let near = 0;
       for (const p of allPlayers) {
         if (p.team !== player.team || p.id === player.id || p.role === 'GK') continue;
-        if (Math.hypot(p.x - ballPos.x, p.y - ballPos.y) < R) near++;
+        if (Math.hypot(p.x - ballPos.x, p.y - ballPos.y) < FM_NUMBERS.BALL_CROWD_COUNT_YD) near++;
       }
       if (near >= 2) {
         // Out along the line from the ball to his own goal side of the target.

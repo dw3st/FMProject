@@ -8,7 +8,7 @@ import { emptyFmTargets, fmTargetCollector, type FmTargetTotals } from "@/lab/fm
 interface Input { league: string; matches: number; offset: number; seed: number }
 export interface FmWorkerOut { fm: FmTargetTotals; world: Record<string, number>; ms: number }
 
-const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions"] as const;
+const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions", "crosses", "throughBallsAttempted", "throughBallsCompleted", "throughBallsLostInFlight", "throughBallsLostInRace", "throughBallsLostInDuel", "ballNearTicks", "ballCrowdTicks"] as const;
 
 self.onmessage = (e: MessageEvent<Input>) => {
   const { league, matches, offset, seed } = e.data;

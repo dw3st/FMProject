@@ -85,4 +85,6 @@ console.log("  FM step DEF 4.4 · MID 6 · FWD 7 yd (target − position: in 9.8
 console.log("\n── Shots (distance to the goal mouth, yd) ──");
 console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) / Math.max(1, fm.shots))}%`).join(" · ") + "   FM: none beyond ~33 yd");
 console.log("\n── World / match ──");
-console.log("  " + Object.entries(world).map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
+console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball")).map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
+// Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.
+if (world.ballNearTicks) console.log(`  crowd 3+ defenders ≤ 8 yd: ${(100 * world.ballCrowdTicks! / world.ballNearTicks).toFixed(1)}% of live ticks (main ~5.4–5.8%)`);

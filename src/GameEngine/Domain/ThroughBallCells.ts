@@ -382,7 +382,9 @@ export function enumerateCandidateCells(
       // simply leaves the cell at its full viability.
       // The chooser learns the risk (stage 4b, `fm-numbers.md`): a race we may lose is worth less.
       const riskMult = DECISION_FLAGS.PASS_ERROR
-        ? (1 - FM_NUMBERS.TB_RISK * (1 - raceScore)) * (Math.hypot(cx - holder.x, cy - holder.y) > FM_NUMBERS.LOFT_YD ? FM_NUMBERS.TB_LONG_MULT : 1)
+        ? (raceScore < FM_NUMBERS.TB_MIN_RACE ? 0 : 1 - FM_NUMBERS.TB_RISK * (1 - raceScore))
+          * Math.max(0, 1 - FM_NUMBERS.TB_LANE_RISK * laneRisk)
+          * (Math.hypot(cx - holder.x, cy - holder.y) > FM_NUMBERS.LOFT_YD ? FM_NUMBERS.TB_LONG_MULT : 1)
         : 1;
       const score = Math.max(0, viability) * (1 + cfg.GOAL_THREAT_BUFF * goalScore * raceScore) * riskMult;
 

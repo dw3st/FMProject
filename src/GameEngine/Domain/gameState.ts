@@ -3700,7 +3700,8 @@ export function startAerialBall(
   // A set-piece delivery into the box: everyone who went up attacks it (`set-pieces-play.md`).
   const boxDelivery = kind === 'cross' && state.setPiece?.variant === 'box';
   return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, toX, toY, holder.team, {
-    maxPerTeam: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASERS : C.MAX_CHASERS_PER_TEAM,
+    // A lofted pass to feet (stage 4b) is the receiver against his marker, not a crowd under the ball.
+    maxPerTeam: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASERS : lofted ? FM_NUMBERS.LOFT_CHASERS : C.MAX_CHASERS_PER_TEAM,
     etaHorizon: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASE_ETA_HORIZON : C.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
     ignoreRoleWeights: boxDelivery,

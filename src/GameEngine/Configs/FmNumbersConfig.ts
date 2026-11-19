@@ -20,8 +20,8 @@ export const FM_NUMBERS = {
   MARGIN_SPAN: 40,
   MARGIN_PER_M: 0.5,
   MARGIN_MAX: 41,
-  /** Along-track error in yards: offset = relErr · distance · ALONG_SCALE (rolling distance ∝ v², so ≈ 2× the speed error). */
-  ALONG_SCALE: 2,
+  /** Along-track error in yards: offset = relErr · distance · ALONG_SCALE (rolling distance ∝ v², ≈ 2× the speed error; 1.7 matches FM's 22–27 m). */
+  ALONG_SCALE: 1.7,
   /** The receiver reaches a ball within this ellipse of where he stood (along the pass / across it), + REACH_TOUCH_YD × first touch. */
   REACH_ALONG_YD: 2.2,
   REACH_SIDE_YD: 1.3,
@@ -32,8 +32,12 @@ export const FM_NUMBERS = {
   LOFT_YD: 30,
   /** Lofted pass: the launch error × this (the ball drops on the receiver). */
   LOFT_ERR_MULT: 1.6,
+  /** Chasers per side under a lofted pass to feet. */
+  LOFT_CHASERS: 1,
   /** Chooser: the pass quality × (1 − RISK_WEIGHT · loss estimate). A miss is lost about MISS_LOSS of the time. */
   RISK_WEIGHT: 1,
+  /** Share of that risk that reaches the pass action against carry / hold (1 = all, 0 = it only picks the receiver). */
+  RISK_IN_ACTION: 0,
   MISS_LOSS: 0.55,
   /** Estimated keep rate of a lofted pass for the chooser (FM: ~31% to the receiver, ~45% kept by the team). */
   LOFT_KEEP: 0.4,
@@ -41,6 +45,12 @@ export const FM_NUMBERS = {
   TB_RISK: 0.4,
   /** ...and × this for a ball into space longer than LOFT_YD (FM: almost every pass beyond ~27 m is lofted and contested). */
   TB_LONG_MULT: 0.85,
+  /** ...and 0 below this race score (0.5 = level race): a ball into space the defender reaches first is not played. */
+  TB_MIN_RACE: 0.5,
+  /** ...and × (1 − TB_LANE_RISK × lane risk): a ball past a defender's interception corridor is mostly lost in flight. */
+  TB_LANE_RISK: 0.15,
+  /** Cross score × this (the passes it competes with already carry their risk; most crosses are lost). */
+  CROSS_RISK_MULT: 0.85,
 
   // ── 2. Decision timing (FM: ~0.65 decisions per second, a carry is a 2 m step) ──
   /** A carry is a step this long (yd); the holder re-decides when it is done. */
@@ -83,8 +93,10 @@ export const FM_NUMBERS = {
   SHAPE_SHIFT_RANGE_YD: 25,
   /** ...never closer to the ball than this (yd): the shape moves, it does not crowd the ball. */
   SHAPE_SHIFT_KEEP_YD: 12,
-  /** With two teammates already within this of the ball (yd), a third holding shape or marking stays at its edge. */
-  BALL_CROWD_YD: 8.5,
+  /** With two teammates already on the ball, a third holding shape or marking keeps this far from it (yd). */
+  BALL_CROWD_YD: 10,
+  /** ...teammates counted within this of the ball (yd). */
+  BALL_CROWD_COUNT_YD: 8,
   /** Ball in our defensive third: defenders / midfielders converge this share toward the ball's side. */
   BOX_CONVERGE: 0.35,
 
@@ -92,8 +104,10 @@ export const FM_NUMBERS = {
   /** Out of possession: depth behind the ball × this (deeper block; also the back-line depth, `ballRelativeLineX`). */
   OUT_DEPTH_MULT: 1.15,
   /** In possession: the whole shape moves up IN_ADVANCE_YD plus IN_PUSH × (ball depth − halfway), uniformly. */
-  IN_ADVANCE_YD: 8,
+  IN_ADVANCE_YD: 0,
   IN_PUSH: 0.25,
+  /** ...× this by line: the back moves up, the front much less. */
+  IN_SHIFT_BY_LINE: { DEF: 1, MID: 0.6, FWD: 0.2 },
   /** Out of possession: the whole shape drops this far (yd) toward its own goal (never inside OUT_MIN_YD of it). */
   OUT_DROP_YD: 5,
   OUT_MIN_YD: 8,

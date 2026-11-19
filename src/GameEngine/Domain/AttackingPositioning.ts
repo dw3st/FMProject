@@ -14,6 +14,7 @@
 
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
+import { getMainRole } from '@/Domain/roles';
 import { keeperAttackingTarget } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import type { GamePlayer, Formation } from '@/GameEngine/types';
@@ -40,15 +41,20 @@ const BOX_CONVERGENCE_SPAN   = 30;
  * The block slides with the ball (stage 4b, `fm-numbers.md`): in possession the whole shape moves up IN_ADVANCE_YD
  * plus IN_PUSH × (ball depth − halfway) — a uniform shift, never a squeeze toward the ball. 0 with the flag off.
  */
-export function blockShiftX(player: { attackDir: 1 | -1 }, ballPos: { x: number; y: number }): number {
+export function blockShiftX(player: { attackDir: 1 | -1; role?: string }, ballPos: { x: number; y: number }): number {
   if (!DECISION_FLAGS.SLIDING_BLOCK) return 0;
   const relBall = player.attackDir === 1 ? ballPos.x : PITCH_LENGTH - ballPos.x;
-  return player.attackDir * (FM_NUMBERS.IN_ADVANCE_YD + FM_NUMBERS.IN_PUSH * (relBall - PITCH_LENGTH / 2));
+  // The back of the team moves up most; the front already stands on the other side's line, and pushing it
+  // further only crowds the ball (stage 4b, round 2).
+  const main = player.role ? getMainRole(player.role) : 'Midfielder';
+  const line = main === 'Defender' || main === 'GK' ? FM_NUMBERS.IN_SHIFT_BY_LINE.DEF
+    : main === 'Forward' ? FM_NUMBERS.IN_SHIFT_BY_LINE.FWD : FM_NUMBERS.IN_SHIFT_BY_LINE.MID;
+  return player.attackDir * line * (FM_NUMBERS.IN_ADVANCE_YD + FM_NUMBERS.IN_PUSH * (relBall - PITCH_LENGTH / 2));
 }
 
 export function attackingAnchor(
   base: { x: number; y: number },
-  player: { team: TeamId; attackDir: 1 | -1 },
+  player: { team: TeamId; attackDir: 1 | -1; role?: string },
   ballPos: { x: number; y: number },
 ): { x: number; y: number } {
   const centre = PITCH_WIDTH / 2;

@@ -664,7 +664,8 @@ function crossAction(best: ReturnType<typeof evaluateCrossTargets>[number] | und
   if (!best || best.raw <= 0) return { type: 'cross', score: 0 };
   return {
     type: 'cross',
-    score: compress(best.raw, AERIAL_CONFIG.CROSS_STRONG_RAW),
+    // The chooser prices the risk of a cross like a pass's (stage 4b, `fm-numbers.md`): most are lost.
+    score: compress(best.raw, AERIAL_CONFIG.CROSS_STRONG_RAW) * (DECISION_FLAGS.PASS_ERROR ? FM_NUMBERS.CROSS_RISK_MULT : 1),
     toX: best.x, toY: best.y, intendedRunnerId: best.bestAttackerId,
   };
 }
