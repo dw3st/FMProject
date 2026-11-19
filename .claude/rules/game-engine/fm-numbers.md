@@ -96,6 +96,11 @@ match's values so far and its seed) and the `/lab` `PairDetail` table "FM target
 match; `PerMatchView.avgLongBallsCompleted` added for it). Long-range shots need the collector (script only). The
 matches are seeded through `simulateMatch(..., { seed })` (seed + offset + match), not by replacing `Math.random`.
 
+The seeded generator (stage 0, `game-engine.md` → "Seeded match generator") leaves the volume where it was:
+`ai-formation-goals.ts --leagues premier_league --modes ai --quick 0`, before / after, three runs (200 + 200 + 400
+matches each): goals 1.590 / 1.525, 1.580 / 1.510, 1.692 / 1.650 (800 matches: 1.639 / 1.584, −3.4%, under 1 standard
+error); shots 4.82 / 4.46, 4.75 / 4.55, 4.75 / 4.74 (4.77 / 4.62, −3.1%, 1.4 standard errors).
+
 ## Target against ours
 
 Premier League, 150 seeded matches each (`fm-targets.ts`, AI formations, balanced). "main" = the seven flags off;
