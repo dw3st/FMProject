@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { loanReport, shareWithRecall } from "@/Domain/negotiation/loanReport";
 import { emptySeasonLog, type RosterPlayer } from "@/types/playerTypes";
 
-const stats = { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5, heading: 5, strength: 5, stamina: 5, reflex: 1, jump: 1 };
+const stats = { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5, heading: 5, strength: 5, stamina: 5, reflex: 1, jump: 1, decisions: 1, composure: 1, flair: 1, anticipation: 1 };
 const player = (over: Partial<RosterPlayer>): RosterPlayer => ({
   id: "p", name: "P", age: 20, positions: ["Midfielder"], stats, seasonLog: emptySeasonLog(), ...over,
 }) as unknown as RosterPlayer;

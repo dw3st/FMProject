@@ -6,7 +6,7 @@ function flatStats(v: number): RosterPlayer["stats"] {
   return {
     passing: v, vision: v, finishing: v, dribbling: v,
     speed: v, acceleration: v, tackling: v, pressing: v,
-    stamina: v, heading: v, strength: v, reflex: v, jump: v,
+    stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
   };
 }
 

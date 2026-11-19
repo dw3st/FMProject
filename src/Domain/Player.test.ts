@@ -4,7 +4,7 @@ import type { PlayerStatsRecord } from "@/types/playerTypes";
 
 const stats = (over: Partial<PlayerStatsRecord>): PlayerStatsRecord => ({
   passing: 3, vision: 3, finishing: 3, dribbling: 3, speed: 3, acceleration: 3, tackling: 3,
-  pressing: 3, stamina: 3, heading: 3, strength: 3, reflex: 1, jump: 1, ...over,
+  pressing: 3, stamina: 3, heading: 3, strength: 3, reflex: 1, jump: 1, decisions: 1, composure: 1, flair: 1, anticipation: 1, ...over,
 });
 
 describe("Player.bestSpecificRole", () => {

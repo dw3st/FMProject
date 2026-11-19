@@ -47,7 +47,7 @@ function basePlayer(overrides: Partial<RosterPlayer> & Pick<RosterPlayer, "id" |
     stats: {
       passing: 10, vision: 10, finishing: 10, dribbling: 10,
       speed: 10, acceleration: 10, tackling: 10, pressing: 10,
-      stamina: 10, heading: 10, strength: 10, reflex: 10, jump: 10,
+      stamina: 10, heading: 10, strength: 10, reflex: 10, jump: 10, decisions: 10, composure: 10, flair: 10, anticipation: 10,
     },
     profile: { summary: "", archetype: "test" },
     seasonLog: makeSeasonLog(),
@@ -547,7 +547,7 @@ describe("coaching staff on a training day", () => {
     players: [basePlayer({
       id: "p1", name: "Kid", age: 19, seasonLog: makeSeasonLog({ fitness: 95 }),
       stats: { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5,
-        stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5 },
+        stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5, decisions: 5, composure: 5, flair: 5, anticipation: 5 },
     })],
     ...(staff ? { staff } : {}),
     ...extra,
@@ -555,8 +555,10 @@ describe("coaching staff on a training day", () => {
   // One session from a fresh record: the DP added on top of the seed (no level-up that small).
   const progressOf = (s: Squad) => {
     const sq = buildTrainingEvent("s", s, { minEnergyToTrain: 0, intensity: "normal" }, "2027-02-05", () => 0.99).updatedSquad;
-    const seed = 13 * dpRequired(5) * 0.5;
-    return Object.values(sq.players[0]!.progress ?? {}).reduce((a, b) => a + b, 0) - seed;
+    // Every attribute (the 13 and the 4 mental ones) is 5 here: each seeded at half a step.
+    const values = Object.values(sq.players[0]!.progress ?? {});
+    const seed = values.length * dpRequired(5) * 0.5;
+    return values.reduce((a, b) => a + b, 0) - seed;
   };
 
   test("a club with nobody leading the areas develops at about 40% of a 3-star staff", () => {
@@ -629,7 +631,7 @@ describe("youth coach on an academy training day (12.1)", () => {
   };
   const five5 = {
     passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5,
-    stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5,
+    stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5, decisions: 5, composure: 5, flair: 5, anticipation: 5,
   };
   const kid = basePlayer({ id: "y", name: "Y", age: 17, stats: five5, seasonLog: makeSeasonLog({ fitness: 90 }) });
   const first = basePlayer({ id: "p", name: "P", age: 19, stats: five5, seasonLog: makeSeasonLog({ fitness: 90 }) });

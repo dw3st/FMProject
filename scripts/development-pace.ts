@@ -32,6 +32,7 @@ import { Player } from "@/Domain/Player";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import { effectAt } from "@/Domain/facilities/facilityItems";
 import { emptyDevelopmentProgress, type PlayerStatsRecord, type RosterPlayer } from "@/types/playerTypes";
+import { BASE_ATTRIBUTE_LIST } from "@/Domain/attributes";
 
 type Dev = Pick<typeof CURRENT, "applyDevelopment" | "applyTrainingDevelopment"> & { GROWTH_DP_SCALE?: number };
 
@@ -59,18 +60,19 @@ const CT_MATCH_DP = effectAt(W.CT_MATCH_DEV_MIN, ctCondition);
 
 const PROFILES: { name: string; role: string; stats: PlayerStatsRecord }[] = [
   { name: "meia (tudo 5)", role: "CM", stats: { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5,
-    acceleration: 5, tackling: 5, pressing: 5, stamina: 5, heading: 5, strength: 5, reflex: 1, jump: 3 } },
+    acceleration: 5, tackling: 5, pressing: 5, stamina: 5, heading: 5, strength: 5, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3 } },
   { name: "atacante", role: "ST", stats: { passing: 5, vision: 5, finishing: 7, dribbling: 6, speed: 7,
-    acceleration: 6, tackling: 3, pressing: 4, stamina: 5, heading: 6, strength: 6, reflex: 1, jump: 3 } },
+    acceleration: 6, tackling: 3, pressing: 4, stamina: 5, heading: 6, strength: 6, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3 } },
   { name: "zagueiro", role: "CB", stats: { passing: 4, vision: 4, finishing: 3, dribbling: 3, speed: 5,
-    acceleration: 5, tackling: 7, pressing: 6, stamina: 5, heading: 7, strength: 7, reflex: 1, jump: 3 } },
+    acceleration: 5, tackling: 7, pressing: 6, stamina: 5, heading: 7, strength: 7, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3 } },
 ];
 const GOALKEEPER = { name: "goleiro", role: "GK", stats: { passing: 4, vision: 3, finishing: 3, dribbling: 3, speed: 3,
-  acceleration: 3, tackling: 3, pressing: 5, stamina: 3, heading: 3, strength: 3, reflex: 5, jump: 5 } as PlayerStatsRecord };
+  acceleration: 3, tackling: 3, pressing: 5, stamina: 3, heading: 3, strength: 3, reflex: 5, jump: 5, decisions: 5, composure: 5, flair: 5, anticipation: 5 } as PlayerStatsRecord };
 const AGES = [18, 21, 24, 27, 31, 33];
 const SEASONS = 3;
 
-const mean = (p: RosterPlayer) => Object.values(p.stats).reduce((a, b) => a + b, 0) / 13;
+// The 13 base attributes (the mental ones have their own pool, `mental.md`).
+const mean = (p: RosterPlayer) => BASE_ATTRIBUTE_LIST.reduce((a, x) => a + p.stats[x.id as keyof RosterPlayer["stats"]], 0) / BASE_ATTRIBUTE_LIST.length;
 const overall = (p: RosterPlayer) => Player.computeOverallAvg({ ...p, overallAvg: undefined });
 const weightsOf = (role: string) => rolesData[role]!.dpWeights!;
 
@@ -111,7 +113,7 @@ for (const realistic of [true, false]) {
 
 // Academy: mirrors developYouthSeason (CM weights, the growth scale divided back out, progress kept).
 const youthStats: PlayerStatsRecord = { passing: 4, vision: 4, finishing: 4, dribbling: 4, speed: 5, acceleration: 5,
-  tackling: 4, pressing: 4, stamina: 5, heading: 4, strength: 4, reflex: 1, jump: 3 };
+  tackling: 4, pressing: 4, stamina: 5, heading: 4, strength: 4, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3 };
 let y = { id: "pace-youth", name: "x", age: 16, preferredFoot: "right", positions: ["CM"], stats: { ...youthStats } } as unknown as RosterPlayer;
 const y0 = mean(y);
 const cumulative: string[] = [];

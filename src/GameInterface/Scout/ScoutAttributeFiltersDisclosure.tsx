@@ -4,7 +4,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react
 import {
   ATTR_INPUT_MAX,
   ATTR_INPUT_MIN,
-  ATTRIBUTE_GROUPS,
+  visibleAttributeGroups,
   defaultAttributeRanges,
   isAnyRange,
   orderedRange,
@@ -108,7 +108,7 @@ export function ScoutAttributeFiltersDisclosure({
 }) {
   const { t } = useTranslation();
   const ranges = filters.attributeRanges;
-  const total = activeCount(ranges, ATTRIBUTE_GROUPS.flatMap((g) => g.attributes));
+  const total = activeCount(ranges, visibleAttributeGroups().flatMap((g) => g.attributes));
 
   function patchAttr(id: AttributeId, r: Range) {
     setFilters({ ...filters, attributeRanges: { ...ranges, [id]: r } });
@@ -152,7 +152,7 @@ export function ScoutAttributeFiltersDisclosure({
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-start">
-              {ATTRIBUTE_GROUPS.map((group) => (
+              {visibleAttributeGroups().map((group) => (
                 <Disclosure key={group.id} as="div" defaultOpen className="rounded-md border border-border/60 bg-background/40">
                   {({ open: groupOpen }) => (
                     <>

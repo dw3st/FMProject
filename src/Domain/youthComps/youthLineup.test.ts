@@ -14,6 +14,7 @@ function mk(id: string, pos: string, age: number, apps = 0, level = 5): RosterPl
     stats: {
       passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
       pressing: v, stamina: v, heading: v, strength: v, reflex: pos === "GK" ? v : 0, jump: pos === "GK" ? v : 0,
+      decisions: v, composure: v, flair: v, anticipation: v,
     },
     profile: { summary: "", archetype: "" },
     seasonLog: { ...emptySeasonLog(), appearances: apps, fitness: 90 },

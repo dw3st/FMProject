@@ -20,7 +20,7 @@ function squad(id: string, nat: (i: number) => string, starterLevel = 7): Squad 
     id: pid, name: `${id} ${pid}`, age: 25, squadId: id, preferredFoot: "right", positions: [role], nationality,
     stats: {
       passing: level, vision: level, finishing: level, dribbling: level, speed: level, acceleration: level,
-      tackling: level, pressing: level, stamina: 7, heading: level, strength: level, reflex: level, jump: level,
+      tackling: level, pressing: level, stamina: 7, heading: level, strength: level, reflex: level, jump: level, decisions: level, composure: level, flair: level, anticipation: level,
     },
     profile: { summary: "", archetype: "" },
     seasonLog: emptySeasonLog(),

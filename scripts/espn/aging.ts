@@ -63,7 +63,8 @@ export function agePlayerStats(
       x[k] = d > 0 ? x[k]! + share * (1 - (x[k]! / 10) ** 2) : x[k]! + share;
     });
   }
-  const out = {} as PlayerStatsRecord;
+  // Any other key (the mental attributes, `mental.md`) passes through unchanged.
+  const out = { ...stats } as PlayerStatsRecord;
   for (const k of STAT_KEYS) {
     out[k] = roundAttr(x[k]!);
   }

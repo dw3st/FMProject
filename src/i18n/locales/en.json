@@ -21,7 +21,11 @@
     "heading": "Heading",
     "strength": "Strength",
     "reflex": "Reflexes",
-    "jump": "Jumping"
+    "jump": "Jumping",
+    "decisions": "Decisions",
+    "composure": "Composure",
+    "flair": "Flair",
+    "anticipation": "Anticipation"
   },
   "attributeDescriptions": {
     "passing": "How accurately the player delivers short and medium passes.",
@@ -36,7 +40,11 @@
     "heading": "How effectively the player wins and directs aerial duels.",
     "strength": "Physical power in duels, holding up play, and shot force.",
     "reflex": "Goalkeeper reaction ability for close-range and fast shots.",
-    "jump": "Goalkeeper reach and extension for high balls and long-range efforts."
+    "jump": "Goalkeeper reach and extension for high balls and long-range efforts.",
+    "decisions": "How often the player picks the right option.",
+    "composure": "How calm the player stays with the ball under pressure.",
+    "flair": "How willing the player is to try the unexpected.",
+    "anticipation": "How early the player reads what happens next."
   },
   "common": {
     "decrease": "Decrease",
@@ -2809,6 +2817,7 @@
       "passing": "Passing",
       "defense": "Defense",
       "goalkeeping": "Goalkeeping",
+      "mental": "Mental",
       "rightFoot": "Right",
       "leftFoot": "Left",
       "yearsOld": "years",
@@ -3678,7 +3687,8 @@
       "ovr": "OVR",
       "potential": "Potential",
       "potentialHint": "Range up to age 23",
-      "potentialDone": "Past the age of big growth"
+      "potentialDone": "Past the age of big growth",
+      "mentalTitle": "Mental"
     },
     "squadView": {
       "title": "Squad overview",
@@ -3759,7 +3769,8 @@
         "physical": "Physical",
         "attack": "Technique and attack",
         "defense": "Defence",
-        "goalkeeper": "Goalkeeper"
+        "goalkeeper": "Goalkeeper",
+        "mental": "Mental"
       }
     },
     "savedFilters": {

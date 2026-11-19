@@ -85,7 +85,7 @@ describe("derivePlayer", () => {
   });
   test("playerProfile names the archetype of the strongest stat", () => {
     const s = { passing: 9, vision: 2, finishing: 1, dribbling: 3, speed: 3, acceleration: 3, tackling: 3,
-      pressing: 3, stamina: 3, heading: 3, strength: 3, reflex: 0, jump: 0 };
+      pressing: 3, stamina: 3, heading: 3, strength: 3, reflex: 0, jump: 0, decisions: 0, composure: 0, flair: 0, anticipation: 0 };
     expect(playerProfile("Midfielder", s, "Solid")).toEqual({ archetype: "Playmaker", summary: "Solid midfielder, strongest at passing." });
   });
 });

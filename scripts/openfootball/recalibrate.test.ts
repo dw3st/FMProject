@@ -11,7 +11,7 @@ const ATTR_WEIGHTS = ROLES as Record<string, { attrWeights?: Record<string, numb
 
 const STATS_ZERO: PlayerStatsRecord = {
   passing: 0, vision: 0, finishing: 0, dribbling: 0, speed: 0, acceleration: 0,
-  tackling: 0, pressing: 0, stamina: 0, heading: 0, strength: 0, reflex: 0, jump: 0,
+  tackling: 0, pressing: 0, stamina: 0, heading: 0, strength: 0, reflex: 0, jump: 0, decisions: 0, composure: 0, flair: 0, anticipation: 0,
 };
 
 const st = (over: Partial<PlayerStatsRecord>): PlayerStatsRecord => ({ ...STATS_ZERO, ...over });

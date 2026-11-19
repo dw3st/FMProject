@@ -17,7 +17,7 @@ function mk(id: string, pos: string, age: number): RosterPlayer {
     id, name: `P ${id}`, age, squadId: "s1", preferredFoot: "right", positions: [pos],
     stats: {
       passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
-      pressing: v, stamina: v, heading: v, strength: v, reflex: 0, jump: 0,
+      pressing: v, stamina: v, heading: v, strength: v, reflex: 0, jump: 0, decisions: 0, composure: 0, flair: 0, anticipation: 0,
     },
     profile: { summary: "", archetype: "" },
     seasonLog: { ...emptySeasonLog(), appearances: 10, goals: 3, avgRating: 6.5, recentRatings: [6.5], fitness: 90, load: 20 },

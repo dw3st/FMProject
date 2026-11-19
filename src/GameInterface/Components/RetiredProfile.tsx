@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ATTRIBUTE_LIST, attrDisplay } from "@/Domain/attributes";
+import { attrDisplay, visibleAttributeList } from "@/Domain/attributes";
 import { computeOverallAvg } from "@/Domain/playerRating";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
@@ -85,7 +85,7 @@ export function RetiredProfile({ saveId, retiredId, leagues }: { saveId: string;
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-2">
-        {ATTRIBUTE_LIST.map((a) => {
+        {visibleAttributeList().map((a) => {
           const v = attrDisplay(rec.statsAtRetirement[a.id] ?? 0);
           return (
             <div key={a.id} className="flex items-center gap-3">

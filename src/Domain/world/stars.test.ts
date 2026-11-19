@@ -4,7 +4,7 @@ import { emptySeasonLog, type PlayerStatsRecord, type RosterPlayer, type Squad }
 
 const stats = (o: number): PlayerStatsRecord => ({
   passing: o, vision: o, finishing: o, dribbling: o, speed: o, acceleration: o, tackling: o,
-  pressing: o, stamina: o, heading: o, strength: o, reflex: o, jump: o,
+  pressing: o, stamina: o, heading: o, strength: o, reflex: o, jump: o, decisions: o, composure: o, flair: o, anticipation: o,
 });
 
 const player = (id: string, overall: number, age = 25, log: Partial<ReturnType<typeof emptySeasonLog>> = {}): RosterPlayer => ({

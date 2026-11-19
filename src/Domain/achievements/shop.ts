@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS as A } from "@/Domain/achievements/achievementsConfig";
+import { mentalStatsFor } from "@/Domain/mental/mental";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { clamp } from "@/Domain/math";
 import { weightedScore } from "@/Domain/playerRating";
@@ -63,7 +64,7 @@ export function createdPlayer(args: {
     preferredFoot: input.foot,
     positions: [input.position],
     naturalPosition: input.position,
-    stats: statsFor(id, input.position, level),
+    stats: mentalStatsFor(statsFor(id, input.position, level), A.CREATED_AGE, id),
     profile: { summary: "Exceptional academy prospect.", archetype: "Wonderkid" },
     nationality: input.nationality,
     academyOf: squad.id,

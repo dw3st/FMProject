@@ -24,7 +24,7 @@ import type {
   PlayerDevelopmentChange,
 } from "@/types/dayLogTypes";
 import { applyDevelopment } from "@/GameEngine/PlayerDevelopment";
-import { matchDpWeights, playedRoles } from "@/Domain/development/dpWeights";
+import { matchDpWeights, mentalWeightsFor, playedRoles } from "@/Domain/development/dpWeights";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { quickSimMatch, type Rng } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
@@ -366,6 +366,7 @@ function finalizeSquadsAfterMatch(
           * youthAttributeMult(squad.managerAttributes, p.age),
         professionalismDecayMult(p),
         areas,
+        mentalWeightsFor(p),
       );
       if (levelChanges) allChanges.push(levelChanges);
       return updatedPlayer;

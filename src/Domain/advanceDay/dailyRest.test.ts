@@ -29,7 +29,7 @@ function basePlayer(overrides: Partial<RosterPlayer> & Pick<RosterPlayer, "id" |
     stats: {
       passing: 10, vision: 10, finishing: 10, dribbling: 10,
       speed: 10, acceleration: 10, tackling: 10, pressing: 10,
-      stamina: 10, heading: 10, strength: 10, reflex: 10, jump: 10,
+      stamina: 10, heading: 10, strength: 10, reflex: 10, jump: 10, decisions: 10, composure: 10, flair: 10, anticipation: 10,
     },
     profile: { summary: "", archetype: "test" },
     seasonLog: makeSeasonLog(),

@@ -1,4 +1,5 @@
 import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
+import { withMentalAttributes } from "@/Domain/mental/mental";
 import type { TurfType } from "@/types/facilityTypes";
 import { useState } from "react";
 import { quickSimMatch, type QuickSimResult } from "@/Domain/advanceDay/quickSim";
@@ -17,7 +18,7 @@ interface RawSquadFile {
 }
 
 function squadFrom(raw: RawSquadFile): Squad {
-  const players = raw.players.map((p) => ({ ...p, seasonLog: emptySeasonLog() }));
+  const players = raw.players.map((p) => ({ ...withMentalAttributes(p), seasonLog: emptySeasonLog() }));
   return {
     id: raw.id,
     name: raw.name,
@@ -27,8 +28,8 @@ function squadFrom(raw: RawSquadFile): Squad {
   };
 }
 
-const HOME = squadFrom(manUtdSquad as RawSquadFile);
-const AWAY = squadFrom(newcastleSquad as RawSquadFile);
+const HOME = squadFrom(manUtdSquad as unknown as RawSquadFile);
+const AWAY = squadFrom(newcastleSquad as unknown as RawSquadFile);
 /** Both sides play the default formation — same as non-followed league fixtures. */
 const ROLES = slotRoles(formationForSimId(DEFAULT_SIM_FORMATION_ID));
 

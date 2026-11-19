@@ -77,6 +77,7 @@ import { continentalClubIds, isContinentalSlug } from "@/Domain/continental/comp
 import { intercontinentalView } from "@/backend/intercontinentalWorld";
 import { groupTable } from "@/Domain/continental/groupTable";
 import { leaguePhaseTable } from "@/Domain/continental/leaguePhase";
+import { fillSquadMentalInPlace } from "@/Domain/mental/mental";
 
 // fileURLToPath (not `.pathname`) so this resolves correctly on Windows, where a bare
 // `.pathname` leaves a leading slash before the drive letter (e.g. "/C:/...") and every
@@ -401,6 +402,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
         if (isSquadInSave(index, league, clubSlug, clubSlug)) continue;
 
         const raw   = (await Bun.file(`${srcDir}/${p}`).json()) as Squad;
+        fillSquadMentalInPlace(raw);
         if (isSquadInSave(index, league, clubSlug, raw.id)) continue;
         const squad: Squad = {
           ...raw,

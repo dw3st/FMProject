@@ -6,7 +6,7 @@ import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { PlayerProfile } from "@/GameInterface/Development/PlayerProfile";
-import { AttributesPanel } from "@/GameInterface/Development/AttributesPanel";
+import { AttributesPanel, MentalAttributesPanel } from "@/GameInterface/Development/AttributesPanel";
 import { PlayerSelector } from "@/GameInterface/Development/PlayerSelector";
 import { GrowthFactorsPanel, factorName, factorValue } from "@/GameInterface/Development/GrowthFactorsPanel";
 import { DevHistoryPanel } from "@/GameInterface/Development/DevHistoryPanel";
@@ -21,7 +21,8 @@ import { DevelopmentWarnings } from "@/GameInterface/Development/DevelopmentWarn
 import { DevelopmentTrainingConfig } from "@/GameInterface/Development/DevelopmentTrainingConfig";
 import { IndividualTrainingPanel } from "@/GameInterface/Development/IndividualTrainingPanel";
 import { attributeText } from "@/GameInterface/attributeText";
-import type { AttributeId } from "@/Domain/attributes";
+import { MENTAL_ATTRIBUTE_IDS, type AttributeId } from "@/Domain/attributes";
+import { SHOW_MENTAL } from "@/Domain/mental/mentalConfig";
 import type { RosterPlayer, DevelopmentProgress } from "@/types/playerTypes";
 import ROLES from "@/Data/roles.json";
 import type { AgePhase, DevStatus } from "@/GameInterface/Development/PlayerProfile";
@@ -43,7 +44,8 @@ function getAgePhase(age: number): AgePhase {
 
 function getDevStatus(age: number, progress: DevelopmentProgress | undefined): DevStatus {
   if (!progress) return "stable";
-  const total = Object.values(progress).reduce((a, b) => a + b, 0);
+  // The 13 base attributes only: the mental pool has its own pace (`mental.md`).
+  const total = ALL_ATTR_IDS.reduce((a, id) => a + (progress[id as keyof DevelopmentProgress] ?? 0), 0);
   if (age >= 32) return "declining";
   if (getAgePhase(age) === "atPeak") return "stable";
   if (total > 50) return "improving";
@@ -88,10 +90,10 @@ function getAttrDirection(
   return "stable";
 }
 
-function buildDevAttributes(player: RosterPlayer, nameOf: (id: string) => string): DevAttribute[] {
+function buildDevAttributes(player: RosterPlayer, nameOf: (id: string) => string, ids: readonly AttributeId[] = ALL_ATTR_IDS): DevAttribute[] {
   const pos = roleForDevelopmentWeights(player.positions ?? []);
   const stats = player.stats as unknown as Record<string, number>;
-  return ALL_ATTR_IDS.map((id) => {
+  return ids.map((id) => {
     const value = stats[id] ?? 0;
     const dp    = player.progress?.[id as keyof DevelopmentProgress];
     const progressPct = dp !== undefined ? Math.max(0, dp) / dpRequired(value) : undefined;
@@ -232,6 +234,7 @@ export function DevelopmentScreen() {
   const devStatus = getDevStatus(player.age, player.progress);
   const nameOf = (id: string) => attributeText(t, id).name;
   const attributes = buildDevAttributes(player, nameOf);
+  const mentalAttributes = SHOW_MENTAL ? buildDevAttributes(player, nameOf, MENTAL_ATTRIBUTE_IDS) : [];
   const roleFocus = buildRoleFocus(player, nameOf);
   const explanation = t(`developmentScreen.explanation.${buildExplanation(player)}`);
   const warnings = buildWarnings(player);
@@ -279,6 +282,9 @@ export function DevelopmentScreen() {
                     potential={potential}
                     declining={factors?.phase === "declining"}
                   />
+                  {SHOW_MENTAL && mentalAttributes.length > 0 && (
+                    <MentalAttributesPanel attributes={mentalAttributes} declining={factors?.phase === "declining"} />
+                  )}
                   {/* Training and positions side by side, so the middle column ends near the left one (tester report). */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 phone:gap-3 items-start">
                     {session && (

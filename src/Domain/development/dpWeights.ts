@@ -1,9 +1,9 @@
 import rolesData from "@/Data/roles.json";
-import { DEFAULT_DP_WEIGHTS, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
+import { DEFAULT_DP_WEIGHTS, DEFAULT_MENTAL_WEIGHTS, type MentalWeights, type RoleDPWeights } from "@/GameEngine/PlayerDevelopment";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import type { RosterPlayer } from "@/types/playerTypes";
 
-const ROLES = rolesData as unknown as Record<string, { dpWeights?: RoleDPWeights }>;
+const ROLES = rolesData as unknown as Record<string, { dpWeights?: RoleDPWeights; mentalWeights?: MentalWeights }>;
 
 /**
  * DP weights of the player's natural detailed role (`positions.md`). `positions[0]` is only the line
@@ -11,6 +11,11 @@ const ROLES = rolesData as unknown as Record<string, { dpWeights?: RoleDPWeights
  */
 export function dpWeightsFor(player: RosterPlayer): RoleDPWeights {
   return ROLES[preferredRole(player)]?.dpWeights ?? DEFAULT_DP_WEIGHTS;
+}
+
+/** Split of the mental DP pool for the player's natural role (`roles.json → mentalWeights`, `mental.md`). */
+export function mentalWeightsFor(player: RosterPlayer): MentalWeights {
+  return ROLES[preferredRole(player)]?.mentalWeights ?? DEFAULT_MENTAL_WEIGHTS;
 }
 
 /**

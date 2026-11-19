@@ -16,6 +16,7 @@ function mk(id: string, pos: string, level: number, age = 26): RosterPlayer {
     stats: {
       passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
       pressing: v, stamina: v, heading: v, strength: v, reflex: pos === "GK" ? v : 0, jump: pos === "GK" ? v : 0,
+      decisions: v, composure: v, flair: v, anticipation: v,
     },
     profile: { summary: "s", archetype: "a" },
   };
@@ -127,7 +128,7 @@ describe("generateReborn", () => {
     wasWorldClass: true, appearances: 30, goals: 20, rebornOffer: "pending",
     statsAtRetirement: {
       passing: 6, vision: 7, finishing: 10, dribbling: 8, speed: 5, acceleration: 6, tackling: 2,
-      pressing: 3, stamina: 5, heading: 9, strength: 7, reflex: 0, jump: 0,
+      pressing: 3, stamina: 5, heading: 9, strength: 7, reflex: 0, jump: 0, decisions: 0, composure: 0, flair: 0, anticipation: 0,
     } as any,
   };
   const sq = squad(Array.from({ length: 24 }, (_, i) => mk(`p${i}`, i < 3 ? "GK" : i < 10 ? "CB" : i < 17 ? "CM" : "ST", 6)));

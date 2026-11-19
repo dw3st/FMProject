@@ -32,6 +32,7 @@ import { runPool } from "@/backend/dal/pool";
 import { bumpSaveDataVersion } from "@/backend/dal/saveDataVersion";
 import { fixedPlayerName, withFixedPlayerNames } from "@/Domain/world/playerNames";
 import { leagueNationality, withDefaultNationality } from "@/Domain/world/defaultNationality";
+import { fillMentalInPlace, fillRetiredMentalInPlace, fillSquadMentalInPlace } from "@/Domain/mental/mental";
 import { fileURLToPath } from "url";
 
 const SAVES_DIR = `${RUNTIME_DATA_DIR}/saves`;
@@ -51,8 +52,12 @@ async function nationalityOfLeague(slug: string): Promise<string | null> {
   }
   return leagueNationalities.get(slug) ?? null;
 }
-/** A squad as read from disk: name fixes and the league nationality for players without one. */
+/**
+ * A squad as read from disk: name fixes, the league nationality for players without one and the
+ * missing mental attributes (derived, `src/Domain/mental`; `raw` is a just-parsed object).
+ */
 async function readFixes(raw: Squad, leagueSlug: string): Promise<Squad> {
+  fillSquadMentalInPlace(raw);
   return withDefaultNationality(withFixedPlayerNames(raw), await nationalityOfLeague(leagueSlug));
 }
 
@@ -205,6 +210,7 @@ export class FileSystemDAL implements ISaveDAL {
     const file = Bun.file(freeAgentsPath(saveId));
     if (!(await file.exists())) return [];
     const agents = (await file.json()) as FreeAgent[];
+    for (const a of agents) fillMentalInPlace(a.player);
     return agents.map((a) => ({ ...a, player: fixedPlayerName(a.player) }));
   }
 
@@ -338,7 +344,9 @@ export class FileSystemDAL implements ISaveDAL {
   async readRetired(saveId: string): Promise<RetiredPlayer[]> {
     const file = Bun.file(retiredPath(saveId));
     if (!(await file.exists())) return [];
-    return ((await file.json()) as RetiredPlayer[]).map(fixedPlayerName);
+    const retired = (await file.json()) as RetiredPlayer[];
+    for (const r of retired) fillRetiredMentalInPlace(r);
+    return retired.map(fixedPlayerName);
   }
 
   async writeRetired(saveId: string, retired: RetiredPlayer[]): Promise<void> {
@@ -428,6 +436,7 @@ export class FileSystemDAL implements ISaveDAL {
     const squads: Squad[] = [];
     for await (const path of glob.scan(dir)) {
       const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
+      fillSquadMentalInPlace(raw);
       squads.push({ ...raw, leagueSlug });
     }
     return squads;

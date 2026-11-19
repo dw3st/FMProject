@@ -37,7 +37,7 @@ function minimalSquad(
           heading: 5,
           strength: 5,
           reflex: 5,
-          jump: 5,
+          jump: 5, decisions: 5, composure: 5, flair: 5, anticipation: 5,
         },
         profile: { summary: "", archetype: "test" },
         seasonLog: { ...emptySeasonLog(), goals: 3, appearances: 5 },

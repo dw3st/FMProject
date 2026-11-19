@@ -1,4 +1,5 @@
 import { standDepths } from "@/Domain/facilities/standDepth";
+import { withMentalAttributes } from '@/Domain/mental/mental';
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { pitchInjury, TURF_TYPES, MOWING_PATTERNS } from '@/Domain/facilities/turf';
 import type { TurfType, MowingPattern } from '@/types/facilityTypes';
@@ -93,7 +94,7 @@ import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 /** If `/api/formations` is unreachable (wrong dev server, no Bun, etc.), still populate dropdowns. */
 const FORMATION_IDS_FALLBACK = FORMATION_IDS;
 
-const ALL_PLAYERS = playersJson as RosterPlayer[];
+const ALL_PLAYERS = (playersJson as unknown as RosterPlayer[]).map(withMentalAttributes);
 const TEAM_RED    = ALL_PLAYERS.filter(p => p.squadId === 'team_red');
 const TEAM_BLUE   = ALL_PLAYERS.filter(p => p.squadId === 'team_blue');
 
@@ -316,7 +317,7 @@ function applyAttrOverride(players: GamePlayer[], a: number, b: number): GamePla
     const raw: PlayerStatsRecord = {
       passing: v, vision: v, finishing: v, dribbling: v,
       pressing: v, tackling: v, speed: v, acceleration: v,
-      stamina: v, heading: v, strength: v, reflex: v, jump: v,
+      stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
     };
     const baseStats = teamLineup(raw, p.role);
     const energy = 100;

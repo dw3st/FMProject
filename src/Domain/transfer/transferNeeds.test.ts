@@ -33,7 +33,7 @@ function basePlayer(overrides: Partial<RosterPlayer> & Pick<RosterPlayer, "id" |
       heading: 10,
       strength: 10,
       reflex: 10,
-      jump: 10,
+      jump: 10, decisions: 10, composure: 10, flair: 10, anticipation: 10,
     },
     profile: { summary: "", archetype: "test" },
     ...overrides,

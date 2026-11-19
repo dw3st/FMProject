@@ -9,7 +9,7 @@ import type { SquadMarketProfile } from "@/types/transferMarketTypes";
 function stats(v: number): RosterPlayer["stats"] {
   return {
     passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v, pressing: v,
-    stamina: v, heading: v, strength: v, reflex: v, jump: v,
+    stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
   };
 }
 function player(id: string, v = 6, pos = "CM", squadId = ""): RosterPlayer {

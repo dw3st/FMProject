@@ -89,6 +89,13 @@ function t(p: PersonalityHolder, trait: PersonalityTrait): number {
   return traitT(personalityOf(p)[trait]);
 }
 
+/** Personality shifts of the mental attributes (`src/Domain/mental`): t of professionalism, temperament, ambition. */
+export interface MentalShift { prof: number; temp: number; amb: number }
+
+export function mentalShiftOf(p: Personality): MentalShift {
+  return { prof: traitT(p.professionalism), temp: traitT(p.temperament), amb: traitT(p.ambition) };
+}
+
 export function traitBand(v: number): TraitBand {
   if (v <= P.BAND_MAX.very_low) return "very_low";
   if (v <= P.BAND_MAX.low) return "low";

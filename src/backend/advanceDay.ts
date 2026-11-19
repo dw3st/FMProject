@@ -99,6 +99,8 @@ import {
 import { resolveSimModeForSeats } from "@/Domain/advanceDay/simMode";
 import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
 import { recordDevChanges, snapshotDevHistory, type DayDevChanges } from "@/Domain/development/devHistory";
+import { isMentalKey } from "@/Domain/mental/mental";
+import { SHOW_MENTAL } from "@/Domain/mental/mentalConfig";
 import { buildRestEvent } from "@/Domain/advanceDay/dailyRest";
 import { aiRestingClubs } from "@/Domain/advanceDay/aiRest";
 import { computeAdvanceDayMoney, type PlayerHomeFixtureToday } from "@/Domain/advanceDay/financial";
@@ -1093,7 +1095,8 @@ export async function advanceOneDay(
       for (const [playerId, { playerName, changes }] of aggregated) {
         const net = Array.from(changes.entries())
           .map(([attribute, v]) => ({ attribute, from: v.from, to: v.to }))
-          .filter((c) => c.from !== c.to);
+          // Mental changes stay out of the inbox until the screens show them (`SHOW_MENTAL`, `mental.md`).
+          .filter((c) => c.from !== c.to && (SHOW_MENTAL || !isMentalKey(c.attribute)));
         if (net.length === 0) continue;
 
         await emitInboxMessage(

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { SHOW_MENTAL } from "@/Domain/mental/mentalConfig";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
 import { capitalizeSeverity } from "@/GameInterface/playerHelpers";
 import type { PlayerStatsRecord } from "@/types/playerTypes";
@@ -41,6 +42,10 @@ const STAT_ABBR: Partial<Record<keyof PlayerStatsRecord, string>> = {
   tackling:     "TAC",
   reflex:       "REF",
   jump:         "JMP",
+  decisions:    "DEC",
+  composure:    "COM",
+  flair:        "FLA",
+  anticipation: "ANT",
 };
 
 function StatBar({
@@ -148,7 +153,9 @@ export function PlayerCard({
     { label: t("dashboard.playerCard.goalkeeping"), keys: ["reflex", "jump", "passing"] },
   ];
 
-  const statGroups = mainRole === "GK" ? GK_STAT_GROUPS : STAT_GROUPS;
+  // Mental block (`.claude/rules/game/mental.md`): only with `SHOW_MENTAL`, until the engine reads it.
+  const MENTAL_GROUP = { label: t("dashboard.playerCard.mental"), keys: ["decisions", "composure", "flair", "anticipation"] as (keyof PlayerStatsRecord)[] };
+  const statGroups = [...(mainRole === "GK" ? GK_STAT_GROUPS : STAT_GROUPS), ...(SHOW_MENTAL ? [MENTAL_GROUP] : [])];
 
   if (layout === "wide") {
     const heightFact = identityFacts?.find((f) => f.kind === "height");

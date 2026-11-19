@@ -14,7 +14,7 @@ function makeSquad(id: string): Squad {
     positions: [role],
     stats: {
       passing: 4, vision: 4, finishing: 4, dribbling: 4, speed: 4, acceleration: 4,
-      tackling: 4, pressing: 4, stamina: 4, heading: 4, strength: 4, reflex: 4, jump: 4,
+      tackling: 4, pressing: 4, stamina: 4, heading: 4, strength: 4, reflex: 4, jump: 4, decisions: 4, composure: 4, flair: 4, anticipation: 4,
     },
     profile: { summary: "", archetype: "" },
     seasonLog: emptySeasonLog(),

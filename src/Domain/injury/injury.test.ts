@@ -28,7 +28,7 @@ function player(overrides: Partial<RosterPlayer> = {}): RosterPlayer {
     positions: ["Midfielder"],
     stats: {
       passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5,
-      tackling: 5, pressing: 5, stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5,
+      tackling: 5, pressing: 5, stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5, decisions: 5, composure: 5, flair: 5, anticipation: 5,
     },
     profile: { summary: "", archetype: "" },
     ...overrides,

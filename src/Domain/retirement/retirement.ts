@@ -1,4 +1,6 @@
 import { RETIREMENT as R } from "@/Domain/retirement/retirementConfig";
+import { mentalStatsFor, type BaseStats } from "@/Domain/mental/mental";
+import { generatePersonality } from "@/Domain/personality/personality";
 import { renewalContract } from "@/Domain/contracts/contracts";
 import { roleOf } from "@/Domain/contracts/freeAgents";
 import { roundAttr } from "@/Domain/attributes";
@@ -193,7 +195,8 @@ export function generateReborn(args: {
   for (const k of STAT_KEYS) stats[k] = roundAttr(best[k]);
   const player: RosterPlayer = {
     id, name: retired.name, age: R.REBORN_AGE, squadId: squad.id, preferredFoot: retired.preferredFoot,
-    positions: retired.positions, stats: stats as unknown as PlayerStatsRecord, profile: retired.profile,
+    // Mental keys derived fresh for a 17-year-old (the original's personality), never copied from the veteran.
+    positions: retired.positions, stats: mentalStatsFor(stats as unknown as BaseStats, R.REBORN_AGE, id, generatePersonality(retired.id)), profile: retired.profile,
     nationality: retired.nationality,
     reborn: { fromId: retired.id },
     academyOf: squad.id,

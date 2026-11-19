@@ -68,44 +68,67 @@ export function AttributesPanel({ attributes, ovr, potential, declining }: Attri
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 phone:grid-cols-2 gap-x-6 gap-y-4">
-        {attributes.map((attr) => {
-          const display = attrDisplay(attr.value);
-          const pct = Math.round(Math.min(1, attr.progressPct ?? 0) * 100);
-          return (
-            <div key={attr.name}>
-              <div className="flex items-center justify-between gap-3 mb-1.5">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`truncate ${attr.focus === "limited" ? "text-muted-foreground" : "text-foreground"} font-bold text-[13px] uppercase tracking-[0.08em] font-display`}>
-                      {attr.name}
+      <AttributeRows attributes={attributes} declining={declining} />
+    </div>
+  );
+}
+
+/** The attribute rows (name, focus badge, progress, value, bar), two columns. */
+function AttributeRows({ attributes, declining }: { attributes: DevAttribute[]; declining: boolean }) {
+  const { t } = useTranslation();
+  const k = "developmentScreen.attributes";
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 phone:grid-cols-2 gap-x-6 gap-y-4">
+      {attributes.map((attr) => {
+        const display = attrDisplay(attr.value);
+        const pct = Math.round(Math.min(1, attr.progressPct ?? 0) * 100);
+        return (
+          <div key={attr.name}>
+            <div className="flex items-center justify-between gap-3 mb-1.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`truncate ${attr.focus === "limited" ? "text-muted-foreground" : "text-foreground"} font-bold text-[13px] uppercase tracking-[0.08em] font-display`}>
+                    {attr.name}
+                  </span>
+                  {attr.focus === "primary" && (
+                    <span className="text-sm px-2 py-0.5 rounded border border-primary/50 text-primary font-bold shrink-0">
+                      {t("development.attributesPrimary")}
                     </span>
-                    {attr.focus === "primary" && (
-                      <span className="text-sm px-2 py-0.5 rounded border border-primary/50 text-primary font-bold shrink-0">
-                        {t("development.attributesPrimary")}
-                      </span>
-                    )}
-                    {attr.focus === "secondary" && (
-                      <span className="text-sm px-2 py-0.5 rounded border border-chart-3/50 text-chart-3 font-bold shrink-0">
-                        {t("development.attributesSecondary")}
-                      </span>
-                    )}
-                  </div>
-                  {attr.progressPct !== undefined && (
-                    <span className="text-sm text-muted-foreground tabular-nums block">
-                      {t(declining ? `${k}.toDrop` : `${k}.toNext`, { pct })}
+                  )}
+                  {attr.focus === "secondary" && (
+                    <span className="text-sm px-2 py-0.5 rounded border border-chart-3/50 text-chart-3 font-bold shrink-0">
+                      {t("development.attributesSecondary")}
                     </span>
                   )}
                 </div>
-                <span className={`text-lg font-bold font-display tabular-nums shrink-0 ${attributeTextClass(display)}`}>
-                  {display}
-                </span>
+                {attr.progressPct !== undefined && (
+                  <span className="text-sm text-muted-foreground tabular-nums block">
+                    {t(declining ? `${k}.toDrop` : `${k}.toNext`, { pct })}
+                  </span>
+                )}
               </div>
-              <AttributeBar display={display} />
+              <span className={`text-lg font-bold font-display tabular-nums shrink-0 ${attributeTextClass(display)}`}>
+                {display}
+              </span>
             </div>
-          );
-        })}
-      </div>
+            <AttributeBar display={display} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * The mental attributes (`.claude/rules/game/mental.md`) in their own block, same rows as the others. Shown only
+ * with `SHOW_MENTAL`, until the match engine reads them.
+ */
+export function MentalAttributesPanel({ attributes, declining }: { attributes: DevAttribute[]; declining: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <div className="card-arcade rounded-md p-5">
+      <h3 className="font-display font-black uppercase text-xl leading-none m-0 mb-4">{t("developmentScreen.attributes.mentalTitle")}</h3>
+      <AttributeRows attributes={attributes} declining={declining} />
     </div>
   );
 }

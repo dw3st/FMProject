@@ -1,4 +1,4 @@
-import { dpWeightsFor } from "@/Domain/development/dpWeights";
+import { dpWeightsFor, mentalWeightsFor } from "@/Domain/development/dpWeights";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { applyMatchFitness, decayLoad, recoverDay } from "@/Domain/fitness/fitness";
 import { clearHealed, mergeInjury, returnDate as injuryReturnDate, withInjuryCounted } from "@/Domain/injury/injury";
@@ -97,7 +97,7 @@ export function applyNationalMatch(
     out = { ...out, seasonLog: withInjuryCounted(log, opts.date, pl.injury, rd), injury: mergeInjury(pl.injury, injury) };
   }
   // Growth only: the age decline is charged by the club's own matches.
-  out = applyDevelopment(out, rating, dpWeightsFor(out), personalDpMult(out), 0, {}).updatedPlayer;
+  out = applyDevelopment(out, rating, dpWeightsFor(out), personalDpMult(out), 0, {}, mentalWeightsFor(out)).updatedPlayer;
   return { player: out, injury, healed, played: true };
 }
 

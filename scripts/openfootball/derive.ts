@@ -153,7 +153,8 @@ function deriveStats(
     dribbling: statOf("dribbling"), speed: statOf("speed"), acceleration: statOf("acceleration"),
     tackling: statOf("tackling"), pressing: statOf("pressing"), stamina: statOf("stamina"),
     heading: statOf("heading"), strength: statOf("strength"), reflex: statOf("reflex"), jump: statOf("jump"),
-  };
+    // The mental keys are derived by the last world step (`scripts/applyMentalAttributes.ts`).
+  } as PlayerStatsRecord;
 }
 
 /** The pre-#3 formula (independent per-attribute noise) — used only to calibrate `buildLevelCorrection`. */
@@ -168,7 +169,8 @@ function deriveStatsLegacy(sp: SeedPlayer, coeffs: PlayerCoeffs, rep: number, ro
     dribbling: statOf("dribbling"), speed: statOf("speed"), acceleration: statOf("acceleration"),
     tackling: statOf("tackling"), pressing: statOf("pressing"), stamina: statOf("stamina"),
     heading: statOf("heading"), strength: statOf("strength"), reflex: statOf("reflex"), jump: statOf("jump"),
-  };
+    // The mental keys are derived by the last world step (`scripts/applyMentalAttributes.ts`).
+  } as PlayerStatsRecord;
 }
 
 /** Mean `computeOverallAvg` over a seedOverall × leagueRep × draw grid, for one role. */

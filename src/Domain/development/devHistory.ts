@@ -1,5 +1,7 @@
 import { addDays } from "@/Domain/dates";
 import { overallAvg } from "@/Domain/playerRating";
+import { isMentalKey } from "@/Domain/mental/mental";
+import { SHOW_MENTAL } from "@/Domain/mental/mentalConfig";
 import type { StatLevelChange } from "@/types/dayLogTypes";
 import type { DevHistoryPoint, DevLogEntry, RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -27,6 +29,8 @@ export function recordDevChanges(squad: Squad, date: string, day: readonly DayDe
     const list = byPlayer.get(d.playerId) ?? [];
     for (const c of d.changes) {
       if (c.delta === 0) continue;
+      // Mental changes stay out of the log until the screens show them (`SHOW_MENTAL`, `mental.md`).
+      if (!SHOW_MENTAL && isMentalKey(c.stat)) continue;
       list.push({ date, stat: c.stat, delta: c.delta, source: c.delta < 0 ? "age" : d.source });
     }
     byPlayer.set(d.playerId, list);

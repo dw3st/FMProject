@@ -72,6 +72,10 @@ function uniformAttrs(level: number): RawAttributes {
   };
 }
 
+function uniformMental(level: number) {
+  return { decisions: level, composure: level, flair: level, anticipation: level };
+}
+
 function attrsForRole(spec: SquadSpec, role: string): RawAttributes {
   const base = uniformAttrs(spec.statLevel);
   if (spec.kind === "uniform") return base;
@@ -94,7 +98,8 @@ function buildSquad(spec: SquadSpec, label: string): Squad {
       squadId: `lab-${label}`,
       preferredFoot: "right",
       positions,
-      stats: attrsForRole(spec, positions[0] ?? ""),
+      // Mental keys at the squad level: nothing in the engine reads them yet (`.claude/rules/game/mental.md`).
+      stats: { ...attrsForRole(spec, positions[0] ?? ""), ...uniformMental(spec.statLevel) },
       profile: { summary: "", archetype: "" },
       seasonLog: emptySeasonLog(),
     })),

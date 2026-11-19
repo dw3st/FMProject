@@ -4,7 +4,7 @@ import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
 const st = (v: number): PlayerStatsRecord => ({
   passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
-  pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v,
+  pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
 });
 const pl = (id: string, role: string, v: number, age = 25): RosterPlayer => ({
   id, name: id, age, squadId: "s", preferredFoot: "right", positions: [role], stats: st(v),

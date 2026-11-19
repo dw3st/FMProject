@@ -9,6 +9,7 @@
  */
 
 import { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
+import { withMentalAttributes } from '@/Domain/mental/mental';
 import type { GameState, GamePlayer, Formation, TeamId, PlayerRole } from '@/GameEngine/types';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import { getRuntimeLineup } from '@/GameEngine/Domain/RuntimeLineup';
@@ -30,23 +31,23 @@ import { drainMultiplier as loadDrainMultiplier } from '@/Domain/fitness/fitness
 
 const STRIKER: PlayerStatsRecord = {
   passing: 7, vision: 7, finishing: 9, dribbling: 8, speed: 8, acceleration: 8, tackling: 3, pressing: 7,
-  stamina: 7, heading: 8, strength: 7, reflex: 5, jump: 8,
+  stamina: 7, heading: 8, strength: 7, reflex: 5, jump: 8, decisions: 8, composure: 8, flair: 8, anticipation: 8,
 };
 const WINGER: PlayerStatsRecord = {
   passing: 7, vision: 7, finishing: 6, dribbling: 8, speed: 9, acceleration: 9, tackling: 4, pressing: 7,
-  stamina: 7, heading: 6, strength: 6, reflex: 5, jump: 7,
+  stamina: 7, heading: 6, strength: 6, reflex: 5, jump: 7, decisions: 7, composure: 7, flair: 7, anticipation: 7,
 };
 const MIDFIELDER: PlayerStatsRecord = {
   passing: 8, vision: 8, finishing: 5, dribbling: 7, speed: 6, acceleration: 7, tackling: 7, pressing: 8,
-  stamina: 8, heading: 6, strength: 7, reflex: 6, jump: 6,
+  stamina: 8, heading: 6, strength: 7, reflex: 6, jump: 6, decisions: 6, composure: 6, flair: 6, anticipation: 6,
 };
 const DEFENDER: PlayerStatsRecord = {
   passing: 6, vision: 7, finishing: 2, dribbling: 4, speed: 7, acceleration: 7, tackling: 9, pressing: 8,
-  stamina: 8, heading: 8, strength: 8, reflex: 6, jump: 8,
+  stamina: 8, heading: 8, strength: 8, reflex: 6, jump: 8, decisions: 8, composure: 8, flair: 8, anticipation: 8,
 };
 const GOALKEEPER: PlayerStatsRecord = {
   passing: 6, vision: 6, finishing: 1, dribbling: 3, speed: 5, acceleration: 5, tackling: 4, pressing: 3,
-  stamina: 7, heading: 4, strength: 6, reflex: 8, jump: 7,
+  stamina: 7, heading: 4, strength: 6, reflex: 8, jump: 7, decisions: 7, composure: 7, flair: 7, anticipation: 7,
 };
 
 // ── Dummy formation for mini test scenarios ───────────────────────────────────
@@ -143,7 +144,7 @@ export interface TestScenario {
 
 // ── Scenarios ─────────────────────────────────────────────────────────────────
 
-const roster = playersJson as RosterPlayer[];
+const roster = (playersJson as unknown as RosterPlayer[]).map(withMentalAttributes);
 const teamRedPlayers  = roster.filter(p => p.squadId === 'team_red');
 const teamBluePlayers = roster.filter(p => p.squadId === 'team_blue');
 

@@ -17,7 +17,7 @@ function makeSquad(id: string, level: number): Squad {
     stats: {
       passing: level, vision: level, finishing: level, dribbling: level,
       speed: level, acceleration: level, tackling: level, pressing: level,
-      stamina: level, heading: level, strength: level, reflex: level, jump: level,
+      stamina: level, heading: level, strength: level, reflex: level, jump: level, decisions: level, composure: level, flair: level, anticipation: level,
     },
     profile: { summary: "", archetype: "" },
     seasonLog: emptySeasonLog(),

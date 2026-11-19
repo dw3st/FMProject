@@ -437,3 +437,12 @@ Similarly, `speed` and `acceleration` feed into both `carrySpeed` and `pressSpee
 | `withoutBall.pressRange` | **LOW** — flat value, tactic-driven not stat-driven |
 | `stamina` (raw, not an engine stat) | **MEDIUM-HIGH** — halves in-match energy cost at max value; scales half-time and daily recovery |
 | `withoutBall.heading` / `jump` | **MEDIUM** — aerial duels, header finishing, cross / long-ball targets |
+
+---
+
+## Part 6 — Mental attributes (phase 1: not read)
+
+`decisions`, `composure`, `flair`, `anticipation` are roster attributes since the FM-style decisions phase 1
+(`.claude/rules/game/mental.md`). `TeamLineup.ts` converts none of them into an engine stat and nothing in the engine
+reads them: weight 0 in every `attrWeights`, so overall, value and aptitude are unchanged. `lineupMental(raw, id, age)`
+(the 0..1 values, derived when a key is missing) is the entry point the decision layer will use from phase 3.

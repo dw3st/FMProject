@@ -5,7 +5,7 @@ import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
 
 const STATS: PlayerStatsRecord = {
   passing: 6, vision: 6, finishing: 6, dribbling: 6, speed: 6, acceleration: 6, tackling: 6,
-  pressing: 6, stamina: 6, heading: 6, strength: 6, reflex: 6, jump: 6,
+  pressing: 6, stamina: 6, heading: 6, strength: 6, reflex: 6, jump: 6, decisions: 6, composure: 6, flair: 6, anticipation: 6,
 };
 
 const seenWith = (knowledge: number, noise: number): RosterPlayer => ({

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { DisplayPlayer } from "@/Domain/scout/displayPlayer";
-import { ATTRIBUTE_GROUPS } from "@/Domain/scout/scoutFilterState";
+import { visibleAttributeGroups } from "@/Domain/scout/scoutFilterState";
 import { attrDisplay } from "@/Domain/attributes";
 import { seenAttributeRange, rangeMid } from "@/Domain/scouting/seen";
 import { PlayerFace } from "@/GameInterface/Components/PlayerFace";
@@ -18,7 +18,7 @@ export const HOVER_CARD_WIDTH = 360;
 export function ScoutHoverCard({ player, x, y }: { player: DisplayPlayer; x: number; y: number }) {
   const { t } = useTranslation();
   const isGk = player.natural === "GK" || player.pos === "GK";
-  const groups = ATTRIBUTE_GROUPS.filter((g) => (isGk ? g.id !== "attack" : g.id !== "goalkeeper"));
+  const groups = visibleAttributeGroups().filter((g) => (isGk ? g.id !== "attack" : g.id !== "goalkeeper"));
   if (isGk) groups.sort((a, b) => (a.id === "goalkeeper" ? -1 : b.id === "goalkeeper" ? 1 : 0));
   return (
     <div

@@ -452,3 +452,9 @@ Report do usuário ("poucas informações, confuso"). Quatro blocos novos na tel
 - **Visão do elenco** (`SquadDevelopmentTable`): o elenco todo, ordenável (`useTableSort`): posição, idade, OVR, variação de 4 semanas (`ovrChange`, contra a foto mais antiga dentro de 28 dias), fase e fator principal. Clicar escolhe o jogador.
 
 O cartão de forma recente (`RecentTrend`, setas inventadas) saiu.
+
+## Pool mental (fase 1 das decisões no estilo FM)
+
+Os atributos mentais (`mental.md`) evoluem num pool à parte, só de partidas: `DP ganho × 0,25 × mentalAgeGrowth(idade) ×
+GROWTH_DP_SCALE`, repartido por `roles.json → mentalWeights`; declínio só a partir dos 33 (0,3 × o declínio por idade). O
+treino nunca os move. As 13 de sempre evoluem exatamente como antes (o "sem histórico" do progresso é julgado só nelas).

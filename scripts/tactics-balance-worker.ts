@@ -75,7 +75,7 @@ function buildSquad(statLevel: number): Squad {
   const flatStats = {
     passing: v, vision: v, finishing: v, dribbling: v,
     speed: v, acceleration: v, tackling: v, pressing: v,
-    stamina: v, heading: v, strength: v, reflex: v, jump: v,
+    stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
   };
   return {
     id: 'uniform', name: `Uniform XI (${v}/10)`, colors: ['#3b82f6', '#ffffff'], money: 0,

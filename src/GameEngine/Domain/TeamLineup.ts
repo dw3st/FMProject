@@ -10,6 +10,8 @@
 
 import type { PlayerRole, PlayerStats } from '@/GameEngine/types';
 import type { PlayerStatsRecord } from '@/types/playerTypes';
+import { generatePersonality, mentalShiftOf } from '@/Domain/personality/personality';
+import { MENTAL_KEYS, hasMental, statsWithMental, type MentalValues } from '@/Domain/mental/mental';
 
 /** Base press engagement distance (yards). Team `pressing_style` adjusts this in DefensivePositioning. */
 const PRESS_RANGE_BASE_YARDS = 8;
@@ -67,4 +69,16 @@ export function teamLineup(raw: PlayerStatsRecord, role: PlayerRole): PlayerStat
       jump:          (raw.jump ?? 5) / 10,     // 0..1 — aerial duels
     },
   };
+}
+
+/**
+ * Safety net for the mental attributes (`.claude/rules/game/mental.md`): the roster values on a 0..1
+ * scale, derived (deterministic by id) when a key is missing — a /test fixture or data that skipped
+ * the DAL fill. Phase 1: the engine never calls it; the decision layer reads mental through it.
+ */
+export function lineupMental(raw: PlayerStatsRecord, id: string, age: number): MentalValues {
+  const full = hasMental(raw) ? raw : statsWithMental(raw, age, id, mentalShiftOf(generatePersonality(id)));
+  const out = {} as MentalValues;
+  for (const k of MENTAL_KEYS) out[k] = full[k] / 10;
+  return out;
 }

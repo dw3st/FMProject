@@ -30,6 +30,7 @@ bun scripts/applyMarketRecalibration.ts  # notas e posições pelo valor de merc
 bun scripts/applyPlayerCorrections.ts  # correções manuais (posição natural, nota) vencem — ver abaixo
 bun scripts/applyClubNameCorrections.ts  # nomes de exibição dos clubes (acentos, sem sufixos) — ver abaixo
 bun scripts/applyCoaches.ts            # técnico atual (Wikidata + correções manuais) — ver "Técnicos"
+bun scripts/applyMentalAttributes.ts   # atributos mentais que faltam (derivados) — `.claude/rules/game/mental.md`
 # opcional, rede: escudos do TheSportsDB para clubes que seguem sem escudo (ver "Escudos no front")
 # bun scripts/fetchTheSportsDBBadges.ts && bun scripts/applyTsdbBadges.ts
 rm -rf src/Data/squads src/Data/logos/espn

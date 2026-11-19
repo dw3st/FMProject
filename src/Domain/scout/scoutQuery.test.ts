@@ -12,7 +12,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 
 const STATS = (v = 5): PlayerStatsRecord => ({
   passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
-  pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v,
+  pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
 });
 
 const P = (over: Partial<DisplayPlayer> & { id: string }): DisplayPlayer => ({

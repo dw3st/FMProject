@@ -1,6 +1,6 @@
 import { youthAttributeMult } from "@/Domain/achievements/managerAttributes";
 import { addDays } from "@/Domain/dates";
-import { dpWeightsFor } from "@/Domain/development/dpWeights";
+import { dpWeightsFor, mentalWeightsFor } from "@/Domain/development/dpWeights";
 import { trainingGroundEffectsOf } from "@/Domain/facilities/facilities";
 import { applyMatchFitness } from "@/Domain/fitness/fitness";
 import { clearHealed, mergeInjury, returnDate as injuryReturnDate, withInjuryCounted } from "@/Domain/injury/injury";
@@ -124,7 +124,7 @@ export function applyYouthMatch(
     return applyDevelopment(
       out, rating, dpWeightsFor(out),
       friendly ? (dp / youthCompDpMult(out.age)) * FRIENDLY.DP_MULT * (friendly.subs.has(p0.id) ? FRIENDLY.SUB_DP : 1) : dp,
-      0, academy ? academyAreas(areas) : areas,
+      0, academy ? academyAreas(areas) : areas, mentalWeightsFor(out),
     ).updatedPlayer;
   };
 

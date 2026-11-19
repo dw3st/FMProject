@@ -19,6 +19,7 @@ import { YOUTH_COMP } from "@/Domain/youthComps/youthCompConfig";
 import { Player } from "@/Domain/Player";
 import { mulberry32 } from "@/Domain/rng";
 import type { PlayerStatsRecord, RosterPlayer } from "@/types/playerTypes";
+import { BASE_ATTRIBUTE_LIST } from "@/Domain/attributes";
 
 const argOf = (name: string) => {
   const i = process.argv.indexOf(name);
@@ -31,15 +32,16 @@ const RUNS = Number(argOf("--runs") ?? 400);
 const TRAINING = 120;
 
 const STATS: PlayerStatsRecord = { passing: 4.5, vision: 4.5, finishing: 4, dribbling: 4.5, speed: 5, acceleration: 5,
-  tackling: 4, pressing: 4, stamina: 5, heading: 4, strength: 4.5, reflex: 1, jump: 3 };
+  tackling: 4, pressing: 4, stamina: 5, heading: 4, strength: 4.5, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3 };
 const RESERVE: PlayerStatsRecord = { passing: 5.5, vision: 5.5, finishing: 5, dribbling: 5.5, speed: 6, acceleration: 6,
-  tackling: 5, pressing: 5, stamina: 6, heading: 5, strength: 5.5, reflex: 1, jump: 3 };
+  tackling: 5, pressing: 5, stamina: 6, heading: 5, strength: 5.5, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3 };
 
 const make = (id: string, age: number, stats: PlayerStatsRecord): RosterPlayer => ({
   id, name: id, age, preferredFoot: "right", positions: ["CM"], stats: { ...stats },
   personality: { ambition: 10, loyalty: 10, professionalism: 11, temperament: 10 },
 } as unknown as RosterPlayer);
-const mean = (p: RosterPlayer) => Object.values(p.stats).reduce((a, b) => a + b, 0) / 13;
+// The 13 base attributes (the mental ones have their own pool, `mental.md`).
+const mean = (p: RosterPlayer) => BASE_ATTRIBUTE_LIST.reduce((a, x) => a + p.stats[x.id as keyof RosterPlayer["stats"]], 0) / BASE_ATTRIBUTE_LIST.length;
 const overall = (p: RosterPlayer) => Player.computeOverallAvg({ ...p, overallAvg: undefined });
 
 function gauss(rng: () => number): number {

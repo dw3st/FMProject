@@ -26,7 +26,7 @@ function baseStats(): PlayerStatsRecord {
     heading: 6,
     strength: 6,
     reflex: 6,
-    jump: 6,
+    jump: 6, decisions: 6, composure: 6, flair: 6, anticipation: 6,
   };
 }
 

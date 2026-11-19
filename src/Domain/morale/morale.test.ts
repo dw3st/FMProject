@@ -34,7 +34,7 @@ const NEUTRAL_PERSONALITY = { ambition: 10.5, loyalty: 10.5, professionalism: 10
 function stats(v: number): PlayerStatsRecord {
   return {
     passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
-    pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v,
+    pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
   };
 }
 

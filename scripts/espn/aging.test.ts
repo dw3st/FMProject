@@ -4,7 +4,7 @@ import type { PlayerStatsRecord } from "@/types/playerTypes";
 
 const base: PlayerStatsRecord = {
   passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5,
-  pressing: 5, stamina: 5, heading: 5, strength: 5, reflex: 1, jump: 1,
+  pressing: 5, stamina: 5, heading: 5, strength: 5, reflex: 1, jump: 1, decisions: 1, composure: 1, flair: 1, anticipation: 1,
 };
 const outfield: Record<string, number> = { passing: 1, vision: 1, finishing: 1, dribbling: 1, speed: 1, acceleration: 1, tackling: 1, pressing: 1, stamina: 1, heading: 1, strength: 1 };
 const sum = (s: PlayerStatsRecord) => Object.values(s).reduce((a, b) => a + b, 0);

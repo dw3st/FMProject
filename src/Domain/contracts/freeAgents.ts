@@ -1,4 +1,5 @@
 import { arriving } from "@/Domain/settling/settling";
+import { isMentalKey, mentalStatsFor, type BaseStats } from "@/Domain/mental/mental";
 import { stripPlayerMorale } from "@/Domain/morale/morale";
 import { aiClubFinance, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
 import { AI_FINANCE_CONFIG } from "@/Domain/aiFinance/aiFinanceConfig";
@@ -49,16 +50,20 @@ function makeYouthPlayer(squad: Squad, role: MainRole, tag: string): RosterPlaye
   // The country's name book when the server set it (11.1: these youngsters copied a team-mate's surname).
   const name = drawAcademyName({ seed: key, slot: "refill", nationality: squad.country, surnames: clubSurnames(squad) })
     ?? `${initial}. ${lastParts[lastParts.length - 1]}`;
-  const stats = template
-    ? Object.fromEntries(Object.entries(template.stats).map(([k, v]) => [k, roundAttr((v as number) - 1)]))
+  const base = template
+    ? Object.fromEntries(Object.entries(template.stats).filter(([k]) => !isMentalKey(k)).map(([k, v]) => [k, roundAttr((v as number) - 1)]))
     : {
         passing: 2, vision: 2, finishing: 2, dribbling: 2, speed: 3, acceleration: 3, tackling: 2,
         pressing: 2, stamina: 3, heading: 2, strength: 2, reflex: 0, jump: 0,
       };
+  const id = `youth_${squad.id}_${tag}`;
+  const age = 17 + Math.floor(unit(`${key}:a`) * 3);
+  // Mental keys derived for the youngster (never the template's minus one).
+  const stats = mentalStatsFor(base as unknown as BaseStats, age, id);
   return {
-    id: `youth_${squad.id}_${tag}`,
+    id,
     name,
-    age: 17 + Math.floor(unit(`${key}:a`) * 3),
+    age,
     squadId: squad.id,
     preferredFoot: unit(`${key}:p`) < 0.5 ? "left" : "right",
     positions: [role],

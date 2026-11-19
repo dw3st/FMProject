@@ -17,6 +17,7 @@ import type { PlayerStatsRecord, RosterPlayer, Squad } from "@/types/playerTypes
 import { clamp } from "@/Domain/math";
 import { unitFrom } from "@/Domain/rng";
 import { clubSurnames, drawAcademyName } from "@/Domain/youth/academyNames";
+import { mentalStatsFor, type BaseStats } from "@/Domain/mental/mental";
 
 /** Pure youth-academy model (`.claude/rules/game/youth.md`). No I/O. */
 
@@ -45,13 +46,13 @@ function assistantLevelBonus(rating: number): number {
 }
 
 const STATS_CACHE_MAX = 20000;
-const statsCache = new Map<string, PlayerStatsRecord>();
+const statsCache = new Map<string, BaseStats>();
 
 /**
  * Attribute vector for `target` overall in `specific` role, shaped by the role's weights. Pure, so it is
  * memoised (bounded): the youth-competition fillers ask for the same youngsters every round.
  */
-export function statsFor(id: string, specific: string, target: number): PlayerStatsRecord {
+export function statsFor(id: string, specific: string, target: number): BaseStats {
   const key = `${id}|${specific}|${target}`;
   const hit = statsCache.get(key);
   if (hit) return { ...hit };
@@ -61,7 +62,7 @@ export function statsFor(id: string, specific: string, target: number): PlayerSt
   return { ...out };
 }
 
-function computeStatsFor(id: string, specific: string, target: number): PlayerStatsRecord {
+function computeStatsFor(id: string, specific: string, target: number): BaseStats {
   const weights = (ROLES as Record<string, { attrWeights?: Record<string, number> }>)[specific]?.attrWeights ?? {};
   const ws = STAT_KEYS.map((k) => weights[k] ?? 0);
   const wMax = Math.max(...ws, 0.001);
@@ -70,6 +71,7 @@ function computeStatsFor(id: string, specific: string, target: number): PlayerSt
   const continuous = (shift: number): PlayerStatsRecord => {
     const out = {} as Record<string, number>;
     STAT_KEYS.forEach((k, i) => { out[k] = clamp(shift + raw[i]!, 0, 10); });
+    // Mental keys carry weight 0 in every role: absent here, they change nothing in `weightedScore`.
     return out as unknown as PlayerStatsRecord;
   };
   let lo = -6;
@@ -85,7 +87,9 @@ function computeStatsFor(id: string, specific: string, target: number): PlayerSt
     // An attribute the role does not use stays low (a striker has no goalkeeping).
     out[k] = (weights[k] ?? 0) > 0 ? v : Math.min(v, 2);
   }
-  return out as unknown as PlayerStatsRecord;
+  // The 13 base attributes only: the "weight 0 → ≤ 2" clamp above never touches the mental keys, which
+  // the caller derives after the solve (`statsWithMental`, they need the age).
+  return out as unknown as BaseStats;
 }
 
 function pickRoles(squad: Squad, count: number, key: string): MainRole[] {
@@ -149,14 +153,15 @@ export function makeAcademyPlayer(args: {
     return n;
   };
   const name = fromBook ?? fallback();
+  const age = ageRange[0] + Math.floor(unit(`${seed}:age:${i}`) * (ageRange[1] - ageRange[0] + 1));
   return {
     id,
     name,
-    age: ageRange[0] + Math.floor(unit(`${seed}:age:${i}`) * (ageRange[1] - ageRange[0] + 1)),
+    age,
     squadId: squad.id,
     preferredFoot: unit(`${seed}:foot:${i}`) < 0.5 ? "left" : "right",
     positions: [specific],
-    stats: statsFor(id, specific, level),
+    stats: mentalStatsFor(statsFor(id, specific, level), age, id),
     profile: {
       summary: promise ? "Exceptional academy prospect." : "Young prospect from the academy.",
       archetype: promise ? "Wonderkid" : "Prospect",

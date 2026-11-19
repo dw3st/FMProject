@@ -93,7 +93,7 @@ function wearMeasure(turf: TurfType): void {
 
 function demandMeasure(): void {
   const stats = { passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5, tackling: 5, pressing: 5,
-    stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5 };
+    stamina: 5, heading: 5, strength: 5, reflex: 5, jump: 5, decisions: 5, composure: 5, flair: 5, anticipation: 5 };
   const player = (id: string, ambition: number): RosterPlayer => ({
     id, name: id, age: 26, squadId: "x", preferredFoot: "right", positions: ["CM"], stats,
     profile: { summary: "" } as RosterPlayer["profile"],

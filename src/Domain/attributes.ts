@@ -5,6 +5,7 @@
  * For localized strings, prefer `useAttributeLabel(id)` / `useAttributeDescription(id)`
  * which read from i18next. The constants below remain as English fallback.
  */
+import { SHOW_MENTAL } from "@/Domain/mental/mentalConfig";
 
 export type AttributeId =
   | "passing"
@@ -19,7 +20,11 @@ export type AttributeId =
   | "heading"
   | "strength"
   | "reflex"
-  | "jump";
+  | "jump"
+  | "decisions"
+  | "composure"
+  | "flair"
+  | "anticipation";
 
 export interface AttributeLabel {
   id: AttributeId;
@@ -93,10 +98,41 @@ export const ATTRIBUTE_LABELS: Record<AttributeId, AttributeLabel> = {
     label: "Jump",
     description: "Goalkeeper reach and extension for high balls and long-range efforts.",
   },
+  decisions: {
+    id: "decisions",
+    label: "Decisions",
+    description: "How often the player picks the right option.",
+  },
+  composure: {
+    id: "composure",
+    label: "Composure",
+    description: "How calm the player stays with the ball under pressure.",
+  },
+  flair: {
+    id: "flair",
+    label: "Flair",
+    description: "How willing the player is to try the unexpected.",
+  },
+  anticipation: {
+    id: "anticipation",
+    label: "Anticipation",
+    description: "How early the player reads what happens next.",
+  },
 };
 
 /** All attribute entries in a stable order for listing in the UI (heading included since #154: it drives aerial play). */
 export const ATTRIBUTE_LIST: AttributeLabel[] = Object.values(ATTRIBUTE_LABELS);
+
+/** The mental attributes (`.claude/rules/game/mental.md`), last in `ATTRIBUTE_LIST`. */
+export const MENTAL_ATTRIBUTE_IDS: readonly AttributeId[] = ["decisions", "composure", "flair", "anticipation"];
+
+/** The 13 physical and technical attributes (every attribute but the mental ones). */
+export const BASE_ATTRIBUTE_LIST: AttributeLabel[] = ATTRIBUTE_LIST.filter((a) => !MENTAL_ATTRIBUTE_IDS.includes(a.id));
+
+/** The attributes the screens list: the mental ones only with `SHOW_MENTAL`. */
+export function visibleAttributeList(): AttributeLabel[] {
+  return SHOW_MENTAL ? ATTRIBUTE_LIST : BASE_ATTRIBUTE_LIST;
+}
 
 
 /** Attributes live on 0..10 with one decimal (shown x10 as 0..100). */

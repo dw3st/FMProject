@@ -66,6 +66,7 @@ import type { WorldState } from "@/types/multiplayerTypes";
 import { metaForSeat } from "@/Domain/seats/seats";
 import type { LiveRecordingFile, PendingDay } from "@/types/groupAdvanceTypes";
 import { trimPendingSummary } from "@/Domain/groupAdvance/groupAdvance";
+import { fillSquadMentalInPlace } from "@/Domain/mental/mental";
 
 /**
  * The world meta stored in `{saveId}.json` (`.claude/rules/game/multiplayer.md`): the date, the leagues and
@@ -1128,6 +1129,7 @@ export class SaveService {
       const homeGames = Math.max(0, paths.length - 1);
       for (const p of paths) {
         const raw   = (await Bun.file(`${srcDir}/${p}`).json()) as Squad;
+        fillSquadMentalInPlace(raw);
         const clubSlug = p.replace(".json", "");
 
         const isPlayerClub = !!human && league === body.leagueSlug && clubSlug === human.clubId;

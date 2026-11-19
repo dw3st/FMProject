@@ -5,7 +5,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 const stats = {
   passing: 4, vision: 4, finishing: 6, dribbling: 5, speed: 5, acceleration: 5, tackling: 2, pressing: 3,
-  stamina: 5, heading: 5, strength: 5, reflex: 1, jump: 3,
+  stamina: 5, heading: 5, strength: 5, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3,
 };
 
 function player(over: Partial<RosterPlayer> = {}): RosterPlayer {

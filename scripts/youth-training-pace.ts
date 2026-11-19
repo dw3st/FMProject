@@ -8,13 +8,15 @@ import { developYouthSeason } from "@/Domain/youth/youth";
 import { DEFAULT_YOUTH_PLAN, trainYouthSession, YOUTH_TRAINING } from "@/Domain/youth/youthTraining";
 import type { RosterPlayer } from "@/types/playerTypes";
 import type { YouthTrainingPlan } from "@/types/youthTrainingTypes";
+import { BASE_ATTRIBUTE_LIST } from "@/Domain/attributes";
 
 const y = {
   id: "y1", name: "Y", age: 16, squadId: "s", preferredFoot: "right", positions: ["Midfielder"], naturalPosition: "CM",
   stats: { passing: 4, vision: 4, finishing: 3, dribbling: 4, speed: 4, acceleration: 4, tackling: 3, pressing: 3, stamina: 4, heading: 3, strength: 3, reflex: 1, jump: 1 },
   profile: { summary: "", archetype: "" }, nationality: "Spain",
 } as RosterPlayer;
-const mean = (p: RosterPlayer) => Object.values(p.stats).reduce((s, v) => s + v, 0) / Object.values(p.stats).length;
+// The 13 base attributes (the mental ones have their own pool, `mental.md`).
+const mean = (p: RosterPlayer) => BASE_ATTRIBUTE_LIST.reduce((a, x) => a + p.stats[x.id as keyof RosterPlayer["stats"]], 0) / BASE_ATTRIBUTE_LIST.length;
 const year = (plan: YouthTrainingPlan, n = YOUTH_TRAINING.SESSIONS_PER_YEAR) => {
   let p = y;
   for (let i = 0; i < n; i++) p = trainYouthSession(p, plan, 1, {});

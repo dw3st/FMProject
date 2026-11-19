@@ -21,7 +21,7 @@ function player(id: string, role: string, over: Partial<RosterPlayer["stats"]> =
     id, name: `Name ${id}`, age: 25, squadId: "s", preferredFoot: "right", positions: [role],
     stats: {
       passing: 5, vision: 5, finishing: 5, dribbling: 5, speed: 5, acceleration: 5,
-      tackling: 5, pressing: 5, stamina: 7, heading: 5, strength: 5, reflex: 5, jump: 5, ...over,
+      tackling: 5, pressing: 5, stamina: 7, heading: 5, strength: 5, reflex: 5, jump: 5, decisions: 5, composure: 5, flair: 5, anticipation: 5, ...over,
     },
     profile: { summary: "", archetype: "" },
     seasonLog: emptySeasonLog(),

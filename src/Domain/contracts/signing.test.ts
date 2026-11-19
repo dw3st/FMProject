@@ -11,7 +11,7 @@ function player(id: string, age = 25): RosterPlayer {
     id, name: id, age, squadId: "a", preferredFoot: "right", positions: ["CM"],
     stats: {
       passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v,
-      tackling: v, pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v,
+      tackling: v, pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
     },
     profile: { summary: "" } as RosterPlayer["profile"],
   };

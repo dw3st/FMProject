@@ -10,7 +10,7 @@ const [fA, fB] = await Promise.all([
   Bun.file(`${FORMATIONS_DIR}/4-4-2.json`).json() as Promise<Formation>,
 ]);
 
-const maxStats = { passing:10, vision:10, finishing:10, dribbling:10, speed:10, acceleration:10, tackling:10, pressing:10, stamina:10, heading:10, strength:10, reflex:10, jump:10 };
+const maxStats = { passing:10, vision:10, finishing:10, dribbling:10, speed:10, acceleration:10, tackling:10, pressing:10, stamina:10, heading:10, strength:10, reflex:10, jump:10, decisions: 10, composure: 10, flair: 10, anticipation: 10 };
 const roleSlots: Array<[string, string[]]> = [
   ['GK1',['GK']],['LB1',['LB']],['RB1',['RB']],['LWB1',['LWB']],['RWB1',['RWB']],
   ['CB1',['CB']],['CB2',['CB']],['CB3',['CB']],['CDM1',['CDM']],['CDM2',['CDM']],

@@ -1,4 +1,5 @@
 import { ATTRIBUTE_LIST, type AttributeId } from "@/Domain/attributes";
+import { SHOW_MENTAL } from "@/Domain/mental/mentalConfig";
 import type { ScoutGrade } from "@/types/scoutingTypes";
 
 /**
@@ -64,14 +65,20 @@ export interface ScoutFilterState {
 }
 
 /** Attribute groups of the search filters (#147); every listed attribute (`ATTRIBUTE_LIST`) is in exactly one. */
-export type AttributeGroupId = "physical" | "attack" | "defense" | "goalkeeper";
+export type AttributeGroupId = "physical" | "attack" | "defense" | "goalkeeper" | "mental";
 
 export const ATTRIBUTE_GROUPS: { id: AttributeGroupId; attributes: AttributeId[] }[] = [
   { id: "physical", attributes: ["speed", "acceleration", "strength", "stamina"] },
   { id: "attack", attributes: ["finishing", "dribbling", "passing", "vision"] },
   { id: "defense", attributes: ["tackling", "pressing", "heading"] },
   { id: "goalkeeper", attributes: ["reflex", "jump"] },
+  { id: "mental", attributes: ["decisions", "composure", "flair", "anticipation"] },
 ];
+
+/** The groups the screens show: the mental one only with `SHOW_MENTAL` (`.claude/rules/game/mental.md`). */
+export function visibleAttributeGroups(): { id: AttributeGroupId; attributes: AttributeId[] }[] {
+  return SHOW_MENTAL ? ATTRIBUTE_GROUPS : ATTRIBUTE_GROUPS.filter((g) => g.id !== "mental");
+}
 
 /** Lowest and highest value typed in an attribute field (the screen's 1–100 scale). */
 export const ATTR_INPUT_MIN = 1;

@@ -16,6 +16,8 @@ import type { PlayerDevelopmentChange, StatLevelChange } from "@/types/dayLogTyp
 import { Player } from "@/Domain/Player";
 import { roundAttr } from "@/Domain/attributes";
 import { computeOverallAvg } from "@/Domain/playerRating";
+import { MENTAL } from "@/Domain/mental/mentalConfig";
+import { MENTAL_KEYS, type MentalKey } from "@/Domain/mental/mental";
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -85,6 +87,18 @@ export const DEFAULT_DP_WEIGHTS: RoleDPWeights = {
   physical: 0.15,
 };
 
+/** Split of the mental DP pool over the four mental attributes (`roles.json → mentalWeights`, sum 1). */
+export type MentalWeights = Record<MentalKey, number>;
+
+/** Fallback when a role has no `mentalWeights`: an even split. */
+export const DEFAULT_MENTAL_WEIGHTS: MentalWeights = { decisions: 0.25, composure: 0.25, flair: 0.25, anticipation: 0.25 };
+
+/** Growth multiplier of the mental pool by age (`.claude/rules/game/mental.md`). */
+export function mentalAgeGrowth(age: number): number {
+  for (const [upTo, mult] of MENTAL.DEV.AGE_GROWTH) if (age <= upTo) return mult;
+  return 0;
+}
+
 // ── Formulas ────────────────────────────────────────────────────────────────
 
 function performanceMultiplier(rating: number): number {
@@ -152,6 +166,10 @@ function softCapFactor(value: number): number {
 
 // ── Core update ─────────────────────────────────────────────────────────────
 
+/** The 13 base attributes of the progress record (every key but the mental ones). */
+const BASE_PROGRESS_KEYS = (Object.keys(emptyDevelopmentProgress()) as (keyof DevelopmentProgress)[])
+  .filter((k) => !(MENTAL_KEYS as readonly string[]).includes(k));
+
 export interface DevelopmentResult {
   updatedPlayer: RosterPlayer;
   levelChanges:  PlayerDevelopmentChange | null; // null if no levels changed
@@ -166,6 +184,7 @@ export interface DevelopmentResult {
  * @param dpMult      Assistant-coach multiplier on the DP earned (`src/Domain/staff`); default 1
  * @param decayMult   Multiplier on the age decay (professionalism, `src/Domain/personality`); default 1
  * @param areaMults   Growth multiplier per training area (staff, `src/Domain/staff`); never on the decay
+ * @param mentalWeights Split of the mental pool (`roles.json → mentalWeights`, `dpWeights.mentalWeightsFor`)
  */
 export function applyDevelopment(
   player: RosterPlayer,
@@ -174,12 +193,22 @@ export function applyDevelopment(
   dpMult = 1,
   decayMult = 1,
   areaMults: AreaMults = {},
+  mentalWeights: MentalWeights = DEFAULT_MENTAL_WEIGHTS,
 ): DevelopmentResult {
   const earnedDP = BASE_DP * performanceMultiplier(matchRating) * dpMult;
   const growth   = earnedDP * ageGrowthMultiplier(player.age) * GROWTH_DP_SCALE;
   const decay    = ageDecayPerMatch(player.age) * decayDpScale(player.age) * decayMult;
-  return distributeAndResolve(player, growth, decay, weights, areaMults);
+  // Mental pool: matches only, its own age curve; declines only from 33, at a share of the age decay.
+  const mental: MentalPool = {
+    growth: earnedDP * MENTAL.DEV.DP_SHARE * mentalAgeGrowth(player.age) * GROWTH_DP_SCALE,
+    decay:  player.age >= MENTAL.DEV.DECLINE_FROM ? MENTAL.DEV.DECLINE_SHARE * decay : 0,
+    weights: mentalWeights,
+  };
+  return distributeAndResolve(player, growth, decay, weights, areaMults, mental);
 }
+
+/** The mental DP of one update: growth and decay split by `weights` (no training area). */
+interface MentalPool { growth: number; decay: number; weights: MentalWeights }
 
 /**
  * Per-age-band training DP factor.
@@ -234,61 +263,77 @@ function distributeAndResolve(
   decay: number,
   weights: Partial<RoleDPWeights>,
   areaMults: AreaMults,
+  mental?: MentalPool,
 ): DevelopmentResult {
   // Seed progress at the midpoint of each stat's current level cost so that players
   // without any tracked history aren't immediately at the cliff edge: any tiny decay
   // would otherwise drop progress below 0 and trigger an instant level-down.
   // An all-zero record (reset at every season rollover) is seeded the same way.
+  // Judged on the 13 base attributes only, so a record from before the mental keys behaves as it always did.
   const isUninitialized =
     !player.progress ||
-    Object.values(player.progress).every((v) => v === 0);
+    BASE_PROGRESS_KEYS.every((k) => (player.progress![k] ?? 0) === 0);
 
   const progress: DevelopmentProgress = isUninitialized
     ? (() => {
         const p = emptyDevelopmentProgress();
         for (const stat of Object.keys(p) as (keyof DevelopmentProgress)[]) {
-          p[stat] = SEED_DP(player.stats[stat as keyof PlayerStatsRecord]);
+          p[stat] = SEED_DP(player.stats[stat as keyof PlayerStatsRecord] ?? 0);
         }
         return p;
       })()
     : { ...player.progress! };
+  // Mental progress missing (a record from before) or all zero (reset at the rollover): seeded the same way.
+  if (MENTAL_KEYS.some((k) => typeof progress[k] !== "number") || MENTAL_KEYS.every((k) => progress[k] === 0)) {
+    for (const k of MENTAL_KEYS) progress[k] = SEED_DP(player.stats[k] ?? 0);
+  }
 
   const stats: PlayerStatsRecord = { ...player.stats };
   const statChanges: StatLevelChange[] = [];
   // Only growth is braked, and only when there is some: a pure decline never reads the overall.
-  const brake = growth > 0 ? eliteBrake(computeOverallAvg(player)) : 1;
+  const brake = growth > 0 || (mental?.growth ?? 0) > 0 ? eliteBrake(computeOverallAvg(player)) : 1;
 
+  // One entry per stat receiving DP this update: the base categories, then the mental pool.
+  const plan: [keyof PlayerStatsRecord, number][] = [];
   for (const [category, weight] of Object.entries(weights) as [DPCategory, number][]) {
     const statsInCategory = CATEGORY_STATS[category];
     if (!statsInCategory || weight === 0) continue;
     const categoryDP = (growth * (areaMults[category] ?? 1) - decay) * weight;
     const dpPerStat = categoryDP / statsInCategory.length;
+    for (const stat of statsInCategory) plan.push([stat, dpPerStat]);
+  }
+  if (mental) {
+    for (const k of MENTAL_KEYS) {
+      const w = mental.weights[k] ?? 0;
+      if (w === 0 || typeof stats[k] !== "number") continue;
+      plan.push([k, (mental.growth - mental.decay) * w]);
+    }
+  }
 
-    for (const stat of statsInCategory) {
-      const currentValue = stats[stat];
+  for (const [stat, dpPerStat] of plan) {
+    const currentValue = stats[stat];
 
-      // Soft cap — high values grow slower (or decline faster when negative)
-      const effective = dpPerStat >= 0
-        ? dpPerStat * softCapFactor(currentValue) * brake
-        : dpPerStat; // decay is not soft-capped
+    // Soft cap — high values grow slower (or decline faster when negative)
+    const effective = dpPerStat >= 0
+      ? dpPerStat * softCapFactor(currentValue) * brake
+      : dpPerStat; // decay is not soft-capped
 
-      progress[stat] += effective;
+    progress[stat] += effective;
 
-      // Resolve level-ups (0.1 steps)
-      while (progress[stat] >= dpRequired(stats[stat])) {
-        if (stats[stat] >= 10) { progress[stat] = 0; break; }
-        progress[stat] -= dpRequired(stats[stat]);
-        stats[stat] = roundAttr(stats[stat] + ATTR_STEP);
-        statChanges.push({ stat, delta: ATTR_STEP, newValue: stats[stat] });
-      }
+    // Resolve level-ups (0.1 steps)
+    while (progress[stat] >= dpRequired(stats[stat])) {
+      if (stats[stat] >= 10) { progress[stat] = 0; break; }
+      progress[stat] -= dpRequired(stats[stat]);
+      stats[stat] = roundAttr(stats[stat] + ATTR_STEP);
+      statChanges.push({ stat, delta: ATTR_STEP, newValue: stats[stat] });
+    }
 
-      // Resolve level-downs (0.1 steps)
-      while (progress[stat] < 0) {
-        if (stats[stat] <= 0) { progress[stat] = 0; break; }
-        progress[stat] += dpRequired(stats[stat] - ATTR_STEP);
-        stats[stat] = roundAttr(stats[stat] - ATTR_STEP);
-        statChanges.push({ stat, delta: -ATTR_STEP, newValue: stats[stat] });
-      }
+    // Resolve level-downs (0.1 steps)
+    while (progress[stat] < 0) {
+      if (stats[stat] <= 0) { progress[stat] = 0; break; }
+      progress[stat] += dpRequired(stats[stat] - ATTR_STEP);
+      stats[stat] = roundAttr(stats[stat] - ATTR_STEP);
+      statChanges.push({ stat, delta: -ATTR_STEP, newValue: stats[stat] });
     }
   }
 

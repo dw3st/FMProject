@@ -1,4 +1,5 @@
 import realLegendsData from "@/Data/realLegends.json";
+import { mentalStatsFor } from "@/Domain/mental/mental";
 import { clamp } from "@/Domain/math";
 import { statsFor } from "@/Domain/youth/youth";
 import type { RetiredPlayer } from "@/types/playerTypes";
@@ -42,7 +43,7 @@ export function realLegendRetiree(e: RealLegendEntry): RetiredPlayer {
   return {
     id: e.id, name: e.name, nationality: e.nationality, positions: [e.position], preferredFoot: "right",
     profile: { summary: "", archetype: "Legend" }, retiredOn: RETIRED_ON, squadId: "", age: 36,
-    wasWorldClass: realWorldClass(e), statsAtRetirement: statsFor(e.id, e.position, realLegendLevel(e)),
+    wasWorldClass: realWorldClass(e), statsAtRetirement: mentalStatsFor(statsFor(e.id, e.position, realLegendLevel(e)), 36, e.id),
     appearances: 0, goals: 0,
     real: { wikidata: e.wikidata, birthYear: e.birthYear, ballonDor: e.ballonDor, worldCups: e.worldCups, fame: e.fame },
   };

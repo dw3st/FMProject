@@ -8,7 +8,7 @@ function player(id: string, age: number, level: number, until: string, wage = 10
     id, name: id, age, squadId: "c1", preferredFoot: "right", positions: [pos],
     stats: {
       passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v,
-      tackling: v, pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v,
+      tackling: v, pressing: v, stamina: v, heading: v, strength: v, reflex: v, jump: v, decisions: v, composure: v, flair: v, anticipation: v,
     },
     profile: { summary: "" } as RosterPlayer["profile"],
     contract: { until, wage },

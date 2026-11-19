@@ -3,6 +3,7 @@
     "mainRole": "GK",
     "position": { "x": 50, "y": 95 },
     "dpWeights": { "goalkeeping": 0.31, "shooting": 0.00, "setPieces": 0.00, "passing": 0.12, "defending": 0.00, "technical": 0.27, "physical": 0.30 },
+    "mentalWeights": { "decisions": 0.35, "composure": 0.30, "flair": 0.05, "anticipation": 0.30 },
     "attrWeights": {
       "passing": 0.6, "vision": 0.0, "finishing": 0.0, "dribbling": 0.0,
       "speed": 0.0, "acceleration": 0.0, "tackling": 0.0, "pressing": 0.0,
@@ -22,6 +23,7 @@
     "mainRole": "Defender",
     "position": { "x": 50, "y": 78 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.00, "setPieces": 0.10, "passing": 0.10, "defending": 0.45, "technical": 0.20, "physical": 0.15 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.20, "flair": 0.05, "anticipation": 0.45 },
     "attrWeights": {
       "passing": 0.7, "vision": 0.6, "finishing": 0.2, "dribbling": 0.3,
       "speed": 0.7, "acceleration": 0.7, "tackling": 1.0, "pressing": 0.8,
@@ -41,6 +43,7 @@
     "mainRole": "Defender",
     "position": { "x": 15, "y": 75 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.03, "setPieces": 0.02, "passing": 0.20, "defending": 0.30, "technical": 0.20, "physical": 0.25 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.20, "flair": 0.15, "anticipation": 0.35 },
     "attrWeights": {
       "passing": 0.8, "vision": 0.6, "finishing": 0.3, "dribbling": 0.6,
       "speed": 0.9, "acceleration": 0.9, "tackling": 0.8, "pressing": 0.8,
@@ -60,6 +63,7 @@
     "mainRole": "Defender",
     "position": { "x": 85, "y": 75 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.03, "setPieces": 0.02, "passing": 0.20, "defending": 0.30, "technical": 0.20, "physical": 0.25 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.20, "flair": 0.15, "anticipation": 0.35 },
     "attrWeights": {
       "passing": 0.8, "vision": 0.6, "finishing": 0.3, "dribbling": 0.6,
       "speed": 0.9, "acceleration": 0.9, "tackling": 0.8, "pressing": 0.8,
@@ -79,6 +83,7 @@
     "mainRole": "Defender",
     "position": { "x": 12, "y": 62 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.03, "setPieces": 0.02, "passing": 0.25, "defending": 0.20, "technical": 0.20, "physical": 0.30 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.20, "flair": 0.20, "anticipation": 0.30 },
     "attrWeights": {
       "passing": 0.8, "vision": 0.7, "finishing": 0.4, "dribbling": 0.8,
       "speed": 1.0, "acceleration": 1.0, "tackling": 0.7, "pressing": 0.8,
@@ -98,6 +103,7 @@
     "mainRole": "Defender",
     "position": { "x": 88, "y": 62 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.03, "setPieces": 0.02, "passing": 0.25, "defending": 0.20, "technical": 0.20, "physical": 0.30 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.20, "flair": 0.20, "anticipation": 0.30 },
     "attrWeights": {
       "passing": 0.8, "vision": 0.7, "finishing": 0.4, "dribbling": 0.8,
       "speed": 1.0, "acceleration": 1.0, "tackling": 0.7, "pressing": 0.8,
@@ -117,6 +123,7 @@
     "mainRole": "Midfielder",
     "position": { "x": 50, "y": 62 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.03, "setPieces": 0.02, "passing": 0.25, "defending": 0.40, "technical": 0.20, "physical": 0.10 },
+    "mentalWeights": { "decisions": 0.35, "composure": 0.20, "flair": 0.05, "anticipation": 0.40 },
     "attrWeights": {
       "passing": 0.8, "vision": 0.7, "finishing": 0.3, "dribbling": 0.5,
       "speed": 0.6, "acceleration": 0.6, "tackling": 1.0, "pressing": 1.0,
@@ -136,6 +143,7 @@
     "mainRole": "Midfielder",
     "position": { "x": 50, "y": 52 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.07, "setPieces": 0.03, "passing": 0.35, "defending": 0.15, "technical": 0.25, "physical": 0.15 },
+    "mentalWeights": { "decisions": 0.35, "composure": 0.25, "flair": 0.15, "anticipation": 0.25 },
     "attrWeights": {
       "passing": 0.9, "vision": 0.8, "finishing": 0.5, "dribbling": 0.6,
       "speed": 0.7, "acceleration": 0.7, "tackling": 0.7, "pressing": 0.8,
@@ -155,6 +163,7 @@
     "mainRole": "Midfielder",
     "position": { "x": 50, "y": 40 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.15, "setPieces": 0.05, "passing": 0.35, "defending": 0.05, "technical": 0.30, "physical": 0.10 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.25, "flair": 0.30, "anticipation": 0.15 },
     "attrWeights": {
       "passing": 1.0, "vision": 1.0, "finishing": 0.7, "dribbling": 0.8,
       "speed": 0.6, "acceleration": 0.7, "tackling": 0.3, "pressing": 0.5,
@@ -174,6 +183,7 @@
     "mainRole": "Midfielder",
     "position": { "x": 15, "y": 48 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.10, "setPieces": 0.05, "passing": 0.25, "defending": 0.10, "technical": 0.20, "physical": 0.30 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.20, "flair": 0.30, "anticipation": 0.20 },
     "attrWeights": {
       "passing": 0.7, "vision": 0.7, "finishing": 0.7, "dribbling": 0.9,
       "speed": 1.0, "acceleration": 1.0, "tackling": 0.4, "pressing": 0.6,
@@ -193,6 +203,7 @@
     "mainRole": "Midfielder",
     "position": { "x": 85, "y": 48 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.10, "setPieces": 0.05, "passing": 0.25, "defending": 0.10, "technical": 0.20, "physical": 0.30 },
+    "mentalWeights": { "decisions": 0.30, "composure": 0.20, "flair": 0.30, "anticipation": 0.20 },
     "attrWeights": {
       "passing": 0.7, "vision": 0.7, "finishing": 0.7, "dribbling": 0.9,
       "speed": 1.0, "acceleration": 1.0, "tackling": 0.4, "pressing": 0.6,
@@ -212,6 +223,7 @@
     "mainRole": "Forward",
     "position": { "x": 15, "y": 28 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.22, "setPieces": 0.08, "passing": 0.20, "defending": 0.05, "technical": 0.20, "physical": 0.25 },
+    "mentalWeights": { "decisions": 0.25, "composure": 0.25, "flair": 0.35, "anticipation": 0.15 },
     "attrWeights": {
       "passing": 0.7, "vision": 0.7, "finishing": 0.8, "dribbling": 1.0,
       "speed": 1.0, "acceleration": 1.0, "tackling": 0.3, "pressing": 0.5,
@@ -231,6 +243,7 @@
     "mainRole": "Forward",
     "position": { "x": 85, "y": 28 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.22, "setPieces": 0.08, "passing": 0.20, "defending": 0.05, "technical": 0.20, "physical": 0.25 },
+    "mentalWeights": { "decisions": 0.25, "composure": 0.25, "flair": 0.35, "anticipation": 0.15 },
     "attrWeights": {
       "passing": 0.7, "vision": 0.7, "finishing": 0.8, "dribbling": 1.0,
       "speed": 1.0, "acceleration": 1.0, "tackling": 0.3, "pressing": 0.5,
@@ -250,6 +263,7 @@
     "mainRole": "Forward",
     "position": { "x": 50, "y": 20 },
     "dpWeights": { "goalkeeping": 0.00, "shooting": 0.30, "setPieces": 0.15, "passing": 0.10, "defending": 0.05, "technical": 0.25, "physical": 0.15 },
+    "mentalWeights": { "decisions": 0.25, "composure": 0.35, "flair": 0.25, "anticipation": 0.15 },
     "attrWeights": {
       "passing": 0.4, "vision": 0.4, "finishing": 1.0, "dribbling": 0.6,
       "speed": 0.8, "acceleration": 0.8, "tackling": 0.2, "pressing": 0.7,

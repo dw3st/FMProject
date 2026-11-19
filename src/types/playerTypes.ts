@@ -21,6 +21,11 @@ export interface PlayerStatsRecord {
   strength: number;
   reflex: number;
   jump: number;
+  /** Mental attributes (`.claude/rules/game/mental.md`): read by nothing in the match engine yet. */
+  decisions: number;
+  composure: number;
+  flair: number;
+  anticipation: number;
 }
 
 interface PlayerProfile {
@@ -107,6 +112,10 @@ export interface DevelopmentProgress {
   strength:     number;
   reflex:       number;
   jump:         number;
+  decisions:    number;
+  composure:    number;
+  flair:        number;
+  anticipation: number;
 }
 
 export function emptyDevelopmentProgress(): DevelopmentProgress {
@@ -115,6 +124,7 @@ export function emptyDevelopmentProgress(): DevelopmentProgress {
     speed: 0, acceleration: 0, tackling: 0, pressing: 0,
     stamina: 0, heading: 0, strength: 0,
     reflex: 0, jump: 0,
+    decisions: 0, composure: 0, flair: 0, anticipation: 0,
   };
 }
 

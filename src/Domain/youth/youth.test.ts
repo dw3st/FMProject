@@ -13,6 +13,7 @@ function mk(i: number, pos: string, level: number): RosterPlayer {
     stats: {
       passing: v, vision: v, finishing: v, dribbling: v, speed: v, acceleration: v, tackling: v,
       pressing: v, stamina: v, heading: v, strength: v, reflex: pos === "GK" ? v : 0, jump: pos === "GK" ? v : 0,
+      decisions: v, composure: v, flair: v, anticipation: v,
     },
     profile: { summary: "", archetype: "" },
   };
@@ -201,7 +202,7 @@ describe("youth rollover", () => {
 
 test("academy keeps its pace: the growth scale of the 0.1 steps does not apply", () => {
   const stats = { passing: 4, vision: 4, finishing: 4, dribbling: 4, speed: 5, acceleration: 5, tackling: 4,
-    pressing: 4, stamina: 5, heading: 4, strength: 4, reflex: 1, jump: 3 };
+    pressing: 4, stamina: 5, heading: 4, strength: 4, reflex: 1, jump: 3, decisions: 3, composure: 3, flair: 3, anticipation: 3 };
   const p = { id: "pace-youth", name: "x", age: 16, positions: ["CM"], stats } as unknown as RosterPlayer;
   const mean = (x: RosterPlayer) => Object.values(x.stats).reduce((a, b) => a + b, 0) / 13;
   const gain = mean(developYouthSeason(p, 1)) - mean(p);
