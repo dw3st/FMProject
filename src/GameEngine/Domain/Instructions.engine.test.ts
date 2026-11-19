@@ -1,3 +1,4 @@
+import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { describe, expect, test } from "bun:test";
 import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
@@ -159,6 +160,8 @@ describe("man-marking", () => {
     // Two matches, explicit balanced tactics (the config stores are process-global).
     const run = () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, {
       tactics: { A: { style: "balanced", manMarks: [{ slot: CM_SLOT, targetSlot: ST_SLOT }] }, B: { style: "balanced" } },
+      // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep this mechanism test fast: the code paths are the same (stage 2).
+      clockScale: LEGACY_CLOCK_SCALE,
       onTick: st => {
         if (st.matchPhase !== "firstHalf" && st.matchPhase !== "secondHalf") return;
         const holder = st.players.find(p => p.id === st.ballHolderId);
@@ -178,7 +181,7 @@ describe("man-marking", () => {
     // A match the way the day advance plays it (formations and XIs, unseeded) before the seeded ones: state
     // the engine keeps between ticks (cached defensive intents) must not leak into the next match — it made
     // this test depend on the test files run before it.
-    simulateMatch(loadSquad("40.json"), loadSquad("33.json"), F433, F433);
+    simulateMatch(loadSquad("40.json"), loadSquad("33.json"), F433, F433, undefined, undefined, { clockScale: LEGACY_CLOCK_SCALE });
     const spy = spyMatchRandom().mockImplementation(mulberry32(MARK_SEED));
     let result: ReturnType<typeof run>;
     try {
@@ -222,6 +225,8 @@ describe("variants change behaviour", () => {
       let n = 0;
       simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, {
         tactics: { A: { style: "balanced", ...(instr ? { slotInstructions: instr } : {}) }, B: { style: "balanced" } },
+        // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep this mechanism test fast: the code paths are the same (stage 2).
+        clockScale: LEGACY_CLOCK_SCALE,
         onTick: st => {
           if (st.matchPhase !== "firstHalf" && st.matchPhase !== "secondHalf") return;
           const holder = st.players.find(p => p.id === st.ballHolderId);

@@ -1,3 +1,4 @@
+import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
@@ -28,7 +29,7 @@ describe("simulateMatch pass accounting", () => {
     }
     // Sanity: the match did play through balls, so the check above is meaningful.
     expect(throughBalls).toBeGreaterThan(0);
-  }, 30_000);
+  }, 120_000); // one match of 90 physical minutes
 });
 
 describe("simulateMatch knockout", () => {
@@ -36,7 +37,8 @@ describe("simulateMatch knockout", () => {
     const squad = loadSquad("33.json");
     for (let i = 0; i < 6; i++) {
       // Same squad both sides → many level games after 90'.
-      const r = simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { knockout: true });
+      // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep the loop fast: the knockout path is the same (stage 2).
+      const r = simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { knockout: true, clockScale: LEGACY_CLOCK_SCALE });
       const d = r.decider;
       let goalsFromPlayers = 0;
       for (const s of r.playerStats.values()) goalsFromPlayers += s.goals;
@@ -60,7 +62,7 @@ describe("simulateMatch knockout", () => {
   test("league match reports no decider", () => {
     const r = simulateMatch(loadSquad("33.json"), loadSquad("34.json"));
     expect(r.decider).toBeNull();
-  }, 30_000);
+  }, 120_000); // one match of 90 physical minutes
 
   test("second leg: aggregate decides whether the tie is level", () => {
     const squad = loadSquad("33.json");
@@ -68,6 +70,7 @@ describe("simulateMatch knockout", () => {
       const r = simulateMatch(squad, squad, undefined, undefined, undefined, undefined, {
         knockout: true,
         aggregate: { A: 3, B: 0 },
+        clockScale: LEGACY_CLOCK_SCALE,
       });
       // Extra time happens only when the 90' score levels the aggregate (B ahead by exactly 3).
       const et = r.decider?.extraTime ?? { A: 0, B: 0 };
@@ -88,6 +91,7 @@ describe("simulateMatch tactics option", () => {
         A: { style: "high_press" as never, axesOverride: { defensive_line: "deep" } },
         B: { style: "balanced" as never },
       },
+      clockScale: LEGACY_CLOCK_SCALE,
     });
     expect(getTeamTacticalStyle("A")).toBe("high_press" as never);
     expect(getDefenseTacticKeys("A").pressingStyle).toBe("high_press");
@@ -96,10 +100,11 @@ describe("simulateMatch tactics option", () => {
     // The next match applies its own tactics: A's previous style must not survive.
     simulateMatch(a, b, undefined, undefined, undefined, undefined, {
       tactics: { A: { style: "balanced" as never }, B: { style: "balanced" as never } },
+      clockScale: LEGACY_CLOCK_SCALE,
     });
     expect(getTeamTacticalStyle("A")).toBe("balanced" as never);
     expect(getDefenseTacticKeys("A").defensiveLine).not.toBe("deep");
-  });
+  }, 60_000);
 });
 
 describe("simulateMatch: style familiarity execution", () => {
@@ -109,9 +114,9 @@ describe("simulateMatch: style familiarity execution", () => {
     const squad = loadSquad("33.json");
     applyTeamAttackConfig("A", "possession", "balanced", undefined, { possession: 100 });
     expect(getTeamExecutionMult("A")).toBeGreaterThan(1);
-    simulateMatch(squad, squad);
+    simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { clockScale: LEGACY_CLOCK_SCALE });
     expect(getTeamExecutionMult("A")).toBe(1);
-    simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { executionFamiliarity: { B: 100 } });
+    simulateMatch(squad, squad, undefined, undefined, undefined, undefined, { executionFamiliarity: { B: 100 }, clockScale: LEGACY_CLOCK_SCALE });
     expect(getTeamExecutionMult("A")).toBe(1);
     expect(getTeamExecutionMult("B")).toBeCloseTo(1 + FAMILIARITY_ENGINE.EXECUTION_STAT_SCALE);
   }, 60_000);
@@ -123,7 +128,7 @@ describe("simulateMatch goal log (season awards)", () => {
     let goalsSeen = 0;
     // Goalless runs happen (and the engine has no seed): keep simulating until some goals were checked.
     for (let i = 0; i < 12 && (i < 4 || goalsSeen === 0); i++) {
-      const r = simulateMatch(squad, loadSquad("34.json"), undefined, undefined, undefined, undefined, { knockout: true });
+      const r = simulateMatch(squad, loadSquad("34.json"), undefined, undefined, undefined, undefined, { knockout: true, clockScale: LEGACY_CLOCK_SCALE });
       expect(r.goals.length).toBe(r.score.A + r.score.B);
       const ids = new Set([...r.players.map((p) => p.id), ...r.substitutions.map((s) => s.playerOutId), ...r.injuries.map((x) => x.playerId), ...r.cards.map((c) => c.playerId)]);
       for (const g of r.goals) {

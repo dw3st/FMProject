@@ -1,5 +1,8 @@
 # Feature: Match Flow and Clock Control
 
+> Stage 2 of the engine rebuild: the engine now plays the 90 minutes in real physics; the 7-minute compressed clock below
+> is the live match's provisional clock (`LEGACY_CLOCK_SCALE`). See "Clock and time constants" at the end.
+
 ## Business Rules
 
 • The match must last approximately **7 minutes of real time**.
@@ -593,3 +596,51 @@ User report, option A of the mock (`data_process/assets/subs_panel_mock.py`). Ev
 # Substitutions screen redone (12.12)
 
 Tester report, approved by the user from real screenshots. `SubstitutionPanel` is a wide `Modal`; every tab is `PanelColumns` (`Components/SubsPanelLayout.tsx`): the upright mini pitch on the left (`PANEL_PITCH_HEIGHT`), the tab's controls on the right, the main button at the bottom. Out of position on the formation preview uses the aptitude (needs training or worse), like the player-change tab.
+
+# Clock and time constants (engine rebuild stage 2)
+
+The engine plays the 90 minutes in real physics: `GameState.clockScale` (game-seconds per physical second) is absent
+= 1, so a match is ~93 game minutes of 0.2 s ticks (~28 000 ticks). `LEGACY_CLOCK_SCALE` (18) is the compressed
+clock of before (45 game minutes in 150 s of physics); `withClockScale(state, scale)` sets it on a fresh state. The
+`FULL_DURATION` switch is gone. Who uses which clock:
+
+| Path | Clock |
+|---|---|
+| `simulateMatch` (day advance, worker pool, `/lab`, scripts, tests) | 1 (`options.clockScale` only for comparison runs) |
+| `/test` | 1; chip **Clock ×18** for comparison; chip **90' match** (mode A: periods end, speeds up to 32×) |
+| Live match, broadcast, match between two managers (`buildLiveMatchState`) | 18, provisional until stage 19 (5 real minutes at 1×, unchanged) |
+
+Presentation pauses (`presentationCountdown` of the kick-off show, half time, the extra-time break, the shootout,
+and a VAR check) are real seconds: `PixiPitch` feeds them the real elapsed time, never × the match speed.
+`simulateMatch` skips them.
+
+Every constant that counts time, by what it means in football (game-s = match clock, phys-s = physical step):
+
+| Constant | Before (compressed) | Now | Why |
+|---|---|---|---|
+| Restart dead time: free kick / corner / box FK / direct FK / penalty | 0.4 / 1.2 / 1.0 / 1.5 / 2.0 phys-s (= 7.2 / 21.6 / 18 / 27 / 36 game-s) | the same game-s (`FOUL_CONFIG.*_COUNTDOWN`, `SET_PIECE_CONFIG.*_COUNTDOWN`); freeze = game-s / clockScale (`restartFreeze`) | a restart takes the game time it already took; FM27: goal kick ~19 s, offside ~24 s of dead ball |
+| Kick-off, goal kick, throw-in, corner out of play, offside FK | 2 / 1 / 1.5 / 2 / 2 phys-s | 36 / 18 / 27 / 36 / 36 game-s (`RESTART_DEAD_S`) | same rule |
+| Set-piece phase (`SET_PIECE_PHASE_SECONDS`) | 45 game-s (~2.5 s of play) | 10 game-s | the delivery and the second ball; still closes when the other side has the ball |
+| Whistle waits for an attack (`ATTACK_HOLD_MAX`) | 45 game-s (~2.5 s of play) | 10 game-s | an attack in the last 30 yards ends within ~10 s |
+| Whistle waits for a restart (`RESTART_HOLD_MAX`) | 60 game-s | 60 game-s | holds a penalty's 36 s plus the kick |
+| Team intent re-evaluation (`INTENT_REEVAL_INTERVAL`) | 3 game-s (every tick) | 3 game-s (15 ticks) | 3 s of play, as written |
+| VAR: goal after a missed offside (`GOAL_CHAIN_SECONDS`) | 15 game-s (~4 ticks) | 15 game-s | the attacking phase of the goal |
+| VAR check (`REVIEW_SECONDS`), complaint window | 3 / 6 real s | same | presentation; no game time passes |
+| AI substitution check (`AI_SUB_CHECK_INTERVAL`), stoppage time, injury risk per minute, energy per second (`consumeEnergy`), form window (`formWindow`) | game-s / game-min | same | already the match clock |
+| Possession push-up / pressing patience (`POSSESSION_PUSH_UP`, `POSSESSION_PATIENCE`), `possessionTime` | phys-s | same | seconds of possession |
+| Tackle cooldown, duel recovery, `COMMIT_TICKS`, holder action timing, through-ball cache, loose-ball watchdog, kinematics | phys-s / ticks of 0.2 s | same | physical durations |
+| Contact injuries, cards per foul, VAR per call, half-time recovery | per event | same | per event: the count follows the events (measured, not calibrated) |
+
+## Cost per tick
+
+`bun scripts/engine-cost.ts [matches] [league] [--seed 9000] [--clock 1] [--out f] [--check f]`: seeded matches, ms
+and CPU ms per tick, and a fingerprint of each match (score, team stats, ratings, final positions); `--check` fails
+on any difference with a previous `--out`. The optimisations of stage 2 left every fingerprint identical (12 matches
+on the legacy clock, 3 on the full clock):
+
+- through-ball cells: chasers precomputed once per enumeration, ETA skipped when the cell is beyond the best ETA even at
+  top speed, the goal-threat score of every cell in a table, the lane risk with squared distances first;
+- off-ball cells: the synthetic receiver, the holder's pressure and pass config, the block shift and the slot built
+  once per evaluation (`passCfgFor`, `scorePassToReceiverBreakdown(..., passCfg)`);
+- mark assignment: the defender × opponent cost matrix computed once for the greedy pass and the swap-improve;
+- crowd grid: rows copied from a zero row.

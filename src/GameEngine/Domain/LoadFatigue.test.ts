@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
+import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { ensureSeasonLog } from "@/Domain/advanceDay/seasonLog";
 import { FITNESS } from "@/Domain/fitness/fitnessConfig";
 import type { Squad } from "@/types/playerTypes";
@@ -45,7 +46,8 @@ describe("load raises in-match energy cost", () => {
     let comparedPairs = 0;
 
     for (let i = 0; i < REPLICATES; i++) {
-      const result = simulateMatch(highLoad, fresh);
+      // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep this mechanism test fast: the code paths are the same (stage 2).
+      const result = simulateMatch(highLoad, fresh, undefined, undefined, undefined, undefined, { clockScale: LEGACY_CLOCK_SCALE });
       const subbedInIds = new Set(result.substitutions.map(s => s.playerInRosterId));
       const stillOriginal = result.players.filter(p => !subbedInIds.has(p.rosterId));
       const highPlayers = stillOriginal.filter(p => p.team === "A");

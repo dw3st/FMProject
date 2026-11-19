@@ -1,3 +1,4 @@
+import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { describe, expect, test } from "bun:test";
 import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
@@ -27,6 +28,7 @@ function seeded<T>(seed: number, f: () => T): T {
 }
 const ref = (strictness: number) => ({ id: "ref_test", name: "Test Referee", country: "England", strictness });
 
+// Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep these mechanism tests fast: the code paths are the same (stage 2).
 describe("referee in the engine", () => {
   test("withReferee sets and removes the referee", () => {
     const s = createMatchState(HOME.players, F433, AWAY.players, F433);
@@ -35,8 +37,8 @@ describe("referee in the engine", () => {
   });
 
   test("s = 0 plays exactly the match without a referee (same random rolls)", () => {
-    const plain = seeded(7, () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, { tactics: TACTICS }));
-    const neutral = seeded(7, () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, { tactics: TACTICS, referee: ref(0) }));
+    const plain = seeded(7, () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, { tactics: TACTICS, clockScale: LEGACY_CLOCK_SCALE }));
+    const neutral = seeded(7, () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, { tactics: TACTICS, referee: ref(0), clockScale: LEGACY_CLOCK_SCALE }));
     expect(neutral.score).toEqual(plain.score);
     expect(neutral.cards).toEqual(plain.cards);
     expect(neutral.teamStats.A.fouls).toBe(plain.teamStats.A.fouls);
@@ -48,7 +50,7 @@ describe("referee in the engine", () => {
     let lenient = 0;
     for (let i = 0; i < 8; i++) {
       const count = (s: number) => {
-        const r = seeded(100 + i, () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, { tactics: TACTICS, referee: ref(s) }));
+        const r = seeded(100 + i, () => simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, { tactics: TACTICS, referee: ref(s), clockScale: LEGACY_CLOCK_SCALE }));
         return r.teamStats.A.fouls + r.teamStats.B.fouls + 4 * r.cards.length;
       };
       strict += count(1);

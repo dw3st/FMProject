@@ -1,3 +1,4 @@
+import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
@@ -17,7 +18,8 @@ function loadSquad(file: string): Squad {
 }
 const A = loadSquad("33.json");
 const B = loadSquad("34.json");
-const play = (seed: number) => simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], { seed });
+// Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep the three matches fast: the generator path is the same (stage 2).
+const play = (seed: number) => simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], { seed, clockScale: LEGACY_CLOCK_SCALE });
 const fingerprint = (r: ReturnType<typeof play>) => ({
   score: r.score,
   shots: [r.teamStats.A.shots, r.teamStats.B.shots],
