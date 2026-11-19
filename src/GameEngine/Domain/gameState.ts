@@ -27,6 +27,7 @@ import { resolveBasePosition, slotBasePosition } from '@/GameEngine/FormationSlo
 import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
 import { assignMarkTargets, resetDefensiveIntentCache, stayHomeTarget } from '@/GameEngine/Domain/DefensivePositioning';
+import { resetOffBallIntentCache } from '@/GameEngine/Domain/OffBallMovement';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import {
   applyContinuousFatigue,
@@ -68,6 +69,9 @@ import {
   resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
+import { getMainRole } from '@/Domain/roles';
+import { passLaunch } from '@/GameEngine/Domain/PassError';
 import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
 import {
   shotBlocker, passLengthFactor, standOffPoint, robustMean, stepBackLine,
@@ -421,6 +425,7 @@ export function createMatchState(
   injuryMult: { A?: number; B?: number } = {},
 ): GameState {
   resetDefensiveIntentCache();
+  resetOffBallIntentCache();
   const withMult = (r: ReturnType<typeof buildTeam>, m: number | undefined) =>
     m === undefined || m === 1
       ? r
@@ -2510,6 +2515,27 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
 
   const distance = Math.sqrt((to.x - holder.x) ** 2 + (to.y - holder.y) ** 2);
 
+  // Launch error (stage 4b, `fm-numbers.md`): a long pass is lofted (a high ball contested where it lands); a pass to
+  // feet lands off target by an error growing with distance and pressure, shrinking with passing.
+  let miss: { x: number; y: number; vx: number; vy: number } | null = null;
+  if (DECISION_FLAGS.PASS_ERROR && !state.setPiece && distance > 0.5) {
+    if (distance > FM_NUMBERS.LOFT_YD) {
+      debugLog('pass', `${holder.name} lofts a ${distance.toFixed(0)}-yd pass to ${to.name}`, { playerId: holder.id });
+      return startAerialBall({ ...state, setPiece: null }, 'long_ball', { x: to.x, y: to.y }, to.id, Math.random, true);
+    }
+    const pressure = holderPressure(holder.x, holder.y, opponents);
+    const [z0, z1] = gaussianPair(Math.random);
+    const l = passLaunch(holder.runtimeStats.withBall.passingSkill, distance, pressure, to.runtimeStats.withBall.firstTouch, z0, z1);
+    if (l.miss) {
+      const ux = (to.x - holder.x) / distance, uy = (to.y - holder.y) / distance;
+      const x = Math.max(0.5, Math.min(PITCH_LENGTH - 0.5, to.x + ux * l.along - uy * l.side));
+      const y = Math.max(0.5, Math.min(PITCH_WIDTH - 0.5, to.y + uy * l.along + ux * l.side));
+      const v = FM_NUMBERS.MISS_ROLL_SPEED + Math.max(0, l.along);
+      miss = { x, y, vx: ux * v, vy: uy * v };
+      debugLog('pass', `${holder.name}'s pass to ${to.name} is off target (${l.along.toFixed(1)} / ${l.side.toFixed(1)} yd, P ${pressure.toFixed(0)})`, { playerId: holder.id });
+    }
+  }
+
   gameBus.emit('passAttempted', { player: holder.id, toId: to.id, distance: distance });
   // Switch-of-play: the chosen lane earned a far-flank descriptor bonus. Detected
   // from the descriptor-derived flag on PassLaneInfo, never by naming the intent.
@@ -2520,11 +2546,12 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
     pass: {
       fromId: state.ballHolderId,
       toId: to.id,
-      toX: to.x,
-      toY: to.y,
+      toX: miss ? miss.x : to.x,
+      toY: miss ? miss.y : to.y,
       kind: 'regular',
       t: 0,
       distance,
+      ...(miss ? { miss: { vx: miss.vx, vy: miss.vy } } : {}),
       receiverOffside,
       offsideLineX: offsideLineAt(holder, state.players),
       intendedRunnerId: null,
@@ -3612,6 +3639,7 @@ export function startAerialBall(
   target: { x: number; y: number },
   intendedId: number | null,
   rng: () => number = Math.random,
+  lofted = false,
 ): GameState {
   const C = AERIAL_CONFIG;
   const holder = state.players.find(p => p.id === state.ballHolderId)!;
@@ -3624,7 +3652,7 @@ export function startAerialBall(
   const distance = Math.hypot(toX - holder.x, toY - holder.y);
 
   if (kind === 'cross') gameBus.emit('crossStarted', { player: holder.id, toX, toY, intendedRunnerId: intendedId });
-  else gameBus.emit('longBallStarted', { player: holder.id, toX, toY, targetId: intendedId });
+  else gameBus.emit('longBallStarted', { player: holder.id, toX, toY, targetId: intendedId, ...(lofted ? { lofted: true } : {}) });
   debugLog('aerial', `${holder.name} plays a ${kind === 'cross' ? 'cross' : 'long ball'} to (${toX.toFixed(0)}, ${toY.toFixed(0)})`, {
     playerId: holder.id, data: { intendedId, distance: Math.round(distance) },
   });
@@ -3664,6 +3692,7 @@ export function startAerialBall(
     intendedRunnerId: intendedId,
     aerialOffsideIds: offsideIdsAt(holder, state.players),
     offsideLineX: offsideLineAt(holder, state.players),
+    ...(lofted ? { lofted: true } : {}),
     ...(state.setPiece ? { fromSetPiece: true } : {}),
     ...(state.setPiece?.variant ? { setPieceVariant: state.setPiece.variant } : {}),
   };
@@ -4026,6 +4055,23 @@ function emitDecisionTelemetry(
  */
 export const DECISION_REF_DT = 0.2;
 
+/** Distance (yd) from `p` to the nearest opponent on the pitch. */
+function nearestOpponentDist(players: readonly GamePlayer[], p: GamePlayer): number {
+  let best = Infinity;
+  for (const o of players) if (o.team !== p.team) best = Math.min(best, Math.hypot(o.x - p.x, o.y - p.y));
+  return best;
+}
+
+/** How long (ticks of 0.2 s) a holder action lasts before he re-decides (stage 4b, `fm-numbers.md`). */
+function holderActionTicks(d: PlayerDecision): number {
+  if (d.type === 'carry') {
+    const sec = d.step === 'hold' ? FM_NUMBERS.HOLD_S : d.step === 'turn' ? FM_NUMBERS.TURN_S : FM_NUMBERS.CARRY_STEP_MAX_S;
+    return sec / DECISION_REF_DT;
+  }
+  if (d.type === 'dribble') return COMMIT_TICKS.dribble;
+  return 0;
+}
+
 export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickResult {
   const noop = (s: GameState): TickResult =>
     ({ state: s, passCompleted: false, tackled: false, goalScored: null });
@@ -4365,6 +4411,27 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       updatedMemory[p.id] = { ...mem, commitTicks: mem.commitTicks - dt / DECISION_REF_DT };
       continue;
     }
+    // Action cadence (stage 4b, `fm-numbers.md`): the holder decides when he receives and when his action ends — a
+    // carry step of CARRY_STEP_YD, a hold or a turn, a dribble until it is resolved — not every tick.
+    if (isBallHolder && DECISION_FLAGS.ACTION_CADENCE && !pathChanged && mem.commitTicks > 0 && mem.decision !== null
+      && (mem.decision.type === 'carry' || mem.decision.type === 'dribble')
+      && !s.pass && !s.looseBall && !s.shot && !(s.setPiece && s.setPiece.takerId === p.id)) {
+      const d = mem.decision;
+      const moved = mem.from ? Math.hypot(p.x - mem.from.x, p.y - mem.from.y) : 0;
+      const stepDone = d.type === 'carry' && !d.step && moved >= FM_NUMBERS.CARRY_STEP_YD;
+      // A new threat ends the action at once: an opponent closing inside INTERRUPT_YD, nearer than at the start.
+      const nd = nearestOpponentDist(s.players, p);
+      const interrupt = (nd <= FM_NUMBERS.INTERRUPT_YD && nd < (mem.nearD ?? Infinity) - FM_NUMBERS.INTERRUPT_CLOSE_YD)
+        || nd <= FM_NUMBERS.CHALLENGE_YD
+        // In the shooting zone a chance opens in a tick: he reads it every tick there.
+        || Math.hypot((p.attackDir === 1 ? PITCH_LENGTH : 0) - p.x, PITCH_WIDTH / 2 - p.y) <= FM_NUMBERS.CADENCE_FREE_YD;
+      if (!stepDone && !interrupt) {
+        newDecisions[p.id] = d;
+        updatedMemory[p.id] = { ...mem, commitTicks: mem.commitTicks - dt / DECISION_REF_DT };
+        if (p.decisionNoise) updatedNoise.set(p.id, p.decisionNoise);
+        continue;
+      }
+    }
 
     // Fresh decision — only the holder uses tbCachedCells (no-op for everyone else)
     const fresh = decide(
@@ -4398,7 +4465,16 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         }
       }
     }
-    updatedMemory[p.id] = { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
+    updatedMemory[p.id] = isBallHolder && DECISION_FLAGS.ACTION_CADENCE
+      ? {
+        path: currentPath, decision: fresh, commitTicks: holderActionTicks(fresh),
+        from: { x: p.x, y: p.y }, nearD: nearestOpponentDist(s.players, p),
+      }
+      : { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
+    if (isBallHolder && fresh.type === 'carry' && fresh.step) {
+      gameBus.emit('holderStep', { playerId: p.id, team: p.team, step: fresh.step });
+      debugLog('decision', `${p.name} ${fresh.step === 'hold' ? 'holds the ball' : 'turns'}`, { playerId: p.id });
+    }
     if (telemetry) {
       const cap = takeCapture();
       // Set-piece takers play a forced restart: their score vector is not the decision they take.
@@ -4629,10 +4705,22 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         };
       }
 
+      // Short steps (stage 4b, `fm-numbers.md`): the movement target he carries is a step of STEP_YD by line toward
+      // where he wants to be, re-issued every tick while he moves (FM's setters: DEF 4.4, MID 6, FWD 7 yd). He keeps
+      // running toward the full point (a capped point would brake him to arrive on every step).
+      let stepTarget = target;
+      if (DECISION_FLAGS.SHORT_STEPS && !isPressing && player.role !== 'GK') {
+        const sx = target.x - player.x, sy = target.y - player.y;
+        const sd = Math.hypot(sx, sy);
+        const main = getMainRole(player.role);
+        const cap = main === 'Defender' ? FM_NUMBERS.STEP_YD.DEF : main === 'Forward' ? FM_NUMBERS.STEP_YD.FWD : FM_NUMBERS.STEP_YD.MID;
+        if (sd > cap) stepTarget = { x: player.x + (sx / sd) * cap, y: player.y + (sy / sd) * cap };
+      }
+
       const dx   = target.x - player.x;
       const dy   = target.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 0.01) return { ...standStill(player, s, dt, moveLog), targetPosition: target };
+      if (dist < 0.01) return { ...standStill(player, s, dt, moveLog), targetPosition: stepTarget };
 
       const baseSpeed    = player.runtimeStats.withoutBall.pressSpeed;
       // Off-ball runners within 15 yards of a holder who just received get an
@@ -4648,7 +4736,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const recoveryMult = recoverySpeedMult(player);
       const step = Math.min((baseSpeed + accelBurst) * recoveryMult * dt, dist);
       const legacy = { x: player.x + (dx / dist) * step, y: player.y + (dy / dist) * step };
-      return { ...moveToward(player, s, dt, target, (baseSpeed + accelBurst) * recoveryMult, legacy, moveLog), targetPosition: target };
+      return { ...moveToward(player, s, dt, target, (baseSpeed + accelBurst) * recoveryMult, legacy, moveLog), targetPosition: stepTarget };
     });
 
     s = { ...s, players: movedPlayers };
@@ -4991,7 +5079,8 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const accelBurst   = isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
       const recoveryMult = carrier.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
       // Shielding (`HolderMoves.ts`): he edges away from the presser, ball kept on the far foot.
-      const shieldMult = holderDecision.move === 'shield' ? HOLDER_MOVES.SHIELD_SPEED_MULT : 1;
+      const shieldMult = (holderDecision.move === 'shield' ? HOLDER_MOVES.SHIELD_SPEED_MULT : 1)
+        * (holderDecision.step === 'hold' ? FM_NUMBERS.HOLD_SPEED : holderDecision.step === 'turn' ? FM_NUMBERS.TURN_SPEED : 1);
       const step = (wb.carrySpeed + accelBurst) * recoveryMult * shieldMult * dt * weatherEffectOf(s.weather).carrySpeed;
       // Role bounds don't restrict the ball carrier — only the pitch boundary does.
       // Off-ball positioning is where bounds apply.
@@ -5118,7 +5207,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   // High balls (cross / long ball) fly over everyone — contested only where they land.
   if (s.tackleCooldown === 0 && !aerialPass) {
     const ballPos      = getBallPos(s);
-    const targetPos    = activePass.kind === 'through' || activePass.toId === null
+    const targetPos    = activePass.kind === 'through' || activePass.toId === null || activePass.miss
       ? { x: activePass.toX, y: activePass.toY }
       : (s.players.find(p => p.id === activePass.toId) ?? { x: activePass.toX, y: activePass.toY });
     for (const player of s.players) {
@@ -5247,6 +5336,17 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     // ── Regular pass landing ─────────────────────────────────────────────────
     const receiver = s.players.find(p => p.id === activePass.toId!)!;
 
+    // Off target (stage 4b, `fm-numbers.md`): the ball passes the receiver and runs loose from where it lands.
+    if (activePass.miss) {
+      const passer = s.players.find(p => p.id === activePass.fromId) ?? receiver;
+      gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
+      gameBus.emit('passMissed', { player: activePass.fromId, toId: activePass.toId!, distance: activePass.distance });
+      return {
+        state: runLoose(s, passer, activePass.toX, activePass.toY, activePass.miss.vx, activePass.miss.vy, 'misplaced'),
+        passCompleted: false, tackled: false, goalScored: null,
+      };
+    }
+
     // ── Offside enforcement ─────────────────────────────────────────────────
     // The offside position was determined when the pass was played (at t=0).
     // Enforce only at the moment the receiver would touch the ball (t=1).
@@ -5371,10 +5471,10 @@ export function getBallPos(state: GameState): { x: number; y: number } {
   const eased = t * t * (3 - 2 * t);
   // Through balls track to a position; regular passes track to the receiver's
   // current position (so the ball follows a moving runner).
-  const toX = state.pass.kind === 'through' || state.pass.toId === null
+  const toX = state.pass.kind === 'through' || state.pass.toId === null || state.pass.miss
     ? state.pass.toX
     : (state.players.find(p => p.id === state.pass!.toId)?.x ?? state.pass.toX);
-  const toY = state.pass.kind === 'through' || state.pass.toId === null
+  const toY = state.pass.kind === 'through' || state.pass.toId === null || state.pass.miss
     ? state.pass.toY
     : (state.players.find(p => p.id === state.pass!.toId)?.y ?? state.pass.toY);
   return {

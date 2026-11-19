@@ -71,6 +71,10 @@ export interface GameEvents {
   passCompleted:  { player: number; toId: number };
   /** Emitted when an opponent intercepts the pass in flight. */
   passFailed:     { player: number; toId: number };
+  /** Stage 4b (`fm-numbers.md`): the launch error missed the receiver; the ball runs loose. */
+  passMissed:     { player: number; toId: number; distance: number };
+  /** Stage 4b: the holder holds the ball or turns (a carry step of that kind starts). */
+  holderStep:     { playerId: number; team: TeamId; step: 'hold' | 'turn' };
   /**
    * Emitted at kick time when the chosen pass earned a positive far-flank
    * (switch-of-play) bonus. Derived generically from the active intent's
@@ -105,7 +109,7 @@ export interface GameEvents {
   /** A cross was played toward (`toX`, `toY`) — the landing point after the error model. */
   crossStarted:    { player: number; toX: number; toY: number; intendedRunnerId: number | null };
   /** A long ball was played over the line toward `targetId`. */
-  longBallStarted: { player: number; toX: number; toY: number; targetId: number | null };
+  longBallStarted: { player: number; toX: number; toY: number; targetId: number | null; lofted?: boolean };
   /**
    * A high ball (cross / long ball) was resolved. `completed` = the passer's team won the first
    * contact (header, knock-down, control, or the loose ball it later picked up).

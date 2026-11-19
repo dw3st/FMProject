@@ -558,6 +558,13 @@ export interface PassState {
   t: number;
   /** Straight-line distance in yards from passer to target at kick moment. */
   distance: number;
+  /** A lofted pass (`fm-numbers.md` → pass error): flies over the lane, contested where it lands. */
+  lofted?: boolean;
+  /**
+   * Regular pass whose launch error missed the receiver's reach (`fm-numbers.md`): the ball flies to (toX, toY) and
+   * runs loose from there at (vx, vy) yd/s.
+   */
+  miss?: { vx: number; vy: number };
   /**
    * Whether the receiver was in an offside position at the moment the pass was played.
    * For regular passes: the named receiver. For through balls: the intended runner.
@@ -599,7 +606,7 @@ export type LooseBallSource = 'through' | 'cross' | 'long_ball' | 'clearance';
 
 /** Why the ball runs loose (stage 4, `movement.md`): an overhit through ball, a heavy touch on a long pass, a pass
  *  deflected off a defender, a blocked shot. */
-export type LooseBallCause = 'overhit' | 'heavy_touch' | 'deflection' | 'block';
+export type LooseBallCause = 'overhit' | 'heavy_touch' | 'deflection' | 'block' | 'misplaced';
 
 /** The back line's movement state (stage 4, `movement.md`). */
 export type BackLineMode = 'hold' | 'step_up' | 'drop';

@@ -12,6 +12,8 @@
  * No side effects. No gameState imports (avoids circular deps).
  */
 
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { keeperAttackingTarget } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import type { GamePlayer, Formation } from '@/GameEngine/types';
@@ -34,21 +36,34 @@ const BOX_CONVERGENCE_FROM_X = 70;
 /** Yards of ball advance over which the convergence ramps to its full value. */
 const BOX_CONVERGENCE_SPAN   = 30;
 
+/**
+ * The block slides with the ball (stage 4b, `fm-numbers.md`): in possession the whole shape moves up IN_ADVANCE_YD
+ * plus IN_PUSH × (ball depth − halfway) — a uniform shift, never a squeeze toward the ball. 0 with the flag off.
+ */
+export function blockShiftX(player: { attackDir: 1 | -1 }, ballPos: { x: number; y: number }): number {
+  if (!DECISION_FLAGS.SLIDING_BLOCK) return 0;
+  const relBall = player.attackDir === 1 ? ballPos.x : PITCH_LENGTH - ballPos.x;
+  return player.attackDir * (FM_NUMBERS.IN_ADVANCE_YD + FM_NUMBERS.IN_PUSH * (relBall - PITCH_LENGTH / 2));
+}
+
 export function attackingAnchor(
   base: { x: number; y: number },
   player: { team: TeamId; attackDir: 1 | -1 },
   ballPos: { x: number; y: number },
 ): { x: number; y: number } {
   const centre = PITCH_WIDTH / 2;
-  const spread = getTeamAttackWidth(player.team) / ATTACK_CONFIG.ATTACK_WIDTH;
+  const spread = getTeamAttackWidth(player.team) / ATTACK_CONFIG.ATTACK_WIDTH
+    * (DECISION_FLAGS.SLIDING_BLOCK ? FM_NUMBERS.IN_WIDTH : 1);
   let y = centre + (base.y - centre) * spread;
   const relBase = player.attackDir === 1 ? base.x : PITCH_LENGTH - base.x;
+  // The block slides with the ball (stage 4b, `fm-numbers.md`): in possession the whole shape moves up behind it.
+  const x = Math.max(1, Math.min(PITCH_LENGTH - 1, base.x + blockShiftX(player, ballPos)));
   if (relBase >= BOX_CONVERGENCE_FROM_X) {
     const relBall = player.attackDir === 1 ? ballPos.x : PITCH_LENGTH - ballPos.x;
     const t = Math.max(0, Math.min(1, (relBall - BOX_CONVERGENCE_FROM_X) / BOX_CONVERGENCE_SPAN));
     y += (centre - y) * ATTACK_CONFIG.BOX_CONVERGENCE * t;
   }
-  return { x: base.x, y: Math.max(1, Math.min(PITCH_WIDTH - 1, y)) };
+  return { x, y: Math.max(1, Math.min(PITCH_WIDTH - 1, y)) };
 }
 
 export function computeAttackingPosition(

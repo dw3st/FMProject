@@ -19,6 +19,8 @@ import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality, TacticalAxes } 
 import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import { STYLE_FAMILIARITY_EFFECTS, LONG_BALL_EFFECT, applyMult, setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
@@ -242,8 +244,15 @@ const TEAM_CARRY_WEIGHTS: Record<TeamId, TeamCarryWeights> = {
 
 /** Returns the full carry config for the given team (CARRY_CONFIG + per-team lane weight overrides). */
 export function getTeamCarryConfig(team: TeamId): { [K in keyof typeof CARRY_CONFIG]: number } {
-  return { ...CARRY_CONFIG, ...TEAM_CARRY_WEIGHTS[team] };
+  const cfg = { ...CARRY_CONFIG, ...TEAM_CARRY_WEIGHTS[team] };
+  // Mentality moves the carry threshold (stage 4b, `fm-numbers.md`): defensive carries less, attacking more.
+  if (DECISION_FLAGS.TACTIC_DAMP && TEAM_MENTALITY[team] !== 'balanced') {
+    cfg.MIN_TOTAL_SCORE += (TEAM_MENTALITY[team] === 'defensive' ? 1 : -1) * FM_NUMBERS.MENTALITY_CARRY_MIN;
+  }
+  return cfg;
 }
+
+const TEAM_MENTALITY: Record<TeamId, Mentality> = { A: 'balanced', B: 'balanced' };
 
 // ── Per-team attacking width (driven by width tactic) ────────────────────────
 
@@ -265,6 +274,8 @@ const TEAM_ATTACK_WIDTH: Record<TeamId, number> = {
  * as drawn), wide ×1.2.
  */
 export function getTeamAttackWidth(team: TeamId): number {
+  // FM moves the weights gently (stage 4b): ×0.9 / ×1 / ×1.1 instead of ×0.75 / ×1 / ×1.2.
+  if (DECISION_FLAGS.TACTIC_DAMP) return FM_NUMBERS.WIDTH_ATTACK_DAMPED[TEAM_WIDTH[team]];
   return TEAM_ATTACK_WIDTH[team];
 }
 
@@ -335,4 +346,5 @@ export function applyTeamAttackConfig(
   TEAM_BUILD_UP[team]        = axes.build_up;
   TEAM_WIDTH[team]           = axes.width;
   TEAM_TACTICAL_STYLE[team]  = style;
+  TEAM_MENTALITY[team]       = mentality;
 }

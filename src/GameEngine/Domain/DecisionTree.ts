@@ -57,10 +57,12 @@ import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { evaluateBoxSetPiece, routineOption } from '@/GameEngine/Domain/SetPieces';
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
+import { getMainRole } from '@/Domain/roles';
 import { chipMove, cutInsideMove, layOffMove, roundKeeperMove, shieldMove, type HolderMove } from '@/GameEngine/Domain/HolderMoves';
 
 export type PlayerDecision =
-  | { type: 'carry'; dx: number; dy: number; move?: HolderMove } // withBall → advancing with the ball (move: shield / cut inside)
+  | { type: 'carry'; dx: number; dy: number; move?: HolderMove; step?: 'hold' | 'turn' } // withBall → advancing with the ball (move: shield / cut inside; step: hold the ball / turn, `fm-numbers.md`)
   | { type: 'shoot'; move?: HolderMove }                // withBall  → will shoot (move: chip)
   | { type: 'pass'; targetId?: number; move?: HolderMove } // withBall → pass (targetId: forced receiver, one-on-one gate / lay-off)
   | { type: 'through_ball'; cellX: number; cellY: number; intendedRunnerId: number | null } // withBall → ball into space
@@ -87,6 +89,9 @@ export interface DecisionMemory {
   path:        DecisionPath | null;
   decision:    PlayerDecision | null;
   commitTicks: number;
+  /** Holder action cadence (stage 4b, `fm-numbers.md`): where the action began, and whether an opponent was already close. */
+  from?: { x: number; y: number };
+  nearD?: number;
 }
 
 export const EMPTY_DECISION_MEMORY: DecisionMemory = { path: null, decision: null, commitTicks: 0 };
@@ -473,6 +478,12 @@ const SHOOT_THRESHOLD: Record<string, number> = {
   GK:  9.99, // effectively never
 };
 
+/** Shot score multiplier of a role's shooting level (stage 4b): defenders shoot "rarely", the rest "normal". */
+export function shotLevelMult(role: string, level = 0): number {
+  const base = getMainRole(role) === 'Defender' ? FM_NUMBERS.SHOT_RARELY_MULT : 1;
+  return base * FM_NUMBERS.SHOT_LEVEL_STEP ** level;
+}
+
 function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamIntent): ActionScore {
   const goalX = player.attackDir === 1 ? PITCH_LENGTH : 0;
   const dist  = Math.abs(goalX - player.x);
@@ -491,7 +502,13 @@ function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamInte
   const xgFloor = xg * xg;
   // Intent flat bonus (small — never large enough to force a shot from nowhere)
   const intentBonus = getShootIntentBonus(intent);
-  const score = Math.max(roleScore, xgFloor) + intentBonus;
+  let score = Math.max(roleScore, xgFloor) + intentBonus;
+  // Shot limit (stage 4b, `fm-numbers.md`): no shot beyond SHOT_MAX_YD of the goal mouth; the shooting level of the
+  // role (defenders "rarely") multiplies the score, never the limit.
+  if (DECISION_FLAGS.SHOT_LIMIT) {
+    if (distToGoalMouth(player.x, player.y, player.attackDir) > FM_NUMBERS.SHOT_MAX_YD) score = 0;
+    else score *= shotLevelMult(player.role);
+  }
   return {
     type: 'shoot',
     score,
@@ -978,6 +995,14 @@ function decideBallHolder(
     });
   }
 
+  // Hold and turn (stage 4b, `fm-numbers.md`): nothing better than a weak carry → keep the ball and wait for an option;
+  // a carry against the way he was moving → a short turn first. Off for set-piece takers and the keeper.
+  const cadence = mind && DECISION_FLAGS.ACTION_CADENCE && player.role !== 'GK' && !gate;
+  if (cadence && (best.type === 'carry' || best.score < MIN_ACTION_SCORE) && !best.move) {
+    const step = holderStepOf(player, opponents, ca, ps, best.score < MIN_ACTION_SCORE);
+    if (step) return step;
+  }
+
   if (best.score < MIN_ACTION_SCORE) {
     // One-on-one: never fall back to an ungated pass — shoot instead.
     if (gate) return { type: 'shoot' };
@@ -1002,6 +1027,34 @@ function decideBallHolder(
     case 'cross':         return { type: 'cross', toX: best.toX!, toY: best.toY!, intendedRunnerId: best.intendedRunnerId ?? null };
     case 'long_ball':     return { type: 'long_ball', toX: best.toX!, toY: best.toY!, targetId: best.targetId! };
   }
+}
+
+/**
+ * Hold or turn instead of the plain carry (stage 4b, `fm-numbers.md`). Hold: the carry is weak (compressed score
+ * below HOLD_CARRY_SCORE) and the best pass is not clearly better, or nothing scores at all — he edges away from the
+ * nearest opponent. Turn: the carry goes more than TURN_DEG from where he was moving.
+ */
+function holderStepOf(player: GamePlayer, opponents: GamePlayer[], ca: ActionScore, ps: ActionScore, nothing: boolean): PlayerDecision | null {
+  const F = FM_NUMBERS;
+  let near: GamePlayer | null = null; let nd = Infinity;
+  for (const o of opponents) { const d = Math.hypot(o.x - player.x, o.y - player.y); if (d < nd) { nd = d; near = o; } }
+  // FM holds more deep in his own half (own third 14%, final third 6%).
+  const fromOwn = player.attackDir === 1 ? player.x : PITCH_LENGTH - player.x;
+  const holdBar = F.HOLD_CARRY_SCORE + F.HOLD_OWN_THIRD_EXTRA * Math.max(0, 1 - fromOwn / (PITCH_LENGTH / 2));
+  if ((nothing || (ca.score < holdBar && ps.score < ca.score + F.HOLD_PASS_MARGIN)) && nd >= F.HOLD_MIN_OPP_YD) {
+    let dx = -player.attackDir as number, dy = 0;
+    if (near && nd > 0.01) { dx = (player.x - near.x) / nd; dy = (player.y - near.y) / nd; }
+    return { type: 'carry', dx, dy, step: 'hold' };
+  }
+  const v = player.vel;
+  if (v && ca.dx !== undefined && ca.dy !== undefined) {
+    const sp = Math.hypot(v.x, v.y);
+    if (sp >= F.TURN_MIN_SPEED) {
+      const cos = (v.x * ca.dx + v.y * ca.dy) / sp;
+      if (cos < Math.cos((F.TURN_DEG * Math.PI) / 180)) return { type: 'carry', dx: ca.dx, dy: ca.dy, step: 'turn' };
+    }
+  }
+  return null;
 }
 
 /**

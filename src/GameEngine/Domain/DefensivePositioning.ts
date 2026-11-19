@@ -16,6 +16,8 @@
  * No side effects. No gameState imports (avoids circular deps).
  */
 
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
+import { getMainRole } from '@/Domain/roles';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import type { GamePlayer, Formation, TeamId, TeamIntent } from '@/GameEngine/types';
 import { slotBasePosition } from '@/GameEngine/FormationSlots';
@@ -108,7 +110,7 @@ export function setBackLineX(team: TeamId, x: number | null): void {
 export function ballRelativeLineX(player: GamePlayer, ballPos: { x: number; y: number }, cfg: DefenseConfigValues): number {
   const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
   const depthOffset = (1.0 - cfg.DEFENSIVE_LINE_HEIGHT) * DEPTH_OFFSET_RANGE + DEPTH_OFFSET_BASE;
-  const scale = Math.min(1, Math.abs(ballPos.x - ownGoalX) / 55);
+  const scale = Math.min(1, Math.abs(ballPos.x - ownGoalX) / 55) * (DECISION_FLAGS.SLIDING_BLOCK ? FM_NUMBERS.OUT_DEPTH_MULT : 1);
   return ballPos.x - player.attackDir * depthOffset * scale;
 }
 
@@ -536,10 +538,16 @@ export function computeDefensiveShapeAnchor(
     // When the ball is far away the full tactical offset applies.
     const distBallFromOwnGoal = Math.abs(ballPos.x - ownGoalX);
     const ballDistScale = Math.min(1, distBallFromOwnGoal / 55);
-    const scaledDepthOffset = depthOffset * ballDistScale;
+    // Out of possession the block drops deeper behind the ball (stage 4b, `fm-numbers.md`).
+    const scaledDepthOffset = depthOffset * ballDistScale * (DECISION_FLAGS.SLIDING_BLOCK ? FM_NUMBERS.OUT_DEPTH_MULT : 1);
 
     const ballLineX = ballPos.x - player.attackDir * scaledDepthOffset;
     rawX += (ballLineX - rawX) * X_TRACK_WEIGHT;
+    if (DECISION_FLAGS.SLIDING_BLOCK) {
+      // The whole block drops toward its own goal out of possession (FM: back line ~24 yd from goal).
+      const rel = Math.max(FM_NUMBERS.OUT_MIN_YD, Math.abs(rawX - ownGoalX) - FM_NUMBERS.OUT_DROP_YD);
+      rawX = ownGoalX + player.attackDir * rel;
+    }
   }
 
   // ── Y: block shifts laterally with ball ─────────────────────────────────
@@ -550,6 +558,26 @@ export function computeDefensiveShapeAnchor(
 
   // ── Y: horizontal compactness — squeeze toward pitch center ─────────────
   rawY += (PITCH_CENTER_Y - rawY) * cfg.HORIZONTAL_COMPACTNESS * COMPACTNESS_SCALE;
+  if (DECISION_FLAGS.SLIDING_BLOCK) rawY = PITCH_CENTER_Y + (rawY - PITCH_CENTER_Y) * FM_NUMBERS.OUT_WIDTH;
+
+  // ── Calm pressing (stage 4b): the shape shifts toward the ball instead of sending players onto him ──
+  if (DECISION_FLAGS.CALM_PRESS && player.role !== 'GK') {
+    const dBall = Math.hypot(ballPos.x - rawX, ballPos.y - rawY);
+    const R = FM_NUMBERS.SHAPE_SHIFT_RANGE_YD;
+    // Stronger the nearer the ball is to our goal: high up the pitch the forwards hang off (FM: 0.85 opponents within
+    // 10 m of a holder in his own third, 3.1 in the final third).
+    const depth = 1 - Math.min(1, Math.abs(ballPos.x - ownGoalX) / PITCH_LENGTH);
+    const fade = (dBall <= R ? 1 : Math.max(0, 2 - dBall / R)) * depth * 1.5;
+    const main = getMainRole(player.role);
+    const shift = (main === 'Defender' ? FM_NUMBERS.SHAPE_SHIFT_YD.DEF : main === 'Forward' ? FM_NUMBERS.SHAPE_SHIFT_YD.FWD : FM_NUMBERS.SHAPE_SHIFT_YD.MID) * fade;
+    if (dBall > 0.01 && shift > 0) {
+      const k = Math.min(shift, dBall * 0.5) / dBall;
+      rawX += (ballPos.x - rawX) * k;
+      rawY += (ballPos.y - rawY) * k;
+    }
+    // Ball in our defensive third: the block converges on the ball's side.
+    if (Math.abs(ballPos.x - ownGoalX) < PITCH_LENGTH / 3) rawY += (ballPos.y - rawY) * FM_NUMBERS.BOX_CONVERGE;
+  }
 
   // ── X: lane blocking — nudge toward space between ball and own goal ─────
   const ballSide = ballPos.x - ownGoalX;
@@ -1040,6 +1068,12 @@ function scorePressHolderIntent(
   rawPatienceT: number,
 ): number {
   let s = w.press_holder * press.press_holder * line.press_holder;
+  // Calm pressing (stage 4b, `fm-numbers.md`): a holder deep in his own half is rarely pressed by a dedicated man.
+  if (DECISION_FLAGS.CALM_PRESS && ctx.ballHolder) {
+    const h = ctx.ballHolder;
+    const fromOwn = h.attackDir === 1 ? h.x : PITCH_LENGTH - h.x;
+    s *= fromOwn < PITCH_LENGTH / 3 ? FM_NUMBERS.PRESS_OWN_THIRD : fromOwn < (2 * PITCH_LENGTH) / 3 ? FM_NUMBERS.PRESS_MID_THIRD : 1;
+  }
   // Range expansion uses rawPatienceT (not proximity-dampened) — patience exhaustion
   // should expand who is eligible to press regardless of their current distance.
   // The boost multiplier below still uses proximity-dampened patienceT so far-away
@@ -1201,6 +1235,11 @@ function selectDefensiveIntent(ctx: DefensiveIntentContext, possessionTime: numb
       bestScore = scores[intent];
       best = intent;
     }
+  }
+  // Positioning held longer (stage 4b, `fm-numbers.md`): the intent he holds is kept unless another clearly beats it.
+  const prev = _intentCache[ctx.player.id];
+  if (DECISION_FLAGS.SHORT_STEPS && prev !== undefined && prev !== best && scores[best] < scores[prev] + FM_NUMBERS.INTENT_HYSTERESIS) {
+    best = prev;
   }
   return { intent: best, scores, carryLaneBonus };
 }

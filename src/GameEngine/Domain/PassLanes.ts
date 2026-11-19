@@ -24,6 +24,20 @@ import { applyPassIntent, getPassTargetBias } from '@/GameEngine/Configs/IntentC
 import { computeOpenAngle, MAX_OPEN_ANGLE } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 import { engineOf } from '@/GameEngine/Domain/roleEngineData';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
+import { passMissChance } from '@/GameEngine/Domain/PassError';
+import { holderPressure } from '@/GameEngine/Domain/Pressure';
+
+/**
+ * Loss estimate of a pass (stage 4b, `fm-numbers.md`): a lofted pass (beyond LOFT_YD) keeps the ball ~LOFT_KEEP of the
+ * time; a pass to feet misses with the launch-error chance and a miss is lost ~MISS_LOSS of the time.
+ */
+export function passLossEstimate(holder: GamePlayer, receiver: GamePlayer, pressure: number): number {
+  const d = Math.hypot(receiver.x - holder.x, receiver.y - holder.y);
+  if (d > FM_NUMBERS.LOFT_YD) return 1 - FM_NUMBERS.LOFT_KEEP;
+  return passMissChance(holder.runtimeStats.withBall.passingSkill, d, pressure, receiver.runtimeStats.withBall.firstTouch) * FM_NUMBERS.MISS_LOSS;
+}
 
 export interface PassLaneInfo {
   toId: number;
@@ -278,6 +292,7 @@ export function scorePassToReceiverBreakdown(
   receiver:  GamePlayer,
   opponents: GamePlayer[],
   intent:    TeamIntent = 'balanced',
+  pressure?: number,
 ): PassBreakdown {
   const baseCfg     = getTeamPassConfig(holder.team);
   const cfg         = { ...baseCfg, ...applyPassIntent(baseCfg, intent) };
@@ -329,7 +344,11 @@ export function scorePassToReceiverBreakdown(
   const routingGate = Math.max(0, Math.min(1, (progressScore - 0.3) / 0.2));
   const receiverRoleBonus = getReceiverRoleScore(receiver) * cfg.RECEIVER_ROLE_WEIGHT * routingGate;
 
-  const qualityRaw = baseScore + playerModifier + tacticalModifier + passTargetBonus;
+  // The chooser learns the risk (stage 4b): a pass likely to be lost scores less (fewer long lofted passes).
+  const riskMult = DECISION_FLAGS.PASS_ERROR
+    ? Math.max(0, 1 - FM_NUMBERS.RISK_WEIGHT * passLossEstimate(holder, receiver, pressure ?? holderPressure(holder.x, holder.y, opponents)))
+    : 1;
+  const qualityRaw = (baseScore + playerModifier + tacticalModifier + passTargetBonus) * riskMult;
   return {
     laneScore, progressScore, receiverSpaceScore,
     distancePenalty, goalProximityBonus, visionRangePenalty,
@@ -376,8 +395,9 @@ export function evaluatePassLanes(
   const baseCfg = getTeamPassConfig(holder.team);
   const cfg     = { ...baseCfg, ...applyPassIntent(baseCfg, intent) };
 
+  const pressure = DECISION_FLAGS.PASS_ERROR ? holderPressure(holder.x, holder.y, opponents) : 0;
   return teammates.map(receiver => {
-    const bd = scorePassToReceiverBreakdown(holder, receiver, opponents, intent);
+    const bd = scorePassToReceiverBreakdown(holder, receiver, opponents, intent, pressure);
     return {
       toId:       receiver.id,
       toX:        receiver.x,

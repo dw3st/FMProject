@@ -1,9 +1,10 @@
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import type { GamePlayer, PlayerRole, TeamIntent } from '@/GameEngine/types';
 import type { PlayerDecision } from '@/GameEngine/Domain/DecisionTree';
 import { scorePassQuality } from '@/GameEngine/Domain/PassLanes';
 import { engineOf, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
-import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
+import { blockShiftX, attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { applyOffBallIntent } from '@/GameEngine/Configs/IntentConfig';
 import {
   OFF_BALL_CONFIG,
@@ -177,8 +178,18 @@ function selectOffBallIntent(ctx: OffBallContext): {
   for (const i of ALL_INTENTS) {
     if (finalScores[i] > bestScore) { bestScore = finalScores[i]; best = i; }
   }
+  // Positioning held longer (stage 4b, `fm-numbers.md`): keep the held intent unless another clearly beats it.
+  const prev = _offBallIntent.get(ctx.player.id);
+  if (DECISION_FLAGS.SHORT_STEPS && prev !== undefined && prev !== best && finalScores[best] < finalScores[prev] + FM_NUMBERS.INTENT_HYSTERESIS) {
+    best = prev;
+  }
+  _offBallIntent.set(ctx.player.id, best);
   return { intent: best, scores: finalScores };
 }
+
+/** The off-ball intent each player holds (stage 4b hysteresis); reset with the match. */
+const _offBallIntent = new Map<number, OffBallIntent>();
+export function resetOffBallIntentCache(): void { _offBallIntent.clear(); }
 
 // ── Stage 2: Candidate generation ─────────────────────────────────────────────
 
@@ -273,10 +284,12 @@ function densityCount(
 }
 
 /** Soft penalty for cells outside the player's role bounds. */
-function getRoleFitPenalty(player: GamePlayer, target: { x: number; y: number }): number {
+function getRoleFitPenalty(player: GamePlayer, target: { x: number; y: number }, shiftX = 0): number {
+  // The sliding block (stage 4b) moves the role zone with the shape.
+  const tx = target.x - shiftX;
   const xOverrun = Math.max(0,
-    target.x - player.bounds.maxX,
-    player.bounds.minX - target.x,
+    tx - player.bounds.maxX,
+    player.bounds.minX - tx,
   );
   const yOverrun = Math.max(0,
     target.y - player.bounds.maxY,
@@ -328,7 +341,7 @@ function scoreCell(
   const separation   = Math.max(0, 1 - teammatesNear / OFF_BALL_CONFIG.SEPARATION_NORM_PLAYERS);
   const markFreedom  = Math.max(0, 1 - opponentsNear / OFF_BALL_CONFIG.MARK_NORM_PLAYERS);
 
-  const roleFitPen   = getRoleFitPenalty(ctx.player, target) * OFF_BALL_CONFIG.ROLE_FIT_WEIGHT;
+  const roleFitPen   = getRoleFitPenalty(ctx.player, target, blockShiftX(ctx.player, ctx.ballHolder)) * OFF_BALL_CONFIG.ROLE_FIT_WEIGHT;
   const offsidePen   = getOffsidePenalty(target, ctx);
   const sameRolePen  = sameRolePenalty(target, ctx);
 

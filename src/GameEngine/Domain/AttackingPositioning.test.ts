@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { DECISION_FLAGS } from "@/GameEngine/Configs/DecisionConfig";
 import { attackingAnchor } from "@/GameEngine/Domain/AttackingPositioning";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { ATTACK_CONFIG } from "@/GameEngine/Configs/AttackConfig";
@@ -6,6 +7,11 @@ import { ATTACK_CONFIG } from "@/GameEngine/Configs/AttackConfig";
 const A = { team: "A" as const, attackDir: 1 as const };
 const B = { team: "B" as const, attackDir: -1 as const };
 const ownHalfBall = { x: 30, y: 37 };
+
+// The slot geometry itself; the stage-4b sliding block and damped width are measured in `FmNumbers.test.ts`.
+const saved = { slide: DECISION_FLAGS.SLIDING_BLOCK, damp: DECISION_FLAGS.TACTIC_DAMP };
+beforeAll(() => { DECISION_FLAGS.SLIDING_BLOCK = false; DECISION_FLAGS.TACTIC_DAMP = false; });
+afterAll(() => { DECISION_FLAGS.SLIDING_BLOCK = saved.slide; DECISION_FLAGS.TACTIC_DAMP = saved.damp; });
 
 afterEach(() => {
   applyTeamAttackConfig("A", "balanced");

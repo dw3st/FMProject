@@ -236,6 +236,14 @@ export interface TeamStats extends PlayerStats {
   pressStandOffs: number;
   supportShort: number;
   anticipationReads: number;
+  /**
+   * Stage 4b (`fm-numbers.md`): passes whose launch error missed the receiver (run loose), passes played lofted (a
+   * long pass to feet turned into a high ball), holder holds and turns.
+   */
+  passesMissed: number;
+  passesLofted: number;
+  holderHolds: number;
+  holderTurns: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -326,6 +334,7 @@ type TeamFlags = {
   moveShield: number; moveShieldHeld: number; moveCutInside: number; moveLayOff: number; moveChip: number; moveChipGoals: number; moveRound: number; moveRoundWon: number;
   ballsOutOfPlay: number; deflections: number; shotsBlocked: number; heavyTouches: number; lineStepUps: number; lineDrops: number;
   pressStandOffs: number; supportShort: number; anticipationReads: number;
+  passesMissed: number; passesLofted: number; holderHolds: number; holderTurns: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -337,6 +346,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0,
   ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0,
   pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
+  passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -676,6 +686,14 @@ gameBus.on('backLineState', e => {
 gameBus.on('pressStandOff', e => { teamFlags[e.team].pressStandOffs++; });
 gameBus.on('supportShort', e => { teamFlags[e.team].supportShort++; });
 gameBus.on('anticipationRead', e => { teamFlags[e.team].anticipationReads++; });
+
+// ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
+gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
+gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
+gameBus.on('holderStep', e => {
+  if (e.step === 'hold') teamFlags[e.team].holderHolds++;
+  else if (e.step === 'turn') teamFlags[e.team].holderTurns++;
+});
 
 /** The last holder-mind event of a player this match (`/test`). */
 export function getLastHolderMind(playerId: number): HolderMindEvent | undefined {

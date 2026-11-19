@@ -45,6 +45,21 @@ export interface DecisionFlags {
   BACK_LINE: boolean;
   /** Stage 4: the nearest defender / midfielder comes short to a pressed holder. */
   SUPPORT_SHORT: boolean;
+  /** Stage 4b (`fm-numbers.md`): launch error on passes (distance, loft, pressure); long passes go lofted; the chooser
+   * weighs the risk. */
+  PASS_ERROR: boolean;
+  /** Stage 4b: the holder decides when he receives and when his action ends (carry steps, hold, turn). */
+  ACTION_CADENCE: boolean;
+  /** Stage 4b: fewer dedicated pressers; the shape shifts toward the ball instead. */
+  CALM_PRESS: boolean;
+  /** Stage 4b: the block slides with possession (deep out of it, high in it, narrower). */
+  SLIDING_BLOCK: boolean;
+  /** Stage 4b: off-ball targets are short steps by line, positioning held longer. */
+  SHORT_STEPS: boolean;
+  /** Stage 4b: no shot beyond ~33 yd; per-role shooting level multiplies the shot score. */
+  SHOT_LIMIT: boolean;
+  /** Stage 4b: tactic axes move the engine gently (width damped, mentality on the carry threshold). */
+  TACTIC_DAMP: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -65,6 +80,13 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   SHOT_BLOCKS: true,
   BACK_LINE: true,
   SUPPORT_SHORT: true,
+  PASS_ERROR: true,
+  ACTION_CADENCE: true,
+  CALM_PRESS: true,
+  SLIDING_BLOCK: true,
+  SHORT_STEPS: true,
+  SHOT_LIMIT: true,
+  TACTIC_DAMP: true,
 };
 
 /**

@@ -16,6 +16,8 @@
  * Layer: Domain. Pure module — no Pixi, React, or DOM imports.
  */
 
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { etaTo as kinEta } from '@/GameEngine/Domain/Kinematics';
 import type { GamePlayer, GameState, TeamId } from '@/GameEngine/types';
 import {
@@ -378,7 +380,11 @@ export function enumerateCandidateCells(
       // collected by the keeper, would outrank a clean channel ball the runner
       // wins). This is still a buff, never a penalty: low threat or lost race
       // simply leaves the cell at its full viability.
-      const score = Math.max(0, viability) * (1 + cfg.GOAL_THREAT_BUFF * goalScore * raceScore);
+      // The chooser learns the risk (stage 4b, `fm-numbers.md`): a race we may lose is worth less.
+      const riskMult = DECISION_FLAGS.PASS_ERROR
+        ? (1 - FM_NUMBERS.TB_RISK * (1 - raceScore)) * (Math.hypot(cx - holder.x, cy - holder.y) > FM_NUMBERS.LOFT_YD ? FM_NUMBERS.TB_LONG_MULT : 1)
+        : 1;
+      const score = Math.max(0, viability) * (1 + cfg.GOAL_THREAT_BUFF * goalScore * raceScore) * riskMult;
 
       survivors.push({
         col: c, row: r, x: cx, y: cy, score,

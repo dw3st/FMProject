@@ -297,6 +297,44 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-long-pass',
+    name:        'FM numbers — long pass under pressure',
+    description: 'A poor passer (4) under pressure from a CM at 2 yd has a teammate 34 yd away and one at 12 yd (stage 4b, `fm-numbers.md`). Beyond ~27 m the pass is lofted and contested where it lands; a short one under pressure can still miss by more than the receiver reaches (`passMissed`, then a loose ball "misplaced"). Watch the "pass" debug log for the launch error.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CB',   35, 37, { ...DEFENDER, passing: 4 }),
+        makePlayer('Lopes',    'A', 'CM',   46, 33, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   68, 45, STRIKER),
+        makePlayer('Silva',    'B', 'CM',   37, 37.5, MIDFIELDER),
+        makePlayer('Okafor',   'B', 'CB',   75, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'fm-calm-block',
+    name:        'FM numbers — calm block in their own half',
+    description: 'Team A builds from its own third with no one pressed; team B (a full back four, two CMs, a ST) shifts its shape 4–7 yd toward the ball and only steps on the holder when he comes into the middle third (stage 4b `CALM_PRESS`, `SLIDING_BLOCK`). The holder takes 2 yd carry steps and sometimes holds or turns (`holderStep` in the "decision" log).',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CB',   22, 30, DEFENDER),
+        makePlayer('Lopes',    'A', 'CB',   22, 44, DEFENDER),
+        makePlayer('Mendes',   'A', 'CM',   38, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   60, 37, STRIKER),
+        makePlayer('Silva',    'B', 'ST',   48, 37, STRIKER),
+        makePlayer('Nunes',    'B', 'CM',   62, 30, MIDFIELDER),
+        makePlayer('Costa',    'B', 'CM',   62, 44, MIDFIELDER),
+        makePlayer('Okafor',   'B', 'CB',   88, 32, DEFENDER),
+        makePlayer('Ivanov',   'B', 'CB',   88, 42, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'keeper-sweeper',
     name:        'Keeper — sweeper on a ball over the top',
     description: 'CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. The keeper (Kowalski) leaves his box and gets there first (`Keeper.ts`, sweeper). Toggle "Keeper" for the sweeper zone and his target; watch the "keeper" debug log.',

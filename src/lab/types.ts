@@ -345,6 +345,11 @@ export interface TeamRawStats {
   pressStandOffs: number;
   supportShort: number;
   anticipationReads: number;
+  // FM numbers (stage 4b, `fm-numbers.md`)
+  passesMissed: number;
+  passesLofted: number;
+  holderHolds: number;
+  holderTurns: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -551,6 +556,10 @@ export interface PerMatchView {
   avgPressStandOffs: number;
   avgSupportShort: number;
   avgAnticipationReads: number;
+  avgPassesMissed: number;
+  avgPassesLofted: number;
+  avgHolderHolds: number;
+  avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -715,6 +724,10 @@ export interface VariantSummary {
   avgPressStandOffs: number;
   avgSupportShort: number;
   avgAnticipationReads: number;
+  avgPassesMissed: number;
+  avgPassesLofted: number;
+  avgHolderHolds: number;
+  avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
