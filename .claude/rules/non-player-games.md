@@ -227,8 +227,9 @@ desenvolvimento) é o mesmo do motor.
 > tabelas das subseções abaixo (2026-09-23 a 3.4) são histórico — o processo de calibração continua o
 > mesmo, mas os números foram refeitos contra o motor de hoje.
 
-- **Modo:** definido por `resolveSimMode` (`simMode.ts`). Usam o motor completo a liga do
-  jogador e até 3 `followedLeagues`. As partidas do clube do jogador são sempre no motor completo.
+- **Modo:** definido por `resolveSimMode` (`simMode.ts`). Desde a reforma do motor (etapa 1) só as partidas de um
+  clube com assento usam o motor completo; todo o resto, inclusive a liga do jogador, as ligas seguidas, a copa e a
+  continental, usa o quickSim. Ver "Motor completo só nos jogos humanos" no fim deste arquivo.
 - **Log do dia:** os eventos saem com `compact: true`, sem estatísticas por jogador.
 - **Constantes:** ficam em `QuickSimConfig.ts`. Para calibrar, rode
   `bun scripts/quicksim-calibrate.ts <liga> <pares> <repetições>`; a meta é ficar a ±10% do motor.
@@ -1248,3 +1249,30 @@ Championship, Eredivisie, Liga MX, Allsvenskan, Quênia), 400 jogos do motor cad
   Quênia 0,79 no motor), por isso o expoente 1.
 - Limitações: 9 ligas em vez de 26 (os expoentes de nível saem de menos pontos); notas ≥ 8,5 do DEF e do MID continuam
   abaixo do motor (0,10 × 0,24 e 0,27 × 0,41%).
+
+## Motor completo só nos jogos humanos (reforma do motor, etapa 1)
+
+Decisão do usuário (como o FM Mobile): o motor completo só roda numa partida de um clube com assento
+(`resolveSimMode(home, away, clubesComAssento)`, `simMode.ts`). A liga do jogador, as ligas seguidas, a copa e a
+continental (mesmo com clubes da liga do jogador) passam ao quickSim, com o log `compact`. As ligas seguidas continuam
+para a tela (estrela, notícias), sem mudar o modo. O jogo de seleção de um técnico humano segue no dia nacional.
+
+- **Pool de workers** (`src/backend/matchPool.ts`, `matchPoolWorker.ts`, `matchPoolJob.ts`): os jogos humanos do dia
+  vão a Bun Workers (`MATCH_WORKERS`, padrão 2–4 pelos núcleos, `defaultPoolSize`; `0` = no processo). Cada worker tem
+  os próprios globais do motor, como o worker do jogo entre técnicos. O laço de jogos do `advanceDay` põe cada partida
+  numa fila na ordem dos jogos (`enqueueMatch`) e aplica os efeitos nessa ordem (`drainMatches`, no fim do laço ou antes
+  de um jogo de um clube com partida na fila), então o dia grava o mesmo que em série. Teste: `matchPool.test.ts` (com
+  `seed`, worker e série dão o mesmo resultado).
+- **Custo** (`bun scripts/bench-advance-day.ts --buffered --days 14 [--seats N]`, Premier + La Liga + Bundesliga, 2026-11-19;
+  o `full` do bench conta os jogos do pool, `poolBusy` o tempo de motor somado nos workers):
+
+| Assentos | Dia de rodada antes | depois | Demais dias antes / depois |
+|---|---|---|---|
+| 1 | 25,1 s (10 jogos no motor) | 5,3 s (1 jogo, 2,1 s de motor) | 2,2 / 2,5 s |
+| 2 | 23,6 s | 4,9 s | 2,3 / 2,6 s |
+| 3 | 31,8 s (10 a 19 jogos) | 7,4 s (1 ou 2 jogos em paralelo; medido com outra corrida junto) | 2,5 / 3,4 s |
+
+  Com `FULL_DURATION=1` (90 minutos de física, ~27–31 s por jogo): 1 assento, dia de rodada da Premier 272,6 s → 35,7 s;
+  3 assentos, dia de La Liga + Bundesliga (19 jogos antes, ~510 s estimado) → 37,0 s com 2 jogos em paralelo, contra
+  56,6 s em série (`MATCH_WORKERS=0`).
+- Limitação: o gol da temporada só tem candidatos dos jogos dos clubes humanos (`awards.md`).

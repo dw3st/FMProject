@@ -228,7 +228,8 @@ de travar o dia inteiro.
 
 ## Modo de simulação
 
-Mesma regra das copas: uma fixture continental roda no **motor completo** só quando um dos dois
+Reforma do motor (etapa 1): só o jogo de um clube com assento vai ao motor completo; o resto usa o quickSim
+(`resolveSimMode`). Regra antiga, histórico: uma fixture continental roda no **motor completo** só quando um dos dois
 clubes está na liga do jogador; o resto usa o quickSim. O clube do próprio jogador sempre joga no
 motor completo.
 

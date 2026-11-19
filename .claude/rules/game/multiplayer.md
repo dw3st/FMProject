@@ -1033,3 +1033,9 @@ Reports do usuário. Na partida entre dois técnicos os pênaltis são sempre em
 ### Cancelar o avanço (tester report)
 
 Solo: "Avançar até o próximo jogo" pede ao servidor um dia por requisição (`FAST_FORWARD_STEP_DAYS`, `GameInterface/fastForwardStep.ts`, `nextFastForwardAction`), então Cancelar (ou Esc) para depois do dia em andamento; a janela mostra "Dia 2 de 5" e "19 de ago. → 22 de ago.". As paradas continuam as do servidor (`runAdvanceBatch`). Grupo: com o mundo avançando e a marca de pronto do assento ainda valendo, o "Avançando…" da barra ganha o X que tira a marca (`ready { until: null }`): o executor relê as marcas antes de cada dia e para depois do dia em andamento (no mundo público, que anda pelo relógio, o X não aparece).
+
+## Motor completo só nos jogos humanos (reforma do motor, etapa 1)
+
+Cada liga com assento não põe mais a rodada inteira no motor completo: só os jogos dos clubes com assento vão ao motor,
+num pool de workers, em paralelo (`non-player-games.md` → "Motor completo só nos jogos humanos"). Dia de rodada com 3
+assentos: 31,8 s → 7,4 s (compressão de hoje); com 90 minutos de física, 2 jogos de assentos no mesmo dia em 37 s, não 57.
