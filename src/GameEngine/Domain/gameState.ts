@@ -7,7 +7,7 @@ import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { LONG_SHOT_DISTANCE, weatherEffectOf, type WeatherEffect } from '@/GameEngine/Configs/WeatherConfig';
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
-import { SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
+import { RESTART_DEAD_S, SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
 import {
   attackingBoxPositions, pickRoutine, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick, keepDistanceFromBall,
   pickSetPieceTaker, wallBlockChance, wallSize, wallSpots, type SetPieceDuty,
@@ -142,6 +142,28 @@ export const LEGACY_CLOCK_SCALE = 18;
 export function clockScaleOf(state: Pick<GameState, 'clockScale'>): number {
   return state.clockScale ?? 1;
 }
+
+/**
+ * Physical freeze of a restart that takes `deadS` game-seconds of dead ball (`SetPiece.countdown` is drained by the
+ * physical step while the clock runs `clockScale` × faster): the dead time is game time, the freeze shrinks with a
+ * compressed clock. Stage 2: every restart keeps the game time it took before (old physical value × 18).
+ */
+export function restartFreeze(state: Pick<GameState, 'clockScale'>, deadS: number): number {
+  return deadS / clockScaleOf(state);
+}
+
+/**
+ * Sets the match clock scale (`GameState.clockScale`) on a fresh state, rescaling the pending kickoff freeze
+ * (built at scale 1 by `createMatchState`). 1 removes the field.
+ */
+export function withClockScale(state: GameState, scale: number): GameState {
+  const { clockScale: _old, ...rest } = state;
+  const base: GameState = scale === 1 ? rest : { ...rest, clockScale: scale };
+  const ratio = clockScaleOf(state) / scale;
+  return state.setPiece && ratio !== 1
+    ? { ...base, setPiece: { ...state.setPiece, countdown: state.setPiece.countdown * ratio } }
+    : base;
+}
 /** Yards off-ball targets keep from the touchlines (#37). */
 const OFF_BALL_TOUCHLINE_MARGIN = 2.5;
 /** Minimum yards an off-ball target keeps from a teammate's position (#37). */
@@ -195,7 +217,7 @@ export function matchMinute(state: GameState): number {
  * Game-seconds between periodic team intent re-evaluations. Possession transfer
  * already triggers a recompute; this catches cases where the situation changes
  * mid-possession (opponent pushes forward, we lose a numerical advantage, etc.)
- * without churning every tick — 3 game-seconds is roughly 12 ticks at 0.25s dt.
+ * without churning every tick — 3 s of play, 15 ticks of 0.2 s (stage 2; on the compressed clock every tick).
  */
 const INTENT_REEVAL_INTERVAL = 3;
 
@@ -482,7 +504,7 @@ export function createMatchState(
     looseBall:             null,
     score:                 { A: 0, B: 0 },
     tackleCooldown:        0,
-    setPiece:              { type: 'kickoff', takerId: kickoffHolder.id, countdown: 2 },
+    setPiece:              { type: 'kickoff', takerId: kickoffHolder.id, countdown: RESTART_DEAD_S.KICKOFF },
     decisions:             {},
     matchPhase:            'preMatch',
     matchTime:             0,
@@ -973,7 +995,7 @@ export function stopForInjury(state: GameState, team: TeamId | null, spot: { x: 
     ballHolderId:   taker.id,
     lastPasserId:   null,
     tackleCooldown: TACKLE_COOLDOWN,
-    setPiece:       { type: 'free_kick', takerId: taker.id, countdown: FOUL_CONFIG.FREE_KICK_COUNTDOWN, position: pos },
+    setPiece:       { type: 'free_kick', takerId: taker.id, countdown: restartFreeze(state, FOUL_CONFIG.FREE_KICK_COUNTDOWN), position: pos },
   }, prevHolderId);
 }
 
@@ -1206,7 +1228,10 @@ export function bookPlayer(state: GameState, player: GamePlayer, card: 'yellow' 
   return ensureCompetentGK(removeInjuredPlayer(s, player), player.team);
 }
 
-/** Game-seconds past the period's end that a pending penalty / dangerous free kick may still use. */
+/**
+ * Game-seconds past the period's end that a pending penalty / dangerous free kick may still use. Stage 2: kept (it
+ * holds a penalty's 36 s of dead ball plus the kick).
+ */
 const RESTART_HOLD_MAX = 60;
 
 /**
@@ -1234,7 +1259,8 @@ export function restartHoldsPeriod(state: GameState, newMatchTime: number, perio
 
 /** How close to the goal line it attacks (yards) the ball has to be for the whistle to wait, and for how long (game-seconds). */
 const ATTACK_HOLD_DIST = 30;
-const ATTACK_HOLD_MAX = 45;
+/** Stage 2: 45 game-s was ~2.5 s of play on the compressed clock; an attack in the last 30 yards ends within ~10 s. */
+const ATTACK_HOLD_MAX = 10;
 
 /**
  * True when the whistle must wait for an attack in progress (tester report, 10.7: periods ended with a player
@@ -1447,7 +1473,7 @@ function awardFoulRestart(
       }
       return p;
     });
-    setPiece = { type: 'penalty', takerId: taker.id, countdown: FOUL_CONFIG.PENALTY_COUNTDOWN, position: pos };
+    setPiece = { type: 'penalty', takerId: taker.id, countdown: restartFreeze(state, FOUL_CONFIG.PENALTY_COUNTDOWN), position: pos };
     gameBus.emit('penaltyAwarded', { team: fouledTeam, takerId: taker.id, offenderId, minute });
     debugLog('foul', `PENALTY to team ${fouledTeam} — ${taker.name} to take it`, { playerId: taker.id, data: { offenderId, minute } });
   } else {
@@ -1465,10 +1491,10 @@ function awardFoulRestart(
     else if (box) players = applyBoxSetPiece(players, taker, pos, 'free_kick', matchRandom, routine);
     players = players.map(p => (p.id === taker.id ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p));
     setPiece = direct
-      ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN, position: pos, variant: 'direct', wallIds }
+      ? { type: 'free_kick', takerId: taker.id, countdown: restartFreeze(state, SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN), position: pos, variant: 'direct', wallIds }
       : box
-        ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.BOX_FREE_KICK_COUNTDOWN, position: pos, variant: 'box', ...(routine ? { routine } : {}) }
-        : { type: 'free_kick', takerId: taker.id, countdown: FOUL_CONFIG.FREE_KICK_COUNTDOWN, position: pos };
+        ? { type: 'free_kick', takerId: taker.id, countdown: restartFreeze(state, SET_PIECE_CONFIG.BOX_FREE_KICK_COUNTDOWN), position: pos, variant: 'box', ...(routine ? { routine } : {}) }
+        : { type: 'free_kick', takerId: taker.id, countdown: restartFreeze(state, FOUL_CONFIG.FREE_KICK_COUNTDOWN), position: pos };
     gameBus.emit('freeKickAwarded', { team: fouledTeam, takerId: taker.id, x: pos.x, y: pos.y, dangerous, minute });
     debugLog('foul', `Free kick to team ${fouledTeam}${dangerous ? ' (dangerous)' : ''} at (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) — ${taker.name}`, {
       playerId: taker.id, data: { offenderId, dangerous, minute },
@@ -1724,7 +1750,7 @@ function finishInMatchPenalty(state: GameState, taker: GamePlayer, gk: GamePlaye
       ballHolderId:   keeper.id,
       possessionTime: 0,
       lastPasserId:   null,
-      setPiece:       { type: 'goal_kick', takerId: keeper.id, countdown: 1 },
+      setPiece:       { type: 'goal_kick', takerId: keeper.id, countdown: restartFreeze(state, RESTART_DEAD_S.GOAL_KICK) },
     }, s.ballHolderId),
     passCompleted: false, tackled: false, goalScored: null,
   };
@@ -2214,7 +2240,7 @@ function resetToKickoff(state0: GameState, kickoffTeam: import('../types').TeamI
     pass:          null,
     shot:          null,
     looseBall:     null,
-    setPiece:      { type: 'kickoff', takerId: kickoffHolder.id, countdown: 2 },
+    setPiece:      { type: 'kickoff', takerId: kickoffHolder.id, countdown: restartFreeze(state, RESTART_DEAD_S.KICKOFF) },
     setPiecePhase: null,
     possessionTime: 0,
     lastPasserId: null,
@@ -2294,7 +2320,7 @@ function switchSides(
     matchPhase:            nextPhase,
     matchTime:             0,
     presentationCountdown: 0,
-    setPiece:              { type: 'kickoff', takerId: kickoffHolder.id, countdown: 2 },
+    setPiece:              { type: 'kickoff', takerId: kickoffHolder.id, countdown: restartFreeze(state, RESTART_DEAD_S.KICKOFF) },
     setPiecePhase:         null,
     possessionTime:        0,
     lastPasserId:          null,
@@ -3003,9 +3029,9 @@ function oobLayoutFor(
 }
 
 function oobCountdownFor(kind: OOBKind): number {
-  if (kind === 'throw_in') return 1.5;
-  if (kind === 'corner')   return 2;
-  return 1; // goal_kick — matches the value used after saves/missed shots
+  if (kind === 'throw_in') return RESTART_DEAD_S.THROW_IN;
+  if (kind === 'corner')   return RESTART_DEAD_S.OOB_CORNER;
+  return RESTART_DEAD_S.GOAL_KICK; // goal_kick — matches the value used after saves/missed shots
 }
 
 /**
@@ -3136,7 +3162,7 @@ function resolveOOBSetPiece(
       setPiece: {
         type:      kind,
         takerId:   taker.id,
-        countdown: oobCountdownFor(kind),
+        countdown: restartFreeze(s, oobCountdownFor(kind)),
         position,
       },
     }, prevHolderId),
@@ -3172,7 +3198,7 @@ export function awardCorner(
     playerId: taker.id, data: { fromId: fromPasserId, source: cornerSource, restart: position },
   });
   const prevHolderId = s0.ballHolderId;
-  const countdown = SET_PIECE_CONFIG.CORNER_COUNTDOWN;
+  const countdown = restartFreeze(s, SET_PIECE_CONFIG.CORNER_COUNTDOWN);
   const st = onPossessionTransfer({
     ...s0,
     players,
@@ -3382,7 +3408,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
         possessionTime: 0,
         lastPasserId: null,
         tackleCooldown: TACKLE_COOLDOWN,
-        setPiece: { type: 'offside_fk', takerId: nearestDefender.id, countdown: 2, position: { x: lb.x, y: lb.y } },
+        setPiece: { type: 'offside_fk', takerId: nearestDefender.id, countdown: restartFreeze(s, RESTART_DEAD_S.OFFSIDE_FK), position: { x: lb.x, y: lb.y } },
       }, prevHolderId),
       passCompleted: false, tackled: false, goalScored: null,
     });
@@ -3638,7 +3664,7 @@ function aerialOffsideFreeKick(s: GameState, offender: GamePlayer, at: { x: numb
     possessionTime: 0,
     lastPasserId: null,
     tackleCooldown: TACKLE_COOLDOWN,
-    setPiece: { type: 'offside_fk', takerId: taker.id, countdown: 2, position: { ...at } },
+    setPiece: { type: 'offside_fk', takerId: taker.id, countdown: restartFreeze(s, RESTART_DEAD_S.OFFSIDE_FK), position: { ...at } },
   }, prevHolderId);
 }
 
@@ -3820,7 +3846,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
           ballHolderId: gk.id,
           possessionTime: 0,
           lastPasserId: null,
-          setPiece: { type: 'goal_kick', takerId: gk.id, countdown: 1 },
+          setPiece: { type: 'goal_kick', takerId: gk.id, countdown: restartFreeze(state, RESTART_DEAD_S.GOAL_KICK) },
         }, prevHolderId));
       }
       if (deep && rng() < KEEPER_CONFIG.HIGH_FLAP_SHARE) {
@@ -4884,7 +4910,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
             possessionTime: 0,
             lastPasserId: null,
             players: gkPlayers,
-            setPiece: { type: 'goal_kick', takerId: newHolder.id, countdown: 1 },
+            setPiece: { type: 'goal_kick', takerId: newHolder.id, countdown: restartFreeze(s, RESTART_DEAD_S.GOAL_KICK) },
           }, prevHolderId),
           passCompleted: false, tackled: false, goalScored: null,
         };
@@ -5418,7 +5444,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
           setPiece: {
             type: 'offside_fk',
             takerId: nearestDefender.id,
-            countdown: 2,
+            countdown: restartFreeze(s, RESTART_DEAD_S.OFFSIDE_FK),
             position: { x: receiver.x, y: receiver.y },
           },
         }, prevHolderId),

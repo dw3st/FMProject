@@ -71,12 +71,15 @@ export const FOUL_CONFIG = {
   CLEAR_CHANCE_CORRIDOR: 8,
 
   // ── Restarts ────────────────────────────────────────────────────────────────
-  /** Free kick freeze (real seconds). */
-  FREE_KICK_COUNTDOWN: 0.4,
+  /**
+   * Free kick: game-seconds of dead ball (the physical freeze is this / clockScale, `restartFreeze`). Stage 2: the
+   * 0.4 s freeze of the compressed clock × 18, the game time it already took.
+   */
+  FREE_KICK_COUNTDOWN: 7.2,
   /** A free kick within this many yards of the goal it attacks uses the freeKick_Attack/_Defend layouts. */
   DANGEROUS_FREE_KICK_DIST: 25,
-  /** Penalty freeze (real seconds) before the kick is resolved. */
-  PENALTY_COUNTDOWN: 2.0,
+  /** Penalty: game-seconds of dead ball before the kick is resolved (2 s × 18, stage 2). */
+  PENALTY_COUNTDOWN: 36,
   /** Penalty spot distance from the goal line (yards). */
   PENALTY_SPOT_DIST: 12,
 } as const;

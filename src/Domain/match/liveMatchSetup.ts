@@ -10,7 +10,7 @@ import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
-import { applyTeamInstructions, createMatchState, setManMarksBySlot, LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
+import { applyTeamInstructions, createMatchState, setManMarksBySlot, LEGACY_CLOCK_SCALE, withClockScale } from "@/GameEngine/Domain/gameState";
 import type { Formation, GameState, SetPieceTakers, TeamId } from "@/GameEngine/types";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { pitchInjury } from "@/Domain/facilities/turf";
@@ -134,9 +134,6 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
   let state: GameState = {
     ...createMatchState(input.A.players, input.A.formation, input.B.players, input.B.formation, lineupA, lineupB, injuryMult, input.seed),
     knockout: input.knockout,
-    // Provisional (stage 2): the live match, the broadcast and the match between two managers keep the compressed
-    // clock (5 real minutes at 1×) until stage 19 adapts them to the 90 physical minutes (`match-flow.md`).
-    clockScale: LEGACY_CLOCK_SCALE,
     ...(input.weather ? { weather: input.weather } : {}),
     ...(input.referee ? { referee: input.referee } : {}),
     ...(some(autoSubs) ? { autoSubs } : {}),
@@ -147,6 +144,9 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
     ...(input.aggregate ? { aggregate: input.aggregate } : {}),
     ...(SIDES.some((t) => input[t].penalty2d) ? { penaltyInteractive: SIDES.filter((t) => input[t].penalty2d) } : {}),
   };
+  // Provisional (stage 2): the live match, the broadcast and the match between two managers keep the compressed
+  // clock (5 real minutes at 1×) until stage 19 adapts them to the 90 physical minutes (`match-flow.md`).
+  state = withClockScale(state, LEGACY_CLOCK_SCALE);
   // Player instructions of each human side: the saved slot instructions and this match's man-marking.
   for (const team of SIDES) {
     const side = input[team];

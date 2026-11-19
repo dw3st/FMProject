@@ -591,6 +591,8 @@ export interface PairResult {
   variantBId: string;
   matches: number;
   draws: number;
+  /** Wall time of the pair in the worker divided by its matches (engine cost per match, stage 2). */
+  msPerMatch?: number;
   teamA: PerMatchView;
   teamB: PerMatchView;
   /** Present only when the scenario set `congestion` — one row per match-in-sequence index. */

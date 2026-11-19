@@ -21,7 +21,7 @@ import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
-import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans, clockScaleOf } from '@/GameEngine/Domain/gameState';
+import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans, clockScaleOf, withClockScale } from '@/GameEngine/Domain/gameState';
 import { initStats, getAllPlayerStats, getGoalLog, getTeamStats, type GoalLogEntry } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
@@ -288,7 +288,6 @@ export function simulateMatch(
     matchPhase:            'firstHalf',
     presentationCountdown: 0,
     knockout:              options.knockout === true,
-    ...(options.clockScale !== undefined && options.clockScale !== 1 ? { clockScale: options.clockScale } : {}),
     ...(options.aggregate ? { aggregate: options.aggregate } : {}),
     ...(options.referee ? { referee: options.referee } : {}),
     ...(options.weather ? { weather: options.weather } : {}),
@@ -304,6 +303,8 @@ export function simulateMatch(
           } }
         : {}),
   };
+
+  if (options.clockScale !== undefined && options.clockScale !== 1) s = withClockScale(s, options.clockScale);
 
   if (options.weather) debugLog('weather', `Weather: ${options.weather}`, { data: { ...weatherEffectOf(options.weather) } });
 

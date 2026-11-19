@@ -569,6 +569,7 @@ export async function runScenario(
     variantBId: r.variantBId,
     matches: r.matches,
     draws: r.draws,
+    msPerMatch: r.matches > 0 ? r.durationMs / r.matches : 0,
     teamA: perMatchView(r.teamA, r.matches),
     teamB: perMatchView(r.teamB, r.matches),
     ...(r.congestionMatches

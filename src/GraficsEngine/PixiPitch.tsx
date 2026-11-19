@@ -56,8 +56,11 @@ import {
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute, getBallPos } from "@/GameEngine/Domain/gameState";
+import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute, getBallPos, restartFreeze } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
+
+/** Match phases whose countdown is a presentation pause (real seconds, never sped up). */
+const PRESENTATION_PHASES: ReadonlySet<string> = new Set(["preMatch", "halfTime", "extraTimeBreak", "penalties"]);
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
 import { reconcileMatchStateSync } from "@/GraficsEngine/matchStateSync";
@@ -1611,8 +1614,11 @@ export function PixiPitch({
         if (celebration && !framesVisible()) celebration = null;
         const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null || celebration !== null || stretcherHolds());
         if (elapsedRealSeconds <= 0) return;
-        const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
         const prevState = stateRef.current;
+        // Presentation pauses (kick-off show, half time, the extra-time break, the shootout, a VAR check) run in real
+        // seconds, apart from the match speed (stage 2): at 32× the half-time pause still lasts its 4 s.
+        const presenting = prevState.varReview != null || PRESENTATION_PHASES.has(prevState.matchPhase);
+        const gameSeconds = elapsedRealSeconds * (presenting ? 1 : gameSpeedRef.current);
         const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
         simCarryRef.current = result.carry;
         renderPair = nextRenderPair(renderPair, { prevState, result, steps: result.steps });
@@ -4396,7 +4402,7 @@ export function PixiPitch({
           if (sp?.type === 'free_kick' && sp.variant === 'direct' && sp.position && !replayRun) {
             const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
             if (taker) {
-              const k = 1 - sp.countdown / SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN;
+              const k = 1 - sp.countdown / restartFreeze(drawState, SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN);
               const off = penaltyRunUp(k);
               const next = new Map(drawnPos);
               next.set(taker.id, { x: sp.position.x - taker.attackDir * off.back, y: sp.position.y + taker.attackDir * off.side });
@@ -4420,7 +4426,7 @@ export function PixiPitch({
             const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
             const spot = sp.position ?? (taker ? { x: taker.x, y: taker.y } : null);
             if (taker && spot) {
-              const k = 1 - sp.countdown / FOUL_CONFIG.PENALTY_COUNTDOWN;
+              const k = 1 - sp.countdown / restartFreeze(drawState, FOUL_CONFIG.PENALTY_COUNTDOWN);
               const off = penaltyRunUp(k);
               const next = new Map(drawnPos);
               next.set(taker.id, { x: spot.x - taker.attackDir * off.back, y: spot.y + taker.attackDir * off.side });

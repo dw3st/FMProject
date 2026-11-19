@@ -175,7 +175,9 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
           <h3 className="font-semibold">
             {labelFor(aId)} <span className="text-white/40">vs</span> {labelFor(bId)}
           </h3>
-          <div className="text-xs text-white/50">{pair.matches} matches</div>
+          <div className="text-xs text-white/50">
+            {pair.matches} matches{pair.msPerMatch !== undefined ? ` · ${(pair.msPerMatch / 1000).toFixed(1)} s/match` : ""}
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-4 text-center">
           <ResultBadge label={labelFor(aId)} pct={winA} colour="emerald" />
