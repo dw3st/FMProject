@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.28.1",
     date: "2026-11-19",
-    time: "23:00",
+    time: "11:01",
     items: [],
     fixes: [
       { tab: "match", pt: "O placar da partida mostra a posição de cada time na tabela, ao lado do escudo.", en: "The match scoreboard shows each team's league position next to its crest." },
