@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.27.1",
     date: "2026-11-19",
-    time: "23:00",
+    time: "10:40",
     items: [],
     fixes: [
       { tab: "match", pt: "O resultado da partida abre na hora: o jogo não fica mais parado enquanto o dia roda.", en: "The match result opens straight away: the game no longer freezes while the day runs." },
