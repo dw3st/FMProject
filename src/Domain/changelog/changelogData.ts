@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.28.4",
     date: "2026-11-19",
-    time: "23:00",
+    time: "15:29",
     items: [],
     fixes: [
       { tab: "scout", pt: "A compensação de um jovem sem clube acompanha o nível e o potencial dele: um jovem fraco sai bem mais barato.", en: "The fee of a club-less youngster follows his level and potential: a weak one costs much less." },
