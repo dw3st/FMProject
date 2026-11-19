@@ -1317,6 +1317,8 @@
       "AD": "Aerial Duels Won",
       "HG": "Header Goals",
       "KS": "Keeper sorties",
+      "DST": "Distance covered (yards)",
+      "SPR": "Sprints (85% of top speed for 1 s)",
       "KW": "Keeper sweeps",
       "KM": "Keeper smothers",
       "LB": "Long Balls",

@@ -1317,6 +1317,8 @@
       "AD": "Disputas Aéreas Vencidas",
       "HG": "Gols de Cabeça",
       "KS": "Saídas do goleiro",
+      "DST": "Distância percorrida (jardas)",
+      "SPR": "Arrancadas (85% da velocidade máxima por 1 s)",
       "KW": "Bolas afastadas pelo goleiro",
       "KM": "Abafadas do goleiro",
       "LB": "Lançamentos Longos",

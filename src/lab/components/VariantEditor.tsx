@@ -399,6 +399,12 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
         <span className="text-white/70">VAR</span>
       </label>
 
+      <label className="flex items-center gap-2 text-xs cursor-pointer" title="Player kinematics: acceleration, braking and turning (variant A; off = the engine before kinematics)">
+        <span className="text-white/50 w-20">Kinematics</span>
+        <input type="checkbox" checked={variant.kinematics !== "off"} onChange={(e) => patch({ kinematics: e.target.checked ? undefined : "off" })} />
+        <span className="text-white/70">Acceleration, braking, turning</span>
+      </label>
+
       <label className="flex items-center gap-2 text-xs cursor-pointer">
         <span className="text-white/50 w-20">Positions</span>
         <input

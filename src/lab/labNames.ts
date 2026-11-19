@@ -48,7 +48,8 @@ export function variantAutoLabel(v: Variant): string {
   const withQ = v.refereeQuality === undefined ? withRef : `${withRef} · refq ${v.refereeQuality}${v.var ? " · VAR" : ""}`;
   const instr = (v.slotInstructions ?? []).filter((i) => i && (i.variant || (i.press && i.press !== "normal"))).length;
   const withInstr = instr > 0 ? `${withQ} · instr ${instr}` : withQ;
-  return v.manMarks && v.manMarks.length > 0 ? `${withInstr} · mark` : withInstr;
+  const withMark = v.manMarks && v.manMarks.length > 0 ? `${withInstr} · mark` : withInstr;
+  return v.kinematics === "off" ? `${withMark} · kin off` : withMark;
 }
 
 /** Auto-name for the whole scenario based on its variant pool. */

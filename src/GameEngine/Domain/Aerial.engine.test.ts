@@ -204,7 +204,8 @@ describe("landing resolution", () => {
     s = place(s, cam.id, s.looseBall!.x, s.looseBall!.y);
     const resolved = collect("aerialResolved");
     const tb = collect("throughBallCompleted");
-    for (let i = 0; i < 5 && s.looseBall; i++) s = tickState(s, 0.2).state;
+    // 10 steps: placed on the ball he starts from standstill while it rolls on (`kinematics.md`).
+    for (let i = 0; i < 10 && s.looseBall; i++) s = tickState(s, 0.2).state;
     resolved.off();
     tb.off();
     expect(resolved.events.some(e => e.outcome === "loose" && e.completed && e.fromId === lw.id)).toBe(true);
@@ -331,7 +332,8 @@ describe("review fixes", () => {
     s = resolveAerialLanding(s, seq(0.5)).state;
     expect(s.looseBall?.offsideIds).toEqual([cam.id]);
     s = place(s, cam.id, s.looseBall!.x, s.looseBall!.y);
-    for (let i = 0; i < 5 && s.looseBall; i++) s = tickState(s, 0.2).state;
+    // 10 steps: placed on the ball he starts from standstill while it rolls on (`kinematics.md`).
+    for (let i = 0; i < 10 && s.looseBall; i++) s = tickState(s, 0.2).state;
     expect(s.setPiece?.type).toBe("offside_fk");
   });
 

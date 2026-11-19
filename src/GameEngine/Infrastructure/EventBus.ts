@@ -77,6 +77,11 @@ export interface GameEvents {
   keeperSweep: { keeperId: number };
   /** A keeper's challenge won the ball at a holder's feet. */
   keeperSmother: { keeperId: number };
+  /**
+   * Movement of one step (`kinematics.md`): yards covered per player, and the players whose run just became a sprint
+   * (≥ SPRINT_FRACTION of their top speed for SPRINT_SECONDS).
+   */
+  playerMoved: { moves: Array<[number, number]>; sprints: number[] };
   /** What a save did (12.10): held, spilled loose in front of goal, or parried behind for a corner. */
   keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry" };
   /** A rehearsed routine was called for a corner / crossed free kick (`set-pieces-play.md`). */

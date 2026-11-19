@@ -214,6 +214,8 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgKeeperSmothers: r2(t.keeperSmothers / matches),
     avgKeeperHolds: r2(t.keeperHolds / matches),
     avgKeeperSpills: r2(t.keeperSpills / matches),
+    avgDistanceCovered: r2(t.distanceCovered / matches),
+    avgSprints: r2(t.sprints / matches),
     avgCorners: r2(t.corners / matches),
     avgThrowIns: r2(t.throwIns / matches),
     avgSetPieceRoutines: r2(t.setPieceRoutines / matches),
@@ -251,7 +253,7 @@ function emptyTotals(): VariantTotals {
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
-    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0,
+    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
@@ -324,6 +326,8 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.keeperSmothers        += src.keeperSmothers;
   dst.keeperHolds           += src.keeperHolds;
   dst.keeperSpills          += src.keeperSpills;
+  dst.distanceCovered       += src.distanceCovered;
+  dst.sprints               += src.sprints;
   dst.corners               += src.corners;
   dst.throwIns              += src.throwIns;
   dst.setPieceRoutines              += src.setPieceRoutines;
@@ -412,6 +416,8 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgKeeperSmothers: r2(totals.keeperSmothers / games),
     avgKeeperHolds: r2(totals.keeperHolds / games),
     avgKeeperSpills: r2(totals.keeperSpills / games),
+    avgDistanceCovered: r2(totals.distanceCovered / games),
+    avgSprints: r2(totals.sprints / games),
     avgCorners: r2(totals.corners / games),
     avgThrowIns: r2(totals.throwIns / games),
     avgSetPieceRoutines: r2(totals.setPieceRoutines / games),

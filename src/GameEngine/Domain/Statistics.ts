@@ -106,6 +106,11 @@ export interface PlayerStats {
   keeperHolds:              number;
   /** Saves spilled loose in front of goal (12.10). */
   keeperSpills:             number;
+  // ── Kinematics (`.claude/rules/game-engine/kinematics.md`) ─────────────────
+  /** Yards covered in the live periods. */
+  distanceCovered:          number;
+  /** Runs at ≥ 85% of the player's top speed lasting ≥ 1 s. */
+  sprints:                  number;
   // ── Set pieces (`.claude/rules/game-engine/set-pieces-play.md`) ──────────────
   /** Corners won by the team, credited to the taker. */
   corners:                  number;
@@ -211,6 +216,8 @@ function emptyStats(): PlayerStats {
     keeperSorties:            0,
     keeperSweeps:             0,
     keeperSmothers:           0,
+    distanceCovered:          0,
+    sprints:                  0,
     keeperHolds:              0,
     keeperSpills:             0,
     corners:                  0,
@@ -462,6 +469,13 @@ gameBus.on('header', e => { get(e.player).headers++; notify(); });
 gameBus.on('keeperSortie',  e => { get(e.keeperId).keeperSorties++; notify(); });
 gameBus.on('keeperSweep',   e => { get(e.keeperId).keeperSweeps++; notify(); });
 gameBus.on('keeperSmother', e => { get(e.keeperId).keeperSmothers++; notify(); });
+
+// ── Kinematics: distance covered and sprints (`kinematics.md`). No notify: it fires every step; the next counted
+// event (or the end of the match) refreshes the live panel.
+gameBus.on('playerMoved', e => {
+  for (const [id, yards] of e.moves) { const s = store.get(id); if (s) s.distanceCovered += yards; }
+  for (const id of e.sprints) { const s = store.get(id); if (s) s.sprints++; }
+});
 gameBus.on('keeperSave', e => {
   if (e.kind === 'hold') get(e.keeperId).keeperHolds++;
   if (e.kind === 'spill') get(e.keeperId).keeperSpills++;
@@ -559,6 +573,8 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.keeperSorties            += stats.keeperSorties;
     result.keeperSweeps             += stats.keeperSweeps;
     result.keeperSmothers           += stats.keeperSmothers;
+    result.distanceCovered          += stats.distanceCovered;
+    result.sprints                  += stats.sprints;
     result.keeperHolds              += stats.keeperHolds;
     result.keeperSpills             += stats.keeperSpills;
     result.corners                  += stats.corners;

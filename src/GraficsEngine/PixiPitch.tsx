@@ -411,6 +411,8 @@ export interface DebugOverlays {
   instructions:          boolean;
   /** Active keeper (`Keeper.ts`): sweeper zone, wide high-ball zone, 1v1 rush range and his current target. */
   keeper:                boolean;
+  /** Player kinematics (`kinematics.md`): velocity vectors (0.6 s ahead) and a ring on a player losing speed to a sharp turn. */
+  kinematics:            boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -425,6 +427,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   setPieces:             true,
   instructions:          true,
   keeper:                false,
+  kinematics:            false,
 };
 
 interface Props {
@@ -4948,6 +4951,27 @@ export function PixiPitch({
               const { px: tx, py: ty } = toPixel(gk.targetPosition.x, gk.targetPosition.y);
               passLinesGfx.moveTo(gx, gy).lineTo(tx, ty).stroke({ width: 2, color: 0xbef264, alpha: 0.9 });
               passLinesGfx.circle(tx, ty, 3).fill({ color: 0xbef264, alpha: 0.9 });
+            }
+          }
+
+          // ── Kinematics — velocity vectors and turn-penalty rings (`kinematics.md`) ──
+          if (ovl.kinematics) {
+            for (const player of stateRef.current.players) {
+              const v = player.vel;
+              const k = player.kin;
+              if (!v || !k || k.x !== player.x || k.y !== player.y) continue;
+              const { px: sx, py: sy } = toPixel(player.x, player.y);
+              const speed = Math.hypot(v.x, v.y);
+              if (speed > 0.05) {
+                const { px: ex, py: ey } = toPixel(player.x + v.x * 0.6, player.y + v.y * 0.6);
+                const color = player.team === 'A' ? 0x7dd3fc : 0xfca5a5;
+                passLinesGfx.moveTo(sx, sy).lineTo(ex, ey).stroke({ width: 2, color, alpha: 0.9 });
+                passLinesGfx.circle(ex, ey, 2.5).fill({ color, alpha: 0.9 });
+              }
+              if (k.turn < 1) {
+                // Ring grows with the speed lost to the turn (×0.9 → small, ×0.4 → large).
+                passLinesGfx.circle(sx, sy, (1 + 3 * (1 - k.turn)) * m.scale).stroke({ width: 2, color: 0xf97316, alpha: 0.9 });
+              }
             }
           }
 

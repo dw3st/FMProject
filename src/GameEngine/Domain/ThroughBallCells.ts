@@ -16,6 +16,7 @@
  * Layer: Domain. Pure module — no Pixi, React, or DOM imports.
  */
 
+import { etaTo as kinEta } from '@/GameEngine/Domain/Kinematics';
 import type { GamePlayer, GameState, TeamId } from '@/GameEngine/types';
 import {
   CELL_W, CELL_H, GRID_COLS, GRID_ROWS,
@@ -82,12 +83,15 @@ function effectiveSprintSpeed(p: GamePlayer): number {
   );
 }
 
-/** Seconds for a player to reach a cell at sprint speed (straight-line). */
+/**
+ * Seconds for a player to reach a cell at sprint speed (straight-line), from his current velocity with the kinematic
+ * layer (`kinematics.md`: a runner already going that way gets there sooner than one standing).
+ */
 function etaToCell(p: GamePlayer, cx: number, cy: number): number {
   const dist  = Math.hypot(cx - p.x, cy - p.y);
   const speed = effectiveSprintSpeed(p);
   if (speed < 0.01) return Infinity;
-  return dist / speed;
+  return kinEta(p, p.runtimeStats.withoutBall.acceleration, cx, cy, dist, speed);
 }
 
 // ── Phase 2 score components ──────────────────────────────────────────────────

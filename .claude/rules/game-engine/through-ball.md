@@ -433,3 +433,7 @@ All weights and thresholds live in `ThroughBallConfig.ts`. Notable:
 ## Margem da lateral (8.4)
 
 Report de tester: bolas para o lado, sem ninguém, dando lateral ao adversário. `MIN_TOUCHLINE_MARGIN` (8 jardas): nenhuma célula candidata mais perto da lateral que isso (a bola rola cerca de 4 jardas depois de cair, mais o erro de mira). Antes, em 120 jogos da Premier: 5,3 dessas bolas por jogo, 46% em lateral para o adversário, quase todos os 2,7 laterais do jogo. Medido com formações da IA, 800 jogos por liga: Premier 1,866 → 2,060 gols e 4,97 → 5,54 chutes; Championship 1,609 → 1,686 e 4,74 → 5,22 (somadas +7,8% e +10,8%: os lances continuam vivos). Fora dos ±5%: o quickSim subiu pelo mesmo fator (`BASE_GOALS` 0,73 → 0,787, `SHOTS_PER_XG` 1,89 → 1,943).
+
+## Race estimates with kinematics (12.x)
+
+`etaToCell` and the chaser / sweeper ETAs (`commitLooseBallChasers`, the keeper's loose ball in his box) use the player's current velocity and acceleration (`Kinematics.etaTo`: the velocity component toward the point, the acceleration law at the run-up's mid speed), so a runner already going that way wins the race the movement will give him. Off switch and numbers: `kinematics.md`.

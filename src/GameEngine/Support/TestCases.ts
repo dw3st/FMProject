@@ -889,4 +889,46 @@ export const TEST_SCENARIOS: TestScenario[] = [
       };
     },
   },
+
+  {
+    id:          'kin-sprint-stop',
+    name:        'Kinematics — sprint from standstill and stop',
+    description: 'A loose ball 30 yd ahead of a standing striker; the centre-back, the same distance from it, is already running toward it at full speed. The striker builds up speed over the first ~10 yd and brakes to arrive on the ball; the running CB gets there first. Toggle "Kinematics" to see the velocity vectors (`kinematics.md`).',
+    createState() {
+      _nextId = 1;
+      const state = buildState([
+        makePlayer('Garcia',   'A', 'CM',  30, 37, MIDFIELDER), // last touch
+        makePlayer('Santos',   'A', 'ST',  45, 37, STRIKER),    // standing
+        moving(makePlayer('Silva', 'B', 'CB', 105, 37, DEFENDER), -8, 0), // already running at it
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...state, looseBall: looseAt(75, 37, 1) };
+    },
+  },
+
+  {
+    id:          'kin-sharp-turn',
+    name:        'Kinematics — sharp turn',
+    description: 'The centre-back is sprinting upfield when the ball runs loose behind him: he has to turn round (the orange ring: top speed × 0.4 on a 180° turn) and build up speed again, while the striker, already facing it, is first to the ball (`kinematics.md`).',
+    createState() {
+      _nextId = 1;
+      const state = buildState([
+        makePlayer('Garcia',   'A', 'CM',  40, 37, MIDFIELDER),
+        moving(makePlayer('Santos', 'A', 'ST', 70, 40, STRIKER), 4, 0),
+        moving(makePlayer('Silva', 'B', 'CB', 78, 37, DEFENDER), -8, 0),  // sprinting toward halfway
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...state, looseBall: looseAt(88, 37, 1) };
+    },
+  },
 ];
+
+/** A player already moving at (vx, vy) yd/s when the scenario starts (`kinematics.md`: the velocity carries into tick 1). */
+function moving(p: GamePlayer, vx: number, vy: number): GamePlayer {
+  return { ...p, vel: { x: vx, y: vy }, kin: { x: p.x, y: p.y, t: 0, turn: 1 } };
+}
+
+/** A resting loose ball nobody has committed to yet (the engine commits the chasers on the next tick). */
+function looseAt(x: number, y: number, fromPasserId: number): GameState['looseBall'] {
+  return { x, y, vx: 0, vy: 0, startTime: 0, fromPasserId, fromTeamLastTouch: 'A', intendedRunnerId: null, receiverOffside: false };
+}

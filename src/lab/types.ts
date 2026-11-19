@@ -141,6 +141,8 @@ export interface Variant {
   refereeQuality?: number;
   /** The match has VAR (variant A sets it; only with `refereeQuality`). */
   var?: boolean;
+  /** Player kinematics (`kinematics.md`) for the match (variant A): "off" = the engine without acceleration, braking and turning. Absent = on. */
+  kinematics?: "off";
   /**
    * Player instructions of this side (`player-instructions.md`): per-slot role variant / pressing
    * (index = slot of `formation`). Absent = default. Full engine only (the quickSim ignores them).
@@ -294,6 +296,9 @@ export interface TeamRawStats {
   keeperSmothers: number;
   keeperHolds: number;
   keeperSpills: number;
+  /** Kinematics (`kinematics.md`), summed across games: yards covered by the team, sprints (≥ 85% of top speed for 1 s). */
+  distanceCovered: number;
+  sprints: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -465,6 +470,9 @@ export interface PerMatchView {
   avgKeeperSmothers: number;
   avgKeeperHolds: number;
   avgKeeperSpills: number;
+  /** Kinematics per match (`kinematics.md`): team yards covered, sprints. */
+  avgDistanceCovered: number;
+  avgSprints: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -594,6 +602,9 @@ export interface VariantSummary {
   avgKeeperSmothers: number;
   avgKeeperHolds: number;
   avgKeeperSpills: number;
+  /** Kinematics per match (`kinematics.md`): team yards covered, sprints. */
+  avgDistanceCovered: number;
+  avgSprints: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

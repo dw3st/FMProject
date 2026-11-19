@@ -58,6 +58,8 @@ const COLS: Col[] = [
     value: (s) => (s.directFreeKickShots > 0 ? `${s.directFreeKickShots} (${s.directFreeKickGoals})` : 0),
   },
   { label: "SPG",  titleKey: "stats.headers.SPG",   value: (s) => s.setPieceGoals },
+  { label: "DST",  titleKey: "stats.headers.DST",   value: (s) => Math.round(s.distanceCovered) },
+  { label: "SPR",  titleKey: "stats.headers.SPR",   value: (s) => s.sprints },
 ];
 
 const EMPTY_STATS: PlayerStats = emptyPlayerStats();

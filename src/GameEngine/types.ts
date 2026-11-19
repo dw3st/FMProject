@@ -432,6 +432,16 @@ export interface GamePlayer {
    * energy cost from the same source value.
    */
   injuryLoad: number;
+  /**
+   * Velocity after the last movement step (yd/s), `.claude/rules/game-engine/kinematics.md`. Carried into the next step
+   * only when `kin` says that step was the previous one, at this spot (a teleport, a freeze or a step without movement
+   * starts him from standstill). Absent = standing.
+   */
+  vel?: { x: number; y: number };
+  /** Where (x, y) and when (`matchTime`) the last kinematic step ended, and the turn factor it applied (1 = none). */
+  kin?: { x: number; y: number; t: number; turn: number };
+  /** Sprint tracking for the statistics: seconds above the sprint speed in a row, and whether this run already counted. */
+  sprint?: { secs: number; counted: boolean };
   /** Yellow cards of the season at kickoff (`seasonLog.yellowCards`): the match screen marks a player one yellow from a ban. */
   seasonYellows?: number;
   /** Morale this player plays at (`.claude/rules/game/morale.md`); absent = neutral 65. Debug display only. */

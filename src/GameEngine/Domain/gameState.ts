@@ -78,6 +78,8 @@ import type { VarApply, VarReviewState } from '@/GameEngine/types';
 import { withMoraleExecution } from '@/Domain/morale/morale';
 import { settlingMult, withSettlingExecution } from '@/Domain/settling/settling';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
+import { KINEMATICS_CONFIG } from '@/GameEngine/Configs/KinematicsConfig';
+import { etaTo as kinEta, stepAlong, stepToward, type KinStep } from '@/GameEngine/Domain/Kinematics';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { getOffBallBias } from '@/GameEngine/Domain/OffBallMovement';
 import { OFF_BALL_CONFIG } from '@/GameEngine/Configs/OffBallConfig';
@@ -1499,7 +1501,8 @@ export function foulCheck(
   const temperament = offender.temperament ?? 0;
   const strictness = strictnessFor(state, offender.team);
   const discipline = state.managerDiscipline?.[offender.team];
-  const chance = foulChance({
+  // Kinematics (`kinematics.md`): × the foul compensation while the layer is on (× 1 off: the old chance bit for bit).
+  const chance = (KINEMATICS_CONFIG.ENABLED ? KINEMATICS_CONFIG.FOUL_MULT : 1) * foulChance({
     kind, angle, inOwnBox, tackleWon, onYellow, temperament, strictness, discipline,
     aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
     // A keeper's challenge reads his positioning as technique and fouls less (`Keeper.ts`).
@@ -2493,10 +2496,7 @@ function nearestOutfieldTo(players: readonly GamePlayer[], exceptId: number, x: 
  * (the ball drifts and the commit at the start of the race may have left him out — e.g. the ball he flapped).
  */
 function keeperClaimsLooseBall(s: GameState, lb: NonNullable<GameState['looseBall']>): GameState {
-  const etaTo = (p: GamePlayer) => {
-    const v = chaseSprintSpeed(p);
-    return v > 0.01 ? Math.hypot(p.x - lb.x, p.y - lb.y) / v : Infinity;
-  };
+  const etaTo = (p: GamePlayer) => raceEta(p, lb.x, lb.y, chaseSprintSpeed(p));
   for (const gk of s.players) {
     if (gk.role !== 'GK' || isPlayerInRecovery(gk)) continue;
     const inBox = isInGoalScoreArea(lb.x, lb.y, gk.attackDir === 1 ? 0 : PITCH_LENGTH);
@@ -2563,6 +2563,103 @@ function recoverySpeedMult(p: GamePlayer): number {
   return p.recoveryTime > 0 ? (p.recoverySpeed ?? DUEL_RECOVERY_SPEED_FACTOR) : 1;
 }
 
+// ── Kinematics (`.claude/rules/game-engine/kinematics.md`) ───────────────────
+
+/** Distance and sprints of one movement pass, emitted as one `playerMoved` event. */
+interface MoveLog { moves: Array<[number, number]>; sprints: number[] }
+const newMoveLog = (): MoveLog => ({ moves: [], sprints: [] });
+function emitMoveLog(log: MoveLog): void {
+  if (log.moves.length > 0 || log.sprints.length > 0) gameBus.emit('playerMoved', log);
+}
+
+const STANDING = { x: 0, y: 0 } as const;
+
+/**
+ * The velocity a player carries into this step: only when his last kinematic step was the previous step (matchTime
+ * moved by one step) and ended where he stands. A teleport (set piece, kick-off, swap), a freeze or a step he did not
+ * move in (holder passing, standing) starts him from standstill.
+ */
+function carriedVelocity(p: GamePlayer, s: GameState, dt: number): { x: number; y: number } {
+  const k = p.kin;
+  if (!k || !p.vel || k.x !== p.x || k.y !== p.y) return STANDING;
+  const gap = s.matchTime - k.t;
+  return gap >= 0 && gap <= 1.5 * dt * TIME_SCALE ? p.vel : STANDING;
+}
+
+/**
+ * Ends a movement step: position, velocity, the kinematic memo, sprint tracking and the distance log. `topRef` is the
+ * player's top running speed for the sprint threshold (pressSpeed off the ball, carrySpeed with it).
+ */
+function finishMove(
+  p: GamePlayer, s: GameState, dt: number, x: number, y: number, vx: number, vy: number, turn: number, topRef: number,
+  log: MoveLog,
+): GamePlayer {
+  const yards = Math.hypot(x - p.x, y - p.y);
+  const speed = yards / dt;
+  if (yards > 0) log.moves.push([p.id, yards]);
+  const prev = p.sprint ?? { secs: 0, counted: false };
+  let sprint = prev;
+  if (speed >= KINEMATICS_CONFIG.SPRINT_FRACTION * topRef && topRef > 0) {
+    const secs = prev.secs + dt;
+    const counts = !prev.counted && secs >= KINEMATICS_CONFIG.SPRINT_SECONDS - 1e-9;
+    if (counts) log.sprints.push(p.id);
+    sprint = { secs, counted: prev.counted || counts };
+  } else if (prev.secs > 0 || prev.counted) {
+    sprint = { secs: 0, counted: false };
+  }
+  return { ...p, x, y, vel: { x: vx, y: vy }, kin: { x, y, t: s.matchTime, turn }, sprint };
+}
+
+/**
+ * Moves `p` toward `target` at top speed `vTop` (yd/s) with the kinematic layer, or to `legacy` (the position the engine
+ * before kinematics computed, bit for bit) with the layer off.
+ */
+function moveToward(
+  p: GamePlayer, s: GameState, dt: number, target: { x: number; y: number }, vTop: number,
+  legacy: { x: number; y: number }, log: MoveLog,
+): GamePlayer {
+  const topRef = p.runtimeStats.withoutBall.pressSpeed;
+  if (!KINEMATICS_CONFIG.ENABLED) {
+    return finishMove(p, s, dt, legacy.x, legacy.y, (legacy.x - p.x) / dt, (legacy.y - p.y) / dt, 1, topRef, log);
+  }
+  const v = carriedVelocity(p, s, dt);
+  const r: KinStep = stepToward(
+    { x: p.x, y: p.y, vx: v.x, vy: v.y, accel: p.runtimeStats.withoutBall.acceleration }, target.x, target.y, vTop, dt,
+    { dropToTop: p.recoveryTime > 0 },
+  );
+  return finishMove(p, s, dt, r.x, r.y, r.vx, r.vy, r.turn, topRef, log);
+}
+
+/** The carrier's step along a direction (no arrival), clamped to the pitch; `legacy` with the layer off. */
+function carryAlong(
+  p: GamePlayer, s: GameState, dt: number, dirX: number, dirY: number, vTop: number,
+  legacy: { x: number; y: number }, log: MoveLog,
+): GamePlayer {
+  const wb = p.runtimeStats.withBall;
+  if (!KINEMATICS_CONFIG.ENABLED) {
+    return finishMove(p, s, dt, legacy.x, legacy.y, (legacy.x - p.x) / dt, (legacy.y - p.y) / dt, 1, wb.carrySpeed, log);
+  }
+  const v = carriedVelocity(p, s, dt);
+  const r = stepAlong({ x: p.x, y: p.y, vx: v.x, vy: v.y, accel: wb.acceleration }, dirX, dirY, vTop, dt,
+    { dropToTop: p.recoveryTime > 0, carryDribbling: wb.dribbling });
+  const x = Math.max(0, Math.min(PITCH_LENGTH, r.x));
+  const y = Math.max(0, Math.min(PITCH_WIDTH, r.y));
+  // Stopped by the touchline / goal line: the blocked part of the velocity goes.
+  const vx = x === r.x ? r.vx : 0;
+  const vy = y === r.y ? r.vy : 0;
+  return finishMove(p, s, dt, x, y, vx, vy, r.turn, wb.carrySpeed, log);
+}
+
+/** A step without movement (at the target): standing, the kinematic memo kept current. */
+function standStill(p: GamePlayer, s: GameState, dt: number, log: MoveLog): GamePlayer {
+  return finishMove(p, s, dt, p.x, p.y, 0, 0, 1, p.runtimeStats.withoutBall.pressSpeed, log);
+}
+
+/** Race estimate (seconds) to (tx, ty) at top speed `vTop`, from the player's current velocity (`kinematics.md`). */
+function raceEta(p: GamePlayer, tx: number, ty: number, vTop: number): number {
+  return kinEta(p, p.runtimeStats.withoutBall.acceleration, tx, ty, Math.hypot(p.x - tx, p.y - ty), vTop);
+}
+
 /** Clears every chase_loose_ball memory (restarts: kickoff, half-time). */
 function clearAllChasers(state: GameState): GameState {
   const ids = new Set(state.players.filter(p => p.decisionMemory?.decision?.type === 'chase_loose_ball').map(p => p.id));
@@ -2595,10 +2692,7 @@ function commitLooseBallChasers(
   if (!passerTeam) return state;
 
   type Cand = { id: number; team: TeamId; eta: number; role: PlayerRole };
-  const etaOf = (p: GamePlayer) => {
-    const speed = chaseSprintSpeed(p);
-    return speed > 0.01 ? Math.hypot(p.x - toX, p.y - toY) / speed : Infinity;
-  };
+  const etaOf = (p: GamePlayer) => raceEta(p, toX, toY, chaseSprintSpeed(p));
   // Fastest attacker to the point (the passer's side): the sweeper keeper must beat him (`Keeper.ts`).
   const bestAttackerEta = state.players
     .filter(p => p.team === passerTeam && p.id !== passerId && p.role !== 'GK' && !isPlayerInRecovery(p))
@@ -4173,6 +4267,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   // ── 1. Formation movement — runs every tick, including during passes/shots ──
   {
     const markAssignments = assignMarkTargets(s.players, defendingTeam);
+    const moveLog = newMoveLog();
 
     const movedPlayers = s.players.map(player => {
       if (player.id === s.ballHolderId && !looseKeeper(s, player)) return player;
@@ -4185,13 +4280,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           const dx = gkTarget.x - player.x;
           const dy = gkTarget.y - player.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 0.01) return { ...player, targetPosition: gkTarget };
+          if (dist < 0.01) return { ...standStill(player, s, dt, moveLog), targetPosition: gkTarget };
           const recoveryMult = recoverySpeedMult(player);
           const step = Math.min(player.runtimeStats.withoutBall.pressSpeed * recoveryMult * dt, dist);
+          // The keeper's reaction to a shot is a dive, not a run: no acceleration ramp (`kinematics.md`).
+          const nx = player.x + (dx / dist) * step;
+          const ny = player.y + (dy / dist) * step;
           return {
-            ...player,
-            x: player.x + (dx / dist) * step,
-            y: player.y + (dy / dist) * step,
+            ...finishMove(player, s, dt, nx, ny, (nx - player.x) / dt, (ny - player.y) / dt, 1, player.runtimeStats.withoutBall.pressSpeed, moveLog),
             targetPosition: gkTarget,
           };
         }
@@ -4219,15 +4315,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const cdx = targetPt.x - player.x;
         const cdy = targetPt.y - player.y;
         const cdist = Math.hypot(cdx, cdy);
-        if (cdist < 0.01) return { ...player, targetPosition: targetPt };
+        if (cdist < 0.01) return { ...standStill(player, s, dt, moveLog), targetPosition: targetPt };
         const recoveryMult = recoverySpeedMult(player);
         const step = Math.min(sprintSpeed * recoveryMult * dt, cdist);
-        return {
-          ...player,
-          x: player.x + (cdx / cdist) * step,
-          y: player.y + (cdy / cdist) * step,
-          targetPosition: targetPt,
-        };
+        const legacy = { x: player.x + (cdx / cdist) * step, y: player.y + (cdy / cdist) * step };
+        return { ...moveToward(player, s, dt, targetPt, sprintSpeed * recoveryMult, legacy, moveLog), targetPosition: targetPt };
       }
       if (isPressing) {
         const holderDecision = s.decisions[holder.id];
@@ -4337,7 +4429,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const dx   = target.x - player.x;
       const dy   = target.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 0.01) return { ...player, targetPosition: target };
+      if (dist < 0.01) return { ...standStill(player, s, dt, moveLog), targetPosition: target };
 
       const baseSpeed    = player.runtimeStats.withoutBall.pressSpeed;
       // Off-ball runners within 15 yards of a holder who just received get an
@@ -4352,15 +4444,12 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           : 0;
       const recoveryMult = recoverySpeedMult(player);
       const step = Math.min((baseSpeed + accelBurst) * recoveryMult * dt, dist);
-      return {
-        ...player,
-        x: player.x + (dx / dist) * step,
-        y: player.y + (dy / dist) * step,
-        targetPosition: target,
-      };
+      const legacy = { x: player.x + (dx / dist) * step, y: player.y + (dy / dist) * step };
+      return { ...moveToward(player, s, dt, target, (baseSpeed + accelBurst) * recoveryMult, legacy, moveLog), targetPosition: target };
     });
 
     s = { ...s, players: movedPlayers };
+    emitMoveLog(moveLog);
   }
 
   // ── Shot in flight ─────────────────────────────────────────────────────────
@@ -4669,7 +4758,10 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
             const step = burstSpeed * dt;
             const newX = Math.max(0, Math.min(PITCH_LENGTH, carrier0.x + (odx / olen) * step));
             const newY = Math.max(0, Math.min(PITCH_WIDTH,  carrier0.y + (ody / olen) * step));
-            const updated = { ...carrier0, x: newX, y: newY, targetPosition: { x: newX, y: newY } };
+            const burstLog = newMoveLog();
+            const moved = carryAlong(carrier0, s, dt, odx / olen, ody / olen, burstSpeed, { x: newX, y: newY }, burstLog);
+            emitMoveLog(burstLog);
+            const updated = { ...moved, targetPosition: { x: moved.x, y: moved.y } };
             s = { ...s, players: s.players.map(p => p.id === updated.id ? updated : p) };
             return { state: s, passCompleted: false, tackled: false, goalScored: null };
           }
@@ -4693,7 +4785,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const newX = Math.max(0, Math.min(PITCH_LENGTH, carrier.x + holderDecision.dx * step));
       const newY = Math.max(0, Math.min(PITCH_WIDTH,  carrier.y + holderDecision.dy * step));
 
-      const updatedCarrier = { ...carrier, x: newX, y: newY, targetPosition: { x: newX, y: newY } };
+      const carryLog = newMoveLog();
+      const carried = carryAlong(carrier, s, dt, holderDecision.dx, holderDecision.dy,
+        (wb.carrySpeed + accelBurst) * recoveryMult * weatherEffectOf(s.weather).carrySpeed, { x: newX, y: newY }, carryLog);
+      emitMoveLog(carryLog);
+      const updatedCarrier = { ...carried, targetPosition: { x: carried.x, y: carried.y } };
       s = { ...s, players: s.players.map(p => p.id === updatedCarrier.id ? updatedCarrier : p) };
       return { state: s, passCompleted: false, tackled: false, goalScored: null };
     }
@@ -4714,7 +4810,12 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           const step = Math.min(attacker.runtimeStats.withBall.carrySpeed * recoveryMult * dt * weatherEffectOf(s.weather).carrySpeed, dist);
           const newX = Math.max(0, Math.min(PITCH_LENGTH, attacker.x + (ddx / dist) * step));
           const newY = Math.max(0, Math.min(PITCH_WIDTH,  attacker.y + (ddy / dist) * step));
-          const updatedAttacker = { ...attacker, x: newX, y: newY, targetPosition: { x: defender.x, y: defender.y } };
+          const approachLog = newMoveLog();
+          // Driving at the defender at full tilt: no braking to arrive (`kinematics.md`).
+          const approached = carryAlong(attacker, s, dt, ddx / dist, ddy / dist,
+            attacker.runtimeStats.withBall.carrySpeed * recoveryMult * weatherEffectOf(s.weather).carrySpeed, { x: newX, y: newY }, approachLog);
+          emitMoveLog(approachLog);
+          const updatedAttacker = { ...approached, targetPosition: { x: defender.x, y: defender.y } };
           s = { ...s, players: s.players.map(p => p.id === updatedAttacker.id ? updatedAttacker : p) };
           return { state: s, passCompleted: false, tackled: false, goalScored: null };
         }

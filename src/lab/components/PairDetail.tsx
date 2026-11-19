@@ -92,6 +92,8 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Keeper smothers",   key: "avgKeeperSmothers" },
     { stat: "Saves held",        key: "avgKeeperHolds" },
     { stat: "Saves spilled",     key: "avgKeeperSpills" },
+    { stat: "Distance (yd)",     key: "avgDistanceCovered" },
+    { stat: "Sprints",           key: "avgSprints" },
     { stat: "Corners",           key: "avgCorners" },
     { stat: "Throw-ins",         key: "avgThrowIns" },
     { stat: "Set-piece routines",         key: "avgSetPieceRoutines" },

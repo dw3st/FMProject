@@ -19,8 +19,8 @@ alwaysApply: false
 | Folder | Files |
 |---|---|
 | root | `types.ts` (GameState, GamePlayer, PlayerStats, SetPiece…), `FormationSlots.ts`, `PlayerDevelopment.ts` (DP model) |
-| `Domain/` | `gameState.ts` (state factory + tick, executes decisions), `DecisionTree.ts` (every player choice), `CarryLaneEval.ts`, `PassLanes.ts`, `ThroughBallCells.ts`, `Aerial.ts`, `OffBallMovement.ts`, `DefensivePositioning.ts`, `AttackingPositioning.ts`, `Positioning.ts`, `PositionalAwareness.ts`, `Offside.ts`, `Fouls.ts`, `SetPieces.ts` / `SetPieceLayouts.ts` / `SetPiecePositioning.ts`, `IntentDetection.ts`, `AiSubstitution.ts`, `TeamLineup.ts` (roster attributes → engine stats), `RuntimeLineup.ts` (fatigue, energy), `roleEngineData.ts` (per-role tuning from `roles.json`), `SimulateMatch.ts` (headless match), `Statistics.ts`, `PlayerRating.ts`, `advanceSim.ts`, `pitch.ts` |
-| `Configs/` | One tunable constant set per system: Attack (team pass/carry weights per tactic), Carry, Pass, Defense, DefensiveIntent, OffBall, Intent, ThroughBall, Aerial, Foul, SetPiece, Penalty, Familiarity, PlayerRating, QuickSim, Keeper (`keeper.md`) |
+| `Domain/` | `gameState.ts` (state factory + tick, executes decisions), `DecisionTree.ts` (every player choice), `CarryLaneEval.ts`, `PassLanes.ts`, `ThroughBallCells.ts`, `Aerial.ts`, `OffBallMovement.ts`, `DefensivePositioning.ts`, `AttackingPositioning.ts`, `Positioning.ts`, `PositionalAwareness.ts`, `Offside.ts`, `Fouls.ts`, `SetPieces.ts` / `SetPieceLayouts.ts` / `SetPiecePositioning.ts`, `IntentDetection.ts`, `AiSubstitution.ts`, `TeamLineup.ts` (roster attributes → engine stats), `RuntimeLineup.ts` (fatigue, energy), `roleEngineData.ts` (per-role tuning from `roles.json`), `SimulateMatch.ts` (headless match), `Statistics.ts`, `PlayerRating.ts`, `advanceSim.ts`, `pitch.ts`, `Kinematics.ts` (acceleration, braking, turning; `kinematics.md`) |
+| `Configs/` | One tunable constant set per system: Attack (team pass/carry weights per tactic), Carry, Pass, Defense, DefensiveIntent, OffBall, Intent, ThroughBall, Aerial, Foul, SetPiece, Penalty, Familiarity, PlayerRating, QuickSim, Keeper (`keeper.md`), Kinematics (`kinematics.md`) |
 | `Infrastructure/` | `ActionOutcomes.ts` (every dice roll: shot, save, tackle, interception, dribble, duels), `EventBus.ts`, `CrowdGrid.ts`, `SpatialEvaluation.ts`, `PenaltyShootout.ts` |
 | `Support/` | `DebugLog.ts`, `DebugSubscriber.ts`, `TestCases.ts` (`/test` scenarios) |
 
@@ -51,7 +51,7 @@ alwaysApply: false
 3. **Housekeeping:** set-piece phase expiry, per-minute injury risk, AI substitutions, possession
    timer, periodic team-intent re-evaluation, crowd grid and through-ball cell cache
 4. **Decisions** for every player (with commitment memory)
-5. **Movement** of every non-holder toward its target (formation/positioning, press, chase)
+5. **Movement** of every non-holder toward its target (formation/positioning, press, chase), through the kinematic layer: velocity carried from the previous step, acceleration, braking to arrive, turn penalty (`game-engine/kinematics.md`)
 6. **Shot in flight** → `resolveShot` → goal / save / miss and restarts
 7. **Loose ball** drift, pickup, duels, out-of-bounds restarts
 8. **Ball held:** tackle check (closest tackler, shared cooldown with interceptions), then the

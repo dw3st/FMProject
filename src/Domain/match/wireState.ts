@@ -14,7 +14,7 @@ function roundStats<T extends object>(o: T): T {
 
 /** A player without the engine-only fields, numbers rounded (a player goes from ~2.2 KB to ~0.9 KB). */
 export function wirePlayer(p: GamePlayer): H2HWirePlayer {
-  const { fit: _f, baseStats: _b, decisionMemory: _d, engine: _e, bounds: _bo, fatigueBaselineEnergy: _fb, ...rest } = p;
+  const { fit: _f, baseStats: _b, decisionMemory: _d, engine: _e, bounds: _bo, fatigueBaselineEnergy: _fb, kin: _k, sprint: _sp, vel: _v, ...rest } = p;
   return {
     ...rest,
     ...(p.fit ? { fit: { aptitudes: p.fit.aptitudes } } : {}),

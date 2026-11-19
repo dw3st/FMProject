@@ -58,6 +58,7 @@ const PROMO_OVERLAYS: DebugOverlays = {
   setPieces: false,
   instructions: false,
   keeper: false,
+  kinematics: false,
 };
 
 // URL params.
