@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.22.1",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "general", pt: "O avanço até o próximo jogo agora vai um dia por vez, mostra o dia e pode ser cancelado a qualquer momento (botão Cancelar ou Esc).", en: "Advancing to the next match now goes one day at a time, shows the day and can be cancelled at any moment (Cancel button or Esc)." },
+      { tab: "general", pt: "Com amigos, dá para cancelar o seu pronto enquanto o mundo avança: ele para depois do dia em andamento.", en: "With friends, you can cancel your ready mark while the world advances: it stops after the current day." },
+    ],
+  },
+  {
     version: "12.22",
     date: "2026-11-18",
     time: "20:11",
