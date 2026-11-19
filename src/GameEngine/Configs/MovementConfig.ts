@@ -108,7 +108,7 @@ export const MOVEMENT = {
   /** Loose / through ball race: a chaser's ETA − ANTICIPATION_CHASE × lookahead when the chasers are picked. */
   ANTICIPATION_CHASE: 0.5,
   /** Interception reach × (1 + ANTICIPATION_INTERCEPT × (anticipation − mean)) . */
-  ANTICIPATION_INTERCEPT: 0.6,
+  ANTICIPATION_INTERCEPT: 0.3,
   /** Mean anticipation of the world (0..1): the neutral point of the interception gain. */
   ANTICIPATION_MEAN: 0.29,
 };
