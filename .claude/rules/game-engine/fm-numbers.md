@@ -140,6 +140,33 @@ Isolated with `ball-cluster.ts` (150 matches, AI formations, flags and `FM_NUMBE
 (`TB_RISK` 0: −1.5). Misses (reach ×10: no change), the out-of-possession drop and depth, the shape shift and the
 crowd-edge rule moved little.
 
+## 90 minutes of physics (engine rebuild stage 2)
+
+The engine plays the 90 minutes on the real clock (`match-flow.md` → "Clock and time constants"). Premier League,
+24 seeded matches (`fm-targets.ts 24 --chunks 1 --seed 9000`), raw counts per match, both teams; "before" = the
+`FULL_DURATION` switch of stage 0 (90 minutes but the restarts still 0.4–2 physical s of dead ball). Recorded only:
+nothing calibrated.
+
+| Measure | FM | before | stage 2 |
+|---|---|---|---|
+| Goals | 1.5 | 37 | 14.8 |
+| Shots | 21.5 | 114 | 45.8 |
+| Passes (all kinds) | 978 | 975 | 746 |
+| Corners | 12.5 | 81 | 39.1 |
+| Fouls | 19 | 107 | 59.1 |
+| Throw-ins | 23 | 45 | 22.8 |
+| Penalties | 0.2 | — | 2.7 |
+| Outfield energy at 15' / 45' / 90' | 87 / 77.5 / 73.5 | — / — / 52 | 83.7 / 75.0 / 65.6 |
+| Keepers' energy at the end | 96.5 | — | 68.8 |
+
+Restarts now take their dead time on the match clock (a corner 21.6 game-s, a goal kick 18…), so about half the
+match the ball is out of play, as in football; the counts fell by about half. Shots are still about twice FM's and
+goals ten times (xG per shot 0.48 against 0.15): the next stages (shot choice, keeper, blocks) have to move them.
+
+Cost (`engine-cost.ts`, same 3 seeded matches, machine loaded by other runs): 1.35 → 0.93 ms per tick wall, 0.66
+CPU ms per tick, 38 → 26 s per match (15.3 s in the fm-targets run), ~28 100 ticks, RSS 135 MB. Unloaded, 0.48 ms
+per tick (13.8 s per match).
+
 ## Limitations
 
 - Ball crowding with every team in 4-3-3 (Premier) is still 6.6% against main's 5.8%; with the AI formations and in
