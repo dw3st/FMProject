@@ -90,6 +90,18 @@ export interface PlayerStats {
   penaltyGoals:             number;
   /** Times caught offside (the receiver). */
   offsides:                 number;
+  /** Stage 13: fouls suffered, by the third from the fouled team's view (own / middle / final; FM 21 / 43 / 36%). */
+  foulsWonOwnThird:         number;
+  foulsWonMidThird:         number;
+  foulsWonFinalThird:       number;
+  /** Stage 13: fouls suffered on the ball while carrying, just after receiving, holding / turning (FM ≥ 44% carrying). */
+  foulsWonCarrying:         number;
+  foulsWonReceiving:        number;
+  foulsWonHolding:          number;
+  /** Stage 13: contact fouls committed (leaning on / by the holder, no tackle; also in `fouls`). */
+  contactFouls:             number;
+  /** Stage 13 (`OffsideRuns.ts`): reads of the offside line that left him past it, or a lapse. */
+  lineMisreads:             number;
   // ── Aerial (`.claude/rules/game-engine/aerial.md`) ─────────────────────────
   /** Crosses played. */
   crosses:                  number;
@@ -166,6 +178,20 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   avgEndEnergy: number;
   /** Count of substitutions this team made that were flagged `reason: 'fatigue'` by AiSubstitution. */
   fatigueSubstitutions: number;
+  /**
+   * Stage 14 (`fitness.md` → "FM condition"): the AI's changes (`fatigue` + `tactical`), the tactical ones, and the sum of
+   * their minutes and of the outgoing players' condition (averages = sum / aiSubstitutions).
+   */
+  aiSubstitutions: number;
+  tacticalSubstitutions: number;
+  aiSubMinuteSum: number;
+  aiSubConditionSum: number;
+  /**
+   * Stage 14: the outfield median condition of this side at 15' / 30' / 45' / 60' / 75' (first sample at or after the
+   * minute, `conditionSample`) and at the last sample (90' or the end), and the keeper's at the last sample. 0 = none.
+   */
+  condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
+  keeperCondition: number;
   /** Count of in-match injuries suffered by this team (`injury` event). */
   injuries: number;
   /** Injury stoppages after which this team restarted play (`injuryStoppage`). */
@@ -308,6 +334,14 @@ function emptyStats(): PlayerStats {
     penaltiesConceded:        0,
     penaltyGoals:             0,
     offsides:                 0,
+    foulsWonOwnThird: 0,
+    foulsWonMidThird: 0,
+    foulsWonFinalThird: 0,
+    foulsWonCarrying: 0,
+    foulsWonReceiving: 0,
+    foulsWonHolding: 0,
+    contactFouls: 0,
+    lineMisreads: 0,
     crosses:                  0,
     crossesCompleted:         0,
     aerialDuels:              0,
@@ -366,6 +400,9 @@ type TeamFlags = {
   cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
   passGround: number; passDriven: number; passChip: number; passHigh: number; passThroughLow: number; passThroughHigh: number; passHeader: number;
   passLaunchSpeedSum: number; passLaunchN: number;
+  aiSubstitutions: number; tacticalSubstitutions: number; aiSubMinuteSum: number; aiSubConditionSum: number;
+  condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
+  keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
@@ -381,6 +418,8 @@ const emptyTeamFlags = (): TeamFlags => ({
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
   highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
   passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
+  aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
+  condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
@@ -432,6 +471,22 @@ gameBus.on('playerSubstituted', e => {
   playerTeam.set(e.inId, e.team);
   endEnergy.set(e.outId, { team: e.team, energy: e.outEnergy });
   if (e.reason === 'fatigue') teamFlags[e.team].fatigueSubstitutions++;
+  if (e.reason === 'fatigue' || e.reason === 'tactical') {
+    const f = teamFlags[e.team];
+    f.aiSubstitutions++;
+    if (e.reason === 'tactical') f.tacticalSubstitutions++;
+    f.aiSubMinuteSum += e.minute ?? 0;
+    f.aiSubConditionSum += e.outEnergy;
+  }
+});
+
+// Condition by minute (stage 14): first sample at or after 15' … 75', and the last one (90' or the end).
+const CONDITION_KEYS = [[15, 'condition15'], [30, 'condition30'], [45, 'condition45'], [60, 'condition60'], [75, 'condition75']] as const;
+gameBus.on('conditionSample', e => {
+  const f = teamFlags[e.team];
+  for (const [m, k] of CONDITION_KEYS) if (e.minute >= m && f[k] === 0) f[k] = e.median;
+  f.condition90 = e.median;
+  if (e.keeper !== null) f.keeperCondition = e.keeper;
 });
 
 // Players still on the pitch at the final whistle — merged with the `playerSubstituted` exits
@@ -562,7 +617,16 @@ gameBus.on('ballCluster', e => {
 });
 
 // ── Discipline stats ──────────────────────────────────────────────────────────
-gameBus.on('foul', e => { get(e.offenderId).fouls++; lastHolder = null; notify(); });
+gameBus.on('foul', e => {
+  get(e.offenderId).fouls++;
+  const w = get(e.fouledId);
+  if (e.third === 0) w.foulsWonOwnThird++; else if (e.third === 1) w.foulsWonMidThird++; else if (e.third === 2) w.foulsWonFinalThird++;
+  if (e.context === 'carry') w.foulsWonCarrying++; else if (e.context === 'reception') w.foulsWonReceiving++; else if (e.context === 'hold') w.foulsWonHolding++;
+  lastHolder = null;
+  notify();
+});
+gameBus.on('contactFoul', e => { get(e.offenderId).contactFouls++; notify(); });
+gameBus.on('lineMisread', e => { get(e.playerId).lineMisreads++; });
 gameBus.on('card', e => {
   const s = get(e.playerId);
   if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
@@ -906,6 +970,14 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.penaltiesConceded        += stats.penaltiesConceded;
     result.penaltyGoals             += stats.penaltyGoals;
     result.offsides                 += stats.offsides;
+    result.foulsWonOwnThird += stats.foulsWonOwnThird;
+    result.foulsWonMidThird += stats.foulsWonMidThird;
+    result.foulsWonFinalThird += stats.foulsWonFinalThird;
+    result.foulsWonCarrying += stats.foulsWonCarrying;
+    result.foulsWonReceiving += stats.foulsWonReceiving;
+    result.foulsWonHolding += stats.foulsWonHolding;
+    result.contactFouls += stats.contactFouls;
+    result.lineMisreads += stats.lineMisreads;
     result.crosses                  += stats.crosses;
     result.crossesCompleted         += stats.crossesCompleted;
     result.aerialDuels              += stats.aerialDuels;

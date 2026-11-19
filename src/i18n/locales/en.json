@@ -1312,6 +1312,8 @@
       "YC": "Yellow Cards",
       "RC": "Red Cards",
       "OFF": "Offsides",
+      "MR": "Offside line misreads",
+      "FW": "Fouls won",
       "PEN": "Penalty Goals",
       "CR": "Crosses",
       "AD": "Aerial Duels Won",

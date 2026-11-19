@@ -946,6 +946,29 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-condition-subs',
+    name:        "11v11 — FM condition and AI changes (54')",
+    description: "Stage 14 (`fitness.md` → FM condition): second half at 54', every outfield player between 62 and 84 condition, both sides managed by the AI rule. From 55' the AI changes the players below 75 % (most tired first, at most 2 a check, 3–4 a match, a tactical one from 70' if fewer than 3). Open the Energy panel: the condition per player at 0/15/30/45/60/75/90', the outfield median next to FM's, and every change with its reason; the condition debug line logs each AI change.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = (p: GamePlayer, i: number): GamePlayer => {
+        if (p.role === 'GK') return { ...p, energy: 97, fatigueBaselineEnergy: 97, runtimeStats: getRuntimeLineup(p.baseStats, { energy: 97 }) };
+        const energy = 62 + ((i * 7) % 23);
+        return { ...p, energy, fatigueBaselineEnergy: energy, runtimeStats: getRuntimeLineup(p.baseStats, { energy }) };
+      };
+      return {
+        ...base,
+        matchPhase: 'secondHalf',
+        matchTime: 9 * 60 - 5,
+        presentationCountdown: 0,
+        autoSubs: { A: true },
+        players: base.players.map(tired),
+      };
+    },
+  },
+
+  {
     id:          'hothead',
     name:        '11v11 — Hot-heads vs calm side',
     description: 'Team A players all at temperament 20 (hot-headed: foul chance x1.45, yellows x1.15, straight reds x1.35 per foul), Team B at 1 (very calm: x0.55, x0.77, x0.58) — measured 20 vs 1 with the same club: ~1.8x the fouls, ~2.8x the yellows from the roster itself (`.claude/rules/game/personality.md`). Set Team A to High press, keep the Temperament selectors on "Roster" and watch the foul/card log entries (`tempMult`) and the Energy panel.',
@@ -1236,6 +1259,59 @@ export const TEST_SCENARIOS: TestScenario[] = [
       let i = 0;
       const fouled = maybeFoul(placed, placed.players.find(p => p.id === cb.id)!, placed.players.find(p => p.id === st.id)!, 'tackle', false, () => rolls[i++] ?? 0.5);
       return fouled ?? placed;
+    },
+  },
+
+  {
+    id:          'offside-mistimed-run',
+    name:        '11v11 — Mistimed run (offside, stage 13)',
+    description: 'Team A CM has the ball on the halfway line; the Team A ST has misread the offside line (a lapse: he believes it is 3 yd deeper than it is, `OffsideRuns.ts`) and runs past it. A pass to him is flagged offside. Watch the "offside" debug log (misreads, the call), the OFF column and the line-misread count.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cm = base.players.find(p => p.team === 'A' && p.role === 'CM');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cm || !st) return base;
+      const dir = cm.attackDir;
+      const mid = PITCH_LENGTH / 2;
+      const lineX = mid + dir * 22;
+      const placed: GameState = {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cm.id,
+        players: base.players.map(p => {
+          if (p.id === cm.id) return { ...p, x: mid, y: 37 };
+          if (p.id === st.id) return { ...p, x: lineX - dir * 0.5, y: 34, lineRead: { lineX, err: 3, nextAt: 1e9, lapse: true } };
+          if (p.team === 'B' && (p.role === 'CB' || p.role === 'LB' || p.role === 'RB')) return { ...p, x: lineX, y: p.y };
+          return p;
+        }),
+      };
+      return placed;
+    },
+  },
+
+  {
+    id:          'contact-foul-carrier',
+    name:        '11v11 — Contact foul on a carrier (stage 13)',
+    description: 'Team A RW carries down the right with a Team B LB 1.2 yd off his shoulder. Contact moments (`FOUL_CONFIG.FM.CONTACT_RATE` per second) are foul checks of kind "contact" on the carrier (`fouls.md` → "FM fouls"). Watch the "foul" debug log (context carry, third) and the FL column.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const rw = base.players.find(p => p.team === 'A' && p.role === 'RW');
+      const lb = base.players.find(p => p.team === 'B' && p.role === 'LB');
+      if (!rw || !lb) return base;
+      const dir = rw.attackDir;
+      const x = PITCH_LENGTH / 2 + dir * 15;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: rw.id,
+        players: base.players.map(p =>
+          p.id === rw.id ? { ...p, x, y: 64 } :
+          p.id === lb.id ? { ...p, x: x - dir * 0.9, y: 63.2 } : p),
+      };
     },
   },
 

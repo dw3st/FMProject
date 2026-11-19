@@ -73,6 +73,15 @@ export interface DecisionFlags {
   PHYSICAL_INTERCEPTION: boolean;
   /** Stage 18 (`highlights.md`): the highlight layer (observation only: marks the lances, never changes the play). */
   HIGHLIGHTS: boolean;
+  /** Stage 13 (`game-rules/offside.md`): attackers read the offside line every few tenths of a second with an error
+   *  (anticipation, decisions, consistency) instead of being held on it; mistimed runs are caught offside. */
+  OFFSIDE_RUNS: boolean;
+  /** Stage 13 (`fouls.md`): contact fouls on the ball holder (carrying, receiving, holding), the foul's context and
+   *  third, and the FM card per foul. */
+  FM_FOULS: boolean;
+  /** Stage 14 (`fitness.md` → "FM condition"): FM's condition curve (kick-off 99, drain fading toward a floor, +2 at
+   *  half time, keepers barely tire) and FM's AI substitutions (from 55', at 55–75 %, 3–4 a match). */
+  FM_CONDITION: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -105,6 +114,9 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   PASS_PHYSICS: true,
   PHYSICAL_INTERCEPTION: true,
   HIGHLIGHTS: true,
+  OFFSIDE_RUNS: true,
+  FM_FOULS: true,
+  FM_CONDITION: true,
 };
 
 /**

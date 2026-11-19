@@ -451,6 +451,18 @@ export const FM_NEAR_HOLDER = [0.85, 1.8, 3.1] as const;
 /** R7: shape in / out of possession (yd): back line, length, width, back→mid, mid→front, front line. */
 export const FM_SHAPE = [[58, 39, 40, 19, 10, 87], [24, 35, 37, 14, 12.5, 50]] as const;
 
+/**
+ * Stage 13 (R8 §3, R9 §5): where the fouls are (fouled team's view: own / middle / final third, %), what the fouled
+ * player was doing (carry ≥ 44%, his team's pass 17%, turn or hold 9%), and FM's per-second rates over a 93-minute
+ * match (5580 s of play, the comparison while our match still has ~5 min of physics).
+ */
+export const FM_FOULS = {
+  thirds: [21, 43, 36] as const,
+  carry: 44, reception: 17, hold: 9,
+  matchSeconds: 5580,
+  foulsPerMatch: 19, offsidesPerMatch: 8, yellowsPerMatch: 3,
+} as const;
+
 /** Match counts the targets are computed from: the two teams' `Statistics.ts` totals summed. */
 export interface FmMatchCounts {
   goals: number; shots: number; shotsOnTarget: number; shotsBlocked: number; xg: number;
@@ -461,6 +473,10 @@ export interface FmMatchCounts {
   crosses: number; crossesCompleted: number; longBalls: number; longBallsCompleted: number;
   aerialDuelsWon: number; tackles: number; interceptions: number; dribblesWon: number;
   fouls: number; yellowCards: number; redCards: number; offsides: number; penaltiesAwarded: number;
+  /** Stage 13: fouls suffered by third (fouled team's view) and by what he was doing; contact fouls; line misreads. */
+  foulsWonOwnThird?: number; foulsWonMidThird?: number; foulsWonFinalThird?: number;
+  foulsWonCarrying?: number; foulsWonReceiving?: number; foulsWonHolding?: number;
+  contactFouls?: number; lineMisreads?: number;
   /** Shots from 18+ yd of the goal mouth, when a collector counted them (`longShotsOf`); else absent. */
   longShots?: number;
   /** Median xG per shot, when a collector kept the histogram (`xgMedianOf`); else absent. */
@@ -473,6 +489,8 @@ export const FM_COUNT_KEYS = [
   "crosses", "crossesCompleted", "longBalls", "longBallsCompleted",
   "aerialDuelsWon", "tackles", "interceptions", "dribblesWon",
   "fouls", "yellowCards", "redCards", "offsides", "penaltiesAwarded",
+  "foulsWonOwnThird", "foulsWonMidThird", "foulsWonFinalThird", "foulsWonCarrying", "foulsWonReceiving", "foulsWonHolding",
+  "contactFouls", "lineMisreads",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
 /** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */

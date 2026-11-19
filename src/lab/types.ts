@@ -241,6 +241,13 @@ export interface TeamRawStats {
   avgEndEnergySum: number;
   /** Fatigue-driven AI substitutions made by this team, summed across `matches` games. */
   fatigueSubstitutions: number;
+  /**
+   * Stage 14 (`fitness.md` → "FM condition"), summed across games: the AI's changes (fatigue + tactical), the tactical
+   * ones, their minutes and the outgoing players' condition; the outfield median condition at 45' and 90' and the
+   * keeper's at the end (full engine only; 0 in the quickSim).
+   */
+  aiSubstitutions: number; tacticalSubstitutions: number; aiSubMinuteSum: number; aiSubConditionSum: number;
+  condition45Sum: number; condition90Sum: number; keeperConditionSum: number;
   /** In-match injuries suffered by this team, summed across `matches` games. */
   injuries: number;
   /** Injury stoppages after which this team restarted play, summed across `matches` games. */
@@ -287,6 +294,14 @@ export interface TeamRawStats {
   penaltyGoals: number;
   /** Times this team was caught offside. */
   offsides: number;
+  /** Stage 13: fouls this team suffered by third (its view) and on the ball while carrying; contact fouls
+   *  committed; misreads of the offside line. */
+  foulsWonOwnThird: number;
+  foulsWonMidThird: number;
+  foulsWonFinalThird: number;
+  foulsWonCarrying: number;
+  contactFouls: number;
+  lineMisreads: number;
   // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
   crosses: number;
   crossesCompleted: number;
@@ -502,6 +517,10 @@ export interface PerMatchView {
   avgEndEnergy: number;
   /** Fatigue-driven AI substitutions per match. */
   avgFatigueSubs: number;
+  /** Stage 14: AI changes per match (FM 3–4), tactical ones, their mean minute and the outgoing player's condition. */
+  avgAiSubs: number; avgTacticalSubs: number; avgAiSubMinute: number; avgAiSubCondition: number;
+  /** Stage 14: outfield median condition at 45' and 90' (FM 77.5 / 73.5) and the keeper's at the end (FM 96.5). */
+  condition45: number; condition90: number; keeperCondition: number;
   /** Injuries per match. */
   avgInjuries: number;
   /** Injury stoppages per match after which this team restarted play. */
@@ -541,6 +560,14 @@ export interface PerMatchView {
   /** In-match penalty goals per match. */
   avgPenaltyGoals: number;
   avgOffsides: number;
+  /** Stage 13: fouls suffered by third (own / middle / final, %), on a carrier (%), contact fouls and line misreads
+   *  per match. */
+  foulsOwnThirdPct: number;
+  foulsMidThirdPct: number;
+  foulsFinalThirdPct: number;
+  foulsOnCarrierPct: number;
+  avgContactFouls: number;
+  avgLineMisreads: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;
@@ -700,6 +727,10 @@ export interface VariantSummary {
   avgEndEnergy: number;
   /** Fatigue-driven AI substitutions per match. */
   avgFatigueSubs: number;
+  /** Stage 14: AI changes per match (FM 3–4), tactical ones, their mean minute and the outgoing player's condition. */
+  avgAiSubs: number; avgTacticalSubs: number; avgAiSubMinute: number; avgAiSubCondition: number;
+  /** Stage 14: outfield median condition at 45' and 90' (FM 77.5 / 73.5) and the keeper's at the end (FM 96.5). */
+  condition45: number; condition90: number; keeperCondition: number;
   /** Injuries per match. */
   avgInjuries: number;
   /** Injury stoppages per match after which this team restarted play. */
@@ -739,6 +770,14 @@ export interface VariantSummary {
   /** In-match penalty goals per match. */
   avgPenaltyGoals: number;
   avgOffsides: number;
+  /** Stage 13: fouls suffered by third (own / middle / final, %), on a carrier (%), contact fouls and line misreads
+   *  per match. */
+  foulsOwnThirdPct: number;
+  foulsMidThirdPct: number;
+  foulsFinalThirdPct: number;
+  foulsOnCarrierPct: number;
+  avgContactFouls: number;
+  avgLineMisreads: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;

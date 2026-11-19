@@ -10,10 +10,10 @@ const card = (playerId: number, c: "yellow" | "red"): CardRecord => ({
 describe("fatigueColor", () => {
   test("bands and limits", () => {
     expect(fatigueColor(100)).toBe(FATIGUE_BAR.OK);
-    expect(fatigueColor(60)).toBe(FATIGUE_BAR.OK);
-    expect(fatigueColor(59.9)).toBe(FATIGUE_BAR.MID);
-    expect(fatigueColor(40)).toBe(FATIGUE_BAR.MID);
-    expect(fatigueColor(39.9)).toBe(FATIGUE_BAR.LOW);
+    expect(fatigueColor(FATIGUE_BAR.OK_FROM)).toBe(FATIGUE_BAR.OK);
+    expect(fatigueColor(FATIGUE_BAR.OK_FROM - 0.1)).toBe(FATIGUE_BAR.MID);
+    expect(fatigueColor(FATIGUE_BAR.MID_FROM)).toBe(FATIGUE_BAR.MID);
+    expect(fatigueColor(FATIGUE_BAR.MID_FROM - 0.1)).toBe(FATIGUE_BAR.LOW);
     expect(fatigueColor(0)).toBe(FATIGUE_BAR.LOW);
   });
 });
