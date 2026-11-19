@@ -54,6 +54,8 @@ import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { ballMeetsKeeper, defenderCovers, saveOutcomeChances, shotStoppingSkill, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
+import { shotXg, XG_PENALTY } from '@/GameEngine/Domain/ShotXg';
+import type { FmXgResult } from '@/GameEngine/Domain/FmXg';
 import type { RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
@@ -1372,10 +1374,13 @@ export function startDirectFreeKick(state: GameState, rng: () => number = matchR
   const taker = state.players.find(p => p.id === state.ballHolderId)!;
   const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
   const pos = { x: taker.x, y: taker.y };
-  const base = directFreeKickXG(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX));
   const wall = (sp.wallIds ?? []).map(id => state.players.find(p => p.id === id)).filter((p): p is GamePlayer => !!p);
   const pBlock = wallBlockChance(wall.length);
-  const xg = base * (1 - pBlock);
+  // Stage 6 (`xg.md`): the FM free-kick model (the wall is in its blocker features); the wall roll below still decides
+  // a block and the flight rolls on this xG.
+  const fmBase = DECISION_FLAGS.FM_XG ? shotXg(taker, state.players, 'free_kick').xg : null;
+  const base = fmBase ?? directFreeKickXG(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX));
+  const xg = fmBase ?? base * (1 - pBlock);
   const blocked = wall.length > 0 && rng() < pBlock;
   gameBus.emit('shot', { player: taker.id, xg });
   gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked });
@@ -1702,7 +1707,7 @@ export function applyPenaltyOutcome(state: GameState, outcome: PenaltyOutcome): 
 
 /** The end of a penalty in the match, once its outcome is known (automatic or 2D). */
 function finishInMatchPenalty(state: GameState, taker: GamePlayer, gk: GamePlayer | null, scored: boolean, chance: number): TickResult {
-  gameBus.emit('shot', { player: taker.id, xg: chance });
+  gameBus.emit('shot', { player: taker.id, xg: DECISION_FLAGS.FM_XG ? XG_PENALTY : chance });
   gameBus.emit('penaltyResolved', { team: taker.team, takerId: taker.id, keeperId: gk?.id ?? null, scored, chance });
   debugLog('foul', `Penalty by ${taker.name}: ${scored ? 'GOAL' : 'saved/missed'} (chance ${(chance * 100).toFixed(0)}%)`, {
     playerId: taker.id, data: { chance, scored },
@@ -2406,6 +2411,15 @@ export function endCurrentPeriod(state: GameState, newMatchTime: number = state.
   }
 }
 
+/** Debug line of a shot's FM xG (stage 6): model, the seven features, visible goal. */
+function logShotXg(shooter: GamePlayer, fm: FmXgResult): void {
+  if (!isDebugEnabled()) return;
+  const f = fm.features;
+  debugLog('shot', `${shooter.name} xG ${fm.xg.toFixed(3)} (${fm.model}): dist ${f.distance.toFixed(2)} · occl ${f.occluding.toFixed(2)} · between ${fm.inTriangle} · angle ${f.angleLocation.toFixed(2)} · facing ${f.angleFacing.toFixed(2)} · height ${f.height.toFixed(2)} · visible ${(f.fraction * 100).toFixed(0)}%`, {
+    playerId: shooter.id, data: { xg: fm.xg, model: fm.model, ...f },
+  });
+}
+
 function startShot(state: GameState): GameState {
   if (state.setPiece?.variant === 'direct' && state.setPiece.takerId === state.ballHolderId) return startDirectFreeKick(state);
   const shooter = state.players.find(p => p.id === state.ballHolderId)!;
@@ -2420,7 +2434,10 @@ function startShot(state: GameState): GameState {
   const openAngle = computeOpenAngle(shooter.x, shooter.y, goalX);
   const defenders = state.players.filter(p => p.team !== shooter.team);
   const pressure  = computeWeightedPressure(shooter, defenders);
-  const xg = computeXG(dist, openAngle, pressure);
+  // Stage 6 (`xg.md`): the FM xG is the shot's number; the resolution below still rolls on it (stage 7 replaces that).
+  const fmXg = DECISION_FLAGS.FM_XG ? shotXg(shooter, state.players, 'ground') : null;
+  const xg = fmXg ? fmXg.xg : computeXG(dist, openAngle, pressure);
+  if (fmXg?.fm) logShotXg(shooter, fmXg.fm);
 
   gameBus.emit('shot', { player: shooter.id, xg });
 
@@ -2455,7 +2472,8 @@ function startChip(state: GameState): GameState {
   if (chance <= 0) return startShot(state);
   const isGoal = resolveChip(chance);
   const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
-  gameBus.emit('shot', { player: shooter.id, xg: chance });
+  // Stage 6: the statistic is the FM xG of the shot; the chip's own chance still decides it.
+  gameBus.emit('shot', { player: shooter.id, xg: DECISION_FLAGS.FM_XG ? shotXg(shooter, state.players, 'ground').xg : chance });
   gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: isGoal ? 'success' : 'fail' });
   debugLog('keeper', `${shooter.name} chips ${keeper?.name ?? 'the keeper'} (${(chance * 100).toFixed(0)}%)`, { playerId: shooter.id });
   return {
@@ -3886,7 +3904,10 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
   const dist = Math.abs(goalX - p.x);
   const openAngle = computeOpenAngle(p.x, p.y, goalX);
   const pressure = computeWeightedPressure(p, state.players.filter(o => o.team !== p.team)) * pressureMult;
-  const xg = computeXG(dist, openAngle, pressure) * AERIAL_CONFIG.HEADER_XG_MULT;
+  // Stage 6 (`xg.md`): the FM header models (ball height a placeholder until the 3D ball).
+  const fmXg = DECISION_FLAGS.FM_XG ? shotXg(p, state.players, 'header') : null;
+  const xg = fmXg ? fmXg.xg : computeXG(dist, openAngle, pressure) * AERIAL_CONFIG.HEADER_XG_MULT;
+  if (fmXg?.fm) logShotXg(p, fmXg.fm);
   // Heading stands in for finishing in the aim spread.
   const aimAs: GamePlayer = {
     ...p,
@@ -4244,7 +4265,10 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   const r = tickStateCore(state, dt, passSpeed);
   // Stage 3 (`ball-3d.md`): the 3D ball follows the play (passes, shots, loose balls, held).
   const ball = DECISION_FLAGS.BALL_3D ? syncBall(state, r.state, dt, passSpeed) : undefined;
-  return { ...r, state: { ...r.state, rng: matchRngState(), ball } };
+  const next = { ...r.state, rng: matchRngState(), ball };
+  // Stage 18 (`highlights.md`): the highlight layer reads every step (observation only).
+  if (DECISION_FLAGS.HIGHLIGHTS) gameBus.emit('simStep', { state: next, dt, ball: getBallPos(next) });
+  return { ...r, state: next };
 }
 
 function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResult {

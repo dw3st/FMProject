@@ -17,6 +17,7 @@
  */
 
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
+import { shotXg } from '@/GameEngine/Domain/ShotXg';
 import { DECISION_FLAGS, HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { holderPressure } from '@/GameEngine/Domain/Pressure';
 import {
@@ -382,6 +383,8 @@ interface ShootBreakdown {
   xgFloor:     number;
   intentBonus: number;
   score:       number;
+  /** FM xG model breakdown (stage 6, `xg.md`), present with `FM_XG` on. */
+  fm?:         { model: string; features: Record<string, number>; availableM: number; coveredM: number; inTriangle: number };
 }
 
 /** Dribble breakdown — debug-only view of how the dribble ActionScore is produced. */
@@ -484,13 +487,15 @@ export function shotLevelMult(role: string, level = 0): number {
   return base * FM_NUMBERS.SHOT_LEVEL_STEP ** level;
 }
 
-function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamIntent): ActionScore {
+function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamIntent, allPlayers: GamePlayer[]): ActionScore {
   const goalX = player.attackDir === 1 ? PITCH_LENGTH : 0;
   const dist  = Math.abs(goalX - player.x);
 
   const openAngle = computeOpenAngle(player.x, player.y, goalX);
   const pressure  = computeWeightedPressure(player, opponents);
-  const xg        = computeXG(dist, openAngle, pressure);
+  // Stage 6 (`xg.md`): with FM_XG the FM logistic model over everyone on the pitch; off, the old spatial xG.
+  const sx        = DECISION_FLAGS.FM_XG ? shotXg(player, allPlayers, 'ground') : null;
+  const xg        = sx ? sx.xg : computeXG(dist, openAngle, pressure);
 
   // Compress xG relative to role eagerness.
   // SHOOT_STRONG_RAW=1.6: ST at xG=0.40 (threshold=0.25 → raw=1.6) scores 0.632.
@@ -515,6 +520,7 @@ function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamInte
     shootBreakdown: {
       dist, openAngle, pressure, xg, threshold,
       roleScore, xgFloor, intentBonus, score,
+      ...(sx?.fm ? { fm: { model: sx.fm.model, features: { ...sx.fm.features }, availableM: sx.fm.availableM, coveredM: sx.fm.coveredM, inTriangle: sx.fm.inTriangle } } : {}),
     },
   };
 }
@@ -761,8 +767,10 @@ function oneOnOneGate(
   return (x, y, receiverId, xgMult = 1) => {
     if (distToGoalMouth(x, y, player.attackDir) >= holderDist) return false;
     const receiver = (receiverId !== null ? allPlayers.find(p => p.id === receiverId) : undefined) ?? player;
-    const xg = computeXG(Math.abs(goalX - x), computeOpenAngle(x, y, goalX),
-      computeWeightedPressure({ ...receiver, x, y }, opponents)) * xgMult;
+    const xg = DECISION_FLAGS.FM_XG
+      ? shotXg(receiver, allPlayers, xgMult === 1 ? 'ground' : 'header', { x, y }).xg
+      : computeXG(Math.abs(goalX - x), computeOpenAngle(x, y, goalX),
+        computeWeightedPressure({ ...receiver, x, y }, opponents)) * xgMult;
     return xg >= holderXg + ONE_ON_ONE_CONFIG.XG_MARGIN;
   };
 }
@@ -885,7 +893,7 @@ function decideBallHolder(
     ? null
     : (player.team === 'A' ? crowdGrid.teamBOutfield : crowdGrid.teamAOutfield);
 
-  const sh = evalShoot(player, opponents, intent);          // GK included — affects pressure calc
+  const sh = evalShoot(player, opponents, intent, allPlayers);          // GK included — affects pressure calc
   // One-on-one with the keeper (#156): only give the ball to a clearly better-placed teammate.
   const gate = oneOnOneGate(player, opponents, outfieldOpponents, allPlayers, sh.shootBreakdown?.xg ?? 0);
   const ps = evalPass(player, opponents, allPlayers, intent, gate && (r => gate(r.x, r.y, r.id)));

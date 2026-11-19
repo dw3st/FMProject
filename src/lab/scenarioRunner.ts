@@ -238,6 +238,8 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgBallsOutOfPlay: r2(t.ballsOutOfPlay / matches),
     avgDeflections: r2(t.deflections / matches),
     avgShotsBlocked: r2(t.shotsBlocked / matches),
+    avgChances: r2(t.chances / matches),
+    avgClearChances: r2(t.clearChances / matches),
     avgHeavyTouches: r2(t.heavyTouches / matches),
     avgLineStepUps: r2(t.lineStepUps / matches),
     avgLineDrops: r2(t.lineDrops / matches),
@@ -248,6 +250,12 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgPassesLofted: r2(t.passesLofted / matches),
     avgHighBalls: r2(t.highBalls / matches),
     avgBallAirSeconds: r2(t.ballAirSeconds / matches),
+    avgHighlightsMain: r2(t.highlightsMain / matches),
+    avgHighlightsExtended: r2(t.highlightsExtended / matches),
+    avgHighlightsFull: r2(t.highlightsFull / matches),
+    highlightShareMain: r2(100 * t.highlightSecondsMain / Math.max(1, t.highlightLiveSeconds)),
+    highlightShareExtended: r2(100 * t.highlightSecondsExtended / Math.max(1, t.highlightLiveSeconds)),
+    highlightShareFull: r2(100 * t.highlightSecondsFull / Math.max(1, t.highlightLiveSeconds)),
     crossPeakM: r2(t.crossPeakSum / Math.max(1, t.crossPeakN) / 1.0936),
     cornerPeakM: r2(t.cornerPeakSum / Math.max(1, t.cornerPeakN) / 1.0936),
     longPeakM: r2(t.longPeakSum / Math.max(1, t.longPeakN) / 1.0936),
@@ -299,7 +307,7 @@ function emptyTotals(): VariantTotals {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
-    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
@@ -402,6 +410,8 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.ballsOutOfPlay += src.ballsOutOfPlay;
   dst.deflections += src.deflections;
   dst.shotsBlocked += src.shotsBlocked;
+  dst.chances += src.chances;
+  dst.clearChances += src.clearChances;
   dst.heavyTouches += src.heavyTouches;
   dst.lineStepUps += src.lineStepUps;
   dst.lineDrops += src.lineDrops;
@@ -412,6 +422,13 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.passesLofted += src.passesLofted;
   dst.highBalls += src.highBalls;
   dst.ballAirSeconds += src.ballAirSeconds;
+  dst.highlightsMain += src.highlightsMain;
+  dst.highlightsExtended += src.highlightsExtended;
+  dst.highlightsFull += src.highlightsFull;
+  dst.highlightSecondsMain += src.highlightSecondsMain;
+  dst.highlightSecondsExtended += src.highlightSecondsExtended;
+  dst.highlightSecondsFull += src.highlightSecondsFull;
+  dst.highlightLiveSeconds += src.highlightLiveSeconds;
   dst.crossPeakSum += src.crossPeakSum;
   dst.crossPeakN += src.crossPeakN;
   dst.cornerPeakSum += src.cornerPeakSum;
@@ -540,6 +557,8 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgBallsOutOfPlay: r2(totals.ballsOutOfPlay / games),
     avgDeflections: r2(totals.deflections / games),
     avgShotsBlocked: r2(totals.shotsBlocked / games),
+    avgChances: r2(totals.chances / games),
+    avgClearChances: r2(totals.clearChances / games),
     avgHeavyTouches: r2(totals.heavyTouches / games),
     avgLineStepUps: r2(totals.lineStepUps / games),
     avgLineDrops: r2(totals.lineDrops / games),
@@ -550,6 +569,12 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgPassesLofted: r2(totals.passesLofted / games),
     avgHighBalls: r2(totals.highBalls / games),
     avgBallAirSeconds: r2(totals.ballAirSeconds / games),
+    avgHighlightsMain: r2(totals.highlightsMain / games),
+    avgHighlightsExtended: r2(totals.highlightsExtended / games),
+    avgHighlightsFull: r2(totals.highlightsFull / games),
+    highlightShareMain: r2(100 * totals.highlightSecondsMain / Math.max(1, totals.highlightLiveSeconds)),
+    highlightShareExtended: r2(100 * totals.highlightSecondsExtended / Math.max(1, totals.highlightLiveSeconds)),
+    highlightShareFull: r2(100 * totals.highlightSecondsFull / Math.max(1, totals.highlightLiveSeconds)),
     crossPeakM: r2(totals.crossPeakSum / Math.max(1, totals.crossPeakN) / 1.0936),
     cornerPeakM: r2(totals.cornerPeakSum / Math.max(1, totals.cornerPeakN) / 1.0936),
     longPeakM: r2(totals.longPeakSum / Math.max(1, totals.longPeakN) / 1.0936),

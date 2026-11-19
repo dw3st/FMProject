@@ -15,7 +15,7 @@ import {
   BALL_GROUPS, BAND_LABELS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
   FLIGHT_LABELS, FM_FLIGHT_S, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
-  emptyFmTargets, fmTargetRows, longShotsOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
+  emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
 const args = process.argv.slice(2);
@@ -53,9 +53,14 @@ const f2 = (x: number) => x.toFixed(2);
 const share = (o: Outcome3) => { const t = o[0] + o[1] + o[2]; return t ? `${f1(pct(o))}% (n ${t}, opp ${f1((100 * o[2]) / t)}%)` : "—"; };
 console.log(`\n${league}: ${n} matches, ${f1(ms / n)} ms/match, ${f1(fm.realSeconds / n)} live s/match`);
 console.log("\n── FM targets per match, both teams (ours × FM; R9 official stats) ──");
-for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShotsOf(fm) / n })) {
+for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShotsOf(fm) / n, xgMedian: xgMedianOf(fm) ?? undefined })) {
   const ratio = r.ratio === null ? "" : `  ×${r.ratio.toFixed(2)}`;
   console.log(`  ${r.target.label.padEnd(24)} ${r.ours.padStart(8)}   FM ${r.fm.padStart(7)} (${r.target.confidence})${ratio}`);
+}
+{
+  const tot = fm.shotXgHist.reduce((a, b) => a + b, 0) || 1;
+  const q = (p: number) => { let c = 0; for (let i = 0; i < fm.shotXgHist.length; i++) { c += fm.shotXgHist[i]!; if (c >= p * tot) return (i + 0.5) / fm.shotXgHist.length; } return 1; };
+  console.log(`  chances (xG ≥ 0.15) ${f2(counts.chances / n)} · clear-cut (≥ 0.30) ${f2(counts.clearChances / n)} per match · shot xG p25 ${f2(q(0.25))} · median ${f2(q(0.5))} · p90 ${f2(q(0.9))} (FM median 0.03, p90 0.17)`);
 }
 console.log("\n── Condition (outfield median energy) by minute ──");
 console.log("  " + CONDITION_MINUTES.map((m, i) => `${m}' ${f1(fm.condition[i]!.sum / Math.max(1, fm.condition[i]!.n))} (FM ${FM_CONDITION[i]})`).join(" · "));
@@ -119,6 +124,11 @@ console.log("  FM step DEF 4.4 · MID 6 · FWD 7 yd (target − position: in 9.8
 console.log("\n── Shots (distance to the goal mouth, yd) ──");
 console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) / Math.max(1, fm.shots))}%`).join(" · ") + "   FM: none beyond ~33 yd");
 console.log("\n── World / match ──");
-console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball")).map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
+console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
 // Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.
 if (world.ballNearTicks) console.log(`  crowd 3+ defenders ≤ 8 yd: ${(100 * world.ballCrowdTicks! / world.ballNearTicks).toFixed(1)}% of live ticks (main ~5.4–5.8%)`);
+// Stage 18 (`highlights.md`): lances per match by level and the share of the live play they cover (FM shows ~15–25 main).
+if (world.liveSeconds) {
+  const lv = ["Main", "Extended", "Full"] as const;
+  console.log("  lances: " + lv.map(l => `${l.toLowerCase()} ${f1(world[`highlights${l}`]! / n)} (${f1(world[`highlightSeconds${l}`]! / n)} s, ${f1((100 * world[`highlightSeconds${l}`]!) / world.liveSeconds!)}%)`).join(" · "));
+}

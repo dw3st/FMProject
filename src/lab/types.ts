@@ -339,6 +339,9 @@ export interface TeamRawStats {
   ballsOutOfPlay: number;
   deflections: number;
   shotsBlocked: number;
+  /** Stage 6 (`xg.md`): shots with xG ≥ 0.15 / ≥ 0.30, summed across games. */
+  chances: number;
+  clearChances: number;
   heavyTouches: number;
   lineStepUps: number;
   lineDrops: number;
@@ -351,6 +354,14 @@ export interface TeamRawStats {
   /** Stage 3 (`ball-3d.md`), summed across games: high balls, seconds in the air, peak sums (yd) and counts. */
   highBalls: number;
   ballAirSeconds: number;
+  /** Stage 18 (`highlights.md`), summed across games: lances about this team per level (cumulative), their sim seconds, live sim seconds. */
+  highlightsMain: number;
+  highlightsExtended: number;
+  highlightsFull: number;
+  highlightSecondsMain: number;
+  highlightSecondsExtended: number;
+  highlightSecondsFull: number;
+  highlightLiveSeconds: number;
   crossPeakSum: number;
   crossPeakN: number;
   cornerPeakSum: number;
@@ -570,6 +581,9 @@ export interface PerMatchView {
   avgBallsOutOfPlay: number;
   avgDeflections: number;
   avgShotsBlocked: number;
+  /** Stage 6 (`xg.md`): chances (xG ≥ 0.15) and clear-cut chances (≥ 0.30) per match. */
+  avgChances: number;
+  avgClearChances: number;
   avgHeavyTouches: number;
   avgLineStepUps: number;
   avgLineDrops: number;
@@ -581,6 +595,13 @@ export interface PerMatchView {
   /** Stage 3 (`ball-3d.md`): per match; peak heights are means, in metres. */
   avgHighBalls: number;
   avgBallAirSeconds: number;
+  /** Stage 18: lances per match about this team (main / extended / full) and the share of the play they cover (%, the side's half). */
+  avgHighlightsMain: number;
+  avgHighlightsExtended: number;
+  avgHighlightsFull: number;
+  highlightShareMain: number;
+  highlightShareExtended: number;
+  highlightShareFull: number;
   crossPeakM: number;
   cornerPeakM: number;
   longPeakM: number;
@@ -753,6 +774,9 @@ export interface VariantSummary {
   avgBallsOutOfPlay: number;
   avgDeflections: number;
   avgShotsBlocked: number;
+  /** Stage 6 (`xg.md`): chances (xG ≥ 0.15) and clear-cut chances (≥ 0.30) per match. */
+  avgChances: number;
+  avgClearChances: number;
   avgHeavyTouches: number;
   avgLineStepUps: number;
   avgLineDrops: number;
@@ -764,6 +788,13 @@ export interface VariantSummary {
   /** Stage 3 (`ball-3d.md`): per match; peak heights are means, in metres. */
   avgHighBalls: number;
   avgBallAirSeconds: number;
+  /** Stage 18: lances per match about this team (main / extended / full) and the share of the play they cover (%, the side's half). */
+  avgHighlightsMain: number;
+  avgHighlightsExtended: number;
+  avgHighlightsFull: number;
+  highlightShareMain: number;
+  highlightShareExtended: number;
+  highlightShareFull: number;
   crossPeakM: number;
   cornerPeakM: number;
   longPeakM: number;

@@ -6,6 +6,8 @@
  * every function returns deterministic numeric scores, never rolls outcomes.
  */
 
+import { fmShotXG, isChance, isClearChance } from '@/GameEngine/Domain/FmXg';
+import { facingAngleDeg } from '@/GameEngine/Domain/HolderMoves';
 import type { GamePlayer, GameState, TeamId } from '@/GameEngine/types';
 import { evaluatePassLanes, scorePassToReceiver } from '@/GameEngine/Domain/PassLanes';
 import { evaluateCarryLane, rot } from '@/GameEngine/Domain/CarryLaneEval';
@@ -363,6 +365,8 @@ export function queryShot(
   gkPresent:  boolean;
   gkEffect:   number;
   goalChance: number;
+  /** Stage 6 (`xg.md`): the FM xG of this shot (the engine's number with FM_XG on). */
+  fmXg:       { xg: number; model: string; features: Record<string, number>; visibleGoalM: number; coveredM: number; inTriangle: number; chance: boolean; clearChance: boolean };
 } {
   const shooter = getPlayer(state, shooterId);
   // Allow a hypothetical position via opts; default to the shooter's current position.
@@ -403,6 +407,19 @@ export function queryShot(
     gkPresent:     !!gk,
     gkEffect:      +gkEffect.toFixed(4),
     goalChance:    +Math.max(0, Math.min(1, xg * shooterEffect * gkEffect)).toFixed(4),
+    fmXg: (() => {
+      const fm = fmShotXG({
+        x: sx, y: sy, attackDir: shooter.attackDir,
+        others: state.players.filter(p => p.id !== shooter.id).map(p => ({ x: p.x, y: p.y, keeper: p.role === 'GK' })),
+        facingDeg: facingAngleDeg(virtualShooter), ballHeightM: 0, kind: 'ground',
+      });
+      return {
+        xg: +fm.xg.toFixed(4), model: fm.model,
+        features: Object.fromEntries(Object.entries(fm.features).map(([k, v]) => [k, +v.toFixed(4)])),
+        visibleGoalM: +fm.availableM.toFixed(2), coveredM: +fm.coveredM.toFixed(2), inTriangle: fm.inTriangle,
+        chance: isChance(fm.xg), clearChance: isClearChance(fm.xg),
+      };
+    })(),
   };
 }
 

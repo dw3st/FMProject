@@ -16,7 +16,11 @@ function holderDecision(edit?: (players: GamePlayer[]) => void) {
 describe('one-on-one with the keeper (#156)', () => {
   test('through on goal, a wider teammate further from goal does not get the ball', () => {
     const d = holderDecision();
-    expect(['shoot', 'carry']).toContain(d.type);
+    // Stage 6 (FM xG): a through ball can now win when its cell is closer to goal with a clearly higher xG (the keeper
+    // out of the cell's shooting triangle); the ball never goes to the wider teammate further from goal.
+    if (d.type === 'pass') throw new Error('passed to the wider teammate');
+    if (d.type === 'through_ball') expect(Math.hypot(115 - d.cellX, Math.max(0, Math.abs(d.cellY - 37) - 4))).toBeLessThan(14);
+    else expect(['shoot', 'carry']).toContain(d.type);
   });
 
   test('a teammate clearly better placed (closer, much higher xG) can still be found', () => {

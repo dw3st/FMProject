@@ -118,3 +118,8 @@ passes, shots and loose balls move it physically, a loose ball above a player's 
 ## Physical pass (stage 4)
 Passes are launched with FM's speed and height by type and distance and arrive where the 3D ball reaches the receiver
 (`Domain/PassPhysics.ts`, `Configs/PassPhysicsConfig.ts`, flag `PASS_PHYSICS`). See `game-engine/pass-physics.md`.
+
+## Highlight layer (stage 18)
+`Domain/Highlights.ts` (pure classifier) and `Domain/HighlightTracker.ts` (gameBus wiring) mark the match's lances
+(main / extended / full); `tickState` emits `simStep` at the end of every step for it. Observation only. See
+`game-engine/highlights.md`.

@@ -120,7 +120,7 @@ function emptyTeamRaw(): TeamRawStats {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
-    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -220,6 +220,8 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.ballsOutOfPlay += src.ballsOutOfPlay;
   dst.deflections += src.deflections;
   dst.shotsBlocked += src.shotsBlocked;
+  dst.chances += src.chances;
+  dst.clearChances += src.clearChances;
   dst.heavyTouches += src.heavyTouches;
   dst.lineStepUps += src.lineStepUps;
   dst.lineDrops += src.lineDrops;
@@ -230,6 +232,13 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.passesLofted += src.passesLofted;
   dst.highBalls += src.highBalls;
   dst.ballAirSeconds += src.ballAirSeconds;
+  dst.highlightsMain += src.highlightsMain;
+  dst.highlightsExtended += src.highlightsExtended;
+  dst.highlightsFull += src.highlightsFull;
+  dst.highlightSecondsMain += src.highlightSecondsMain;
+  dst.highlightSecondsExtended += src.highlightSecondsExtended;
+  dst.highlightSecondsFull += src.highlightSecondsFull;
+  dst.highlightLiveSeconds += src.highlightLiveSeconds;
   dst.crossPeakSum += src.crossPeakSum;
   dst.crossPeakN += src.crossPeakN;
   dst.cornerPeakSum += src.cornerPeakSum;
@@ -563,6 +572,8 @@ function runOneMatch(
   teamA.ballsOutOfPlay += sA.ballsOutOfPlay ?? 0; teamB.ballsOutOfPlay += sB.ballsOutOfPlay ?? 0;
   teamA.deflections += sA.deflections ?? 0; teamB.deflections += sB.deflections ?? 0;
   teamA.shotsBlocked += sA.shotsBlocked ?? 0; teamB.shotsBlocked += sB.shotsBlocked ?? 0;
+  teamA.chances += sA.chances ?? 0; teamB.chances += sB.chances ?? 0;
+  teamA.clearChances += sA.clearChances ?? 0; teamB.clearChances += sB.clearChances ?? 0;
   teamA.heavyTouches += sA.heavyTouches ?? 0; teamB.heavyTouches += sB.heavyTouches ?? 0;
   teamA.lineStepUps += sA.lineStepUps ?? 0; teamB.lineStepUps += sB.lineStepUps ?? 0;
   teamA.lineDrops += sA.lineDrops ?? 0; teamB.lineDrops += sB.lineDrops ?? 0;
@@ -573,6 +584,13 @@ function runOneMatch(
   teamA.passesLofted += sA.passesLofted ?? 0; teamB.passesLofted += sB.passesLofted ?? 0;
   teamA.highBalls += sA.highBalls ?? 0; teamB.highBalls += sB.highBalls ?? 0;
   teamA.ballAirSeconds += sA.ballAirSeconds ?? 0; teamB.ballAirSeconds += sB.ballAirSeconds ?? 0;
+  teamA.highlightsMain += sA.highlightsMain ?? 0; teamB.highlightsMain += sB.highlightsMain ?? 0;
+  teamA.highlightsExtended += sA.highlightsExtended ?? 0; teamB.highlightsExtended += sB.highlightsExtended ?? 0;
+  teamA.highlightsFull += sA.highlightsFull ?? 0; teamB.highlightsFull += sB.highlightsFull ?? 0;
+  teamA.highlightSecondsMain += sA.highlightSecondsMain ?? 0; teamB.highlightSecondsMain += sB.highlightSecondsMain ?? 0;
+  teamA.highlightSecondsExtended += sA.highlightSecondsExtended ?? 0; teamB.highlightSecondsExtended += sB.highlightSecondsExtended ?? 0;
+  teamA.highlightSecondsFull += sA.highlightSecondsFull ?? 0; teamB.highlightSecondsFull += sB.highlightSecondsFull ?? 0;
+  teamA.highlightLiveSeconds += sA.highlightLiveSeconds ?? 0; teamB.highlightLiveSeconds += sB.highlightLiveSeconds ?? 0;
   teamA.crossPeakSum += sA.crossPeakSum ?? 0; teamB.crossPeakSum += sB.crossPeakSum ?? 0;
   teamA.crossPeakN += sA.crossPeakN ?? 0; teamB.crossPeakN += sB.crossPeakN ?? 0;
   teamA.cornerPeakSum += sA.cornerPeakSum ?? 0; teamB.cornerPeakSum += sB.cornerPeakSum ?? 0;

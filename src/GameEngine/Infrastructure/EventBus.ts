@@ -58,6 +58,8 @@ export interface DecisionTelemetryEvent {
 export interface GameEvents {
   /** Emitted whenever possession or pass state changes significantly. */
   stateChanged: GameState;
+  /** End of every `tickState` step (`highlights.md`): the new state, the step's sim seconds and the ball. */
+  simStep: { state: GameState; dt: number; ball: { x: number; y: number } };
   /** Emitted the moment a goal is scored. */
   /** `fromX/fromY` = shot point (the spot for a penalty), `goalX` = attacked goal line, `minute` = `matchMinute` (data only, awards). */
   goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; fromX: number; fromY: number; goalX: number; minute: number };
@@ -281,6 +283,8 @@ export interface GameEvents {
         xgFloor:     number;
         intentBonus: number;
         score:       number;
+        /** Stage 6 (`xg.md`): the FM xG model of the shot (with `FM_XG`). */
+        fm?: { model: string; features: Record<string, number>; availableM: number; coveredM: number; inTriangle: number };
       };
       pass: {
         toId:               number | null;

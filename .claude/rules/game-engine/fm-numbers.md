@@ -204,3 +204,45 @@ crowd-edge rule moved little.
 - The back line sits 46 yd up in possession (FM 58) and 36.5 out of it (FM 24).
 - Off-ball steps are shorter than FM's; short off-ball actions are held ~1 s against ~5 s.
 - Fewer through balls and crosses: shots and goals fell (volume is left for the final calibration).
+
+## Etapa 6: xG do FM (antes / depois)
+
+Premier League, 120 partidas com semente (`fm-targets.ts 120 --chunks 2`, formações da IA, equilibrado). Antes =
+`DECISION_OVERRIDES='{"FM_XG":false}'` (o `computeXG` antigo); depois = o xG do FM (`xg.md`) como estatística, nota
+de chutar e entrada da resolução de hoje. Nada calibrado.
+
+| Medida (por partida, os dois times) | FM | antes | depois |
+|---|---|---|---|
+| xG por chute, média / mediana | 0,15 / 0,03 | 0,49 / 0,46 | 0,34 / 0,31 |
+| xG por chute p25 / p90 | — / 0,17 | 0,28 / 0,81 | 0,14 / 0,76 |
+| xG da partida | 3,3 | 2,2 | 1,6 |
+| Chances (xG ≥ 0,15) / chances claras (≥ 0,30) | — / 3,5 | 4,3 / 3,2 | 3,4 / 2,3 |
+| Chutes | 21,5 | 4,4 | 4,6 |
+| Gols / % dos chutes | 1,5 / 7% | 1,53 / 34,5% | 1,10 / 24% |
+| Chutes de 18+ jd | 46% | 23% | 20% |
+
+O modelo bate com os exemplos do FM (`FmXg.test.ts`); a diferença que sobra é a escolha do chute: nós chutamos pouco e
+quase só de perto e sem bloqueio (77% dos chutes a menos de 18 jd, bloqueados 0,4%), o FM chuta 21,5 vezes de toda
+parte, metade de longe e 38% bloqueados. Isso é das etapas 8 e 9. Os gols caem porque a resolução de hoje ainda sorteia
+sobre o xG (~30% menor por chute); a etapa 7 troca isso pela trajetória. Custo: ~9 µs por avaliação do xG.
+
+## Etapa 18: camada de lances (só registro)
+
+`bun scripts/highlights-measure.ts` (Premier League, semente 9000, formações da IA, equilibrado). Antes: não havia
+lances. Os níveis se contêm (`highlights.md`); segundos = tempo de exibição a 1×. Nada calibrado.
+
+| Por partida, os dois times | Relógio comprimido (24 partidas) | `FULL_DURATION=1` (6 partidas) | Referência |
+|---|---|---|---|
+| Jogo vivo simulado (s) | 317 | 5651 | — |
+| Gols / chances claras no motor | 1,17 / 1,2 | 26 / 32,5 | FM 1,5 / 3,5 |
+| Lances principais (duração somada, % do jogo) | 2,5 (47 s, 15%) | 62,8 (19,8 min, 21%) | FM ~15–25 lances principais; meta de produto 2–4 min |
+| Lances estendidos | 7,2 (120 s, 38%) | 136,5 (40 min, 43%) | — |
+| Lances completos | 10,9 (171 s, 54%) | 203,8 (55 min, 59%) | — |
+| Mediana de um lance principal / estendido / completo (s) | 18,8 / 15,4 / 14,0 | 18,0 / 16,4 / 15,0 | — |
+
+- Todo gol fica dentro de um lance principal (28 de 28, 156 de 156).
+- Com `FULL_DURATION` o motor ainda faz ~26 gols e ~33 chances claras por jogo (sem calibração): quase todo lance
+  principal é um gol ou uma chance clara, então a contagem segue esse volume. No volume do FM (1,5 gols, 3,5 chances
+  claras, poucos pênaltis e vermelhos) o nível principal daria ~5–6 lances (~1,7 min); os "15–25 lances principais" do
+  FM ficam mais perto do nosso nível estendido (chutes, defesas, escanteios, faltas perigosas, cartões).
+- Custo: o `simStep` por passo e o rastreador ficaram dentro do ruído do tempo por partida (PC carregado).

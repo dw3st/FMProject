@@ -56,6 +56,8 @@ export interface FmTargetTotals {
   holdShort: Record<Line, number[]>;
   shotDist: number[];
   shots: number;
+  /** Stage 6 (`xg.md`): every shot's xG (the `shot` event) in bins of 1 / XG_HIST_BINS. */
+  shotXgHist: number[];
   realSeconds: number;
   /** Sum over matches of the outfield median energy at `CONDITION_MINUTES` (n per minute), and the keepers' at the end. */
   condition: { sum: number; n: number }[];
@@ -120,7 +122,7 @@ export function emptyFmTargets(): FmTargetTotals {
     shape: [0, 1].map(() => ({ n: 0, back: 0, length: 0, width: 0, gapBM: 0, gapMF: 0, front: 0 })),
     step: lineRec(() => [{ sum: 0, n: 0 }, { sum: 0, n: 0 }]),
     holdDefault: lineRec(() => [] as number[]), holdShort: lineRec(() => [] as number[]),
-    shotDist: SHOT_LABELS.map(() => 0), shots: 0, realSeconds: 0,
+    shotDist: SHOT_LABELS.map(() => 0), shots: 0, shotXgHist: new Array(XG_HIST_BINS).fill(0), realSeconds: 0,
     condition: CONDITION_MINUTES.map(() => ({ sum: 0, n: 0 })), keeperEnd: { sum: 0, n: 0 },
     ballPeak: { cross: [], corner: [], long: [] }, ballContact: { cross: [], corner: [], long: [] }, ballAirSeconds: 0,
     passVz: VZ_LABELS.map(o3), launchSpeed: LAUNCH_LABELS.map(() => []), launchVz: LAUNCH_LABELS.map(() => []),
@@ -148,6 +150,7 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
     dst.holdDefault[l].push(...src.holdDefault[l]); dst.holdShort[l].push(...src.holdShort[l]);
   }
   src.shotDist.forEach((v, i) => { dst.shotDist[i]! += v; }); dst.shots += src.shots;
+  src.shotXgHist.forEach((v, i) => { dst.shotXgHist[i]! += v; });
   src.condition.forEach((v, i) => { dst.condition[i]!.sum += v.sum; dst.condition[i]!.n += v.n; });
   dst.keeperEnd.sum += src.keeperEnd.sum; dst.keeperEnd.n += src.keeperEnd.n;
   for (const g of BALL_GROUPS) { dst.ballPeak[g].push(...(src.ballPeak?.[g] ?? [])); dst.ballContact[g].push(...(src.ballContact?.[g] ?? [])); }
@@ -370,12 +373,13 @@ export const CONDITION_MINUTES = [15, 30, 45, 60, 75, 90] as const;
 
 export type FmConfidence = "H" | "M" | "L";
 export type FmMatchKey =
-  | "goals" | "shots" | "shotsOnTargetPct" | "shotsBlockedPct" | "longShotsPct" | "xg" | "xgPerShot" | "conversionPct"
+  | "goals" | "shots" | "shotsOnTargetPct" | "shotsBlockedPct" | "longShotsPct" | "xg" | "xgPerShot" | "xgMedian"
+  | "clearChances" | "conversionPct"
   | "corners" | "throwIns" | "passesAttempted" | "passCompletionPct" | "crosses" | "crossCompletionPct"
   | "aerialDuelsWon" | "tacklesWon" | "interceptions" | "dribbles" | "fouls" | "yellowCards" | "yellowsPerFoul"
   | "redCards" | "offsides" | "penalties";
 
-export interface FmMatchTarget { key: FmMatchKey; label: string; fm: number; pct?: true; confidence: FmConfidence; source: "R9" | "L" }
+export interface FmMatchTarget { key: FmMatchKey; label: string; fm: number; pct?: true; confidence: FmConfidence; source: "R9" | "R6" | "L" }
 
 /** The per-match volume targets (R9 §8 and the gap list's volume list). */
 export const FM_MATCH_TARGETS: readonly FmMatchTarget[] = [
@@ -386,6 +390,8 @@ export const FM_MATCH_TARGETS: readonly FmMatchTarget[] = [
   { key: "longShotsPct",       label: "Long-range % (18+ yd)", fm: 46, pct: true, confidence: "M", source: "R9" },
   { key: "xg",                 label: "xG",                    fm: 3.3,  confidence: "M", source: "R9" },
   { key: "xgPerShot",          label: "xG per shot",           fm: 0.15, confidence: "M", source: "R9" },
+  { key: "xgMedian",           label: "xG per shot, median",   fm: 0.03, confidence: "M", source: "R6" },
+  { key: "clearChances",       label: "Clear-cut chances",     fm: 3.5,  confidence: "M", source: "R9" },
   { key: "conversionPct",      label: "Goals % of shots",      fm: 7, pct: true, confidence: "M", source: "R9" },
   { key: "corners",            label: "Corners",               fm: 12.5, confidence: "H", source: "R9" },
   { key: "throwIns",           label: "Throw-ins",             fm: 23,   confidence: "L", source: "L" },
@@ -430,6 +436,8 @@ export const FM_SHAPE = [[58, 39, 40, 19, 10, 87], [24, 35, 37, 14, 12.5, 50]] a
 /** Match counts the targets are computed from: the two teams' `Statistics.ts` totals summed. */
 export interface FmMatchCounts {
   goals: number; shots: number; shotsOnTarget: number; shotsBlocked: number; xg: number;
+  /** Stage 6 (`xg.md`): shots with xG ≥ 0.15 / ≥ 0.30. */
+  chances: number; clearChances: number;
   corners: number; throwIns: number;
   passesAttempted: number; passesCompleted: number; throughBallsAttempted: number; throughBallsCompleted: number;
   crosses: number; crossesCompleted: number; longBalls: number; longBallsCompleted: number;
@@ -437,10 +445,12 @@ export interface FmMatchCounts {
   fouls: number; yellowCards: number; redCards: number; offsides: number; penaltiesAwarded: number;
   /** Shots from 18+ yd of the goal mouth, when a collector counted them (`longShotsOf`); else absent. */
   longShots?: number;
+  /** Median xG per shot, when a collector kept the histogram (`xgMedianOf`); else absent. */
+  xgMedian?: number;
 }
 
 export const FM_COUNT_KEYS = [
-  "goals", "shots", "shotsOnTarget", "shotsBlocked", "xg", "corners", "throwIns",
+  "goals", "shots", "shotsOnTarget", "shotsBlocked", "xg", "chances", "clearChances", "corners", "throwIns",
   "passesAttempted", "passesCompleted", "throughBallsAttempted", "throughBallsCompleted",
   "crosses", "crossesCompleted", "longBalls", "longBallsCompleted",
   "aerialDuelsWon", "tackles", "interceptions", "dribblesWon",
@@ -471,7 +481,8 @@ export function fmMatchValues(c: FmMatchCounts): Record<FmMatchKey, number | nul
     goals: c.goals, shots: c.shots,
     shotsOnTargetPct: pc(c.shotsOnTarget, c.shots), shotsBlockedPct: pc(c.shotsBlocked, c.shots),
     longShotsPct: c.longShots === undefined ? null : pc(c.longShots, c.shots),
-    xg: c.xg, xgPerShot: ratio(c.xg, c.shots), conversionPct: pc(c.goals, c.shots),
+    xg: c.xg, xgPerShot: ratio(c.xg, c.shots), xgMedian: c.xgMedian ?? null, clearChances: c.clearChances,
+    conversionPct: pc(c.goals, c.shots),
     corners: c.corners, throwIns: c.throwIns,
     passesAttempted: all, passCompletionPct: pc(done, all),
     crosses: c.crosses, crossCompletionPct: pc(c.crossesCompleted, c.crosses),
@@ -498,6 +509,23 @@ export function fmFormat(t: FmMatchTarget, v: number | null): string {
   return Math.abs(v) < 1 && v !== 0 ? v.toFixed(2) : v.toFixed(1);
 }
 
+/** Bins of the shot-xG histogram (`FmTargetTotals.shotXgHist`). */
+export const XG_HIST_BINS = 200;
+
+/** Adds one shot's xG to the histogram. */
+export function addShotXg(t: FmTargetTotals, xg: number): void {
+  t.shotXgHist[Math.min(XG_HIST_BINS - 1, Math.max(0, Math.floor(xg * XG_HIST_BINS)))]!++;
+}
+
+/** Median shot xG of the histogram (bin centre); null with no shot. */
+export function xgMedianOf(t: FmTargetTotals): number | null {
+  const tot = t.shotXgHist.reduce((a, b) => a + b, 0);
+  if (!tot) return null;
+  let c = 0;
+  for (let i = 0; i < t.shotXgHist.length; i++) { c += t.shotXgHist[i]!; if (c >= tot / 2) return (i + 0.5) / XG_HIST_BINS; }
+  return null;
+}
+
 /** Shots from 18+ yd in a collector's distance histogram (bins of 6 yd). */
 export function longShotsOf(t: FmTargetTotals): number {
   return t.shotDist.slice(3).reduce((a, b) => a + b, 0);
@@ -507,6 +535,7 @@ export function longShotsOf(t: FmTargetTotals): number {
 export function fmCountsFromViews(a: PerMatchView, b: PerMatchView): FmMatchCounts {
   const one = (v: PerMatchView): FmMatchCounts => ({
     goals: v.avgGoals, shots: v.avgShots, shotsOnTarget: v.avgShotsOnTarget, shotsBlocked: v.avgShotsBlocked, xg: v.avgXg,
+    chances: v.avgChances, clearChances: v.avgClearChances,
     corners: v.avgCorners, throwIns: v.avgThrowIns,
     passesAttempted: v.avgPassesAttempted, passesCompleted: v.avgPassesCompleted,
     throughBallsAttempted: v.avgThroughBalls, throughBallsCompleted: (v.avgThroughBalls * v.throughBallCompletionPct) / 100,

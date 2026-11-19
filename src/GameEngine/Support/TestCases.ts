@@ -228,6 +228,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'highlights-timeline',
+    name:        '11v11 — Lances (highlight layer)',
+    description: 'Stage 18 (`highlights.md`): 11v11 with Team A striker on the ball 24 yd out, so a lance opens within seconds (an attack, a shot, maybe a corner). Open the "Lances" panel: the windows on the timeline of the live play by level (main / extended / full), the list with their triggers, and "Next lance" (simulates ahead and jumps to the next window start). The "highlight" debug line logs each window as it opens.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST')!;
+      const x = st.attackDir === 1 ? PITCH_LENGTH - 24 : 24;
+      return {
+        ...base, matchPhase: 'firstHalf', presentationCountdown: 0, setPiece: null, ballHolderId: st.id,
+        players: base.players.map(p => (p.id === st.id ? { ...p, x, y: 37 } : p)),
+      };
+    },
+  },
+
+  {
     id:          'knockout-draw-90',
     name:        '11v11 — Knockout level at 90\'',
     description: 'Knockout match, 1–1 late in the second half. Use "End period" to go through extra time and penalties.',
@@ -300,6 +316,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Silva',    'B', 'CB',   99, 43.5, DEFENDER),
         makePlayer('Okafor',   'B', 'CB',   97, 39, DEFENDER),
         makePlayer('Kowalski', 'B', 'GK',  113.2, 37.6, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'fm-xg-blocked',
+    name:        'FM xG — shot through bodies',
+    description: 'Stage 6 (`xg.md`): a striker 16 yd out, central, with a CB 3 yd in front of him on the shot line, a second CB near the six-yard box and the keeper on his line. The FM xG sees both CBs and the keeper in the shooter–posts triangle (between 3/22, the near CB pushes "occl" toward 1, the visible goal drops). Select him: Decision Scores → Shoot shows the FM model and the seven features; the "shot" debug line repeats them when he shoots. Move the near CB off the line and the xG jumps.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Santos',   'A', 'ST',   99, 37, STRIKER),
+        makePlayer('Garcia',   'A', 'CAM',  92, 28, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB',  102, 37.4, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  109, 39, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
       ], 1);
     },
   },

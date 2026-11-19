@@ -19,6 +19,9 @@ import type { DecisionTelemetryEvent, HolderMindEvent } from '@/GameEngine/Infra
 import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
 import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
+import { isChance, isClearChance } from '@/GameEngine/Domain/FmXg';
+import { resetHighlights, highlightTeamStats, exportHighlightState, importHighlightState, type HighlightTeamStats } from '@/GameEngine/Domain/HighlightTracker';
+import type { HighlightState } from '@/GameEngine/Domain/Highlights';
 
 /** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
 export interface GoalLogEntry {
@@ -49,6 +52,9 @@ export interface PlayerStats {
   tackles:         number;
   /** Accumulated expected goals from all shots taken. */
   xg:              number;
+  /** Stage 6 (`xg.md`): shots with xG ≥ 0.15 (chance) and ≥ 0.30 (clear-cut chance). */
+  chances:         number;
+  clearChances:    number;
   dribblesWon:     number;
   dribblesLost:    number;
   // ── Through-ball family (kept distinct from passes — failure modes differ) ──
@@ -147,7 +153,7 @@ export interface PlayerStats {
   defenseDecisions:         number;
 }
 
-export interface TeamStats extends PlayerStats {
+export interface TeamStats extends PlayerStats, HighlightTeamStats {
   /** 1 when the match went to extra time. */
   extraTimePlayed: number;
   /** 1 when this team won a penalty shootout. */
@@ -277,6 +283,8 @@ function emptyStats(): PlayerStats {
     interceptions:   0,
     tackles:         0,
     xg:              0,
+    chances:         0,
+    clearChances:    0,
     dribblesWon:     0,
     dribblesLost:    0,
     throughBallsAttempted:    0,
@@ -434,6 +442,8 @@ gameBus.on('passCompleted', e => {
 gameBus.on('passFailed',    e => { get(e.player).passesFailed++;    notify(); });
 gameBus.on('shot',          e => {
   const s = get(e.player); s.shots++; s.xg += e.xg;
+  if (isChance(e.xg)) s.chances++;
+  if (isClearChance(e.xg)) s.clearChances++;
   if (lastHolder && lastHolder.playerId === e.player) {
     const team = playerTeam.get(e.player);
     if (team) { teamFlags[team].shotPressureSum += lastHolder.pressure; teamFlags[team].shotPressureCount++; }
@@ -817,6 +827,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   markedNow = new Set();
   teamFlags.A = emptyTeamFlags();
   teamFlags.B = emptyTeamFlags();
+  resetHighlights(players);
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();
   lastDecision.clear();
@@ -836,7 +847,7 @@ export function getPlayerStats(id: number): PlayerStats {
 /** Team stats derived from the sum of all player stats for that team. */
 export function getTeamStats(team: TeamId): TeamStats {
   const result: TeamStats = {
-    ...emptyStats(), ...teamFlags[team], avgEndEnergy: 0,
+    ...emptyStats(), ...teamFlags[team], ...highlightTeamStats(team), avgEndEnergy: 0,
     holderEntropy: teamEntropy(team, 'holder'), offBallEntropy: teamEntropy(team, 'offBall'), defenseEntropy: teamEntropy(team, 'defense'),
   };
   let energySum = 0;
@@ -859,6 +870,8 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.interceptions   += stats.interceptions;
     result.tackles         += stats.tackles;
     result.xg              += stats.xg;
+    result.chances         += stats.chances;
+    result.clearChances    += stats.clearChances;
     result.dribblesWon     += stats.dribblesWon;
     result.dribblesLost    += stats.dribblesLost;
     result.throughBallsAttempted    += stats.throughBallsAttempted;
@@ -930,6 +943,8 @@ export interface StatsSnapshot {
   teamFlags: Record<TeamId, Partial<TeamFlags>>;
   /** Goals so far (absent in snapshots taken before the goal log existed). */
   goals?: GoalLogEntry[];
+  /** Highlight layer (`highlights.md`); absent in older snapshots. */
+  highlights?: HighlightState;
 }
 
 /** Everything accumulated so far, as plain data (no Maps). */
@@ -940,6 +955,7 @@ export function exportStatsState(): StatsSnapshot {
     endEnergy: [...endEnergy].map(([id, e]) => [id, { ...e }]),
     teamFlags: { A: { ...teamFlags.A }, B: { ...teamFlags.B } },
     goals:     goalLog.map((g) => ({ ...g })),
+    highlights: exportHighlightState(),
   };
 }
 
@@ -952,6 +968,7 @@ export function importStatsState(snap: StatsSnapshot): void {
   for (const [id, team] of snap.teams) playerTeam.set(id, team);
   for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
   goalLog = (snap.goals ?? []).map((g) => ({ ...g }));
+  if (snap.highlights) importHighlightState(snap.highlights);
   teamFlags.A = { ...emptyTeamFlags(), ...snap.teamFlags.A };
   teamFlags.B = { ...emptyTeamFlags(), ...snap.teamFlags.B };
   notify();
