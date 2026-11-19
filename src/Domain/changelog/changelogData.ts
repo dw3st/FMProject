@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.25",
+    date: "2026-11-19",
+    time: "23:00",
+    items: [
+      { tab: "match", pt: "Quem tem a bola decide como um jogador de verdade: às vezes lê mal o lance, se apressa quando está apertado e sem saída, e os mais calmos e inteligentes erram menos.", en: "The player on the ball decides like a real one: he sometimes misreads the play, rushes when pressed with nowhere to go, and the calm and clever ones make fewer mistakes." },
+      { tab: "match", pt: "Jogadas novas: proteger e girar, cortar para dentro, tocar de primeira, chutar por cobertura e driblar o goleiro.", en: "New moves: shield and turn, cut inside, one-touch lay-off, chip shot and rounding the keeper." },
+    ],
+  },
+  {
     version: "12.24.1",
     date: "2026-11-18",
     time: "22:47",
@@ -6680,6 +6689,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
+  { pt: "Movimento sem bola mais real: linha de defesa, segunda marcação, apoio curto e bola rolando para fora", en: "More realistic off-ball movement: defensive line, second presser, short support and the ball running out of play" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];
