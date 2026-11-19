@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.29",
     date: "2026-11-19",
-    time: "23:00",
+    time: "17:06",
     items: [
       { tab: "squad", pt: "Empréstimos podem ser renovados por mais uma temporada: o clube dono de quem está emprestado com você oferece, e o clube que está com um jogador seu pede para ficar com ele quando ele jogou bem. A proposta chega na caixa de entrada alguns dias antes da volta.", en: "Loans can be renewed for one more season: the owner of a player on loan with you offers it, and the club holding one of your players asks to keep him when he played well. The offer arrives in the inbox a few days before he goes back." },
     ],
