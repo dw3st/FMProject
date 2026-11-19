@@ -204,6 +204,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'highlights-timeline',
+    name:        '11v11 — Lances (highlight layer)',
+    description: 'Stage 18 (`highlights.md`): 11v11 with Team A striker on the ball 24 yd out, so a lance opens within seconds (an attack, a shot, maybe a corner). Open the "Lances" panel: the windows on the timeline of the live play by level (main / extended / full), the list with their triggers, and "Next lance" (simulates ahead and jumps to the next window start). The "highlight" debug line logs each window as it opens.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST')!;
+      const x = st.attackDir === 1 ? PITCH_LENGTH - 24 : 24;
+      return {
+        ...base, matchPhase: 'firstHalf', presentationCountdown: 0, setPiece: null, ballHolderId: st.id,
+        players: base.players.map(p => (p.id === st.id ? { ...p, x, y: 37 } : p)),
+      };
+    },
+  },
+
+  {
     id:          'knockout-draw-90',
     name:        '11v11 — Knockout level at 90\'',
     description: 'Knockout match, 1–1 late in the second half. Use "End period" to go through extra time and penalties.',

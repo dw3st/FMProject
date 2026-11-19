@@ -22,6 +22,8 @@ import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
 import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans, TIME_SCALE } from '@/GameEngine/Domain/gameState';
+import { getHighlights, getHighlightLiveSeconds } from '@/GameEngine/Domain/HighlightTracker';
+import type { Highlight } from '@/GameEngine/Domain/Highlights';
 import { initStats, getAllPlayerStats, getGoalLog, getTeamStats, type GoalLogEntry } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
@@ -75,6 +77,9 @@ export interface MatchResult {
   decider:       KnockoutDecider | null;
   /** Every goal with minute and shot position, in order (engine ids; data for the season awards). */
   goals:         GoalLogEntry[];
+  /** Highlight windows of the match (`highlights.md`), in sim seconds of live play, and the live sim seconds. */
+  highlights:    Highlight[];
+  liveSeconds:   number;
   durationMs:    number;
 }
 
@@ -343,6 +348,8 @@ export function simulateMatch(
     cards:         s.cards,
     decider:       knockoutDecider(s),
     goals:         getGoalLog(),
+    highlights:    getHighlights(),
+    liveSeconds:   getHighlightLiveSeconds(),
     durationMs:    performance.now() - startMs,
   };
 }

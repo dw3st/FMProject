@@ -65,6 +65,8 @@ export interface DecisionFlags {
   /** Stage 3 of the rebuild (`ball-3d.md`): the ball is a 3D object (height, flight, bounce, roll); passes, shots and
    *  loose balls move it physically; a loose ball above a player's reach can't be collected. */
   BALL_3D: boolean;
+  /** Stage 18 (`highlights.md`): the highlight layer (observation only: marks the lances, never changes the play). */
+  HIGHLIGHTS: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -94,6 +96,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   TACTIC_DAMP: true,
   FM_XG: true,
   BALL_3D: true,
+  HIGHLIGHTS: true,
 };
 
 /**

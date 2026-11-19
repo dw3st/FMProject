@@ -4126,7 +4126,10 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
   const r = tickStateCore(state, dt, passSpeed);
   // Stage 3 (`ball-3d.md`): the 3D ball follows the play (passes, shots, loose balls, held).
   const ball = DECISION_FLAGS.BALL_3D ? syncBall(state, r.state, dt, passSpeed) : undefined;
-  return { ...r, state: { ...r.state, rng: matchRngState(), ball } };
+  const next = { ...r.state, rng: matchRngState(), ball };
+  // Stage 18 (`highlights.md`): the highlight layer reads every step (observation only).
+  if (DECISION_FLAGS.HIGHLIGHTS) gameBus.emit('simStep', { state: next, dt, ball: getBallPos(next) });
+  return { ...r, state: next };
 }
 
 function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResult {

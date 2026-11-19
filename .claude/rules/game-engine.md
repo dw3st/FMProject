@@ -114,3 +114,8 @@ listened to, no dice. See `game-engine/decisions.md`.
 `GameState.ball` (`Domain/Ball3D.ts` physics, `Domain/BallSync.ts` kept in step by `tickState`): x, y, z and velocity;
 passes, shots and loose balls move it physically, a loose ball above a player's reach can't be collected. Flag
 `BALL_3D`. See `game-engine/ball-3d.md`.
+
+## Highlight layer (stage 18)
+`Domain/Highlights.ts` (pure classifier) and `Domain/HighlightTracker.ts` (gameBus wiring) mark the match's lances
+(main / extended / full); `tickState` emits `simStep` at the end of every step for it. Observation only. See
+`game-engine/highlights.md`.

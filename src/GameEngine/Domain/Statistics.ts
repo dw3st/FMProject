@@ -20,6 +20,8 @@ import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
 import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
 import { isChance, isClearChance } from '@/GameEngine/Domain/FmXg';
+import { resetHighlights, highlightTeamStats, exportHighlightState, importHighlightState, type HighlightTeamStats } from '@/GameEngine/Domain/HighlightTracker';
+import type { HighlightState } from '@/GameEngine/Domain/Highlights';
 
 /** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
 export interface GoalLogEntry {
@@ -151,7 +153,7 @@ export interface PlayerStats {
   defenseDecisions:         number;
 }
 
-export interface TeamStats extends PlayerStats {
+export interface TeamStats extends PlayerStats, HighlightTeamStats {
   /** 1 when the match went to extra time. */
   extraTimePlayed: number;
   /** 1 when this team won a penalty shootout. */
@@ -806,6 +808,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   markedNow = new Set();
   teamFlags.A = emptyTeamFlags();
   teamFlags.B = emptyTeamFlags();
+  resetHighlights(players);
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();
   lastDecision.clear();
@@ -825,7 +828,7 @@ export function getPlayerStats(id: number): PlayerStats {
 /** Team stats derived from the sum of all player stats for that team. */
 export function getTeamStats(team: TeamId): TeamStats {
   const result: TeamStats = {
-    ...emptyStats(), ...teamFlags[team], avgEndEnergy: 0,
+    ...emptyStats(), ...teamFlags[team], ...highlightTeamStats(team), avgEndEnergy: 0,
     holderEntropy: teamEntropy(team, 'holder'), offBallEntropy: teamEntropy(team, 'offBall'), defenseEntropy: teamEntropy(team, 'defense'),
   };
   let energySum = 0;
@@ -921,6 +924,8 @@ export interface StatsSnapshot {
   teamFlags: Record<TeamId, Partial<TeamFlags>>;
   /** Goals so far (absent in snapshots taken before the goal log existed). */
   goals?: GoalLogEntry[];
+  /** Highlight layer (`highlights.md`); absent in older snapshots. */
+  highlights?: HighlightState;
 }
 
 /** Everything accumulated so far, as plain data (no Maps). */
@@ -931,6 +936,7 @@ export function exportStatsState(): StatsSnapshot {
     endEnergy: [...endEnergy].map(([id, e]) => [id, { ...e }]),
     teamFlags: { A: { ...teamFlags.A }, B: { ...teamFlags.B } },
     goals:     goalLog.map((g) => ({ ...g })),
+    highlights: exportHighlightState(),
   };
 }
 
@@ -943,6 +949,7 @@ export function importStatsState(snap: StatsSnapshot): void {
   for (const [id, team] of snap.teams) playerTeam.set(id, team);
   for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
   goalLog = (snap.goals ?? []).map((g) => ({ ...g }));
+  if (snap.highlights) importHighlightState(snap.highlights);
   teamFlags.A = { ...emptyTeamFlags(), ...snap.teamFlags.A };
   teamFlags.B = { ...emptyTeamFlags(), ...snap.teamFlags.B };
   notify();
