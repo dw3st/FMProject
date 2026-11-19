@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.24",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [
+      { tab: "match", pt: "Movimento novo na partida: os jogadores aceleram aos poucos, freiam antes de chegar e perdem velocidade nas curvas. Quem tem mais aceleração arranca melhor.", en: "New movement in the match: players speed up gradually, brake before arriving and lose speed when turning. Players with more acceleration get away quicker." },
+      { tab: "stats", pt: "Partida: distância percorrida e piques de cada jogador.", en: "Match: distance covered and sprints of each player." },
+    ],
+  },
+  {
     version: "12.23",
     date: "2026-11-18",
     time: "22:10",
