@@ -10,6 +10,11 @@ export const GROUP_ADVANCE = {
   MAX_ERROR_RETRIES: 5,
   /** Real-time interval of the deadline clock. */
   CLOCK_MS: 60_000,
+  /**
+   * Real milliseconds the executor waits after a live recording arrives, so the result screen's requests (the
+   * provisional result, the squads) are served before the day runs the round in the full engine.
+   */
+  LIVE_RECORDING_KICK_DELAY_MS: 4_000,
   /** Days kept in a seat's pending summary. */
   PENDING_SUMMARY_MAX: 120,
 } as const;

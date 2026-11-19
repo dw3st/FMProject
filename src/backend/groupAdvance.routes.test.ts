@@ -3,6 +3,7 @@ import { saveService } from "@/backend/SaveService";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { addSaveMember, deleteSaveMembers } from "@/backend/auth/saveOwnership";
 import { setKickScheduler } from "@/backend/groupAdvance";
+import { GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
 import { callApi } from "@/backend/worlds/worldTestUtils";
 import { fakeWorld } from "@/backend/testing/worldFixtures";
 
@@ -189,6 +190,7 @@ describe("group advance routes", () => {
 
 describe("group advance routes: the seat has a game today", () => {
   const kicks: string[] = [];
+  const delays: (number | undefined)[] = [];
   let token = "";
   let id = "";
   let fixture: Record<string, unknown> = {};
@@ -201,7 +203,7 @@ describe("group advance routes: the seat has a game today", () => {
     callApi(method, "/api/worlds/:saveId/" + route, token, { params: { saveId: id }, body });
 
   beforeAll(async () => {
-    setKickScheduler((sid) => kicks.push(sid));
+    setKickScheduler((sid, delayMs) => { kicks.push(sid); delays.push(delayMs); });
     const login = devAutoLogin("ga-routes-game@test.local");
     token = login.session.token;
     id = await fakeWorld({ seatIds: ["a", "b"], date: D });
@@ -212,7 +214,7 @@ describe("group advance routes: the seat has a game today", () => {
       async (_s: string, sid: string) => ({ id: sid, name: sid, players: [], youth: [] }) as never,
     ));
   });
-  afterEach(() => { kicks.length = 0; });
+  afterEach(() => { kicks.length = 0; delays.length = 0; });
   afterAll(async () => {
     setKickScheduler(null);
     for (const sp of spies) sp.mockRestore();
@@ -229,6 +231,7 @@ describe("group advance routes: the seat has a game today", () => {
     expect(seat.readyUntil! >= "2027-03-11").toBe(true);
     expect(await saveService.getLiveRecording(id, "a")).toBeNull();
     expect(kicks).toEqual([id]);
+    expect(delays).toEqual([0]);
     expect((await api("POST", "match-decision", { date: D, fixtureId: "other", mode: "simulate" })).json.error).toBe("notYourMatch");
   });
 
@@ -250,6 +253,8 @@ describe("group advance routes: the seat has a game today", () => {
     expect(seat.matchDecision).toEqual({ date: D, fixtureId: "fx1", mode: "live" });
     expect((await saveService.getLiveRecording(id, "a"))!.fixtureId).toBe("fx1");
     expect(kicks).toEqual([id]);
+    // The result screen loads first: the executor starts the day a few seconds later.
+    expect(delays).toEqual([GROUP_ADVANCE.LIVE_RECORDING_KICK_DELAY_MS]);
     const got = await api("GET", "live-recording");
     expect(got.status).toBe(200);
     expect(got.json.event.fixtureId).toBe("fx1");

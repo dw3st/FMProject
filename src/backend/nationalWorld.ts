@@ -56,6 +56,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MainRole } from "@/Domain/roles";
 import type { Confed } from "@/types/registrationTypes";
 import { logError } from "@/Logger";
+import { yieldToEventLoop } from "@/backend/yieldToEventLoop";
 
 export const isNationalTeamId = (id: string): boolean => id.startsWith("nat_");
 export const nationalTeamId = (nation: string): string => `nat_${countryKey(nation)}`;
@@ -574,6 +575,7 @@ export async function playNationalDay(args: {
             homeFormation: h.formation, homeLineup: h.lineup, awayFormation: a.formation, awayLineup: a.lineup,
             tactics: { A: h.tactics, B: a.tactics },
           }).recording;
+          await yieldToEventLoop();
         }
         const event = nationalMatchEvent(fx, recording, home.players, away.players);
         for (const c of coaches) {

@@ -481,7 +481,11 @@ export function kickWorld(saveId: string, deps: GroupAdvanceDeps = defaultGroupD
   return run;
 }
 
-const defaultScheduler = (saveId: string) => {
+const defaultScheduler = (saveId: string, delayMs = 0) => {
+  if (delayMs > 0) {
+    setTimeout(() => defaultScheduler(saveId), delayMs);
+    return;
+  }
   void (async () => {
     // Public world (part 5b): a member action only matters for the early step (everyone ready); the slots do the rest.
     if ((await defaultGroupDeps.service.getMeta(saveId))?.world?.kind === "public") {
@@ -492,14 +496,17 @@ const defaultScheduler = (saveId: string) => {
     await kickWorld(saveId);
   })().catch((e) => logError("world", `save ${saveId}: group advance crashed`, e));
 };
-let scheduler: (saveId: string) => void = defaultScheduler;
+let scheduler: (saveId: string, delayMs?: number) => void = defaultScheduler;
 
-/** Routes call this (tests swap it with `setKickScheduler`). */
-export function scheduleKick(saveId: string): void {
-  scheduler(saveId);
+/**
+ * Routes call this (tests swap it with `setKickScheduler`). `delayMs` holds the kick back (a live recording: the
+ * result screen loads the provisional result before the day blocks the server).
+ */
+export function scheduleKick(saveId: string, delayMs = 0): void {
+  scheduler(saveId, delayMs);
 }
 
-export function setKickScheduler(fn: ((saveId: string) => void) | null): void {
+export function setKickScheduler(fn: ((saveId: string, delayMs?: number) => void) | null): void {
   scheduler = fn ?? defaultScheduler;
 }
 

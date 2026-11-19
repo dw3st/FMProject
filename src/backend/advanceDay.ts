@@ -220,6 +220,7 @@ import {
 } from "@/backend/continentalWorld";
 import { advanceIntercontinental, ensureIntercontinental, ICC_SLUG, playerIntercontinentalSlug } from "@/backend/intercontinentalWorld";
 import { ICC } from "@/Domain/intercontinental/iccConfig";
+import { yieldToEventLoop } from "@/backend/yieldToEventLoop";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -310,6 +311,19 @@ export function payloadForSeat(
   seatId: string,
 ): Record<string, unknown> {
   return { ...outcome.payload, ...(outcome.seats[seatId] ?? {}) };
+}
+
+/**
+ * Body of `POST /api/advance-day`: the day, the new date and the seat's flags only. The day's events (every match with
+ * per-player stats, training and rest lines) stay on disk in the day log; a full-world payload was ~3.6 MB the client
+ * never read (`useAdvanceDay` and `MatchScreen` only use the flags).
+ */
+export function advanceDayResponseFor(
+  outcome: { payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>> },
+  seatId: string,
+): Record<string, unknown> {
+  const { saveId, date, newDate } = outcome.payload;
+  return { saveId, date, newDate, ...(outcome.seats[seatId] ?? {}) };
 }
 
 /**
@@ -883,6 +897,9 @@ export async function advanceOneDay(
               ? buildMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather, ...(aiMorale ? { aiMorale } : {}) })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather });
             if (sim.study && mode === "full") r.event = { ...r.event, study: sim.study };
+            // A full-engine match takes ~1 s of CPU and the day's other awaits resolve from the buffer (microtasks):
+            // give the server one macrotask between matches so other requests are not held for the whole round.
+            if (mode === "full") await yieldToEventLoop();
             registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
             dayEvents.push(r.event);
             // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).
@@ -4136,7 +4153,7 @@ export const advanceDayRoutes = {
     return withSaveLock(saveId, async () => {
       const outcome = await runBufferedDay(saveId, recordings);
       if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-      return Response.json(payloadForSeat(outcome, auth.seatId));
+      return Response.json(advanceDayResponseFor(outcome, auth.seatId));
     });
   },
 
