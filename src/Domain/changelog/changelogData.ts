@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.24.1",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "manager", pt: "Cassino com símbolos novos, pintados à mão, nas duas máquinas e no avião.", en: "Casino with new hand-painted symbols on both machines and the plane." },
+    ],
+  },
+  {
     version: "12.24",
     date: "2026-11-18",
     time: "22:22",
