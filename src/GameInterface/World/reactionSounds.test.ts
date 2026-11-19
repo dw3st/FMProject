@@ -19,8 +19,8 @@ describe("reaction sounds and art", () => {
   test("a random roll picks among the takes", () => {
     expect(pickReactionSound("applause", 0)).toBe("audio/taunt-applause-1.mp3");
     expect(pickReactionSound("applause", 0.99)).toBe("audio/taunt-applause-2.mp3");
-    expect(pickReactionSound("fire", 0)).toBe("audio/taunt-fireworks-3.mp3");
-    expect(pickReactionSound("fire", 0.99)).toBe("audio/taunt-fireworks-8.mp3");
+    expect(pickReactionSound("fire", 0)).toBe("audio/taunt-fireworks-5.mp3");
+    expect(pickReactionSound("fire", 0.99)).toBe("audio/taunt-fireworks-5.mp3");
   });
 
   test("sound spam: a gap between sounds, then silence after a burst", () => {

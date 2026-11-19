@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.28.3",
+    date: "2026-11-19",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "friends", pt: "A reação de fogos toca sempre o mesmo som, o escolhido.", en: "The fireworks reaction always plays the same sound, the chosen one." },
+    ],
+  },
+  {
     version: "12.28.2",
     date: "2026-11-19",
     time: "11:19",

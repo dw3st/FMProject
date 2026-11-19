@@ -3,12 +3,12 @@ import { readChatSound, readMatchVolume } from "@/GameInterface/artPrefs";
 import type { ReactionId } from "@/types/rivalsTypes";
 
 /**
- * Real recordings of each taunt reaction (Freesound, CC0; picked by the user, 2026-11-16; fire = fireworks since 12.8.5, six takes since 12.9). With more than one, a click
+ * Real recordings of each taunt reaction (Freesound, CC0; picked by the user, 2026-11-16; fire = fireworks since 12.8.5, one take since 12.29, picked by the user). With more than one, a click
  * plays one of them at random.
  */
 export const REACTION_SOUNDS: Record<ReactionId, readonly string[]> = {
   applause: ["audio/taunt-applause-1.mp3", "audio/taunt-applause-2.mp3"],
-  fire: ["audio/taunt-fireworks-3.mp3", "audio/taunt-fireworks-4.mp3", "audio/taunt-fireworks-5.mp3", "audio/taunt-fireworks-6.mp3", "audio/taunt-fireworks-7.mp3", "audio/taunt-fireworks-8.mp3"],
+  fire: ["audio/taunt-fireworks-5.mp3"],
   laugh: ["audio/taunt-laugh-1.mp3", "audio/taunt-laugh-2.mp3", "audio/taunt-laugh-3.mp3", "audio/taunt-laugh-4.mp3", "audio/taunt-laugh-5.mp3"],
   sorry: ["audio/taunt-sorry-1.mp3", "audio/taunt-sorry-2.mp3"],
   horn: ["audio/taunt-horn-1.mp3", "audio/taunt-horn-2.mp3"],
