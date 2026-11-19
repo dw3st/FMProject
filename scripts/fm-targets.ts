@@ -12,7 +12,7 @@
 import { writeFileSync } from "node:fs";
 import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
-  BAND_LABELS, CONDITION_MINUTES, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
+  BALL_GROUPS, BAND_LABELS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
   emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
@@ -64,6 +64,12 @@ for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShot
 console.log("\n── Condition (outfield median energy) by minute ──");
 console.log("  " + CONDITION_MINUTES.map((m, i) => `${m}' ${f1(fm.condition[i]!.sum / Math.max(1, fm.condition[i]!.n))} (FM ${FM_CONDITION[i]})`).join(" · "));
 console.log(`  keepers at the end ${f1(fm.keeperEnd.sum / Math.max(1, fm.keeperEnd.n))} (FM ${FM_KEEPER_END})`);
+console.log("\n── The 3D ball (stage 3; R9 §3: median peak / contact height, m) ──");
+for (const g of BALL_GROUPS) {
+  const pk = fm.ballPeak?.[g] ?? [], ct = fm.ballContact?.[g] ?? [];
+  console.log(`  ${g.padEnd(7)} n ${String(pk.length).padStart(5)}  peak ${f2(median(pk))} m (FM ${FM_BALL[g].peak})  contact ${f2(median(ct))} m (FM ${FM_BALL[g].contact})`);
+}
+console.log(`  ball in the air ${f1((fm.ballAirSeconds ?? 0) / Math.max(1, n))} s per match`);
 console.log("\n── Passes to the intended receiver (FM target, R7) ──");
 BAND_LABELS.forEach((l, i) => console.log(`  ${l.padEnd(6)} m  ${share(fm.passBand[i]!).padEnd(34)} FM ${FM_PASS_BAND[i]}%`));
 BAND_LABELS.forEach((l, i) => console.log(`  regular ${l.padEnd(6)} m  ${share(fm.passBandRegular[i]!)}`));

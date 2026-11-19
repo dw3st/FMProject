@@ -62,7 +62,23 @@ export interface FmTargetTotals {
   /** Sum over matches of the outfield median energy at `CONDITION_MINUTES` (n per minute), and the keepers' at the end. */
   condition: { sum: number; n: number }[];
   keeperEnd: { sum: number; n: number };
+  /**
+   * Stage 3 (`ball-3d.md`): the 3D ball's flights (`state.ball`) — peak and the height where the flight ended (first
+   * contact or landing), metres, per kind (cross, corner, long = long balls and clearances); air time (s).
+   */
+  ballPeak: Record<BallGroup, number[]>;
+  ballContact: Record<BallGroup, number[]>;
+  ballAirSeconds: number;
 }
+
+export const BALL_GROUPS = ["cross", "corner", "long"] as const;
+export type BallGroup = (typeof BALL_GROUPS)[number];
+/** R9 §3: median peak and contact height (m) of crosses, corners and long balls / clearances. */
+export const FM_BALL: Record<BallGroup, { peak: number; contact: number }> = {
+  cross: { peak: 4.0, contact: 1.8 },
+  corner: { peak: 5.6, contact: 2.2 },
+  long: { peak: 4.4, contact: 1.4 },
+};
 
 export function emptyFmTargets(): FmTargetTotals {
   const lineRec = <T>(f: () => T) => ({ GK: f(), DEF: f(), MID: f(), FWD: f() });
@@ -79,6 +95,7 @@ export function emptyFmTargets(): FmTargetTotals {
     holdDefault: lineRec(() => [] as number[]), holdShort: lineRec(() => [] as number[]),
     shotDist: SHOT_LABELS.map(() => 0), shots: 0, shotXgHist: new Array(XG_HIST_BINS).fill(0), realSeconds: 0,
     condition: CONDITION_MINUTES.map(() => ({ sum: 0, n: 0 })), keeperEnd: { sum: 0, n: 0 },
+    ballPeak: { cross: [], corner: [], long: [] }, ballContact: { cross: [], corner: [], long: [] }, ballAirSeconds: 0,
   };
 }
 
@@ -105,7 +122,12 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
   src.shotXgHist.forEach((v, i) => { dst.shotXgHist[i]! += v; });
   src.condition.forEach((v, i) => { dst.condition[i]!.sum += v.sum; dst.condition[i]!.n += v.n; });
   dst.keeperEnd.sum += src.keeperEnd.sum; dst.keeperEnd.n += src.keeperEnd.n;
+  for (const g of BALL_GROUPS) { dst.ballPeak[g].push(...(src.ballPeak?.[g] ?? [])); dst.ballContact[g].push(...(src.ballContact?.[g] ?? [])); }
+  dst.ballAirSeconds += src.ballAirSeconds ?? 0;
 }
+
+const ballGroupOf = (kind: string): BallGroup | null =>
+  kind === "cross" ? "cross" : kind === "corner" ? "corner" : kind === "long_ball" || kind === "clearance" ? "long" : null;
 
 /** FM category of a holder decision. */
 export function holderCategory(d: PlayerDecision): HolderCat {
@@ -180,6 +202,13 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
       const c = acc.condition[i]!; c.sum += median(s.players.filter(p => p.role !== "GK").map(p => p.energy)); c.n++;
     });
     acc.realSeconds += dt;
+    // ── the 3D ball (stage 3): a flight that ended gives its peak and the height it ended at ──
+    const cb = s.ball;
+    if (cb && cb.z > 0.1) acc.ballAirSeconds += dt;
+    if (cb?.ended && cb.ended.phase === "pass") {
+      const g = ballGroupOf(cb.ended.kind);
+      if (g) { acc.ballPeak[g].push(cb.ended.peak / YD); acc.ballContact[g].push(cb.ended.z / YD); }
+    }
     const held = !s.pass && !s.looseBall && !s.shot;
     // ── passes ──
     if (s.pass && (!prev || !prev.pass || prev.pass.fromId !== s.pass.fromId || s.pass.t < prev.pass.t)) {

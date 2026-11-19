@@ -101,6 +101,32 @@ The seeded generator (stage 0, `game-engine.md` → "Seeded match generator") le
 matches each): goals 1.590 / 1.525, 1.580 / 1.510, 1.692 / 1.650 (800 matches: 1.639 / 1.584, −3.4%, under 1 standard
 error); shots 4.82 / 4.46, 4.75 / 4.55, 4.75 / 4.74 (4.77 / 4.62, −3.1%, 1.4 standard errors).
 
+### Stage 3: the 3D ball (`ball-3d.md`)
+
+`fm-targets.ts 60 premier_league --chunks 1` (seed 9000, compressed clock), before (`feat/engine-fm` a20e77f3) / after
+(`BALL_3D` on). Only recorded, nothing tuned. With `BALL_3D` off the counts are identical to before (6 seeded matches).
+
+| Per match, both teams | Before | After | FM (R9) |
+|---|---|---|---|
+| Cross peak / contact height (median, m) | — | 1.31 / 0 (n 281) | 4.0 / 1.8 |
+| Corner peak / contact (m) | — | 2.15 / 0 (n 218) | 5.6 / 2.2 |
+| Long ball and clearance peak / contact (m) | — | 1.85 / 0 (n 460) | 4.4 / 1.4 |
+| Ball in the air (s, compressed clock) | — | 38.9 | — |
+| Interceptions | 2.52 | 3.13 | 59 |
+| Passes (regular) attempted / completed | 67.4 / 58.5 | 66.2 / 56.6 | — |
+| Pass completion, all kinds | 76.5% | 75.7% | 86% |
+| Goals / shots / on target | 1.57 / 4.65 / 2.90 | 1.48 / 4.70 / 2.55 | 1.5 / 21.5 / 7.5 |
+| Corners / throw-ins | 3.82 / 2.82 | 3.70 / 2.85 | 12.5 / 23 |
+| Crosses (completed) / long balls (completed) | 9.20 (0.97) / 2.50 (1.12) | 8.45 (0.88) / 2.65 (1.38) | 64 (12) / — |
+
+- The peaks follow from the engine's flight times (high balls 30 yd/s: a 35-yd cross flies ~1.2 s, peak g·T²/8 ≈ 1.6 m),
+  so they sit at a third to a half of FM's; FM launches lofted balls at vz 10–14 m/s (stage 4). Contact height 0: the high
+  ball still lands before the duel (stage 10).
+- With `FULL_DURATION=1` (3 matches, 90 physical minutes) the peaks are the same (cross 1.10, corner 2.15, long 1.88 m):
+  they depend only on the flight times; the ball is in the air 711 s per match.
+- Interceptions +24%: on a ground pass the physical ball is fast early and slow late (the old smoothstep was slow early),
+  so it reaches a defender's corridor sooner.
+
 ## Target against ours
 
 Premier League, 150 seeded matches each (`fm-targets.ts`, AI formations, balanced). "main" = the seven flags off;

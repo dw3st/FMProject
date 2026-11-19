@@ -14,6 +14,7 @@
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import type { SetPieceGoalKind, TeamId } from '@/GameEngine/types';
 import { BALL_CLUSTER_CONFIG } from '@/GameEngine/Domain/BallCluster';
+import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
 import type { DecisionTelemetryEvent, HolderMindEvent } from '@/GameEngine/Infrastructure/EventBus';
 import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
@@ -248,6 +249,15 @@ export interface TeamStats extends PlayerStats {
   passesLofted: number;
   holderHolds: number;
   holderTurns: number;
+  /**
+   * Stage 3 (`ball-3d.md`), by the team that played the ball: flights peaking above 1.2 m, seconds the ball spent in
+   * the air, and the peak heights (yd, summed, with the counts) of crosses, corners and long balls / clearances.
+   */
+  highBalls: number;
+  ballAirSeconds: number;
+  crossPeakSum: number; crossPeakN: number;
+  cornerPeakSum: number; cornerPeakN: number;
+  longPeakSum: number; longPeakN: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -341,6 +351,8 @@ type TeamFlags = {
   ballsOutOfPlay: number; deflections: number; shotsBlocked: number; heavyTouches: number; lineStepUps: number; lineDrops: number;
   pressStandOffs: number; supportShort: number; anticipationReads: number;
   passesMissed: number; passesLofted: number; holderHolds: number; holderTurns: number;
+  highBalls: number; ballAirSeconds: number; crossPeakSum: number; crossPeakN: number;
+  cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -353,6 +365,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0,
   pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
+  highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -694,6 +707,18 @@ gameBus.on('backLineState', e => {
 gameBus.on('pressStandOff', e => { teamFlags[e.team].pressStandOffs++; });
 gameBus.on('supportShort', e => { teamFlags[e.team].supportShort++; });
 gameBus.on('anticipationRead', e => { teamFlags[e.team].anticipationReads++; });
+
+// ── Stage 3 of the rebuild: the 3D ball (`ball-3d.md`) ───────────────────────────
+gameBus.on('ballFlight', e => {
+  if (!e.team) return;
+  const f = teamFlags[e.team];
+  f.ballAirSeconds += e.air;
+  if (e.kind === 'loose') return;
+  if (e.peak >= BALL_PHYSICS.HIGH_BALL_Z) f.highBalls++;
+  if (e.kind === 'cross') { f.crossPeakSum += e.peak; f.crossPeakN++; }
+  else if (e.kind === 'corner') { f.cornerPeakSum += e.peak; f.cornerPeakN++; }
+  else if (e.kind === 'long_ball' || e.kind === 'clearance') { f.longPeakSum += e.peak; f.longPeakN++; }
+});
 
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });

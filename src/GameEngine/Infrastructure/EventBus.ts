@@ -238,6 +238,9 @@ export interface GameEvents {
   /** Stage 4 (`movement.md`): the ball ran loose off a body or a bad touch (`playerId` = who touched it last). */
   ballRunsLoose: { playerId: number; team: TeamId; cause: LooseBallCause; x: number; y: number; vx: number; vy: number };
   /** Stage 4: a loose ball rolled out of play (throw-in / goal kick / corner follows). */
+  /** Stage 3 (`ball-3d.md`): a flight of the 3D ball ended (a pass, a shot, a loose spell). Peak in yards, air time in
+   *  seconds above `AIR_Z`, distance of the launch in yards, height where it ended (first contact / landing). */
+  ballFlight: { team: TeamId | null; kind: import('@/GameEngine/types').BallFlightKind; peak: number; air: number; distance: number; bounces: number; endZ: number };
   ballOutOfPlay: { team: TeamId; cause: LooseBallCause | 'through' | 'other'; kind: 'throw_in' | 'goal_kick' | 'corner' };
   /** Stage 4: the back line changed state (`team` = the defending side). */
   backLineState: { team: TeamId; mode: BackLineMode; x: number };

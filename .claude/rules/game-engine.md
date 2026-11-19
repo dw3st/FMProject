@@ -109,3 +109,8 @@ a `/test` surface and a `/lab` metric (`CLAUDE.md`).
 `holderDecision` / `offBallDecision` / `defensiveDecision` carry every fresh decision's score vector, situation bucket
 and FM pressure (`Domain/DecisionTelemetry.ts`, `Domain/Pressure.ts`, `Configs/DecisionConfig.ts`); emitted only while
 listened to, no dice. See `game-engine/decisions.md`.
+
+## 3D ball (engine rebuild stage 3)
+`GameState.ball` (`Domain/Ball3D.ts` physics, `Domain/BallSync.ts` kept in step by `tickState`): x, y, z and velocity;
+passes, shots and loose balls move it physically, a loose ball above a player's reach can't be collected. Flag
+`BALL_3D`. See `game-engine/ball-3d.md`.

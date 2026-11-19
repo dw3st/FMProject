@@ -351,6 +351,15 @@ export interface TeamRawStats {
   // FM numbers (stage 4b, `fm-numbers.md`)
   passesMissed: number;
   passesLofted: number;
+  /** Stage 3 (`ball-3d.md`), summed across games: high balls, seconds in the air, peak sums (yd) and counts. */
+  highBalls: number;
+  ballAirSeconds: number;
+  crossPeakSum: number;
+  crossPeakN: number;
+  cornerPeakSum: number;
+  cornerPeakN: number;
+  longPeakSum: number;
+  longPeakN: number;
   holderHolds: number;
   holderTurns: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
@@ -565,6 +574,12 @@ export interface PerMatchView {
   avgAnticipationReads: number;
   avgPassesMissed: number;
   avgPassesLofted: number;
+  /** Stage 3 (`ball-3d.md`): per match; peak heights are means, in metres. */
+  avgHighBalls: number;
+  avgBallAirSeconds: number;
+  crossPeakM: number;
+  cornerPeakM: number;
+  longPeakM: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
@@ -736,6 +751,12 @@ export interface VariantSummary {
   avgAnticipationReads: number;
   avgPassesMissed: number;
   avgPassesLofted: number;
+  /** Stage 3 (`ball-3d.md`): per match; peak heights are means, in metres. */
+  avgHighBalls: number;
+  avgBallAirSeconds: number;
+  crossPeakM: number;
+  cornerPeakM: number;
+  longPeakM: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */

@@ -40,6 +40,7 @@ import {
 import { evaluatePassLanes } from '@/GameEngine/Domain/PassLanes';
 import { PASS_CONFIG, PASS_YARDS_PER_SEC } from '@/GameEngine/Configs/PassConfig';
 import { predictBallPoint } from '@/GameEngine/Domain/BallPrediction';
+import { advanceLooseBall, ballWithinReach, passKey, shotKey, syncBall } from '@/GameEngine/Domain/BallSync';
 import {
   THROUGH_BALL_CONFIG,
   CHASE_LOOSE_BALL_WEIGHT_ATTACK,
@@ -3239,7 +3240,12 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   // ── 1. Advance ball + decay velocity ─────────────────────────────────────
   let { x, y, vx, vy } = lb;
   const speed = Math.hypot(vx, vy);
-  if (speed > 0) {
+  // Stage 3 (`ball-3d.md`): the 3D ball rolls, flies and bounces (on the ground the same rolling as below).
+  const ball3d = DECISION_FLAGS.BALL_3D ? advanceLooseBall(s, lb, dt) : undefined;
+  if (ball3d) {
+    ({ x, y, vx, vy } = ball3d);
+    s = { ...s, ball: ball3d };
+  } else if (speed > 0) {
     const newSpeed = Math.max(0, speed - cfg.LOOSE_BALL_DECELERATION * weatherEffectOf(s.weather).looseDecel * dt);
     const factor   = newSpeed / speed;
     vx *= factor;
@@ -3304,6 +3310,8 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   // Sort players by distance to the loose ball
   const ranked = s.players
     .filter(p => !isPlayerInRecovery(p))
+    // A ball above his reach flies over him (stage 3, `ball-3d.md`).
+    .filter(p => !ball3d || ballWithinReach(s.ball, p.role === 'GK'))
     .map(p => ({ p, dist: Math.hypot(p.x - lb.x, p.y - lb.y) }))
     .sort((a, b) => a.dist - b.dist);
 
@@ -4116,7 +4124,9 @@ function holderActionTicks(d: PlayerDecision): number {
 export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickResult {
   if (state.rng !== undefined) loadMatchRng(state.rng);
   const r = tickStateCore(state, dt, passSpeed);
-  return { ...r, state: { ...r.state, rng: matchRngState() } };
+  // Stage 3 (`ball-3d.md`): the 3D ball follows the play (passes, shots, loose balls, held).
+  const ball = DECISION_FLAGS.BALL_3D ? syncBall(state, r.state, dt, passSpeed) : undefined;
+  return { ...r, state: { ...r.state, rng: matchRngState(), ball } };
 }
 
 function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResult {
@@ -5497,6 +5507,12 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
 
 /** Current ball position in yards. */
 export function getBallPos(state: GameState): { x: number; y: number } {
+  // The 3D ball of the flight in the air (stage 3, `ball-3d.md`); a flight started this tick has none yet.
+  const b = state.ball;
+  if (b && DECISION_FLAGS.BALL_3D) {
+    if (state.shot && b.phase === 'shot' && b.key === shotKey(state.shot)) return { x: b.x, y: b.y };
+    if (!state.shot && state.pass && b.phase === 'pass' && b.key === passKey(state.pass)) return { x: b.x, y: b.y };
+  }
   if (state.shot) {
     const { fromX, fromY, toX, toY, t } = state.shot;
     const eased = t * t * (3 - 2 * t);

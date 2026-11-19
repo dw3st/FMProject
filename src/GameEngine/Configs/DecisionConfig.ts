@@ -62,6 +62,9 @@ export interface DecisionFlags {
   TACTIC_DAMP: boolean;
   /** Stage 6 (`xg.md`): the shot's xG is the FM logistic model (stats, the shot decision, the resolution input). */
   FM_XG: boolean;
+  /** Stage 3 of the rebuild (`ball-3d.md`): the ball is a 3D object (height, flight, bounce, roll); passes, shots and
+   *  loose balls move it physically; a loose ball above a player's reach can't be collected. */
+  BALL_3D: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -90,6 +93,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   SHOT_LIMIT: true,
   TACTIC_DAMP: true,
   FM_XG: true,
+  BALL_3D: true,
 };
 
 /**
