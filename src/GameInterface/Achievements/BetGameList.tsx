@@ -116,59 +116,59 @@ export function BetGameList({ games, today, mine, open, slip, query, scope, days
   const takenOf = (g: BetGame) => (m: BetPick["market"]) => open.some((b) => b.competition === g.competition && b.fixtureId === g.fixtureId && b.pick.market === m);
 
   const renderDay = (d: { date: string; games: BetGame[] }, withCompetition: boolean) => (
-<div key={`${withCompetition ? "f" : "c"}-${d.date}`}>
-                  <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50">
-                    <p className={`${LABEL} flex-1`}>{day(d.date)}</p>
-                    <div className="hidden sm:flex gap-1.5 pr-[124px]">
-                      {["1", "X", "2"].map((h) => <span key={h} className={`${LABEL} w-[78px] text-center`}>{h}</span>)}
-                    </div>
-                  </div>
-                  {d.games.map((g) => {
-                    const key = gameKey(g);
-                    const taken = takenOf(g);
-                    const sel = slip && gameKey(slip.game) === key ? slip.pick : undefined;
-                    const isOpen = expanded === key;
-                    const friends = friendSidesOf(g, humanClubs);
-                    return (
-                      <div key={key} className="border-b border-border/50 last:border-b-0">
-                        <div className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-4 py-2 ${g.own ? "bg-primary/5" : ""}`}>
-                          <span className="w-12 shrink-0 text-sm text-muted-foreground tabular-nums">{g.kickoff ?? ""}</span>
-                          {withCompetition && <span className="basis-full sm:basis-auto sm:w-36 shrink-0 text-sm text-muted-foreground truncate order-first sm:order-none" title={name(g.competition)}>{name(g.competition)}</span>}
-                          <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2 font-semibold">
-                            <span className="flex items-center justify-end gap-2 min-w-0">
-                              {friends.home && <HumanBadge nickname={friends.home} />}
-                              <span className="truncate text-right">{g.homeName}</span>
-                              <ClubLogo logoUrl={squadLogoUrl(g.home)} title={g.homeName} className="w-8 h-8 shrink-0" />
-                            </span>
-                            <span className="text-sm text-muted-foreground">x</span>
-                            <span className="flex items-center gap-2 min-w-0">
-                              <ClubLogo logoUrl={squadLogoUrl(g.away)} title={g.awayName} className="w-8 h-8 shrink-0" />
-                              <span className="truncate">{g.awayName}</span>
-                              {friends.away && <HumanBadge nickname={friends.away} />}
-                            </span>
-                          </div>
-                          <div className="flex gap-1.5 shrink-0">
-                            {SIDES.map((s) => {
-                              const r = g.markets.result.find((x) => x.side === s);
-                              const p: BetPick = { market: "result", side: s };
-                              const label = s === "home" ? "1" : s === "draw" ? "X" : "2";
-                              return <OddsButton key={s} label={label} odds={r?.odds ?? null} on={samePick(sel, p)} disabled={taken("result")} onClick={() => r && onPick(g, p, r.odds)} />;
-                            })}
-                          </div>
-                          <button
-                            type="button"
-                            aria-expanded={isOpen}
-                            onClick={() => onToggle(g)}
-                            className={`shrink-0 h-10 w-[112px] whitespace-nowrap rounded-md border text-sm font-semibold tabular-nums ${isOpen ? "border-primary text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-foreground"}`}
-                          >
-                            {isOpen ? t("bets.lessMarkets") : t("bets.moreMarkets", { count: g.more ?? 0 })}
-                          </button>
-                        </div>
-                        {isOpen && <MoreMarkets game={g} detail={details[key]} slip={slip} taken={taken} onPick={onPick} />}
-                      </div>
-                    );
-                  })}
-                </div>
+    <div key={`${withCompetition ? "f" : "c"}-${d.date}`}>
+      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50">
+        <p className={`${LABEL} flex-1`}>{day(d.date)}</p>
+        <div className="hidden sm:flex gap-1.5 pr-[124px]">
+          {["1", "X", "2"].map((h) => <span key={h} className={`${LABEL} w-[78px] text-center`}>{h}</span>)}
+        </div>
+      </div>
+      {d.games.map((g) => {
+        const key = gameKey(g);
+        const taken = takenOf(g);
+        const sel = slip && gameKey(slip.game) === key ? slip.pick : undefined;
+        const isOpen = expanded === key;
+        const friends = friendSidesOf(g, humanClubs);
+        return (
+          <div key={key} className="border-b border-border/50 last:border-b-0">
+            <div className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-4 py-2 ${g.own ? "bg-primary/5" : ""}`}>
+              <span className="w-12 shrink-0 text-sm text-muted-foreground tabular-nums">{g.kickoff ?? ""}</span>
+              {withCompetition && <span className="basis-full sm:basis-auto sm:w-36 shrink-0 text-sm text-muted-foreground truncate order-first sm:order-none" title={name(g.competition)}>{name(g.competition)}</span>}
+              <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2 font-semibold">
+                <span className="flex items-center justify-end gap-2 min-w-0">
+                  {friends.home && <HumanBadge nickname={friends.home} />}
+                  <span className="truncate text-right">{g.homeName}</span>
+                  <ClubLogo logoUrl={squadLogoUrl(g.home)} title={g.homeName} className="w-8 h-8 shrink-0" />
+                </span>
+                <span className="text-sm text-muted-foreground">x</span>
+                <span className="flex items-center gap-2 min-w-0">
+                  <ClubLogo logoUrl={squadLogoUrl(g.away)} title={g.awayName} className="w-8 h-8 shrink-0" />
+                  <span className="truncate">{g.awayName}</span>
+                  {friends.away && <HumanBadge nickname={friends.away} />}
+                </span>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                {SIDES.map((s) => {
+                  const r = g.markets.result.find((x) => x.side === s);
+                  const p: BetPick = { market: "result", side: s };
+                  const label = s === "home" ? "1" : s === "draw" ? "X" : "2";
+                  return <OddsButton key={s} label={label} odds={r?.odds ?? null} on={samePick(sel, p)} disabled={taken("result")} onClick={() => r && onPick(g, p, r.odds)} />;
+                })}
+              </div>
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                onClick={() => onToggle(g)}
+                className={`shrink-0 h-10 w-[112px] whitespace-nowrap rounded-md border text-sm font-semibold tabular-nums ${isOpen ? "border-primary text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-foreground"}`}
+              >
+                {isOpen ? t("bets.lessMarkets") : t("bets.moreMarkets", { count: g.more ?? 0 })}
+              </button>
+            </div>
+            {isOpen && <MoreMarkets game={g} detail={details[key]} slip={slip} taken={taken} onPick={onPick} />}
+          </div>
+        );
+      })}
+    </div>
   );
 
   return (
