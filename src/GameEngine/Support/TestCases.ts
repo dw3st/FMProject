@@ -465,6 +465,102 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'movement-rolling-ball',
+    name:        'Movement — overhit through ball rolls out of play',
+    description: 'A through ball played 6 yd beyond its cell toward the right corner, nobody near the landing point: it keeps its pace and rolls over the goal line for a goal kick (`movement.md`). Toggle "Movement": the pink line is the loose ball\'s roll to its stop.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CM',   70, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   82, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   92, 34, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   92, 42, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      const toX = 109, toY = 66;
+      return {
+        ...st,
+        pass: {
+          fromId: 1, toId: null, toX, toY, kind: 'through', t: 0.3, distance: Math.hypot(toX - 70, toY - 37),
+          receiverOffside: false, intendedRunnerId: 2, overhit: 6,
+        },
+      };
+    },
+  },
+
+  {
+    id:          'movement-shot-block',
+    name:        'Movement — shot blocked on its line',
+    description: 'Striker 22 yd out, a centre-back square on the shot line 2 yd in front of him: an open-play shot can be blocked (chance 0.32 × (1 − perp/width)) and rebound loose off his body (`movement.md`). Debug log "movement".',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Santos',   'A', 'ST',   93, 37, STRIKER),
+        makePlayer('Diaz',     'A', 'LW',   88, 18, WINGER),
+        makePlayer('Silva',    'B', 'CB',   95, 37.3, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  101, 45, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'movement-second-presser',
+    name:        'Movement — second presser stands off, support comes short',
+    description: 'Team A\'s midfielder in midfield with two team B midfielders closing: the nearest presses, the second stands off ~5 yd on the line to his goal, cutting the inside route (yellow ring). The holder is pressed, so his nearest defender / midfielder comes short to offer a safe pass (`movement.md`). Toggle "Movement".',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CM',   58, 30, MIDFIELDER),
+        makePlayer('Reyes',    'A', 'CDM',  44, 40, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   82, 36, STRIKER),
+        makePlayer('Mensah',   'B', 'CM',   61, 31, MIDFIELDER),
+        makePlayer('Kone',     'B', 'CDM',  66, 36, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB',   88, 34, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'movement-back-line',
+    name:        'Movement — the back line as a robust mean',
+    description: 'Team A carries forward through midfield against a ragged team B back four (one CB 7 yd deeper than the rest). The line is one robust mean (outliers clamped to ±6 m of the median) and moves in hold / step-up / drop states switching at 10 and 3 mph; each back-liner blends 0.5 own target, 0.25 line, 0.25 ball depth (`movement.md`). Toggle "Movement": teal = hold, green = step up, orange = drop.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Reyes',    'A', 'CAM',  55, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   72, 35, STRIKER),
+        makePlayer('Diaz',     'A', 'LW',   70, 15, WINGER),
+        makePlayer('Moreau',   'B', 'LB',   82, 62, DEFENDER),
+        makePlayer('Silva',    'B', 'CB',   88, 44, DEFENDER),
+        makePlayer('Okeke',    'B', 'CB',   81, 30, DEFENDER),
+        makePlayer('Diallo',   'B', 'RB',   82, 12, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  110, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, players: st.players.map(p => (p.id === 1 ? { ...p, vel: { x: 5, y: 0 } } : p)) };
+    },
+  },
+
+  {
+    id:          'movement-anticipation',
+    name:        'Movement — anticipation wins the race to a loose ball',
+    description: 'A through ball between a striker and a centre-back the same distance from the landing point. The centre-back reads the play (anticipation 0.9 vs 0.1): when the chasers are picked his ETA is credited 0.5 × lookahead, and his press starts on the holder\'s predicted point (`movement.md`). Debug: "anticipationRead".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CM',   62, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   84, 30, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   84, 44, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   92, 24, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      const mind = (a: number) => ({ decisions: 0.5, composure: 0.5, flair: 0.5, anticipation: a, consistency: 0.5, mood: 0 });
+      return { ...st, players: st.players.map(p => (p.id === 2 ? { ...p, mental: mind(0.1) } : p.id === 3 ? { ...p, mental: mind(0.9) } : p)) };
+    },
+  },
+
+  {
     id:          'defensive-cohesion',
     name:        'Defence — Line Cohesion and the Predicted Ball',
     description: 'Team A carries down the right while the back four of team B is stretched (a 20-yd hole between the CBs). The block reads the ball 0.4 s ahead, and each back-liner more than 14 yd from his nearest line partner is pulled toward him (`CohesionConfig.ts`). Toggle "Cohesion": the cyan ring is the predicted ball, the amber lines the stretched pairs with the pull.',

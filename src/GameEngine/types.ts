@@ -587,6 +587,8 @@ export interface PassState {
    * delivery (corner / crossed free kick with both teams set) gets the set-piece rules in the air.
    */
   setPieceVariant?: 'box' | 'direct';
+  /** Through balls (stage 4): yards the landing point is beyond the aimed cell along the pass (negative = short). */
+  overhit?: number;
 }
 
 /**
@@ -594,6 +596,19 @@ export interface PassState {
  * reached (`cross` / `long_ball`) or a defensive header / keeper punch / block (`clearance`).
  */
 export type LooseBallSource = 'through' | 'cross' | 'long_ball' | 'clearance';
+
+/** Why the ball runs loose (stage 4, `movement.md`): an overhit through ball, a heavy touch on a long pass, a pass
+ *  deflected off a defender, a blocked shot. */
+export type LooseBallCause = 'overhit' | 'heavy_touch' | 'deflection' | 'block';
+
+/** The back line's movement state (stage 4, `movement.md`). */
+export type BackLineMode = 'hold' | 'step_up' | 'drop';
+
+export interface BackLineState {
+  /** The line's x (yards). */
+  x: number;
+  mode: BackLineMode;
+}
 
 /**
  * Loose-ball state — ball drifting in space after a through ball lands. The ball
@@ -635,6 +650,8 @@ interface LooseBallState {
    * (`PassState.aerialOffsideIds`). One of them collecting the loose ball is flagged offside.
    */
   offsideIds?: number[];
+  /** Stage 4: why it runs loose (absent = the older causes, e.g. a through ball landing on target). */
+  cause?: LooseBallCause;
 }
 
 export interface ShotState {
@@ -738,6 +755,8 @@ export interface GameState {
    * toucher only.
    */
   looseBall: LooseBallState | null;
+  /** Stage 4 (`movement.md`): each side's back line while it defends (robust mean + hold / step-up / drop). */
+  backLine?: Partial<Record<TeamId, BackLineState>>;
   score: { A: number; B: number };
   /** Seconds until the next tackle window opens (global cooldown) */
   tackleCooldown: number;

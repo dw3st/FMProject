@@ -335,6 +335,16 @@ export interface TeamRawStats {
   moveChipGoals: number;
   moveRound: number;
   moveRoundWon: number;
+  /** Stage 4 (`movement.md`), summed across games. */
+  ballsOutOfPlay: number;
+  deflections: number;
+  shotsBlocked: number;
+  heavyTouches: number;
+  lineStepUps: number;
+  lineDrops: number;
+  pressStandOffs: number;
+  supportShort: number;
+  anticipationReads: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -531,6 +541,16 @@ export interface PerMatchView {
   avgChipGoals: number;
   avgRoundKeeper: number;
   avgRoundKeeperWon: number;
+  /** Stage 4 (`movement.md`): per match. */
+  avgBallsOutOfPlay: number;
+  avgDeflections: number;
+  avgShotsBlocked: number;
+  avgHeavyTouches: number;
+  avgLineStepUps: number;
+  avgLineDrops: number;
+  avgPressStandOffs: number;
+  avgSupportShort: number;
+  avgAnticipationReads: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -685,6 +705,16 @@ export interface VariantSummary {
   avgChipGoals: number;
   avgRoundKeeper: number;
   avgRoundKeeperWon: number;
+  /** Stage 4 (`movement.md`): per match. */
+  avgBallsOutOfPlay: number;
+  avgDeflections: number;
+  avgShotsBlocked: number;
+  avgHeavyTouches: number;
+  avgLineStepUps: number;
+  avgLineDrops: number;
+  avgPressStandOffs: number;
+  avgSupportShort: number;
+  avgAnticipationReads: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

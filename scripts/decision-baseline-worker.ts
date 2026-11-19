@@ -43,12 +43,17 @@ export interface BaselineTotals {
   relByP: number[];
   decByP: number[];
   lapseDecisions?: number;
+  extra?: Record<string, number>;
   releasedPick?: Record<string, number>;
 }
 export const MIND_KEYS = ["holderMindDecisions", "holderOffArgmax", "holderWindows", "holderLapses", "holderReleases",
   "holderHighPressure", "holderReleasesHigh", "holderPanics", "holderSimple",
   "moveShield", "moveShieldHeld", "moveCutInside", "moveLayOff", "moveChip", "moveChipGoals", "moveRound", "moveRoundWon"] as const;
 export type MindKey = (typeof MIND_KEYS)[number];
+/** Team counters summed over both sides (missing on older engines = 0): volume and the movement mechanics (stage 4). */
+export const EXTRA_KEYS = ["tackles", "fouls", "interceptions", "ballsOutOfPlay", "deflections", "shotsBlocked", "heavyTouches", "lineStepUps", "lineDrops",
+  "pressStandOffs", "supportShort", "anticipationReads"] as const;
+export type ExtraKey = (typeof EXTRA_KEYS)[number];
 
 const emptyFamily = (): FamilyTally => ({ n: 0, nearTies: 0, offArgmax: 0, mix: {}, buckets: Array.from({ length: 12 }, () => ({})) });
 
@@ -119,6 +124,8 @@ self.onmessage = (e: MessageEvent<Input>) => {
     }
     for (const [side, opp] of [[r.teamStats.A, r.teamStats.B], [r.teamStats.B, r.teamStats.A]] as const) {
       for (const k of MIND_KEYS) t.mind[k] += side[k] ?? 0;
+      t.extra = t.extra ?? {};
+      for (const k of EXTRA_KEYS) t.extra[k] = (t.extra[k] ?? 0) + (((side as unknown as Record<string, number>)[k]) ?? 0);
       t.xg += side.xg;
       t.passesAttempted += side.passesAttempted;
       t.passesCompleted += side.passesCompleted;

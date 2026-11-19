@@ -68,7 +68,7 @@ export type PlayerDecision =
   | { type: 'long_ball'; toX: number; toY: number; targetId: number } // withBall → high ball over the line
   | { type: 'dribble'; targetId: number; move?: HolderMove } // withBall → beat a close defender 1v1 (move: round the keeper)
   | { type: 'tackle'; targetId: number }                // withoutBall → close enough to attempt a tackle
-  | { type: 'press';  targetId: number }                // withoutBall → sprinting toward the ball holder
+  | { type: 'press';  targetId: number; standOff?: true } // withoutBall → toward the holder (standOff: second presser, stage 4)
   | { type: 'support_run';  dx: number; dy: number }   // offBall   → move into receiving position
   | { type: 'create_space'; dx: number; dy: number }   // offBall   → move away from pressure
   | { type: 'chase_loose_ball'; toX: number; toY: number } // both → sprint to a contested loose ball

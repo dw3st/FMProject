@@ -222,6 +222,20 @@ export interface TeamStats extends PlayerStats {
   moveChipGoals: number;
   moveRound: number;
   moveRoundWon: number;
+  /**
+   * Stage 4 (`movement.md`), team counters: loose balls that rolled out of play, passes deflected loose, open-play shots
+   * blocked (by this team's shots), heavy touches, back-line step-ups and drops (this team defending), second pressers
+   * standing off, short supports offered, anticipation reads.
+   */
+  ballsOutOfPlay: number;
+  deflections: number;
+  shotsBlocked: number;
+  heavyTouches: number;
+  lineStepUps: number;
+  lineDrops: number;
+  pressStandOffs: number;
+  supportShort: number;
+  anticipationReads: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -310,6 +324,8 @@ type TeamFlags = {
   holderMindDecisions: number; holderOffArgmax: number; holderWindows: number; holderLapses: number;
   holderReleases: number; holderHighPressure: number; holderReleasesHigh: number; holderPanics: number; holderSimple: number;
   moveShield: number; moveShieldHeld: number; moveCutInside: number; moveLayOff: number; moveChip: number; moveChipGoals: number; moveRound: number; moveRoundWon: number;
+  ballsOutOfPlay: number; deflections: number; shotsBlocked: number; heavyTouches: number; lineStepUps: number; lineDrops: number;
+  pressStandOffs: number; supportShort: number; anticipationReads: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -319,6 +335,8 @@ const emptyTeamFlags = (): TeamFlags => ({
   holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0,
   holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, holderPanics: 0, holderSimple: 0,
   moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0,
+  ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0,
+  pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -643,6 +661,21 @@ gameBus.on('holderMove', e => {
     f.moveRound++; if (e.phase === 'success') f.moveRoundWon++;
   }
 });
+
+// ── Stage 4: movement and ball physics (`movement.md`) ───────────────────────────
+gameBus.on('ballOutOfPlay', e => { teamFlags[e.team].ballsOutOfPlay++; });
+gameBus.on('ballRunsLoose', e => {
+  if (e.cause === 'deflection') teamFlags[e.team].deflections++;
+  else if (e.cause === 'heavy_touch') teamFlags[e.team].heavyTouches++;
+});
+gameBus.on('shotBlocked', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].shotsBlocked++; });
+gameBus.on('backLineState', e => {
+  if (e.mode === 'step_up') teamFlags[e.team].lineStepUps++;
+  else if (e.mode === 'drop') teamFlags[e.team].lineDrops++;
+});
+gameBus.on('pressStandOff', e => { teamFlags[e.team].pressStandOffs++; });
+gameBus.on('supportShort', e => { teamFlags[e.team].supportShort++; });
+gameBus.on('anticipationRead', e => { teamFlags[e.team].anticipationReads++; });
 
 /** The last holder-mind event of a player this match (`/test`). */
 export function getLastHolderMind(playerId: number): HolderMindEvent | undefined {

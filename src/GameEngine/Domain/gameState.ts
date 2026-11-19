@@ -65,8 +65,17 @@ import {
   computeShotAim, computeXG, computeOpenAngle, computeWeightedPressure,
   resolveShot, resolveTackle, resolveInterception, resolveDribble, resolveLooseBallDuel,
   resolveAerialDuel, gkClaimChance, resolveChip, resolveRoundKeeper,
+  resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
-import { HOLDER_MOVES } from '@/GameEngine/Configs/DecisionConfig';
+import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
+import {
+  shotBlocker, passLengthFactor, standOffPoint, robustMean, stepBackLine,
+  anticipationLookahead, anticipationInterceptMult,
+} from '@/GameEngine/Domain/Movement';
+import { COHESION_LINE_ROLES } from '@/GameEngine/Configs/CohesionConfig';
+import { computeDefensiveShapeAnchor, setBackLineX } from '@/GameEngine/Domain/DefensivePositioning';
+import type { LooseBallCause, BackLineState } from '@/GameEngine/types';
 import { chipMove, chipTargetY, roundKeeperSkill } from '@/GameEngine/Domain/HolderMoves';
 import { getInterceptionPerpDist, tackleAngleModifier, type RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
 import { foulChance, cardRoll, isClearChance, type FoulKind } from '@/GameEngine/Domain/Fouls';
@@ -2391,6 +2400,18 @@ function startShot(state: GameState): GameState {
 
   gameBus.emit('shot', { player: shooter.id, xg });
 
+  // Blocked on its line (stage 4, `movement.md`): the ball rebounds loose off the defender's body.
+  if (DECISION_FLAGS.SHOT_BLOCKS) {
+    const b = shotBlocker(shooter, toX, toY, state.players);
+    if (b && resolveShotBlock(b.perp)) {
+      const dir = scatterDirection(shooter.x - b.player.x, shooter.y - b.player.y, MOVEMENT.SHOT_REBOUND_MAX_DEG);
+      const v = reboundSpeed();
+      gameBus.emit('shotBlocked', { player: shooter.id, blockerId: b.player.id });
+      debugLog('movement', `${b.player.name} blocks ${shooter.name}'s shot (${b.perp.toFixed(1)} yd off the line)`, { playerId: b.player.id });
+      return runLoose({ ...state, setPiece: null }, b.player, b.player.x, b.player.y, dir.x * v, dir.y * v, 'block');
+    }
+  }
+
   return {
     ...state,
     shot: { shooterId: shooter.id, fromX: shooter.x, fromY: shooter.y, toX, toY, t: 0, xg },
@@ -2729,7 +2750,7 @@ function commitLooseBallChasers(
   const passerTeam = passer?.team ?? passerTeamFallback;
   if (!passerTeam) return state;
 
-  type Cand = { id: number; team: TeamId; eta: number; role: PlayerRole };
+  type Cand = { id: number; team: TeamId; eta: number; raw: number; role: PlayerRole };
   const etaOf = (p: GamePlayer) => raceEta(p, toX, toY, chaseSprintSpeed(p));
   // Fastest attacker to the point (the passer's side): the sweeper keeper must beat him (`Keeper.ts`).
   const bestAttackerEta = state.players
@@ -2762,8 +2783,10 @@ function commitLooseBallChasers(
         weight = inReach ? 1.0 : 0;
       }
       if (weight < THROUGH_BALL_CONFIG.ROLE_CHASE_THRESHOLD) continue;
-      const eta = etaOf(p);
-      out.push({ id: p.id, team, eta, role: p.role });
+      const raw = etaOf(p);
+      // Anticipation (stage 4, `movement.md`): who reads the ball earlier gets to the race first.
+      const eta = DECISION_FLAGS.ANTICIPATION_PRESS ? raw - MOVEMENT.ANTICIPATION_CHASE * anticipationLookahead(p) : raw;
+      out.push({ id: p.id, team, eta, raw, role: p.role });
     }
     out.sort((a, b) => a.eta - b.eta);
     return out;
@@ -2781,6 +2804,13 @@ function commitLooseBallChasers(
   };
 
   const chasers = [...pickTop(teamA), ...pickTop(teamB)];
+  for (const arr of [teamA, teamB]) {
+    const first = arr[0];
+    if (first && arr.some(c => c.raw < first.raw - 1e-6)) {
+      const p = state.players.find(q => q.id === first.id);
+      if (p) gameBus.emit('anticipationRead', { playerId: p.id, team: p.team, kind: 'chase', lookahead: anticipationLookahead(p) });
+    }
+  }
   for (const c of chasers) {
     if (!sweepers.has(c.id)) continue;
     const already = state.players.find(p => p.id === c.id)?.decisionMemory?.decision?.type === 'chase_loose_ball';
@@ -2860,6 +2890,11 @@ export function startThroughBall(
     : false;
 
   const distance = Math.sqrt((landingX - holder.x) ** 2 + (landingY - holder.y) ** 2);
+  // Overhit (stage 4): how far the landing point is beyond the aimed cell along the pass.
+  const aimLen = Math.hypot(decision.cellX - holder.x, decision.cellY - holder.y);
+  const overhit = aimLen > 0.01
+    ? ((landingX - decision.cellX) * (decision.cellX - holder.x) + (landingY - decision.cellY) * (decision.cellY - holder.y)) / aimLen
+    : 0;
 
   // Through balls are their own stat family (throughBallStarted → Completed / LostIn*) — they
   // never emit passAttempted, which only counts passes that end in passCompleted / passFailed.
@@ -2887,6 +2922,7 @@ export function startThroughBall(
       receiverOffside:  runnerOffside,
       offsideLineX:     offsideLineAt(holder, state.players),
       intendedRunnerId: decision.intendedRunnerId,
+      overhit,
     },
     setPiece: null,
   };
@@ -3173,6 +3209,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     }
 
     aerialOutcome(null, false);
+    gameBus.emit('ballOutOfPlay', { team: lb.fromTeamLastTouch, cause: lb.cause ?? (isTB ? 'through' : 'other'), kind });
     // Over the defending team's line with one of them on it: his touch put it out — corner.
     if (kind === 'goal_kick') {
       const exit = { x: Math.max(0, Math.min(PITCH_LENGTH, x)), y: Math.max(0, Math.min(PITCH_WIDTH, y)) };
@@ -3478,6 +3515,67 @@ function dropLooseAt(s: GameState, gk: GamePlayer, point: { x: number; y: number
       source: 'clearance',
     },
   }, prevHolderId);
+}
+
+/**
+ * Stage 4 (`movement.md`): the defending side's back line, one robust-mean x of its back-liners' own shape targets,
+ * moved by the hold / step-up / drop state machine (`stepBackLine`). The attacking side has none. Hands the line to
+ * `DefensivePositioning` for this tick.
+ */
+function updateBackLine(s: GameState, defendingTeam: TeamId, shapeBallPos: { x: number; y: number }, dt: number): GameState {
+  const attackingTeam: TeamId = defendingTeam === 'A' ? 'B' : 'A';
+  setBackLineX(attackingTeam, null);
+  if (!DECISION_FLAGS.BACK_LINE || !isLivePhase(s.matchPhase)) {
+    setBackLineX(defendingTeam, null);
+    return s.backLine ? { ...s, backLine: undefined } : s;
+  }
+  const formation = defendingTeam === 'A' ? s.formationA : s.formationB;
+  const cfg = getDefenseConfig(defendingTeam);
+  const line = s.players.filter(p => p.team === defendingTeam && COHESION_LINE_ROLES.has(p.role));
+  if (line.length < 2) { setBackLineX(defendingTeam, null); return s; }
+  const wanted = robustMean(line.map(p => computeDefensiveShapeAnchor(p, shapeBallPos, formation, cfg).x));
+  const prev: BackLineState | undefined = s.backLine?.[defendingTeam];
+  const next = stepBackLine(prev, wanted, line[0]!.attackDir, dt);
+  if (prev && prev.mode !== next.mode) {
+    gameBus.emit('backLineState', { team: defendingTeam, mode: next.mode, x: next.x });
+    debugLog('movement', `Team ${defendingTeam} back line: ${next.mode} at x ${next.x.toFixed(1)}`, {});
+  }
+  setBackLineX(defendingTeam, next.x);
+  return { ...s, backLine: { [defendingTeam]: next } };
+}
+
+/**
+ * Stage 4 (`movement.md`): the ball runs loose off `toucher` (a deflection, a blocked shot, a heavy touch) from (x, y)
+ * at (vx, vy) yd/s. His team made the last touch; chasers of both sides are committed to where it will stop.
+ */
+function runLoose(s: GameState, toucher: GamePlayer, x: number, y: number, vx: number, vy: number, cause: LooseBallCause): GameState {
+  const w = weatherEffectOf(s.weather).looseSpeed;
+  vx *= w; vy *= w;
+  gameBus.emit('ballRunsLoose', { playerId: toucher.id, team: toucher.team, cause, x, y, vx, vy });
+  const prevHolderId = s.ballHolderId;
+  const st = onPossessionTransfer({
+    ...s,
+    pass: null,
+    shot: null,
+    ballHolderId: toucher.id,
+    lastPasserId: null,
+    looseBall: {
+      x, y, vx, vy,
+      startTime: s.matchTime,
+      fromPasserId: toucher.id,
+      fromTeamLastTouch: toucher.team,
+      intendedRunnerId: null,
+      receiverOffside: false,
+      source: 'clearance',
+      cause,
+    },
+  }, prevHolderId);
+  const a = THROUGH_BALL_CONFIG.LOOSE_BALL_DECELERATION * weatherEffectOf(s.weather).looseDecel;
+  const v = Math.hypot(vx, vy);
+  const roll = a > 0 ? (v * v) / (2 * a) : 0;
+  const stopX = Math.max(0, Math.min(PITCH_LENGTH, x + (v > 0 ? (vx / v) * roll : 0)));
+  const stopY = Math.max(0, Math.min(PITCH_WIDTH, y + (v > 0 ? (vy / v) * roll : 0)));
+  return commitLooseBallChasers(st, toucher.id, stopX, stopY, toucher.team);
 }
 
 /** Offside free kick for the team defending against `offender` at `at` (aerial path). */
@@ -4369,6 +4467,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const moveLog = newMoveLog();
     // The defending shape reads where the ball is going (`BallPrediction.ts`, `COHESION.PREDICT_S`).
     const shapeBallPos = predictBallPoint(s, ballPos);
+    s = updateBackLine(s, defendingTeam, shapeBallPos, dt);
 
     const movedPlayers = s.players.map(player => {
       if (player.id === s.ballHolderId && !looseKeeper(s, player)) return player;
@@ -4422,7 +4521,10 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         const legacy = { x: player.x + (cdx / cdist) * step, y: player.y + (cdy / cdist) * step };
         return { ...moveToward(player, s, dt, targetPt, sprintSpeed * recoveryMult, legacy, moveLog), targetPosition: targetPt };
       }
-      if (isPressing) {
+      if (isPressing && decision.type === 'press' && decision.standOff) {
+        // Second presser (stage 4, `movement.md`): stands off the holder, covering the inside route.
+        target = standOffPoint(player, holder);
+      } else if (isPressing) {
         const holderDecision = s.decisions[holder.id];
         if (holderDecision?.type === 'carry') {
           // Intercept-angle press: project holder forward along their carry direction
@@ -5037,8 +5139,28 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const interceptorNow = s.players.find(p => p.id === player.id)!;
       const passer = s.players.find(p => p.id === activePass.fromId);
       const passerSkill = passer?.runtimeStats.withBall.passingSkill ?? 0;
-      const { success, chance } = resolveInterception(interceptorNow, perpDist, corridor, passerSkill);
+      const antMult = DECISION_FLAGS.ANTICIPATION_PRESS ? anticipationInterceptMult(interceptorNow) : 1;
+      const { success, chance } = resolveInterception(interceptorNow, perpDist, corridor, passerSkill, antMult);
       gameBus.emit('interception', { player: player.id, success, chance });
+      if (success && antMult > 1.05) {
+        gameBus.emit('anticipationRead', { playerId: player.id, team: player.team, kind: 'intercept', lookahead: anticipationLookahead(interceptorNow) });
+      }
+      if (success && DECISION_FLAGS.DEFLECTIONS && resolveDeflection()) {
+        // Deflected (stage 4, `movement.md`): the pass bounces off him, nobody has it.
+        if (activePass.kind === 'through') {
+          gameBus.emit('throughBallLostInFlight', { player: activePass.fromId, interceptorId: player.id });
+        } else {
+          gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId ?? activePass.fromId });
+        }
+        const pdx = targetPos.x - ballPos.x, pdy = targetPos.y - ballPos.y;
+        const dir = scatterDirection(pdx, pdy, MOVEMENT.DEFLECT_MAX_DEG);
+        const v = PASS_YARDS_PER_SEC * MOVEMENT.DEFLECT_SPEED_SHARE;
+        debugLog('movement', `${interceptorNow.name} deflects the pass`, { playerId: player.id });
+        return {
+          state: runLoose(s, interceptorNow, interceptorNow.x, interceptorNow.y, dir.x * v, dir.y * v, 'deflection'),
+          passCompleted: false, tackled: true, goalScored: null,
+        };
+      }
       if (success) {
         if (activePass.kind === 'through') {
           gameBus.emit('throughBallLostInFlight', { player: activePass.fromId, interceptorId: player.id });
@@ -5082,7 +5204,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       const dx = landingX - (passer?.x ?? landingX);
       const dy = landingY - (passer?.y ?? landingY);
       const len = Math.hypot(dx, dy);
-      const initSpeed = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
+      // An overhit ball keeps its pace and rolls on (stage 4, `movement.md`): nobody reaching it, it runs out of play.
+      const overhit = DECISION_FLAGS.ROLLING_BALL ? Math.max(0, activePass.overhit ?? 0) : 0;
+      const baseSpeed = Math.min(MOVEMENT.OVERHIT_MAX_SPEED,
+        THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED + overhit * MOVEMENT.OVERHIT_SPEED_PER_YD);
+      const initSpeed = baseSpeed * weatherEffectOf(s.weather).looseSpeed;
       logWeather(s, 'looseSpeed', 'Through ball runs loose', passer?.id);
       logWeather(s, 'looseDecel', 'Through ball runs loose', passer?.id);
       const vx = len > 0.001 ? (dx / len) * initSpeed : 0;
@@ -5111,6 +5237,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
             intendedRunnerId: activePass.intendedRunnerId,
             receiverOffside: activePass.receiverOffside,
             offsideLineX: activePass.offsideLineX,
+            ...(overhit >= 1 ? { cause: 'overhit' as const } : {}),
           },
         },
         passCompleted: false, tackled: false, goalScored: null,
@@ -5180,6 +5307,19 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
       const exitY = receiver.y < PITCH_WIDTH / 2 ? -1 : PITCH_WIDTH + 1;
       return resolveOOBSetPiece({ ...s, pass: null }, 'throw_in', receiver.team === 'A' ? 'B' : 'A', receiver.x, exitY, receiver.id, 'clearance');
+    }
+    // A long ball to feet miscontrolled (stage 4, `movement.md`): it runs on in the pass direction.
+    if (DECISION_FLAGS.ROLLING_BALL && !activePass.fromSetPiece && activePass.distance > 0
+      && resolveHeavyTouch(passLengthFactor(activePass.distance), receiver.runtimeStats.withBall.firstTouch)) {
+      const passer = s.players.find(p => p.id === activePass.fromId);
+      const dx = receiver.x - (passer?.x ?? receiver.x), dy = receiver.y - (passer?.y ?? receiver.y);
+      const d = Math.hypot(dx, dy) || 1;
+      gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
+      debugLog('movement', `${receiver.name} miscontrols a ${activePass.distance.toFixed(0)}-yd pass`, { playerId: receiver.id });
+      return {
+        state: runLoose(s, receiver, receiver.x, receiver.y, (dx / d) * MOVEMENT.HEAVY_TOUCH_SPEED, (dy / d) * MOVEMENT.HEAVY_TOUCH_SPEED, 'heavy_touch'),
+        passCompleted: false, tackled: false, goalScored: null,
+      };
     }
     gameBus.emit('passCompleted', { player: activePass.fromId, toId: activePass.toId! });
     // Pass complete is same-team, so onPossessionTransfer would no-op — but the

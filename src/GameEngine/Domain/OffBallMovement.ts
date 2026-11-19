@@ -18,6 +18,11 @@ import {
 import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
+import { holderPressure } from '@/GameEngine/Domain/Pressure';
+import { shortSupportOf, shortSupportAnchor } from '@/GameEngine/Domain/Movement';
+import { getMainRole } from '@/Domain/roles';
 import {
   sampleCellSum,
   sampleCellSumExcluding,
@@ -52,6 +57,8 @@ export function getOffBallBias(player: { role: PlayerRole; engine?: RoleEngineTu
 // ── Context ───────────────────────────────────────────────────────────────────
 
 interface OffBallContext {
+  /** Stage 4 (`movement.md`): the holder is pressed and this player is his nearest defender / midfielder: come short. */
+  comeShort?: boolean;
   player:        GamePlayer;
   ballHolder:    GamePlayer;
   allPlayers:    GamePlayer[];
@@ -159,6 +166,9 @@ function selectOffBallIntent(ctx: OffBallContext): {
   // Too far behind to make a useful penetrating run.
   if (ctx.relativeAdvance < -20) scores.make_run *= 0.5;
 
+  // Support comes short (stage 4): the nearest defender / midfielder offers a pressed holder a safe option.
+  if (ctx.comeShort) scores.offer_support *= MOVEMENT.SUPPORT_BOOST;
+
   // ── Team intent multipliers (counter_attack, etc.) ────────────────────────
   const finalScores = applyOffBallIntent(scores, ctx.intent);
 
@@ -187,6 +197,10 @@ function getAnchor(intent: OffBallIntent, ctx: OffBallContext): Anchor {
 
   switch (intent) {
     case 'offer_support': {
+      if (ctx.comeShort) {
+        const a = shortSupportAnchor(player, ballHolder);
+        return { x: a.x, y: a.y, searchRadius: OFF_BALL_CONFIG.SUPPORT_SEARCH_RADIUS * 0.5 };
+      }
       // Midway between player and holder — biased slightly toward the player so
       // close support partners scan their own neighbourhood instead of the ball.
       return {
@@ -407,6 +421,24 @@ function createSpaceDirection(
   return { dx: awayDx, dy: awayDy };
 }
 
+// ── Support comes short (stage 4) ─────────────────────────────────────────────
+
+/** Last (holder, supporter) pair announced: `supportShort` is emitted once per pair, not per decision. */
+let lastSupport = '';
+
+function comesShort(player: GamePlayer, holder: GamePlayer, allPlayers: GamePlayer[], opponents: GamePlayer[]): boolean {
+  const sup = shortSupportOf(holder, allPlayers, p => getMainRole(p.role));
+  if (!sup || sup.id !== player.id) return false;
+  const p = holderPressure(holder.x, holder.y, opponents);
+  if (p < MOVEMENT.SUPPORT_PRESSURE) return false;
+  const key = `${holder.id}:${player.id}`;
+  if (key !== lastSupport) {
+    lastSupport = key;
+    gameBus.emit('supportShort', { playerId: player.id, team: player.team, holderId: holder.id });
+  }
+  return true;
+}
+
 // ── Main evaluator ────────────────────────────────────────────────────────────
 
 export function evaluateOffBall(
@@ -424,6 +456,7 @@ export function evaluateOffBall(
 
   const opponents = allPlayers.filter(p => p.team !== player.team);
   const ctx = buildContext(player, ballHolder, allPlayers, opponents, offsideLine, teamIntent, crowdGrid);
+  if (DECISION_FLAGS.SUPPORT_SHORT && player.role !== 'GK') ctx.comeShort = comesShort(player, ballHolder, allPlayers, opponents);
 
   const { intent, scores: intentScores } = selectOffBallIntent(ctx);
   if (decisionCaptureOn()) captureDecision('offBall', { ...intentScores }, intent);

@@ -37,6 +37,9 @@ import { sampleCellSumExcluding, type CrowdGrid, type GridMatrix } from '@/GameE
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 import { keeperDefendingTarget } from '@/GameEngine/Domain/Keeper';
 import { COHESION, COHESION_LINE_ROLES } from '@/GameEngine/Configs/CohesionConfig';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
+import { blendLineX, firstPresserOf, anticipationLookahead, predictedPoint } from '@/GameEngine/Domain/Movement';
 import type { PressingStyle } from '@/types/tacticsTypes';
 
 const PITCH_CENTER_Y = 37;
@@ -89,6 +92,25 @@ function effectivePressRange(player: GamePlayer, intent: TeamIntent = 'balanced'
 
 /** Last-computed defensive intent per player id — written each tick, read by computeDefensivePosition. */
 const _intentCache: Record<number, DefensiveIntent> = {};
+
+/** The back line each defending side holds this tick (stage 4, `movement.md`); null = none (attacking, or off). */
+const _backLineX: Partial<Record<TeamId, number | null>> = {};
+
+/** Last (holder, defender) stand-off announced: `pressStandOff` once per pair. */
+let _lastStandOff = '';
+
+/** Set by the tick loop once per tick for each side (`gameState.ts`). */
+export function setBackLineX(team: TeamId, x: number | null): void {
+  _backLineX[team] = x;
+}
+
+/** The ball-relative depth of the back line: the ball's x minus the tactic's depth offset (scaled near goal). */
+export function ballRelativeLineX(player: GamePlayer, ballPos: { x: number; y: number }, cfg: DefenseConfigValues): number {
+  const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
+  const depthOffset = (1.0 - cfg.DEFENSIVE_LINE_HEIGHT) * DEPTH_OFFSET_RANGE + DEPTH_OFFSET_BASE;
+  const scale = Math.min(1, Math.abs(ballPos.x - ownGoalX) / 55);
+  return ballPos.x - player.attackDir * depthOffset * scale;
+}
 
 /** Forget every cached intent: a new match must not start with the last match's (player ids repeat). */
 export function resetDefensiveIntentCache(): void {
@@ -1218,6 +1240,16 @@ export function evaluateDefensiveDecision(
     teamIntent,
   );
 
+  // Anticipation (stage 4): a defender reading the play judges the press on where the holder is going, not where he is.
+  if (DECISION_FLAGS.ANTICIPATION_PRESS && Number.isFinite(ctx.distToHolder)) {
+    const look = anticipationLookahead(player);
+    const ahead = predictedPoint(ballHolder, look);
+    const dAhead = Math.hypot(ahead.x - player.x, ahead.y - player.y);
+    if (dAhead < ctx.distToHolder) {
+      ctx.distToHolder = Math.max(dAhead, ctx.distToHolder - MOVEMENT.ANTICIPATION_PRESS_MAX_YD);
+    }
+  }
+
   const { intent, scores, carryLaneBonus } = selectDefensiveIntent(ctx, possessionTime);
   if (decisionCaptureOn()) captureDecision('defense', { ...scores }, intent);
 
@@ -1240,6 +1272,15 @@ export function evaluateDefensiveDecision(
 
   switch (intent) {
     case 'press_holder':
+      // Second presser (stage 4): a teammate is already on the holder, so he stands off covering the inside route.
+      if (DECISION_FLAGS.SECOND_PRESSER && player.role !== 'GK' && firstPresserOf(player, ballHolder, allPlayers)) {
+        const key = `${ballHolder.id}:${player.id}`;
+        if (_lastStandOff !== key) {
+          _lastStandOff = key;
+          gameBus.emit('pressStandOff', { playerId: player.id, team: player.team, holderId: ballHolder.id });
+        }
+        return { type: 'press', targetId: ballHolder.id, standOff: true };
+      }
       return { type: 'press', targetId: ballHolder.id };
     case 'track_mark':
       return { type: 'track_mark', markTargetId: markTargetId ?? -1 };
@@ -1369,6 +1410,13 @@ export function computeDefensivePosition(
   if ((intent === 'hold_shape' || intent === 'track_mark') && player.manMarkTargetId === undefined) {
     const c = lineCohesionPull(player, { x: rawX, y: rawY }, allPlayers);
     if (c) rawY += c.pull;
+  }
+
+  // The back line (stage 4): a zonal back-liner blends his own x with the line and the ball-relative depth.
+  const lineX = _backLineX[player.team];
+  if (DECISION_FLAGS.BACK_LINE && lineX != null && COHESION_LINE_ROLES.has(player.role)
+    && (intent === 'hold_shape' || (intent === 'track_mark' && MOVEMENT.LINE_TRACK_MARK > 0)) && player.manMarkTargetId === undefined) {
+    rawX = blendLineX(rawX, lineX, ballRelativeLineX(player, shapeBallPos, cfg));
   }
 
   // Soft bounds: active engagement intents (track_mark / step_into_carry_lane)

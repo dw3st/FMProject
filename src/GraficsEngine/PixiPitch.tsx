@@ -103,6 +103,8 @@ import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
 import { assignMarkTargets, lineCohesionPull } from "@/GameEngine/Domain/DefensivePositioning";
 import { predictBallPoint } from "@/GameEngine/Domain/BallPrediction";
+import { standOffPoint } from "@/GameEngine/Domain/Movement";
+import { THROUGH_BALL_CONFIG as TB_CFG } from "@/GameEngine/Configs/ThroughBallConfig";
 import {
   computeCrowdGrid,
   attackingTeam,
@@ -416,6 +418,8 @@ export interface DebugOverlays {
   kinematics:            boolean;
   /** Defensive cohesion (`CohesionConfig.ts`): the predicted ball the block reads, and back-line pairs stretched past MAX_GAP. */
   cohesion:              boolean;
+  /** Stage 4 movement (`movement.md`): the back line and its state, second-presser stand-off points, a loose ball's roll. */
+  movement:              boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -432,6 +436,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   keeper:                false,
   kinematics:            false,
   cohesion:              false,
+  movement:              false,
 };
 
 interface Props {
@@ -2633,6 +2638,16 @@ export function PixiPitch({
         // A high ball brought down: on the chest.
         gameBus.on("aerialResolved", (e) => { if (e.outcome === "control" && topDownMoves()) act(e.winnerId, "chest"); }),
         gameBus.on("keeperSmother", (e) => { if (topDownMoves()) act(e.keeperId, "smother"); }),
+        // The holder's moves (`HolderMoves.ts`, stage 4 `movement.md`): an existing pose for each. Shielding he stands over
+        // the ball (receive), cutting inside he turns (roulette), the lay-off is a first-time pass, the chip a lofted
+        // strike (volley), rounding the keeper a step-over.
+        gameBus.on("holderMove", (e) => {
+          if (!topDownMoves()) return;
+          if (e.move === "chip") { act(e.playerId, "volley"); return; }
+          if (e.move === "round_keeper") { act(e.playerId, "stepover", e.playerId % 2 === 0 ? 1 : -1); return; }
+          if (e.phase !== "start") return;
+          act(e.playerId, e.move === "shield" ? "receive" : e.move === "cut_inside" ? "roulette" : "pass");
+        }),
         // A won dribble: the pixel figure plays one of its tricks (kept through a pose he is still in).
         gameBus.on("dribble", (e) => {
           if (!e.success || !pixelArt || !framesShown()) return;
@@ -4978,6 +4993,38 @@ export function PixiPitch({
               }
             }
           }
+          // ── Stage 4 movement — back line, stand-off points, loose-ball roll (`movement.md`) ──
+          if (ovl.movement) {
+            const st = stateRef.current;
+            for (const team of ["A", "B"] as const) {
+              const bl = st.backLine?.[team];
+              if (!bl) continue;
+              const color = bl.mode === "hold" ? 0x5eead4 : bl.mode === "step_up" ? 0x22c55e : 0xf97316;
+              const top = toPixel(bl.x, 0), bottom = toPixel(bl.x, 74);
+              passLinesGfx.moveTo(top.px, top.py).lineTo(bottom.px, bottom.py).stroke({ width: 2, color, alpha: 0.75 });
+            }
+            const holderNow = st.players.find(p => p.id === st.ballHolderId);
+            if (holderNow) {
+              for (const p of st.players) {
+                const d = st.decisions[p.id];
+                if (d?.type !== "press" || !d.standOff) continue;
+                const pt = standOffPoint(p, holderNow);
+                const a = toPixel(p.x, p.y), b = toPixel(pt.x, pt.y);
+                passLinesGfx.moveTo(a.px, a.py).lineTo(b.px, b.py).stroke({ width: 1, color: 0xfacc15, alpha: 0.7 });
+                passLinesGfx.circle(b.px, b.py, 4).stroke({ width: 2, color: 0xfacc15, alpha: 0.9 });
+              }
+            }
+            const lb = st.looseBall;
+            if (lb) {
+              const v = Math.hypot(lb.vx, lb.vy);
+              const roll = v > 0 ? (v * v) / (2 * TB_CFG.LOOSE_BALL_DECELERATION) : 0;
+              const a = toPixel(lb.x, lb.y);
+              const b = toPixel(lb.x + (v > 0 ? (lb.vx / v) * roll : 0), lb.y + (v > 0 ? (lb.vy / v) * roll : 0));
+              passLinesGfx.moveTo(a.px, a.py).lineTo(b.px, b.py).stroke({ width: 2, color: lb.cause ? 0xf472b6 : 0x94a3b8, alpha: 0.85 });
+              passLinesGfx.circle(b.px, b.py, 3).fill({ color: lb.cause ? 0xf472b6 : 0x94a3b8, alpha: 0.85 });
+            }
+          }
+
           // ── Defensive cohesion — predicted ball + stretched back-line pairs ──
           if (ovl.cohesion && ballHolder) {
             const st = stateRef.current;

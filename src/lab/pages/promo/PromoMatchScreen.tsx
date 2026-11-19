@@ -60,6 +60,7 @@ const PROMO_OVERLAYS: DebugOverlays = {
   keeper: false,
   kinematics: false,
   cohesion: false,
+  movement: false,
 };
 
 // URL params.

@@ -17,9 +17,9 @@ export interface DecisionFlags {
   OFFBALL: boolean;
   /** Defence: noise on the intent scores, lapse (§4). */
   DEFENSE: boolean;
-  /** Anticipation stretches the carry-intercept lookahead (§4). */
+  /** Anticipation reads the play earlier: press start and loose-ball chase use a lookahead (stage 4, `movement.md`). */
   ANTICIPATION_PRESS: boolean;
-  /** The second presser stops short (§4). */
+  /** The second presser stands off ~5 yd covering the inside route (stage 4, `movement.md`). */
   SECOND_PRESSER: boolean;
   /** Positioning target lags the shape anchor by a discipline τ (§4). */
   DISCIPLINE_LAG: boolean;
@@ -35,14 +35,24 @@ export interface DecisionFlags {
   CHIP: boolean;
   /** Holder moves: round the keeper in a one-on-one. */
   ROUND_KEEPER: boolean;
+  /** Stage 4 (`movement.md`): an overhit through ball rolls on; a long pass can be miscontrolled into a loose ball. */
+  ROLLING_BALL: boolean;
+  /** Stage 4: part of the interceptions deflect the pass loose instead of controlling it. */
+  DEFLECTIONS: boolean;
+  /** Stage 4: an open-play shot can be blocked by a defender on its line and rebound loose. */
+  SHOT_BLOCKS: boolean;
+  /** Stage 4: the back line holds one line (robust mean) with hold / step-up / drop states. */
+  BACK_LINE: boolean;
+  /** Stage 4: the nearest defender / midfielder comes short to a pressed holder. */
+  SUPPORT_SHORT: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   HOLDER: true,
   OFFBALL: false,
   DEFENSE: false,
-  ANTICIPATION_PRESS: false,
-  SECOND_PRESSER: false,
+  ANTICIPATION_PRESS: true,
+  SECOND_PRESSER: true,
   DISCIPLINE_LAG: false,
   CONSISTENCY_CAP: false,
   SHIELD: true,
@@ -50,6 +60,11 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   LAY_OFF: true,
   CHIP: true,
   ROUND_KEEPER: true,
+  ROLLING_BALL: true,
+  DEFLECTIONS: true,
+  SHOT_BLOCKS: true,
+  BACK_LINE: true,
+  SUPPORT_SHORT: true,
 };
 
 /**
@@ -64,17 +79,17 @@ export const HOLDER_MOVES = {
   /** ... or the nearest opponent within this distance on his goal side (a defender on his back). */
   BACK_MARKER_YD: 4,
   /** Shield: an opponent within this distance; raw = weight × (strength + composure)/2 × (0.5 + pN). */
-  SHIELD_NEAR_YD: 2.5,
-  SHIELD_WEIGHT: 0.45,
+  SHIELD_NEAR_YD: 3.5,
+  SHIELD_WEIGHT: 0.6,
   /** Shielding he edges away at this share of his carry speed. */
   SHIELD_SPEED_MULT: 0.3,
   /** A tackle on a shielding holder succeeds × (1 − this × strength); fouls × FOUL_MULT. */
   SHIELD_TACKLE_RESIST: 0.35,
   SHIELD_FOUL_MULT: 1.4,
   /** Cut inside: from at least CUT_WIDE_YD off the centre line, CUT_MIN..MAX from the goal line, toward the box edge. */
-  CUT_WIDE_YD: 14,
+  CUT_WIDE_YD: 10,
   CUT_MIN_YD: 16,
-  CUT_MAX_YD: 40,
+  CUT_MAX_YD: 45,
   CUT_TARGET_DEPTH_YD: 20,
   CUT_TARGET_WIDE_YD: 8,
   /** No opponent within CUT_CLEAR_YD of the first CUT_LANE_YD of the run. */
@@ -84,30 +99,30 @@ export const HOLDER_MOVES = {
   CUT_NATURAL_FOOT: 0.5,
   CUT_SHOW_YD: 6,
   CUT_SHOW_BONUS: 1.3,
-  CUT_WEIGHT: 0.8,
+  CUT_WEIGHT: 0.85,
   /** Lay-off: right after a reception (justReceivedTicks ≥ this), an opponent within PRESSURE_YD, a teammate
    *  MIN..MAX away, at most MAX_AHEAD in front, arriving (≥ RUN_SPEED yd/s), lane clear by LANE_YD. */
   LAYOFF_RECEIVED_TICKS: 1,
-  LAYOFF_PRESSURE_YD: 5,
+  LAYOFF_PRESSURE_YD: 7,
   LAYOFF_MIN_YD: 4,
-  LAYOFF_MAX_YD: 18,
+  LAYOFF_MAX_YD: 20,
   LAYOFF_MAX_AHEAD_YD: 3,
-  LAYOFF_RUN_SPEED: 0.8,
+  LAYOFF_RUN_SPEED: 0.5,
   LAYOFF_LANE_YD: 2.5,
-  LAYOFF_WEIGHT: 1,
+  LAYOFF_WEIGHT: 1.15,
   /** Chip: keeper at least MIN_DEPTH off his line and within KEEPER_OFF_LINE of the shot line, the shooter
    *  MIN..MAX from goal and MIN_GAP beyond him. Chance = XG × depth factor × angle × skill. */
-  CHIP_MIN_DEPTH_YD: 5,
+  CHIP_MIN_DEPTH_YD: 3,
   CHIP_MIN_YD: 10,
-  CHIP_MAX_YD: 26,
+  CHIP_MAX_YD: 28,
   CHIP_MIN_GAP_YD: 4,
-  CHIP_KEEPER_OFF_LINE_YD: 3,
+  CHIP_KEEPER_OFF_LINE_YD: 4.5,
   CHIP_XG: 0.8,
   CHIP_DEPTH_SPAN_YD: 8,
-  CHIP_WEIGHT: 2,
+  CHIP_WEIGHT: 2.6,
   /** Round the keeper: keeper within RANGE in a one-on-one. P(win) = (skill + BASE)/(skill + BASE + smother). */
-  ROUND_RANGE_YD: 5,
-  ROUND_WEIGHT: 1.6,
+  ROUND_RANGE_YD: 8,
+  ROUND_WEIGHT: 2,
   ROUND_BASE: 0,
   /** A rounded keeper is beaten for this long (s). */
   ROUND_KEEPER_RECOVERY: 1.4,

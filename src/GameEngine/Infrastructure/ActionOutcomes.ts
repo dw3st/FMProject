@@ -24,6 +24,7 @@ import {
   GOAL_Y_MAX,
 } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
+import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
 
 export const SHOT_SPEED      = 2.0;
 export const TACKLE_COOLDOWN = 1.2;
@@ -539,14 +540,48 @@ export function resolveInterception(
   corridor: number,
   /** 0..1 normalised passing skill of the player who made the pass. */
   passerSkill: number = 0,
+  /** Reading of the play (stage 4, `movement.md`): × on the chance (1 = neutral). */
+  anticipationMult: number = 1,
 ): InterceptionResult {
-  const baseChance   = interceptor.runtimeStats.withoutBall.interceptionChance;
+  const baseChance   = interceptor.runtimeStats.withoutBall.interceptionChance * anticipationMult;
   const distFactor   = Math.sqrt(Math.max(0, 1 - perpDist / corridor));
   // A 10/10 passer (passerSkill=1) reduces the final chance by 40%
   const passerFactor = 1 - passerSkill * 0.4;
   const chance       = baseChance * distFactor * passerFactor;
   const success      = Math.random() < chance;
   return { success, chance };
+}
+
+// ── Ball physics dice (stage 4, `movement.md`) ────────────────────────────────
+
+/** A long pass to feet miscontrolled: chance = base × lengthFactor × (1 − firstTouch). */
+export function resolveHeavyTouch(lengthFactor: number, firstTouch: number): boolean {
+  const chance = MOVEMENT.HEAVY_TOUCH_BASE * clamp(lengthFactor, 0, 1) * (1 - clamp(firstTouch, 0, 1));
+  return chance > 0 && Math.random() < chance;
+}
+
+/** A successful interception that deflects the ball loose instead of controlling it. */
+export function resolveDeflection(): boolean {
+  return Math.random() < MOVEMENT.DEFLECT_SHARE;
+}
+
+/** Direction (unit vector) turned by a uniform angle in ±maxDeg. */
+export function scatterDirection(dx: number, dy: number, maxDeg: number): { x: number; y: number } {
+  const len = Math.hypot(dx, dy) || 1;
+  const a = (Math.random() * 2 - 1) * (maxDeg * Math.PI) / 180;
+  const ux = dx / len, uy = dy / len;
+  return { x: ux * Math.cos(a) - uy * Math.sin(a), y: ux * Math.sin(a) + uy * Math.cos(a) };
+}
+
+/** A defender on the shot line blocks it: chance = base × (1 − perp / width). */
+export function resolveShotBlock(perp: number): boolean {
+  const chance = MOVEMENT.SHOT_BLOCK_BASE * Math.max(0, 1 - perp / MOVEMENT.SHOT_BLOCK_WIDTH);
+  return chance > 0 && Math.random() < chance;
+}
+
+/** Speed of a blocked shot's rebound (yd/s). */
+export function reboundSpeed(): number {
+  return MOVEMENT.SHOT_REBOUND_MIN + Math.random() * (MOVEMENT.SHOT_REBOUND_MAX - MOVEMENT.SHOT_REBOUND_MIN);
 }
 
 // ── Holder mind dice (`decisions.md` → phase 3) ──────────────────────────────

@@ -1,4 +1,4 @@
-import type { GameState, TeamId, SetPieceGoalKind } from '@/GameEngine/types';
+import type { GameState, TeamId, SetPieceGoalKind, LooseBallCause, BackLineMode } from '@/GameEngine/types';
 
 /** What put the ball behind for a corner (`cornerAwarded`). */
 export type CornerSource = 'save' | 'deflection' | 'cross_block' | 'cross_clearance' | 'tackle' | 'loose' | 'other';
@@ -143,6 +143,8 @@ export interface GameEvents {
   // ── Shot event ───────────────────────────────────────────────────────────
   /** Emitted the moment a player takes a shot. */
   shot: { player: number; xg: number };
+  /** Stage 4 (`movement.md`): an open-play shot blocked on its line (also counted as a shot). */
+  shotBlocked: { player: number; blockerId: number };
 
   // ── Defensive events ─────────────────────────────────────────────────────
   /** Emitted on every tackle attempt (success or failure). */
@@ -229,6 +231,18 @@ export interface GameEvents {
   /** One of the holder's extra moves (`HolderMoves.ts`): started, and for shield / chip / round the outcome. */
   holderMove: { playerId: number; team: TeamId; move: 'shield' | 'cut_inside' | 'lay_off' | 'chip' | 'round_keeper'; phase: 'start' | 'success' | 'fail' };
   holderMind:        HolderMindEvent;
+  /** Stage 4 (`movement.md`): the ball ran loose off a body or a bad touch (`playerId` = who touched it last). */
+  ballRunsLoose: { playerId: number; team: TeamId; cause: LooseBallCause; x: number; y: number; vx: number; vy: number };
+  /** Stage 4: a loose ball rolled out of play (throw-in / goal kick / corner follows). */
+  ballOutOfPlay: { team: TeamId; cause: LooseBallCause | 'through' | 'other'; kind: 'throw_in' | 'goal_kick' | 'corner' };
+  /** Stage 4: the back line changed state (`team` = the defending side). */
+  backLineState: { team: TeamId; mode: BackLineMode; x: number };
+  /** Stage 4: a second defender stands off a pressed holder instead of closing in too. */
+  pressStandOff: { playerId: number; team: TeamId; holderId: number };
+  /** Stage 4: a teammate comes short to offer a pressed holder a safe option. */
+  supportShort: { playerId: number; team: TeamId; holderId: number };
+  /** Stage 4: an anticipating player read the play early (press start or a loose-ball chase). */
+  anticipationRead: { playerId: number; team: TeamId; kind: 'press' | 'chase' | 'intercept'; lookahead: number };
   offBallDecision:   DecisionTelemetryEvent;
   defensiveDecision: DecisionTelemetryEvent;
 

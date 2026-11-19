@@ -67,6 +67,7 @@ const tot = parts.reduce((a, b) => ({
   xg: a.xg + b.xg, passesAttempted: a.passesAttempted + b.passesAttempted, passesCompleted: a.passesCompleted + b.passesCompleted,
   turnovers: a.turnovers + b.turnovers,
   lapseDecisions: (a.lapseDecisions ?? 0) + (b.lapseDecisions ?? 0),
+  extra: (() => { const o: Record<string, number> = { ...(a.extra ?? {}) }; for (const [k, v] of Object.entries(b.extra ?? {})) o[k] = (o[k] ?? 0) + v; return o; })(),
   releasedPick: (() => { const o: Record<string, number> = { ...(a.releasedPick ?? {}) }; for (const [k, v] of Object.entries(b.releasedPick ?? {})) o[k] = (o[k] ?? 0) + v; return o; })(),
   relByP: a.relByP.map((v, i) => v + b.relByP[i]!), decByP: a.decByP.map((v, i) => v + b.decByP[i]!),
   wins: (() => { const x = (a as any).wins, y = (b as any).wins; return { A: x.A + y.A, D: x.D + y.D, B: x.B + y.B }; })(),
@@ -84,6 +85,7 @@ const fmt = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : String(x)
 
 console.log(`${league}  matches ${tot.n}  seed ${seed}${off ? "  (telemetry OFF)" : ""}`);
 console.log(`goals/match ${fmt(tot.goals / tot.n, 3)}  shots/match ${fmt(tot.shots / tot.n, 2)}  xG/match ${fmt(tot.xg / tot.n, 3)}  ms/match ${fmt(tot.ms / tot.n, 1)}`);
+console.log("per match: " + Object.entries(tot.extra ?? {}).map(([k, v]) => `${k} ${fmt(v / tot.n, 2)}`).join("  "));
 console.log(`passes completed ${fmt((100 * tot.passesCompleted) / Math.max(1, tot.passesAttempted), 1)}% (${fmt(tot.passesAttempted / tot.n, 1)}/match)  turnovers/match ${fmt(tot.turnovers / tot.n, 1)}`);
 {
   const w = (tot as any).wins as { A: number; D: number; B: number };
