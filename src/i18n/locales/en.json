@@ -1871,6 +1871,8 @@
     "history": "History",
     "sections": "Bets",
     "allCompetitions": "All competitions",
+    "friendsFirst": "Friends' games first",
+    "friendsGroup": "Friends' games",
     "withGames": "With games this week",
     "noOpen": "No open bets.",
     "noneMine": "No games in your competitions this week. Pick All competitions to see the others.",

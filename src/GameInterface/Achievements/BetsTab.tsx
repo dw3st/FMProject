@@ -10,6 +10,7 @@ import { pickLabel } from "@/GameInterface/Achievements/betText";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
 import { useLeagueCatalog } from "@/GameInterface/World/useLeagueCatalog";
 import type { Bet, BetGame, BetPick, BetsView } from "@/types/betTypes";
 
@@ -17,6 +18,15 @@ const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] te
 const KPI = "font-display font-bold tabular-nums text-2xl m-0 mt-1";
 
 type BetsSection = "games" | "open" | "stats";
+const FRIENDS_FIRST_KEY = "fm.bets.friendsFirst";
+
+/** On unless this browser turned it off. */
+function readFriendsFirst(): boolean {
+  try { return localStorage.getItem(FRIENDS_FIRST_KEY) !== "0"; } catch { return true; }
+}
+function writeFriendsFirst(on: boolean): void {
+  try { localStorage.setItem(FRIENDS_FIRST_KEY, on ? "1" : "0"); } catch { /* the choice just isn't remembered */ }
+}
 const money = (v: number) => (v === 0 ? "€0" : formatFee(v));
 
 function OpenBets({ bets, game }: { bets: Bet[]; game: (b: Bet) => string }) {
@@ -51,6 +61,9 @@ export function BetsTab() {
   const { session } = useGameSave();
   const saveId = session?.saveId;
   const leagues = useLeagueCatalog();
+  const multi = !!session?.groupAdvance;
+  const humanClubs = useHumanClubs(saveId, multi);
+  const [friendsFirst, setFriendsFirst] = useState(readFriendsFirst);
   const [view, setView] = useState<BetsView | null>(null);
   const [failed, setFailed] = useState(false);
   const [section, setSection] = useState<BetsSection>("games");
@@ -184,6 +197,9 @@ export function BetsTab() {
             leagues={leagues}
             day={day}
             nextDate={view.nextDate}
+            humanClubs={humanClubs}
+            friendsFirst={multi ? friendsFirst : null}
+            onFriendsFirst={(on) => { setFriendsFirst(on); writeFriendsFirst(on); }}
             onQuery={setQuery}
             onScope={(s) => { setScope(s); scopeTouched.current = true; }}
             onDays={setDays}

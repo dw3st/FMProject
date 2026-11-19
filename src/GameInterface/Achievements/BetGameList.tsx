@@ -1,12 +1,15 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { betCompetitions, filterBetGames, groupBetGames, type BetDays, type BetScope } from "@/Domain/bets/gameList";
+import { friendSidesOf, splitFriendGames } from "@/Domain/bets/friendGames";
+import { betCompetitions, betGameDays, filterBetGames, groupBetGames, type BetDays, type BetScope } from "@/Domain/bets/gameList";
 import { competitionName } from "@/Domain/world/labels";
 import type { SlipPick } from "@/GameInterface/Achievements/BetSlip";
 import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { Icon } from "@/GameInterface/Icons";
+import { Chip } from "@/GameInterface/ui/Chip";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { HumanBadge } from "@/GameInterface/World/HumanBadge";
 import type { Bet, BetGame, BetPick, BetSide } from "@/types/betTypes";
 import type { LeagueData } from "@/types/playerTypes";
 
@@ -73,7 +76,7 @@ function MoreMarkets({ game, detail, slip, taken, onPick }: {
 }
 
 /** Finding a game: club search, days, competitions, then the games by competition and day, odds on the row. */
-export function BetGameList({ games, today, mine, open, slip, query, scope, days, expanded, details, leagues, day, nextDate, onQuery, onScope, onDays, onToggle, onPick }: {
+export function BetGameList({ games, today, mine, open, slip, query, scope, days, expanded, details, leagues, day, nextDate, humanClubs, friendsFirst, onFriendsFirst, onQuery, onScope, onDays, onToggle, onPick }: {
   games: BetGame[];
   today: string;
   mine: string[];
@@ -87,6 +90,11 @@ export function BetGameList({ games, today, mine, open, slip, query, scope, days
   leagues: LeagueData[];
   day: (d: string) => string;
   nextDate: string | null | undefined;
+  /** Clubs of the humans of the world (club id → nickname); empty in a solo world. */
+  humanClubs: ReadonlyMap<string, string>;
+  /** Null hides the chip (solo world). */
+  friendsFirst: boolean | null;
+  onFriendsFirst: (on: boolean) => void;
   onQuery: (q: string) => void;
   onScope: (s: BetScope) => void;
   onDays: (d: BetDays) => void;
@@ -96,13 +104,72 @@ export function BetGameList({ games, today, mine, open, slip, query, scope, days
   const { t, i18n } = useTranslation();
   const name = (slug: string) => competitionName(slug, leagues, i18n.language);
   const shown = useMemo(() => filterBetGames(games, { query, scope, days, today, mine }), [games, query, scope, days, today, mine]);
-  const groups = useMemo(() => groupBetGames(shown, mine), [shown, mine]);
+  // Friends' games on top in a group of their own, out of their competition groups (tester request).
+  const split = useMemo(() => (friendsFirst ? splitFriendGames(shown, humanClubs) : { friends: [], rest: shown }), [shown, humanClubs, friendsFirst]);
+  const friendDays = useMemo(() => betGameDays(split.friends), [split.friends]);
+  const groups = useMemo(() => groupBetGames(split.rest, mine), [split.rest, mine]);
   const competitionOptions = useMemo(() => [
     { value: "mine", label: t("bets.mine") },
     { value: "all", label: t("bets.allCompetitions") },
     ...betCompetitions(games).map((c) => ({ value: c.competition, label: `${name(c.competition)} (${c.count})`, group: t("bets.withGames") })),
   ], [games, leagues, i18n.language, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const takenOf = (g: BetGame) => (m: BetPick["market"]) => open.some((b) => b.competition === g.competition && b.fixtureId === g.fixtureId && b.pick.market === m);
+
+  const renderDay = (d: { date: string; games: BetGame[] }, withCompetition: boolean) => (
+<div key={`${withCompetition ? "f" : "c"}-${d.date}`}>
+                  <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50">
+                    <p className={`${LABEL} flex-1`}>{day(d.date)}</p>
+                    <div className="hidden sm:flex gap-1.5 pr-[124px]">
+                      {["1", "X", "2"].map((h) => <span key={h} className={`${LABEL} w-[78px] text-center`}>{h}</span>)}
+                    </div>
+                  </div>
+                  {d.games.map((g) => {
+                    const key = gameKey(g);
+                    const taken = takenOf(g);
+                    const sel = slip && gameKey(slip.game) === key ? slip.pick : undefined;
+                    const isOpen = expanded === key;
+                    const friends = friendSidesOf(g, humanClubs);
+                    return (
+                      <div key={key} className="border-b border-border/50 last:border-b-0">
+                        <div className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-4 py-2 ${g.own ? "bg-primary/5" : ""}`}>
+                          <span className="w-12 shrink-0 text-sm text-muted-foreground tabular-nums">{g.kickoff ?? ""}</span>
+                          {withCompetition && <span className="basis-full sm:basis-auto sm:w-36 shrink-0 text-sm text-muted-foreground truncate order-first sm:order-none" title={name(g.competition)}>{name(g.competition)}</span>}
+                          <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2 font-semibold">
+                            <span className="flex items-center justify-end gap-2 min-w-0">
+                              {friends.home && <HumanBadge nickname={friends.home} />}
+                              <span className="truncate text-right">{g.homeName}</span>
+                              <ClubLogo logoUrl={squadLogoUrl(g.home)} title={g.homeName} className="w-8 h-8 shrink-0" />
+                            </span>
+                            <span className="text-sm text-muted-foreground">x</span>
+                            <span className="flex items-center gap-2 min-w-0">
+                              <ClubLogo logoUrl={squadLogoUrl(g.away)} title={g.awayName} className="w-8 h-8 shrink-0" />
+                              <span className="truncate">{g.awayName}</span>
+                              {friends.away && <HumanBadge nickname={friends.away} />}
+                            </span>
+                          </div>
+                          <div className="flex gap-1.5 shrink-0">
+                            {SIDES.map((s) => {
+                              const r = g.markets.result.find((x) => x.side === s);
+                              const p: BetPick = { market: "result", side: s };
+                              const label = s === "home" ? "1" : s === "draw" ? "X" : "2";
+                              return <OddsButton key={s} label={label} odds={r?.odds ?? null} on={samePick(sel, p)} disabled={taken("result")} onClick={() => r && onPick(g, p, r.odds)} />;
+                            })}
+                          </div>
+                          <button
+                            type="button"
+                            aria-expanded={isOpen}
+                            onClick={() => onToggle(g)}
+                            className={`shrink-0 h-10 w-[112px] whitespace-nowrap rounded-md border text-sm font-semibold tabular-nums ${isOpen ? "border-primary text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-foreground"}`}
+                          >
+                            {isOpen ? t("bets.lessMarkets") : t("bets.moreMarkets", { count: g.more ?? 0 })}
+                          </button>
+                        </div>
+                        {isOpen && <MoreMarkets game={g} detail={details[key]} slip={slip} taken={taken} onPick={onPick} />}
+                      </div>
+                    );
+                  })}
+                </div>
+  );
 
   return (
     <div className="flex flex-col gap-3 min-w-0">
@@ -135,73 +202,38 @@ export function BetGameList({ games, today, mine, open, slip, query, scope, days
           onChange={onScope}
           options={[{ key: "mine", label: t("bets.mine") }, { key: "all", label: t("bets.allCompetitions") }]}
         />
+        {friendsFirst !== null && (
+          <Chip selected={friendsFirst} onClick={() => onFriendsFirst(!friendsFirst)}>{t("bets.friendsFirst")}</Chip>
+        )}
         <span className="text-sm text-muted-foreground tabular-nums">{t("bets.gamesCount", { count: shown.length })}</span>
       </div>
       {query.trim() && <p className="text-sm text-muted-foreground m-0">{t("bets.search.everywhere")}</p>}
 
       {games.length === 0 ? (
         <p className="text-sm text-muted-foreground m-0">{nextDate ? t("bets.noGamesNext", { date: day(nextDate) }) : t("bets.noGames")}</p>
-      ) : groups.length === 0 ? (
+      ) : groups.length === 0 && friendDays.length === 0 ? (
         <p className="text-sm text-muted-foreground m-0">{scope === "mine" && !query.trim() ? t("bets.noneMine") : t("bets.noneFiltered")}</p>
       ) : (
         <div className="flex flex-col gap-3">
+          {friendDays.length > 0 && (
+            <section className="card-arcade rounded-md overflow-hidden">
+              <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-chart-2/10 border-b border-border">
+                <p className="font-display font-black uppercase text-base leading-none m-0 truncate flex items-center gap-2">
+                  <Icon name="users" size={16} className="text-chart-2 shrink-0" />
+                  {t("bets.friendsGroup")}
+                </p>
+                <span className="text-sm text-muted-foreground tabular-nums shrink-0">{t("bets.gamesCount", { count: split.friends.length })}</span>
+              </div>
+              {friendDays.map((d) => renderDay(d, true))}
+            </section>
+          )}
           {groups.map((grp) => (
             <section key={grp.competition} className="card-arcade rounded-md overflow-hidden">
               <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-secondary/30 border-b border-border">
                 <p className="font-display font-black uppercase text-base leading-none m-0 truncate">{name(grp.competition)}</p>
                 <span className="text-sm text-muted-foreground tabular-nums shrink-0">{t("bets.gamesCount", { count: grp.count })}</span>
               </div>
-              {grp.days.map((d) => (
-                <div key={d.date}>
-                  <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border/50">
-                    <p className={`${LABEL} flex-1`}>{day(d.date)}</p>
-                    <div className="hidden sm:flex gap-1.5 pr-[124px]">
-                      {["1", "X", "2"].map((h) => <span key={h} className={`${LABEL} w-[78px] text-center`}>{h}</span>)}
-                    </div>
-                  </div>
-                  {d.games.map((g) => {
-                    const key = gameKey(g);
-                    const taken = takenOf(g);
-                    const sel = slip && gameKey(slip.game) === key ? slip.pick : undefined;
-                    const isOpen = expanded === key;
-                    return (
-                      <div key={key} className="border-b border-border/50 last:border-b-0">
-                        <div className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-4 py-2 ${g.own ? "bg-primary/5" : ""}`}>
-                          <span className="w-12 shrink-0 text-sm text-muted-foreground tabular-nums">{g.kickoff ?? ""}</span>
-                          <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2 font-semibold">
-                            <span className="flex items-center justify-end gap-2 min-w-0">
-                              <span className="truncate text-right">{g.homeName}</span>
-                              <ClubLogo logoUrl={squadLogoUrl(g.home)} title={g.homeName} className="w-8 h-8 shrink-0" />
-                            </span>
-                            <span className="text-sm text-muted-foreground">x</span>
-                            <span className="flex items-center gap-2 min-w-0">
-                              <ClubLogo logoUrl={squadLogoUrl(g.away)} title={g.awayName} className="w-8 h-8 shrink-0" />
-                              <span className="truncate">{g.awayName}</span>
-                            </span>
-                          </div>
-                          <div className="flex gap-1.5 shrink-0">
-                            {SIDES.map((s) => {
-                              const r = g.markets.result.find((x) => x.side === s);
-                              const p: BetPick = { market: "result", side: s };
-                              const label = s === "home" ? "1" : s === "draw" ? "X" : "2";
-                              return <OddsButton key={s} label={label} odds={r?.odds ?? null} on={samePick(sel, p)} disabled={taken("result")} onClick={() => r && onPick(g, p, r.odds)} />;
-                            })}
-                          </div>
-                          <button
-                            type="button"
-                            aria-expanded={isOpen}
-                            onClick={() => onToggle(g)}
-                            className={`shrink-0 h-10 w-[112px] whitespace-nowrap rounded-md border text-sm font-semibold tabular-nums ${isOpen ? "border-primary text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-foreground"}`}
-                          >
-                            {isOpen ? t("bets.lessMarkets") : t("bets.moreMarkets", { count: g.more ?? 0 })}
-                          </button>
-                        </div>
-                        {isOpen && <MoreMarkets game={g} detail={details[key]} slip={slip} taken={taken} onPick={onPick} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+              {grp.days.map((d) => renderDay(d, false))}
             </section>
           ))}
         </div>

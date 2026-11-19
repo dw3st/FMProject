@@ -51,13 +51,16 @@ export function groupBetGames(games: readonly BetGame[], order: readonly string[
   const rank = (slug: string) => { const i = order.indexOf(slug); return i < 0 ? order.length : i; };
   return [...by.entries()]
     .sort(([a, ga], [b, gb]) => rank(a) - rank(b) || gb.length - ga.length || a.localeCompare(b))
-    .map(([competition, list]) => {
-      const days = new Map<string, BetGame[]>();
-      for (const g of [...list].sort((x, y) => x.date.localeCompare(y.date) || (x.kickoff ?? "").localeCompare(y.kickoff ?? "") || x.homeName.localeCompare(y.homeName))) {
-        days.set(g.date, [...(days.get(g.date) ?? []), g]);
-      }
-      return { competition, days: [...days.entries()].map(([date, g]) => ({ date, games: g })), count: list.length };
-    });
+    .map(([competition, list]) => ({ competition, days: betGameDays(list), count: list.length }));
+}
+
+/** By day, then by kickoff, then by home club. */
+export function betGameDays(games: readonly BetGame[]): { date: string; games: BetGame[] }[] {
+  const days = new Map<string, BetGame[]>();
+  for (const g of [...games].sort((x, y) => x.date.localeCompare(y.date) || (x.kickoff ?? "").localeCompare(y.kickoff ?? "") || x.homeName.localeCompare(y.homeName))) {
+    days.set(g.date, [...(days.get(g.date) ?? []), g]);
+  }
+  return [...days.entries()].map(([date, g]) => ({ date, games: g }));
 }
 
 /** The competitions that have games in the window, with how many, most games first (the competition selector). */
