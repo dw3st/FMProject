@@ -214,3 +214,27 @@ The offside system should remain:
 Offside enforcement should not introduce complex prediction or decision logic.
 
 The rule should simply validate whether the receiving player was legally positioned when the pass occurred.
+
+---
+
+# Mistimed runs (stage 13 of the engine rebuild, `OFFSIDE_RUNS`)
+
+The attacker is no longer held on the true line every tick. `Domain/OffsideRuns.ts` (constants in
+`Configs/OffsideRunsConfig.ts`) keeps a `GamePlayer.lineRead` for every outfield player of the team on the ball:
+
+- he reads the true line every τ = 0.3 + 1.0 × (1 − anticipation on the world scale) seconds of play and holds that
+  read in between, so a back line that steps up (`BACK_LINE`) leaves him past it;
+- each read carries an error ~ N(0, σ), σ = 0.9 × (1.4 − decisions on the world scale) yd, clipped at ±2.5σ;
+- a read is a lapse with chance 0.05 × (1.5 − consistency): he stands 2.5 yd further for that read.
+- between reads he projects the line on its speed since his previous read, × his anticipation (0..1): a good
+  reader follows a line that drops or steps up, a poor one stays on the old spot.
+
+`tickState` refreshes the reads once per tick (`refreshLineRead`, `matchRandom`) and gives every attacker his
+perceived line (`perceivedLine` = read + projection + attackDir × error) wherever his own movement reads the line: the off-ball run
+clamp, the attacking shape (`computeAttackingPosition`) and his off-ball cell scoring (`decide`). The passer's choices
+and the call itself (`checkReceiverOffside`, the true line at the pass) are unchanged. The mental attributes only count
+with the holder mind on (`HOLDER`), like everywhere else.
+
+- Event `lineMisread` (once per spell of misjudged reads, only within 6 yd of the true line) → `Statistics.lineMisreads` → `/lab` "Line misreads",
+  `/test` column MR and the "offside" debug log; `/test` scenario `offside-mistimed-run`.
+- Not calibrated (stage 21). Measured numbers: `fm-numbers.md` → "Stage 13".

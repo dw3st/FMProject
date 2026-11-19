@@ -31,7 +31,7 @@ self.onmessage = (e: MessageEvent<Input>) => {
     ms += performance.now() - t0;
     col.finish();
     const c = fmCountsOf({ ...r.teamStats.A, goals: r.score.A }, { ...r.teamStats.B, goals: r.score.B });
-    for (const k of FM_COUNT_KEYS) counts[k] += c[k];
+    for (const k of FM_COUNT_KEYS) counts[k] = (counts[k] ?? 0) + (c[k] ?? 0);
     world.goals! += r.score.A + r.score.B;
     world.liveSeconds = (world.liveSeconds ?? 0) + r.liveSeconds;
     for (const side of [r.teamStats.A, r.teamStats.B]) {

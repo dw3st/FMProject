@@ -1,6 +1,6 @@
 import { REFEREE } from '@/Domain/referees/refereeConfig';
 import { describe, expect, test } from 'bun:test';
-import { foulChance, cardRoll, isClearChance, type FoulContext } from '@/GameEngine/Domain/Fouls';
+import { foulChance, cardRoll, isClearChance, foulThird, isPromisingAttack, type FoulContext } from '@/GameEngine/Domain/Fouls';
 import { FOUL_CONFIG as C } from '@/GameEngine/Configs/FoulConfig';
 
 const base: FoulContext = {
@@ -124,5 +124,36 @@ describe("the manager's discipline (achievements)", () => {
     const calm = cardRoll({ ...ctx, discipline: 20 }, () => 0.99);
     expect(calm.yellowChance).toBeCloseTo(plain.yellowChance * 0.95, 9);
     expect(calm.redChance).toBeCloseTo(plain.redChance * 0.95, 9);
+  });
+});
+
+describe('FM fouls (stage 13)', () => {
+  const seq = (...v: number[]) => { let i = 0; return () => v[i++ % v.length]!; };
+  test('foulThird is the fouled team view', () => {
+    expect(foulThird(10, 1)).toBe(0);
+    expect(foulThird(57, 1)).toBe(1);
+    expect(foulThird(100, 1)).toBe(2);
+    expect(foulThird(100, -1)).toBe(0);
+  });
+  test('a contact foul has its own base', () => {
+    expect(foulChance({ ...base, kind: 'contact' })).toBeCloseTo(C.FM.CONTACT_BASE, 6);
+  });
+  test('FM card per foul: base, from behind, promising attack', () => {
+    const plain = cardRoll({ angle: 'side', clearChance: false, onYellow: false, fm: true }, seq(0.99, 0.99));
+    expect(plain.yellowChance).toBeCloseTo(C.FM.YELLOW_BASE, 6);
+    const behind = cardRoll({ angle: 'behind', clearChance: false, onYellow: false, fm: true }, seq(0.99, 0.99));
+    expect(behind.yellowChance).toBeCloseTo(C.FM.YELLOW_BASE * C.FM.BEHIND_MULT, 6);
+    const prom = cardRoll({ angle: 'side', clearChance: false, onYellow: false, fm: true, promising: true }, seq(0.99, 0.99));
+    expect(prom.yellowChance).toBeCloseTo(C.FM.YELLOW_BASE * C.FM.PROMISING_MULT, 6);
+    // Without fm the old base, promising ignored.
+    const old = cardRoll({ angle: 'side', clearChance: false, onYellow: false, promising: true }, seq(0.99, 0.99));
+    expect(old.yellowChance).toBeCloseTo(C.YELLOW_BASE, 6);
+  });
+  test('a promising attack needs the ball, the range and the offender level or behind', () => {
+    const fouled = { x: 90, y: 37, attackDir: 1 as const };
+    expect(isPromisingAttack(fouled, { x: 88, y: 37 }, true)).toBe(true);
+    expect(isPromisingAttack(fouled, { x: 92, y: 37 }, true)).toBe(false);
+    expect(isPromisingAttack(fouled, { x: 88, y: 37 }, false)).toBe(false);
+    expect(isPromisingAttack({ x: 40, y: 37, attackDir: 1 }, { x: 38, y: 37 }, true)).toBe(false);
   });
 });

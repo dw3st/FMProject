@@ -14,9 +14,20 @@ import { refereeFoulMult, refereeRedMult, refereeYellowMult } from '@/Domain/ref
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
 
-/** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel. */
-export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial';
+/** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel,
+ *  `contact` = an opponent leaning on the holder without a tackle (stage 13, `FM_FOULS`). */
+export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial' | 'contact';
+
+/** What the fouled player was doing (stage 13; FM's "last action before the foul", R8). */
+export type FoulContextKind = 'carry' | 'reception' | 'hold' | 'loose' | 'aerial' | 'off_ball';
+
+/** Third of the pitch from the fouled team's view: 0 = own, 1 = middle, 2 = final. */
+export function foulThird(x: number, attackDir: 1 | -1): 0 | 1 | 2 {
+  const fromOwnGoal = attackDir === 1 ? x : PITCH_LENGTH - x;
+  return fromOwnGoal < PITCH_LENGTH / 3 ? 0 : fromOwnGoal < (2 * PITCH_LENGTH) / 3 ? 1 : 2;
+}
 type CardColour = 'yellow' | 'red';
+interface Pos { x: number; y: number }
 
 export interface FoulContext {
   kind: FoulKind;
@@ -55,6 +66,7 @@ export function foulChance(ctx: FoulContext): number {
   const base     = ctx.kind === 'tackle' ? C.TACKLE_BASE
     : ctx.kind === 'dribble' ? C.DRIBBLE_BASE
     : ctx.kind === 'aerial' ? C.AERIAL_BASE
+    : ctx.kind === 'contact' ? C.FM.CONTACT_BASE
     : C.DUEL_BASE;
   const angle    = C.ANGLE_MULT[ctx.angle];
   const aggr     = Math.max(0, 1 + C.AGGRESSION_WEIGHT * (ctx.aggression - C.AGGRESSION_REF));
@@ -85,6 +97,21 @@ export interface CardContext {
   strictness?: number;
   /** The offender's manager's Discipline (absent / 10 = neutral): yellow and straight red × (1 − 5% × t). */
   discipline?: number;
+  /** Stage 13 (`FM_FOULS`): the FM card per foul (`FOUL_CONFIG.FM`) instead of the old yellow base. */
+  fm?: boolean;
+  /** The foul stopped a promising attack (`isPromisingAttack`); only read with `fm`. */
+  promising?: boolean;
+}
+
+/** The foul stops a promising attack: the fouled player on the ball, within `FM.PROMISING_DIST` of the goal he
+ *  attacks, with the offender level or behind him. */
+export function isPromisingAttack(
+  fouled: Pos & { attackDir: 1 | -1 }, offender: Pos, onBall: boolean,
+): boolean {
+  if (!onBall) return false;
+  const goalX = fouled.attackDir === 1 ? PITCH_LENGTH : 0;
+  if (Math.hypot(goalX - fouled.x, (GOAL_Y_MIN + GOAL_Y_MAX) / 2 - fouled.y) > C.FM.PROMISING_DIST) return false;
+  return (offender.x - fouled.x) * fouled.attackDir <= 0;
 }
 
 export interface CardRollResult {
@@ -102,9 +129,11 @@ function cardTemper(mult: (t: number) => number, t: number | undefined): number 
 /** Card for a foul: straight red rolled first (one `rng()` draw), then yellow (a second draw). */
 export function cardRoll(ctx: CardContext, rng: () => number = matchRandom): CardRollResult {
   const behind = ctx.angle === 'behind';
+  const severity = ctx.fm
+    ? C.FM.YELLOW_BASE * (behind ? C.FM.BEHIND_MULT : 1) * (ctx.promising ? C.FM.PROMISING_MULT : 1)
+    : C.YELLOW_BASE * (behind ? C.BEHIND_YELLOW_MULT : 1);
   const yellowChance = clamp(
-    C.YELLOW_BASE
-      * (behind ? C.BEHIND_YELLOW_MULT : 1)
+    severity
       * (ctx.clearChance ? C.CLEAR_CHANCE_YELLOW_MULT : 1)
       * (ctx.onYellow ? C.ON_YELLOW_YELLOW_MULT : 1)
       * cardTemper(temperamentYellowMult, ctx.temperament)
@@ -126,8 +155,6 @@ export function cardRoll(ctx: CardContext, rng: () => number = matchRandom): Car
   if (rng() < yellowChance) return { card: 'yellow', yellowChance, redChance };
   return { card: 'none', yellowChance, redChance };
 }
-
-interface Pos { x: number; y: number }
 
 /**
  * True when the fouled player was through on goal: within `CLEAR_CHANCE_MAX_DIST` of the goal he

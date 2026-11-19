@@ -89,7 +89,7 @@ import { computeDefensiveShapeAnchor, setBackLineX } from '@/GameEngine/Domain/D
 import type { LooseBallCause, BackLineState } from '@/GameEngine/types';
 import { chipMove, chipTargetY, roundKeeperSkill } from '@/GameEngine/Domain/HolderMoves';
 import { getInterceptionPerpDist, tackleAngleModifier, type RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
-import { foulChance, cardRoll, isClearChance, type FoulKind } from '@/GameEngine/Domain/Fouls';
+import { foulChance, cardRoll, isClearChance, isPromisingAttack, foulThird, type FoulKind, type FoulContextKind } from '@/GameEngine/Domain/Fouls';
 import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
 import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { getDefenseConfig } from '@/GameEngine/Configs/DefenseConfig';
@@ -105,6 +105,8 @@ import type { VarApply, VarReviewState } from '@/GameEngine/types';
 import { withMoraleExecution } from '@/Domain/morale/morale';
 import { settlingMult, withSettlingExecution } from '@/Domain/settling/settling';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
+import { refreshLineRead, perceivedLine } from '@/GameEngine/Domain/OffsideRuns';
+import { OFFSIDE_RUNS } from '@/GameEngine/Configs/OffsideRunsConfig';
 import { KINEMATICS_CONFIG } from '@/GameEngine/Configs/KinematicsConfig';
 import { etaTo as kinEta, stepAlong, stepToward, type KinStep } from '@/GameEngine/Domain/Kinematics';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
@@ -1564,6 +1566,48 @@ export function maybeFoul(
 }
 
 /**
+ * Stage 13 (`FOUL_CONFIG.FM`): an opponent within `CONTACT_RANGE` of the holder (out of recovery, not a set-piece
+ * taker) leans on him. Contact moments come at `CONTACT_RATE` per second of play (× what the holder is doing); each
+ * is a foul check of kind `contact`, the holder himself the offender `HOLDER_OFFENDER_SHARE` of the time. Returns the
+ * restart state on a foul, null otherwise. No dice when nobody is that close.
+ */
+function contactFoul(s: GameState, holder: GamePlayer, dt: number): GameState | null {
+  if (!isLivePhase(s.matchPhase) || s.setPiece || s.shot || s.looseBall || s.varReview) return null;
+  if (holder.role === 'GK') return null;
+  const F = FOUL_CONFIG.FM;
+  let near: GamePlayer | null = null;
+  let best = F.CONTACT_RANGE * F.CONTACT_RANGE;
+  for (const p of s.players) {
+    if (p.team === holder.team || p.role === 'GK' || isPlayerInRecovery(p)) continue;
+    const d = distSq(p, holder);
+    if (d <= best) { best = d; near = p; }
+  }
+  if (!near) return null;
+  const dec = s.decisions[holder.id];
+  const ctx: 'carry' | 'reception' | 'hold' = holder.justReceivedTicks > 0 ? 'reception'
+    : (dec?.type === 'dribble' || (dec?.type === 'carry' && dec.move !== 'shield' && !dec.step)) ? 'carry' : 'hold';
+  const rate = F.CONTACT_RATE * F.CONTEXT_MULT[ctx];
+  if (matchRandom() >= 1 - Math.exp(-rate * dt)) return null;
+  const holderFouls = matchRandom() < F.HOLDER_OFFENDER_SHARE;
+  const [offender, fouled] = holderFouls ? [holder, near] : [near, holder];
+  const fc = foulCheck(s, offender, fouled, 'contact', false);
+  if (!fc.foul) return null;
+  gameBus.emit('contactFoul', { offenderId: offender.id, fouledId: fouled.id, team: offender.team, context: holderFouls ? 'off_ball' : ctx });
+  return { ...fc.foul, tackleCooldown: TACKLE_COOLDOWN };
+}
+
+/** What the fouled player was doing when fouled (stage 13; FM's "last action before the foul"). */
+function foulContextOf(state: GameState, offender: GamePlayer, fouled: GamePlayer, kind: FoulKind): FoulContextKind {
+  if (kind === 'duel') return 'loose';
+  if (kind === 'aerial') return 'aerial';
+  if (fouled.id !== state.ballHolderId || offender.id === state.ballHolderId) return 'off_ball';
+  if (fouled.justReceivedTicks > 0) return 'reception';
+  const dec = state.decisions[fouled.id];
+  if (kind === 'dribble' || dec?.type === 'dribble' || (dec?.type === 'carry' && dec.move !== 'shield' && !dec.step)) return 'carry';
+  return 'hold';
+}
+
+/**
  * `maybeFoul` with the state of a challenge that was not whistled: `foul` = the restart state (a foul, or a
  * phantom penalty), else `null` and `state` carries what changed anyway (a missed penalty is logged as a referee
  * error, `var.md`). Without a referee `state` is the input object itself.
@@ -1581,7 +1625,7 @@ export function foulCheck(
   // Tackle: real approach angle. Dribble: head-on when the defender won it, from behind when he was
   // beaten and chases back (a cynical stop). Loose-ball duel: shoulder to shoulder.
   const angle: RelativePosition =
-    kind === 'tackle'  ? angleFromModifier(tackleAngleModifier(offender, fouled)) :
+    kind === 'tackle' || kind === 'contact' ? angleFromModifier(tackleAngleModifier(offender, fouled)) :
     kind === 'dribble' ? (tackleWon ? 'front' : 'behind') :
                          'side';
   const onYellow = yellowsOf(state, offender.id) > 0;
@@ -1602,6 +1646,8 @@ export function foulCheck(
   });
   const minute = matchMinute(state);
   const spot = { x: fouled.x, y: fouled.y };
+  const third = foulThird(spot.x, fouled.attackDir);
+  const context = foulContextOf(state, offender, fouled, kind);
   if (rng() >= chance) {
     // Not a foul — but a challenge in the box can still be whistled as a penalty (`var.md` §2).
     if (!inOwnBox || !refereeErrs(state, 'phantom_penalty', rng)) return { foul: null, state };
@@ -1623,10 +1669,10 @@ export function foulCheck(
   state = errState;
   gameBus.emit('foul', {
     offenderId: offender.id, fouledId: fouled.id, team: offender.team, kind,
-    x: spot.x, y: spot.y, inBox: inOwnBox, minute,
+    x: spot.x, y: spot.y, inBox: inOwnBox, minute, third, context,
   });
-  debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
-    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament), refMult: refereeFoulMult(strictness), discMult: attributeReduce(discipline) },
+  debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}, ${context}, third ${third}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
+    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, context, third, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament), refMult: refereeFoulMult(strictness), discMult: attributeReduce(discipline) },
   });
 
   let s: GameState = {
@@ -1634,7 +1680,9 @@ export function foulCheck(
     players: state.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
   };
   const opponents = s.players.filter(p => p.team === offender.team && p.id !== offender.id);
-  let { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness, discipline }, rng);
+  const fm = DECISION_FLAGS.FM_FOULS;
+  const promising = fm && isPromisingAttack(fouled, offender, context === 'carry' || context === 'reception' || context === 'hold');
+  let { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness, discipline, fm, promising }, rng);
   // Wrong card (`var.md` §2): a yellow shown as a straight red, a straight red shown as a yellow.
   if (card === 'yellow' && !onYellow && refereeErrs(s, 'wrong_red', rng)) {
     const corrected = varFixes(s, 'wrong_red', rng);
@@ -1667,7 +1715,7 @@ function phantomPenalty(
   let s = recordRefereeError(state, 'phantom_penalty', offender.team, offender.id, corrected, minute);
   gameBus.emit('foul', {
     offenderId: offender.id, fouledId: fouled.id, team: offender.team, kind,
-    x: spot.x, y: spot.y, inBox: true, minute,
+    x: spot.x, y: spot.y, inBox: true, minute, third: foulThird(spot.x, fouled.attackDir), context: foulContextOf(state, offender, fouled, kind),
   });
   s = {
     ...s,
@@ -4557,6 +4605,32 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
   s = { ...s, throughBallCellsCache: nextTbCache };
 
+  // ── Offside line reads (stage 13, `OffsideRuns.ts`) ──────────────────────
+  // An attacker reads the line every few tenths of a second with an error; his own movement and off-ball choices use
+  // that read (`lineFor`), so a stepping-up line or a misread leaves him past it. The call itself uses the true line.
+  if (DECISION_FLAGS.OFFSIDE_RUNS && isLivePhase(s.matchPhase)) {
+    let changed = false;
+    const players = s.players.map(p => {
+      if (p.team !== attackingTeam || p.role === 'GK') return p.lineRead ? (changed = true, { ...p, lineRead: undefined }) : p;
+      const read = refreshLineRead(p, offsideLine, s.matchTime, clockScaleOf(s));
+      if (read === p.lineRead) return p;
+      changed = true;
+      // Counted once per misjudged spell: a misread read after a good one (or his first read).
+      const bad = (r: typeof read) => !!r && (r.err > ATTACK_CONFIG.OFFSIDE_MARGIN || r.lapse);
+      // Only near the line, where a misread can be offside (within MISREAD_NEAR_YD of it).
+      if (read && offsideLine !== null && bad(read) && !bad(p.lineRead)
+        && Math.abs(p.x - offsideLine) <= OFFSIDE_RUNS.MISREAD_NEAR_YD) {
+        gameBus.emit('lineMisread', { playerId: p.id, team: p.team, err: read.err, lapse: read.lapse });
+        debugLog('offside', `${p.name} misreads the line by ${read.err.toFixed(1)} yd${read.lapse ? ' (lapse)' : ''}`, { playerId: p.id, data: { lineX: read.lineX, err: read.err } });
+      }
+      return { ...p, lineRead: read };
+    });
+    if (changed) s = { ...s, players };
+  }
+  const lineFor = (p: GamePlayer): number | null => (DECISION_FLAGS.OFFSIDE_RUNS && p.team === attackingTeam && p.lineRead
+    ? perceivedLine(p.lineRead, p.attackDir, s.matchTime)
+    : offsideLine);
+
   // ── Compute decisions with short-term memory ───────────────────────────
   // Each player has a DecisionPath (BALL_HOLDER | TEAM_WITH_BALL | TEAM_WITHOUT_BALL).
   // When the path is unchanged and commitTicks > 0, the previous decision is reused.
@@ -4694,7 +4768,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
 
     // Fresh decision — only the holder uses tbCachedCells (no-op for everyone else)
     const fresh = decide(
-      p, holder, isBallHolder, inFlight, s.players, offsideLine, s.possessionTime,
+      p, holder, isBallHolder, inFlight, s.players, lineFor(p), s.possessionTime,
       s.setPiece, crowdGrid, s.teamIntent,
       isBallHolder ? tbCachedCells : null,
       s.matchTime,
@@ -4914,10 +4988,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         let tx = pushedBaseX + (rawX - pushedBaseX) * pull;
         const ty = base.y + (rawY - base.y) * pull;
 
-        // Clamp to stay onside
-        if (offsideLine !== null) {
+        // Clamp to stay onside — on his read of the line (stage 13), not the true one.
+        const ownLine = lineFor(player);
+        if (ownLine !== null) {
           const fwd   = player.attackDir;
-          const safeX = offsideLine - fwd * ATTACK_CONFIG.OFFSIDE_MARGIN;
+          const safeX = ownLine - fwd * ATTACK_CONFIG.OFFSIDE_MARGIN;
           if ((tx - safeX) * fwd > 0) {
             tx = safeX;
           }
@@ -4940,7 +5015,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       } else {
         const committedMarkId = decision?.type === 'track_mark' ? decision.markTargetId : undefined;
         const markTargetId = committedMarkId ?? markAssignments.get(player.id);
-        target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime, shapeBallPos);
+        target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, lineFor(player), markTargetId, s.possessionTime, shapeBallPos);
       }
 
       // Man-marker with his team on the ball: he stays home on his man (`stayHomeTarget`).
@@ -5267,6 +5342,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
           s = rollContactInjuries(s, [tackler.id, updatedHolder.id], matchMinute(s));
         }
       }
+    }
+    // ── Contact foul (stage 13, `fouls.md` → "FM fouls"): no tackle this tick, somebody leaning on the holder ──
+    if (DECISION_FLAGS.FM_FOULS) {
+      const contact = contactFoul(s, s.players.find(p => p.id === s.ballHolderId)!, dt);
+      if (contact) return { state: contact, passCompleted: false, tackled: false, goalScored: null };
     }
   }
 

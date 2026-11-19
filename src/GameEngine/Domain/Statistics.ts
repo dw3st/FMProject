@@ -90,6 +90,18 @@ export interface PlayerStats {
   penaltyGoals:             number;
   /** Times caught offside (the receiver). */
   offsides:                 number;
+  /** Stage 13: fouls suffered, by the third from the fouled team's view (own / middle / final; FM 21 / 43 / 36%). */
+  foulsWonOwnThird:         number;
+  foulsWonMidThird:         number;
+  foulsWonFinalThird:       number;
+  /** Stage 13: fouls suffered on the ball while carrying, just after receiving, holding / turning (FM ≥ 44% carrying). */
+  foulsWonCarrying:         number;
+  foulsWonReceiving:        number;
+  foulsWonHolding:          number;
+  /** Stage 13: contact fouls committed (leaning on / by the holder, no tackle; also in `fouls`). */
+  contactFouls:             number;
+  /** Stage 13 (`OffsideRuns.ts`): reads of the offside line that left him past it, or a lapse. */
+  lineMisreads:             number;
   // ── Aerial (`.claude/rules/game-engine/aerial.md`) ─────────────────────────
   /** Crosses played. */
   crosses:                  number;
@@ -317,6 +329,14 @@ function emptyStats(): PlayerStats {
     penaltiesConceded:        0,
     penaltyGoals:             0,
     offsides:                 0,
+    foulsWonOwnThird: 0,
+    foulsWonMidThird: 0,
+    foulsWonFinalThird: 0,
+    foulsWonCarrying: 0,
+    foulsWonReceiving: 0,
+    foulsWonHolding: 0,
+    contactFouls: 0,
+    lineMisreads: 0,
     crosses:                  0,
     crossesCompleted:         0,
     aerialDuels:              0,
@@ -590,7 +610,16 @@ gameBus.on('ballCluster', e => {
 });
 
 // ── Discipline stats ──────────────────────────────────────────────────────────
-gameBus.on('foul', e => { get(e.offenderId).fouls++; lastHolder = null; notify(); });
+gameBus.on('foul', e => {
+  get(e.offenderId).fouls++;
+  const w = get(e.fouledId);
+  if (e.third === 0) w.foulsWonOwnThird++; else if (e.third === 1) w.foulsWonMidThird++; else if (e.third === 2) w.foulsWonFinalThird++;
+  if (e.context === 'carry') w.foulsWonCarrying++; else if (e.context === 'reception') w.foulsWonReceiving++; else if (e.context === 'hold') w.foulsWonHolding++;
+  lastHolder = null;
+  notify();
+});
+gameBus.on('contactFoul', e => { get(e.offenderId).contactFouls++; notify(); });
+gameBus.on('lineMisread', e => { get(e.playerId).lineMisreads++; });
 gameBus.on('card', e => {
   const s = get(e.playerId);
   if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
@@ -925,6 +954,14 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.penaltiesConceded        += stats.penaltiesConceded;
     result.penaltyGoals             += stats.penaltyGoals;
     result.offsides                 += stats.offsides;
+    result.foulsWonOwnThird += stats.foulsWonOwnThird;
+    result.foulsWonMidThird += stats.foulsWonMidThird;
+    result.foulsWonFinalThird += stats.foulsWonFinalThird;
+    result.foulsWonCarrying += stats.foulsWonCarrying;
+    result.foulsWonReceiving += stats.foulsWonReceiving;
+    result.foulsWonHolding += stats.foulsWonHolding;
+    result.contactFouls += stats.contactFouls;
+    result.lineMisreads += stats.lineMisreads;
     result.crosses                  += stats.crosses;
     result.crossesCompleted         += stats.crossesCompleted;
     result.aerialDuels              += stats.aerialDuels;
