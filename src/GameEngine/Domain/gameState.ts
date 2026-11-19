@@ -130,18 +130,18 @@ const OFFSIDE_CONFIG = {
  */
 const PRESS_INTERCEPT_MAX_LOOKAHEAD = 14;
 
-// ── Tune match duration here ──────────────────────────────────────────────────
+// ── Match clock ──────────────────────────────────────────────────────────────
 /**
- * Experimental (measurement only, off by default): `FULL_DURATION=1` (env, read once at load, scripts and workers)
- * makes the physical time of every period the real game time (TIME_SCALE 1, ~93 min of physics a match).
+ * Game-seconds per physical second of the clock compressed before the engine rebuild (stage 2): 45 game minutes in
+ * 150 s of physics. The engine plays the 90 minutes in real physics (`GameState.clockScale` absent = 1); this scale is
+ * only for comparison runs and, provisionally, the live match (`buildLiveMatchState`) until stage 19 adapts it.
  */
-export const FULL_DURATION = typeof process !== 'undefined' && process.env?.FULL_DURATION === '1';
-/** Real-world seconds per half. 150 = 2.5 min/half → 5 min total match (2700 with `FULL_DURATION`). */
-const REAL_HALF_DURATION = FULL_DURATION ? 2700 : 150;
-// ─────────────────────────────────────────────────────────────────────────────
+export const LEGACY_CLOCK_SCALE = 18;
 
-/** Game-seconds per real-second: 45 game-minutes / REAL_HALF_DURATION. */
-export const TIME_SCALE = 2700 / REAL_HALF_DURATION;
+/** Game-seconds the match clock advances per physical second of simulation (1 = real time, the default). */
+export function clockScaleOf(state: Pick<GameState, 'clockScale'>): number {
+  return state.clockScale ?? 1;
+}
 /** Yards off-ball targets keep from the touchlines (#37). */
 const OFF_BALL_TOUCHLINE_MARGIN = 2.5;
 /** Minimum yards an off-ball target keeps from a teammate's position (#37). */
@@ -979,7 +979,7 @@ export function stopForInjury(state: GameState, team: TeamId | null, spot: { x: 
 
 /** Per-tick, per-player injury roll: `injuryRatePerMinute` scaled to the game-minutes elapsed this tick. */
 function rollInMatchInjuries(state: GameState, dt: number): GameState {
-  const gameMinutes = (dt * TIME_SCALE) / 60;
+  const gameMinutes = (dt * clockScaleOf(state)) / 60;
   const side = sideWithBall(state);
   const spot = getBallPos(state);
   let s = state;
@@ -1276,7 +1276,7 @@ function setPieceTakerOf(state: GameState, team: TeamId, duty: SetPieceDuty): Ga
 function openSetPiecePhase(state: GameState, team: TeamId, kind: SetPieceGoalKind, countdown: number): GameState {
   return {
     ...state,
-    setPiecePhase: { team, kind, until: state.matchTime + countdown * TIME_SCALE + SET_PIECE_CONFIG.SET_PIECE_PHASE_SECONDS },
+    setPiecePhase: { team, kind, until: state.matchTime + countdown * clockScaleOf(state) + SET_PIECE_CONFIG.SET_PIECE_PHASE_SECONDS },
   };
 }
 
@@ -2683,7 +2683,7 @@ function carriedVelocity(p: GamePlayer, s: GameState, dt: number): { x: number; 
   const k = p.kin;
   if (!k || !p.vel || k.x !== p.x || k.y !== p.y) return STANDING;
   const gap = s.matchTime - k.t;
-  return gap >= 0 && gap <= 1.5 * dt * TIME_SCALE ? p.vel : STANDING;
+  return gap >= 0 && gap <= 1.5 * dt * clockScaleOf(s) ? p.vel : STANDING;
 }
 
 /**
@@ -3294,7 +3294,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
 
   // ── Watchdog (#36): a loose ball can never outlive the timeout — award it to the nearest
   // player (recovering players included) so play always resumes.
-  if (inTouch.length === 0 && s.matchTime - lb.startTime >= cfg.LOOSE_BALL_WATCHDOG_REAL_SECONDS * TIME_SCALE) {
+  if (inTouch.length === 0 && s.matchTime - lb.startTime >= cfg.LOOSE_BALL_WATCHDOG_REAL_SECONDS * clockScaleOf(s)) {
     const nearest = s.players
       .map(p => ({ p, dist: Math.hypot(p.x - lb.x, p.y - lb.y) }))
       .sort((a, b) => a.dist - b.dist)[0];
@@ -4189,7 +4189,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
 
   // ── Clock advancement (the four live periods) ─────────────────────────────
-  const newMatchTime = state.matchTime + dt * TIME_SCALE;
+  const newMatchTime = state.matchTime + dt * clockScaleOf(state);
   const periodEnd =
     state.matchPhase === 'firstHalf'       ? HALF_DURATION + state.extraTimeFirst :
     state.matchPhase === 'secondHalf'      ? HALF_DURATION + state.extraTimeSecond :
@@ -4269,7 +4269,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // In live matches, only Team B (opponent) is AI-controlled; in headless mode,
   // SimulateMatch passes aiTeams = ['A', 'B'] via the optional parameter below.
   const inSubsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
-  if (inSubsWindow && shouldCheckAiSubs(s.matchTime, dt * TIME_SCALE)) {
+  if (inSubsWindow && shouldCheckAiSubs(s.matchTime, dt * clockScaleOf(s))) {
     // Team B is always AI in live matches; `aiTeams` can override for headless sim
     const subsB = evaluateAiSubstitutions(s, 'B');
     if (subsB.length > 0) {
@@ -4531,7 +4531,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
         const energy = consumeEnergy(
-          pl.energy, pl.stamina, action, dt * TIME_SCALE, (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain,
+          pl.energy, pl.stamina, action, dt * clockScaleOf(s), (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain,
         );
         if (energy === pl.energy) return p;
         // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
@@ -4549,7 +4549,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // Man-marking time (player instructions): the marked targets, for the marked-target statistics.
   if (s.manMarks && isLivePhase(s.matchPhase)) {
     const targetIds = [...(s.manMarks.A ?? []), ...(s.manMarks.B ?? [])].map(p => p.targetId);
-    gameBus.emit('manMarkTick', { targetIds, seconds: dt * TIME_SCALE });
+    gameBus.emit('manMarkTick', { targetIds, seconds: dt * clockScaleOf(s) });
   }
 
   // Ball cluster statistics (#145): players of each side bunched within 8 yards of the ball.

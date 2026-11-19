@@ -787,8 +787,14 @@ export interface GameState {
 
   // ── Match flow ─────────────────────────────────────────────────────────────
   matchPhase: MatchPhase;
-  /** Game-seconds elapsed this half (advances at TIME_SCALE × real-time). */
+  /** Game-seconds elapsed this half (advances `clockScale` × the physical step). */
   matchTime: number;
+  /**
+   * Game-seconds of match clock per physical second of simulation. Absent = 1: the 90 minutes play in real physics
+   * (stage 2). `LEGACY_CLOCK_SCALE` (18) is the compressed clock of before, kept for comparisons and, provisionally,
+   * the live match until stage 19.
+   */
+  clockScale?: number;
   /** Extra game-seconds (stoppage time) for first half — set once at match start. */
   extraTimeFirst: number;
   /** Extra game-seconds (stoppage time) for second half — set once at match start. */

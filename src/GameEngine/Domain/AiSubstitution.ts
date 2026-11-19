@@ -115,10 +115,10 @@ function sameMainRole(roleA: string, roleB: string): boolean {
 /**
  * Returns true if a 300-game-second check boundary was crossed this tick.
  *
- * `dt` is the game-time advance for this tick (already scaled by TIME_SCALE
- * by the caller). Callers pass `realDt * TIME_SCALE`.
+ * `dt` is the game-time advance for this tick (already scaled by the clock
+ * scale by the caller). Callers pass `physicalDt * clockScaleOf(state)`.
  *
- * Previously re-multiplied `dt` by TIME_SCALE internally, which looked back
+ * Previously re-multiplied `dt` by the clock scale internally, which looked back
  * ~65 game-seconds instead of ~3.6, causing the check to fire ~18 consecutive
  * ticks at every interval boundary. That bloated pendingSubsA/B because each
  * firing re-queued the same recommended subs.
