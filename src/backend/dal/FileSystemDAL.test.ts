@@ -1,7 +1,9 @@
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { unlinkSync } from "fs";
 import { randomUUID } from "crypto";
-import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
+import { FileSystemDAL, JSON_READ_RETRY, readJsonRetrying } from "@/backend/dal/FileSystemDAL";
+import { tmpdir } from "os";
+import { join } from "path";
 import type { Squad } from "@/types/playerTypes";
 import { generatePool } from "@/Domain/staff/staffPool";
 import { getSaveDataVersion } from "@/backend/dal/saveDataVersion";
@@ -137,5 +139,30 @@ describe("FileSystemDAL staff pool", () => {
     const pool = generatePool(saveId, "2027", "2027-02-05");
     await dal.writeStaffPool(saveId, pool);
     expect(await dal.readStaffPool(saveId)).toEqual(pool);
+  });
+});
+
+describe("FileSystemDAL JSON read of a file being written", () => {
+  test("a file that does not parse on the first read is read again and parses on the second", async () => {
+    const path = join(tmpdir(), `fs-dal-half-${randomUUID()}.json`);
+    await Bun.write(path, '{"currentDate":"2027-03');
+    let reads = 0;
+    const file = Bun.file(path);
+    const first = { name: path, json: async () => { reads++; const v = await file.json(); return v; } };
+    // The write finishes while the reader waits between tries.
+    setTimeout(() => void Bun.write(path, '{"currentDate":"2027-03-10"}'), JSON_READ_RETRY.WAIT_MS / 2);
+    expect(await readJsonRetrying(first)).toEqual({ currentDate: "2027-03-10" });
+    expect(reads).toBe(1);
+    unlinkSync(path);
+  });
+
+  test("a file that never parses throws after the last try; a missing file still throws its own error", async () => {
+    const path = join(tmpdir(), `fs-dal-bad-${randomUUID()}.json`);
+    await Bun.write(path, "{not json");
+    const started = performance.now();
+    await expect(readJsonRetrying(Bun.file(path))).rejects.toBeInstanceOf(SyntaxError);
+    expect(performance.now() - started).toBeGreaterThanOrEqual(JSON_READ_RETRY.WAIT_MS * (JSON_READ_RETRY.TRIES - 1) - 5);
+    unlinkSync(path);
+    await expect(readJsonRetrying(Bun.file(path))).rejects.not.toBeInstanceOf(SyntaxError);
   });
 });

@@ -44,7 +44,7 @@ async function nationalityOfLeague(slug: string): Promise<string | null> {
     try {
       const file = Bun.file(`${fileURLToPath(new URL("../../Data", import.meta.url))}/leagueData.json`);
       if (await file.exists()) {
-        for (const l of (await file.json()) as { slug?: string; country?: string }[]) {
+        for (const l of (await readJsonRetrying(file)) as { slug?: string; country?: string }[]) {
           if (l.slug) leagueNationalities.set(l.slug, leagueNationality(l.country));
         }
       }
@@ -125,10 +125,28 @@ function seatDir(saveId: string, seatId: string): string {
   return `${SAVES_DIR}/${saveId}/seats/${seatId}`;
 }
 
+/**
+ * Retries of a JSON read that fails to parse: the writes are not atomic (`Bun.write` straight to the file), so a
+ * request served while the day flushes can read a half-written file. A missing file or any other error is unchanged.
+ */
+export const JSON_READ_RETRY = { TRIES: 3, WAIT_MS: 40 };
+
+/** `readJsonRetrying(file)` that re-reads a file which does not parse yet (a write in progress), then throws as before. */
+export async function readJsonRetrying(file: { name?: string; json(): Promise<unknown> }): Promise<unknown> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await (attempt === 1 || !file.name ? file : Bun.file(file.name)).json();
+    } catch (err) {
+      if (!(err instanceof SyntaxError) || attempt >= JSON_READ_RETRY.TRIES) throw err;
+      await new Promise((resolve) => setTimeout(resolve, JSON_READ_RETRY.WAIT_MS));
+    }
+  }
+}
+
 async function readJsonFile<T>(path: string): Promise<T | null> {
   const file = Bun.file(path);
   if (!(await file.exists())) return null;
-  return file.json() as Promise<T>;
+  return readJsonRetrying(file) as Promise<T>;
 }
 
 async function writeJsonFile(dir: string, path: string, value: unknown, pretty = false): Promise<void> {
@@ -165,7 +183,7 @@ export class FileSystemDAL implements ISaveDAL {
     const saves: SaveMeta[] = [];
     for await (const path of glob.scan(SAVES_DIR)) {
       const file = Bun.file(`${SAVES_DIR}/${path}`);
-      saves.push((await file.json()) as SaveMeta);
+      saves.push((await readJsonRetrying(file)) as SaveMeta);
     }
     saves.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     return saves;
@@ -174,7 +192,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readMeta(saveId: string): Promise<SaveMeta | null> {
     const file = Bun.file(metaPath(saveId));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<SaveMeta>;
+    return readJsonRetrying(file) as Promise<SaveMeta>;
   }
 
   async writeMeta(meta: SaveMeta): Promise<void> {
@@ -195,7 +213,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readSeasonArchive(saveId: string, year: number): Promise<SeasonArchive | null> {
     const file = Bun.file(seasonArchivePath(saveId, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<SeasonArchive>;
+    return readJsonRetrying(file) as Promise<SeasonArchive>;
   }
 
   async writeSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void> {
@@ -209,7 +227,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readFreeAgents(saveId: string): Promise<FreeAgent[]> {
     const file = Bun.file(freeAgentsPath(saveId));
     if (!(await file.exists())) return [];
-    const agents = (await file.json()) as FreeAgent[];
+    const agents = (await readJsonRetrying(file)) as FreeAgent[];
     for (const a of agents) fillMentalInPlace(a.player);
     return agents.map((a) => ({ ...a, player: fixedPlayerName(a.player) }));
   }
@@ -223,7 +241,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readSeatOffers(saveId: string): Promise<SeatOffer[]> {
     const file = Bun.file(seatOffersPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<SeatOffer[]>;
+    return readJsonRetrying(file) as Promise<SeatOffer[]>;
   }
 
   async writeSeatOffers(saveId: string, offers: SeatOffer[]): Promise<void> {
@@ -235,7 +253,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readSeatSeasons(saveId: string): Promise<SeatSeasonRow[]> {
     const file = Bun.file(seatSeasonsPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<SeatSeasonRow[]>;
+    return readJsonRetrying(file) as Promise<SeatSeasonRow[]>;
   }
 
   async writeSeatSeasons(saveId: string, rows: SeatSeasonRow[]): Promise<void> {
@@ -247,7 +265,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readRivalsFeed(saveId: string): Promise<SeatResult[]> {
     const file = Bun.file(rivalsFeedPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<SeatResult[]>;
+    return readJsonRetrying(file) as Promise<SeatResult[]>;
   }
 
   async writeRivalsFeed(saveId: string, results: SeatResult[]): Promise<void> {
@@ -259,7 +277,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readStaffPool(saveId: string): Promise<StaffPool | null> {
     const file = Bun.file(staffPoolPath(saveId));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<StaffPool>;
+    return readJsonRetrying(file) as Promise<StaffPool>;
   }
 
   async writeStaffPool(saveId: string, pool: StaffPool): Promise<void> {
@@ -270,7 +288,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readRefereePool(saveId: string): Promise<RefereePool | null> {
     const file = Bun.file(`${refereesDir(saveId)}/pool.json`);
     if (!(await file.exists())) return null;
-    return file.json() as Promise<RefereePool>;
+    return readJsonRetrying(file) as Promise<RefereePool>;
   }
 
   async writeRefereePool(saveId: string, pool: RefereePool): Promise<void> {
@@ -281,7 +299,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readRefereeState(saveId: string): Promise<RefereeState | null> {
     const file = Bun.file(`${refereesDir(saveId)}/state.json`);
     if (!(await file.exists())) return null;
-    return file.json() as Promise<RefereeState>;
+    return readJsonRetrying(file) as Promise<RefereeState>;
   }
 
   async writeRefereeState(saveId: string, state: RefereeState): Promise<void> {
@@ -292,7 +310,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readRefereeSeason(saveId: string, key: string): Promise<RefereeSeasonArchive | null> {
     const file = Bun.file(refereeSeasonPath(saveId, key));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<RefereeSeasonArchive>;
+    return readJsonRetrying(file) as Promise<RefereeSeasonArchive>;
   }
 
   async writeRefereeSeason(saveId: string, key: string, archive: RefereeSeasonArchive): Promise<void> {
@@ -311,7 +329,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readNationalState(saveId: string): Promise<NationalState | null> {
     const file = Bun.file(`${nationalDir(saveId)}/state.json`);
     if (!(await file.exists())) return null;
-    return file.json() as Promise<NationalState>;
+    return readJsonRetrying(file) as Promise<NationalState>;
   }
 
   async writeNationalState(saveId: string, state: NationalState): Promise<void> {
@@ -322,7 +340,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readNationalComp(saveId: string, slug: string): Promise<NationalCompetition | null> {
     const file = Bun.file(nationalCompPath(saveId, slug));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<NationalCompetition>;
+    return readJsonRetrying(file) as Promise<NationalCompetition>;
   }
 
   async writeNationalComp(saveId: string, comp: NationalCompetition): Promise<void> {
@@ -333,7 +351,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readManagers(saveId: string): Promise<ManagerRecord[]> {
     const file = Bun.file(managersPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<ManagerRecord[]>;
+    return readJsonRetrying(file) as Promise<ManagerRecord[]>;
   }
 
   async writeManagers(saveId: string, managers: ManagerRecord[]): Promise<void> {
@@ -344,7 +362,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readRetired(saveId: string): Promise<RetiredPlayer[]> {
     const file = Bun.file(retiredPath(saveId));
     if (!(await file.exists())) return [];
-    const retired = (await file.json()) as RetiredPlayer[];
+    const retired = (await readJsonRetrying(file)) as RetiredPlayer[];
     for (const r of retired) fillRetiredMentalInPlace(r);
     return retired.map(fixedPlayerName);
   }
@@ -357,7 +375,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readClubHistory(saveId: string, squadId: string): Promise<ClubHistory | null> {
     const file = Bun.file(clubHistoryPath(saveId, squadId));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<ClubHistory>;
+    return readJsonRetrying(file) as Promise<ClubHistory>;
   }
 
   async writeClubHistory(saveId: string, history: ClubHistory): Promise<void> {
@@ -368,7 +386,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readTransfers(saveId: string): Promise<StoredTransferRecord[]> {
     const file = Bun.file(transfersPath(saveId));
     if (!(await file.exists())) return [];
-    return file.json() as Promise<StoredTransferRecord[]>;
+    return readJsonRetrying(file) as Promise<StoredTransferRecord[]>;
   }
 
   async writeTransfers(saveId: string, transfers: StoredTransferRecord[]): Promise<void> {
@@ -379,7 +397,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readTransfersArchive(saveId: string, year: number): Promise<StoredTransferRecord[] | null> {
     const file = Bun.file(transfersArchivePath(saveId, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<StoredTransferRecord[]>;
+    return readJsonRetrying(file) as Promise<StoredTransferRecord[]>;
   }
 
   async writeTransfersArchive(saveId: string, year: number, transfers: StoredTransferRecord[]): Promise<void> {
@@ -395,7 +413,7 @@ export class FileSystemDAL implements ISaveDAL {
     if (!(await file.exists())) return null;
     // Inject leagueSlug from the path — squad files don't store it, but downstream
     // (resolveSquadId, transfer persistence) relies on it. Mirrors listAllSquads.
-    const raw = (await file.json()) as Squad;
+    const raw = (await readJsonRetrying(file)) as Squad;
     return { ...(await readFixes(raw, leagueSlug)), leagueSlug };
   }
 
@@ -435,7 +453,7 @@ export class FileSystemDAL implements ISaveDAL {
     const glob = new Bun.Glob("*.json");
     const squads: Squad[] = [];
     for await (const path of glob.scan(dir)) {
-      const raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
+      const raw = (await readJsonRetrying(Bun.file(`${dir}/${path}`))) as Squad;
       fillSquadMentalInPlace(raw);
       squads.push({ ...raw, leagueSlug });
     }
@@ -470,7 +488,7 @@ export class FileSystemDAL implements ISaveDAL {
       const [leagueSlug, file] = path.split(/[\\/]/) as [string, string];
       let raw: Squad;
       try {
-        raw = (await Bun.file(`${dir}/${path}`).json()) as Squad;
+        raw = (await readJsonRetrying(Bun.file(`${dir}/${path}`))) as Squad;
       } catch (e) {
         // Deleted between the scan and the read (e.g. a concurrent moveSquad): no longer a squad file.
         if ((e as NodeJS.ErrnoException).code === "ENOENT") return;
@@ -486,7 +504,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readMarket(saveId: string): Promise<WorldMarketState | null> {
     const file = Bun.file(marketPath(saveId));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<WorldMarketState>;
+    return readJsonRetrying(file) as Promise<WorldMarketState>;
   }
 
   async writeMarket(saveId: string, market: WorldMarketState): Promise<void> {
@@ -500,7 +518,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readDayLog(saveId: string, date: string): Promise<StoredDayLog | null> {
     const file = Bun.file(dayLogPath(saveId, date));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<StoredDayLog>;
+    return readJsonRetrying(file) as Promise<StoredDayLog>;
   }
 
   async writeDayLog(saveId: string, date: string, log: StoredDayLog): Promise<void> {
@@ -515,7 +533,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readLeagueMeta(saveId: string, leagueSlug: string): Promise<LeagueSeasonMeta | null> {
     const file = Bun.file(leagueMetaPath(saveId, leagueSlug));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<LeagueSeasonMeta>;
+    return readJsonRetrying(file) as Promise<LeagueSeasonMeta>;
   }
 
   async writeLeagueMeta(saveId: string, meta: LeagueSeasonMeta): Promise<void> {
@@ -526,7 +544,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readLeagueStandings(saveId: string, leagueSlug: string): Promise<StandingRow[] | null> {
     const file = Bun.file(leagueStandingsPath(saveId, leagueSlug));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<StandingRow[]>;
+    return readJsonRetrying(file) as Promise<StandingRow[]>;
   }
 
   async writeLeagueStandings(saveId: string, leagueSlug: string, rows: StandingRow[]): Promise<void> {
@@ -537,7 +555,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readRound(saveId: string, leagueSlug: string, round: number): Promise<RoundFixtures | null> {
     const file = Bun.file(roundPath(saveId, leagueSlug, round));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<RoundFixtures>;
+    return readJsonRetrying(file) as Promise<RoundFixtures>;
   }
 
   async writeRound(saveId: string, leagueSlug: string, round: number, data: RoundFixtures): Promise<void> {
@@ -548,7 +566,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readDateIndex(saveId: string, leagueSlug: string): Promise<LeagueDateIndex | null> {
     const file = Bun.file(dateIndexPath(saveId, leagueSlug));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<LeagueDateIndex>;
+    return readJsonRetrying(file) as Promise<LeagueDateIndex>;
   }
 
   async writeDateIndex(saveId: string, leagueSlug: string, index: LeagueDateIndex): Promise<void> {
@@ -569,7 +587,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readLeagueSeasonArchive(saveId: string, leagueSlug: string, year: number): Promise<SeasonArchive | null> {
     const file = Bun.file(leagueSeasonArchivePath2(saveId, leagueSlug, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<SeasonArchive>;
+    return readJsonRetrying(file) as Promise<SeasonArchive>;
   }
 
   async writeLeagueSeasonArchive(saveId: string, archive: SeasonArchive): Promise<void> {
@@ -584,7 +602,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readAwardsYear(saveId: string, year: number): Promise<AwardsYear | null> {
     const file = Bun.file(awardsPath(saveId, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<AwardsYear>;
+    return readJsonRetrying(file) as Promise<AwardsYear>;
   }
 
   async writeAwardsYear(saveId: string, data: AwardsYear): Promise<void> {
@@ -608,7 +626,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readNewsMonth(saveId: string, month: string): Promise<NewsItem[] | null> {
     const file = Bun.file(newsPath(saveId, month));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<NewsItem[]>;
+    return readJsonRetrying(file) as Promise<NewsItem[]>;
   }
 
   async writeNewsMonth(saveId: string, month: string, items: NewsItem[]): Promise<void> {
@@ -632,7 +650,7 @@ export class FileSystemDAL implements ISaveDAL {
   async readSeasonGoals(saveId: string, league: string, year: number): Promise<SeasonGoals | null> {
     const file = Bun.file(seasonGoalsPath(saveId, league, year));
     if (!(await file.exists())) return null;
-    return file.json() as Promise<SeasonGoals>;
+    return readJsonRetrying(file) as Promise<SeasonGoals>;
   }
 
   async writeSeasonGoals(saveId: string, data: SeasonGoals): Promise<void> {
