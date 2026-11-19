@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.26",
     date: "2026-11-19",
-    time: "23:00",
+    time: "08:24",
     items: [
       { tab: "finances", pt: "Finanças em quatro abas: um resumo com o saldo de cada mês e as maiores receitas e despesas, uma visão simples por categoria, a completa de antes e os patrocínios.", en: "Finances in four tabs: a summary with the balance of each month and the biggest income and expenses, a simple view by category, the full one from before and the sponsors." },
       { tab: "manager", pt: "Apostas: os jogos dos amigos aparecem primeiro, com o nome de cada um.", en: "Bets: friends' games come first, with each friend's name." },
