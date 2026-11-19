@@ -793,6 +793,38 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'pass-intercepted',
+    name:        'Interception — a defender cuts the pass',
+    description: 'A 22-yd pass to feet with a midfielder 4 yd off the line halfway (stage 5, `interception.md`): no interception dice. He works out the point of the path of the ball he reaches before it (reaction 0.25 s, then his sprint to within his reach) and runs there; when the ball passes within his reach he touches it, and his first touch, how far from his body he meets it and the speed of the ball decide control, deflection or the ball running past him. Toggle "Intercept" for the reach rings and his run to the point (green: spare time, amber: just in time). Debug log "interception".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CM',   40, 37, MIDFIELDER),
+        makePlayer('Lopes',    'A', 'CM',   62, 37, MIDFIELDER),
+        makePlayer('Nunes',    'B', 'CM',   51, 41, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'regular') };
+    },
+  },
+
+  {
+    id:          'pass-intercept-clear',
+    name:        'Interception — cut and cleared near his own goal',
+    description: 'A through ball across the edge of the box with a centre-back running across it (stage 5): he reaches the path in time; near his own goal a touch he does not control is a clearance (hooked away as a high ball), upfield it would be a deflection. Toggle "Intercept".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CAM',  78, 20, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   88, 44, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   96, 36, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'through', [0, 0, 0], 0, { x: 98, y: 44 }) };
+    },
+  },
+
+  {
     id:          'cross-to-box',
     name:        'Aerial — Cross to the Box',
     description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',

@@ -157,6 +157,15 @@ export interface GameEvents {
   tackle: { player: number; targetId: number; success: boolean; chance: number };
   /** Emitted on every interception attempt (success or failure). */
   interception: { player: number; success: boolean; chance: number };
+  /**
+   * Stage 5 (`interception.md`): a defender touched a physical pass on its way (no dice for the touch to happen): what
+   * the touch did, the ball's speed (m/s) and height (m), how far from his body (0 feet .. 1 edge of reach) and the
+   * chance he had to control it.
+   */
+  interceptionTouch: {
+    player: number; team: TeamId; passerId: number; kind: 'regular' | 'through';
+    outcome: 'control' | 'clear' | 'deflect' | 'miss'; speedMs: number; zM: number; offset: number; control: number; flight: number;
+  };
   /** Emitted on every dribble attempt (success = attacker beats defender). */
   dribble: { player: number; targetId: number; success: boolean; chance: number };
 

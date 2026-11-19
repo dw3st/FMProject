@@ -267,6 +267,12 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgPassThroughHigh: r2(t.passThroughHigh / matches),
     avgPassHeader: r2(t.passHeader / matches),
     passLaunchMps: r2(t.passLaunchSpeedSum / Math.max(1, t.passLaunchN) / 1.0936),
+    avgCutTouches: r2(t.cutTouches / matches),
+    avgCutControls: r2(t.cutControls / matches),
+    avgCutClears: r2(t.cutClears / matches),
+    avgCutDeflects: r2(t.cutDeflects / matches),
+    avgCutMisses: r2(t.cutMisses / matches),
+    cutSpeedMps: r2(t.cutSpeedSum / Math.max(1, t.cutTouches)),
     avgHolderHolds: r2(t.holderHolds / matches),
     avgHolderTurns: r2(t.holderTurns / matches),
     avgCorners: r2(t.corners / matches),
@@ -307,7 +313,7 @@ function emptyTotals(): VariantTotals {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
-    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
@@ -444,6 +450,12 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.passHeader += src.passHeader;
   dst.passLaunchSpeedSum += src.passLaunchSpeedSum;
   dst.passLaunchN += src.passLaunchN;
+  dst.cutTouches += src.cutTouches;
+  dst.cutControls += src.cutControls;
+  dst.cutClears += src.cutClears;
+  dst.cutDeflects += src.cutDeflects;
+  dst.cutMisses += src.cutMisses;
+  dst.cutSpeedSum += src.cutSpeedSum;
   dst.holderHolds += src.holderHolds;
   dst.holderTurns += src.holderTurns;
   dst.corners               += src.corners;
@@ -586,6 +598,12 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgPassThroughHigh: r2(totals.passThroughHigh / games),
     avgPassHeader: r2(totals.passHeader / games),
     passLaunchMps: r2(totals.passLaunchSpeedSum / Math.max(1, totals.passLaunchN) / 1.0936),
+    avgCutTouches: r2(totals.cutTouches / games),
+    avgCutControls: r2(totals.cutControls / games),
+    avgCutClears: r2(totals.cutClears / games),
+    avgCutDeflects: r2(totals.cutDeflects / games),
+    avgCutMisses: r2(totals.cutMisses / games),
+    cutSpeedMps: r2(totals.cutSpeedSum / Math.max(1, totals.cutTouches)),
     avgHolderHolds: r2(totals.holderHolds / games),
     avgHolderTurns: r2(totals.holderTurns / games),
     avgCorners: r2(totals.corners / games),

@@ -14,7 +14,7 @@ import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
   BALL_GROUPS, BAND_LABELS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
-  FLIGHT_LABELS, FM_FLIGHT_S, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
+  FLIGHT_LABELS, FM_FLIGHT_S, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
   emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
@@ -90,6 +90,20 @@ FLIGHT_LABELS.forEach((l, i) => console.log(`  flight ${l.padEnd(6)} m  n ${Stri
 for (const g of LANDING_GROUPS) {
   const a = fm.landingErr?.[g] ?? [];
   console.log(`  landing vs aim ${g.padEnd(7)} n ${String(a.length).padStart(5)}  median ${f1(median(a))} m, p90 ${f1(pctl(a, 0.9))} (FM ${FM_LANDING[g][0]}, ${FM_LANDING[g][1]})`);
+}
+
+console.log("\n── Interception (stage 5; R7 loss split, R9 interceptions) ──");
+{
+  const lt = (fm.lossEarly ?? 0) + (fm.lossLate ?? 0);
+  console.log(`  losses after a pass: early (in flight) ${f1((100 * (fm.lossEarly ?? 0)) / Math.max(1, lt))}% · late ${f1((100 * (fm.lossLate ?? 0)) / Math.max(1, lt))}% (n ${lt}, ${f1(lt / n)} per match)   FM ${FM_LOSS_SPLIT.early} / ${FM_LOSS_SPLIT.late}`);
+  const touches = (world.cutTouches ?? 0) / n;
+  if (touches > 0) {
+    const sh = (k: string) => f1((100 * (world[k] ?? 0)) / Math.max(1, world.cutTouches!));
+    console.log(`  defender touches on a pass in flight ${f2(touches)} / match: control ${sh("cutControls")}% · clear ${sh("cutClears")}% · deflect ${sh("cutDeflects")}% · ran past ${sh("cutMisses")}% · ball ${f1((world.cutSpeedSum ?? 0) / Math.max(1, world.cutTouches!))} m/s`);
+  }
+  const ints = (world.interceptions ?? 0) / n;
+  const liveS = fm.realSeconds / n;
+  console.log(`  interceptions ${f1(ints)} / match (FM 59) · ${f2((60 * ints) / Math.max(1, liveS))} per live min (FM ~${f2((60 * 59) / (978 / 0.21))}, FM live time from 978 passes at 0.21 / s)`);
 }
 
 console.log("\n── Holder decisions ──");

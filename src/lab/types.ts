@@ -378,6 +378,8 @@ export interface TeamRawStats {
   passHeader: number;
   passLaunchSpeedSum: number;
   passLaunchN: number;
+  /** Stage 5 (`interception.md`): touches on a physical pass by this team defending, by outcome; ball speed summed (m/s). */
+  cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
   holderHolds: number;
   holderTurns: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
@@ -614,6 +616,8 @@ export interface PerMatchView {
   avgPassThroughHigh: number;
   avgPassHeader: number;
   passLaunchMps: number;
+  /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
+  avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
@@ -809,6 +813,8 @@ export interface VariantSummary {
   avgPassThroughHigh: number;
   avgPassHeader: number;
   passLaunchMps: number;
+  /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
+  avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */

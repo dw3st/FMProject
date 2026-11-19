@@ -1,6 +1,6 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning, ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
@@ -44,7 +44,9 @@ import { advanceLooseBall, advancePassBall, ballEnv, ballWithinReach, passKey, s
 import { buildAerialLaunch, buildGroundLaunch, loftVzYd, passTypeOf, vzForPeak, weightedSpeed } from '@/GameEngine/Domain/PassPhysics';
 import { PASS_PHYSICS, YD_PER_M_PASS } from '@/GameEngine/Configs/PassPhysicsConfig';
 import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
-import { reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { predictPath, reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { interceptPoint, interceptReachOf, resolveTouch, touchChances, type PathPoint } from '@/GameEngine/Domain/PhysicalInterception';
+import { INTERCEPT } from '@/GameEngine/Configs/InterceptConfig';
 import {
   THROUGH_BALL_CONFIG,
   CHASE_LOOSE_BALL_WEIGHT_ATTACK,
@@ -3594,6 +3596,124 @@ function passerTeamOf(s: GameState, p: PassState): TeamId | undefined {
   return s.players.find(q => q.id === p.fromId)?.team;
 }
 
+// ── Stage 5: physical interception (`interception.md` → "Stage 5") ────────────
+
+/** Stage 5: physical passes are cut by defenders reaching their path (needs the physical pass). */
+function physicalInterceptionOn(): boolean {
+  return DECISION_FLAGS.PHYSICAL_INTERCEPTION && passPhysicsOn();
+}
+
+/** How far across the ball a defender gets a foot to it (yd): his body + a leg put in by his tackling. */
+function interceptReach(p: GamePlayer): number {
+  return interceptReachOf(p.runtimeStats.withoutBall.tackling ?? 0.5);
+}
+
+const ownGoalXOf = (p: GamePlayer) => (p.attackDir === 1 ? 0 : PITCH_LENGTH);
+
+/** The predicted path of the ball of a physical pass from now (times from now), until it stops or leaves the pitch. */
+function physicalPassPath(s: GameState): PathPoint[] {
+  const b = s.ball!;
+  const pts = predictPath({ x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz }, INTERCEPT.PLAN_HORIZON_S, INTERCEPT.PLAN_STEP_S, ballEnv(s.weather));
+  const out: PathPoint[] = [];
+  for (let i = 1; i < pts.length; i++) {
+    const q = pts[i]!;
+    if (q.x < 0 || q.x > PITCH_LENGTH || q.y < 0 || q.y > PITCH_WIDTH) break;
+    out.push({ x: q.x, y: q.y, z: q.z, t: i * INTERCEPT.PLAN_STEP_S });
+    if (q.z <= 1e-6 && Math.hypot(q.vx, q.vy) < PASS_PHYSICS.STOP_SPEED_YD) break;
+  }
+  return out;
+}
+
+/**
+ * The defenders of a physical pass's flight who reach a point of its path in time (before the receiver or the runner
+ * takes it): the earliest INTERCEPT.MAX_RUNNERS run there. A keeper only inside his own box.
+ */
+function planInterceptRuns(s: GameState, pass: PassState): InterceptRun[] {
+  const passerTeam = passerTeamOf(s, pass);
+  if (!passerTeam || !s.ball) return [];
+  const path = physicalPassPath(s);
+  if (path.length === 0) return [];
+  const mateId = pass.kind === 'through' ? pass.intendedRunnerId : pass.toId;
+  const mate = mateId !== null ? s.players.find(p => p.id === mateId) : undefined;
+  let cutoff = Infinity;
+  if (mate) {
+    const reach = pass.kind === 'through' ? PASS_PHYSICS.MOVING_TOUCH_YD : receiveReach(mate);
+    const m = interceptPoint(path, { x: mate.x, y: mate.y, speed: chaseSprintSpeed(mate), reach, reaction: 0, maxZ: reachHeight(mate.role === 'GK') });
+    if (m) cutoff = m.t;
+  }
+  const beaten = new Set(pass.beaten ?? []);
+  const runs: InterceptRun[] = [];
+  for (const p of s.players) {
+    if (p.team === passerTeam || beaten.has(p.id) || isPlayerInRecovery(p)) continue;
+    const dec = p.decisionMemory?.decision;
+    const running = dec?.type === 'chase_loose_ball' && !!dec.intercept;
+    const antMult = DECISION_FLAGS.ANTICIPATION_PRESS ? anticipationInterceptMult(p) : 1;
+    const plan = interceptPoint(path, {
+      x: p.x, y: p.y, speed: chaseSprintSpeed(p), reach: interceptReach(p),
+      reaction: running ? 0 : INTERCEPT.REACTION_S / antMult, maxZ: reachHeight(p.role === 'GK'),
+    }, cutoff);
+    if (!plan) continue;
+    if (p.role === 'GK' && !isInGoalScoreArea(plan.x, plan.y, ownGoalXOf(p))) continue;
+    runs.push({ playerId: p.id, team: p.team, x: plan.x, y: plan.y, z: plan.z, t: plan.t, margin: plan.margin });
+  }
+  runs.sort((a, b) => a.t - b.t || b.margin - a.margin);
+  return runs.slice(0, INTERCEPT.MAX_RUNNERS);
+}
+
+/**
+ * A defender touched a physical pass on its way (no dice for the touch to happen, only for what it does): he controls
+ * it, clears it, deflects it, or it runs past him.
+ */
+function resolveInterceptTouch(s: GameState, pass: PassState, d: GamePlayer): TickResult {
+  const b = s.ball!;
+  const speedYd = Math.hypot(b.vx, b.vy);
+  const reach = interceptReach(d);
+  // How far from his body the ball passes: its closest approach on its line, not where it entered his reach.
+  const across = speedYd > 1e-3 ? Math.abs(((d.x - b.x) * b.vy - (d.y - b.y) * b.vx) / speedYd) : Math.hypot(b.x - d.x, b.y - d.y);
+  const offset = Math.min(1, across / Math.max(0.1, reach));
+  const keeperHands = d.role === 'GK' && isInGoalScoreArea(b.x, b.y, ownGoalXOf(d));
+  const fromOwnGoal = Math.abs(b.x - ownGoalXOf(d));
+  const chances = touchChances({
+    touch: d.runtimeStats.withBall.firstTouch, offset, speedMs: speedYd / YD_PER_M_PASS, z: b.z, keeperHands, fromOwnGoal,
+  });
+  const outcome = resolveTouch(chances, matchRandom);
+  const kind: 'regular' | 'through' = pass.kind === 'through' ? 'through' : 'regular';
+  s = { ...s, players: applyStaminaCost(s.players, d.id, 'interception') };
+  const dNow = s.players.find(p => p.id === d.id) ?? d;
+  gameBus.emit('interceptionTouch', {
+    player: d.id, team: d.team, passerId: pass.fromId, kind, outcome,
+    speedMs: speedYd / YD_PER_M_PASS, zM: b.z / YD_PER_M_PASS, offset, control: chances.control, flight: b.elapsed,
+  });
+  gameBus.emit('interception', { player: d.id, success: outcome !== 'miss', chance: chances.control });
+  if (isDebugEnabled()) {
+    const verb = outcome === 'control' ? 'cuts out' : outcome === 'clear' ? 'clears' : outcome === 'deflect' ? 'deflects' : 'misses';
+    debugLog('interception', `${d.name} ${verb} the pass (${(speedYd / YD_PER_M_PASS).toFixed(1)} m/s, ${(b.z / YD_PER_M_PASS).toFixed(1)} m, offset ${offset.toFixed(2)}, control ${(chances.control * 100).toFixed(0)}%)`, { playerId: d.id });
+  }
+  if (outcome === 'miss') {
+    // The ball runs past him: he can't touch it again; it flies on.
+    const ph = pass.physics!;
+    const next: PassState = { ...pass, beaten: [...(pass.beaten ?? []), d.id], t: Math.min(0.99, b.elapsed / Math.max(0.05, ph.T)) };
+    return { state: { ...s, pass: next }, passCompleted: false, tackled: false, goalScored: null };
+  }
+  if (kind === 'through') gameBus.emit('throughBallLostInFlight', { player: pass.fromId, interceptorId: d.id });
+  else gameBus.emit('passFailed', { player: pass.fromId, toId: pass.toId ?? pass.fromId });
+  if (outcome === 'deflect') {
+    const dir = scatterDirection(b.vx, b.vy, INTERCEPT.DEFLECT_MAX_DEG);
+    const v = speedYd * INTERCEPT.DEFLECT_KEEP;
+    return { state: runLoose(s, dNow, b.x, b.y, dir.x * v, dir.y * v, 'deflection', true), passCompleted: false, tackled: true, goalScored: null };
+  }
+  if (outcome === 'clear') {
+    const dist = INTERCEPT.CLEAR_MIN_YD + matchRandom() * INTERCEPT.CLEAR_SPAN_YD;
+    return { state: clearanceBall({ ...s, pass: null }, dNow, { x: b.x, y: b.y }, dist, matchRandom), passCompleted: false, tackled: true, goalScored: null };
+  }
+  const prevHolderId = s.ballHolderId;
+  const players = s.players.map(p => (p.id === d.id ? { ...p, x: b.x, y: b.y } : p));
+  return {
+    state: onPossessionTransfer({ ...s, players, pass: null, ballHolderId: d.id, possessionTime: 0, lastPasserId: null }, prevHolderId),
+    passCompleted: false, tackled: true, goalScored: null,
+  };
+}
+
 /** Report a physical launch (`Statistics.ts` per type, `/lab`, `fmTargets.ts`). */
 function emitPassLaunched(holder: GamePlayer, p: PassState): void {
   const ph = p.physics;
@@ -4571,7 +4691,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   if (!chaseTarget && THROUGH_BALL_CONFIG.RACE_LOSS_RECOVERY > 0) {
     const losers = s.players.filter(p => {
       const d = p.decisionMemory?.decision;
-      return p.team !== holder.team && d?.type === 'chase_loose_ball' && !d.meet;
+      return p.team !== holder.team && d?.type === 'chase_loose_ball' && !d.meet && !d.intercept;
     });
     if (losers.length > 0) {
       const ids = new Set(losers.map(p => p.id));
@@ -4597,6 +4717,10 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     return { x: b.x + ux * a, y: b.y + uy * a };
   };
 
+  // Stage 5 (`interception.md`): the defenders who reach a point of a physical pass's path in time run to it.
+  const interceptRuns = s.pass && physicalInterceptionOn() && isPhysicalGroundPass(s, s.pass) ? planInterceptRuns(s, s.pass) : [];
+  const runOf = new Map(interceptRuns.map(r => [r.playerId, r]));
+
   // Decision telemetry (`decisions.md`): only while somebody listens. The situation (the ball's third and channel, the
   // holder's pressure) is computed once per tick; no dice, nothing here feeds back into a decision.
   const telemetry = gameBus.has('holderDecision') || gameBus.has('offBallDecision') || gameBus.has('defensiveDecision');
@@ -4617,6 +4741,14 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         : 'TEAM_WITHOUT_BALL';
 
     const mem = p.decisionMemory ?? EMPTY_DECISION_MEMORY;
+
+    const run = runOf.get(p.id);
+    if (run && !isBallHolder) {
+      const cut: PlayerDecision = { type: 'chase_loose_ball', toX: run.x, toY: run.y, intercept: true };
+      newDecisions[p.id] = cut;
+      updatedMemory[p.id] = { path: currentPath, decision: cut, commitTicks: COMMIT_TICKS.chase_loose_ball };
+      continue;
+    }
 
     // ── Pin chasers during through-ball flight + loose-ball wait ──────────
     // Override anything else: if this player was committed to chase, refresh
@@ -4741,6 +4873,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   });
 
   s = { ...s, decisions: newDecisions, players: playersWithMemory };
+  if (interceptRuns.length > 0) s = { ...s, interceptRuns };
+  else if (s.interceptRuns) s = { ...s, interceptRuns: undefined };
 
   if (shouldDrainStamina(s)) {
     const weatherDrain = weatherEffectOf(s.weather).drain;
@@ -5458,7 +5592,9 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // scaled by how close they are to the passing lane (perpDist) and pass speed.
   // For through balls the "target" is the landing position, not a player.
   // High balls (cross / long ball) fly over everyone — contested only where they land.
-  if (s.tackleCooldown === 0 && !aerialPass && !overHeads) {
+  // Stage 5: a physical ground pass has no interception dice — defenders touch the ball on its path (below).
+  const physCut = physGround && physicalInterceptionOn();
+  if (s.tackleCooldown === 0 && !aerialPass && !overHeads && !physCut) {
     const ballPos      = getBallPos(s);
     const targetPos    = activePass.kind === 'through' || activePass.toId === null || activePass.miss
       ? { x: activePass.toX, y: activePass.toY }
@@ -5534,7 +5670,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     const catchers: PassCatcher[] = [];
     if (receiver) {
       catchers.push({ id: receiver.id, x: receiver.x, y: receiver.y, reach: receiveReach(receiver), keeper: receiver.role === 'GK' });
-    } else if (through) {
+    }
+    if (through) {
       // Into space: the first player whose reach the ball passes through ends the flight (it runs loose to him).
       for (const p of s.players) {
         if (p.id === activePass.fromId || isPlayerInRecovery(p)) continue;
@@ -5544,9 +5681,22 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         catchers.push({ id: p.id, x: p.x, y: p.y, reach: PASS_PHYSICS.MOVING_TOUCH_YD, keeper: p.role === 'GK' });
       }
     }
+    if (physCut) {
+      // Stage 5 (`interception.md`): every defender the ball passes within reach of touches it.
+      const passerTeam = passerTeamOf(s, activePass);
+      const beaten = new Set(activePass.beaten ?? []);
+      for (const p of s.players) {
+        if (p.team === passerTeam || beaten.has(p.id) || isPlayerInRecovery(p)) continue;
+        catchers.push({ id: p.id, x: p.x, y: p.y, reach: interceptReach(p), keeper: p.role === 'GK' });
+      }
+    }
     const st = advancePassBall(s, dt, catchers);
     s = { ...s, ball: st.ball };
     physContact = st.contactId;
+    const toucher = physCut && st.contactId !== null ? s.players.find(p => p.id === st.contactId) : undefined;
+    if (toucher && toucher.team !== passerTeamOf(s, activePass)) {
+      return resolveInterceptTouch(s, activePass, toucher);
+    }
     const b = st.ball;
     if (through) {
       const h = Math.hypot(ph.vx, ph.vy) || 1;

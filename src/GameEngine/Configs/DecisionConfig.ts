@@ -68,6 +68,9 @@ export interface DecisionFlags {
   /** Stage 4 of the rebuild (`pass-physics.md`): passes are launched with FM's speed and loft by type and distance, the
    *  passer's error on the 3D vector; the ball arrives where and when the physics takes it (needs `BALL_3D`). */
   PASS_PHYSICS: boolean;
+  /** Stage 5 of the rebuild (`interception.md` → "Stage 5"): no interception dice for a physical pass; a defender who
+   *  reaches a point of its path in time and at a playable height touches it (control, clearance, deflection, miss). */
+  PHYSICAL_INTERCEPTION: boolean;
   /** Stage 18 (`highlights.md`): the highlight layer (observation only: marks the lances, never changes the play). */
   HIGHLIGHTS: boolean;
 }
@@ -100,6 +103,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   FM_XG: true,
   BALL_3D: true,
   PASS_PHYSICS: true,
+  PHYSICAL_INTERCEPTION: true,
   HIGHLIGHTS: true,
 };
 

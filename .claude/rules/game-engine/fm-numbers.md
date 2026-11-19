@@ -273,3 +273,29 @@ lances. Os níveis se contêm (`highlights.md`); segundos = tempo de exibição 
   claras, poucos pênaltis e vermelhos) o nível principal daria ~5–6 lances (~1,7 min); os "15–25 lances principais" do
   FM ficam mais perto do nosso nível estendido (chutes, defesas, escanteios, faltas perigosas, cartões).
 - Custo: o `simStep` por passo e o rastreador ficaram dentro do ruído do tempo por partida (PC carregado).
+
+## Etapa 5: interceptação física (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (90 minutos de física, formações da IA,
+equilibrado). Antes = `DECISION_OVERRIDES='{"PHYSICAL_INTERCEPTION":false}'`, idêntico ao branch antes da etapa (mesmos
+números com as mesmas sementes). Regras em `interception.md` → "Stage 5". Nada calibrado.
+
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Interceptações (domínio + afastar + desvio) | 29,3 | 129,8 (domínio + afastar 72) | 59 |
+| … por minuto de jogo vivo | 0,31 | 1,37 | ~0,76 (978 passes a 0,21/s) |
+| Toques de defensor no passe em voo: domínio / afastou / desviou / passou | — | 38 / 9,5 / 38 / 15% (152) | — |
+| Perdas depois de um passe: no voo / depois | 56 / 44% (107) | 70 / 30% (159) | 56 / 44% |
+| Passe comum ao receptor 0–5 / 5–9 / 9–13 / 13–18 / 18–22 / 22–27 m | 97 / 97 / 98 / 96 / 94 / 97% | 94 / 92 / 90 / 90 / 87 / 80% | (todos) 94 / 92 / 90 / 85 / 87 / 79% |
+| Todos os passes ao receptor (adversário) | 81,0% (13,7%) | 76,3% (17,4%) | 82% (13,5%) |
+| No chão / alto | 89,3 / 21,3% | 81,7 / 22,6% | 92 / 31% |
+| Bola em profundidade ao corredor | 57,4% | 40,4% | — |
+| Passes (todos os tipos) / acerto oficial | 787 / 81,3% | 921 / 75,7% | 978 / 86% |
+| Desarmes ganhos | 45,5 | 68,3 | 17 |
+| Gols / chutes / xG | 8,0 / 33,2 / 10,8 | 6,8 / 27,4 / 7,6 | 1,5 / 21,5 / 3,3 |
+
+- O passe curto ao pé agora erra como no FM por faixa (antes quase nunca era cortado: o dado do corredor só pegava quem
+  estava na linha). Os cortes passam do dobro do FM; a forma defensiva (etapa 15) e a escolha do portador (etapa 8)
+  ainda deixam mais passes por dentro dos defensores.
+- Mais desarmes: os desvios viram bola solta disputada.
+- Custo: ~14 s por partida contra ~13 s antes (o caminho previsto da bola a cada tick do passe em voo).

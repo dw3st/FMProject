@@ -604,7 +604,12 @@ export interface PassState {
   setPieceVariant?: 'box' | 'direct';
   /** Through balls (stage 4): yards the landing point is beyond the aimed cell along the pass (negative = short). */
   overhit?: number;
+  /** Stage 5 (`interception.md`): defenders the ball already ran past (their touch missed); they can't touch it again. */
+  beaten?: number[];
 }
+
+/** Stage 5 (`interception.md`): a defender running to the point of a physical pass's path he reaches in time. */
+export interface InterceptRun { playerId: number; team: TeamId; x: number; y: number; z: number; t: number; margin: number }
 
 /**
  * What put the ball loose: a through ball (default — through-ball stats), a high ball nobody
@@ -827,6 +832,11 @@ export interface GameState {
    * `shot` and `looseBall` by `syncBall` after every tick (the loose ball moves it itself). Absent with `BALL_3D` off.
    */
   ball?: BallState;
+  /**
+   * Stage 5 (`interception.md`): the defenders running to cut the physical pass in flight this tick (their point on the
+   * ball's path, the ball's time to it and his spare time). Observation for `/test`; absent with no pass.
+   */
+  interceptRuns?: InterceptRun[];
   /** Stage 4 (`movement.md`): each side's back line while it defends (robust mean + hold / step-up / drop). */
   backLine?: Partial<Record<TeamId, BackLineState>>;
   score: { A: number; B: number };

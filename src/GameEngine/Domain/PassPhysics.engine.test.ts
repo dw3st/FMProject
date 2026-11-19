@@ -3,6 +3,7 @@ import { tickState } from "@/GameEngine/Domain/gameState";
 import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { setDecisionFlags } from "@/GameEngine/Configs/DecisionConfig";
+import { forceMatchRandom } from "@/GameEngine/Infrastructure/MatchRng";
 import { BALL_PHYSICS } from "@/GameEngine/Configs/BallPhysicsConfig";
 import type { GameState } from "@/GameEngine/types";
 
@@ -50,11 +51,14 @@ describe("physical pass", () => {
   });
 
   test("an off-target pass runs past the receiver as a loose ball", () => {
-    setDecisionFlags();
+    // The pressing defender stands next to the passer: with the physical interception (stage 5) he may touch the
+    // ball on its way; this test is about the launch error, so the old interception roll (forced to fail) stands in.
+    setDecisionFlags({ PHYSICAL_INTERCEPTION: false });
+    forceMatchRandom(() => 0.99);
     const missed: number[] = [];
     const off = gameBus.on("passMissed", e => missed.push(e.player));
     let r;
-    try { r = playPass(start("pass-physics-off-target")); } finally { off(); }
+    try { r = playPass(start("pass-physics-off-target")); } finally { off(); setDecisionFlags(); forceMatchRandom(null); }
     expect(missed).toEqual([1]);
     expect(r.s.looseBall?.cause).toBe("misplaced");
     expect(Math.hypot(r.s.looseBall!.vx, r.s.looseBall!.vy)).toBeGreaterThan(3);

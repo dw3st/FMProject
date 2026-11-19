@@ -79,7 +79,19 @@ export interface FmTargetTotals {
   launchVz: number[][];
   flight: number[][];
   landingErr: Record<LandingGroup, number[]>;
+  /**
+   * Stage 5 (`interception.md`): passes whose next holder was an opponent, split like report 7 by the time from the
+   * kick: early (within FM's expected flight 0.43 + 0.05·d s + one FM tick, read as an in-flight interception) or late
+   * (a loose ball, or lost after reception).
+   */
+  lossEarly: number;
+  lossLate: number;
 }
+
+/** R7: share of the possession losses after a pass that happen in flight (early) against later (%). */
+export const FM_LOSS_SPLIT = { early: 56, late: 44 } as const;
+/** One FM decision tick (s): ticks ≈ 1.8 + 0.21·d against t ≈ 0.43 + 0.05·d s gives ~0.24 s. */
+const FM_TICK_S = 0.24;
 
 /** FM's launch-vz bands (m/s, report 7) and the share to the intended receiver in each. */
 export const VZ_LABELS = ["≤1", "1–3", "3–6", "6–10", ">10"] as const;
@@ -127,6 +139,7 @@ export function emptyFmTargets(): FmTargetTotals {
     ballPeak: { cross: [], corner: [], long: [] }, ballContact: { cross: [], corner: [], long: [] }, ballAirSeconds: 0,
     passVz: VZ_LABELS.map(o3), launchSpeed: LAUNCH_LABELS.map(() => []), launchVz: LAUNCH_LABELS.map(() => []),
     flight: FLIGHT_LABELS.map(() => []), landingErr: { cross: [], corner: [], long: [], lofted: [] },
+    lossEarly: 0, lossLate: 0,
   };
 }
 
@@ -160,6 +173,7 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
   src.launchVz?.forEach((v, i) => dst.launchVz[i]!.push(...v));
   src.flight?.forEach((v, i) => dst.flight[i]!.push(...v));
   for (const g of LANDING_GROUPS) dst.landingErr[g].push(...(src.landingErr?.[g] ?? []));
+  dst.lossEarly += src.lossEarly ?? 0; dst.lossLate += src.lossLate ?? 0;
 }
 
 const ballGroupOf = (kind: string): BallGroup | null =>
@@ -222,6 +236,10 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
     bump(acc.passPressure[pressureBand(pending.pressure)]!);
     bump(acc.passKind[pending.kind] ??= o3());
     if (pending.kind === 'regular') bump(acc.passBandRegular[bandOfYd(pending.dist)]!);
+    if (k === 2) {
+      const expected = 0.43 + 0.05 * (pending.dist / YD) + FM_TICK_S;
+      if (realT - pending.t0 <= expected) acc.lossEarly++; else acc.lossLate++;
+    }
     if (pending.vzM !== null) {
       bump(acc.passVz[vzBand(pending.vzM)]!);
       if (k === 0) acc.flight[flightBand(pending.dist / YD)]!.push(realT - pending.t0);

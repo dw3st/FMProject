@@ -264,6 +264,11 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   passGround: number; passDriven: number; passChip: number; passHigh: number;
   passThroughLow: number; passThroughHigh: number; passHeader: number;
   passLaunchSpeedSum: number; passLaunchN: number;
+  /**
+   * Stage 5 (`interception.md`), by the defending team: touches on a physical pass in flight and what they did
+   * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
+   */
+  cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -361,6 +366,7 @@ type TeamFlags = {
   cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
   passGround: number; passDriven: number; passChip: number; passHigh: number; passThroughLow: number; passThroughHigh: number; passHeader: number;
   passLaunchSpeedSum: number; passLaunchN: number;
+  cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -375,6 +381,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
   highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
   passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
+  cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -742,6 +749,15 @@ gameBus.on('passLaunched', e => {
 });
 
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
+// ── Stage 5: physical interception (`interception.md`) ───────────────────────────
+gameBus.on('interceptionTouch', e => {
+  const f = teamFlags[e.team];
+  f.cutTouches++; f.cutSpeedSum += e.speedMs;
+  if (e.outcome === 'control') f.cutControls++;
+  else if (e.outcome === 'clear') f.cutClears++;
+  else if (e.outcome === 'deflect') f.cutDeflects++;
+  else f.cutMisses++;
+});
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
 gameBus.on('holderStep', e => {
