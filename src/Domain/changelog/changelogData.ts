@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.27",
     date: "2026-11-19",
-    time: "23:00",
+    time: "09:45",
     items: [
       { tab: "match", pt: "A bola agora rola: o passe forte demais pode sair pela linha, o domínio pode escapar, a bola desvia em quem corta e o chute pode bater no zagueiro.", en: "The ball now rolls: a pass hit too hard can go out, a first touch can get away, the ball deflects off whoever blocks it and a shot can hit a defender." },
       { tab: "match", pt: "Defesa mais organizada: a linha sobe e recua junta, o segundo marcador fica de longe fechando o caminho e um companheiro vem curto quando quem tem a bola está apertado.", en: "A better organised defence: the line steps up and drops together, the second presser stays off closing the route and a teammate comes short when the man on the ball is pressed." },
