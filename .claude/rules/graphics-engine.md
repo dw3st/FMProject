@@ -620,3 +620,10 @@ Report do usuário (amontoado feio em alguns jogos), opção C de três renderiz
 - Testes: `bun test src/GraficsEngine/markerSpread.test.ts`.
 - Limitações: conferido em renderização real só no modo bonecos e parado no escanteio; no pixel art o encolhimento escala o boneco fora do zoom inteiro.
 
+
+## Real ball height (engine rebuild stage 3)
+
+`ballHeight.ts` draws `state.ball.z` (the 3D ball, `game-engine/ball-3d.md`) when the state has one: the real parabola
+between two steps of the same flight, the real bounces (the drawn `bounceHeight` hops are off). The illustrative arcs
+stay for states without the 3D ball and for the remote modes (no height in their frames yet). `/test` overlay
+**Ball 3D**: predicted path (`ballFlightPath.ts`), peak, landing point.

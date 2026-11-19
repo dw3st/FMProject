@@ -1,3 +1,4 @@
+import { DECISION_FLAGS } from "@/GameEngine/Configs/DecisionConfig";
 import { describe, expect, test, afterEach } from "bun:test";
 import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
@@ -89,8 +90,10 @@ describe("high ball flight", () => {
     s = place(place(s, lw.id, 100, 8), rb.id, 101, 8);
     s = { ...s, ballHolderId: lw.id };
     const resolved = collect("aerialResolved");
-    // error 0, block roll 0 (< BLOCK_CHANCE), no corner (0.99), spread 0.5, distance 0.5
-    s = startAerialBall(s, "cross", { x: 104, y: 37 }, null, seq(1, 0, 0, 0.99, 0.5, 0.5));
+    // error 0 (the physical launch, stage 4, draws two normal pairs; the old path one), block roll 0 (< BLOCK_CHANCE),
+    // no corner (0.99), spread 0.5, distance 0.5
+    const err = DECISION_FLAGS.PASS_PHYSICS && DECISION_FLAGS.BALL_3D ? [1, 0, 1, 0] : [1, 0];
+    s = startAerialBall(s, "cross", { x: 104, y: 37 }, null, seq(...err, 0, 0.99, 0.5, 0.5));
     resolved.off();
     expect(resolved.events[0]!.outcome).toBe("blocked");
     expect(s.pass?.kind).toBe("clearance");

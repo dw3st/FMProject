@@ -26,13 +26,15 @@ export interface WeatherEffect {
   drain: number;
   /** Injury risk per minute and per contact. */
   injury: number;
+  /** Bounce of the 3D ball (restitution, `ball-3d.md`): wet or snowy grass takes the pace off. */
+  bounce: number;
 }
 
 /** Distance (yards from the goal line) beyond which a shot is a long shot (outside the box). */
 export const LONG_SHOT_DISTANCE = 18;
 
 export const NEUTRAL_WEATHER: Readonly<WeatherEffect> = Object.freeze({
-  control: 1, looseDecel: 1, looseSpeed: 1, carrySpeed: 1, aerialError: 1, gkClaim: 1, longShot: 1, drain: 1, injury: 1,
+  control: 1, looseDecel: 1, looseSpeed: 1, carrySpeed: 1, aerialError: 1, gkClaim: 1, longShot: 1, drain: 1, injury: 1, bounce: 1,
 });
 
 /**
@@ -40,8 +42,8 @@ export const NEUTRAL_WEATHER: Readonly<WeatherEffect> = Object.freeze({
  * measurement script patches it in process (`WEATHER_OVERRIDES`). Weathers not listed are neutral.
  */
 export const WEATHER_EFFECTS: Partial<Record<MatchWeather, Partial<WeatherEffect>>> = {
-  rain: { control: 0.92, looseDecel: 0.8, gkClaim: 0.9 },
-  snow: { looseDecel: 1.2, looseSpeed: 0.9, carrySpeed: 0.95, control: 0.94 },
+  rain: { control: 0.92, looseDecel: 0.8, gkClaim: 0.9, bounce: 0.8 },
+  snow: { looseDecel: 1.2, looseSpeed: 0.9, carrySpeed: 0.95, control: 0.94, bounce: 0.6 },
   wind: { aerialError: 3, longShot: 0.95 },
   hot: { drain: 1.08 },
   cold: { injury: 1.1 },

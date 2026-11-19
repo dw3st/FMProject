@@ -532,3 +532,9 @@ A sonda de lances (Premier, estilo equilibrado, 900 jogos) dava +8% de chutes; c
 ## FM numbers (stage 4b)
 
 With `PASS_ERROR` on a pass to feet has a launch error (technique margin, distance, pressure) and can miss the receiver and run loose; beyond 30 yd it is lofted and contested; the chooser multiplies the pass quality by the estimated keep rate. See `fm-numbers.md`.
+
+## Physical pass (engine rebuild stage 4)
+
+With `PASS_PHYSICS` the pass is a physical launch (FM's speed 7 + 0.45·d m/s, vz by distance, the error on the vector)
+that arrives where the ball reaches the receiver, and up to `LOFT_YD` the lane score is read from arrival times against
+the quickest defender (`arrivalLaneScore`) instead of the corridor clearance. See `pass-physics.md`.

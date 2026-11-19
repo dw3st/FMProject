@@ -12,9 +12,10 @@
 import { writeFileSync } from "node:fs";
 import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
-  BAND_LABELS, CONDITION_MINUTES, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
+  BALL_GROUPS, BAND_LABELS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
-  emptyFmTargets, fmTargetRows, longShotsOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
+  FLIGHT_LABELS, FM_FLIGHT_S, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
+  emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
 const args = process.argv.slice(2);
@@ -52,13 +53,24 @@ const f2 = (x: number) => x.toFixed(2);
 const share = (o: Outcome3) => { const t = o[0] + o[1] + o[2]; return t ? `${f1(pct(o))}% (n ${t}, opp ${f1((100 * o[2]) / t)}%)` : "—"; };
 console.log(`\n${league}: ${n} matches, ${f1(ms / n)} ms/match, ${f1(fm.realSeconds / n)} live s/match`);
 console.log("\n── FM targets per match, both teams (ours × FM; R9 official stats) ──");
-for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShotsOf(fm) / n })) {
+for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShotsOf(fm) / n, xgMedian: xgMedianOf(fm) ?? undefined })) {
   const ratio = r.ratio === null ? "" : `  ×${r.ratio.toFixed(2)}`;
   console.log(`  ${r.target.label.padEnd(24)} ${r.ours.padStart(8)}   FM ${r.fm.padStart(7)} (${r.target.confidence})${ratio}`);
+}
+{
+  const tot = fm.shotXgHist.reduce((a, b) => a + b, 0) || 1;
+  const q = (p: number) => { let c = 0; for (let i = 0; i < fm.shotXgHist.length; i++) { c += fm.shotXgHist[i]!; if (c >= p * tot) return (i + 0.5) / fm.shotXgHist.length; } return 1; };
+  console.log(`  chances (xG ≥ 0.15) ${f2(counts.chances / n)} · clear-cut (≥ 0.30) ${f2(counts.clearChances / n)} per match · shot xG p25 ${f2(q(0.25))} · median ${f2(q(0.5))} · p90 ${f2(q(0.9))} (FM median 0.03, p90 0.17)`);
 }
 console.log("\n── Condition (outfield median energy) by minute ──");
 console.log("  " + CONDITION_MINUTES.map((m, i) => `${m}' ${f1(fm.condition[i]!.sum / Math.max(1, fm.condition[i]!.n))} (FM ${FM_CONDITION[i]})`).join(" · "));
 console.log(`  keepers at the end ${f1(fm.keeperEnd.sum / Math.max(1, fm.keeperEnd.n))} (FM ${FM_KEEPER_END})`);
+console.log("\n── The 3D ball (stage 3; R9 §3: median peak / contact height, m) ──");
+for (const g of BALL_GROUPS) {
+  const pk = fm.ballPeak?.[g] ?? [], ct = fm.ballContact?.[g] ?? [];
+  console.log(`  ${g.padEnd(7)} n ${String(pk.length).padStart(5)}  peak ${f2(median(pk))} m (FM ${FM_BALL[g].peak})  contact ${f2(median(ct))} m (FM ${FM_BALL[g].contact})`);
+}
+console.log(`  ball in the air ${f1((fm.ballAirSeconds ?? 0) / Math.max(1, n))} s per match`);
 console.log("\n── Passes to the intended receiver (FM target, R7) ──");
 BAND_LABELS.forEach((l, i) => console.log(`  ${l.padEnd(6)} m  ${share(fm.passBand[i]!).padEnd(34)} FM ${FM_PASS_BAND[i]}%`));
 BAND_LABELS.forEach((l, i) => console.log(`  regular ${l.padEnd(6)} m  ${share(fm.passBandRegular[i]!)}`));
@@ -69,6 +81,16 @@ console.log(`  lofted    ${share(fm.passLoft.lofted).padEnd(34)} FM ${FM_PASS_OV
 PRESSURE_LABELS.forEach((l, i) => console.log(`  pr ${l.padEnd(6)} ${share(fm.passPressure[i]!).padEnd(34)} FM ${FM_PASS_PRESSURE[i]}%${i === 0 ? "*" : ""}`));
 const passesPerMatch = (fm.passAll[0] + fm.passAll[1] + fm.passAll[2]) / n;
 console.log(`  passes / match ${f1(passesPerMatch)} (${f2(passesPerMatch / (fm.realSeconds / n))} per live s; FM ~0.21)`);
+
+console.log("\n── The physical pass (stage 4; R6 launch, R7 flight and vz bands, R9 §3 landing) ──");
+const pctl = (a: number[], q: number) => { if (!a.length) return NaN; const b = [...a].sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.floor(q * b.length))]!; };
+LAUNCH_LABELS.forEach((l, i) => console.log(`  launch ${l.padEnd(6)} m  n ${String(fm.launchSpeed?.[i]?.length ?? 0).padStart(5)}  |v| ${f1(median(fm.launchSpeed?.[i] ?? []))} m/s (FM ${FM_LAUNCH.speed[i]})  vz ${f2(median(fm.launchVz?.[i] ?? []))} (FM ${FM_LAUNCH.vz[i]})`));
+VZ_LABELS.forEach((l, i) => console.log(`  vz ${l.padEnd(5)} m/s  ${share(fm.passVz?.[i] ?? [0, 0, 0]).padEnd(34)} FM ${FM_PASS_VZ[i]}%`));
+FLIGHT_LABELS.forEach((l, i) => console.log(`  flight ${l.padEnd(6)} m  n ${String(fm.flight?.[i]?.length ?? 0).padStart(5)}  ${f2(median(fm.flight?.[i] ?? []))} s (FM ~${FM_FLIGHT_S[i]})`));
+for (const g of LANDING_GROUPS) {
+  const a = fm.landingErr?.[g] ?? [];
+  console.log(`  landing vs aim ${g.padEnd(7)} n ${String(a.length).padStart(5)}  median ${f1(median(a))} m, p90 ${f1(pctl(a, 0.9))} (FM ${FM_LANDING[g][0]}, ${FM_LANDING[g][1]})`);
+}
 
 console.log("\n── Holder decisions ──");
 const mix = (r: Record<string, number>) => { const t = HOLDER_CATS.reduce((a, k) => a + r[k]!, 0) || 1; return HOLDER_CATS.map(k => `${k} ${f1((100 * r[k]!) / t)}`).join(" · "); };
@@ -102,6 +124,11 @@ console.log("  FM step DEF 4.4 · MID 6 · FWD 7 yd (target − position: in 9.8
 console.log("\n── Shots (distance to the goal mouth, yd) ──");
 console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) / Math.max(1, fm.shots))}%`).join(" · ") + "   FM: none beyond ~33 yd");
 console.log("\n── World / match ──");
-console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball")).map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
+console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
 // Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.
 if (world.ballNearTicks) console.log(`  crowd 3+ defenders ≤ 8 yd: ${(100 * world.ballCrowdTicks! / world.ballNearTicks).toFixed(1)}% of live ticks (main ~5.4–5.8%)`);
+// Stage 18 (`highlights.md`): lances per match by level and the share of the live play they cover (FM shows ~15–25 main).
+if (world.liveSeconds) {
+  const lv = ["Main", "Extended", "Full"] as const;
+  console.log("  lances: " + lv.map(l => `${l.toLowerCase()} ${f1(world[`highlights${l}`]! / n)} (${f1(world[`highlightSeconds${l}`]! / n)} s, ${f1((100 * world[`highlightSeconds${l}`]!) / world.liveSeconds!)}%)`).join(" · "));
+}

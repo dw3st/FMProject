@@ -561,6 +561,14 @@ export interface PassState {
   /** A lofted pass (`fm-numbers.md` → pass error): flies over the lane, contested where it lands. */
   lofted?: boolean;
   /**
+   * Stage 4 (`pass-physics.md`): the launch of a physical pass. The 3D ball leaves the passer at (vx, vy, vz) from z0
+   * (yd, yd/s), passer's error included; `T` is the expected flight to the target (s), only an estimate for the readers
+   * of `t` (the ball arrives where and when the physics takes it); (aimX, aimY) is where he meant it to go.
+   */
+  physics?: PassPhysicsLaunch;
+  /** A headed lay-off (knock-down) of a high ball (`aerial.md`). */
+  header?: boolean;
+  /**
    * Regular pass whose launch error missed the receiver's reach (`fm-numbers.md`): the ball flies to (toX, toY) and
    * runs loose from there at (vx, vy) yd/s.
    */
@@ -628,7 +636,7 @@ export interface BackLineState {
  * `state.pass` is null during this phase. `ballHolderId` continues to reference
  * the last toucher (the passer) for stat attribution and team-with-ball checks.
  */
-interface LooseBallState {
+export interface LooseBallState {
   /** Where the ball is right now (yards). Updated each tick when velocity > 0. */
   x: number;
   y: number;
@@ -659,6 +667,54 @@ interface LooseBallState {
   offsideIds?: number[];
   /** Stage 4: why it runs loose (absent = the older causes, e.g. a through ball landing on target). */
   cause?: LooseBallCause;
+}
+
+/** Kind of pass by its launch (stage 4, `pass-physics.md`). */
+export type PassType =
+  | 'ground' | 'driven' | 'chip' | 'high'
+  | 'through_low' | 'through_high'
+  | 'cross' | 'corner' | 'long' | 'clearance' | 'header';
+
+export interface PassPhysicsLaunch {
+  vx: number; vy: number; vz: number; z0: number;
+  /** Where it was kicked from (yd). */
+  ox: number; oy: number;
+  T: number;
+  type: PassType;
+  aimX: number; aimY: number;
+  /** Launch speed |v| (yd/s) and error factor, for the statistics. */
+  speed: number;
+}
+
+/** Which part of the play the 3D ball belongs to. */
+export type BallPhase = 'held' | 'pass' | 'shot' | 'loose';
+/** Kind of flight, for the statistics (`ballFlight` event). */
+export type BallFlightKind = 'ground' | 'lofted' | 'cross' | 'corner' | 'long_ball' | 'clearance' | 'shot' | 'header' | 'loose';
+
+export interface BallState {
+  x: number; y: number; z: number;
+  /** Velocity, yards per second of the sim step. */
+  vx: number; vy: number; vz: number;
+  phase: BallPhase;
+  /** The pass / shot / loose ball this ball belongs to (`syncBall` starts a new flight when it changes). */
+  key: string;
+  kind: BallFlightKind;
+  /** Team that last played it. */
+  team: TeamId | null;
+  /** Highest point (yd), seconds above `AIR_Z`, seconds since the phase started, bounces. */
+  peak: number;
+  air: number;
+  elapsed: number;
+  bounces: number;
+  /** Guided flights: the profile and the height it lands at. */
+  profile?: 'air' | 'ground';
+  arriveZ?: number;
+  /** Horizontal distance of the flight at launch (yd). */
+  distance: number;
+  /** A physical pass (stage 4, `pass-physics.md`): launched with its own vector, then free physics (no guidance). */
+  free?: boolean;
+  /** The phase that ended this tick (set on the tick it ended): its kind, peak and the height it ended at (yd). */
+  ended?: { kind: BallFlightKind; phase: BallPhase; peak: number; z: number };
 }
 
 export interface ShotState {
@@ -766,6 +822,11 @@ export interface GameState {
    * toucher only.
    */
   looseBall: LooseBallState | null;
+  /**
+   * The 3D ball (stage 3, `Domain/Ball3D.ts`, `.claude/rules/game-engine/ball-3d.md`): kept in step with `pass`,
+   * `shot` and `looseBall` by `syncBall` after every tick (the loose ball moves it itself). Absent with `BALL_3D` off.
+   */
+  ball?: BallState;
   /** Stage 4 (`movement.md`): each side's back line while it defends (robust mean + hold / step-up / drop). */
   backLine?: Partial<Record<TeamId, BackLineState>>;
   score: { A: number; B: number };

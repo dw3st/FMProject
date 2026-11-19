@@ -209,7 +209,7 @@ function selectOffBallIntent(ctx: OffBallContext): {
 
 /** The off-ball intent each player holds (stage 4b hysteresis); reset with the match. */
 const _offBallIntent = new Map<number, OffBallIntent>();
-export function resetOffBallIntentCache(): void { _offBallIntent.clear(); }
+export function resetOffBallIntentCache(): void { _offBallIntent.clear(); lastSupport = ''; }
 
 // ── Stage 2: Candidate generation ─────────────────────────────────────────────
 

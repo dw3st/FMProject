@@ -14,10 +14,14 @@
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import type { SetPieceGoalKind, TeamId } from '@/GameEngine/types';
 import { BALL_CLUSTER_CONFIG } from '@/GameEngine/Domain/BallCluster';
+import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
 import type { DecisionTelemetryEvent, HolderMindEvent } from '@/GameEngine/Infrastructure/EventBus';
 import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
 import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
+import { isChance, isClearChance } from '@/GameEngine/Domain/FmXg';
+import { resetHighlights, highlightTeamStats, exportHighlightState, importHighlightState, type HighlightTeamStats } from '@/GameEngine/Domain/HighlightTracker';
+import type { HighlightState } from '@/GameEngine/Domain/Highlights';
 
 /** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
 export interface GoalLogEntry {
@@ -48,6 +52,9 @@ export interface PlayerStats {
   tackles:         number;
   /** Accumulated expected goals from all shots taken. */
   xg:              number;
+  /** Stage 6 (`xg.md`): shots with xG ≥ 0.15 (chance) and ≥ 0.30 (clear-cut chance). */
+  chances:         number;
+  clearChances:    number;
   dribblesWon:     number;
   dribblesLost:    number;
   // ── Through-ball family (kept distinct from passes — failure modes differ) ──
@@ -146,7 +153,7 @@ export interface PlayerStats {
   defenseDecisions:         number;
 }
 
-export interface TeamStats extends PlayerStats {
+export interface TeamStats extends PlayerStats, HighlightTeamStats {
   /** 1 when the match went to extra time. */
   extraTimePlayed: number;
   /** 1 when this team won a penalty shootout. */
@@ -244,6 +251,19 @@ export interface TeamStats extends PlayerStats {
   passesLofted: number;
   holderHolds: number;
   holderTurns: number;
+  /**
+   * Stage 3 (`ball-3d.md`), by the team that played the ball: flights peaking above 1.2 m, seconds the ball spent in
+   * the air, and the peak heights (yd, summed, with the counts) of crosses, corners and long balls / clearances.
+   */
+  highBalls: number;
+  ballAirSeconds: number;
+  crossPeakSum: number; crossPeakN: number;
+  cornerPeakSum: number; cornerPeakN: number;
+  longPeakSum: number; longPeakN: number;
+  /** Stage 4 (`pass-physics.md`): passes by launch type, and the launch speeds (yd/s, summed) of all physical passes. */
+  passGround: number; passDriven: number; passChip: number; passHigh: number;
+  passThroughLow: number; passThroughHigh: number; passHeader: number;
+  passLaunchSpeedSum: number; passLaunchN: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -263,6 +283,8 @@ function emptyStats(): PlayerStats {
     interceptions:   0,
     tackles:         0,
     xg:              0,
+    chances:         0,
+    clearChances:    0,
     dribblesWon:     0,
     dribblesLost:    0,
     throughBallsAttempted:    0,
@@ -335,6 +357,10 @@ type TeamFlags = {
   ballsOutOfPlay: number; deflections: number; shotsBlocked: number; heavyTouches: number; lineStepUps: number; lineDrops: number;
   pressStandOffs: number; supportShort: number; anticipationReads: number;
   passesMissed: number; passesLofted: number; holderHolds: number; holderTurns: number;
+  highBalls: number; ballAirSeconds: number; crossPeakSum: number; crossPeakN: number;
+  cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
+  passGround: number; passDriven: number; passChip: number; passHigh: number; passThroughLow: number; passThroughHigh: number; passHeader: number;
+  passLaunchSpeedSum: number; passLaunchN: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -347,6 +373,8 @@ const emptyTeamFlags = (): TeamFlags => ({
   ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0,
   pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
+  highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
+  passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -414,6 +442,8 @@ gameBus.on('passCompleted', e => {
 gameBus.on('passFailed',    e => { get(e.player).passesFailed++;    notify(); });
 gameBus.on('shot',          e => {
   const s = get(e.player); s.shots++; s.xg += e.xg;
+  if (isChance(e.xg)) s.chances++;
+  if (isClearChance(e.xg)) s.clearChances++;
   if (lastHolder && lastHolder.playerId === e.player) {
     const team = playerTeam.get(e.player);
     if (team) { teamFlags[team].shotPressureSum += lastHolder.pressure; teamFlags[team].shotPressureCount++; }
@@ -687,6 +717,30 @@ gameBus.on('pressStandOff', e => { teamFlags[e.team].pressStandOffs++; });
 gameBus.on('supportShort', e => { teamFlags[e.team].supportShort++; });
 gameBus.on('anticipationRead', e => { teamFlags[e.team].anticipationReads++; });
 
+// ── Stage 3 of the rebuild: the 3D ball (`ball-3d.md`) ───────────────────────────
+gameBus.on('ballFlight', e => {
+  if (!e.team) return;
+  const f = teamFlags[e.team];
+  f.ballAirSeconds += e.air;
+  if (e.kind === 'loose') return;
+  if (e.peak >= BALL_PHYSICS.HIGH_BALL_Z) f.highBalls++;
+  if (e.kind === 'cross') { f.crossPeakSum += e.peak; f.crossPeakN++; }
+  else if (e.kind === 'corner') { f.cornerPeakSum += e.peak; f.cornerPeakN++; }
+  else if (e.kind === 'long_ball' || e.kind === 'clearance') { f.longPeakSum += e.peak; f.longPeakN++; }
+});
+
+// ── Stage 4 of the rebuild: the physical pass (`pass-physics.md`) ───────────────────
+const PASS_TYPE_FIELD: Partial<Record<import('@/GameEngine/types').PassType, keyof TeamFlags>> = {
+  ground: 'passGround', driven: 'passDriven', chip: 'passChip', high: 'passHigh',
+  through_low: 'passThroughLow', through_high: 'passThroughHigh', header: 'passHeader',
+};
+gameBus.on('passLaunched', e => {
+  const f = teamFlags[e.team];
+  const k = PASS_TYPE_FIELD[e.type];
+  if (k) f[k]++;
+  f.passLaunchSpeedSum += e.speed; f.passLaunchN++;
+});
+
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
@@ -773,6 +827,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   markedNow = new Set();
   teamFlags.A = emptyTeamFlags();
   teamFlags.B = emptyTeamFlags();
+  resetHighlights(players);
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();
   lastDecision.clear();
@@ -792,7 +847,7 @@ export function getPlayerStats(id: number): PlayerStats {
 /** Team stats derived from the sum of all player stats for that team. */
 export function getTeamStats(team: TeamId): TeamStats {
   const result: TeamStats = {
-    ...emptyStats(), ...teamFlags[team], avgEndEnergy: 0,
+    ...emptyStats(), ...teamFlags[team], ...highlightTeamStats(team), avgEndEnergy: 0,
     holderEntropy: teamEntropy(team, 'holder'), offBallEntropy: teamEntropy(team, 'offBall'), defenseEntropy: teamEntropy(team, 'defense'),
   };
   let energySum = 0;
@@ -815,6 +870,8 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.interceptions   += stats.interceptions;
     result.tackles         += stats.tackles;
     result.xg              += stats.xg;
+    result.chances         += stats.chances;
+    result.clearChances    += stats.clearChances;
     result.dribblesWon     += stats.dribblesWon;
     result.dribblesLost    += stats.dribblesLost;
     result.throughBallsAttempted    += stats.throughBallsAttempted;
@@ -886,6 +943,8 @@ export interface StatsSnapshot {
   teamFlags: Record<TeamId, Partial<TeamFlags>>;
   /** Goals so far (absent in snapshots taken before the goal log existed). */
   goals?: GoalLogEntry[];
+  /** Highlight layer (`highlights.md`); absent in older snapshots. */
+  highlights?: HighlightState;
 }
 
 /** Everything accumulated so far, as plain data (no Maps). */
@@ -896,6 +955,7 @@ export function exportStatsState(): StatsSnapshot {
     endEnergy: [...endEnergy].map(([id, e]) => [id, { ...e }]),
     teamFlags: { A: { ...teamFlags.A }, B: { ...teamFlags.B } },
     goals:     goalLog.map((g) => ({ ...g })),
+    highlights: exportHighlightState(),
   };
 }
 
@@ -908,6 +968,7 @@ export function importStatsState(snap: StatsSnapshot): void {
   for (const [id, team] of snap.teams) playerTeam.set(id, team);
   for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
   goalLog = (snap.goals ?? []).map((g) => ({ ...g }));
+  if (snap.highlights) importHighlightState(snap.highlights);
   teamFlags.A = { ...emptyTeamFlags(), ...snap.teamFlags.A };
   teamFlags.B = { ...emptyTeamFlags(), ...snap.teamFlags.B };
   notify();

@@ -21,6 +21,8 @@ import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { EnergyPanel } from "@/GameInterface/EnergyPanel";
 import { FmTargetsPanel } from "@/GameInterface/FmTargetsPanel";
+import { HighlightTimeline } from "@/GameInterface/HighlightTimeline";
+import { resetHighlights } from "@/GameEngine/Domain/HighlightTracker";
 import { PossessionHeatmap } from "@/GameInterface/Components/PossessionHeatmap";
 import { createPossessionHeatmap, samplePossessionHeatmap, type PossessionHeatmap as HeatmapAcc } from "@/Domain/match/possessionHeatmap";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
@@ -596,6 +598,7 @@ export function TestScreen() {
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [fmTargetsOpen, setFmTargetsOpen] = useState(false);
+  const [highlightsOpen, setHighlightsOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
   /** Optional possession heat map (Etapa 35): filled on every emitted state, reset with the match. */
   const [heatmapOpen, setHeatmapOpen] = useState(false);
@@ -786,6 +789,7 @@ export function TestScreen() {
     }
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old match back
     heatmapRef.current = createPossessionHeatmap();
+    resetHighlights(state.players);
     setMatchState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -802,6 +806,7 @@ export function TestScreen() {
     const state = withTestWeather(withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc), lightWeather);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
+    resetHighlights(state.players);
     setScenarioState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -1835,6 +1840,8 @@ export function TestScreen() {
               { key: 'kinematics'            as const, label: 'Kinematics',    color: 'text-orange-300'  },
               { key: 'cohesion'              as const, label: 'Cohesion',      color: 'text-amber-300'   },
               { key: 'movement'              as const, label: 'Movement',      color: 'text-teal-300'    },
+              { key: 'ball3d'                as const, label: 'Ball 3D',       color: 'text-amber-200'   },
+              { key: 'passError'             as const, label: 'Pass error',    color: 'text-cyan-300'    },
               { key: 'setPieces'             as const, label: 'Set pieces',    color: 'text-lime-300'    },
               { key: 'instructions'          as const, label: 'Instructions',  color: 'text-sky-300'     },
             ] as const
@@ -1920,6 +1927,12 @@ export function TestScreen() {
         >
           FM targets
         </button>
+        <button
+          className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10"
+          onClick={() => setHighlightsOpen((o) => !o)}
+        >
+          Lances
+        </button>
       </div>
       {heatmapOpen && (
         <div className="mt-2 w-72 rounded border border-white/10 p-3">
@@ -1935,6 +1948,11 @@ export function TestScreen() {
             teamColorA="#2d6cdf"
             teamColorB="#df3b2d"
           />
+        </div>
+      )}
+      {highlightsOpen && (
+        <div className="mt-2 rounded border border-white/10 overflow-hidden">
+          <HighlightTimeline gameState={liveGameState} />
         </div>
       )}
       {fmTargetsOpen && (

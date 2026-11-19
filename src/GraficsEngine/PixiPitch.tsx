@@ -71,6 +71,8 @@ import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeighte
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
+import { ballFlightPath } from "@/GraficsEngine/ballFlightPath";
+import { passErrorOverlay } from "@/GraficsEngine/passErrorOverlay";
 import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
@@ -423,6 +425,10 @@ export interface DebugOverlays {
   cohesion:              boolean;
   /** Stage 4 movement (`movement.md`): the back line and its state, second-presser stand-off points, a loose ball's roll. */
   movement:              boolean;
+  /** Stage 3 (`ball-3d.md`): the 3D ball's predicted path (dots raised by their height), its peak and landing point. */
+  ball3d:                boolean;
+  /** Stage 4 (`pass-physics.md`): 1-σ spread of the holder's pass error at each teammate; a physical pass's aim. */
+  passError:             boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -440,6 +446,8 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   kinematics:            false,
   cohesion:              false,
   movement:              false,
+  ball3d:                false,
+  passError:             false,
 };
 
 interface Props {
@@ -4362,7 +4370,8 @@ export function PixiPitch({
           const aerial = lb && (lb.source === "cross" || lb.source === "long_ball" || lb.source === "clearance");
           if (aerial && lb.startTime !== bounceKey) { bounceKey = lb.startTime; bounceAt = transitionNow; }
           if (!aerial) bounceKey = null;
-          else if (!remote) drawnB = { ...drawnB, h: Math.max(drawnB.h, bounceHeight(transitionNow - bounceAt)) };
+          // With the 3D ball the bounces are real (`ball-3d.md`): no drawn hops.
+          else if (!remote && !drawState.ball) drawnB = { ...drawnB, h: Math.max(drawnB.h, bounceHeight(transitionNow - bounceAt)) };
         }
         transitionNow = advanceEffectClock(transitionNow, app.ticker.deltaMS / 1000, pausedRef.current);
         if (setPieceStartPending) {
@@ -4951,6 +4960,44 @@ export function PixiPitch({
               const { px: cx, py: cy } = toPixel(player.x, player.y);
               const color = player.team === 'A' ? 0x66aaff : 0xff7777;
               throughBallGfx.moveTo(cx, cy).lineTo(lx, ly).stroke({ width: 1.5, color, alpha: 0.55 });
+            }
+          }
+
+          // ── Ball 3D: predicted path raised by height, peak (gold) and landing point (`ball-3d.md`) ──
+          if (ovl.ball3d && stateRef.current.ball && stateRef.current.ball.phase !== 'held') {
+            const pts = ballFlightPath(stateRef.current);
+            const lift = m.scale * BALL.LIFT_PX_PER_YD;
+            let peak = pts[0];
+            for (const q of pts) {
+              const g = toPixel(q.x, q.y);
+              throughBallGfx.circle(g.px, g.py, 1.5).fill({ color: 0x000000, alpha: 0.35 });
+              throughBallGfx.circle(g.px, g.py - q.z * lift, 2 + q.z * 0.6).fill({ color: 0xfde68a, alpha: 0.75 });
+              if (peak && q.z > peak.z) peak = q;
+            }
+            if (peak && peak.z > 0.2) {
+              const g = toPixel(peak.x, peak.y);
+              throughBallGfx.moveTo(g.px, g.py).lineTo(g.px, g.py - peak.z * lift).stroke({ width: 1.5, color: 0xfacc15, alpha: 0.9 });
+              throughBallGfx.circle(g.px, g.py - peak.z * lift, 5).stroke({ width: 2, color: 0xfacc15, alpha: 0.95 });
+            }
+            const land = pts.find((q, i) => i > 0 && q.z <= 0.01 && (pts[i - 1]?.z ?? 0) > 0.01);
+            if (land) {
+              const g = toPixel(land.x, land.y);
+              throughBallGfx.circle(g.px, g.py, 6).stroke({ width: 2, color: 0xfb923c, alpha: 0.95 });
+            }
+          }
+
+          // ── Pass error: σ across the pass at each teammate; aim and real target of a physical pass (`pass-physics.md`) ──
+          if (ovl.passError) {
+            const pe = passErrorOverlay(stateRef.current);
+            for (const r of pe.rings) {
+              const g = toPixel(r.x, r.y);
+              throughBallGfx.circle(g.px, g.py, Math.max(2, r.r * m.scale)).stroke({ width: 1.5, color: 0x22d3ee, alpha: 0.8 });
+            }
+            if (pe.aim) {
+              const o = toPixel(pe.aim.ox, pe.aim.oy), a = toPixel(pe.aim.aimX, pe.aim.aimY), t = toPixel(pe.aim.toX, pe.aim.toY);
+              throughBallGfx.moveTo(o.px, o.py).lineTo(a.px, a.py).stroke({ width: 1, color: 0x22d3ee, alpha: 0.6 });
+              throughBallGfx.moveTo(a.px - 4, a.py - 4).lineTo(a.px + 4, a.py + 4).moveTo(a.px + 4, a.py - 4).lineTo(a.px - 4, a.py + 4).stroke({ width: 2, color: 0x22d3ee, alpha: 0.95 });
+              throughBallGfx.circle(t.px, t.py, 4).stroke({ width: 2, color: 0xf472b6, alpha: 0.95 });
             }
           }
 

@@ -13,6 +13,8 @@
 
 export type DebugCategory =
   | 'decision'      // per-player AI decision changes
+  | 'highlight'     // highlight layer: a lance window opens (stage 18, `highlights.md`)
+  | 'ball'          // the 3D ball: flights ending (peak, air time, bounces), loose ball above reach
   | 'tackle'        // tackle attempts and outcomes
   | 'interception'  // pass interception attempts and outcomes
   | 'pass'          // pass start and completion
