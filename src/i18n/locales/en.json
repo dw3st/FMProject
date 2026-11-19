@@ -9085,5 +9085,34 @@
       "whyBusy": "{{area}} already has a works under way: {{works}}.",
       "startNote": "Starting takes the parts from the stock. Cancelling gives half back."
     }
+  },
+  "craftHelp": {
+    "open": "How it is made: {{name}}",
+    "madeWith": "Each unit takes",
+    "per": "{{count}} × {{material}}",
+    "inStock": "{{count}} in stock",
+    "bench_one": "{{count}} bench day per {{lot}} units",
+    "bench_other": "{{count}} bench days per {{lot}} units",
+    "needsLevel": "Needs a level {{level}} workshop (yours is level {{now}})",
+    "fromLevel": "Any workshop from level {{level}}",
+    "usedIn": "Used in",
+    "goesInto": "Goes into",
+    "takes": "{{component}}: {{count}} per unit",
+    "buyHint": "Buy it in the Shop on the Materials tab.",
+    "use": {
+      "stand": "Enlarging a stand",
+      "workshop": "Upgrading the workshop"
+    },
+    "make": "Make",
+    "locked": "Level {{level}}",
+    "short": "Materials missing",
+    "buyShort": "Buy what is missing",
+    "canMake": "Enough for {{count}}",
+    "makeColumn": "Make",
+    "queued": "Order placed: {{component}} ×{{count}}. It goes to the next free bench.",
+    "lockedHint": "Needs a level {{level}} workshop",
+    "buy": "Buy",
+    "stockHint": "Make puts the order on the workshop. The ? shows what each one is made of and where it is used.",
+    "openMaterial": "Where it is used: {{name}}"
   }
 }

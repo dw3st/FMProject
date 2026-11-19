@@ -104,7 +104,7 @@ export function ClubScreen() {
             />
           )}
           {tab === "materials" && (
-            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] gap-6 items-start">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-6 items-start">
               <ShopView key={JSON.stringify(cart)} saveId={session.saveId} cart={cart} />
               <div ref={stockRef} className="min-w-0 flex flex-col gap-4">
                 <h2 className="font-display font-black uppercase text-xl leading-none m-0">{t("craft.tabs.stock")}</h2>

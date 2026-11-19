@@ -9070,5 +9070,34 @@
       "whyBusy": "{{area}} já tem uma obra em andamento: {{works}}.",
       "startNote": "Ao começar, as peças saem do estoque. Cancelar devolve metade."
     }
+  },
+  "craftHelp": {
+    "open": "Como é feito: {{name}}",
+    "madeWith": "Cada unidade leva",
+    "per": "{{count}} × {{material}}",
+    "inStock": "{{count}} no estoque",
+    "bench_one": "{{count}} dia de bancada a cada {{lot}} unidades",
+    "bench_other": "{{count}} dias de bancada a cada {{lot}} unidades",
+    "needsLevel": "Precisa da oficina nível {{level}} (a sua é nível {{now}})",
+    "fromLevel": "Qualquer oficina a partir do nível {{level}}",
+    "usedIn": "Usado em",
+    "goesInto": "Vai em",
+    "takes": "{{component}}: {{count}} por unidade",
+    "buyHint": "Compre na Loja da aba Materiais.",
+    "use": {
+      "stand": "Ampliar arquibancada",
+      "workshop": "Melhorar a oficina"
+    },
+    "make": "Fabricar",
+    "locked": "Nível {{level}}",
+    "short": "Faltam materiais",
+    "buyShort": "Comprar o que falta",
+    "canMake": "Dá para fazer {{count}}",
+    "makeColumn": "Fabricar",
+    "queued": "Pedido feito: {{component}} ×{{count}}. Entra na próxima bancada livre.",
+    "lockedHint": "Precisa da oficina nível {{level}}",
+    "buy": "Comprar",
+    "stockHint": "Fabricar põe o pedido na oficina. O ? mostra do que cada um é feito e onde é usado.",
+    "openMaterial": "Onde é usado: {{name}}"
   }
 }

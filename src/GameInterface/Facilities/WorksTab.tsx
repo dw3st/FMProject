@@ -5,6 +5,7 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Icon } from "@/GameInterface/Icons";
 import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
 import { NewOrder, Queue } from "@/GameInterface/Craft/WorkshopView";
+import { ComponentHelp, MaterialHelp, scrollIntoPane } from "@/GameInterface/Craft/CraftHelp";
 import { queueAction, queueComponent, upgradeWorkshop, craftErrorKey, type CraftView } from "@/GameInterface/Craft/craftApi";
 import type { RecipeBuild } from "@/GameInterface/Craft/RecipeLine";
 import type { FacilitiesViewData, FacilityItemView, ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
@@ -31,6 +32,7 @@ import type { FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest, S
 export const OUTLINE = "!border !border-solid !border-border !bg-card !text-foreground hover:!border-primary";
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 const GROUPS: FacilityGroup[] = ["stadium", "training", "academy"];
+const NEW_ORDER_ID = "works-new-order";
 const REPAIR_STEPS = ["25", "50", "100"] as const;
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -97,8 +99,9 @@ function QueueRow({ data, craft, onJob }: { data: FacilitiesViewData; craft: Cra
   const working = craft?.queue.filter((j) => j.startedOn) ?? [];
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="card-arcade rounded-md p-4 flex flex-col gap-2 min-w-0 hover:border-primary/60">
       <button type="button" onClick={() => onJob({ kind: "workshop" })}
-        className="card-arcade rounded-md p-4 flex flex-col gap-2 text-left cursor-pointer min-w-0 hover:border-primary/60">
+        className="flex flex-col gap-2 text-left cursor-pointer min-w-0 bg-transparent border-0 p-0">
         <span className="flex items-baseline justify-between gap-2">
           <span className={LABEL}>{t("clubTabs.works.workshop")}</span>
           {craft && <span className="text-sm text-foreground tabular-nums">{t("craft.workshop.benches", { count: craft.benches })}</span>}
@@ -119,6 +122,14 @@ function QueueRow({ data, craft, onJob }: { data: FacilitiesViewData; craft: Cra
           );
         })}
       </button>
+      <Button variant="secondary" className={`${OUTLINE} mt-auto self-start`} onClick={() => {
+        onJob({ kind: "workshop" });
+        // the order sits under the queue of the workshop's works: bring it into view once it is drawn
+        setTimeout(() => scrollIntoPane(NEW_ORDER_ID), 60);
+      }}>
+        <Icon name="hammer" size={16} />{t("craft.workshop.newOrder")}
+      </Button>
+      </div>
       {GROUPS.map((g) => {
         const running = runningWorksOf(data.facilities.projects, g);
         const pct = running ? Math.round(projectProgress(running, data.date) * 100) : 0;
@@ -423,7 +434,7 @@ function JobPanel({
       {job.kind === "workshop" && craft && (
         <>
           <Queue view={craft} busy={craftBusy} onAction={(id, a) => void runCraft(() => queueAction(saveId, id, a), (v) => v)} />
-          <NewOrder view={craft} busy={craftBusy}
+          <NewOrder id={NEW_ORDER_ID} view={craft} busy={craftBusy}
             onMake={(c, q, gs) => void runCraft(() => queueComponent(saveId, c, q, gs), (v) => v).then((v) => { if (v) onStockChanged(); })} />
         </>
       )}
@@ -523,7 +534,9 @@ function Steps({
             <li key={p.id} className="flex items-center gap-3 min-w-0">
               <CraftIcon kind="component" id={p.id} size={40} />
               <span className="flex flex-col flex-1 min-w-0">
-                <span className="text-sm font-semibold text-foreground truncate">{t(`craft.component.${p.id}`)}</span>
+                <ComponentHelp id={p.id} stock={stock ?? null} workshop={workshop}>
+                  <span className="text-sm font-semibold text-foreground truncate">{t(`craft.component.${p.id}`)}</span>
+                </ComponentHelp>
                 <span className="text-sm text-muted-foreground tabular-nums">{t("clubTabs.job.needHave", { need: p.need, have: p.have })}</span>
               </span>
               {p.short > 0
@@ -553,7 +566,9 @@ function Steps({
                       <li key={m} className="flex items-center gap-3 min-w-0">
                         <CraftIcon kind="material" id={m} size={36} />
                         <span className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-semibold text-foreground truncate">{t(`craft.material.${m}`)}</span>
+                          <MaterialHelp id={m} stock={stock ?? null}>
+                            <span className="text-sm font-semibold text-foreground truncate">{t(`craft.material.${m}`)}</span>
+                          </MaterialHelp>
                           <span className="text-sm text-muted-foreground tabular-nums">{t("clubTabs.job.needHave", { need: n, have })}</span>
                         </span>
                         {lack > 0

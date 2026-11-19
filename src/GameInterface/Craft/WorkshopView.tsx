@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
@@ -7,16 +7,20 @@ import { Icon } from "@/GameInterface/Icons";
 import { StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
 import { CraftBanner } from "@/GameInterface/Craft/CraftBanner";
-import { RecipeLine } from "@/GameInterface/Craft/RecipeLine";
+import { CraftLinksContext, RecipeLine } from "@/GameInterface/Craft/RecipeLine";
+import { ComponentHelp, MaterialHelp, useCraftUseLabel } from "@/GameInterface/Craft/CraftHelp";
 import { craftErrorKey, queueAction, queueComponent, upgradeWorkshop, type CraftView } from "@/GameInterface/Craft/craftApi";
 import { useCraft } from "@/GameInterface/Craft/useCraft";
 import { jobDays, materialsFor } from "@/Domain/craft/workshop";
 import { materialTotal } from "@/Domain/craft/shortfall";
 import { missingComponents } from "@/Domain/craft/stock";
+import { componentUses, orderShort } from "@/Domain/craft/craftHelp";
 import type { ComponentId, MaterialId } from "@/types/craftTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 const MAX_QTY = 500;
+/** A bordered secondary button (same as the club tabs' "Make", "Buy"). */
+const OUTLINE = "!border !border-solid !border-border !bg-card !text-foreground hover:!border-primary";
 type SupplierPick = "auto" | "standard" | "good";
 const GOOD_SHARE: Record<SupplierPick, number | undefined> = { auto: undefined, standard: 0, good: 1 };
 
@@ -127,10 +131,12 @@ export function Queue({ view, busy, onAction }: {
             return (
               <StatsRow key={j.id}>
                 <StatsCell>
-                  <span className="flex items-center gap-2">
-                    <CraftIcon kind="component" id={j.component} />
-                    <span className="font-semibold text-foreground">{t(`craft.component.${j.component}`)}</span>
-                  </span>
+                  <ComponentHelp id={j.component} stock={view.stock} workshop={view.workshop}>
+                    <span className="flex items-center gap-2">
+                      <CraftIcon kind="component" id={j.component} />
+                      <span className="font-semibold text-foreground">{t(`craft.component.${j.component}`)}</span>
+                    </span>
+                  </ComponentHelp>
                 </StatsCell>
                 <StatsCell align="center" className="tabular-nums">{j.qty}</StatsCell>
                 <StatsCell align="center" className="tabular-nums text-muted-foreground">{t("craft.workshop.days", { count: j.days })}</StatsCell>
@@ -177,13 +183,21 @@ export function Queue({ view, busy, onAction }: {
   );
 }
 
-export function NewOrder({ view, busy, onMake }: {
+/**
+ * A new workshop order: component, quantity and supplier, the materials it takes against the stock and "Buy what is
+ * missing" (the shop with the cart filled, through `CraftLinksContext`). `initial` picks the component it opens with.
+ */
+export function NewOrder({ view, busy, onMake, initial, id }: {
   view: CraftView; busy: boolean; onMake: (c: ComponentId, qty: number, goodShare: number | undefined) => void;
+  initial?: ComponentId; id?: string;
 }) {
   const { t } = useTranslation();
+  const links = useContext(CraftLinksContext);
+  const useLabelOf = useCraftUseLabel();
   const open = view.recipes.filter((r) => !r.locked);
   const locked = view.recipes.filter((r) => r.locked);
-  const [component, setComponent] = useState<ComponentId>(open[0]?.component ?? "beam");
+  const [component, setComponent] = useState<ComponentId>(
+    initial && open.some((r) => r.component === initial) ? initial : open[0]?.component ?? "beam");
   const [qty, setQty] = useState(5);
   const [supplier, setSupplier] = useState<SupplierPick>("auto");
   const need = materialsFor(component, qty);
@@ -195,8 +209,9 @@ export function NewOrder({ view, busy, onMake }: {
     return materialTotal(view.stock, m) >= n;
   });
   const full = view.queue.length >= view.maxQueue;
+  const short = enough ? {} : orderShort(component, qty, view.stock);
   return (
-    <section className="card-arcade rounded-md p-4 flex flex-col gap-4">
+    <section id={id} className="card-arcade rounded-md p-4 flex flex-col gap-4 scroll-mt-20">
       <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("craft.workshop.newOrder")}</h3>
       <div className="flex flex-col gap-2">
         <span className={LABEL}>{t("craft.workshop.component")}</span>
@@ -204,6 +219,9 @@ export function NewOrder({ view, busy, onMake }: {
           options={open.map((r) => ({ key: r.component, label: t(`craft.component.${r.component}`) }))}
           value={component} onChange={setComponent} aria-label={t("craft.workshop.component")}
         />
+        <span className="text-sm text-muted-foreground">
+          {t("craftHelp.usedIn")}: {componentUses(component).map(useLabelOf).join(", ")}
+        </span>
         {locked.length > 0 && (
           <span className="text-sm text-muted-foreground">
             {locked.map((r) => `${t(`craft.component.${r.component}`)}: ${t("craft.recipe.lockedAt", { level: r.minLevel })}`).join(" · ")}
@@ -233,8 +251,12 @@ export function NewOrder({ view, busy, onMake }: {
             const have = materialTotal(view.stock, m);
             return (
               <li key={m} className={`flex items-center gap-2 rounded-md border px-2 py-1 text-sm tabular-nums ${have < n ? "border-destructive/50" : "border-border"}`}>
-                <CraftIcon kind="material" id={m} size={22} />
-                <span className="text-foreground">{t(`craft.material.${m}`)}</span>
+                <MaterialHelp id={m} stock={view.stock}>
+                  <span className="flex items-center gap-2">
+                    <CraftIcon kind="material" id={m} size={22} />
+                    <span className="text-foreground">{t(`craft.material.${m}`)}</span>
+                  </span>
+                </MaterialHelp>
                 <span className={`font-semibold ${have < n ? "text-destructive" : "text-primary"}`}>{t("craft.recipe.have", { have: Math.min(have, n), need: n })}</span>
               </li>
             );
@@ -247,10 +269,18 @@ export function NewOrder({ view, busy, onMake }: {
           {!enough && <span className="text-destructive"> · {t("craft.errors.missingMaterials")}</span>}
           {full && <span className="text-destructive"> · {t("craft.errors.queueFull")}</span>}
         </span>
-        <Button onClick={() => onMake(component, qty, GOOD_SHARE[supplier])} disabled={busy || !enough || full || open.length === 0}>
-          <Icon name="hammer" size={16} />
-          {t("craft.workshop.make")}
-        </Button>
+        <span className="flex flex-wrap items-center gap-2">
+          {!enough && links && Object.keys(short).length > 0 && (
+            <Button variant="secondary" className={OUTLINE} onClick={() => links.goToShop(short)}>
+              <Icon name="store" size={16} />
+              {t("craftHelp.buyShort")}
+            </Button>
+          )}
+          <Button onClick={() => onMake(component, qty, GOOD_SHARE[supplier])} disabled={busy || !enough || full || open.length === 0}>
+            <Icon name="hammer" size={16} />
+            {t("craft.workshop.make")}
+          </Button>
+        </span>
       </div>
     </section>
   );

@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Icon } from "@/GameInterface/Icons";
 import { StatsCell, StatsHead, StatsRow, StatsTable } from "@/GameInterface/Components/StatsTable";
 import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
-import { craftErrorKey, recycleItem } from "@/GameInterface/Craft/craftApi";
+import { craftErrorKey, queueComponent, recycleItem } from "@/GameInterface/Craft/craftApi";
+import { ComponentHelp, MaterialHelp, scrollIntoPane } from "@/GameInterface/Craft/CraftHelp";
+import { CraftLinksContext } from "@/GameInterface/Craft/RecipeLine";
+import { NewOrder } from "@/GameInterface/Craft/WorkshopView";
+import { makeState } from "@/Domain/craft/craftHelp";
 import { useCraft } from "@/GameInterface/Craft/useCraft";
 import { useFacilities } from "@/GameInterface/Facilities/facilitiesApi";
 import { COMPONENTS, MATERIALS } from "@/Domain/craft/craftConfig";
@@ -13,10 +17,16 @@ import { formatEuros } from "@/Domain/money";
 import type { ComponentCounts, ComponentId } from "@/types/craftTypes";
 import type { FacilityItemId } from "@/types/facilityTypes";
 
+/** A bordered secondary button (the club tabs' "Make", "Buy"). */
+const OUTLINE = "!border !border-solid !border-border !bg-card !text-foreground hover:!border-primary";
+/** A button that fits a row of the narrow stock column. */
+const ROW_BUTTON = "!h-8 !px-3 whitespace-nowrap";
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
-/** Club → Stock: materials (by supplier, with this week's value), components (by quality) and Recycle. */
-/** `stacked`: one column (the Materials tab, next to the shop). */
+/**
+ * Club → Stock: materials (by supplier, with this week's value), components (by quality) with "Make" on each one (opens
+ * the workshop order under the tables) and Recycle. `stacked`: one column (the Materials tab, next to the shop).
+ */
 export function StockView({ saveId, stacked = false }: { saveId: string; stacked?: boolean }) {
   const { t } = useTranslation();
   const { view, loadError, actionError, busy, run } = useCraft(saveId);
@@ -25,6 +35,12 @@ export function StockView({ saveId, stacked = false }: { saveId: string; stacked
   const [item, setItem] = useState<FacilityItemId | null>(null);
   const [asking, setAsking] = useState(false);
   const [returned, setReturned] = useState<ComponentCounts | null>(null);
+  const [making, setMaking] = useState<ComponentId | null>(null);
+  const [queued, setQueued] = useState<string | null>(null);
+  const links = useContext(CraftLinksContext);
+  useEffect(() => {
+    if (making) scrollIntoPane("stock-new-order");
+  }, [making]);
   if (loadError) return <p className="text-sm text-muted-foreground m-0">{t(craftErrorKey(loadError))}</p>;
   if (!view) return <p className="text-sm text-muted-foreground m-0">{t("financesScreen.loading")}</p>;
 
@@ -59,10 +75,12 @@ export function StockView({ saveId, stacked = false }: { saveId: string; stacked
               return (
                 <StatsRow key={m}>
                   <StatsCell>
-                    <span className="flex items-center gap-2">
-                      <CraftIcon kind="material" id={m} />
-                      <span className="font-semibold text-foreground">{t(`craft.material.${m}`)}</span>
-                    </span>
+                    <MaterialHelp id={m} stock={view.stock}>
+                      <span className="flex items-center gap-2">
+                        <CraftIcon kind="material" id={m} />
+                        <span className="font-semibold text-foreground">{t(`craft.material.${m}`)}</span>
+                      </span>
+                    </MaterialHelp>
                   </StatsCell>
                   <StatsCell align="center" className="tabular-nums">{s?.standard ?? 0}</StatsCell>
                   <StatsCell align="center" className="tabular-nums">{s?.good ?? 0}</StatsCell>
@@ -74,34 +92,64 @@ export function StockView({ saveId, stacked = false }: { saveId: string; stacked
         </section>
         <section className="flex flex-col gap-2 min-w-0">
           <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("craft.stock.components")}</h3>
+          <span className="text-sm text-muted-foreground">{t("craftHelp.stockHint")}</span>
           <StatsTable head={<>
             <StatsHead>{t("craft.workshop.component")}</StatsHead>
             <StatsHead align="center">{t("craft.quality.common")}</StatsHead>
             <StatsHead align="center">{t("craft.quality.good")}</StatsHead>
             <StatsHead align="center">{t("craft.quality.excellent")}</StatsHead>
             <StatsHead align="center">{t("craft.stock.total")}</StatsHead>
+            <StatsHead align="right"><span className="sr-only">{t("craftHelp.makeColumn")}</span></StatsHead>
           </>}>
             {COMPONENTS.map((id) => {
               const c = view.stock.components[id];
               const total = (c?.common ?? 0) + (c?.good ?? 0) + (c?.excellent ?? 0);
+              const state = makeState(id, view.stock, view.workshop);
               return (
                 <StatsRow key={id}>
                   <StatsCell>
-                    <span className="flex items-center gap-2">
-                      <CraftIcon kind="component" id={id} />
-                      <span className="font-semibold text-foreground">{t(`craft.component.${id}`)}</span>
-                    </span>
+                    <ComponentHelp id={id} stock={view.stock} workshop={view.workshop}>
+                      <span className="flex items-center gap-2">
+                        <CraftIcon kind="component" id={id} />
+                        <span className="font-semibold text-foreground">{t(`craft.component.${id}`)}</span>
+                      </span>
+                    </ComponentHelp>
                   </StatsCell>
                   <StatsCell align="center" className="tabular-nums">{c?.common ?? 0}</StatsCell>
                   <StatsCell align="center" className="tabular-nums">{c?.good ?? 0}</StatsCell>
                   <StatsCell align="center" className="tabular-nums">{c?.excellent ?? 0}</StatsCell>
                   <StatsCell align="center" className="font-black font-display text-primary tabular-nums">{total}</StatsCell>
+                  <StatsCell align="right">
+                    {state.kind === "ok" ? (
+                      <Button variant="secondary" className={`${OUTLINE} ${ROW_BUTTON}`} onClick={() => { setMaking(id); setQueued(null); }}
+                        aria-pressed={making === id} title={t("craftHelp.canMake", { count: state.max })}>
+                        {t("craftHelp.make")}
+                      </Button>
+                    ) : state.kind === "locked" ? (
+                      <span className="text-sm text-muted-foreground whitespace-nowrap" title={t("craftHelp.lockedHint", { level: state.minLevel })}>
+                        {t("craftHelp.locked", { level: state.minLevel })}
+                      </span>
+                    ) : (
+                      <Button variant="secondary" className={`${OUTLINE} ${ROW_BUTTON}`} onClick={() => links?.goToShop(state.short)} disabled={!links}
+                        title={`${t("craftHelp.short")} · ${t("craftHelp.buyShort")}`}>
+                        {t("craftHelp.buy")}
+                      </Button>
+                    )}
+                  </StatsCell>
                 </StatsRow>
               );
             })}
           </StatsTable>
         </section>
       </div>
+
+      {making && (
+        <NewOrder key={making} id="stock-new-order" view={view} busy={busy} initial={making}
+          onMake={(c, q, gs) => void run(() => queueComponent(saveId, c, q, gs), (v) => v).then((v) => {
+            if (v) setQueued(t("craftHelp.queued", { count: q, component: t(`craft.component.${c}`) }));
+          })} />
+      )}
+      {queued && <p className="text-sm text-chart-2 m-0">{queued}</p>}
 
       <section className="card-arcade rounded-md p-4 flex flex-col gap-3">
         <div className="flex flex-col gap-1">

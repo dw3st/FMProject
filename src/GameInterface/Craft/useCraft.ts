@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { fetchCraft, type CallResult, type CraftView } from "@/GameInterface/Craft/craftApi";
+
+/** Fired after a craft action changed the club's stock: every other view of the screen reads it again. */
+const CHANGED = "fm:craft-changed";
 
 /**
  * The craft view of the seat's club, and `run` for an action that answers with a new view (or with
@@ -22,6 +25,12 @@ export function useCraft(saveId: string) {
   }, [saveId, reloadKey]);
   /** Reads the view again (after a works took components from the stock). */
   const reload = useCallback(() => setReloadKey((n) => n + 1), []);
+  const me = useId();
+  useEffect(() => {
+    const on = (e: Event) => { if ((e as CustomEvent<string>).detail !== me) reload(); };
+    window.addEventListener(CHANGED, on);
+    return () => window.removeEventListener(CHANGED, on);
+  }, [me, reload]);
 
   const run = useCallback(async <T>(action: () => Promise<CallResult<T>>, pick: (d: T) => CraftView): Promise<T | null> => {
     setBusy(true);
@@ -30,8 +39,9 @@ export function useCraft(saveId: string) {
     setBusy(false);
     if (!r.ok) { setActionError(r.error); return null; }
     setView(pick(r.data));
+    window.dispatchEvent(new CustomEvent(CHANGED, { detail: me }));
     return r.data;
-  }, []);
+  }, [me]);
 
   return { view, loadError, actionError, setActionError, busy, run, reload };
 }
