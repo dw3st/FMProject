@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.25",
     date: "2026-11-19",
-    time: "23:00",
+    time: "07:30",
     items: [
       { tab: "match", pt: "Quem tem a bola decide como um jogador de verdade: às vezes lê mal o lance, se apressa quando está apertado e sem saída, e os mais calmos e inteligentes erram menos.", en: "The player on the ball decides like a real one: he sometimes misreads the play, rushes when pressed with nowhere to go, and the calm and clever ones make fewer mistakes." },
       { tab: "match", pt: "Jogadas novas: proteger e girar, cortar para dentro, tocar de primeira, chutar por cobertura e driblar o goleiro.", en: "New moves: shield and turn, cut inside, one-touch lay-off, chip shot and rounding the keeper." },
