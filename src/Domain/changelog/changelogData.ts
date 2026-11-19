@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.28.3",
     date: "2026-11-19",
-    time: "23:00",
+    time: "14:31",
     items: [],
     fixes: [
       { tab: "friends", pt: "A reação de fogos toca sempre o mesmo som, o escolhido.", en: "The fireworks reaction always plays the same sound, the chosen one." },
