@@ -1332,6 +1332,8 @@
     "subbedOff": "Substituído aos {{minute}}'"
   },
   "match": {
+    "tablePlace_ordinal_other": "{{count}}º",
+    "tablePlaceTitle": "{{place}} na tabela da liga",
     "effects": {
       "save": "DEFESA",
       "wide": "PRA FORA",

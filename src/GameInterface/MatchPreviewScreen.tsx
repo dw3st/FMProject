@@ -221,6 +221,7 @@ function TeamCard({
   accentHex,
   squadUrl,
   sponsor,
+  tablePosition,
 }: {
   side: "home" | "away";
   squadName: string;
@@ -234,6 +235,8 @@ function TeamCard({
   squadUrl?: string;
   /** The club's master sponsor (`.claude/rules/game/sponsors.md`); nothing shown without one. */
   sponsor?: MasterSponsor | null;
+  /** League table position (league matches only). */
+  tablePosition?: number;
 }) {
   const { t } = useTranslation();
   const allOrdered = squad ? getOrderedPlayers(squad.players, lineup) : [];
@@ -282,6 +285,11 @@ function TeamCard({
           )}
           <p className="text-sm font-bold uppercase tracking-[0.08em] m-0 font-display" style={{ color: accentHex }}>
             {formation}
+            {tablePosition != null && (
+              <span className="text-muted-foreground tabular-nums" title={t("match.tablePlaceTitle", { place: t("match.tablePlace", { count: tablePosition, ordinal: true }) })}>
+                {" · "}{t("match.tablePlace", { count: tablePosition, ordinal: true })}
+              </span>
+            )}
           </p>
         </div>
         <div className="flex-1" />
@@ -601,6 +609,8 @@ function LastMinuteSubsModal({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 interface MatchSetupData {
+  /** League table position of each club (league matches only). */
+  tablePositions?: Record<string, number>;
   /** Opponent is another seat's club: the match can only be simulated. */
   seatOpponent?: boolean;
   /** Group world: the day and fixture a decision or recording belongs to. */
@@ -1208,6 +1218,7 @@ export function MatchPreviewScreen() {
           logoUrl={homeLogoUrl}
           accentHex={homeHex}
           sponsor={isHome ? matchSetup?.sponsors?.mine : matchSetup?.sponsors?.opponent}
+          tablePosition={fixture ? matchSetup?.tablePositions?.[fixture.home] : undefined}
           squadUrl={isHome ? `/squad/${session.leagueSlug}/${session.clubId}` : (opponentFileSlug ? `/squad/${session.leagueSlug}/${opponentFileSlug}` : undefined)}
         />
 
@@ -1233,6 +1244,7 @@ export function MatchPreviewScreen() {
           logoUrl={awayLogoUrl}
           accentHex={awayHex}
           sponsor={isHome ? matchSetup?.sponsors?.opponent : matchSetup?.sponsors?.mine}
+          tablePosition={fixture ? matchSetup?.tablePositions?.[fixture.away] : undefined}
           squadUrl={isHome ? (opponentFileSlug ? `/squad/${session.leagueSlug}/${opponentFileSlug}` : undefined) : `/squad/${session.leagueSlug}/${session.clubId}`}
         />
       </div>

@@ -35,6 +35,21 @@ export interface TeamMeta {
   primaryColor: string;
   secondaryColor: string;
   logoUrl?: string;
+  /** League table position (league matches only), shown next to the crest. */
+  tablePosition?: number;
+}
+
+/** "3rd" / "3º" next to the crest; a fixed width so the bar never shifts. */
+function TablePlace({ place }: { place?: number }) {
+  const { t } = useTranslation();
+  return (
+    <span
+      className="w-9 shrink-0 text-center font-display font-bold text-sm tabular-nums text-muted-foreground phone:hidden"
+      title={place ? t("match.tablePlaceTitle", { place: t("match.tablePlace", { count: place, ordinal: true }) }) : undefined}
+    >
+      {place ? t("match.tablePlace", { count: place, ordinal: true }) : ""}
+    </span>
+  );
 }
 
 export function ScoreBar({
@@ -70,6 +85,8 @@ export function ScoreBar({
   const colorB = readableOnDark(scoreColorB ?? teamB?.primaryColor ?? "#ef4444");
   const nameA = teamA?.name ?? "Team A";
   const nameB = teamB?.name ?? "Team B";
+  // Both sides reserve the slot when either has a position, so the crests stay symmetric.
+  const hasPlaces = teamA?.tablePosition != null || teamB?.tablePosition != null;
 
   // 1fr | auto | 1fr: the score + clock block sits exactly in the middle of the bar whatever the
   // length of the team names (#60). Names hug the score, crests sit on the outer side.
@@ -77,6 +94,7 @@ export function ScoreBar({
     <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center">
       {/* Team A */}
       <div className="flex items-center justify-end gap-3 pr-5 phone:pr-2 min-w-0">
+        {hasPlaces && <TablePlace place={teamA?.tablePosition} />}
         <ClubLogo
           logoUrl={teamA?.logoUrl}
           primaryColor={teamA?.primaryColor}
@@ -142,6 +160,7 @@ export function ScoreBar({
           className="w-8 h-8 rounded-full shrink-0"
           imgClassName="w-full h-full object-contain p-0.5"
         />
+        {hasPlaces && <TablePlace place={teamB?.tablePosition} />}
       </div>
     </div>
   );

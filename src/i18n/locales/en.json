@@ -1332,6 +1332,11 @@
     "subbedOff": "Substituted off at {{minute}}'"
   },
   "match": {
+    "tablePlace_ordinal_one": "{{count}}st",
+    "tablePlace_ordinal_two": "{{count}}nd",
+    "tablePlace_ordinal_few": "{{count}}rd",
+    "tablePlace_ordinal_other": "{{count}}th",
+    "tablePlaceTitle": "{{place}} in the league table",
     "effects": {
       "save": "SAVE",
       "wide": "WIDE",

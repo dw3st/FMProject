@@ -212,6 +212,7 @@ export function MatchScreen() {
   const [teamBMeta, setTeamBMeta] = useState<TeamMeta | undefined>();
   /** Squad ids behind the scoreboard crests — URLs are derived once the league catalog loads. */
   const [crestIds, setCrestIds] = useState<{ a: string; b?: string } | null>(null);
+  const [tablePlaces, setTablePlaces] = useState<Record<string, number>>({});
   /** Fixture being played (competition heading under the scoreboard, #81). */
   const [matchFixture, setMatchFixture] = useState<Fixture | null>(null);
   /** The user's club (the heading's "home/away" and the result). */
@@ -562,6 +563,8 @@ export function MatchScreen() {
           oppMorale?: number;
           /** The AI opponent's plan against this manager (`.claude/rules/game/study.md`). */
           study?: import("@/types/studyTypes").MatchSetupStudy;
+          /** League table position of each club (league matches only), next to the crests. */
+          tablePositions?: Record<string, number>;
         };
       })
       .then((data) => {
@@ -578,6 +581,7 @@ export function MatchScreen() {
           setTeamAMeta(side === "A" ? mine : theirs);
           setTeamBMeta(side === "A" ? theirs : mine);
           setCrestIds({ a: data.fixture.home, b: data.fixture.away });
+          setTablePlaces(data.tablePositions ?? {});
           setMyClubId(data.mySquadId);
           setMatchFixture(data.fixture);
           const homeSquad = side === "A" ? data.mySquad : opp;
@@ -769,6 +773,7 @@ export function MatchScreen() {
           });
         }
         setCrestIds({ a: data.mySquadId, b: data.opponentSquad?.id });
+        setTablePlaces(data.tablePositions ?? {});
         setMyClubId(data.mySquadId);
         setMatchFixture(data.fixture);
         // A national team's game goes to the friends too (10.7): under the fixture's own id.
@@ -1843,10 +1848,10 @@ export function MatchScreen() {
   const [teamAWithCrest, teamBWithCrest] = useMemo(() => {
     if (!crestIds) return [teamAMeta, teamBMeta];
     return [
-      teamAMeta && { ...teamAMeta, logoUrl: squadLogoUrl(crestIds.a) },
-      teamBMeta && crestIds.b ? { ...teamBMeta, logoUrl: squadLogoUrl(crestIds.b) } : teamBMeta,
+      teamAMeta && { ...teamAMeta, logoUrl: squadLogoUrl(crestIds.a), tablePosition: tablePlaces[crestIds.a] },
+      teamBMeta && crestIds.b ? { ...teamBMeta, logoUrl: squadLogoUrl(crestIds.b), tablePosition: tablePlaces[crestIds.b] } : teamBMeta,
     ];
-  }, [teamAMeta, teamBMeta, crestIds]);
+  }, [teamAMeta, teamBMeta, crestIds, tablePlaces]);
 
   // Match light (time of day, weather): stable object so the pitch only redraws when it really changes.
   // Before the early returns below: a hook after them breaks the screen ("Rendered more hooks").
