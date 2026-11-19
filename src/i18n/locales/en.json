@@ -8955,5 +8955,130 @@
       "workshop": "More benches and better components",
       "stand": "+{{seats}} seats"
     }
+  },
+  "clubTabs": {
+    "label": "Club sections",
+    "tab": {
+      "overview": "Overview",
+      "stadium": "Stadium",
+      "works": "Works",
+      "materials": "Materials"
+    },
+    "area": {
+      "stadium": "Stadium",
+      "training": "Training ground",
+      "academy": "Academy"
+    },
+    "overview": {
+      "stadium": "Stadium",
+      "seats": "{{seats}} seats",
+      "avg": "average crowd {{avg}}",
+      "comfort": "Comfort level {{level}}",
+      "record": "record {{n}}",
+      "seeStadium": "See stadium",
+      "short": {
+        "stadiumPitch": "Pitch",
+        "seats": "Stands",
+        "stadiumStructure": "Structure and lights"
+      }
+    },
+    "todo": {
+      "title": "To do",
+      "count_one": "{{count}} item",
+      "count_other": "{{count}} items",
+      "empty": "Nothing needs attention right now.",
+      "repair": "Repair · {{count}}",
+      "improve": "Upgrade · {{count}}",
+      "running": "Under way · {{count}}",
+      "below40": "below 40%: {{effect}}",
+      "levels": "Level {{from}} → {{to}}",
+      "missing_one": "{{count}} part missing",
+      "missing_other": "{{count}} parts missing",
+      "repairNow": "Repair",
+      "open": "Open works",
+      "readyOn": "ready on {{date}}"
+    },
+    "stadium": {
+      "stands": "Stands",
+      "expand": "Expand the {{stand}} stand",
+      "expandSummary": "+{{seats}} seats · {{weeks}} weeks · {{parts}}",
+      "underWorks": "Under works",
+      "levelOf": "Level {{level}} of {{max}}",
+      "comfortNext": "Ticket +{{now}}% · next level +{{next}}%",
+      "changeGrass": "Change the grass",
+      "repairCost": "Repair · {{cost}}",
+      "chartSub": "Average {{avg}} · {{pct}}% full"
+    },
+    "works": {
+      "workshop": "Workshop",
+      "benchesFree": "Every bench is free.",
+      "free": "Free",
+      "underWay": "Under works",
+      "noneIn": {
+        "stadium": "No works at the stadium",
+        "training": "No works at the training ground",
+        "academy": "No works at the academy"
+      },
+      "pickBeside": "Pick a works on the left"
+    },
+    "pick": {
+      "title": "Pick the works",
+      "areaBusy": "works under way",
+      "areaFree": "free",
+      "stand": "Expand a stand",
+      "seats": "seats",
+      "turf": "Change the grass",
+      "trainingAll": "Whole training ground",
+      "academyAll": "Whole academy",
+      "levelUp": "level {{from}} → {{to}}",
+      "max": "top level",
+      "repair": "repair · {{pct}}%",
+      "rebuild": "rebuild",
+      "running": "under way"
+    },
+    "job": {
+      "upgradeTo": "Upgrade to level {{level}}",
+      "levelTo": "Up to level {{level}}",
+      "maxLevel": "At the top level",
+      "repairTo": "Repair up to {{pct}}%",
+      "rebuild": "Rebuild",
+      "conditionFrom": "Condition {{from}}% → {{to}}%",
+      "stand": "+{{seats}} seats",
+      "standAbout": "Now {{now}} seats · new capacity {{capacity}}",
+      "turf": "Lay {{turf}} grass",
+      "weeks_one": "{{count}} week of works",
+      "weeks_other": "{{count}} weeks of works",
+      "areaFree": "Area free",
+      "areaBusy": "Area busy",
+      "nothing": "Nothing to build here.",
+      "step1": "Parts",
+      "step2": "Make or buy",
+      "step3": "Start the works",
+      "needHave": "needs {{need}} · has {{have}}",
+      "shortParts_one": "{{count}} part missing from the stock.",
+      "shortParts_other": "{{count}} parts missing from the stock.",
+      "nothingToMake": "Nothing to make: every part is in the stock.",
+      "makingUses": "Making the missing parts takes:",
+      "makeN": "Make {{count}} {{what}}",
+      "bench_one": "at the bench: {{count}} day",
+      "bench_other": "at the bench: {{count}} days",
+      "benchShort_one": "at the bench: {{count}} day · materials missing",
+      "benchShort_other": "at the bench: {{count}} days · materials missing",
+      "noBench": "The workshop cannot make these parts yet.",
+      "buy": "Buy what is missing",
+      "buyCost": "Buy what is missing · {{cost}}",
+      "buyHint": "opens Materials with the cart filled",
+      "deadline": "Time",
+      "delivery": "Ready",
+      "area": "Area",
+      "areaFreeOf": "{{area}} free",
+      "areaBusyOf": "{{area}} under works",
+      "start": "Start the works",
+      "cannotYet": "Not yet:",
+      "whyParts_one": "{{count}} part missing from the stock.",
+      "whyParts_other": "{{count}} parts missing from the stock.",
+      "whyBusy": "{{area}} already has a works under way: {{works}}.",
+      "startNote": "Starting takes the parts from the stock. Cancelling gives half back."
+    }
   }
 }

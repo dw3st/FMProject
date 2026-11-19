@@ -11,6 +11,7 @@ export function useCraft(saveId: string) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
     void fetchCraft(saveId).then((r) => {
@@ -18,7 +19,9 @@ export function useCraft(saveId: string) {
       if (r.ok) { setView(r.data); setLoadError(null); } else setLoadError(r.error);
     });
     return () => { cancelled = true; };
-  }, [saveId]);
+  }, [saveId, reloadKey]);
+  /** Reads the view again (after a works took components from the stock). */
+  const reload = useCallback(() => setReloadKey((n) => n + 1), []);
 
   const run = useCallback(async <T>(action: () => Promise<CallResult<T>>, pick: (d: T) => CraftView): Promise<T | null> => {
     setBusy(true);
@@ -30,5 +33,5 @@ export function useCraft(saveId: string) {
     return r.data;
   }, []);
 
-  return { view, loadError, actionError, setActionError, busy, run };
+  return { view, loadError, actionError, setActionError, busy, run, reload };
 }

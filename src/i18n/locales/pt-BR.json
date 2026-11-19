@@ -8943,5 +8943,130 @@
       "workshop": "Mais bancadas e componentes melhores",
       "stand": "+{{seats}} lugares"
     }
+  },
+  "clubTabs": {
+    "label": "Seções do clube",
+    "tab": {
+      "overview": "Visão geral",
+      "stadium": "Estádio",
+      "works": "Obras",
+      "materials": "Materiais"
+    },
+    "area": {
+      "stadium": "Estádio",
+      "training": "CT",
+      "academy": "Base"
+    },
+    "overview": {
+      "stadium": "Estádio",
+      "seats": "{{seats}} lugares",
+      "avg": "público médio {{avg}}",
+      "comfort": "Conforto nível {{level}}",
+      "record": "recorde {{n}}",
+      "seeStadium": "Ver estádio",
+      "short": {
+        "stadiumPitch": "Gramado",
+        "seats": "Arquibancadas",
+        "stadiumStructure": "Estrutura e luz"
+      }
+    },
+    "todo": {
+      "title": "O que fazer",
+      "count_one": "{{count}} item",
+      "count_other": "{{count}} itens",
+      "empty": "Nada precisa de atenção agora.",
+      "repair": "Reformar · {{count}}",
+      "improve": "Melhorar · {{count}}",
+      "running": "Em andamento · {{count}}",
+      "below40": "abaixo de 40%: {{effect}}",
+      "levels": "Nível {{from}} → {{to}}",
+      "missing_one": "falta {{count}} peça",
+      "missing_other": "faltam {{count}} peças",
+      "repairNow": "Reformar",
+      "open": "Abrir obra",
+      "readyOn": "prontos em {{date}}"
+    },
+    "stadium": {
+      "stands": "Setores",
+      "expand": "Ampliar setor {{stand}}",
+      "expandSummary": "+{{seats}} lugares · {{weeks}} semanas · {{parts}}",
+      "underWorks": "Em obra",
+      "levelOf": "Nível {{level}} de {{max}}",
+      "comfortNext": "Ingresso +{{now}}% · próximo nível +{{next}}%",
+      "changeGrass": "Trocar a grama",
+      "repairCost": "Reformar · {{cost}}",
+      "chartSub": "Média {{avg}} · ocupação {{pct}}%"
+    },
+    "works": {
+      "workshop": "Oficina",
+      "benchesFree": "Todas as bancadas livres.",
+      "free": "Livre",
+      "underWay": "em obra",
+      "noneIn": {
+        "stadium": "Nenhuma obra no estádio",
+        "training": "Nenhuma obra no CT",
+        "academy": "Nenhuma obra na base"
+      },
+      "pickBeside": "Escolha uma obra ao lado"
+    },
+    "pick": {
+      "title": "Escolha a obra",
+      "areaBusy": "obra em andamento",
+      "areaFree": "livre",
+      "stand": "Ampliar setor",
+      "seats": "lugares",
+      "turf": "Troca de grama",
+      "trainingAll": "CT inteiro",
+      "academyAll": "Base inteira",
+      "levelUp": "nível {{from}} → {{to}}",
+      "max": "nível máximo",
+      "repair": "reformar · {{pct}}%",
+      "rebuild": "reconstruir",
+      "running": "em obra"
+    },
+    "job": {
+      "upgradeTo": "Melhorar para o nível {{level}}",
+      "levelTo": "Subir para o nível {{level}}",
+      "maxLevel": "No nível máximo",
+      "repairTo": "Reformar até {{pct}}%",
+      "rebuild": "Reconstruir",
+      "conditionFrom": "Condição {{from}}% → {{to}}%",
+      "stand": "+{{seats}} lugares",
+      "standAbout": "Hoje {{now}} lugares · capacidade nova {{capacity}}",
+      "turf": "Colocar grama {{turf}}",
+      "weeks_one": "{{count}} semana de obra",
+      "weeks_other": "{{count}} semanas de obra",
+      "areaFree": "Área livre",
+      "areaBusy": "Área ocupada",
+      "nothing": "Nada a fazer aqui.",
+      "step1": "Peças",
+      "step2": "Fabricar ou comprar",
+      "step3": "Começar a obra",
+      "needHave": "precisa {{need}} · tem {{have}}",
+      "shortParts_one": "Falta {{count}} peça no estoque.",
+      "shortParts_other": "Faltam {{count}} peças no estoque.",
+      "nothingToMake": "Nada a fabricar: as peças já estão no estoque.",
+      "makingUses": "Fabricar o que falta gasta:",
+      "makeN": "Fabricar {{count}} {{what}}",
+      "bench_one": "na bancada: {{count}} dia",
+      "bench_other": "na bancada: {{count}} dias",
+      "benchShort_one": "na bancada: {{count}} dia · faltam materiais",
+      "benchShort_other": "na bancada: {{count}} dias · faltam materiais",
+      "noBench": "A oficina ainda não fabrica estas peças.",
+      "buy": "Comprar o que falta",
+      "buyCost": "Comprar o que falta · {{cost}}",
+      "buyHint": "abre Materiais com o carrinho cheio",
+      "deadline": "Prazo",
+      "delivery": "Entrega",
+      "area": "Área",
+      "areaFreeOf": "{{area}} livre",
+      "areaBusyOf": "{{area}} em obra",
+      "start": "Começar a obra",
+      "cannotYet": "Ainda não dá para começar:",
+      "whyParts_one": "falta {{count}} peça no estoque.",
+      "whyParts_other": "faltam {{count}} peças no estoque.",
+      "whyBusy": "{{area}} já tem uma obra em andamento: {{works}}.",
+      "startNote": "Ao começar, as peças saem do estoque. Cancelar devolve metade."
+    }
   }
 }

@@ -16,7 +16,8 @@ import type { FacilityItemId } from "@/types/facilityTypes";
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
 /** Club → Stock: materials (by supplier, with this week's value), components (by quality) and Recycle. */
-export function StockView({ saveId }: { saveId: string }) {
+/** `stacked`: one column (the Materials tab, next to the shop). */
+export function StockView({ saveId, stacked = false }: { saveId: string; stacked?: boolean }) {
   const { t } = useTranslation();
   const { view, loadError, actionError, busy, run } = useCraft(saveId);
   const [refresh, setRefresh] = useState(0);
@@ -42,7 +43,7 @@ export function StockView({ saveId }: { saveId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${stacked ? "" : "xl:grid-cols-2"}`}>
         <section className="flex flex-col gap-2 min-w-0">
           <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("craft.stock.materials")}</h3>
           <StatsTable head={<>

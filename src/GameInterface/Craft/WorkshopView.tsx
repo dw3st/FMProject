@@ -39,7 +39,7 @@ export function WorkshopView({ saveId }: { saveId: string }) {
   );
 }
 
-function WorkshopHeader({ view }: { view: CraftView }) {
+export function WorkshopHeader({ view }: { view: CraftView }) {
   const { t, i18n } = useTranslation();
   const speed = view.foremanSpeed.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const level = Math.min(5, Math.max(1, view.workshop));
@@ -100,7 +100,7 @@ function Benches({ view }: { view: CraftView }) {
   );
 }
 
-function Queue({ view, busy, onAction }: {
+export function Queue({ view, busy, onAction }: {
   view: CraftView; busy: boolean; onAction: (jobId: string, action: "up" | "down" | "cancel") => void;
 }) {
   const { t } = useTranslation();
@@ -177,7 +177,7 @@ function Queue({ view, busy, onAction }: {
   );
 }
 
-function NewOrder({ view, busy, onMake }: {
+export function NewOrder({ view, busy, onMake }: {
   view: CraftView; busy: boolean; onMake: (c: ComponentId, qty: number, goodShare: number | undefined) => void;
 }) {
   const { t } = useTranslation();
