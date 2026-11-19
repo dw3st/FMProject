@@ -19,8 +19,8 @@ export function standBuild(data: FacilitiesViewData, cost: number): RecipeBuild 
 }
 
 /** A derived group level (mean of the item levels / 2) with at most one decimal. */
-export function levelText(level: number): string {
-  return String(Math.round(level * 10) / 10);
+export function levelText(level: number, lang?: string): string {
+  return (Math.round(level * 10) / 10).toLocaleString(lang);
 }
 
 const pct = (mult: number) => `${mult >= 1 ? "+" : "−"}${Math.abs(Math.round((mult - 1) * 100))}%`;

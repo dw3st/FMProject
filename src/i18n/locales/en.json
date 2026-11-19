@@ -9059,7 +9059,7 @@
       "shortParts_other": "{{count}} parts missing from the stock.",
       "nothingToMake": "Nothing to make: every part is in the stock.",
       "makingUses": "Making the missing parts takes:",
-      "makeN": "Make {{count}} {{what}}",
+      "makeN": "Make: {{what}} ×{{count}}",
       "bench_one": "at the bench: {{count}} day",
       "bench_other": "at the bench: {{count}} days",
       "benchShort_one": "at the bench: {{count}} day · materials missing",

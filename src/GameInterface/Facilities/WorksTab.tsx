@@ -28,7 +28,7 @@ import type { ComponentId, MaterialCounts, MaterialId } from "@/types/craftTypes
 import type { FacilityGroup, FacilityItemId, FacilityProject, FacilityRequest, StandId, TurfType } from "@/types/facilityTypes";
 
 /** A bordered secondary button (the mock's "Make", "Buy", "Open works"). */
-export const OUTLINE = "border border-border bg-card !text-foreground hover:border-primary";
+export const OUTLINE = "!border !border-solid !border-border !bg-card !text-foreground hover:!border-primary";
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 const GROUPS: FacilityGroup[] = ["stadium", "training", "academy"];
 const REPAIR_STEPS = ["25", "50", "100"] as const;
@@ -170,11 +170,11 @@ function sameJob(a: WorksJob, b: WorksJob): boolean {
 }
 
 function JobPicker({ data, craft, job, onJob }: { data: FacilitiesViewData; craft: CraftView | null; job: WorksJob; onJob: (j: WorksJob) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const busy = new Set(data.busyGroups ?? []);
   const groupLevel = (k: "comfort" | "training" | "academy") => {
     const q = data.quotes[k];
-    return q ? t("clubTabs.pick.levelUp", { from: levelText(data.levels[k]), to: q.level }) : t("clubTabs.pick.max");
+    return q ? t("clubTabs.pick.levelUp", { from: levelText(data.levels[k], i18n.language), to: q.level }) : t("clubTabs.pick.max");
   };
   const rows = (g: FacilityGroup): PickRow[] => {
     const items = data.items.filter((it) => it.group === g).map((it): PickRow => {
@@ -570,15 +570,18 @@ function Steps({
                 {locked.map((id) => `${t(`craft.component.${id}`)}: ${t("craft.recipe.lockedAt", { level: CRAFT.RECIPES[id].minLevel })}`).join(" · ")}
               </p>
             )}
+            {craftableIds.length === 0 ? (
+              <p className="text-sm text-muted-foreground m-0 mt-auto">{t("clubTabs.job.noBench")}</p>
+            ) : (
             <div className="flex flex-col gap-1 mt-auto">
               <Button variant="secondary" className={OUTLINE} onClick={() => void make()} disabled={!canMake || craftBusy || pending}>
                 <Icon name="hammer" size={16} />{makeLabel}
               </Button>
               <span className="text-sm text-muted-foreground text-center tabular-nums">
-                {craftableIds.length === 0 ? t("clubTabs.job.noBench")
-                  : shortIds.length > 0 ? t("clubTabs.job.benchShort", { count: days }) : t("clubTabs.job.bench", { count: days })}
+                {shortIds.length > 0 ? t("clubTabs.job.benchShort", { count: days }) : t("clubTabs.job.bench", { count: days })}
               </span>
             </div>
+            )}
             {shortIds.length > 0 && (
               <div className="flex flex-col gap-1">
                 <Button variant="secondary" className={`${OUTLINE} tabular-nums`} onClick={() => onBuy(short)} disabled={pending}>

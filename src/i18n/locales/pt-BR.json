@@ -9047,7 +9047,7 @@
       "shortParts_other": "Faltam {{count}} peças no estoque.",
       "nothingToMake": "Nada a fabricar: as peças já estão no estoque.",
       "makingUses": "Fabricar o que falta gasta:",
-      "makeN": "Fabricar {{count}} {{what}}",
+      "makeN": "Fabricar: {{what}} ×{{count}}",
       "bench_one": "na bancada: {{count}} dia",
       "bench_other": "na bancada: {{count}} dias",
       "benchShort_one": "na bancada: {{count}} dia · faltam materiais",

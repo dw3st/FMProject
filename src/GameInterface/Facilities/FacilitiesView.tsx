@@ -15,6 +15,7 @@ import type { MaterialCounts } from "@/types/craftTypes";
 import type { FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
 import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/GameInterface/Facilities/facilitiesApi";
 import { itemEffectText } from "@/GameInterface/Facilities/FacilityItemsPanel";
+import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { PitchSurfaceSvg } from "@/GameInterface/Components/PitchSurfaceSvg";
 import { ClubOverview } from "@/GameInterface/Facilities/ClubOverview";
 import { OUTLINE, WorksTab } from "@/GameInterface/Facilities/WorksTab";
@@ -129,7 +130,7 @@ export function FacilitiesView({
                 sub={avgAttendance === null ? undefined : t("facilities.kpi.occupancy", { pct: Math.round(avgOcc * 100) })} />
               <Kpi label={t("facilities.kpi.record")} value={f.record ? nf(f.record.attendance) : "—"} sub={f.record ? formatGameDate(f.record.date, i18n.language) : undefined} />
               <Kpi label={t("facilities.kpi.ticket")} value={`+${Math.round((data.priceMult - 1) * 100)}%`}
-                sub={t("facilities.kpi.comfortLevel", { level: levelText(data.levels.comfort) })} />
+                sub={t("facilities.kpi.comfortLevel", { level: levelText(data.levels.comfort, i18n.language) })} />
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <ComfortCard data={data} onOpen={() => onJob({ kind: "comfort" }, true)} />
@@ -202,13 +203,13 @@ function StandExpansion({ data, stand, seats, onSeats, nf, onOpen }: {
 }
 
 function ComfortCard({ data, onOpen }: { data: FacilitiesViewData; onOpen: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const now = Math.round((data.priceMult - 1) * 100);
   const q = data.quotes.comfort;
   return (
     <section className="card-arcade rounded-md p-4 flex flex-col gap-3 min-w-0">
       <span className={LABEL}>{t("facilities.kind.comfort")}</span>
-      <span className="font-display font-black uppercase text-xl leading-none">{t("clubTabs.stadium.levelOf", { level: levelText(data.levels.comfort), max: FACILITIES.MAX_LEVEL })}</span>
+      <span className="font-display font-black uppercase text-xl leading-none">{t("clubTabs.stadium.levelOf", { level: levelText(data.levels.comfort, i18n.language), max: FACILITIES.MAX_LEVEL })}</span>
       <LevelMarks level={data.levels.comfort} />
       <span className="text-sm text-muted-foreground tabular-nums">
         {q
@@ -249,8 +250,8 @@ function TurfSummary({ data, ground, onRepair, onChange, onMowing }: {
           <span className={`font-semibold ${bad ? "text-destructive" : "text-foreground"}`}>{condition}%</span>
         </span>
         {effect && <span className="text-sm text-muted-foreground">{effect}</span>}
-        <OptionChips options={MOWING_PATTERNS.map((m) => ({ key: m, label: t(`facilities.mowing.${m}`) }))}
-          value={data.mowing} onChange={onMowing} aria-label={t("facilities.mowing.label")} />
+        <SelectCombobox label={t("facilities.mowing.label")} value={data.mowing} onChange={onMowing} floating
+          options={MOWING_PATTERNS.map((m) => ({ value: m, label: t(`facilities.mowing.${m}`) }))} />
         <div className="flex flex-wrap justify-end gap-2 mt-auto">
           <Button variant="secondary" className={OUTLINE} onClick={onChange}>{t("clubTabs.stadium.changeGrass")}</Button>
           {repair && (

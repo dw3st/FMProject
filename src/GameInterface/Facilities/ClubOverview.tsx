@@ -94,7 +94,7 @@ function StadiumCard({ data, avgAttendance, onStadium }: { data: FacilitiesViewD
         </ul>
         <span className="text-sm text-muted-foreground tabular-nums">
           {[
-            t("clubTabs.overview.comfort", { level: levelText(data.levels.comfort) }),
+            t("clubTabs.overview.comfort", { level: levelText(data.levels.comfort, i18n.language) }),
             t(`facilities.turf.type.${data.turf}`),
             f.record ? t("clubTabs.overview.record", { n: nf(f.record.attendance) }) : null,
           ].filter(Boolean).join(" · ")}
