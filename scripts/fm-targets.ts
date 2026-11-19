@@ -1,6 +1,7 @@
 /**
  * FM27 target metrics next to ours (`.claude/rules/game-engine/fm-numbers.md`): seeded full-engine matches (mulberry32
- * per match), AI formations, balanced, fitness 88. Prints pass completion by FM band, loft and pressure, the holder
+ * per match, `simulateMatch(..., { seed })`), AI formations, balanced, fitness 88. Prints the FM volume targets (R9:
+ * shots, corners, passes, fouls… per match, both teams) next to ours, the condition by minute, pass completion by FM band, loft and pressure, the holder
  * decision mix by third, time on ball, pressers, opponents near the holder, the team shape in and out of possession,
  * off-ball steps and hold times, shot distances, and the world volume.
  *
@@ -10,7 +11,11 @@
  */
 import { writeFileSync } from "node:fs";
 import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
-import { BAND_LABELS, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS, emptyFmTargets, median, mergeFmTargets, pct, type Outcome3 } from "@/lab/fmTargets";
+import {
+  BAND_LABELS, CONDITION_MINUTES, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
+  FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
+  emptyFmTargets, fmTargetRows, longShotsOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
+} from "@/lab/fmTargets";
 
 const args = process.argv.slice(2);
 const flag = (f: string, d: string) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] ?? d : d; };
@@ -31,47 +36,59 @@ const parts = await Promise.all(Array.from({ length: chunks }, (_, c) => new Pro
 })));
 const fm = emptyFmTargets();
 const world: Record<string, number> = {};
+const counts = Object.fromEntries(FM_COUNT_KEYS.map(k => [k, 0])) as unknown as FmMatchCounts;
 let ms = 0;
-for (const p of parts) { mergeFmTargets(fm, p.fm); for (const [k, v] of Object.entries(p.world)) world[k] = (world[k] ?? 0) + v; ms += p.ms; }
-if (out) writeFileSync(out, JSON.stringify({ fm, world, ms }));
+for (const p of parts) {
+  mergeFmTargets(fm, p.fm);
+  for (const [k, v] of Object.entries(p.world)) world[k] = (world[k] ?? 0) + v;
+  for (const k of FM_COUNT_KEYS) counts[k] += p.counts[k];
+  ms += p.ms;
+}
+if (out) writeFileSync(out, JSON.stringify({ fm, world, counts, ms }));
 
 const n = fm.matches;
 const f1 = (x: number) => x.toFixed(1);
 const f2 = (x: number) => x.toFixed(2);
 const share = (o: Outcome3) => { const t = o[0] + o[1] + o[2]; return t ? `${f1(pct(o))}% (n ${t}, opp ${f1((100 * o[2]) / t)}%)` : "—"; };
 console.log(`\n${league}: ${n} matches, ${f1(ms / n)} ms/match, ${f1(fm.realSeconds / n)} live s/match`);
-console.log("\n── Passes to the intended receiver (FM target) ──");
-const FM_BAND = ["94", "92", "90", "85", "87", "79", "36", "21", "29"];
-BAND_LABELS.forEach((l, i) => console.log(`  ${l.padEnd(6)} m  ${share(fm.passBand[i]!).padEnd(34)} FM ${FM_BAND[i]}%`));
+console.log("\n── FM targets per match, both teams (ours × FM; R9 official stats) ──");
+for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShotsOf(fm) / n })) {
+  const ratio = r.ratio === null ? "" : `  ×${r.ratio.toFixed(2)}`;
+  console.log(`  ${r.target.label.padEnd(24)} ${r.ours.padStart(8)}   FM ${r.fm.padStart(7)} (${r.target.confidence})${ratio}`);
+}
+console.log("\n── Condition (outfield median energy) by minute ──");
+console.log("  " + CONDITION_MINUTES.map((m, i) => `${m}' ${f1(fm.condition[i]!.sum / Math.max(1, fm.condition[i]!.n))} (FM ${FM_CONDITION[i]})`).join(" · "));
+console.log(`  keepers at the end ${f1(fm.keeperEnd.sum / Math.max(1, fm.keeperEnd.n))} (FM ${FM_KEEPER_END})`);
+console.log("\n── Passes to the intended receiver (FM target, R7) ──");
+BAND_LABELS.forEach((l, i) => console.log(`  ${l.padEnd(6)} m  ${share(fm.passBand[i]!).padEnd(34)} FM ${FM_PASS_BAND[i]}%`));
 BAND_LABELS.forEach((l, i) => console.log(`  regular ${l.padEnd(6)} m  ${share(fm.passBandRegular[i]!)}`));
 for (const [k, v] of Object.entries(fm.passKind)) console.log(`  kind ${k.padEnd(10)} ${share(v)}`);
-console.log(`  overall   ${share(fm.passAll).padEnd(34)} FM 82% (opp 13.5%)`);
-console.log(`  ground    ${share(fm.passLoft.ground).padEnd(34)} FM 92%`);
-console.log(`  lofted    ${share(fm.passLoft.lofted).padEnd(34)} FM 31%`);
-const FM_PR = ["74*", "91", "85", "79", "67"];
-PRESSURE_LABELS.forEach((l, i) => console.log(`  pr ${l.padEnd(6)} ${share(fm.passPressure[i]!).padEnd(34)} FM ${FM_PR[i]}%`));
+console.log(`  overall   ${share(fm.passAll).padEnd(34)} FM ${FM_PASS_OVERALL.all}% (opp 13.5%)`);
+console.log(`  ground    ${share(fm.passLoft.ground).padEnd(34)} FM ${FM_PASS_OVERALL.ground}%`);
+console.log(`  lofted    ${share(fm.passLoft.lofted).padEnd(34)} FM ${FM_PASS_OVERALL.lofted}%`);
+PRESSURE_LABELS.forEach((l, i) => console.log(`  pr ${l.padEnd(6)} ${share(fm.passPressure[i]!).padEnd(34)} FM ${FM_PASS_PRESSURE[i]}%${i === 0 ? "*" : ""}`));
 const passesPerMatch = (fm.passAll[0] + fm.passAll[1] + fm.passAll[2]) / n;
 console.log(`  passes / match ${f1(passesPerMatch)} (${f2(passesPerMatch / (fm.realSeconds / n))} per live s; FM ~0.21)`);
 
 console.log("\n── Holder decisions ──");
 const mix = (r: Record<string, number>) => { const t = HOLDER_CATS.reduce((a, k) => a + r[k]!, 0) || 1; return HOLDER_CATS.map(k => `${k} ${f1((100 * r[k]!) / t)}`).join(" · "); };
-console.log(`  all     ${mix(fm.holderCat)}   FM carry 44 · pass 34 · turn 12 · hold 9 · kick 1`);
-console.log(`  own     ${mix(fm.holderCatByThird[0]!)}   FM carry 26 · pass 37 · turn 23 · hold 14`);
-console.log(`  middle  ${mix(fm.holderCatByThird[1]!)}   FM carry 50 · pass 33 · turn 10 · hold 7`);
-console.log(`  final   ${mix(fm.holderCatByThird[2]!)}   FM carry 51 · pass 32 · turn 7 · hold 6 · kick 4`);
-console.log(`  decisions / live s ${f2(fm.holderDecisions / fm.realSeconds)} (FM 0.65)  per possession ${f2(fm.possessionDecisions / Math.max(1, fm.possessions))} (FM 2.5–3)`);
+const fmMix = (r: Partial<Record<string, number>>) => Object.entries(r).map(([k, v]) => `${k} ${v}`).join(" · ");
+console.log(`  all     ${mix(fm.holderCat)}   FM ${fmMix(FM_HOLDER_MIX.all)}`);
+console.log(`  own     ${mix(fm.holderCatByThird[0]!)}   FM ${fmMix(FM_HOLDER_MIX.own)}`);
+console.log(`  middle  ${mix(fm.holderCatByThird[1]!)}   FM ${fmMix(FM_HOLDER_MIX.middle)}`);
+console.log(`  final   ${mix(fm.holderCatByThird[2]!)}   FM ${fmMix(FM_HOLDER_MIX.final)}`);
+console.log(`  decisions / live s ${f2(fm.holderDecisions / fm.realSeconds)} (FM ${FM_TIMING.perSecond})  per possession ${f2(fm.possessionDecisions / Math.max(1, fm.possessions))} (FM ${FM_TIMING.perPossession})`);
 {
   const h = fm.possessionHist; const tot = h.reduce((a, b) => a + b, 0);
   const q = (p: number) => { let c = 0; for (let i = 0; i < h.length; i++) { c += h[i]!; if (c >= p * tot) return i * 0.2; } return h.length * 0.2; };
-  console.log(`  time on ball median ${f1(q(0.5))} s · p90 ${f1(q(0.9))} s   FM 0.7–1.0 · p90 2–3.4`);
+  console.log(`  time on ball median ${f1(q(0.5))} s · p90 ${f1(q(0.9))} s   FM ${FM_TIMING.onBallMedian} · p90 ${FM_TIMING.onBallP90}`);
 }
 console.log("\n── Pressing ──");
 const ps = fm.pressSamples || 1;
-console.log(`  dedicated pressers (target ≤ 3 m): 0 ${f1((100 * fm.pressers[0]) / ps)}% · 1 ${f1((100 * fm.pressers[1]) / ps)}% · 2+ ${f1((100 * fm.pressers[2]) / ps)}%   FM 75 · 20 · 5`);
+console.log(`  dedicated pressers (target ≤ 3 m): 0 ${f1((100 * fm.pressers[0]) / ps)}% · 1 ${f1((100 * fm.pressers[1]) / ps)}% · 2+ ${f1((100 * fm.pressers[2]) / ps)}%   FM ${FM_PRESSERS.join(" · ")}`);
 const nb = fm.nearByThird.map(t => f2(t.sum / Math.max(1, t.n)));
-console.log(`  opponents ≤ 10 m of the holder by his third: own ${nb[0]} · middle ${nb[1]} · final ${nb[2]}   FM 0.85 · 1.8 · 3.1`);
+console.log(`  opponents ≤ 10 m of the holder by his third: own ${nb[0]} · middle ${nb[1]} · final ${nb[2]}   FM ${FM_NEAR_HOLDER.join(" · ")}`);
 console.log("\n── Shape (yd) ──");
-const FM_SHAPE = [[58, 39, 40, 19, 10, 87], [24, 35, 37, 14, 12.5, 50]];
 fm.shape.forEach((sh, i) => {
   const k = Math.max(1, sh.n); const fmr = FM_SHAPE[i]!;
   console.log(`  ${i === 0 ? "in poss " : "out poss"}  back ${f1(sh.back / k)} (FM ${fmr[0]}) · length ${f1(sh.length / k)} (${fmr[1]}) · width ${f1(sh.width / k)} (${fmr[2]}) · back→mid ${f1(sh.gapBM / k)} (${fmr[3]}) · mid→front ${f1(sh.gapMF / k)} (${fmr[4]}) · front ${f1(sh.front / k)} (${fmr[5]})`);

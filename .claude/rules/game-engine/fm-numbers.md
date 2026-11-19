@@ -83,6 +83,19 @@ hold_shape / track_mark / support_run / idle), shot distance. Seeded matches, AI
 Surfaces: `Statistics.ts` team counters `passesMissed`, `passesLofted`, `holderHolds`, `holderTurns` → `/lab`
 `TeamRawStats` → `avgPassesMissed` … → `PairDetail`. `/test`: scenarios `fm-long-pass`, `fm-calm-block`.
 
+### FM targets panel (engine rebuild stage 0)
+
+The FM numbers live in `src/lab/fmTargets.ts`: `FM_MATCH_TARGETS` (report 9's official per-match stats, both teams:
+goals, shots, on target / blocked / long-range %, xG, xG per shot, conversion, corners, throw-ins, passes of every kind
+and completion, crosses, headers won, tackles won, interceptions, dribbles, fouls, cards, offsides, penalties; each with
+its confidence), `FM_CONDITION` (outfield median at 15'…90', keepers at the end) and report 7's pass bands, holder mix,
+timing, pressers and shape. `fmCountsOf` sums the two teams' `Statistics.ts` totals, `fmTargetRows` gives ours, FM's and
+the ratio. Read by the script (first two tables: "FM targets per match" and "Condition by minute"; the collector now
+also samples the condition), the `/test` panel **FM targets** (`GameInterface/FmTargetsPanel.tsx`: the current
+match's values so far and its seed) and the `/lab` `PairDetail` table "FM targets" (`fmCountsFromViews`, A + B per
+match; `PerMatchView.avgLongBallsCompleted` added for it). Long-range shots need the collector (script only). The
+matches are seeded through `simulateMatch(..., { seed })` (seed + offset + match), not by replacing `Math.random`.
+
 ## Target against ours
 
 Premier League, 150 seeded matches each (`fm-targets.ts`, AI formations, balanced). "main" = the seven flags off;

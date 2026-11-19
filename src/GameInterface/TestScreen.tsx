@@ -20,6 +20,7 @@ import { DebugPanel } from "@/GameInterface/DebugPanel";
 import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { EnergyPanel } from "@/GameInterface/EnergyPanel";
+import { FmTargetsPanel } from "@/GameInterface/FmTargetsPanel";
 import { PossessionHeatmap } from "@/GameInterface/Components/PossessionHeatmap";
 import { createPossessionHeatmap, samplePossessionHeatmap, type PossessionHeatmap as HeatmapAcc } from "@/Domain/match/possessionHeatmap";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
@@ -586,6 +587,7 @@ export function TestScreen() {
   const [debug, setDebug]         = useState(true);
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [fmTargetsOpen, setFmTargetsOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
   /** Optional possession heat map (Etapa 35): filled on every emitted state, reset with the match. */
   const [heatmapOpen, setHeatmapOpen] = useState(false);
@@ -1888,6 +1890,12 @@ export function TestScreen() {
         >
           Heatmap
         </button>
+        <button
+          className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10"
+          onClick={() => setFmTargetsOpen((o) => !o)}
+        >
+          FM targets
+        </button>
       </div>
       {heatmapOpen && (
         <div className="mt-2 w-72 rounded border border-white/10 p-3">
@@ -1903,6 +1911,11 @@ export function TestScreen() {
             teamColorA="#2d6cdf"
             teamColorB="#df3b2d"
           />
+        </div>
+      )}
+      {fmTargetsOpen && (
+        <div className="mt-2 rounded border border-white/10 overflow-hidden">
+          <FmTargetsPanel gameState={liveGameState} />
         </div>
       )}
       {energyOpen && (

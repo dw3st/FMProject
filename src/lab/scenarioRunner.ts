@@ -209,6 +209,7 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgAerialDuelsWon: r2(t.aerialDuelsWon / matches),
     avgHeaderGoals: r2(t.headerGoals / matches),
     avgLongBalls: r2(t.longBalls / matches),
+    avgLongBallsCompleted: r2(t.longBallsCompleted / matches),
     avgKeeperSorties: r2(t.keeperSorties / matches),
     avgKeeperSweeps: r2(t.keeperSweeps / matches),
     avgKeeperSmothers: r2(t.keeperSmothers / matches),

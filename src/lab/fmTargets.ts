@@ -6,9 +6,10 @@
 import type { GameState, GamePlayer, TeamId } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
 import { holderPressure } from "@/GameEngine/Domain/Pressure";
-import { isLivePhase } from "@/GameEngine/Domain/gameState";
+import { isLivePhase, matchMinute } from "@/GameEngine/Domain/gameState";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from "@/GameEngine/Domain/pitch";
 import { getMainRole } from "@/Domain/roles";
+import type { PerMatchView } from "@/lab/types";
 
 const YD = 1.0936;
 /** FM's pass bands in metres (report 7): 0–5, 5–9, 9–13, 13–18, 18–22, 22–27, 27–31, 31–35, 35+. */
@@ -56,6 +57,9 @@ export interface FmTargetTotals {
   shotDist: number[];
   shots: number;
   realSeconds: number;
+  /** Sum over matches of the outfield median energy at `CONDITION_MINUTES` (n per minute), and the keepers' at the end. */
+  condition: { sum: number; n: number }[];
+  keeperEnd: { sum: number; n: number };
 }
 
 export function emptyFmTargets(): FmTargetTotals {
@@ -72,6 +76,7 @@ export function emptyFmTargets(): FmTargetTotals {
     step: lineRec(() => [{ sum: 0, n: 0 }, { sum: 0, n: 0 }]),
     holdDefault: lineRec(() => [] as number[]), holdShort: lineRec(() => [] as number[]),
     shotDist: SHOT_LABELS.map(() => 0), shots: 0, realSeconds: 0,
+    condition: CONDITION_MINUTES.map(() => ({ sum: 0, n: 0 })), keeperEnd: { sum: 0, n: 0 },
   };
 }
 
@@ -95,6 +100,8 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
     dst.holdDefault[l].push(...src.holdDefault[l]); dst.holdShort[l].push(...src.holdShort[l]);
   }
   src.shotDist.forEach((v, i) => { dst.shotDist[i]! += v; }); dst.shots += src.shots;
+  src.condition.forEach((v, i) => { dst.condition[i]!.sum += v.sum; dst.condition[i]!.n += v.n; });
+  dst.keeperEnd.sum += src.keeperEnd.sum; dst.keeperEnd.n += src.keeperEnd.n;
 }
 
 /** FM category of a holder decision. */
@@ -134,6 +141,8 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
   let sinceSample = 0;
   let realT = 0;
   const runs = new Map<number, HoldRun>();
+  const conditionDone = new Set<number>();
+  let last: GameState | null = null;
 
   const closeStint = () => {
     if (stint && stint.decisions > 0) {
@@ -158,7 +167,15 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
   const tick = (s: GameState) => {
     acc.ticks++;
     realT += dt;
+    last = s;
     if (!isLivePhase(s.matchPhase)) { prev = s; return; }
+    // ── condition by minute (report 9 §6); 90' is read at the end ──
+    const minute = matchMinute(s);
+    CONDITION_MINUTES.forEach((m, i) => {
+      if (m === 90 || minute < m || conditionDone.has(m)) return;
+      conditionDone.add(m);
+      const c = acc.condition[i]!; c.sum += median(s.players.filter(p => p.role !== "GK").map(p => p.energy)); c.n++;
+    });
     acc.realSeconds += dt;
     const held = !s.pass && !s.looseBall && !s.shot;
     // ── passes ──
@@ -248,6 +265,11 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
   };
   const finish = () => {
     closeStint();
+    if (last) {
+      const c = acc.condition[CONDITION_MINUTES.indexOf(90)]!;
+      c.sum += median(last.players.filter(p => p.role !== "GK").map(p => p.energy)); c.n++;
+      for (const k of last.players.filter(p => p.role === "GK")) { acc.keeperEnd.sum += k.energy; acc.keeperEnd.n++; }
+    }
     acc.matches++;
     for (const r of runs.values()) (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(realT - r.since);
     runs.clear();
@@ -259,3 +281,161 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
 const mean = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 export const median = (a: number[]) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]!; };
 export const pct = (o: Outcome3) => { const n = o[0] + o[1] + o[2]; return n ? (100 * o[0]) / n : 0; };
+
+// ── FM targets (engine rebuild stage 0). Per match, both teams. R9 = the official stats of two device matches
+// (`fm-engine-report-9.md` §1, §6, §8); R7 = report 7 (passes by band, holder mix, shape); L = low-confidence figures
+// of the gap list. Read by `scripts/fm-targets.ts`, the /test panel (`FmTargetsPanel`) and the /lab `PairDetail`. ──
+
+/** Minutes of the condition samples (report 9 §6). */
+export const CONDITION_MINUTES = [15, 30, 45, 60, 75, 90] as const;
+
+export type FmConfidence = "H" | "M" | "L";
+export type FmMatchKey =
+  | "goals" | "shots" | "shotsOnTargetPct" | "shotsBlockedPct" | "longShotsPct" | "xg" | "xgPerShot" | "conversionPct"
+  | "corners" | "throwIns" | "passesAttempted" | "passCompletionPct" | "crosses" | "crossCompletionPct"
+  | "aerialDuelsWon" | "tacklesWon" | "interceptions" | "dribbles" | "fouls" | "yellowCards" | "yellowsPerFoul"
+  | "redCards" | "offsides" | "penalties";
+
+export interface FmMatchTarget { key: FmMatchKey; label: string; fm: number; pct?: true; confidence: FmConfidence; source: "R9" | "L" }
+
+/** The per-match volume targets (R9 §8 and the gap list's volume list). */
+export const FM_MATCH_TARGETS: readonly FmMatchTarget[] = [
+  { key: "goals",              label: "Goals",                 fm: 1.5,  confidence: "M", source: "R9" },
+  { key: "shots",              label: "Shots",                 fm: 21.5, confidence: "H", source: "R9" },
+  { key: "shotsOnTargetPct",   label: "On target % of shots",  fm: 35, pct: true, confidence: "H", source: "R9" },
+  { key: "shotsBlockedPct",    label: "Blocked % of shots",    fm: 38, pct: true, confidence: "M", source: "R9" },
+  { key: "longShotsPct",       label: "Long-range % (18+ yd)", fm: 46, pct: true, confidence: "M", source: "R9" },
+  { key: "xg",                 label: "xG",                    fm: 3.3,  confidence: "M", source: "R9" },
+  { key: "xgPerShot",          label: "xG per shot",           fm: 0.15, confidence: "M", source: "R9" },
+  { key: "conversionPct",      label: "Goals % of shots",      fm: 7, pct: true, confidence: "M", source: "R9" },
+  { key: "corners",            label: "Corners",               fm: 12.5, confidence: "H", source: "R9" },
+  { key: "throwIns",           label: "Throw-ins",             fm: 23,   confidence: "L", source: "L" },
+  { key: "passesAttempted",    label: "Passes (all kinds)",    fm: 978,  confidence: "H", source: "R9" },
+  { key: "passCompletionPct",  label: "Pass completion %",     fm: 86, pct: true, confidence: "H", source: "R9" },
+  { key: "crosses",            label: "Crosses",               fm: 64,   confidence: "M", source: "R9" },
+  { key: "crossCompletionPct", label: "Cross completion %",    fm: 19, pct: true, confidence: "M", source: "R9" },
+  { key: "aerialDuelsWon",     label: "Headers won",           fm: 27,   confidence: "M", source: "R9" },
+  { key: "tacklesWon",         label: "Tackles won",           fm: 17,   confidence: "M", source: "R9" },
+  { key: "interceptions",      label: "Interceptions",         fm: 59,   confidence: "M", source: "R9" },
+  { key: "dribbles",           label: "Dribbles",              fm: 20,   confidence: "L", source: "R9" },
+  { key: "fouls",              label: "Fouls",                 fm: 19,   confidence: "M", source: "R9" },
+  { key: "yellowCards",        label: "Yellow cards",          fm: 3,    confidence: "L", source: "R9" },
+  { key: "yellowsPerFoul",     label: "Yellows per foul",      fm: 0.16, confidence: "L", source: "R9" },
+  { key: "redCards",           label: "Red cards",             fm: 0,    confidence: "L", source: "R9" },
+  { key: "offsides",           label: "Offsides",              fm: 8,    confidence: "M", source: "R9" },
+  { key: "penalties",          label: "Penalties",             fm: 0.2,  confidence: "L", source: "L" },
+];
+
+/** FM's outfield median condition at `CONDITION_MINUTES` (R9 §6, middle of the two matches); keepers at full time. */
+export const FM_CONDITION = [87, 86.5, 77.5, 72.5, 75, 73.5] as const;
+export const FM_KEEPER_END = 96.5;
+/** R7: pass to the intended receiver by `BAND_LABELS` (%), overall / ground / lofted, by `PRESSURE_LABELS`. */
+export const FM_PASS_BAND = [94, 92, 90, 85, 87, 79, 36, 21, 29] as const;
+export const FM_PASS_OVERALL = { all: 82, ground: 92, lofted: 31 } as const;
+export const FM_PASS_PRESSURE = [74, 91, 85, 79, 67] as const;
+/** R7: holder decision mix (%), all and by third. */
+export const FM_HOLDER_MIX: Record<"all" | "own" | "middle" | "final", Partial<Record<HolderCat, number>>> = {
+  all: { carry: 44, pass: 34, turn: 12, hold: 9, kick: 1 },
+  own: { carry: 26, pass: 37, turn: 23, hold: 14 },
+  middle: { carry: 50, pass: 33, turn: 10, hold: 7 },
+  final: { carry: 51, pass: 32, turn: 7, hold: 6, kick: 4 },
+};
+/** R7: decisions per live second and per possession; time on ball median / p90 (s). */
+export const FM_TIMING = { perSecond: 0.65, perPossession: "2.5–3", onBallMedian: "0.7–1.0", onBallP90: "2–3.4" } as const;
+/** R7: dedicated pressers 0 / 1 / 2+ (%); opponents within 10 m of the holder by his third. */
+export const FM_PRESSERS = [75, 20, 5] as const;
+export const FM_NEAR_HOLDER = [0.85, 1.8, 3.1] as const;
+/** R7: shape in / out of possession (yd): back line, length, width, back→mid, mid→front, front line. */
+export const FM_SHAPE = [[58, 39, 40, 19, 10, 87], [24, 35, 37, 14, 12.5, 50]] as const;
+
+/** Match counts the targets are computed from: the two teams' `Statistics.ts` totals summed. */
+export interface FmMatchCounts {
+  goals: number; shots: number; shotsOnTarget: number; shotsBlocked: number; xg: number;
+  corners: number; throwIns: number;
+  passesAttempted: number; passesCompleted: number; throughBallsAttempted: number; throughBallsCompleted: number;
+  crosses: number; crossesCompleted: number; longBalls: number; longBallsCompleted: number;
+  aerialDuelsWon: number; tackles: number; interceptions: number; dribblesWon: number;
+  fouls: number; yellowCards: number; redCards: number; offsides: number; penaltiesAwarded: number;
+  /** Shots from 18+ yd of the goal mouth, when a collector counted them (`longShotsOf`); else absent. */
+  longShots?: number;
+}
+
+export const FM_COUNT_KEYS = [
+  "goals", "shots", "shotsOnTarget", "shotsBlocked", "xg", "corners", "throwIns",
+  "passesAttempted", "passesCompleted", "throughBallsAttempted", "throughBallsCompleted",
+  "crosses", "crossesCompleted", "longBalls", "longBallsCompleted",
+  "aerialDuelsWon", "tackles", "interceptions", "dribblesWon",
+  "fouls", "yellowCards", "redCards", "offsides", "penaltiesAwarded",
+] as const satisfies readonly (keyof FmMatchCounts)[];
+
+/** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */
+export function fmCountsOf(a: object, b: object): FmMatchCounts {
+  const out: Record<string, number> = {};
+  for (const k of FM_COUNT_KEYS) out[k] = Number((a as Record<string, unknown>)[k] ?? 0) + Number((b as Record<string, unknown>)[k] ?? 0);
+  return out as unknown as FmMatchCounts;
+}
+
+/** Counts summed over `n` matches → per-match mean. */
+export function perMatchCounts(sum: FmMatchCounts, n: number): FmMatchCounts {
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(sum)) out[k] = n > 0 ? (v as number) / n : 0;
+  return out as unknown as FmMatchCounts;
+}
+
+/** Our value of each target from one match's counts (or a per-match mean); null when we don't measure it. */
+export function fmMatchValues(c: FmMatchCounts): Record<FmMatchKey, number | null> {
+  const ratio = (x: number, y: number) => (y > 0 ? x / y : null);
+  const pc = (x: number, y: number) => (y > 0 ? (100 * x) / y : null);
+  const all = c.passesAttempted + c.throughBallsAttempted + c.crosses + c.longBalls;
+  const done = c.passesCompleted + c.throughBallsCompleted + c.crossesCompleted + c.longBallsCompleted;
+  return {
+    goals: c.goals, shots: c.shots,
+    shotsOnTargetPct: pc(c.shotsOnTarget, c.shots), shotsBlockedPct: pc(c.shotsBlocked, c.shots),
+    longShotsPct: c.longShots === undefined ? null : pc(c.longShots, c.shots),
+    xg: c.xg, xgPerShot: ratio(c.xg, c.shots), conversionPct: pc(c.goals, c.shots),
+    corners: c.corners, throwIns: c.throwIns,
+    passesAttempted: all, passCompletionPct: pc(done, all),
+    crosses: c.crosses, crossCompletionPct: pc(c.crossesCompleted, c.crosses),
+    aerialDuelsWon: c.aerialDuelsWon, tacklesWon: c.tackles, interceptions: c.interceptions, dribbles: c.dribblesWon,
+    fouls: c.fouls, yellowCards: c.yellowCards, yellowsPerFoul: ratio(c.yellowCards, c.fouls), redCards: c.redCards,
+    offsides: c.offsides, penalties: c.penaltiesAwarded,
+  };
+}
+
+/** One row per target: label, our value, FM's (formatted), and the ratio ours / FM (null when not comparable). */
+export interface FmTargetRow { target: FmMatchTarget; ours: string; fm: string; ratio: number | null }
+export function fmTargetRows(c: FmMatchCounts): FmTargetRow[] {
+  const v = fmMatchValues(c);
+  return FM_MATCH_TARGETS.map(t => {
+    const ours = v[t.key];
+    return { target: t, ours: fmFormat(t, ours), fm: fmFormat(t, t.fm), ratio: ours === null || t.fm === 0 ? null : ours / t.fm };
+  });
+}
+
+/** Display of one value: counts with 1–2 decimals, percentages with a % sign. */
+export function fmFormat(t: FmMatchTarget, v: number | null): string {
+  if (v === null || !Number.isFinite(v)) return "—";
+  if (t.pct) return `${v.toFixed(1)}%`;
+  return Math.abs(v) < 1 && v !== 0 ? v.toFixed(2) : v.toFixed(1);
+}
+
+/** Shots from 18+ yd in a collector's distance histogram (bins of 6 yd). */
+export function longShotsOf(t: FmTargetTotals): number {
+  return t.shotDist.slice(3).reduce((a, b) => a + b, 0);
+}
+
+/** Both sides' per-match means of a /lab pair (`PerMatchView`) as FM match counts (the `PairDetail` panel). */
+export function fmCountsFromViews(a: PerMatchView, b: PerMatchView): FmMatchCounts {
+  const one = (v: PerMatchView): FmMatchCounts => ({
+    goals: v.avgGoals, shots: v.avgShots, shotsOnTarget: v.avgShotsOnTarget, shotsBlocked: v.avgShotsBlocked, xg: v.avgXg,
+    corners: v.avgCorners, throwIns: v.avgThrowIns,
+    passesAttempted: v.avgPassesAttempted, passesCompleted: v.avgPassesCompleted,
+    throughBallsAttempted: v.avgThroughBalls, throughBallsCompleted: (v.avgThroughBalls * v.throughBallCompletionPct) / 100,
+    crosses: v.avgCrosses, crossesCompleted: (v.avgCrosses * v.crossCompletionPct) / 100,
+    longBalls: v.avgLongBalls, longBallsCompleted: v.avgLongBallsCompleted,
+    aerialDuelsWon: v.avgAerialDuelsWon, tackles: v.avgTackles, interceptions: v.avgInterceptions, dribblesWon: v.avgDribblesWon,
+    fouls: v.avgFouls, yellowCards: v.avgYellowCards, redCards: v.avgRedCards, offsides: v.avgOffsides,
+    penaltiesAwarded: v.avgPenaltiesAwarded,
+  });
+  return fmCountsOf(one(a), one(b));
+}

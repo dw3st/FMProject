@@ -515,6 +515,7 @@ export interface PerMatchView {
   avgAerialDuelsWon: number;
   avgHeaderGoals: number;
   avgLongBalls: number;
+  avgLongBallsCompleted: number;
   /** Active keeper per match (`Keeper.ts`). */
   avgKeeperSorties: number;
   avgKeeperSweeps: number;

@@ -56,6 +56,7 @@ export const DEBUG_FILES = [
   "src/GameInterface/DebugPanel.tsx",
   "src/GameInterface/CrowdHeatmapPanel.tsx",
   "src/GameInterface/EnergyPanel.tsx",
+  "src/GameInterface/FmTargetsPanel.tsx",
   "src/GameInterface/QuickSimPanel.tsx",
   "src/GameInterface/SimulationScreen.tsx",
 ];

@@ -3,6 +3,7 @@ import { Bar } from "react-chartjs-2";
 import type { ChartOptions } from "chart.js";
 import { ensureChartsRegistered } from "@/lab/components/chartSetup";
 import type { CongestionMatchResult, LabSlotView, PerMatchView, ScenarioResult } from "@/lab/types";
+import { fmCountsFromViews, fmTargetRows } from "@/lab/fmTargets";
 
 ensureChartsRegistered();
 
@@ -190,6 +191,8 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
         </div>
       </div>
 
+      <FmTargetsTable a={pair.teamA} b={pair.teamB} />
+
       {(pair.teamA.slotStats.length > 0 || pair.teamB.slotStats.length > 0) && (
         <SlotTable a={pair.teamA.slotStats} b={pair.teamB.slotStats} labelA={labelFor(aId)} labelB={labelFor(bId)} />
       )}
@@ -330,6 +333,40 @@ function SlotTable({ a, b, labelA, labelB }: { a: LabSlotView[]; b: LabSlotView[
           <tbody>
             {side(a, labelA, "text-emerald-300")}
             {side(b, labelB, "text-rose-300")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/** The FM per-match targets (R9, both teams, `fmTargets.ts`) next to this pair's per-match total (A + B). */
+function FmTargetsTable({ a, b }: { a: PerMatchView; b: PerMatchView }) {
+  const rows = fmTargetRows(fmCountsFromViews(a, b));
+  return (
+    <div className="bg-white/[0.03] border border-white/10 rounded p-4">
+      <h3 className="text-sm font-semibold mb-3 text-white/80">FM targets (per match, both teams)</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs max-w-2xl">
+          <thead>
+            <tr className="text-white/50 text-left">
+              <th className="py-1 pr-3">Metric</th>
+              <th className="py-1 pr-3 text-right">Ours (A + B)</th>
+              <th className="py-1 pr-3 text-right">FM</th>
+              <th className="py-1 pr-3 text-right">Ours / FM</th>
+              <th className="py-1 pr-3">Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.target.key} className="border-t border-white/5">
+                <td className="py-1 pr-3 text-white/80">{r.target.label}</td>
+                <td className="py-1 pr-3 text-right text-white tabular-nums">{r.ours}</td>
+                <td className="py-1 pr-3 text-right text-white/60 tabular-nums">{r.fm}</td>
+                <td className="py-1 pr-3 text-right text-white/60 tabular-nums">{r.ratio === null ? "" : r.ratio.toFixed(2)}</td>
+                <td className="py-1 pr-3 text-white/50">{r.target.confidence}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
