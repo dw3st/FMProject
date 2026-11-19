@@ -276,8 +276,14 @@ describe("/test scenario cross-to-box", () => {
     const sc = TEST_SCENARIOS.find(t => t.id === "cross-to-box")!;
     const s = sc.createState();
     const holder = s.players.find(p => p.id === s.ballHolderId)!;
-    const d = decide(holder, holder, true, false, s.players, null, 0);
-    expect(d.type).toBe("cross");
+    // The cross scoring itself: stage 4b prices crosses (CROSS_RISK_MULT), and in this scenario the carry then wins.
+    const { FM_NUMBERS } = await import("@/GameEngine/Configs/FmNumbersConfig");
+    const prev = FM_NUMBERS.CROSS_RISK_MULT;
+    FM_NUMBERS.CROSS_RISK_MULT = 1;
+    try {
+      const d = decide(holder, holder, true, false, s.players, null, 0);
+      expect(d.type).toBe("cross");
+    } finally { FM_NUMBERS.CROSS_RISK_MULT = prev; }
   });
 });
 

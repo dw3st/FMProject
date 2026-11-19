@@ -12,15 +12,20 @@ FM works in metres, the engine in yards (1 m = 1.0936 yd).
 
 `Domain/PassError.ts` (pure): technique margin `s = clamp(40 · passing − 0.5 · d_m, 0, 41)`, error factor
 `(1 − s/50) · (1 + 1.07 · P/100)` (P = FM pressure on the passer, `Pressure.ts`), σ along the pass
-`0.075 · factor · d · 2` yd, σ across `d · tan(2.5° · factor)`. The ball lands at the receiver's point plus the two
+`0.075 · factor · d · 1.7` yd, σ across `d · tan(2.5° · factor)`. The ball lands at the receiver's point plus the two
 Gaussian offsets; outside his reach ellipse (2.2 × 1.3 yd, + 0.8 × first touch) he misses it: `passFailed` +
 `passMissed`, and the ball runs loose from the landing point (`LooseBallCause` `misplaced`, 3 yd/s plus the overrun; one chaser per side).
 No new interception dice: interceptions on the way are the same as before.
 
 - A pass to feet longer than `LOFT_YD` (30 yd ≈ 27 m) is lofted: played as a high ball (`startAerialBall(...,
   lofted)`), contested where it lands like a long ball.
-- The chooser learns the risk: the pass quality × `1 − loss`, loss = miss chance × 0.55 (lofted: 1 − 0.4)
-  (`passLossEstimate`, `PassLanes.ts`); a through-ball cell × `1 − 0.4 · (1 − race score)` and × 0.85 beyond 30 yd.
+- The chooser learns the risk: the receiver is picked on pass quality × `1 − loss`, loss = miss chance × 0.55
+  (lofted: 1 − 0.4) (`passLossEstimate`, `PassLanes.ts`); the pass action against carry / hold uses the plain quality
+  (`RISK_IN_ACTION` 0: with the risk in the action, holders kept the ball in crowds).
+- Through balls: a cell the defender reaches first (race score < 0.5, `TB_MIN_RACE`) is not played; the rest ×
+  `1 − 0.4 · (1 − race)` × `1 − 0.15 · lane risk` (`TB_LANE_RISK`, interceptions in flight were most of the losses),
+  × 0.85 beyond 30 yd. Crosses × 0.85 (`CROSS_RISK_MULT`).
+- A lofted pass to feet commits one chaser per side (`LOFT_CHASERS`).
 - Set pieces are exempt.
 
 ## 2. Decision timing (`ACTION_CADENCE`)
@@ -42,8 +47,11 @@ converges 35% toward the ball's side (`computeDefensiveShapeAnchor`); neither sh
 
 ## 4. Sliding block (`SLIDING_BLOCK`)
 
-In possession every attacking anchor moves up `8 + 0.25 × (ball depth − halfway)` yd, a uniform shift, never a
-squeeze (`blockShiftX`, `attackingAnchor`; the off-ball role-fit penalty moves with it), and the spread × 0.85. Out of
+In possession every attacking anchor moves up `0.25 × (ball depth − halfway)` yd × the line's share (DEF 1, MID 0.4,
+FWD 0, `IN_SHIFT_BY_LINE`) (`blockShiftX`, `attackingAnchor`; the off-ball role-fit penalty moves with it), and the
+spread × 0.95. Round 2: the first version also moved everyone 8 yd forward (`IN_ADVANCE_YD`, now 0); pushing the
+front into the other side's block was the main cause of three defenders round the ball (`ball-cluster.ts` 8.8 → 5.9%
+in the AI formations with only that change). Out of
 possession the depth behind the ball × 1.15 (shape anchor and `ballRelativeLineX`), the whole block drops 5 yd more
 (never inside 8 yd of its goal) and the spread × 0.92.
 
@@ -77,48 +85,52 @@ Surfaces: `Statistics.ts` team counters `passesMissed`, `passesLofted`, `holderH
 
 ## Target against ours
 
-Premier League, 150 seeded matches each (`fm-targets.ts`, AI formations, balanced). "main" = the seven flags off.
+Premier League, 150 seeded matches each (`fm-targets.ts`, AI formations, balanced). "main" = the seven flags off;
+round 1 = first version; round 2 = current. Pass bands: all kinds (in brackets the regular passes to feet).
 
-| Measure | FM | main | branch |
-|---|---|---|---|
-| Pass to the receiver 0–13 m | 90–94% | 92–96% | 90–97% |
-| 13–18 / 18–22 / 22–27 m | 85 / 87 / 79% | 87 / 79 / 71% | 78 / 68 / 60% |
-| 27–31 / 31–35 / 35+ m | 36 / 21 / 29% | 67 / 60 / 48% | 50 / 42 / 23% |
-| Overall (all kinds incl. crosses) | 82% | 72.3% | 67.7% |
-| Ground / lofted | 92 / 31% | 82.7 / 10.1% | 86.4 / 12.9% |
-| Holder mix carry / pass / turn / hold / shot | 44 / 34 / 12 / 9 / 1 | 80 / 19 / 0 / 0 / 0.6 | 57 / 30 / 8 / 3 / 0.8 |
-| Own third | 26 / 37 / 23 / 14 | 82 / 18 / 0 / 0 | 58 / 26 / 11 / 4 |
-| Final third carry / pass / shot | 51 / 32 / 4 | 83 / 15 / 2.0 | 57 / 31 / 3.7 |
-| Decisions per live s / per possession | 0.65 / 2.5–3 | 2.43 / 9.96 | 1.45 / 6.38 |
-| Time on ball median / p90 (s) | 0.7–1.0 / 2–3.4 | 1.2 / 5.2 | 1.2 / 6.4 |
-| Dedicated pressers 0 / 1 / 2+ | 75 / 20 / 5 | 67.7 / 27.2 / 5.2 | 76.6 / 19.0 / 4.4 |
-| Opponents ≤ 10 m of holder, own / mid / final third | 0.85 / 1.8 / 3.1 | 1.27 / 1.26 / 1.63 | 1.27 / 1.55 / 2.24 |
-| Back line from own goal, in / out of possession (yd) | 58 / 24 | 42.9 / 37.2 | 47.1 / 39.2 |
-| Length in / out | 39 / 35 | 36.3 / 34.9 | 31.1 / 32.5 |
-| Width in / out | 40 / 37 | 50.3 / 41.4 | 42.5 / 36.1 |
-| back→mid in / out | 19 / 14 | 17.0 / 15.4 | 13.4 / 13.6 |
-| mid→front in / out | 10 / 12.5 | 12.5 / 11.8 | 9.8 / 10.4 |
-| Off-ball step DEF / MID / FWD in poss (yd) | 4.4 / 6 / 7 | 2.8 / 6.4 / 10.0 | 2.0 / 3.5 / 4.7 |
-| ... out of possession | 4.4 / 6 / 7 | 11.9 / 13.2 / 13.5 | 3.2 / 4.0 / 4.5 |
-| Default positioning held DEF / MID / FWD (s) | 19 / 10 / 12 | 13.6 / 14.8 / 8.6 | 14.6 / 13.8 / 10.2 |
-| Short actions held (s) | ~5 | 1.0–1.4 | 1.0–1.2 |
-| Shots beyond 30 yd | 0 | 0% | 0.3% |
+| Measure | FM | main | round 1 | round 2 |
+|---|---|---|---|---|
+| 3+ defenders ≤ 8 yd of the ball, Premier 4-3-3 / AI formations (`ball-cluster.ts`, 400) | — | 5.8 / 5.4% | 10.2 / 8.9% | 6.6 / 5.3% |
+| ...Championship 4-3-3 / AI formations | — | 6.0 / 5.8% | — | 6.1 / 5.9% |
+| Pass to the receiver 13–18 m | 85% | 87 (93) | 78 (85) | 85 (87) |
+| 18–22 m | 87% | 79 (95) | 68 (87) | 76 (85) |
+| 22–27 m | 79% | 71 (93) | 60 (80) | 70 (83) |
+| 27–31 / 31–35 / 35+ m | 36 / 21 / 29% | 67 / 60 / 48 | 50 / 42 / 23 | 63 / 51 / 25 |
+| Overall / ground / lofted | 82 / 92 / 31% | 72 / 83 / 10 | 68 / 86 / 13 | 80 / 89 / 13 |
+| Through balls per match (to the runner) | — | 24 (61%) | 17 (72%) | 11.7 (72.5%) |
+| Crosses per match | — | 10.7 | 16.3 | 8.6 |
+| Holder mix carry / pass / turn / hold / shot | 44 / 34 / 12 / 9 / 1 | 80 / 19 / 0 / 0 / 0.6 | 57 / 30 / 8 / 3 / 0.8 | 55 / 34 / 7.5 / 2.6 / 0.7 |
+| Decisions per live s / per possession | 0.65 / 2.5–3 | 2.43 / 10 | 1.45 / 6.4 | 1.63 / 5.9 |
+| Time on ball median / p90 (s) | 0.7–1.0 / 2–3.4 | 1.2 / 5.2 | 1.2 / 6.4 | 1.0 / 5.8 |
+| Dedicated pressers 0 / 1 / 2+ | 75 / 20 / 5 | 68 / 27 / 5 | 77 / 19 / 4 | 76.5 / 20 / 3 |
+| Opponents ≤ 10 m of holder, own / mid / final third | 0.85 / 1.8 / 3.1 | 1.27 / 1.26 / 1.63 | 1.27 / 1.55 / 2.24 | 1.04 / 1.43 / 2.03 |
+| Back line in / out of possession (yd) | 58 / 24 | 43 / 37 | 47 / 39 | 46 / 36.5 |
+| Width in / out of possession (yd) | 40 / 37 | 50 / 41 | 42.5 / 36 | 50.6 / 38.7 |
+| Off-ball step out of possession DEF / MID / FWD (yd) | 4.4 / 6 / 7 | 12 / 13 / 13.5 | 3.2 / 4.0 / 4.5 | 2.8 / 3.6 / 4.1 |
+| Passes per live s | 0.21 | 0.26 | 0.25 | 0.28 |
+| Shots beyond 30 yd | 0 | 0% | 0.3% | 0.8% |
 
-World (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`, chunks 3): Premier goals 2.024 → 1.813 (−10.4%),
-shots 5.62 → 5.29 (−5.9%); Championship goals 1.534 → 1.397 (−8.9%), shots 5.05 → 4.41 (−12.7%). Per match
-(fm-targets, Premier): xG 2.85 → 2.71, passes 48.4 → 43.1 (completed 44.9 → 38.1), tackles 3.95 → 4.05, fouls
-10.05 → 8.18, interceptions 4.18 → 2.79. quickSim not recalibrated.
+World (`ai-formation-goals.ts --engine 800 --modes ai --quick 0`; volume is calibrated at the end of the rebuild, not
+here): Premier goals 2.024 (main) → 1.813 (round 1) → 1.724 (round 2, before the last width / line change), shots
+5.62 → 5.29 → 4.80; Championship goals 1.534 → 1.397 → 1.343, shots 5.05 → 4.41 → 4.45. quickSim not recalibrated.
+
+### Round 2: what moved the crowding
+
+Isolated with `ball-cluster.ts` (150 matches, AI formations, flags and `FM_NUMBERS_OVERRIDES` one at a time): only
+`PASS_ERROR` off + `SLIDING_BLOCK` off gave back main (5.1%). Inside them: the uniform 8-yd advance in possession
+(`IN_ADVANCE_YD`, 8.8 → 5.9%), the risk inside the pass action (`RISK_WEIGHT` 0: −1.4) and the through-ball race price
+(`TB_RISK` 0: −1.5). Misses (reach ×10: no change), the out-of-possession drop and depth, the shape shift and the
+crowd-edge rule moved little.
 
 ## Limitations
 
-- Decisions per second and per possession still about twice FM's (1.45 / 6.4): the post-reception burst and the
-  re-decisions inside 24 yd of goal and on a closing opponent keep the holder deciding.
-- Pass completion between 13 and 27 m is below FM and beyond 27 m above it: through balls into space are scored apart
-  (72% reach), lofted passes to feet are rare (the chooser avoids them), crosses dominate the "lofted" share.
-- The back line sits 47 yd up in possession (FM 58) and 39 out of it (FM 24): the existing back-line logic (`Movement.ts`,
-  stage 4) and the role bounds hold it; a stronger shift cost goals or broke the off-ball role fit.
-- Off-ball steps are shorter than FM's in possession: players are usually already near their targets, the cap only
-  shortens the long ones.
-- Ball crowding (`ball-cluster.ts`) is worse than main: 3+ defenders within 8 yd of the ball ~9% of live ticks (main
-  ~5.5%), spread over all mechanics (no single flag explains it). `BALL_CROWD_YD` keeps a third holder-of-shape off a
-  ball two teammates already have; a misplaced pass commits one chaser per side.
+- Ball crowding with every team in 4-3-3 (Premier) is still 6.6% against main's 5.8%; with the AI formations and in
+  the Championship it is at main's level.
+- Pass bands with every kind stay below FM between 18 and 27 m (76 / 70% against 87 / 79): the regular passes are at
+  FM's level (85 / 83%); crosses (4.5% to the intended runner) and through balls (72.5%) pull the band down.
+- Width in possession went back to 50.6 yd (FM 40): narrowing the attack crowded the ball.
+- Decisions per second and per possession still about 2.5× FM's (1.63 / 5.9); holds and turns are rare (2.6 / 7.5%
+  against 9 / 12%), carries in the own third 60% against 26%.
+- The back line sits 46 yd up in possession (FM 58) and 36.5 out of it (FM 24).
+- Off-ball steps are shorter than FM's; short off-ball actions are held ~1 s against ~5 s.
+- Fewer through balls and crosses: shots and goals fell (volume is left for the final calibration).

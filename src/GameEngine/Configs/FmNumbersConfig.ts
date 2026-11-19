@@ -107,12 +107,12 @@ export const FM_NUMBERS = {
   IN_ADVANCE_YD: 0,
   IN_PUSH: 0.25,
   /** ...× this by line: the back moves up, the front much less. */
-  IN_SHIFT_BY_LINE: { DEF: 1, MID: 0.6, FWD: 0.2 },
+  IN_SHIFT_BY_LINE: { DEF: 1, MID: 0.4, FWD: 0 },
   /** Out of possession: the whole shape drops this far (yd) toward its own goal (never inside OUT_MIN_YD of it). */
   OUT_DROP_YD: 5,
   OUT_MIN_YD: 8,
   /** In possession: lateral spread × this (FM team width 40 yd in possession). */
-  IN_WIDTH: 0.85,
+  IN_WIDTH: 0.95,
   /** Out of possession: lateral spread × this (FM 37 yd). */
   OUT_WIDTH: 0.92,
 
