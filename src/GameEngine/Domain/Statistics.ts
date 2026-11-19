@@ -14,6 +14,9 @@
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import type { SetPieceGoalKind, TeamId } from '@/GameEngine/types';
 import { BALL_CLUSTER_CONFIG } from '@/GameEngine/Domain/BallCluster';
+import type { DecisionTelemetryEvent } from '@/GameEngine/Infrastructure/EventBus';
+import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
+import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
 
 /** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
 export interface GoalLogEntry {
@@ -133,6 +136,13 @@ export interface PlayerStats {
   markedTargetShots:        number;
   /** Goals this player scored while man-marked. */
   markedTargetGoals:        number;
+  // ── Decision telemetry (`.claude/rules/game-engine/decisions.md`) ───────────
+  /** Fresh scored decisions with the ball (one per holder tick). */
+  holderDecisions:          number;
+  /** Fresh scored off-ball decisions (committed ones are not re-counted). */
+  offBallDecisions:         number;
+  /** Fresh scored defensive decisions. */
+  defenseDecisions:         number;
 }
 
 export interface TeamStats extends PlayerStats {
@@ -168,6 +178,22 @@ export interface TeamStats extends PlayerStats {
   varReviews: number;
   /** Of those, overturned calls (the original call favoured this team). */
   varOverturned: number;
+  /** Decisions whose top two scores were within `DECISION_TELEMETRY.NEAR_TIE` (`decisions.md`). */
+  holderNearTies: number;
+  offBallNearTies: number;
+  defenseNearTies: number;
+  /**
+   * Shannon entropy (bits) of the decision mix within each situation bucket, averaged over the buckets weighted by their
+   * decisions (this match). 0 = the same choice every time in a given situation.
+   */
+  holderEntropy: number;
+  offBallEntropy: number;
+  defenseEntropy: number;
+  /** Sum of the FM pressure scalar at the holder's decisions (mean = / `holderDecisions`). */
+  holderPressureSum: number;
+  /** Sum of the pressure at the holder's last decision before each shot, and how many shots had one. */
+  shotPressureSum: number;
+  shotPressureCount: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -231,6 +257,9 @@ function emptyStats(): PlayerStats {
     markedTargetTouches:      0,
     markedTargetShots:        0,
     markedTargetGoals:        0,
+    holderDecisions:          0,
+    offBallDecisions:         0,
+    defenseDecisions:         0,
   };
 }
 
@@ -248,10 +277,14 @@ type TeamFlags = {
   refereeErrors: number; varReviews: number; varOverturned: number;
   ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
   studyPlans: number;
+  holderNearTies: number; offBallNearTies: number; defenseNearTies: number;
+  holderPressureSum: number; shotPressureSum: number; shotPressureCount: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
   ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0,
+  holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0,
+  holderPressureSum: 0, shotPressureSum: 0, shotPressureCount: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -264,6 +297,23 @@ const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeam
 const endEnergy = new Map<number, { team: TeamId; energy: number }>();
 /** Goals of the match in order (`getGoalLog`). */
 let goalLog: GoalLogEntry[] = [];
+
+// ── Decision telemetry store (`decisions.md`) ────────────────────────────────
+type Family = DecisionTelemetryEvent['family'];
+const FAMILIES: readonly Family[] = ['holder', 'offBall', 'defense'];
+/** Per team, family, bucket: action → count (entropy). */
+type BucketMix = Map<string, number>[];
+const emptyBuckets = (): BucketMix => Array.from({ length: BUCKET_COUNT }, () => new Map<string, number>());
+function emptyFamilyBuckets(): Record<Family, BucketMix> {
+  return { holder: emptyBuckets(), offBall: emptyBuckets(), defense: emptyBuckets() };
+}
+let bucketMix: Record<TeamId, Record<Family, BucketMix>> = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
+/** Per player, family: action → count (decision mix). */
+const playerMix = new Map<number, Record<Family, Map<string, number>>>();
+/** The pressure of the last holder decision (the shot that follows it reads it). */
+let lastHolder: { playerId: number; pressure: number } | null = null;
+/** Last decision event of each player (`/test` DebugPanel). */
+const lastDecision = new Map<number, DecisionTelemetryEvent>();
 
 /** Players currently man-marked (refreshed by every `manMarkTick`; cleared at `initStats`). */
 let markedNow = new Set<number>();
@@ -301,6 +351,11 @@ gameBus.on('passCompleted', e => {
 gameBus.on('passFailed',    e => { get(e.player).passesFailed++;    notify(); });
 gameBus.on('shot',          e => {
   const s = get(e.player); s.shots++; s.xg += e.xg;
+  if (lastHolder && lastHolder.playerId === e.player) {
+    const team = playerTeam.get(e.player);
+    if (team) { teamFlags[team].shotPressureSum += lastHolder.pressure; teamFlags[team].shotPressureCount++; }
+  }
+  lastHolder = null;
   if (markedNow.has(e.player)) s.markedTargetShots++;
   notify();
 });
@@ -407,7 +462,7 @@ gameBus.on('ballCluster', e => {
 });
 
 // ── Discipline stats ──────────────────────────────────────────────────────────
-gameBus.on('foul', e => { get(e.offenderId).fouls++; notify(); });
+gameBus.on('foul', e => { get(e.offenderId).fouls++; lastHolder = null; notify(); });
 gameBus.on('card', e => {
   const s = get(e.playerId);
   if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
@@ -496,6 +551,91 @@ gameBus.on('manMarkTick', e => {
   for (const id of e.targetIds) get(id).manMarked += minutes;
 });
 
+// ── Decision telemetry (`decisions.md`) ───────────────────────────────────────
+// Counted on every fresh decision, no notify (it fires every tick; the next counted event refreshes the panels).
+function onDecision(e: DecisionTelemetryEvent): void {
+  const s = get(e.playerId);
+  const f = teamFlags[e.team];
+  const nearTie = e.margin < DECISION_TELEMETRY.NEAR_TIE;
+  if (e.family === 'holder') {
+    s.holderDecisions++;
+    f.holderPressureSum += e.pressure;
+    lastHolder = { playerId: e.playerId, pressure: e.pressure };
+    if (nearTie) f.holderNearTies++;
+  } else if (e.family === 'offBall') {
+    s.offBallDecisions++;
+    if (nearTie) f.offBallNearTies++;
+  } else {
+    s.defenseDecisions++;
+    if (nearTie) f.defenseNearTies++;
+  }
+  const cell = bucketMix[e.team][e.family][e.bucket];
+  if (cell) cell.set(e.chosen, (cell.get(e.chosen) ?? 0) + 1);
+  let pm = playerMix.get(e.playerId);
+  if (!pm) { pm = { holder: new Map(), offBall: new Map(), defense: new Map() }; playerMix.set(e.playerId, pm); }
+  pm[e.family].set(e.chosen, (pm[e.family].get(e.chosen) ?? 0) + 1);
+  lastDecision.set(e.playerId, e);
+}
+
+let decisionUnsubs: (() => void)[] = [];
+/**
+ * Decision telemetry listeners on (default) or off. Off = the engine emits no decision event at all (nobody listens),
+ * which is how `DecisionTelemetry.engine.test.ts` proves the telemetry changes nothing.
+ */
+export function setDecisionTelemetry(on: boolean): void {
+  for (const u of decisionUnsubs) u();
+  decisionUnsubs = [];
+  if (!on) return;
+  decisionUnsubs = [
+    gameBus.on('holderDecision', onDecision),
+    gameBus.on('offBallDecision', onDecision),
+    gameBus.on('defensiveDecision', onDecision),
+  ];
+}
+setDecisionTelemetry(true);
+
+/** Entropy per family of one team: per-bucket Shannon entropy weighted by the bucket's decisions. */
+function teamEntropy(team: TeamId, family: Family): number {
+  let weighted = 0;
+  let total = 0;
+  for (const cell of bucketMix[team][family]) {
+    let n = 0;
+    for (const c of cell.values()) n += c;
+    if (n === 0) continue;
+    weighted += entropyBits(cell.values()) * n;
+    total += n;
+  }
+  return total > 0 ? weighted / total : 0;
+}
+
+/** Decision mix (action → count) of one player per family. */
+export function getDecisionMix(playerId: number): Record<Family, Record<string, number>> {
+  const pm = playerMix.get(playerId);
+  const out = { holder: {}, offBall: {}, defense: {} } as Record<Family, Record<string, number>>;
+  if (!pm) return out;
+  for (const f of FAMILIES) out[f] = Object.fromEntries(pm[f]);
+  return out;
+}
+
+/** Decision mix of one team per family: all buckets and per bucket. */
+export function getTeamDecisionMix(team: TeamId): Record<Family, { total: Record<string, number>; buckets: Record<string, number>[] }> {
+  const out = {} as Record<Family, { total: Record<string, number>; buckets: Record<string, number>[] }>;
+  for (const f of FAMILIES) {
+    const total: Record<string, number> = {};
+    const buckets = bucketMix[team][f].map((cell) => {
+      for (const [k, v] of cell) total[k] = (total[k] ?? 0) + v;
+      return Object.fromEntries(cell);
+    });
+    out[f] = { total, buckets };
+  }
+  return out;
+}
+
+/** The last decision event of a player this match (`/test`). */
+export function getLastDecision(playerId: number): DecisionTelemetryEvent | undefined {
+  return lastDecision.get(playerId);
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -510,6 +650,10 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   markedNow = new Set();
   teamFlags.A = emptyTeamFlags();
   teamFlags.B = emptyTeamFlags();
+  bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
+  playerMix.clear();
+  lastDecision.clear();
+  lastHolder = null;
   for (const { id, team } of players) {
     store.set(id, emptyStats());
     playerTeam.set(id, team);
@@ -523,7 +667,10 @@ export function getPlayerStats(id: number): PlayerStats {
 
 /** Team stats derived from the sum of all player stats for that team. */
 export function getTeamStats(team: TeamId): TeamStats {
-  const result: TeamStats = { ...emptyStats(), ...teamFlags[team], avgEndEnergy: 0 };
+  const result: TeamStats = {
+    ...emptyStats(), ...teamFlags[team], avgEndEnergy: 0,
+    holderEntropy: teamEntropy(team, 'holder'), offBallEntropy: teamEntropy(team, 'offBall'), defenseEntropy: teamEntropy(team, 'defense'),
+  };
   let energySum = 0;
   let energyCount = 0;
   for (const [, e] of endEnergy) {
@@ -588,6 +735,9 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.markedTargetTouches      += stats.markedTargetTouches;
     result.markedTargetShots        += stats.markedTargetShots;
     result.markedTargetGoals        += stats.markedTargetGoals;
+    result.holderDecisions          += stats.holderDecisions;
+    result.offBallDecisions         += stats.offBallDecisions;
+    result.defenseDecisions         += stats.defenseDecisions;
   }
   return result;
 }

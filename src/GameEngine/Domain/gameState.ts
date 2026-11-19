@@ -14,6 +14,8 @@ import {
 } from '@/GameEngine/Domain/SetPieces';
 import type { CornerSource } from '@/GameEngine/Infrastructure/EventBus';
 import { kickOrder, resolvePenaltyShootout, penaltyChance, shootoutDecided, type PenaltySide } from '@/GameEngine/Infrastructure/PenaltyShootout';
+import { holderPressure } from '@/GameEngine/Domain/Pressure';
+import { argmaxAndMargin, setDecisionCapture, situationBucket, takeCapture, type CapturedDecision } from '@/GameEngine/Domain/DecisionTelemetry';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import { outfieldNearBall } from '@/GameEngine/Domain/BallCluster';
 import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
@@ -3864,6 +3866,22 @@ export type TickResult = {
  *
  * During a pass or shot in flight, only ball advancement runs (no pressing/tackling).
  */
+/** Emits one decision telemetry event (`decisions.md`). */
+function emitDecisionTelemetry(
+  p: GamePlayer, cap: CapturedDecision, decisionType: string, ballPos: { x: number; y: number }, pressure: number, t: number,
+): void {
+  const { argmax, margin } = argmaxAndMargin(cap.scores);
+  const event = cap.family === 'holder' ? 'holderDecision' : cap.family === 'offBall' ? 'offBallDecision' : 'defensiveDecision';
+  if (!gameBus.has(event)) return;
+  gameBus.emit(event, {
+    playerId: p.id, team: p.team, family: cap.family,
+    chosen: cap.chosen ?? decisionType, decision: decisionType,
+    scores: cap.scores, argmax, margin,
+    bucket: situationBucket(ballPos.x, ballPos.y, p.attackDir, pressure),
+    pressure, t,
+  });
+}
+
 /**
  * Real-seconds per "tick" that the tick-counted timers were tuned for (`COMMIT_TICKS`, `justReceivedTicks`, the
  * through-ball cell cache): `simulateMatch`'s 0.2 s step, which every calibration (goals, quickSim, formations) used.
@@ -4159,6 +4177,15 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     }
   }
 
+  // Decision telemetry (`decisions.md`): only while somebody listens. The situation (the ball's third and channel, the
+  // holder's pressure) is computed once per tick; no dice, nothing here feeds back into a decision.
+  const telemetry = gameBus.has('holderDecision') || gameBus.has('offBallDecision') || gameBus.has('defensiveDecision');
+  let telemetryPressure = 0;
+  if (telemetry) {
+    telemetryPressure = holderPressure(ballPos.x, ballPos.y, s.players.filter(o => o.team !== holder.team));
+  }
+  setDecisionCapture(telemetry);
+
   for (const p of s.players) {
     // A keeper who spilled a save or flapped a cross is the last touch of the loose ball: he decides and runs like
     // the others (report 2026-11-18: he stood still until someone else took it).
@@ -4212,7 +4239,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     );
     newDecisions[p.id] = fresh;
     updatedMemory[p.id] = { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
+    if (telemetry) {
+      const cap = takeCapture();
+      // Set-piece takers play a forced restart: their score vector is not the decision they take.
+      const forced = isBallHolder && s.setPiece != null && s.setPiece.takerId === p.id;
+      if (cap && !forced) emitDecisionTelemetry(p, cap, fresh.type, ballPos, telemetryPressure, s.matchTime);
+    }
   }
+  if (telemetry) setDecisionCapture(false);
 
   // Apply new memory to player objects
   const playersWithMemory = s.players.map(p => ({

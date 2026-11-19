@@ -299,6 +299,18 @@ export interface TeamRawStats {
   /** Kinematics (`kinematics.md`), summed across games: yards covered by the team, sprints (≥ 85% of top speed for 1 s). */
   distanceCovered: number;
   sprints: number;
+  /** Decision telemetry (`decisions.md`), summed across games: fresh decisions and near-ties per family, the per-match
+   * bucket-weighted entropy (bits), the holder pressure at decisions. */
+  holderDecisions: number;
+  offBallDecisions: number;
+  defenseDecisions: number;
+  holderNearTies: number;
+  offBallNearTies: number;
+  defenseNearTies: number;
+  holderEntropySum: number;
+  offBallEntropySum: number;
+  defenseEntropySum: number;
+  holderPressureSum: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -473,6 +485,14 @@ export interface PerMatchView {
   /** Kinematics per match (`kinematics.md`): team yards covered, sprints. */
   avgDistanceCovered: number;
   avgSprints: number;
+  /** Decision telemetry per match (`decisions.md`): entropy (bits), near-tie share (%), mean holder pressure. */
+  avgHolderEntropy: number;
+  avgOffBallEntropy: number;
+  avgDefenseEntropy: number;
+  holderNearTiePct: number;
+  offBallNearTiePct: number;
+  defenseNearTiePct: number;
+  avgHolderPressure: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -605,6 +625,14 @@ export interface VariantSummary {
   /** Kinematics per match (`kinematics.md`): team yards covered, sprints. */
   avgDistanceCovered: number;
   avgSprints: number;
+  /** Decision telemetry per match (`decisions.md`): entropy (bits), near-tie share (%), mean holder pressure. */
+  avgHolderEntropy: number;
+  avgOffBallEntropy: number;
+  avgDefenseEntropy: number;
+  holderNearTiePct: number;
+  offBallNearTiePct: number;
+  defenseNearTiePct: number;
+  avgHolderPressure: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

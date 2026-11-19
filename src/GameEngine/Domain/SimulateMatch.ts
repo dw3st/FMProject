@@ -12,6 +12,7 @@
 
 import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
+import { setDecisionFlags } from '@/GameEngine/Configs/DecisionConfig';
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
 import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes, type SlotInstruction } from '@/types/tacticsTypes';
@@ -138,6 +139,11 @@ export interface SimulateMatchOptions {
   managerDiscipline?: { A?: number; B?: number };
   /** Effective weather of the match (`.claude/rules/game/weather.md`). Absent = neutral. */
   weather?: import('@/GameEngine/Configs/WeatherConfig').EngineWeather;
+  /**
+   * Decision-layer flags for this match (`DecisionConfig.ts`, `decisions.md`); absent = the base flags (defaults with
+   * `DECISION_OVERRIDES`). Always set here, so nothing leaks from a previous match. Phase 2: no flag changes play yet.
+   */
+  decisions?: Partial<import('@/GameEngine/Configs/DecisionConfig').DecisionFlags>;
 }
 
 /** Player instructions of one side (`player-instructions.md`). */
@@ -253,6 +259,7 @@ export function simulateMatch(
     }
   }
 
+  setDecisionFlags(options.decisions);
   setTeamMoraleOverride('A', options.morale?.A);
   setTeamMoraleOverride('B', options.morale?.B);
   setTeamTemperamentOverride('A', options.temperament?.A);

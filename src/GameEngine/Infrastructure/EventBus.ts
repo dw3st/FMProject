@@ -3,6 +3,29 @@ import type { GameState, TeamId, SetPieceGoalKind } from '@/GameEngine/types';
 /** What put the ball behind for a corner (`cornerAwarded`). */
 export type CornerSource = 'save' | 'deflection' | 'cross_block' | 'cross_clearance' | 'tackle' | 'loose' | 'other';
 
+/** Payload of the three decision telemetry events. */
+export interface DecisionTelemetryEvent {
+  playerId: number;
+  team: TeamId;
+  family: 'holder' | 'offBall' | 'defense';
+  /** Action (holder) or intent (off-ball, defence) actually picked. */
+  chosen: string;
+  /** The `PlayerDecision` type it became (holder: = chosen; off-ball: support_run / create_space / idle). */
+  decision: string;
+  /** Every option's score (holder: compressed action scores; off-ball / defence: intent scores). */
+  scores: Record<string, number>;
+  /** Option with the top score (can differ from `chosen`: the holder's low-score fallback). */
+  argmax: string;
+  /** Top score minus the second (Infinity with a single option). */
+  margin: number;
+  /** Situation bucket 0..11 (`DecisionTelemetry.situationBucket`). */
+  bucket: number;
+  /** FM pressure scalar on the ball holder at the ball (`Pressure.ts`), raw. */
+  pressure: number;
+  /** `GameState.matchTime` of the tick. */
+  t: number;
+}
+
 /** All game events the engine can emit. Add new ones here as the engine grows. */
 export interface GameEvents {
   /** Emitted whenever possession or pass state changes significantly. */
@@ -167,6 +190,16 @@ export interface GameEvents {
   /** A complaint without a card in a match between two managers (9.6.5): `bias` = the referee took it badly. */
   managerComplaint: { team: TeamId; result: "calm" | "bias" };
   goalDisallowed: { team: TeamId; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; score: { A: number; B: number }; minute: number };
+
+  // ── Decision telemetry (`.claude/rules/game-engine/decisions.md`) ─────────
+  /**
+   * One fresh decision of the ball holder / an off-ball attacker / a defender, with its score vector. Emitted only
+   * while somebody listens (`gameBus.has`): `Statistics.ts`, the baseline script, `/test`. Set-piece takers and the
+   * unscored early returns (tackle range, recovery, keeper) emit nothing.
+   */
+  holderDecision:    DecisionTelemetryEvent;
+  offBallDecision:   DecisionTelemetryEvent;
+  defensiveDecision: DecisionTelemetryEvent;
 
   // ── Debug events ──────────────────────────────────────────────────────────
   /** Emitted every tick for the ball holder when debug mode is on. */
@@ -469,6 +502,12 @@ class TypedEventBus {
     if (!this.listeners.has(event)) this.listeners.set(event, new Set());
     this.listeners.get(event)!.add(fn as Listener<unknown>);
     return () => this.listeners.get(event)?.delete(fn as Listener<unknown>);
+  }
+
+  /** True when at least one listener is subscribed (lets emitters skip building a payload nobody reads). */
+  has<K extends keyof GameEvents>(event: K): boolean {
+    const set = this.listeners.get(event);
+    return set !== undefined && set.size > 0;
   }
 
   emit<K extends keyof GameEvents>(event: K, payload: GameEvents[K]): void {

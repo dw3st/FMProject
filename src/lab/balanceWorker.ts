@@ -120,6 +120,7 @@ function emptyTeamRaw(): TeamRawStats {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -191,6 +192,16 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.keeperSpills                += src.keeperSpills;
   dst.distanceCovered             += src.distanceCovered;
   dst.sprints                     += src.sprints;
+  dst.holderDecisions += src.holderDecisions;
+  dst.offBallDecisions += src.offBallDecisions;
+  dst.defenseDecisions += src.defenseDecisions;
+  dst.holderNearTies += src.holderNearTies;
+  dst.offBallNearTies += src.offBallNearTies;
+  dst.defenseNearTies += src.defenseNearTies;
+  dst.holderEntropySum += src.holderEntropySum;
+  dst.offBallEntropySum += src.offBallEntropySum;
+  dst.defenseEntropySum += src.defenseEntropySum;
+  dst.holderPressureSum += src.holderPressureSum;
   dst.corners                     += src.corners;
   dst.throwIns                    += src.throwIns;
   dst.setPieceRoutines                    += src.setPieceRoutines;
@@ -474,6 +485,17 @@ function runOneMatch(
   teamA.keeperSpills       += sA.keeperSpills;       teamB.keeperSpills       += sB.keeperSpills;
   teamA.distanceCovered    += sA.distanceCovered ?? 0; teamB.distanceCovered  += sB.distanceCovered ?? 0;
   teamA.sprints            += sA.sprints ?? 0;       teamB.sprints            += sB.sprints ?? 0;
+  // Decision telemetry (`decisions.md`); absent in the quickSim stats.
+  teamA.holderDecisions += sA.holderDecisions ?? 0; teamB.holderDecisions += sB.holderDecisions ?? 0;
+  teamA.offBallDecisions += sA.offBallDecisions ?? 0; teamB.offBallDecisions += sB.offBallDecisions ?? 0;
+  teamA.defenseDecisions += sA.defenseDecisions ?? 0; teamB.defenseDecisions += sB.defenseDecisions ?? 0;
+  teamA.holderNearTies += sA.holderNearTies ?? 0; teamB.holderNearTies += sB.holderNearTies ?? 0;
+  teamA.offBallNearTies += sA.offBallNearTies ?? 0; teamB.offBallNearTies += sB.offBallNearTies ?? 0;
+  teamA.defenseNearTies += sA.defenseNearTies ?? 0; teamB.defenseNearTies += sB.defenseNearTies ?? 0;
+  teamA.holderEntropySum += sA.holderEntropy ?? 0; teamB.holderEntropySum += sB.holderEntropy ?? 0;
+  teamA.offBallEntropySum += sA.offBallEntropy ?? 0; teamB.offBallEntropySum += sB.offBallEntropy ?? 0;
+  teamA.defenseEntropySum += sA.defenseEntropy ?? 0; teamB.defenseEntropySum += sB.defenseEntropy ?? 0;
+  teamA.holderPressureSum += sA.holderPressureSum ?? 0; teamB.holderPressureSum += sB.holderPressureSum ?? 0;
   teamA.corners             += sA.corners;             teamB.corners             += sB.corners;
   teamA.throwIns            += sA.throwIns ?? 0;       teamB.throwIns            += sB.throwIns ?? 0;
   teamA.setPieceRoutines            += sA.setPieceRoutines ?? 0;       teamB.setPieceRoutines            += sB.setPieceRoutines ?? 0;

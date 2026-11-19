@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { onDebugLog, getDebugLog } from "@/GameEngine/Support/DebugLog";
 import type { DebugEntry } from "@/GameEngine/Support/DebugLog";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
-import type { GameEvents } from "@/GameEngine/Infrastructure/EventBus";
+import type { GameEvents, DecisionTelemetryEvent } from "@/GameEngine/Infrastructure/EventBus";
+import { bucketName } from "@/GameEngine/Domain/DecisionTelemetry";
+import { DECISION_TELEMETRY } from "@/GameEngine/Configs/DecisionConfig";
 import type { GameState } from "@/GameEngine/types";
 import { engineOf } from "@/GameEngine/Domain/roleEngineData";
 import { instructionAnchor } from "@/GameEngine/Configs/RoleVariantConfig";
@@ -203,6 +205,9 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
 
           {/* ── Resolved slot tuning of the selected player (player instructions) ── */}
           {selectedPlayer && <TuningBlock player={selectedPlayer} />}
+
+          {/* ── Last decision telemetry event of the selected player (or the holder) — `decisions.md` ── */}
+          <DecisionTelemetryBlock playerId={selectedPlayerId ?? ballHolderId ?? null} />
 
           {/* ── Ball holder view ── */}
           {rightPanelMode === 'holder' && (scores ? (
@@ -527,6 +532,46 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
 }
 
 /** Engine tuning the selected player plays with (role + slot instruction, `player-instructions.md`). */
+/** Last `holderDecision` / `offBallDecision` / `defensiveDecision` of a player: sorted scores, margin, bucket, pressure. */
+function DecisionTelemetryBlock({ playerId }: { playerId: number | null }) {
+  const lastRef = useRef(new Map<number, DecisionTelemetryEvent>());
+  const idRef = useRef(playerId);
+  const [ev, setEv] = useState<DecisionTelemetryEvent | null>(null);
+  useEffect(() => {
+    idRef.current = playerId;
+    setEv(playerId != null ? lastRef.current.get(playerId) ?? null : null);
+  }, [playerId]);
+  useEffect(() => {
+    const on = (e: DecisionTelemetryEvent) => {
+      lastRef.current.set(e.playerId, e);
+      if (e.playerId === idRef.current) setEv(e);
+    };
+    const offs = [gameBus.on('holderDecision', on), gameBus.on('offBallDecision', on), gameBus.on('defensiveDecision', on)];
+    return () => { for (const u of offs) u(); };
+  }, []);
+  if (!ev) return null;
+  const sorted = Object.entries(ev.scores).sort((a, b) => b[1] - a[1]);
+  return (
+    <div className="space-y-0.5 pb-1.5 border-b border-white/5">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-bold tracking-widest uppercase text-cyan-400/80">Decision · {ev.family}</span>
+        <span className="text-[10px] font-bold text-foreground">{ev.chosen}</span>
+      </div>
+      {sorted.map(([k, v]) => (
+        <div key={k} className={`flex justify-between text-[9px] tabular-nums ${k === ev.argmax ? 'text-foreground' : 'text-muted-foreground/70'}`}>
+          <span>{k}</span><span>{v.toFixed(3)}</span>
+        </div>
+      ))}
+      <div className="text-[9px] tabular-nums text-muted-foreground/60">
+        margin {Number.isFinite(ev.margin) ? ev.margin.toFixed(3) : '∞'}
+        {ev.margin < DECISION_TELEMETRY.NEAR_TIE && <span className="ml-1 text-amber-400">near-tie</span>}
+        <span className="ml-2">{bucketName(ev.bucket)}</span>
+        <span className="ml-2">P {ev.pressure.toFixed(1)}</span>
+      </div>
+    </div>
+  );
+}
+
 function TuningBlock({ player }: { player: import('@/GameEngine/types').GamePlayer }) {
   const e = engineOf(player);
   const a = player.instruction ? {

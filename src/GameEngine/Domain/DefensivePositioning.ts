@@ -16,6 +16,7 @@
  * No side effects. No gameState imports (avoids circular deps).
  */
 
+import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import type { GamePlayer, Formation, TeamId, TeamIntent } from '@/GameEngine/types';
 import { slotBasePosition } from '@/GameEngine/FormationSlots';
 import { getDefenseConfig, getDefenseTacticKeys, MAN_MARK_CONFIG } from '@/GameEngine/Configs/DefenseConfig';
@@ -1217,6 +1218,7 @@ export function evaluateDefensiveDecision(
   );
 
   const { intent, scores, carryLaneBonus } = selectDefensiveIntent(ctx, possessionTime);
+  if (decisionCaptureOn()) captureDecision('defense', { ...scores }, intent);
 
   // Cache intent — computeDefensivePosition reads this to position the player.
   _intentCache[player.id] = intent;

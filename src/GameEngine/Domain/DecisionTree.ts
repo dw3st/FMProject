@@ -16,6 +16,7 @@
  *   4. Document it in game-engine.md
  */
 
+import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import type { GamePlayer, SetPiece, SetPieceRoutine, TeamIntent } from '@/GameEngine/types';
 
 const PITCH_CENTER_Y = PITCH_WIDTH / 2;
@@ -762,6 +763,14 @@ function decideBallHolder(
   const actions: ActionScore[] = [sh, ca, ps, dr, tb, cr, lb];
 
   const best = actions.reduce((a, b) => b.score > a.score ? b : a);
+
+  // Decision telemetry (`decisions.md`): the score vector, only while somebody listens.
+  if (decisionCaptureOn()) {
+    captureDecision('holder', {
+      shoot: sh.score, carry: ca.score, pass: ps.score, dribble: dr.score,
+      through_ball: tb.score, cross: cr.score, long_ball: lb.score,
+    });
+  }
 
   if (isDebugEnabled()) {
     if (gate) {

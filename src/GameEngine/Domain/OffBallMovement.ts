@@ -1,3 +1,4 @@
+import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import type { GamePlayer, PlayerRole, TeamIntent } from '@/GameEngine/types';
 import type { PlayerDecision } from '@/GameEngine/Domain/DecisionTree';
 import { scorePassQuality } from '@/GameEngine/Domain/PassLanes';
@@ -425,6 +426,7 @@ export function evaluateOffBall(
   const ctx = buildContext(player, ballHolder, allPlayers, opponents, offsideLine, teamIntent, crowdGrid);
 
   const { intent, scores: intentScores } = selectOffBallIntent(ctx);
+  if (decisionCaptureOn()) captureDecision('offBall', { ...intentScores }, intent);
 
   const anchor     = getAnchor(intent, ctx);
   const candidates = generateGridCandidates(anchor);

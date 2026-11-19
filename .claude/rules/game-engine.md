@@ -85,3 +85,8 @@ Full map of attribute → stat → effect: `game-engine/player-stats-usage.md`.
 `Statistics.ts` turns them into player/team stats for the live match, `/test` and `simulateMatch`
 (which `/lab` aggregates). A new observable mechanic needs its event, its `Statistics.ts` field,
 a `/test` surface and a `/lab` metric (`CLAUDE.md`).
+
+## Decision telemetry (FM-style decisions, phase 2)
+`holderDecision` / `offBallDecision` / `defensiveDecision` carry every fresh decision's score vector, situation bucket
+and FM pressure (`Domain/DecisionTelemetry.ts`, `Domain/Pressure.ts`, `Configs/DecisionConfig.ts`); emitted only while
+listened to, no dice. See `game-engine/decisions.md`.
