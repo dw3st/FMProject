@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.28.2",
+    date: "2026-11-19",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "club", pt: "No Clube, o ? ao lado de cada peça e material mostra do que é feito e onde é usado, e o estoque tem o botão Fabricar.", en: "In Club, the ? next to each part and material shows what it is made of and where it is used, and the stock has a Make button." },
+    ],
+  },
+  {
     version: "12.28.1",
     date: "2026-11-19",
     time: "11:01",
