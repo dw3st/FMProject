@@ -68,6 +68,8 @@ export interface WorldView {
   kind: "friends" | "public";
   /** Public world: ISO of the next step. */
   nextSlotAt: string | null;
+  /** Leagues the day advance plays in the full engine (every seat's league and followed leagues). */
+  fullLeagues: string[];
 }
 
 /** `GET /api/worlds/by-code/:code`. */

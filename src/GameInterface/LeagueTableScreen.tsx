@@ -1,5 +1,5 @@
 import { IntercontinentalView } from "@/GameInterface/Components/IntercontinentalView";
-import { useHumanClubs } from "@/GameInterface/World/useHumanClubs";
+import { useHumanWorld } from "@/GameInterface/World/useHumanClubs";
 import { HumanBadge } from "@/GameInterface/World/HumanBadge";
 import i18next from "@/i18n/i18n";
 import { formatGameDate } from "@/GameInterface/formatDate";
@@ -20,7 +20,7 @@ import { ClubLogo, squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { ratingTextClass10 } from "@/GameInterface/scoreColors";
 import { computeStandings } from "@/Domain/season/computeStandings";
 import { countryDisplayName, leagueLabel, competitionName } from "@/Domain/world/labels";
-import { resolveSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
+import { displayedSimMode, MAX_FOLLOWED_LEAGUES } from "@/Domain/advanceDay/simMode";
 import { updateFollowedLeagues } from "@/GameInterface/gameSession";
 import { Icon } from "@/GameInterface/Icons";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
@@ -535,7 +535,7 @@ function MatchStatsModal({
 export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
   const { t, i18n } = useTranslation();
   const { session, currentDate, mergeSession, fixtures } = useGameSave();
-  const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
+  const { clubs: humanClubs, fullLeagues: worldFullLeagues } = useHumanWorld(session?.saveId, !!session?.groupAdvance);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [activeSlug, setActiveSlug] = useState(
     leagueSlug ?? session?.leagueSlug ?? "premier_league",
@@ -781,7 +781,7 @@ export function LeagueTableScreen({ leagueSlug }: { leagueSlug?: string }) {
         : t("leagues.followLeague");
 
   const simMode = session
-    ? resolveSimMode(activeSlug, { leagueSlug: session.leagueSlug, followedLeagues })
+    ? displayedSimMode(activeSlug, { leagueSlug: session.leagueSlug, followedLeagues }, worldFullLeagues)
     : "full";
 
   const handleToggleFollow = async () => {

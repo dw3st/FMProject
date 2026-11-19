@@ -1,3 +1,4 @@
+import { fullEngineLeagues } from "@/Domain/advanceDay/simMode";
 import { saveService as defaultService, type SaveService } from "@/backend/SaveService";
 import { deleteSaveMembers, listSaveMembers } from "@/backend/auth/saveOwnership";
 import { getSocialUser } from "@/backend/social/socialStore";
@@ -42,7 +43,8 @@ export async function worldView(
   if (!meta?.world || meta.mode !== "multi") return null;
   const bySeat = new Map(listSaveMembers(saveId).map((m) => [m.seatId, m]));
   const members: WorldMemberView[] = [];
-  for (const { seatId, seat } of await service.listSeats(saveId)) {
+  const seats = await service.listSeats(saveId);
+  for (const { seatId, seat } of seats) {
     const m = bySeat.get(seatId);
     if (!m) continue;
     members.push({
@@ -69,6 +71,7 @@ export async function worldView(
     currentDate: meta.currentDate ?? null,
     myRole: me.role, mySeatId: me.seatId, members,
     kind: meta.world.kind ?? "friends", nextSlotAt: pub ? nextSlotAt(Date.now()) : null,
+    fullLeagues: fullEngineLeagues(seats.map(({ seat }) => seat)),
   };
 }
 

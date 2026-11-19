@@ -34,3 +34,25 @@ export function resolveSimModeForSeats(
 ): SimMode {
   return seats.some((s) => resolveSimMode(leagueSlug, s) === "full") ? "full" : "fast";
 }
+
+/**
+ * Leagues the day advance plays in the full engine for a world with these seats (each seat's league and
+ * followed leagues), sorted and unique: the same rule as `resolveSimModeForSeats`, as a list for the screens.
+ */
+export function fullEngineLeagues(seats: readonly { leagueSlug: string; followedLeagues?: string[] }[]): string[] {
+  const out = new Set<string>();
+  for (const s of seats) {
+    if (s.leagueSlug) out.add(s.leagueSlug);
+    for (const f of (s.followedLeagues ?? []).slice(0, MAX_FOLLOWED_LEAGUES)) out.add(f);
+  }
+  return [...out].sort();
+}
+
+/** Sim mode shown on screen: the viewer's own rule, or full when another seat's day advance plays it in full. */
+export function displayedSimMode(
+  leagueSlug: string,
+  meta: { leagueSlug: string; followedLeagues?: string[] },
+  worldFullLeagues: readonly string[],
+): SimMode {
+  return resolveSimMode(leagueSlug, meta) === "full" || worldFullLeagues.includes(leagueSlug) ? "full" : "fast";
+}

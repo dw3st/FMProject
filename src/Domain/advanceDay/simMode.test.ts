@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MAX_FOLLOWED_LEAGUES, resolveSimMode, resolveSimModeForSeats, sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
+import { displayedSimMode, fullEngineLeagues, MAX_FOLLOWED_LEAGUES, resolveSimMode, resolveSimModeForSeats, sanitizeFollowedLeagues } from "@/Domain/advanceDay/simMode";
 
 describe("resolveSimMode", () => {
   test("liga do jogador é full", () => {
@@ -42,5 +42,29 @@ describe("resolveSimModeForSeats", () => {
     expect(resolveSimModeForSeats("sa", seats)).toBe("full");
     expect(resolveSimModeForSeats("bl", seats)).toBe("fast");
     expect(resolveSimModeForSeats("pl", [])).toBe("fast");
+  });
+});
+
+describe("fullEngineLeagues", () => {
+  test("every seat's league and first 3 followed, unique and sorted, same as resolveSimModeForSeats", () => {
+    const seats = [
+      { leagueSlug: "pl", followedLeagues: ["ll", "a", "b", "c"] },
+      { leagueSlug: "brazil_serie_b", followedLeagues: ["pl"] },
+    ];
+    const list = fullEngineLeagues(seats);
+    expect(list).toEqual(["a", "b", "brazil_serie_b", "ll", "pl"]);
+    for (const slug of ["pl", "ll", "a", "b", "c", "brazil_serie_b", "x"]) {
+      expect(list.includes(slug) ? "full" : "fast").toBe(resolveSimModeForSeats(slug, seats));
+    }
+  });
+});
+
+describe("displayedSimMode", () => {
+  test("another seat's league is shown as full", () => {
+    const me = { leagueSlug: "brazil_serie_a", followedLeagues: ["pl"] };
+    expect(displayedSimMode("brazil_serie_b", me, [])).toBe("fast");
+    expect(displayedSimMode("brazil_serie_b", me, ["brazil_serie_a", "brazil_serie_b"])).toBe("full");
+    expect(displayedSimMode("pl", me, [])).toBe("full");
+    expect(displayedSimMode("la_liga", me, ["brazil_serie_b"])).toBe("fast");
   });
 });

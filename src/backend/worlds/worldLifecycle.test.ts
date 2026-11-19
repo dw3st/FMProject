@@ -40,6 +40,7 @@ describe("world lifecycle", () => {
     const view = (await worldView(meta.id, { seatId: meta.seatId, role: "owner" }))!;
     expect(view).toMatchObject({ phase: "lobby", max: 8, myRole: "owner", mySeatId: meta.seatId });
     expect(view.members.map((m) => [m.managerName, m.role])).toEqual([["Ana", "owner"], ["Bia", "member"]]);
+    expect(view.fullLeagues).toContain("premier_league");
 
     await deleteWorld(meta.id, owner.user.id);
     expect(await saveService.getMeta(meta.id)).toBeNull();
