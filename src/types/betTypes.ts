@@ -45,7 +45,11 @@ export interface BetGame {
   awayName: string;
   /** The side of the manager's own club in this game. */
   own: "home" | "away" | null;
+  /** Kickoff "HH:MM" (the same draw as the live match, `matchConditions`). */
+  kickoff?: string;
   markets: BetMarkets;
+  /** In the list of every competition: only the result is sent; this many other prices wait for the game's own call. */
+  more?: number;
 }
 
 export interface BetsView {
@@ -58,4 +62,8 @@ export interface BetsView {
   games: BetGame[];
   /** With no game in the window: the date of the next game of those competitions (tester report, 8.9.6). */
   nextDate?: string | null;
+  /** The world's date (the games are after it). */
+  today?: string | null;
+  /** His league and his club's cup and continental ("Minhas competições"). */
+  mine?: string[];
 }

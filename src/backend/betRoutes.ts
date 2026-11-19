@@ -7,6 +7,15 @@ import type { Bet } from "@/types/betTypes";
 
 type Req = Request & { params: Record<string, string> };
 
+/** The list of every competition is ~100 KB of JSON (~15 KB gzipped): compressed when the browser takes it. */
+function jsonMaybeGzip(req: Request, value: unknown): Response {
+  const body = JSON.stringify(value);
+  if (body.length < 16_384 || !/gzip/.test(req.headers.get("accept-encoding") ?? "")) {
+    return new Response(body, { headers: { "Content-Type": "application/json" } });
+  }
+  return new Response(Bun.gzipSync(body), { headers: { "Content-Type": "application/json", "Content-Encoding": "gzip", Vary: "Accept-Encoding" } });
+}
+
 export const betRoutes = {
   "/api/saves/:saveId/bets": async (req: Req) => {
     const saveId = req.params.saveId!;
@@ -18,7 +27,12 @@ export const betRoutes = {
       const query = new URL(req.url).searchParams;
       const competition = query.get("competition") ?? undefined;
       if (competition && !(await isBettableCompetition(saveService, saveId, competition))) return Response.json({ error: "invalidCompetition" }, { status: 400 });
-      return Response.json(await betsView(saveService, saveId, auth.seatId, seat, query.get("summary") === "1", competition));
+      const fixture = query.get("fixture") ?? undefined;
+      if (fixture !== undefined && (!competition || fixture.length === 0 || fixture.length > 80)) return Response.json({ error: "invalidFixture" }, { status: 400 });
+      const view = await betsView(saveService, saveId, auth.seatId, seat, {
+        summary: query.get("summary") === "1", competition, fixture, all: query.get("scope") === "all" && !competition,
+      });
+      return jsonMaybeGzip(req, view);
     }
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const body = await req.json().catch(() => null) as Record<string, unknown> | null;

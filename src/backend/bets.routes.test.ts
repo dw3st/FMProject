@@ -76,6 +76,28 @@ describe("bets", () => {
     expect((await call("GET", undefined, "?competition=u21_england")).status).toBe(400);
   }, 120_000);
 
+  test("lists every competition with the 1X2 only, and one game with all its prices", async () => {
+    const all = await call("GET", undefined, "?scope=all");
+    expect(all.status).toBe(200);
+    expect(all.data.today).toBe((await saveService.getMeta(saveId))!.currentDate!);
+    expect(all.data.mine).toContain("premier_league");
+    const comps = new Set(all.data.games.map((g) => g.competition));
+    expect(comps.has("premier_league")).toBe(true);
+    expect(comps.has("of_championship")).toBe(true);
+    expect([...comps].some((c) => c.startsWith("u21_") || c.startsWith("u19_"))).toBe(false);
+    const g = all.data.games.find((x) => !x.own)!;
+    expect(g.markets.result).toHaveLength(3);
+    expect(g.markets.scores).toHaveLength(0);
+    expect(g.more).toBeGreaterThan(0);
+    expect(g.kickoff).toMatch(/^\d{2}:\d{2}$/);
+
+    const one = await call("GET", undefined, `?competition=${g.competition}&fixture=${encodeURIComponent(g.fixtureId)}`);
+    expect(one.data.games).toHaveLength(1);
+    expect(one.data.games[0]!.markets.result).toEqual(g.markets.result);
+    expect(one.data.games[0]!.markets.scores.length + one.data.games[0]!.markets.scorers.length).toBe(g.more!);
+    expect((await call("GET", undefined, `?fixture=${g.fixtureId}`)).status).toBe(400);
+  }, 120_000);
+
   test("the day settles the bet on the game played, moves the wallet and writes to the inbox", async () => {
     const date = (await saveService.getMeta(saveId))!.currentDate!;
     const idx = (await saveService.getDateIndex(saveId, "of_championship"))!;
