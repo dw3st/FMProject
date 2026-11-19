@@ -21,7 +21,7 @@ import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
-import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans, clockScaleOf, withClockScale } from '@/GameEngine/Domain/gameState';
+import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans, clockScaleOf, withClockScale, matchMinute } from '@/GameEngine/Domain/gameState';
 import { getHighlights, getHighlightLiveSeconds } from '@/GameEngine/Domain/HighlightTracker';
 import type { Highlight } from '@/GameEngine/Domain/Highlights';
 import { initStats, getAllPlayerStats, getGoalLog, getTeamStats, type GoalLogEntry } from '@/GameEngine/Domain/Statistics';
@@ -335,7 +335,7 @@ export function simulateMatch(
     // In headless simulation both teams are AI-controlled — evaluate subs for Team A too
     const subsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
     if (subsWindow && shouldCheckAiSubs(s.matchTime, dt * clockScaleOf(s))) {
-      const subsA = evaluateAiSubstitutions(s, 'A');
+      const subsA = evaluateAiSubstitutions(s, 'A', matchMinute(s));
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
     s = tickState(s, dt).state;

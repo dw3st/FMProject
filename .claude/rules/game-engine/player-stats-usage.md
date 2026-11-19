@@ -346,7 +346,7 @@ cost = STAMINA_COST[action] * (1 - reduction) * dtGame * loadDrainMultiplier
 A full-stamina player spends energy at half the rate of a zero-stamina player on every action
 (locomotion drain per tick, tackle/press bursts).
 
-**2. Half-time recovery** (`gameState.ts` — `switchSides`):
+**2. Half-time recovery** (`gameState.ts` — `switchSides` → `halfTimeCondition`; under `FM_CONDITION` (stage 14) it is +2 points × (0.75 + 0.5 × stamina/10) instead, `game/fitness.md` → "FM condition"; the legacy formula below with the flag off):
 ```ts
 recoveryRate = (0.30 + (stamina / 10) * 0.30) * recoveryScale
 // 30% of the energy gap at stamina 0 → 60% at stamina 10

@@ -494,7 +494,12 @@ export interface GameEvents {
    * from `evaluateAiSubstitutions` (AiSubstitution.ts); absent for a manual/tactical substitution
    * (e.g. the user's own sub in MatchScreen) — Statistics counts only the former as a fatigue sub.
    */
-  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: 'fatigue' | 'injury' };
+  /**
+   * Stage 14 (`fitness.md` → "FM condition"): once per match minute of live play per team, the outfield median
+   * condition and the keeper's (null without one). `Statistics.ts` keeps it by minute for `/lab`.
+   */
+  conditionSample: { minute: number; team: TeamId; median: number; keeper: number | null };
+  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: import('@/GameEngine/types').SubstitutionReason; minute?: number };
 
   /** Two starters of `team` swapped slots mid-match (`swapPlayerPositions`, #115) — no substitution used. */
   positionsSwapped: { team: TeamId; aId: number; bId: number };

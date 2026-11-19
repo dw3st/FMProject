@@ -265,7 +265,14 @@ export interface SubstitutionRecord {
   playerInRosterId: string;
   /** Game-minute when the substitution was made. */
   matchMinute: number;
+  /** Why it was made: an AI change (`fatigue` / `tactical`, stage 14) or a forced `injury`; absent = the manager's. */
+  reason?: SubstitutionReason;
+  /** The AI's reason in words (`/test`, the debug log), e.g. "condition 68 < 75 at 61'". */
+  why?: string;
 }
+
+/** `tactical` (stage 14): the AI freshens its most tired player late with fewer than its planned changes. */
+export type SubstitutionReason = 'fatigue' | 'injury' | 'tactical';
 
 /** A queued substitution that will execute at the next dead-ball moment. */
 export interface PendingSub {
@@ -280,7 +287,9 @@ export interface PendingSub {
    * manual/tactical substitution. Threaded through to the `playerSubstituted` event so
    * Statistics.ts can count these separately.
    */
-  reason?: 'fatigue' | 'injury';
+  reason?: SubstitutionReason;
+  /** The AI's reason in words, copied to the `SubstitutionRecord`. */
+  why?: string;
 }
 
 /** One entry in the match injury log (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1). */

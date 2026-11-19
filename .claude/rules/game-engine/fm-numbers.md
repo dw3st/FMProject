@@ -273,3 +273,24 @@ lances. Os níveis se contêm (`highlights.md`); segundos = tempo de exibição 
   claras, poucos pênaltis e vermelhos) o nível principal daria ~5–6 lances (~1,7 min); os "15–25 lances principais" do
   FM ficam mais perto do nosso nível estendido (chutes, defesas, escanteios, faltas perigosas, cartões).
 - Custo: o `simStep` por passo e o rastreador ficaram dentro do ruído do tempo por partida (PC carregado).
+
+## Etapa 14: condição física e substituições (só registro)
+
+`fm-targets.ts 12 premier_league --chunks 1` (semente 9000, 90 min); antes = `DECISION_OVERRIDES='{"FM_CONDITION":false}'`.
+A curva é o comportamento da etapa (escala do FM); o volume não foi calibrado.
+
+| Medida | FM | antes | etapa 14 |
+|---|---|---|---|
+| Condição (mediana dos jogadores de linha) 15' / 30' / 45' | 87 / 86,5 / 77,5 | 83,2 / 77,5 / 72,6 | 91,0 / 83,9 / 78,4 |
+| 60' / 75' / 90' | 72,5 / 75 / 73,5 | 73,6 / 68,1 / 62,2 | 75,4 / 73,6 / 71,3 |
+| Goleiros no fim | 96,5 | 66,8 | 97,2 |
+| Trocas da IA por time | 3–4 | 0,1 | 3,6 |
+| Minuto médio da troca | a partir de ~55 (média ~68) | 85 | 61,9 |
+| Condição de quem sai | 55–75 (uma a 86) | 31,6 | 72,2 |
+| Gols / chutes / passes | 1,5 / 21,5 / 978 | 8,0 / 33,2 / 787 | 8,9 / 33,4 / 816 |
+| Faltas / desarmes ganhos | 19 / 17 | 58,6 / 45,5 | 62,1 / 49,3 |
+
+Em 3 partidas, quem jogou os 90' termina entre 66,6 e 74 (mediana 69,5; FM tem mínimo 60): o piso de 60 e o
+espalhamento pequeno do fôlego deixam a ponta de baixo mais alta que a do FM. As trocas saem cedo (quase todos passam
+de 75 % antes de 60') e em pares; o FM espalha de 54' a 89'. A largada a 99 (antes 88) deixa todo mundo menos cansado
+no jogo: mais passes, desarmes e faltas (fica para a calibração da etapa 21).

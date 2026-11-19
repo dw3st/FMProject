@@ -77,7 +77,8 @@ export const SUB_WALK = { S: 2.4, OFF_YDS: 3 } as const;
 export const FATIGUE_BAR = {
   W: 2.1, H: 4, GAP: 4, TRACK_ALPHA: 0.45,
   OK: 0x5ad16b, MID: 0xf2c94c, LOW: 0xff8a3d,
-  OK_FROM: 60, MID_FROM: 40,
+  /** FM's condition scale (engine rebuild stage 14): kick-off ~99, half time ~78, the AI changes below 75. */
+  OK_FROM: 80, MID_FROM: 70,
 } as const;
 
 /** Ball drawing: radius px, ground shadow, how a raised ball is drawn per yard of height. */

@@ -1,3 +1,4 @@
+import { conditionDrainMult } from "@/GameEngine/Domain/Condition";
 import { describe, expect, test } from "bun:test";
 import {
   applyContinuousFatigue,
@@ -102,7 +103,8 @@ describe("applyStaminaCost", () => {
       decisionMemory: { path: "BALL_HOLDER", decision: null, commitTicks: 0 },
     } as GamePlayer);
     const out = applyStaminaCost([p], 1, "tackle");
-    expect(out[0]!.energy).toBe(100 - STAMINA_COST.tackle);
+    // FM condition (stage 14): the cost × `conditionDrainMult` (DRAIN_SCALE × the headroom above the floor).
+    expect(out[0]!.energy).toBeCloseTo(100 - STAMINA_COST.tackle * conditionDrainMult(p), 10);
   });
 });
 

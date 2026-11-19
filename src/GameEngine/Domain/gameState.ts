@@ -120,7 +120,8 @@ import {
   type InjuryFactors, type InjurySeverity,
 } from '@/Domain/injury/injury';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
-import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
+import { drainMultiplier as loadDrainMultiplier, matchStartCondition, matchStartEnergy } from '@/Domain/fitness/fitness';
+import { conditionDrainMult, halfTimeCondition, outfieldMedianCondition } from '@/GameEngine/Domain/Condition';
 import { matchRandom, loadMatchRng, matchRngState, newMatchSeed } from '@/GameEngine/Infrastructure/MatchRng';
 
 // ── Offside config ────────────────────────────────────────────────────────────
@@ -146,6 +147,11 @@ const PRESS_INTERCEPT_MAX_LOOKAHEAD = 14;
 export const LEGACY_CLOCK_SCALE = 18;
 
 /** Game-seconds the match clock advances per physical second of simulation (1 = real time, the default). */
+/** Kick-off condition from the persisted fitness: FM's scale under `FM_CONDITION` (stage 14), else `matchStartEnergy`. */
+function startConditionOf(fitness: number): number {
+  return DECISION_FLAGS.FM_CONDITION ? matchStartCondition(fitness) : matchStartEnergy(fitness);
+}
+
 export function clockScaleOf(state: Pick<GameState, 'clockScale'>): number {
   return state.clockScale ?? 1;
 }
@@ -323,7 +329,7 @@ function buildGamePlayerForSlot(
   // only. `TestCases.ts` scenarios that want a genuinely fresh 100-energy match (most of them —
   // this default is for engine tuning, not fitness testing) give their roster an explicit
   // `seasonLog.fitness: 100` for that reason.
-  const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
+  const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
   return {
     id:               engineId,
     rosterId:         rp.id,
@@ -397,7 +403,7 @@ function buildTeam(
     ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
-    const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
+    const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
     // Bench players have placeholder positions — overwritten when they sub in
     const dummyPos = { x: 0, y: 0 };
     const dummyBounds = { minX: 0, maxX: PITCH_LENGTH, minY: 0, maxY: PITCH_WIDTH };
@@ -539,7 +545,8 @@ export function performSubstitution(
   team: TeamId,
   outPlayerId: number,
   inPlayerId: number,
-  reason?: 'fatigue' | 'injury',
+  reason?: import('../types').SubstitutionReason,
+  why?: string,
 ): GameState {
   const bench = team === 'A' ? state.benchA : state.benchB;
   const outPlayer = state.players.find(p => p.id === outPlayerId && p.team === team);
@@ -591,9 +598,14 @@ export function performSubstitution(
     playerInName:      inPlayer.name,
     playerInRosterId:  inPlayer.rosterId,
     matchMinute: minute,
+    ...(reason ? { reason } : {}),
+    ...(why ? { why } : {}),
   };
 
-  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason });
+  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason, minute });
+  if (reason === 'fatigue' || reason === 'tactical') {
+    debugLog('condition', `AI sub ${team}: ${inPlayer.name} for ${outPlayer.name} (${reason}${why ? `, ${why}` : ''})`, { playerId: outPlayerId, data: { minute, outEnergy: Math.round(outPlayer.energy), inEnergy: Math.round(inPlayer.energy) } });
+  }
 
   // Transfer ball if outgoing player held it
   let ballHolderId = state.ballHolderId;
@@ -647,7 +659,7 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
   for (const req of pending) {
     const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
     if (subsLeft <= 0) break;
-    s = performSubstitution(s, team, req.outId, req.inId, req.reason);
+    s = performSubstitution(s, team, req.outId, req.inId, req.reason, req.why);
   }
 
   return s;
@@ -2271,8 +2283,8 @@ function switchSides(
 ): GameState {
   state = clearAllChasers(state);
   const switched: GamePlayer[] = state.players.map(p => {
-    const recoveryRate = (0.30 + (p.stamina / 10) * 0.30) * recoveryScale; // 30% at stamina 0 → 60% at stamina 10
-    const recoveredEnergy = Math.min(p.startEnergy, p.energy + (p.startEnergy - p.energy) * recoveryRate);
+    // FM: +2 at the break (stage 14, `Condition.ts`); flag off: 30–60% of the gap to the kick-off value.
+    const recoveredEnergy = halfTimeCondition(p, recoveryScale);
     const energyChanged = recoveredEnergy !== p.energy;
     return {
       ...p,
@@ -4470,13 +4482,13 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   const inSubsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
   if (inSubsWindow && shouldCheckAiSubs(s.matchTime, dt * clockScaleOf(s))) {
     // Team B is always AI in live matches; `aiTeams` can override for headless sim
-    const subsB = evaluateAiSubstitutions(s, 'B');
+    const subsB = evaluateAiSubstitutions(s, 'B', matchMinute(s));
     if (subsB.length > 0) {
       s = { ...s, pendingSubsB: [...s.pendingSubsB, ...subsB] };
     }
     // The human side's assistant (manager banned or sent off, `var.md` §4) makes the changes by the same rule.
     if (s.autoSubs?.A) {
-      const subsA = evaluateAiSubstitutions(s, 'A');
+      const subsA = evaluateAiSubstitutions(s, 'A', matchMinute(s));
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
   }
@@ -4752,7 +4764,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
         const energy = consumeEnergy(
-          pl.energy, pl.stamina, action, dt * clockScaleOf(s), (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain,
+          pl.energy, pl.stamina, action, dt * clockScaleOf(s),
+          (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain * conditionDrainMult(pl),
         );
         if (energy === pl.energy) return p;
         // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
@@ -4765,6 +4778,17 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         return { ...pl, energy, runtimeStats, fatigueBaselineEnergy };
       }),
     };
+  }
+
+  // Condition by minute (stage 14, `Condition.ts`): one sample per team at every new match minute of live play.
+  if (isLivePhase(s.matchPhase) && (matchMinute(s) !== matchMinute(state) || s.matchPhase !== state.matchPhase)) {
+    const minute = matchMinute(s);
+    for (const team of ['A', 'B'] as const) {
+      const mine = s.players.filter(p => p.team === team);
+      if (mine.length === 0) continue;
+      const keeper = mine.find(p => p.role === 'GK');
+      gameBus.emit('conditionSample', { minute, team, median: outfieldMedianCondition(mine), keeper: keeper ? keeper.energy : null });
+    }
   }
 
   // Man-marking time (player instructions): the marked targets, for the marked-target statistics.

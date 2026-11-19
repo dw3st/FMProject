@@ -914,6 +914,29 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-condition-subs',
+    name:        "11v11 — FM condition and AI changes (54')",
+    description: "Stage 14 (`fitness.md` → FM condition): second half at 54', every outfield player between 62 and 84 condition, both sides managed by the AI rule. From 55' the AI changes the players below 75 % (most tired first, at most 2 a check, 3–4 a match, a tactical one from 70' if fewer than 3). Open the Energy panel: the condition per player at 0/15/30/45/60/75/90', the outfield median next to FM's, and every change with its reason; the condition debug line logs each AI change.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = (p: GamePlayer, i: number): GamePlayer => {
+        if (p.role === 'GK') return { ...p, energy: 97, fatigueBaselineEnergy: 97, runtimeStats: getRuntimeLineup(p.baseStats, { energy: 97 }) };
+        const energy = 62 + ((i * 7) % 23);
+        return { ...p, energy, fatigueBaselineEnergy: energy, runtimeStats: getRuntimeLineup(p.baseStats, { energy }) };
+      };
+      return {
+        ...base,
+        matchPhase: 'secondHalf',
+        matchTime: 9 * 60 - 5,
+        presentationCountdown: 0,
+        autoSubs: { A: true },
+        players: base.players.map(tired),
+      };
+    },
+  },
+
+  {
     id:          'hothead',
     name:        '11v11 — Hot-heads vs calm side',
     description: 'Team A players all at temperament 20 (hot-headed: foul chance x1.45, yellows x1.15, straight reds x1.35 per foul), Team B at 1 (very calm: x0.55, x0.77, x0.58) — measured 20 vs 1 with the same club: ~1.8x the fouls, ~2.8x the yellows from the roster itself (`.claude/rules/game/personality.md`). Set Team A to High press, keep the Temperament selectors on "Roster" and watch the foul/card log entries (`tempMult`) and the Energy panel.',

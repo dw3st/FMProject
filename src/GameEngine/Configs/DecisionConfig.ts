@@ -70,6 +70,9 @@ export interface DecisionFlags {
   PASS_PHYSICS: boolean;
   /** Stage 18 (`highlights.md`): the highlight layer (observation only: marks the lances, never changes the play). */
   HIGHLIGHTS: boolean;
+  /** Stage 14 (`fitness.md` → "FM condition"): FM's condition curve (kick-off 99, drain fading toward a floor, +2 at
+   *  half time, keepers barely tire) and FM's AI substitutions (from 55', at 55–75 %, 3–4 a match). */
+  FM_CONDITION: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -101,6 +104,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   BALL_3D: true,
   PASS_PHYSICS: true,
   HIGHLIGHTS: true,
+  FM_CONDITION: true,
 };
 
 /**

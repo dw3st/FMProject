@@ -65,6 +65,11 @@ for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShot
 console.log("\n── Condition (outfield median energy) by minute ──");
 console.log("  " + CONDITION_MINUTES.map((m, i) => `${m}' ${f1(fm.condition[i]!.sum / Math.max(1, fm.condition[i]!.n))} (FM ${FM_CONDITION[i]})`).join(" · "));
 console.log(`  keepers at the end ${f1(fm.keeperEnd.sum / Math.max(1, fm.keeperEnd.n))} (FM ${FM_KEEPER_END})`);
+// Stage 14: the AI's changes per team, their minute and the outgoing player's condition (R9 §6: 3–4 from ~55', 55–75 %).
+{
+  const subs = world.aiSubstitutions ?? 0, teams = 2 * fm.matches;
+  console.log(`  AI changes ${f1(subs / Math.max(1, teams))} per team (FM 3–4; tactical ${f1((world.tacticalSubstitutions ?? 0) / Math.max(1, teams))}) · minute ${f1((world.aiSubMinuteSum ?? 0) / Math.max(1, subs))} (FM from ~55) · condition ${f1((world.aiSubConditionSum ?? 0) / Math.max(1, subs))} (FM 55–75)`);
+}
 console.log("\n── The 3D ball (stage 3; R9 §3: median peak / contact height, m) ──");
 for (const g of BALL_GROUPS) {
   const pk = fm.ballPeak?.[g] ?? [], ct = fm.ballContact?.[g] ?? [];

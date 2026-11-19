@@ -31,6 +31,7 @@ export type DebugCategory =
   | 'setPiece'      // corners, direct free kicks and the wall, set-piece deliveries
   | 'var'           // referee errors, VAR checks, manager complaints
   | 'weather'       // weather of the match (`weather.md`)
+  | 'condition'     // stage 14: AI substitutions with their reason, condition samples (`Condition.ts`)
   | 'keeper'        // active keeper: sweeps, 1v1 rushes, wide high-ball claims (`Keeper.ts`)
   | 'movement';     // stage 4: rolling ball, deflections, shot blocks, back line, stand-off, short support (`movement.md`)
 

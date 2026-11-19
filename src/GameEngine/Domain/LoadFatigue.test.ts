@@ -40,34 +40,30 @@ describe("load raises in-match energy cost", () => {
     // starting XI (matched by rosterId). AI substitutions bring on fresh bench legs and would
     // otherwise mask the drain difference by the time the match ends, so we only compare players
     // who were never substituted in on either side.
-    const REPLICATES = 6;
+    // Stage 14: the AI makes 3–4 changes from 55' (FM), so the comparison is read at half time, before any change:
+    // the mean outfield condition of each side when the first half ends.
+    const REPLICATES = 4;
     let highTotal = 0;
     let freshTotal = 0;
     let comparedPairs = 0;
 
     for (let i = 0; i < REPLICATES; i++) {
+      let atHalf: { A: number; B: number } | null = null;
       // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep this mechanism test fast: the code paths are the same (stage 2).
-      const result = simulateMatch(highLoad, fresh, undefined, undefined, undefined, undefined, { clockScale: LEGACY_CLOCK_SCALE });
-      const subbedInIds = new Set(result.substitutions.map(s => s.playerInRosterId));
-      const stillOriginal = result.players.filter(p => !subbedInIds.has(p.rosterId));
-      const highPlayers = stillOriginal.filter(p => p.team === "A");
-      const freshByRoster = new Map(
-        stillOriginal.filter(p => p.team === "B").map(p => [p.rosterId, p]),
-      );
-
-      let sumHigh = 0;
-      let sumFresh = 0;
-      let n = 0;
-      for (const p of highPlayers) {
-        const counterpart = freshByRoster.get(p.rosterId);
-        if (!counterpart) continue;
-        sumHigh += p.energy;
-        sumFresh += counterpart.energy;
-        n++;
-      }
-      expect(n).toBeGreaterThan(0);
-      highTotal += sumHigh / n;
-      freshTotal += sumFresh / n;
+      simulateMatch(highLoad, fresh, undefined, undefined, undefined, undefined, {
+        clockScale: LEGACY_CLOCK_SCALE, seed: 700 + i,
+        onTick: s => {
+          if (atHalf || s.matchPhase !== "halfTime") return;
+          const mean = (t: "A" | "B") => {
+            const v = s.players.filter(p => p.team === t && p.role !== "GK").map(p => p.energy);
+            return v.reduce((a, b) => a + b, 0) / v.length;
+          };
+          atHalf = { A: mean("A"), B: mean("B") };
+        },
+      });
+      expect(atHalf).not.toBeNull();
+      highTotal += atHalf!.A;
+      freshTotal += atHalf!.B;
       comparedPairs++;
     }
 
