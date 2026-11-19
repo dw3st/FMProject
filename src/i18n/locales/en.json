@@ -3419,6 +3419,47 @@
     "matchEveHint": "Applies to every coming match. You can still change a single day above."
   },
   "financesScreen": {
+    "tabs": {
+      "summary": "Summary",
+      "simple": "Simple",
+      "full": "Full"
+    },
+    "overview": {
+      "balance": "Balance",
+      "revenue": "Season revenue",
+      "expenses": "Season expenses",
+      "result": "Result",
+      "weekly": "Normal week",
+      "balanceByMonth": "Balance at the end of each month",
+      "topRevenue": "Biggest income",
+      "topExpenses": "Biggest expenses",
+      "in": "Money in",
+      "out": "Money out",
+      "nothing": "Nothing in this period.",
+      "simpleNote": "A bank loan received and a club change are left out.",
+      "sponsorYear": "Sponsors per year",
+      "sponsorWeek": "Per week",
+      "sponsorSeason": "Received this season",
+      "sponsorBonus": "Goal bonuses",
+      "sponsorNote": "Sponsors pay every Monday; goal bonuses come at the turn of the season.",
+      "categories": {
+        "revenue": {
+          "tv": "TV",
+          "commercial": "Sponsors",
+          "gate": "Gate",
+          "prizes": "Prizes",
+          "market": "Player sales",
+          "other": "Other"
+        },
+        "expense": {
+          "wages": "Wages",
+          "operations": "Running costs",
+          "market": "Player buys",
+          "facilities": "Facilities",
+          "other": "Other"
+        }
+      }
+    },
     "statement": {
       "season": "Season",
       "month": "Month",

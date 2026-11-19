@@ -3419,6 +3419,47 @@
     "matchEveHint": "Vale para todos os próximos jogos. Dá para mudar um dia só no calendário acima."
   },
   "financesScreen": {
+    "tabs": {
+      "summary": "Resumo",
+      "simple": "Simplificada",
+      "full": "Completa"
+    },
+    "overview": {
+      "balance": "Saldo",
+      "revenue": "Receita da temporada",
+      "expenses": "Despesas da temporada",
+      "result": "Resultado",
+      "weekly": "Semana normal",
+      "balanceByMonth": "Saldo no fim de cada mês",
+      "topRevenue": "Maiores receitas",
+      "topExpenses": "Maiores despesas",
+      "in": "Entrou",
+      "out": "Saiu",
+      "nothing": "Nada neste período.",
+      "simpleNote": "Empréstimo recebido e troca de clube não entram na conta.",
+      "sponsorYear": "Patrocínios por ano",
+      "sponsorWeek": "Por semana",
+      "sponsorSeason": "Recebido na temporada",
+      "sponsorBonus": "Bônus de metas",
+      "sponsorNote": "Os patrocínios pagam toda segunda-feira; os bônus de metas chegam na virada da temporada.",
+      "categories": {
+        "revenue": {
+          "tv": "TV",
+          "commercial": "Patrocínios",
+          "gate": "Bilheteria",
+          "prizes": "Prêmios",
+          "market": "Vendas de jogadores",
+          "other": "Outras"
+        },
+        "expense": {
+          "wages": "Salários",
+          "operations": "Operação",
+          "market": "Compras de jogadores",
+          "facilities": "Instalações",
+          "other": "Outras"
+        }
+      }
+    },
     "statement": {
       "season": "Temporada",
       "month": "Mês",

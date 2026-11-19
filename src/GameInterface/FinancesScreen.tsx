@@ -18,8 +18,18 @@ import { navigate } from "@/GameInterface/router/navigation";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { SponsorsPanel } from "@/GameInterface/Sponsors/SponsorsPanel";
 import { weeklyCommercialIncome } from "@/Domain/sponsors/sponsors";
+import { commercialIncome, monthlyBalances, simpleBreakdown, topLines } from "@/Domain/finance/overview";
+import { FinanceSimple, FinanceSummary, SponsorIncomeStrip } from "@/GameInterface/Finances/FinanceOverview";
 
-type FinancesTab = "accounts" | "sponsors";
+type FinancesTab = "summary" | "simple" | "full" | "sponsors";
+const FINANCE_TABS: FinancesTab[] = ["summary", "simple", "full", "sponsors"];
+
+/** `?tab=`; the old "accounts" link opens the full statement. */
+function tabFromUrl(): FinancesTab {
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  if (tab === "accounts") return "full";
+  return FINANCE_TABS.includes(tab as FinancesTab) ? (tab as FinancesTab) : "summary";
+}
 
 // ── API shape (GET /api/saves/:saveId/ledger?season=) ───────────────────────
 
@@ -68,9 +78,14 @@ export function FinancesScreen() {
   const [monthPick, setMonthPick] = useState("last");
   const [kindFilter, setKindFilter] = useState<LedgerKind | "all">("all");
   const [ledgerVersion, setLedgerVersion] = useState(0);
-  // `?tab=sponsors` opens the sponsors (inbox and dashboard links).
-  const [tab, setTab] = useState<FinancesTab>(() =>
-    new URLSearchParams(window.location.search).get("tab") === "sponsors" ? "sponsors" : "accounts");
+  // `?tab=` picks the tab (`sponsors` from the inbox and dashboard links); the URL follows the tab.
+  const [tab, setTabState] = useState<FinancesTab>(tabFromUrl);
+  const setTab = (next: FinancesTab) => {
+    setTabState(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  };
   // The facilities moved to the Club screen (#120): old `/finances?tab=facilities` links go there.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "facilities") navigate("/club", { replace: true });
@@ -147,6 +162,13 @@ export function FinancesScreen() {
     ];
   }, [squad, save?.managerContract, ledger, seasons, entries, t]);
 
+  const weekly = weekLines.reduce((s, l) => s + l.value, 0);
+  const seasonBreakdown = useMemo(() => simpleBreakdown(entries), [entries]);
+  const periodBreakdown = useMemo(() => simpleBreakdown(statement.entries), [statement]);
+  const months12 = useMemo(() => monthlyBalances(entries, ledger?.opening ?? 0), [entries, ledger?.opening]);
+  const top = useMemo(() => topLines(entries), [entries]);
+  const sponsorMoney = useMemo(() => commercialIncome(entries), [entries]);
+
   if (saveLoading || !session) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -178,7 +200,7 @@ export function FinancesScreen() {
     <ScreenContainer>
         <ScreenTitle
           accent={t("screenTitles.finances.accent")}
-          trailing={ledger && tab === "accounts" ? (
+          trailing={ledger && (tab === "simple" || tab === "full") ? (
             <PeriodControl
               mode={mode}
               onMode={(m) => { setMode(m); setMonthPick("last"); }}
@@ -195,18 +217,23 @@ export function FinancesScreen() {
         <SegmentedTabs
           aria-label={t("sponsors.tabsLabel")}
           tabs={[
-            { key: "accounts", label: t("sponsors.tabAccounts") },
+            { key: "summary", label: t("financesScreen.tabs.summary") },
+            { key: "simple", label: t("financesScreen.tabs.simple") },
+            { key: "full", label: t("financesScreen.tabs.full") },
             { key: "sponsors", label: t("sponsors.tab") },
           ]}
           active={tab}
           onChange={setTab}
         />
 
+        {tab === "sponsors" && squad && (
+          <SponsorIncomeStrip weeklyNow={weeklyCommercialIncome(squad)} season={sponsorMoney} />
+        )}
         {tab === "sponsors" && (
           <SponsorsPanel saveId={session.saveId} onChanged={() => { void refresh({ background: true }); }} />
         )}
 
-        {tab === "accounts" && balance < 0 && (
+        {tab !== "sponsors" && balance < 0 && (
           <div className="card-arcade rounded-md p-4 border border-destructive/50 bg-destructive/10 flex items-start gap-3">
             <Icon name="alert" size={20} className="text-destructive shrink-0 mt-0.5" />
             <div>
@@ -216,7 +243,19 @@ export function FinancesScreen() {
           </div>
         )}
 
-        {tab !== "accounts" ? null : ledger ? (
+        {tab === "summary" && (ledger ? (
+          <FinanceSummary balance={balance} breakdown={seasonBreakdown} weekly={weekly} months={months12} top={top} />
+        ) : (
+          <p className="text-sm text-muted-foreground m-0">{t("financesScreen.noEntries")}</p>
+        ))}
+
+        {tab === "simple" && (ledger ? (
+          <FinanceSimple breakdown={periodBreakdown} />
+        ) : (
+          <p className="text-sm text-muted-foreground m-0">{t("financesScreen.noEntries")}</p>
+        ))}
+
+        {tab !== "full" ? null : ledger ? (
           <>
             <BalanceStrip statement={statement} />
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4">
@@ -245,7 +284,7 @@ export function FinancesScreen() {
           <p className="text-sm text-muted-foreground m-0">{t("financesScreen.noEntries")}</p>
         )}
 
-        {tab === "accounts" && <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4 items-start">
+        {(tab === "full" || tab === "summary") && <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-4 items-start">
           {squad && <WeekCard lines={weekLines} avgGate={averageGate(entries)} />}
           {squad && (
             <BankLoanCard
