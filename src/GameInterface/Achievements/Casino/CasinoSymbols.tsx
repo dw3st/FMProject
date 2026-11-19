@@ -1,5 +1,22 @@
 import type { ClassicSymbol } from "@/Domain/casino/classicSlot";
 import type { StadiumSymbol } from "@/Domain/casino/stadiumSlot";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
+
+/** Painted symbols (FLUX over a vector layout, `data_process/assets/casino/`), shown with the new visual on. */
+export const CASINO_ART_VERSION = 1;
+export const casinoArtPath = (name: string) => `casino/sym-${name}-${CASINO_ART_VERSION}.webp`;
+
+function Painted({ name, className }: { name: string; className?: string }) {
+  return (
+    <img
+      src={gameArtUrl(casinoArtPath(name))}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      className={`${className ?? "w-full h-full"} object-contain select-none`}
+    />
+  );
+}
 
 /** Vector symbols of the casino machines (viewBox 64 × 64, theme colours only, no text). */
 const OUTLINE = "stroke-background";
@@ -13,6 +30,7 @@ function Svg({ children, className }: { children: React.ReactNode; className?: s
 }
 
 export function ClassicSymbolArt({ symbol, className }: { symbol: ClassicSymbol; className?: string }) {
+  if (symbol !== "blank" && newVisualOn()) return <Painted name={symbol} className={className} />;
   switch (symbol) {
     case "seven":
       return (
@@ -68,6 +86,7 @@ export function ClassicSymbolArt({ symbol, className }: { symbol: ClassicSymbol;
 }
 
 export function StadiumSymbolArt({ symbol, className }: { symbol: StadiumSymbol; className?: string }) {
+  if (newVisualOn()) return <Painted name={symbol} className={className} />;
   switch (symbol) {
     case "crest":
       return (
@@ -138,6 +157,7 @@ export function StadiumSymbolArt({ symbol, className }: { symbol: StadiumSymbol;
 
 /** A small airplane seen from the side, nose to the right. */
 export function PlaneArt({ className }: { className?: string }) {
+  if (newVisualOn()) return <Painted name="plane" className={className} />;
   return (
     <svg viewBox="0 0 80 40" className={className} aria-hidden="true">
       <path d="M6 22c0-3 3-5 7-5h44c8 0 15 3 17 5-2 2-9 5-17 5H13c-4 0-7-2-7-5z" className="fill-foreground stroke-background" strokeWidth="2" />

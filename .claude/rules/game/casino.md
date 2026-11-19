@@ -41,3 +41,7 @@ Pedido do usuário (report de tester: uma aba para o técnico gastar o dinheiro 
 - Sem conquistas do cassino (só o `casinoBiggestWin` guardado).
 - O avião aparece até ~0,6 s depois de cair (a pergunta da tela); o servidor paga pelo relógio dele.
 - Gravar o assento e o `casino.json` não é atômico.
+
+## Símbolos pintados (12.x)
+
+Report do usuário ("faz no comfy pra ficar pro"). Com o visual novo, os símbolos das duas máquinas e o avião são imagens pintadas (`casino/sym-<nome>-1.webp` em `src/example_data/assets`, `GAME_ART_FILES`; 256 px, o avião 512 px de largura): layout vetorial em PIL refinado no FLUX.2 klein img2img (`data_process/assets/casino/build_casino_symbols.py`, folha de conferência `contact_sheet.py`), recortado pelo fundo liso ligado à borda e pelo contorno do layout. O "vazio" da clássica continua o ponto em SVG; sem o visual novo, os SVGs de antes (`CasinoSymbols.tsx`). Imagem trocada = nome novo (`CASINO_ART_VERSION`, cache `immutable`).

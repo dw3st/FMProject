@@ -267,6 +267,11 @@ export const GAME_ART_FILES: Record<string, string> = {
   "audio/taunt-laugh-2.mp3": "audio/mpeg",
   "audio/taunt-sorry-1.mp3": "audio/mpeg",
   "audio/taunt-sorry-2.mp3": "audio/mpeg",
+  // Casino symbols (11.x): painted with FLUX over vector layouts, data_process/assets/casino/
+  ...Object.fromEntries(
+    ["seven", "bar", "bell", "lemon", "cherry", "ball", "boot", "whistle", "card", "glove", "trophy", "crest", "plane"]
+      .map((s) => [`casino/sym-${s}-1.webp`, "image/webp"]),
+  ),
   "taunts/reaction-applause.png": "image/png",
   "taunts/reaction-fireworks.png": "image/png",
   "taunts/reaction-popcorn.png": "image/png",
