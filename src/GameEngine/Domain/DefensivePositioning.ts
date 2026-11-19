@@ -570,13 +570,18 @@ export function computeDefensiveShapeAnchor(
     const fade = (dBall <= R ? 1 : Math.max(0, 2 - dBall / R)) * depth * 1.5;
     const main = getMainRole(player.role);
     const shift = (main === 'Defender' ? FM_NUMBERS.SHAPE_SHIFT_YD.DEF : main === 'Forward' ? FM_NUMBERS.SHAPE_SHIFT_YD.FWD : FM_NUMBERS.SHAPE_SHIFT_YD.MID) * fade;
-    if (dBall > 0.01 && shift > 0) {
-      const k = Math.min(shift, dBall * 0.5) / dBall;
+    // The shift never brings him inside SHAPE_SHIFT_KEEP_YD of the ball: the shape moves, it does not crowd the ball.
+    const room = Math.max(0, dBall - FM_NUMBERS.SHAPE_SHIFT_KEEP_YD);
+    if (dBall > 0.01 && shift > 0 && room > 0) {
+      const k = Math.min(shift, room) / dBall;
       rawX += (ballPos.x - rawX) * k;
       rawY += (ballPos.y - rawY) * k;
     }
-    // Ball in our defensive third: the block converges on the ball's side.
-    if (Math.abs(ballPos.x - ownGoalX) < PITCH_LENGTH / 3) rawY += (ballPos.y - rawY) * FM_NUMBERS.BOX_CONVERGE;
+    // Ball in our defensive third: the block converges on the ball's side (lateral gap kept ≥ SHAPE_SHIFT_KEEP_YD).
+    const gapY = Math.abs(ballPos.y - rawY);
+    if (Math.abs(ballPos.x - ownGoalX) < PITCH_LENGTH / 3 && gapY > FM_NUMBERS.SHAPE_SHIFT_KEEP_YD) {
+      rawY += Math.sign(ballPos.y - rawY) * (gapY - FM_NUMBERS.SHAPE_SHIFT_KEEP_YD) * FM_NUMBERS.BOX_CONVERGE;
+    }
   }
 
   // ── X: lane blocking — nudge toward space between ball and own goal ─────
@@ -1456,6 +1461,27 @@ export function computeDefensivePosition(
   if (DECISION_FLAGS.BACK_LINE && lineX != null && COHESION_LINE_ROLES.has(player.role)
     && (intent === 'hold_shape' || (intent === 'track_mark' && MOVEMENT.LINE_TRACK_MARK > 0)) && player.manMarkTargetId === undefined) {
     rawX = blendLineX(rawX, lineX, ballRelativeLineX(player, shapeBallPos, cfg));
+  }
+
+  // Calm pressing (stage 4b): with two teammates already round the ball, a third holding shape or marking stays at
+  // the edge (BALL_CROWD_YD) instead of joining them — FM rarely has three defenders on the ball.
+  if (DECISION_FLAGS.CALM_PRESS && (intent === 'hold_shape' || intent === 'track_mark') && player.manMarkTargetId === undefined) {
+    const R = FM_NUMBERS.BALL_CROWD_YD;
+    const d = Math.hypot(rawX - ballPos.x, rawY - ballPos.y);
+    if (d < R) {
+      let near = 0;
+      for (const p of allPlayers) {
+        if (p.team !== player.team || p.id === player.id || p.role === 'GK') continue;
+        if (Math.hypot(p.x - ballPos.x, p.y - ballPos.y) < R) near++;
+      }
+      if (near >= 2) {
+        // Out along the line from the ball to his own goal side of the target.
+        const ux = d > 0.01 ? (rawX - ballPos.x) / d : (ownGoalX - ballPos.x) / Math.max(0.01, Math.abs(ownGoalX - ballPos.x));
+        const uy = d > 0.01 ? (rawY - ballPos.y) / d : 0;
+        rawX = ballPos.x + ux * R;
+        rawY = ballPos.y + uy * R;
+      }
+    }
   }
 
   // Soft bounds: active engagement intents (track_mark / step_into_carry_lane)

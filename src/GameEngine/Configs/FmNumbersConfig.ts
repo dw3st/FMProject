@@ -81,6 +81,10 @@ export const FM_NUMBERS = {
   SHAPE_SHIFT_YD: { DEF: 5, MID: 7, FWD: 4 },
   /** ...only within this distance of the ball (yd); fades to 0 at twice it. */
   SHAPE_SHIFT_RANGE_YD: 25,
+  /** ...never closer to the ball than this (yd): the shape moves, it does not crowd the ball. */
+  SHAPE_SHIFT_KEEP_YD: 12,
+  /** With two teammates already within this of the ball (yd), a third holding shape or marking stays at its edge. */
+  BALL_CROWD_YD: 8.5,
   /** Ball in our defensive third: defenders / midfielders converge this share toward the ball's side. */
   BOX_CONVERGE: 0.35,
 

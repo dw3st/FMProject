@@ -3602,7 +3602,8 @@ function runLoose(s: GameState, toucher: GamePlayer, x: number, y: number, vx: n
   const roll = a > 0 ? (v * v) / (2 * a) : 0;
   const stopX = Math.max(0, Math.min(PITCH_LENGTH, x + (v > 0 ? (vx / v) * roll : 0)));
   const stopY = Math.max(0, Math.min(PITCH_WIDTH, y + (v > 0 ? (vy / v) * roll : 0)));
-  return commitLooseBallChasers(st, toucher.id, stopX, stopY, toucher.team);
+  // A misplaced pass (stage 4b) is a short loose ball: one chaser per side, not a crowd.
+  return commitLooseBallChasers(st, toucher.id, stopX, stopY, toucher.team, cause === 'misplaced' ? { maxPerTeam: 1 } : undefined);
 }
 
 /** Offside free kick for the team defending against `offender` at `at` (aerial path). */
