@@ -6,8 +6,9 @@ defence noise, release) are measured against the same baseline.
 
 ## Flags (`src/GameEngine/Configs/DecisionConfig.ts`)
 
-- `DECISION_FLAGS`: `HOLDER` (on, phase 3), `OFFBALL`, `DEFENSE`, `ANTICIPATION_PRESS`, `SECOND_PRESSER`,
-  `DISCIPLINE_LAG`, `CONSISTENCY_CAP` (off).
+- `DECISION_FLAGS`: `HOLDER` (on, phase 3), `OFFBALL`, `DEFENSE`, `DISCIPLINE_LAG`, `CONSISTENCY_CAP` (off). Stage 4
+  (`movement.md`, on): `ANTICIPATION_PRESS`, `SECOND_PRESSER`, `ROLLING_BALL`, `DEFLECTIONS`, `SHOT_BLOCKS`, `BACK_LINE`,
+  `SUPPORT_SHORT`.
 - `DECISION_OVERRIDES='{"HOLDER":true}'` (env, read once at load) sets the base flags; `simulateMatch(..., { decisions })`
   sets them per match (always reset to the base when absent, nothing leaks).
 - `DECISION_TELEMETRY`: pressure constants, bucket thresholds, near-tie margin.
@@ -210,12 +211,15 @@ match and −5% / −9% goals and shots in the Premier League; one move off at a
 −0.25, round −0.16, lay-off −0.14, cut −0.13 per match): the holder picked them over better actions. The frequency of
 each move falls steeply with its weight; at the final weights each is under one per match.
 
+Stage 4 (`movement.md`) retuned the move gates and weights: 1–3 per match each in the Premier League (shield 1.5, cut 2.0,
+lay-off 3.0, chip 1.5, round 1.3) and the M4 effect to +5.8 pp with the anticipation layer.
+
 ## Limitations
 
 - The pressure scale is raw FM; phase 3 normalises it (pN = P/60) for its gates.
 - Holder mind: the lapse share doubles in weak leagues (9.7% in the Championship); the facing direction is the last
   movement (no body orientation); the mental effect size of the holder alone is ~+1 pp.
-- Holder moves: each under one per match (the brief asked for a few); more of them cost world goals. No dedicated
-  animation (the drawing shows a carry, pass, shot or dribble); the AI never reacts to a shielding holder.
+- Holder moves: since stage 4 each fires 1–3 per match (Championship shield and cut just under 1); the drawing maps each to
+  an existing pose (`movement.md` § 6); the AI never reacts to a shielding holder.
 - Shot pressure reads the shooter's last holder decision (set-piece shots and shots after a foul have none).
 - Entropy depends on the bucket grid; compare runs only with the same `PRESSURE_HIGH` and channel split.

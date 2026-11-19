@@ -304,3 +304,9 @@ Medição (`SEED_RANDOM=1 bun scripts/ball-cluster.ts --leagues premier_league,o
 As duas ligas somadas: gols +2,5%, chutes +0,3%. O buraco diminui pouco (o maior vão é quase sempre uma célula de canto perto da própria linha de fundo, que a linha não cobre), mas na mesma direção nas três amostras (400 jogos, 400 com outra configuração e 800). Variantes de 400 jogos, gols somados contra o antes: só a previsão 0,6 s −8%; só a cohesão 5,5 +15%; as duas (5,5 / 0,6) +5%; 14 / 0,6 +9%; 10 / 0,6 +4% (buraco maior); 14 / 0,4 +3% (escolhida).
 
 Sem semente (`bun scripts/ai-formation-goals.ts --engine 800 --modes ai --quick 0`, antes com `COHESION_OVERRIDES='{"ENABLED":false}'`): Premier 2,042 → 1,949 gols, 5,56 → 5,70 chutes; Championship 1,594 → 1,699, 5,16 → 5,29; somadas gols +0,3%, chutes +2,5%. Dentro de ±5%: quickSim não recalibrado. Matriz de formações não refeita.
+
+## Back line, second presser, anticipation (stage 4)
+
+The zonal back-liners holding shape also blend toward one robust-mean back line with hold / step-up / drop states; a second
+defender pressing a holder already pressed stands off 5 yd covering the inside route; anticipation moves the press start to
+the holder's predicted point. Rules, constants and numbers: `movement.md`.
