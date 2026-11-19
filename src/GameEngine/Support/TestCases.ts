@@ -10,10 +10,13 @@
 
 import { pitchInjuryMult } from "@/Domain/facilities/facilityItems";
 import { withMentalAttributes } from '@/Domain/mental/mental';
-import type { GameState, GamePlayer, Formation, TeamId, PlayerRole } from '@/GameEngine/types';
+import type { GameState, GamePlayer, Formation, TeamId, PlayerRole, PassState } from '@/GameEngine/types';
+import { buildGroundLaunch, passTypeOf, weightedSpeed } from '@/GameEngine/Domain/PassPhysics';
+import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import { getRuntimeLineup } from '@/GameEngine/Domain/RuntimeLineup';
 import { PITCH_LENGTH } from '@/GameEngine/Domain/pitch';
+import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
@@ -107,6 +110,27 @@ function makePlayer(
     age:              25,
     strengthAttr:     attrs.strength,
     injuryLoad:       0,
+  };
+}
+
+/**
+ * A physical pass already kicked (stage 4, `pass-physics.md`): FM's launch from `fromId` toward `toId` (or the `cell`
+ * of a through ball), the error from the normals `n` × `factor` (0 = exact).
+ */
+function physicalPass(
+  st: GameState, fromId: number, toId: number, kind: 'regular' | 'through',
+  n: [number, number, number] = [0, 0, 0], factor = 0, cell?: { x: number; y: number },
+): PassState {
+  const from = st.players.find(p => p.id === fromId)!;
+  const to = st.players.find(p => p.id === toId)!;
+  const target = cell ?? { x: to.x, y: to.y };
+  const env = { rollDecel: THROUGH_BALL_CONFIG.LOOSE_BALL_DECELERATION, bounce: 1 };
+  const d = Math.hypot(target.x - from.x, target.y - from.y);
+  const vh = kind === 'through' ? weightedSpeed(d, d / 8, env.rollDecel) : undefined;
+  const b = buildGroundLaunch(from, target, BALL_PHYSICS.FOOT_Z, env, factor, n, vz => passTypeOf(kind, vz), vh);
+  return {
+    fromId, toId: kind === 'through' ? null : toId, toX: kind === 'through' ? b.point.x : target.x, toY: kind === 'through' ? b.point.y : target.y,
+    kind, t: 0, distance: d, receiverOffside: false, intendedRunnerId: kind === 'through' ? toId : null, physics: b.launch,
   };
 }
 
@@ -668,6 +692,71 @@ export const TEST_SCENARIOS: TestScenario[] = [
           peak: 3.5, air: 0, elapsed: 0, bounces: 0, distance: 0,
         },
       };
+    },
+  },
+
+  // ── Stage 4: the physical pass (`pass-physics.md`) ─────────────────────────
+  {
+    id:          'pass-physics-ground',
+    name:        'Pass physics — ground pass, the receiver meets it',
+    description: 'An 18-yd pass to feet (stage 4, `pass-physics.md`): FM launch speed 7 + 0.45·d m/s, a little hop (vz 1.8 m/s), then it rolls; the receiver goes to meet it on its path and controls it where it reaches him (no fixed flight time). Debug log "pass": type, speed, vz, expected flight. Toggle "Ball 3D".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CM',   45, 37, MIDFIELDER),
+        makePlayer('Lopes',    'A', 'CM',   60, 46, MIDFIELDER),
+        makePlayer('Nunes',    'B', 'CM',   60, 25, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'regular') };
+    },
+  },
+
+  {
+    id:          'pass-physics-chip',
+    name:        'Pass physics — chipped pass over a defender',
+    description: 'A 28-yd pass to feet with a defender standing on the line halfway (stage 4): FM lofts it with distance (vz about 5 m/s, peak about 1.5 m), the defender on the way is checked against the height of the ball (above his reach it flies over him), and it drops and bounces to the receiver. Toggle "Ball 3D" for the path and the peak.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CM',   40, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   68, 37, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   54, 37.5, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'regular') };
+    },
+  },
+
+  {
+    id:          'pass-physics-off-target',
+    name:        'Pass physics — off target, it runs past him',
+    description: 'A 26-yd pass sent 40° wide by a poor passer under pressure (stage 4): the error is on the launch vector (direction, speed, height); the receiver runs to meet it but it passes beyond his reach and runs on as a loose ball at the pace it has (`passMissed`, "misplaced").',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CB',   40, 37, { ...DEFENDER, passing: 3 }),
+        makePlayer('Lopes',    'A', 'CM',   66, 37, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CM',   42, 38, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'regular', [10, 0.5, 0], 1.6) };
+    },
+  },
+
+  {
+    id:          'pass-physics-through-high',
+    name:        'Pass physics — high ball into space',
+    description: 'A 30-yd through ball for a running striker (stage 4): low or high by its distance (here high, vz about 5–6 m/s), weighted to reach the cell when the runner does (never faster than the FM launch); he meets it on its way, otherwise it runs loose on from the cell at its own pace.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CM',   50, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   70, 30, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   78, 40, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'through', [0, 0, 0], 0, { x: 80, y: 30 }) };
     },
   },
 

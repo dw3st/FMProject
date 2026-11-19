@@ -1812,6 +1812,7 @@ export function TestScreen() {
               { key: 'cohesion'              as const, label: 'Cohesion',      color: 'text-amber-300'   },
               { key: 'movement'              as const, label: 'Movement',      color: 'text-teal-300'    },
               { key: 'ball3d'                as const, label: 'Ball 3D',       color: 'text-amber-200'   },
+              { key: 'passError'             as const, label: 'Pass error',    color: 'text-cyan-300'    },
               { key: 'setPieces'             as const, label: 'Set pieces',    color: 'text-lime-300'    },
               { key: 'instructions'          as const, label: 'Instructions',  color: 'text-sky-300'     },
             ] as const

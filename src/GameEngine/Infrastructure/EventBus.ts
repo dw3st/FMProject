@@ -241,6 +241,9 @@ export interface GameEvents {
   /** Stage 3 (`ball-3d.md`): a flight of the 3D ball ended (a pass, a shot, a loose spell). Peak in yards, air time in
    *  seconds above `AIR_Z`, distance of the launch in yards, height where it ended (first contact / landing). */
   ballFlight: { team: TeamId | null; kind: import('@/GameEngine/types').BallFlightKind; peak: number; air: number; distance: number; bounces: number; endZ: number };
+  /** Stage 4 (`pass-physics.md`): a physical pass left the passer. Speed and vz in yd/s, distance in yd; (aimX, aimY)
+   *  where it was meant to go, (toX, toY) where the physics takes it; T its expected flight (s). */
+  passLaunched: { player: number; team: TeamId; type: import('@/GameEngine/types').PassType; distance: number; speed: number; vz: number; aimX: number; aimY: number; toX: number; toY: number; T: number };
   ballOutOfPlay: { team: TeamId; cause: LooseBallCause | 'through' | 'other'; kind: 'throw_in' | 'goal_kick' | 'corner' };
   /** Stage 4: the back line changed state (`team` = the defending side). */
   backLineState: { team: TeamId; mode: BackLineMode; x: number };

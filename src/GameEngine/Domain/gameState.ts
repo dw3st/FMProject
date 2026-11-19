@@ -40,7 +40,11 @@ import {
 import { evaluatePassLanes } from '@/GameEngine/Domain/PassLanes';
 import { PASS_CONFIG, PASS_YARDS_PER_SEC } from '@/GameEngine/Configs/PassConfig';
 import { predictBallPoint } from '@/GameEngine/Domain/BallPrediction';
-import { advanceLooseBall, ballWithinReach, passKey, shotKey, syncBall } from '@/GameEngine/Domain/BallSync';
+import { advanceLooseBall, advancePassBall, ballEnv, ballWithinReach, passKey, shotKey, syncBall, type PassCatcher } from '@/GameEngine/Domain/BallSync';
+import { buildAerialLaunch, buildGroundLaunch, loftVzYd, passTypeOf, vzForPeak, weightedSpeed } from '@/GameEngine/Domain/PassPhysics';
+import { PASS_PHYSICS, YD_PER_M_PASS } from '@/GameEngine/Configs/PassPhysicsConfig';
+import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
+import { reachHeight } from '@/GameEngine/Domain/Ball3D';
 import {
   THROUGH_BALL_CONFIG,
   CHASE_LOOSE_BALL_WEIGHT_ATTACK,
@@ -72,7 +76,7 @@ import {
 import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
-import { passLaunch } from '@/GameEngine/Domain/PassError';
+import { passErrorFactor, passLaunch } from '@/GameEngine/Domain/PassError';
 import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
 import {
   shotBlocker, passLengthFactor, standOffPoint, robustMean, stepBackLine,
@@ -2533,11 +2537,21 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
   // Launch error (stage 4b, `fm-numbers.md`): a long pass is lofted (a high ball contested where it lands); a pass to
   // feet lands off target by an error growing with distance and pressure, shrinking with passing.
   let miss: { x: number; y: number; vx: number; vy: number } | null = null;
-  if (DECISION_FLAGS.PASS_ERROR && !state.setPiece && distance > 0.5) {
+  let physics: PassState['physics'];
+  if ((DECISION_FLAGS.PASS_ERROR || passPhysicsOn()) && !state.setPiece && distance > 0.5) {
     if (distance > FM_NUMBERS.LOFT_YD) {
       debugLog('pass', `${holder.name} lofts a ${distance.toFixed(0)}-yd pass to ${to.name}`, { playerId: holder.id });
       return startAerialBall({ ...state, setPiece: null }, 'long_ball', { x: to.x, y: to.y }, to.id, matchRandom, true);
     }
+  }
+  if (passPhysicsOn() && distance > 0.5) {
+    // Stage 4 (`pass-physics.md`): FM's launch (speed and loft by distance), the passer's error on the vector; the
+    // ball arrives where the physics takes it. Set pieces are exempt from the error (as in 4b).
+    const factor = state.setPiece ? 0 : passErrorFactor(holder.runtimeStats.withBall.passingSkill, distance, holderPressure(holder.x, holder.y, opponents));
+    const z0 = state.setPiece?.type === 'throw_in' ? BALL_PHYSICS.HEAD_Z : BALL_PHYSICS.FOOT_Z;
+    physics = buildGroundLaunch({ x: holder.x, y: holder.y }, { x: to.x, y: to.y }, z0, ballEnv(state.weather), factor,
+      launchNormals(matchRandom), vz => passTypeOf('regular', vz)).launch;
+  } else if (DECISION_FLAGS.PASS_ERROR && !state.setPiece && distance > 0.5) {
     const pressure = holderPressure(holder.x, holder.y, opponents);
     const [z0, z1] = gaussianPair(matchRandom);
     const l = passLaunch(holder.runtimeStats.withBall.passingSkill, distance, pressure, to.runtimeStats.withBall.firstTouch, z0, z1);
@@ -2556,9 +2570,7 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
   // from the descriptor-derived flag on PassLaneInfo, never by naming the intent.
   if (chosen.switchPass) gameBus.emit('switchPlayPass', { player: holder.id, toId: to.id });
   // Clear any active set piece — once the pass leaves the taker's foot, play is live
-  return {
-    ...state,
-    pass: {
+  const pass: PassState = {
       fromId: state.ballHolderId,
       toId: to.id,
       toX: miss ? miss.x : to.x,
@@ -2567,14 +2579,15 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
       t: 0,
       distance,
       ...(miss ? { miss: { vx: miss.vx, vy: miss.vy } } : {}),
+      ...(physics ? { physics } : {}),
       receiverOffside,
       offsideLineX: offsideLineAt(holder, state.players),
       intendedRunnerId: null,
       // A restart pass (throw-in, short corner) is never rolled to run out for a throw-in on arrival.
       ...(state.setPiece ? { fromSetPiece: true } : {}),
-    },
-    setPiece: null,
   };
+  emitPassLaunched(holder, pass);
+  return { ...state, pass, setPiece: null };
 }
 
 /**
@@ -2913,13 +2926,32 @@ export function startThroughBall(
   // Pass-error model — Gaussian noise on landing point scaled by (1 − passingSkill).
   // Box-Muller approximation.
   const skill   = holder.runtimeStats.withBall.passingSkill;
-  const sigma   = (1 - skill) * THROUGH_BALL_CONFIG.MAX_THROUGH_BALL_ERROR / 2;
-  const u1      = Math.max(1e-6, matchRandom());
-  const u2      = matchRandom();
-  const z0      = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  const z1      = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
-  const landingX = decision.cellX + z0 * sigma;
-  const landingY = decision.cellY + z1 * sigma;
+  let landingX: number, landingY: number;
+  let physics: PassState['physics'];
+  if (passPhysicsOn()) {
+    // Stage 4 (`pass-physics.md`): FM's launch toward the cell (low or high by its distance), the error on the
+    // vector; the ball runs on through the cell at the pace it has and the runner meets it.
+    const d0 = Math.hypot(decision.cellX - holder.x, decision.cellY - holder.y);
+    const opps = state.players.filter(p => p.team !== holder.team);
+    const factor = passErrorFactor(skill, d0, holderPressure(holder.x, holder.y, opps));
+    // Weighted for the runner: it reaches the cell when he does (never faster than FM's launch for the distance).
+    const runner = decision.intendedRunnerId !== null ? state.players.find(p => p.id === decision.intendedRunnerId) : undefined;
+    const env = ballEnv(state.weather);
+    const tRun = runner ? raceEta(runner, decision.cellX, decision.cellY, chaseSprintSpeed(runner)) : 0;
+    const b = buildGroundLaunch({ x: holder.x, y: holder.y }, { x: decision.cellX, y: decision.cellY }, BALL_PHYSICS.FOOT_Z,
+      env, factor, launchNormals(matchRandom), vz => passTypeOf('through', vz), weightedSpeed(d0, tRun, env.rollDecel));
+    landingX = Math.max(0.5, Math.min(PITCH_LENGTH - 0.5, b.point.x));
+    landingY = Math.max(0.5, Math.min(PITCH_WIDTH - 0.5, b.point.y));
+    physics = b.launch;
+  } else {
+    const sigma   = (1 - skill) * THROUGH_BALL_CONFIG.MAX_THROUGH_BALL_ERROR / 2;
+    const u1      = Math.max(1e-6, matchRandom());
+    const u2      = matchRandom();
+    const z0      = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    const z1      = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
+    landingX = decision.cellX + z0 * sigma;
+    landingY = decision.cellY + z1 * sigma;
+  }
 
   // Offside snapshot — for the intended runner, at kick time. Phase 3 v1: only
   // the intended runner's offside status is snapshotted. If a non-intended
@@ -2965,9 +2997,11 @@ export function startThroughBall(
       offsideLineX:     offsideLineAt(holder, state.players),
       intendedRunnerId: decision.intendedRunnerId,
       overhit,
+      ...(physics ? { physics } : {}),
     },
     setPiece: null,
   };
+  emitPassLaunched(holder, stateWithPass.pass!);
 
   // Phase 4: commit chasers from both teams. Their decisions are overridden to
   // `chase_loose_ball` so they sprint at full pace toward the landing point
@@ -3222,6 +3256,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   // ── 1. Advance ball + decay velocity ─────────────────────────────────────
   let { x, y, vx, vy } = lb;
   const speed = Math.hypot(vx, vy);
+  const prevX = lb.x, prevY = lb.y;
   // Stage 3 (`ball-3d.md`): the 3D ball rolls, flies and bounces (on the ground the same rolling as below).
   const ball3d = DECISION_FLAGS.BALL_3D ? advanceLooseBall(s, lb, dt) : undefined;
   if (ball3d) {
@@ -3290,15 +3325,17 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   s = keeperClaimsLooseBall(s, lb);
 
   // Sort players by distance to the loose ball
+  // A fast ball (stage 4, `pass-physics.md`) is played by whoever it passes within reach of during the tick.
+  const moving = passPhysicsOn() && speed > PASS_PHYSICS.MOVING_SPEED_YD;
   const ranked = s.players
     .filter(p => !isPlayerInRecovery(p))
     // A ball above his reach flies over him (stage 3, `ball-3d.md`).
     .filter(p => !ball3d || ballWithinReach(s.ball, p.role === 'GK'))
-    .map(p => ({ p, dist: Math.hypot(p.x - lb.x, p.y - lb.y) }))
+    .map(p => ({ p, dist: moving ? segmentDist(p, prevX, prevY, lb.x, lb.y) : Math.hypot(p.x - lb.x, p.y - lb.y) }))
     .sort((a, b) => a.dist - b.dist);
 
   // Players within touch radius — they can pick up
-  let inTouch = ranked.filter(r => r.dist <= cfg.LOOSE_BALL_TOUCH_RADIUS);
+  let inTouch = ranked.filter(r => r.dist <= (moving ? PASS_PHYSICS.MOVING_TOUCH_YD : cfg.LOOSE_BALL_TOUCH_RADIUS));
 
   // ── Watchdog (#36): a loose ball can never outlive the timeout — award it to the nearest
   // player (recovering players included) so play always resumes.
@@ -3478,6 +3515,54 @@ function gaussianPair(rng: () => number): [number, number] {
   return [r * Math.cos(2 * Math.PI * u2), r * Math.sin(2 * Math.PI * u2)];
 }
 
+/** Distance (yd) from a player to the segment (x0, y0) → (x1, y1). */
+function segmentDist(p: { x: number; y: number }, x0: number, y0: number, x1: number, y1: number): number {
+  const dx = x1 - x0, dy = y1 - y0;
+  const l2 = dx * dx + dy * dy;
+  const t = l2 > 1e-9 ? Math.max(0, Math.min(1, ((p.x - x0) * dx + (p.y - y0) * dy) / l2)) : 0;
+  return Math.hypot(p.x - (x0 + dx * t), p.y - (y0 + dy * t));
+}
+
+/** How far from himself a receiver plays a physical pass (yd): 4b's reach across the pass + first touch. */
+function receiveReach(p: GamePlayer): number {
+  return FM_NUMBERS.REACH_SIDE_YD + FM_NUMBERS.REACH_TOUCH_YD * Math.max(0, Math.min(1, p.runtimeStats.withBall.firstTouch));
+}
+
+/** Stage 4 (`pass-physics.md`): passes are physical launches (needs the 3D ball). */
+function passPhysicsOn(): boolean {
+  return DECISION_FLAGS.PASS_PHYSICS && DECISION_FLAGS.BALL_3D;
+}
+
+/** Three standard normals for a launch error (direction, speed, height). */
+function launchNormals(rng: () => number): [number, number, number] {
+  const [a, b] = gaussianPair(rng);
+  const [c] = gaussianPair(rng);
+  return [a, b, c];
+}
+
+/** The pass is a physical ground pass / through ball whose 3D ball the core moves (`advancePassBall`). */
+function isPhysicalGroundPass(s: GameState, p: PassState): boolean {
+  return passPhysicsOn() && !!p.physics && !isAerialKind(p.kind)
+    && !!s.ball && s.ball.phase === 'pass' && s.ball.key === passKey(p) && !!s.ball.free;
+}
+
+function passerTeamOf(s: GameState, p: PassState): TeamId | undefined {
+  return s.players.find(q => q.id === p.fromId)?.team;
+}
+
+/** Report a physical launch (`Statistics.ts` per type, `/lab`, `fmTargets.ts`). */
+function emitPassLaunched(holder: GamePlayer, p: PassState): void {
+  const ph = p.physics;
+  if (!ph) return;
+  gameBus.emit('passLaunched', {
+    player: holder.id, team: holder.team, type: ph.type, distance: p.distance,
+    speed: ph.speed, vz: ph.vz, aimX: ph.aimX, aimY: ph.aimY, toX: p.toX, toY: p.toY, T: ph.T,
+  });
+  if (isDebugEnabled()) {
+    debugLog('pass', `${holder.name}: ${ph.type} pass, ${(ph.speed / YD_PER_M_PASS).toFixed(1)} m/s, vz ${(ph.vz / YD_PER_M_PASS).toFixed(1)} m/s, ${(p.distance / YD_PER_M_PASS).toFixed(0)} m, ~${ph.T.toFixed(2)} s`, { playerId: holder.id });
+  }
+}
+
 /** Offside line (x) for a ball played by `holder` right now; undefined when offside doesn't apply. */
 function offsideLineAt(holder: GamePlayer, players: GamePlayer[]): number | undefined {
   if (!OFFSIDE_CONFIG.ENABLED) return undefined;
@@ -3516,7 +3601,20 @@ function clearanceBall(
     const other: TeamId = player.team === 'A' ? 'B' : 'A';
     return resolveOOBSetPiece({ ...s, pass: null, looseBall: null }, 'throw_in', other, toX, rawY < 0 ? -1 : PITCH_WIDTH + 1, player.id, 'clearance').state;
   }
-  const toY = Math.max(1, Math.min(PITCH_WIDTH - 1, rawY));
+  let toY = Math.max(1, Math.min(PITCH_WIDTH - 1, rawY));
+  let toXp = toX;
+  let physics: PassState['physics'];
+  if (passPhysicsOn()) {
+    // Stage 4 (`pass-physics.md`): FM's clearance height (4.4 m), from the head after a high ball; the random aim above
+    // is its error.
+    const z0 = s.ball && s.ball.phase === 'pass' && (s.ball.kind === 'cross' || s.ball.kind === 'corner' || s.ball.kind === 'long_ball' || s.ball.kind === 'clearance')
+      ? BALL_PHYSICS.HEAD_Z : BALL_PHYSICS.FOOT_Z;
+    const vz = vzForPeak(z0, PASS_PHYSICS.PEAK_CLEARANCE_M * YD_PER_M_PASS);
+    const b = buildAerialLaunch(origin, { x: toX, y: toY }, z0, vz, ballEnv(s.weather), 0, [0, 0, 0], 'clearance');
+    toXp = Math.max(1, Math.min(PITCH_LENGTH - 1, b.point.x));
+    toY = Math.max(1, Math.min(PITCH_WIDTH - 1, b.point.y));
+    physics = b.launch;
+  }
   const prevHolderId = s.ballHolderId;
   // The clearing player is at the ball: the flight starts from him.
   const players = s.players.map(p => (p.id === player.id ? { ...p, x: origin.x, y: origin.y, targetPosition: { ...origin } } : p));
@@ -3524,9 +3622,10 @@ function clearanceBall(
     ...s,
     players,
     pass: {
-      fromId: player.id, toId: null, toX, toY, kind: 'clearance', t: 0,
-      distance: Math.hypot(toX - origin.x, toY - origin.y),
+      fromId: player.id, toId: null, toX: toXp, toY, kind: 'clearance', t: 0,
+      distance: Math.hypot(toXp - origin.x, toY - origin.y),
       receiverOffside: false, intendedRunnerId: null, aerialOffsideIds: [],
+      ...(physics ? { physics } : {}),
     },
     looseBall: null,
     setPiece: null,
@@ -3534,7 +3633,8 @@ function clearanceBall(
     possessionTime: 0,
     lastPasserId: null,
   }, prevHolderId);
-  return commitLooseBallChasers(st, player.id, toX, toY, player.team, {
+  if (st.pass) emitPassLaunched(player, st.pass);
+  return commitLooseBallChasers(st, player.id, toXp, toY, player.team, {
     maxPerTeam: AERIAL_CONFIG.MAX_CHASERS_PER_TEAM,
     etaHorizon: AERIAL_CONFIG.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
@@ -3597,8 +3697,9 @@ function updateBackLine(s: GameState, defendingTeam: TeamId, shapeBallPos: { x: 
  * Stage 4 (`movement.md`): the ball runs loose off `toucher` (a deflection, a blocked shot, a heavy touch) from (x, y)
  * at (vx, vy) yd/s. His team made the last touch; chasers of both sides are committed to where it will stop.
  */
-function runLoose(s: GameState, toucher: GamePlayer, x: number, y: number, vx: number, vy: number, cause: LooseBallCause): GameState {
-  const w = weatherEffectOf(s.weather).looseSpeed;
+function runLoose(s: GameState, toucher: GamePlayer, x: number, y: number, vx: number, vy: number, cause: LooseBallCause, physical = false): GameState {
+  // A physical ball (stage 4) keeps the pace it has; the others get the weather's loose-ball speed.
+  const w = physical ? 1 : weatherEffectOf(s.weather).looseSpeed;
   vx *= w; vy *= w;
   gameBus.emit('ballRunsLoose', { playerId: toucher.id, team: toucher.team, cause, x, y, vx, vy });
   const prevHolderId = s.ballHolderId;
@@ -3666,12 +3767,35 @@ export function startAerialBall(
 ): GameState {
   const C = AERIAL_CONFIG;
   const holder = state.players.find(p => p.id === state.ballHolderId)!;
-  const maxErr = kind === 'cross' ? C.CROSS_MAX_ERROR : C.LONG_BALL_MAX_ERROR;
-  const sigma = (1 - holder.runtimeStats.withBall.passingSkill) * maxErr / 2 * weatherEffectOf(state.weather).aerialError;
-  logWeather(state, 'aerialError', `${holder.name}'s ${kind === 'cross' ? 'cross' : 'long ball'} lands less precisely (σ ${sigma.toFixed(1)} yd)`, holder.id);
-  const [z0, z1] = gaussianPair(rng);
-  const toX = Math.max(1, Math.min(PITCH_LENGTH - 1, target.x + z0 * sigma));
-  const toY = Math.max(1, Math.min(PITCH_WIDTH - 1, target.y + z1 * sigma));
+  let toX: number, toY: number;
+  let physics: PassState['physics'];
+  if (passPhysicsOn()) {
+    // Stage 4 (`pass-physics.md`): the type's height (FM's peaks: cross 4.0 m, corner 5.6 m, long ball 4.4 m; a lofted
+    // pass to feet the vz of its distance), the horizontal speed to land on the target, the passer's error on the
+    // vector (wind × aerialError); it is contested where it really lands.
+    const corner = kind === 'cross' && state.setPiece?.type === 'corner';
+    const d0 = Math.hypot(target.x - holder.x, target.y - holder.y);
+    const z0 = BALL_PHYSICS.FOOT_Z;
+    const vz = kind === 'cross' ? vzForPeak(z0, (corner ? PASS_PHYSICS.PEAK_CORNER_M : PASS_PHYSICS.PEAK_CROSS_M) * YD_PER_M_PASS)
+      : lofted ? loftVzYd(d0) : vzForPeak(z0, PASS_PHYSICS.PEAK_LONG_M * YD_PER_M_PASS);
+    const opps = state.players.filter(p => p.team !== holder.team);
+    const pressure = state.setPiece ? 0 : holderPressure(holder.x, holder.y, opps);
+    const factor = passErrorFactor(holder.runtimeStats.withBall.passingSkill, d0, pressure);
+    const wErr = weatherEffectOf(state.weather).aerialError;
+    logWeather(state, 'aerialError', `${holder.name}'s ${kind === 'cross' ? 'cross' : 'long ball'} lands less precisely`, holder.id);
+    const b = buildAerialLaunch({ x: holder.x, y: holder.y }, target, z0, vz, ballEnv(state.weather), factor,
+      launchNormals(rng), passTypeOf(kind, vz, { corner, lofted }), wErr);
+    toX = Math.max(1, Math.min(PITCH_LENGTH - 1, b.point.x));
+    toY = Math.max(1, Math.min(PITCH_WIDTH - 1, b.point.y));
+    physics = b.launch;
+  } else {
+    const maxErr = kind === 'cross' ? C.CROSS_MAX_ERROR : C.LONG_BALL_MAX_ERROR;
+    const sigma = (1 - holder.runtimeStats.withBall.passingSkill) * maxErr / 2 * weatherEffectOf(state.weather).aerialError;
+    logWeather(state, 'aerialError', `${holder.name}'s ${kind === 'cross' ? 'cross' : 'long ball'} lands less precisely (σ ${sigma.toFixed(1)} yd)`, holder.id);
+    const [z0, z1] = gaussianPair(rng);
+    toX = Math.max(1, Math.min(PITCH_LENGTH - 1, target.x + z0 * sigma));
+    toY = Math.max(1, Math.min(PITCH_WIDTH - 1, target.y + z1 * sigma));
+  }
   const distance = Math.hypot(toX - holder.x, toY - holder.y);
 
   if (kind === 'cross') gameBus.emit('crossStarted', { player: holder.id, toX, toY, intendedRunnerId: intendedId });
@@ -3716,9 +3840,11 @@ export function startAerialBall(
     aerialOffsideIds: offsideIdsAt(holder, state.players),
     offsideLineX: offsideLineAt(holder, state.players),
     ...(lofted ? { lofted: true } : {}),
+    ...(physics ? { physics } : {}),
     ...(state.setPiece ? { fromSetPiece: true } : {}),
     ...(state.setPiece?.variant ? { setPieceVariant: state.setPiece.variant } : {}),
   };
+  emitPassLaunched(holder, pass);
   // A set-piece delivery into the box: everyone who went up attacks it (`set-pieces-play.md`).
   const boxDelivery = kind === 'cross' && state.setPiece?.variant === 'box';
   return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, toX, toY, holder.team, {
@@ -3728,6 +3854,23 @@ export function startAerialBall(
     keeperSmallBoxOnly: true,
     ignoreRoleWeights: boxDelivery,
   });
+}
+
+/** A headed lay-off (knock-down) from `w` to `mate`; with the physical pass (stage 4) launched from the head. */
+function headerLayOff(s: GameState, w: GamePlayer, mate: GamePlayer, distance: number): PassState {
+  const pass: PassState = {
+    fromId: w.id, toId: mate.id, toX: mate.x, toY: mate.y, kind: 'regular', t: 0, distance,
+    receiverOffside: checkReceiverOffside(w, mate, s.players), intendedRunnerId: null,
+    offsideLineX: offsideLineAt(w, s.players), header: true,
+  };
+  if (passPhysicsOn() && distance > 0.5) {
+    const opps = s.players.filter(p => p.team !== w.team);
+    const factor = passErrorFactor(headingOf(w), distance, holderPressure(w.x, w.y, opps));
+    pass.physics = buildGroundLaunch({ x: w.x, y: w.y }, { x: mate.x, y: mate.y }, BALL_PHYSICS.HEAD_Z, ballEnv(s.weather),
+      factor, launchNormals(matchRandom), () => 'header').launch;
+    emitPassLaunched(w, pass);
+  }
+  return pass;
 }
 
 /** Chance of controlling a high ball at first touch (else it drops loose): base + first touch. */
@@ -3989,11 +4132,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
         ...s,
         ballHolderId: w.id,
         lastPasserId: pass.fromId,
-        pass: {
-          fromId: w.id, toId: mate.id, toX: mate.x, toY: mate.y, kind: 'regular', t: 0, distance,
-          receiverOffside: checkReceiverOffside(w, mate, s.players), intendedRunnerId: null,
-          offsideLineX: offsideLineAt(w, s.players),
-        },
+        pass: headerLayOff(s, w, mate, distance),
       });
     }
     logWeather(s, 'control', `${w.name} controls a high ball`, w.id);
@@ -4380,8 +4519,10 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // team that lost the race are beaten — a short recovery (no challenge, slowed) as they turn back
   // to the shape, the time advantage the engine gives any lost duel (`dribbling.md`).
   if (!chaseTarget && THROUGH_BALL_CONFIG.RACE_LOSS_RECOVERY > 0) {
-    const losers = s.players.filter(p =>
-      p.team !== holder.team && p.decisionMemory?.decision?.type === 'chase_loose_ball');
+    const losers = s.players.filter(p => {
+      const d = p.decisionMemory?.decision;
+      return p.team !== holder.team && d?.type === 'chase_loose_ball' && !d.meet;
+    });
     if (losers.length > 0) {
       const ids = new Set(losers.map(p => p.id));
       s = { ...s, players: s.players.map(p => (ids.has(p.id)
@@ -4393,6 +4534,18 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         : p)) };
     }
   }
+
+  // The receiver of a physical pass (stage 4, `pass-physics.md`) goes to meet the ball: the nearest point of its path
+  // ahead of it (the ball no longer follows him).
+  const meetPass = PASS_PHYSICS.MEET && s.pass && s.pass.kind === 'regular' && s.pass.toId !== null && isPhysicalGroundPass(s, s.pass) ? s.pass : null;
+  const meetPointFor = (p: GamePlayer): { x: number; y: number } => {
+    const b = s.ball!;
+    const sp = Math.hypot(b.vx, b.vy);
+    if (sp < 1e-3) return { x: b.x, y: b.y };
+    const ux = b.vx / sp, uy = b.vy / sp;
+    const a = Math.max(0, (p.x - b.x) * ux + (p.y - b.y) * uy);
+    return { x: b.x + ux * a, y: b.y + uy * a };
+  };
 
   // Decision telemetry (`decisions.md`): only while somebody listens. The situation (the ball's third and channel, the
   // holder's pressure) is computed once per tick; no dice, nothing here feeds back into a decision.
@@ -4430,6 +4583,14 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         decision:    chaseDecision,
         commitTicks: COMMIT_TICKS.chase_loose_ball,
       };
+      continue;
+    }
+
+    if (meetPass && p.id === meetPass.toId && !isBallHolder) {
+      const m = meetPointFor(p);
+      const meet: PlayerDecision = { type: 'chase_loose_ball', toX: m.x, toY: m.y, meet: true };
+      newDecisions[p.id] = meet;
+      updatedMemory[p.id] = { path: currentPath, decision: meet, commitTicks: COMMIT_TICKS.chase_loose_ball };
       continue;
     }
 
@@ -5233,15 +5394,21 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // Speed scales with distance so longer passes take proportionally more time.
   const aerialPass = isAerialKind(activePass.kind);
   const yardsPerSec = aerialPass ? AERIAL_CONFIG.AERIAL_YARDS_PER_SEC : PASS_YARDS_PER_SEC;
-  const distanceSpeed = activePass.distance > 0
-    ? yardsPerSec / activePass.distance
-    : passSpeed;
+  const distanceSpeed = activePass.physics && passPhysicsOn()
+    ? 1 / Math.max(0.05, activePass.physics.T)
+    : activePass.distance > 0
+      ? yardsPerSec / activePass.distance
+      : passSpeed;
+  // Stage 4 (`pass-physics.md`): a physical ground pass is moved here by its own physics; a ball above a player's
+  // reach flies over the defenders on the way.
+  const physGround = isPhysicalGroundPass(s, activePass);
+  const overHeads = passPhysicsOn() && !!s.ball && s.ball.phase === 'pass' && s.ball.z > reachHeight(false);
 
   // Interception check — defender geometrically between ball and target gets a chance
   // scaled by how close they are to the passing lane (perpDist) and pass speed.
   // For through balls the "target" is the landing position, not a player.
   // High balls (cross / long ball) fly over everyone — contested only where they land.
-  if (s.tackleCooldown === 0 && !aerialPass) {
+  if (s.tackleCooldown === 0 && !aerialPass && !overHeads) {
     const ballPos      = getBallPos(s);
     const targetPos    = activePass.kind === 'through' || activePass.toId === null || activePass.miss
       ? { x: activePass.toX, y: activePass.toY }
@@ -5308,7 +5475,62 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     }
   }
 
-  const newT = activePass.t + dt * distanceSpeed;
+  let physArrived = false;
+  let physContact: number | null = null;
+  if (physGround) {
+    const ph = activePass.physics!;
+    const through = activePass.kind === 'through';
+    const receiver = !through && activePass.toId !== null ? s.players.find(p => p.id === activePass.toId) : undefined;
+    const catchers: PassCatcher[] = [];
+    if (receiver) {
+      catchers.push({ id: receiver.id, x: receiver.x, y: receiver.y, reach: receiveReach(receiver), keeper: receiver.role === 'GK' });
+    } else if (through) {
+      // Into space: the first player whose reach the ball passes through ends the flight (it runs loose to him).
+      for (const p of s.players) {
+        if (p.id === activePass.fromId || isPlayerInRecovery(p)) continue;
+        // The passer's team only: a defender on the way is still the interception roll (physical contact is stage 5).
+        if (p.team !== passerTeamOf(s, activePass)) continue;
+        if (p.id !== activePass.intendedRunnerId && p.decisionMemory?.decision?.type !== 'chase_loose_ball') continue;
+        catchers.push({ id: p.id, x: p.x, y: p.y, reach: PASS_PHYSICS.MOVING_TOUCH_YD, keeper: p.role === 'GK' });
+      }
+    }
+    const st = advancePassBall(s, dt, catchers);
+    s = { ...s, ball: st.ball };
+    physContact = st.contactId;
+    const b = st.ball;
+    if (through) {
+      const h = Math.hypot(ph.vx, ph.vy) || 1;
+      const along = ((b.x - ph.ox) * ph.vx + (b.y - ph.oy) * ph.vy) / h;
+      if (st.contactId !== null || st.stopped || along >= activePass.distance) physArrived = true;
+    } else if (st.contactId !== null) {
+      physArrived = true;
+    } else {
+      const R = receiver ? receiveReach(receiver) : 0;
+      const sp = Math.hypot(b.vx, b.vy);
+      const ux = sp > 1e-3 ? b.vx / sp : Math.cos(Math.atan2(ph.vy, ph.vx));
+      const uy = sp > 1e-3 ? b.vy / sp : Math.sin(Math.atan2(ph.vy, ph.vx));
+      const passedHim = !receiver || ((b.x - receiver.x) * ux + (b.y - receiver.y) * uy > R);
+      if (st.stopped || passedHim) {
+        // Off target: the ball ran past him (or stopped short): it runs loose at the pace it has.
+        const passer = s.players.find(p => p.id === activePass.fromId) ?? receiver ?? s.players.find(p => p.id === s.ballHolderId)!;
+        gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
+        gameBus.emit('passMissed', { player: activePass.fromId, toId: activePass.toId!, distance: activePass.distance });
+        debugLog('pass', `The ball runs past ${receiver?.name ?? 'the receiver'} (${st.stopped ? 'stopped short' : 'off target'})`, { playerId: activePass.fromId });
+        return {
+          state: runLoose(s, passer, b.x, b.y, b.vx, b.vy, 'misplaced', true),
+          passCompleted: false, tackled: false, goalScored: null,
+        };
+      }
+    }
+    if (!physArrived) {
+      return {
+        state: { ...s, pass: { ...activePass, t: Math.min(0.99, b.elapsed / Math.max(0.05, ph.T)) } },
+        passCompleted: false, tackled: false, goalScored: null,
+      };
+    }
+  }
+
+  const newT = physArrived ? 1 : activePass.t + dt * distanceSpeed;
   if (newT >= 1 && aerialPass) {
     return resolveAerialLanding(s);
   }
@@ -5318,8 +5540,10 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     // the decision loop, so they keep sprinting. handleLooseBall (called at the
     // top of subsequent ticks) resolves possession when someone is within touch.
     if (activePass.kind === 'through') {
-      const landingX = activePass.toX;
-      const landingY = activePass.toY;
+      // A physical through ball (stage 4) runs loose from where it is, at the pace it has.
+      const physBall = physGround && s.ball ? s.ball : null;
+      const landingX = physBall ? physBall.x : activePass.toX;
+      const landingY = physBall ? physBall.y : activePass.toY;
       const passer   = s.players.find(p => p.id === activePass.fromId);
       const passerTeam = passer?.team ?? 'A';
 
@@ -5336,8 +5560,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       const initSpeed = baseSpeed * weatherEffectOf(s.weather).looseSpeed;
       logWeather(s, 'looseSpeed', 'Through ball runs loose', passer?.id);
       logWeather(s, 'looseDecel', 'Through ball runs loose', passer?.id);
-      const vx = len > 0.001 ? (dx / len) * initSpeed : 0;
-      const vy = len > 0.001 ? (dy / len) * initSpeed : 0;
+      const vx = physBall ? physBall.vx : len > 0.001 ? (dx / len) * initSpeed : 0;
+      const vy = physBall ? physBall.vy : len > 0.001 ? (dy / len) * initSpeed : 0;
 
       gameBus.emit('looseBallStarted', {
         x: landingX,
@@ -5348,25 +5572,26 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         playerId: activePass.fromId,
       });
 
-      return {
-        state: {
-          ...s,
-          pass: null,
-          looseBall: {
-            x: landingX,
-            y: landingY,
-            vx, vy,
-            startTime: s.matchTime,
-            fromPasserId: activePass.fromId,
-            fromTeamLastTouch: passerTeam,
-            intendedRunnerId: activePass.intendedRunnerId,
-            receiverOffside: activePass.receiverOffside,
-            offsideLineX: activePass.offsideLineX,
-            ...(overhit >= 1 ? { cause: 'overhit' as const } : {}),
-          },
+      const landed: GameState = {
+        ...s,
+        pass: null,
+        looseBall: {
+          x: landingX,
+          y: landingY,
+          vx, vy,
+          startTime: s.matchTime,
+          fromPasserId: activePass.fromId,
+          fromTeamLastTouch: passerTeam,
+          intendedRunnerId: activePass.intendedRunnerId,
+          receiverOffside: activePass.receiverOffside,
+          offsideLineX: activePass.offsideLineX,
+          ...(overhit >= 1 ? { cause: 'overhit' as const } : {}),
         },
-        passCompleted: false, tackled: false, goalScored: null,
       };
+      // Physical (stage 4): the ball reached a player on its way: he plays it now (the loose-ball pickup, duel and
+      // offside rules), before it runs on past him.
+      if (physContact !== null) return handleLooseBall(landed, 0);
+      return { state: landed, passCompleted: false, tackled: false, goalScored: null };
     }
 
     // ── Regular pass landing ─────────────────────────────────────────────────

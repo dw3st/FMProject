@@ -114,3 +114,7 @@ listened to, no dice. See `game-engine/decisions.md`.
 `GameState.ball` (`Domain/Ball3D.ts` physics, `Domain/BallSync.ts` kept in step by `tickState`): x, y, z and velocity;
 passes, shots and loose balls move it physically, a loose ball above a player's reach can't be collected. Flag
 `BALL_3D`. See `game-engine/ball-3d.md`.
+
+## Physical pass (stage 4)
+Passes are launched with FM's speed and height by type and distance and arrive where the 3D ball reaches the receiver
+(`Domain/PassPhysics.ts`, `Configs/PassPhysicsConfig.ts`, flag `PASS_PHYSICS`). See `game-engine/pass-physics.md`.

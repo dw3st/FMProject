@@ -14,6 +14,7 @@ import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
   BALL_GROUPS, BAND_LABELS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
+  FLIGHT_LABELS, FM_FLIGHT_S, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
   emptyFmTargets, fmTargetRows, longShotsOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
@@ -75,6 +76,16 @@ console.log(`  lofted    ${share(fm.passLoft.lofted).padEnd(34)} FM ${FM_PASS_OV
 PRESSURE_LABELS.forEach((l, i) => console.log(`  pr ${l.padEnd(6)} ${share(fm.passPressure[i]!).padEnd(34)} FM ${FM_PASS_PRESSURE[i]}%${i === 0 ? "*" : ""}`));
 const passesPerMatch = (fm.passAll[0] + fm.passAll[1] + fm.passAll[2]) / n;
 console.log(`  passes / match ${f1(passesPerMatch)} (${f2(passesPerMatch / (fm.realSeconds / n))} per live s; FM ~0.21)`);
+
+console.log("\n── The physical pass (stage 4; R6 launch, R7 flight and vz bands, R9 §3 landing) ──");
+const pctl = (a: number[], q: number) => { if (!a.length) return NaN; const b = [...a].sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.floor(q * b.length))]!; };
+LAUNCH_LABELS.forEach((l, i) => console.log(`  launch ${l.padEnd(6)} m  n ${String(fm.launchSpeed?.[i]?.length ?? 0).padStart(5)}  |v| ${f1(median(fm.launchSpeed?.[i] ?? []))} m/s (FM ${FM_LAUNCH.speed[i]})  vz ${f2(median(fm.launchVz?.[i] ?? []))} (FM ${FM_LAUNCH.vz[i]})`));
+VZ_LABELS.forEach((l, i) => console.log(`  vz ${l.padEnd(5)} m/s  ${share(fm.passVz?.[i] ?? [0, 0, 0]).padEnd(34)} FM ${FM_PASS_VZ[i]}%`));
+FLIGHT_LABELS.forEach((l, i) => console.log(`  flight ${l.padEnd(6)} m  n ${String(fm.flight?.[i]?.length ?? 0).padStart(5)}  ${f2(median(fm.flight?.[i] ?? []))} s (FM ~${FM_FLIGHT_S[i]})`));
+for (const g of LANDING_GROUPS) {
+  const a = fm.landingErr?.[g] ?? [];
+  console.log(`  landing vs aim ${g.padEnd(7)} n ${String(a.length).padStart(5)}  median ${f1(median(a))} m, p90 ${f1(pctl(a, 0.9))} (FM ${FM_LANDING[g][0]}, ${FM_LANDING[g][1]})`);
+}
 
 console.log("\n── Holder decisions ──");
 const mix = (r: Record<string, number>) => { const t = HOLDER_CATS.reduce((a, k) => a + r[k]!, 0) || 1; return HOLDER_CATS.map(k => `${k} ${f1((100 * r[k]!) / t)}`).join(" · "); };

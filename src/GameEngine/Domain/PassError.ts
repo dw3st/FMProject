@@ -12,11 +12,16 @@ import { FM_NUMBERS as F } from '@/GameEngine/Configs/FmNumbersConfig';
 
 const M_PER_YD = 0.9144;
 
-/** σ (yards) along and across the pass. */
-export function passErrorSigma(passing: number, distanceYd: number, pressure: number, lofted = false): { along: number; side: number } {
+/** FM's error factor (1 − s/50) · (1 + 1.07 · P/100), s the technique margin against the distance. */
+export function passErrorFactor(passing: number, distanceYd: number, pressure: number): number {
   const dM = distanceYd * M_PER_YD;
   const s = Math.max(0, Math.min(F.MARGIN_MAX, F.MARGIN_SPAN * passing - F.MARGIN_PER_M * dM));
-  const factor = (1 - s / 50) * (1 + (F.ERR_PRESSURE * Math.max(0, pressure)) / 100) * (lofted ? F.LOFT_ERR_MULT : 1);
+  return (1 - s / 50) * (1 + (F.ERR_PRESSURE * Math.max(0, pressure)) / 100);
+}
+
+/** σ (yards) along and across the pass. */
+export function passErrorSigma(passing: number, distanceYd: number, pressure: number, lofted = false): { along: number; side: number } {
+  const factor = passErrorFactor(passing, distanceYd, pressure) * (lofted ? F.LOFT_ERR_MULT : 1);
   return {
     along: F.ERR_REL * factor * distanceYd * F.ALONG_SCALE,
     side: distanceYd * Math.tan((F.ERR_ANGLE_DEG * factor * Math.PI) / 180),

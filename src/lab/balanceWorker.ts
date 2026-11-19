@@ -120,7 +120,7 @@ function emptyTeamRaw(): TeamRawStats {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
-    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -236,6 +236,15 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.cornerPeakN += src.cornerPeakN;
   dst.longPeakSum += src.longPeakSum;
   dst.longPeakN += src.longPeakN;
+  dst.passGround += src.passGround;
+  dst.passDriven += src.passDriven;
+  dst.passChip += src.passChip;
+  dst.passHigh += src.passHigh;
+  dst.passThroughLow += src.passThroughLow;
+  dst.passThroughHigh += src.passThroughHigh;
+  dst.passHeader += src.passHeader;
+  dst.passLaunchSpeedSum += src.passLaunchSpeedSum;
+  dst.passLaunchN += src.passLaunchN;
   dst.holderHolds += src.holderHolds;
   dst.holderTurns += src.holderTurns;
   dst.corners                     += src.corners;
@@ -570,6 +579,15 @@ function runOneMatch(
   teamA.cornerPeakN += sA.cornerPeakN ?? 0; teamB.cornerPeakN += sB.cornerPeakN ?? 0;
   teamA.longPeakSum += sA.longPeakSum ?? 0; teamB.longPeakSum += sB.longPeakSum ?? 0;
   teamA.longPeakN += sA.longPeakN ?? 0; teamB.longPeakN += sB.longPeakN ?? 0;
+  teamA.passGround += sA.passGround ?? 0; teamB.passGround += sB.passGround ?? 0;
+  teamA.passDriven += sA.passDriven ?? 0; teamB.passDriven += sB.passDriven ?? 0;
+  teamA.passChip += sA.passChip ?? 0; teamB.passChip += sB.passChip ?? 0;
+  teamA.passHigh += sA.passHigh ?? 0; teamB.passHigh += sB.passHigh ?? 0;
+  teamA.passThroughLow += sA.passThroughLow ?? 0; teamB.passThroughLow += sB.passThroughLow ?? 0;
+  teamA.passThroughHigh += sA.passThroughHigh ?? 0; teamB.passThroughHigh += sB.passThroughHigh ?? 0;
+  teamA.passHeader += sA.passHeader ?? 0; teamB.passHeader += sB.passHeader ?? 0;
+  teamA.passLaunchSpeedSum += sA.passLaunchSpeedSum ?? 0; teamB.passLaunchSpeedSum += sB.passLaunchSpeedSum ?? 0;
+  teamA.passLaunchN += sA.passLaunchN ?? 0; teamB.passLaunchN += sB.passLaunchN ?? 0;
   teamA.holderHolds += sA.holderHolds ?? 0; teamB.holderHolds += sB.holderHolds ?? 0;
   teamA.holderTurns += sA.holderTurns ?? 0; teamB.holderTurns += sB.holderTurns ?? 0;
   teamA.corners             += sA.corners;             teamB.corners             += sB.corners;

@@ -16,6 +16,11 @@ export function ballFlightPath(state: GameState, passSpeed = 0.85): PathPoint[] 
   if (!b || b.phase === "held") return [];
   const env = ballEnv(state.weather);
   if (b.phase === "loose") return predictPath(b, 3, STEP, env).map(({ x, y, z }) => ({ x, y, z }));
+  // A physical pass (stage 4): free physics from where it is, for the flight it has left (at least a second).
+  if (b.phase === "pass" && b.free && state.pass) {
+    const left = Math.max(1, (1 - state.pass.t) / passRate(state.pass, passSpeed));
+    return predictPath(b, left, STEP, env).map(({ x, y, z }) => ({ x, y, z }));
+  }
   const left = b.phase === "shot" && state.shot ? (1 - state.shot.t) / SHOT_SPEED
     : b.phase === "pass" && state.pass ? (1 - state.pass.t) / passRate(state.pass, passSpeed) : 0;
   const to = b.phase === "shot" && state.shot ? { x: state.shot.toX, y: state.shot.toY }

@@ -254,6 +254,10 @@ export interface TeamStats extends PlayerStats {
   crossPeakSum: number; crossPeakN: number;
   cornerPeakSum: number; cornerPeakN: number;
   longPeakSum: number; longPeakN: number;
+  /** Stage 4 (`pass-physics.md`): passes by launch type, and the launch speeds (yd/s, summed) of all physical passes. */
+  passGround: number; passDriven: number; passChip: number; passHigh: number;
+  passThroughLow: number; passThroughHigh: number; passHeader: number;
+  passLaunchSpeedSum: number; passLaunchN: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -347,6 +351,8 @@ type TeamFlags = {
   passesMissed: number; passesLofted: number; holderHolds: number; holderTurns: number;
   highBalls: number; ballAirSeconds: number; crossPeakSum: number; crossPeakN: number;
   cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
+  passGround: number; passDriven: number; passChip: number; passHigh: number; passThroughLow: number; passThroughHigh: number; passHeader: number;
+  passLaunchSpeedSum: number; passLaunchN: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -360,6 +366,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
   highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
+  passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -710,6 +717,18 @@ gameBus.on('ballFlight', e => {
   if (e.kind === 'cross') { f.crossPeakSum += e.peak; f.crossPeakN++; }
   else if (e.kind === 'corner') { f.cornerPeakSum += e.peak; f.cornerPeakN++; }
   else if (e.kind === 'long_ball' || e.kind === 'clearance') { f.longPeakSum += e.peak; f.longPeakN++; }
+});
+
+// ── Stage 4 of the rebuild: the physical pass (`pass-physics.md`) ───────────────────
+const PASS_TYPE_FIELD: Partial<Record<import('@/GameEngine/types').PassType, keyof TeamFlags>> = {
+  ground: 'passGround', driven: 'passDriven', chip: 'passChip', high: 'passHigh',
+  through_low: 'passThroughLow', through_high: 'passThroughHigh', header: 'passHeader',
+};
+gameBus.on('passLaunched', e => {
+  const f = teamFlags[e.team];
+  const k = PASS_TYPE_FIELD[e.type];
+  if (k) f[k]++;
+  f.passLaunchSpeedSum += e.speed; f.passLaunchN++;
 });
 
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────

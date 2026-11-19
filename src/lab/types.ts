@@ -357,6 +357,16 @@ export interface TeamRawStats {
   cornerPeakN: number;
   longPeakSum: number;
   longPeakN: number;
+  /** Stage 4 (`pass-physics.md`), summed across games: passes by launch type and launch speeds (yd/s, summed). */
+  passGround: number;
+  passDriven: number;
+  passChip: number;
+  passHigh: number;
+  passThroughLow: number;
+  passThroughHigh: number;
+  passHeader: number;
+  passLaunchSpeedSum: number;
+  passLaunchN: number;
   holderHolds: number;
   holderTurns: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
@@ -574,6 +584,15 @@ export interface PerMatchView {
   crossPeakM: number;
   cornerPeakM: number;
   longPeakM: number;
+  /** Stage 4 (`pass-physics.md`): passes by launch type per match, mean launch speed (m/s, FM 7 + 0.45·d). */
+  avgPassGround: number;
+  avgPassDriven: number;
+  avgPassChip: number;
+  avgPassHigh: number;
+  avgPassThroughLow: number;
+  avgPassThroughHigh: number;
+  avgPassHeader: number;
+  passLaunchMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
@@ -748,6 +767,15 @@ export interface VariantSummary {
   crossPeakM: number;
   cornerPeakM: number;
   longPeakM: number;
+  /** Stage 4 (`pass-physics.md`): passes by launch type per match, mean launch speed (m/s, FM 7 + 0.45·d). */
+  avgPassGround: number;
+  avgPassDriven: number;
+  avgPassChip: number;
+  avgPassHigh: number;
+  avgPassThroughLow: number;
+  avgPassThroughHigh: number;
+  avgPassHeader: number;
+  passLaunchMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */

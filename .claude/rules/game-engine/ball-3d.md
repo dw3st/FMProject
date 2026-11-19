@@ -62,3 +62,10 @@ draw the illustrative arcs: their frames carry no height (stage 22).
   them, not from FM's launch speeds (stage 4): see the measurement in `fm-numbers.md`.
 - No air drag, spin or wind on the flight; the wind still acts through `aerialError`.
 - A high ball lands on the grass at its target (contact height 0): the duel in the air is stage 10.
+
+## Stage 4: the physical pass
+
+With `PASS_PHYSICS` (on) a pass is no longer guided to its target: it is launched with FM's speed and vz for its type
+and distance and the passer's error on the vector, and flies on free physics (`BallState.free`). A ground pass and a
+through ball are moved by the core (`advancePassBall`) and arrive where the ball reaches the receiver; a high ball's
+landing point is where it lands. Peaks now FM's (cross 4.0, corner 5.5, long 4.4 m). See `pass-physics.md`.

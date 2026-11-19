@@ -69,6 +69,7 @@ import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
 import { ballFlightPath } from "@/GraficsEngine/ballFlightPath";
+import { passErrorOverlay } from "@/GraficsEngine/passErrorOverlay";
 import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
@@ -423,6 +424,8 @@ export interface DebugOverlays {
   movement:              boolean;
   /** Stage 3 (`ball-3d.md`): the 3D ball's predicted path (dots raised by their height), its peak and landing point. */
   ball3d:                boolean;
+  /** Stage 4 (`pass-physics.md`): 1-σ spread of the holder's pass error at each teammate; a physical pass's aim. */
+  passError:             boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -441,6 +444,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   cohesion:              false,
   movement:              false,
   ball3d:                false,
+  passError:             false,
 };
 
 interface Props {
@@ -4973,6 +4977,21 @@ export function PixiPitch({
             if (land) {
               const g = toPixel(land.x, land.y);
               throughBallGfx.circle(g.px, g.py, 6).stroke({ width: 2, color: 0xfb923c, alpha: 0.95 });
+            }
+          }
+
+          // ── Pass error: σ across the pass at each teammate; aim and real target of a physical pass (`pass-physics.md`) ──
+          if (ovl.passError) {
+            const pe = passErrorOverlay(stateRef.current);
+            for (const r of pe.rings) {
+              const g = toPixel(r.x, r.y);
+              throughBallGfx.circle(g.px, g.py, Math.max(2, r.r * m.scale)).stroke({ width: 1.5, color: 0x22d3ee, alpha: 0.8 });
+            }
+            if (pe.aim) {
+              const o = toPixel(pe.aim.ox, pe.aim.oy), a = toPixel(pe.aim.aimX, pe.aim.aimY), t = toPixel(pe.aim.toX, pe.aim.toY);
+              throughBallGfx.moveTo(o.px, o.py).lineTo(a.px, a.py).stroke({ width: 1, color: 0x22d3ee, alpha: 0.6 });
+              throughBallGfx.moveTo(a.px - 4, a.py - 4).lineTo(a.px + 4, a.py + 4).moveTo(a.px + 4, a.py - 4).lineTo(a.px - 4, a.py + 4).stroke({ width: 2, color: 0x22d3ee, alpha: 0.95 });
+              throughBallGfx.circle(t.px, t.py, 4).stroke({ width: 2, color: 0xf472b6, alpha: 0.95 });
             }
           }
 
