@@ -199,3 +199,42 @@ O modelo bate com os exemplos do FM (`FmXg.test.ts`); a diferença que sobra é 
 quase só de perto e sem bloqueio (77% dos chutes a menos de 18 jd, bloqueados 0,4%), o FM chuta 21,5 vezes de toda
 parte, metade de longe e 38% bloqueados. Isso é das etapas 8 e 9. Os gols caem porque a resolução de hoje ainda sorteia
 sobre o xG (~30% menor por chute); a etapa 7 troca isso pela trajetória. Custo: ~9 µs por avaliação do xG.
+
+## Etapa 13: impedimento, faltas e cartões (antes / depois)
+
+Premier League, 60 partidas com semente (`fm-targets.ts 60 --chunks 1`, formações da IA, equilibrado). Antes =
+`DECISION_OVERRIDES='{"OFFSIDE_RUNS":false,"FM_FOULS":false}'` (idêntico ao motor anterior, conferido); depois = as
+duas flags (`offside.md` → "Mistimed runs", `fouls.md` → "Faltas do FM"). Nada calibrado. A partida ainda tem ~319 s de
+jogo com física (etapa 2 em paralelo), então vai também a taxa por segundo de jogo contra os 93 min do FM (5580 s).
+
+| Medida (por partida, os dois times) | FM | antes | depois |
+|---|---|---|---|
+| Impedimentos | 8 | 1,4 | 1,2 |
+| … por segundo de jogo | 0,0014 | 0,0045 | 0,0037 |
+| … por passe | 0,008 | 0,015 | 0,014 |
+| Faltas | 19 | 9,2 | 8,8 |
+| … por segundo de jogo | 0,0034 | 0,029 | 0,028 |
+| … por passe | 0,019 | 0,10 | 0,10 |
+| Faltas sofridas por terço (próprio / meio / último) | 21 / 43 / 36% | 24 / 32 / 44% | 21 / 35 / 44% |
+| Falta em quem conduz / logo depois de receber / segurando | 44 / 17 / 9% | 70 / 2 / 13% | 71 / 1 / 13% |
+| Faltas de contato (sem desarme) | — | 0 | 0,35 |
+| Amarelos / por falta | 3 / 0,16 | 2,1 / 0,23 | 1,8 / 0,20 |
+| Vermelhos | 0 | 0,10 | 0,03 |
+| Pênaltis | 0,2 | 0,45 | 0,33 |
+| Leituras erradas da linha perto dela | — | 0 | 38 |
+| Gols / chutes / passes | 1,5 / 21,5 / 978 | 1,3 / 4,8 / 92 | 1,2 / 3,8 / 86 |
+
+- O atacante não fica mais preso na linha (com a flag, 12,6% dos ticks com algum atacante além dela contra 9%, sonda
+  de 3 partidas), mas o volume de impedimentos não sobe: quem está além da linha costuma estar atrás dos zagueiros, com
+  o passe fechado, e o FM tira os impedimentos sobretudo de corridas feitas no ombro do último zagueiro na hora do
+  passe (movimento sem bola, etapa 15). Por segundo e por passe já passamos do FM; o que falta por partida é a duração
+  da física.
+- Só a leitura da linha, sem projeção (primeira versão), custava ataque: chutes 4,8 → 3,9, gols 1,3 → 1,0 (o atacante
+  ficava no ponto antigo com a linha recuando). Com a projeção pela antecipação: chutes 4,2, gols 1,2, impedimentos 1,1
+  (60 partidas cada; o ruído entre rodadas com outra sequência de sorteios é de ~±0,4 chute).
+- Faltas: o contato no portador quase não dispara (0,35 por partida): quem chega a 2 jd decide desarmar, e o contato
+  só sobra para quem está perto marcando ou depois de um desarme. A distribuição por terço e por contexto quase não
+  muda (já vinha dos desarmes e dribles); falta em quem conduz fica acima do FM (o FM conta a última ação, nós o que
+  ele fazia na hora). O cartão do FM baixa o amarelo por falta de 0,23 para 0,20 (0,16 no FM): nossa mistura tem mais
+  faltas por trás e parando ataques do que a suposta.
+
