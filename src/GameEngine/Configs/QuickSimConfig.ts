@@ -144,23 +144,23 @@ export const QUICK_SIM_CONFIG = {
    * These are shares within the team, so they match the engine's line shares, subs included:
    * quickSim has no subs, and each starter carries his whole slot.
    */
-  ROLE_GOAL_WEIGHT:   { GK: 0, DEF: 0, MID: 0.091, FWD: 1.696 } as Record<LineGroup, number>,
-  ROLE_ASSIST_WEIGHT: { GK: 0.012, DEF: 0.153, MID: 0.332, FWD: 0.646 } as Record<LineGroup, number>,
+  ROLE_GOAL_WEIGHT:   { GK: 0, DEF: 0, MID: 0.099, FWD: 1.729 } as Record<LineGroup, number>,
+  ROLE_ASSIST_WEIGHT: { GK: 0.017, DEF: 0.145, MID: 0.322, FWD: 0.689 } as Record<LineGroup, number>,
   /**
    * Share of goals given no assist when they are drawn. The engine's own rate (1 − assists per goal)
    * is higher (0.29 in 2026-10) because penalty and direct free-kick goals have no assist — quickSim
    * strips those later (`rollDiscipline` / `rollSetPieces`), so this is set for the realized rate to
    * match (0.71 assists per goal in both, 2026-10-04).
    */
-  NO_ASSIST_RATE: 0.151,
+  NO_ASSIST_RATE: 0.087,
   /**
    * Non-goal shots per unit of (match-day) xG, at match level LEVEL_REF, scaled by
    * (matchLevel / LEVEL_REF)^SHOTS_LEVEL_EXPONENT: the engine's weak leagues shoot more per goal
    * (they convert less). 4.41.51: 1.778 → 1.89, so the non-goal shots follow the engine (−2.2%) while
    * BASE_GOALS took the xG down 8.2%.
    */
-  SHOTS_PER_XG: 2.01,
-  SHOTS_LEVEL_EXPONENT: -0.69,
+  SHOTS_PER_XG: 2.033,
+  SHOTS_LEVEL_EXPONENT: -0.91,
 
   /**
    * Regular passes per starting slot at team level LEVEL_REF — the engine counts through balls in
@@ -180,9 +180,9 @@ export const QUICK_SIM_CONFIG = {
    * AI formations), which already includes crosses, long balls and set pieces. The forwards pass
    * much more than at the last fit (FWD 0.865 → 2.12 per slot).
    */
-  PASSES_PER_MATCH:        { GK: 1.593, DEF: 1.977, MID: 2.467, FWD: 2.233 } as Record<LineGroup, number>,
+  PASSES_PER_MATCH:        { GK: 1.828, DEF: 1.878, MID: 2.288, FWD: 2.2 } as Record<LineGroup, number>,
   /** Weak teams pass less in the engine, mostly in midfield. */
-  PASS_LEVEL_EXPONENT:     { GK: -0.18, DEF: 0.37, MID: 0.59, FWD: 0.11 } as Record<LineGroup, number>,
+  PASS_LEVEL_EXPONENT:     { GK: -0.1, DEF: 0.2, MID: 0.37, FWD: 0.16 } as Record<LineGroup, number>,
   /** Engine completion is ~97.7% (only interceptions/offside fail a regular pass); passing does not move it (the 2026-10 fit came out slightly negative, so 0). */
   PASS_COMPLETION_BASE: 0.949,
   PASS_COMPLETION_SKILL: 0,
@@ -192,18 +192,18 @@ export const QUICK_SIM_CONFIG = {
    * Scaled by (ownTeamLevel / LEVEL_REF)^…_LEVEL_EXPONENT[group]. Fitted with
    * `bun scripts/quicksim-spread.ts events`.
    */
-  TACKLES_PER_MATCH:            { GK: 0, DEF: 0.318, MID: 0.129, FWD: 0.116 } as Record<LineGroup, number>,
-  TACKLE_LEVEL_EXPONENT:        { GK: 0, DEF: 0.14, MID: -0.49, FWD: -0.32 } as Record<LineGroup, number>,
-  INTERCEPTIONS_PER_MATCH:      { GK: 0, DEF: 0.144, MID: 0.196, FWD: 0.174 } as Record<LineGroup, number>,
-  INTERCEPTION_LEVEL_EXPONENT:  { GK: 0, DEF: 0.67, MID: 0.86, FWD: 1.29 } as Record<LineGroup, number>,
+  TACKLES_PER_MATCH:            { GK: 0, DEF: 0.322, MID: 0.122, FWD: 0.155 } as Record<LineGroup, number>,
+  TACKLE_LEVEL_EXPONENT:        { GK: 0, DEF: 0, MID: -1.27, FWD: -0.73 } as Record<LineGroup, number>,
+  INTERCEPTIONS_PER_MATCH:      { GK: 0, DEF: 0.159, MID: 0.199, FWD: 0.18 } as Record<LineGroup, number>,
+  INTERCEPTION_LEVEL_EXPONENT:  { GK: 0, DEF: 0.61, MID: 0.69, FWD: 1.19 } as Record<LineGroup, number>,
   /**
    * Failed tackles per starting slot at LEVEL_REF, × (ownTeamLevel / LEVEL_REF)^TACKLE_FAIL_LEVEL_EXPONENT.
    * Independent of the won-tackle roll. The exponents follow the engine; the rates are set so each
    * line's mean starter rating matches the engine's (a quickSim starter also carries the events of
    * the sub who would replace him, so the rates sit off the engine's per-slot counts).
    */
-  TACKLES_FAILED_PER_MATCH:     { GK: 0, DEF: 0.61, MID: 0.118, FWD: 0.878 } as Record<LineGroup, number>,
-  TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.17, MID: -0.82, FWD: -0.67 } as Record<LineGroup, number>,
+  TACKLES_FAILED_PER_MATCH:     { GK: 0, DEF: 0.634, MID: 0.18, FWD: 1.289 } as Record<LineGroup, number>,
+  TACKLE_FAIL_LEVEL_EXPONENT:   { GK: 0, DEF: -0.15, MID: -1.5, FWD: -0.85 } as Record<LineGroup, number>,
 
   /**
    * Rating-tail correction (#9). A quickSim starter carries the goals and assists of the whole slot
@@ -253,15 +253,15 @@ export const QUICK_SIM_CONFIG = {
    * 0.063 reds, 0.34 penalties, 1.22 offsides per match; offsides now barely follow the level
    * (exponent 1.5 → 0.3).
    */
-  FOULS_PER_SIDE: 5.27,
+  FOULS_PER_SIDE: 5.09,
   /** Who commits a foul: weight per line × (1 + 0.6 × (0.5 − tackling/10)). */
   FOUL_LINE_WEIGHT: { GK: 0.05, DEF: 1.2, MID: 1.0, FWD: 0.7 } as Record<LineGroup, number>,
   /** A booked player fouls less (same idea as the engine's `YELLOW_MULT`). */
   BOOKED_FOUL_MULT: 0.35,
-  YELLOW_PER_FOUL: 0.225,
+  YELLOW_PER_FOUL: 0.219,
   /** Card chance on a booked player's foul (engine: 1.15). */
   BOOKED_CARD_MULT: 1.15,
-  DIRECT_RED_PER_FOUL: 0.0011,
+  DIRECT_RED_PER_FOUL: 0.001,
   /**
    * Personality (Etapa 26, `personality.md`): fouls per side × the XI's mean temperament foul
    * multiplier ÷ TEMPERAMENT_FOUL_NORM; the fouler's cards × the engine's temperament card factors ÷
@@ -270,9 +270,9 @@ export const QUICK_SIM_CONFIG = {
   TEMPERAMENT_FOUL_NORM: 1,
   TEMPERAMENT_CARD_NORM: 1.04,
   /** 0.115 → 0.14 with aerial play: the engine's IN_BOX_MULT went up (PL 0.27 / Championship 0.29 penalties per match). */
-  PENALTIES_PER_SIDE: 0.175,
-  OFFSIDES_PER_SIDE: 0.64,
-  OFFSIDE_LEVEL_EXPONENT: 0.3,
+  PENALTIES_PER_SIDE: 0.137,
+  OFFSIDES_PER_SIDE: 0.6,
+  OFFSIDE_LEVEL_EXPONENT: 1,
 
   /**
    * Aerial play (Etapa 13, `.claude/rules/game-engine/aerial.md`), Poisson / binomial around the
@@ -283,7 +283,7 @@ export const QUICK_SIM_CONFIG = {
    * 12.7 aerial duels, 4.1 long balls per match, header goals 18.9% of the goals.
    */
   /** Etapa 14 (set pieces): 0.105 → 0.19 (corners and crossed free kicks are headed in). */
-  HEADER_GOAL_SHARE: 0.212,
+  HEADER_GOAL_SHARE: 0.194,
   /**
    * Engine header goals per starter slot with set pieces: DEF ≈ FWD (centre-backs go up for corners),
    * MID ≈ 0.22 × FWD. Was DEF 0.01, MID 0.11 before set pieces.
@@ -292,12 +292,12 @@ export const QUICK_SIM_CONFIG = {
    */
   HEADER_LINE_WEIGHT: { GK: 0, DEF: 0.7, MID: 0.22, FWD: 1.0 } as Record<LineGroup, number>,
   /** Set-piece deliveries (corners, crossed free kicks) count as crosses: 5.5 → 8.1 per side. */
-  CROSSES_PER_SIDE: 6.51,
-  CROSS_COMPLETION: 0.101,
-  LONG_BALLS_PER_SIDE: 1.26,
+  CROSSES_PER_SIDE: 5.4,
+  CROSS_COMPLETION: 0.106,
+  LONG_BALLS_PER_SIDE: 1.12,
   LONG_BALL_COMPLETION: 0.445,
   /** Distinct aerial duels per match (both teams contest each one). 9.8 → 14.5 with set pieces. */
-  AERIAL_DUELS_PER_MATCH: 11.2,
+  AERIAL_DUELS_PER_MATCH: 8.6,
   /** Who wins a team's duels (engine duels won per starter slot): weight × (0.5 + heading/10). */
   AERIAL_DUEL_LINE_WEIGHT: { GK: 0, DEF: 0.95, MID: 0.44, FWD: 0.72 } as Record<LineGroup, number>,
 
@@ -313,10 +313,10 @@ export const QUICK_SIM_CONFIG = {
    * count as set-piece goals too. The score never changes.
    */
   // 2.84 until 10.7: the engine now gives ~22% fewer corners (a cleared corner rarely becomes another one).
-  CORNERS_PER_SIDE: 2.2,
-  DIRECT_FK_SHOTS_PER_SIDE: 0.068,
-  SET_PIECE_GOAL_SHARE: 0.125,
-  DIRECT_FK_GOAL_SHARE: 0.023,
+  CORNERS_PER_SIDE: 2.1,
+  DIRECT_FK_SHOTS_PER_SIDE: 0.062,
+  SET_PIECE_GOAL_SHARE: 0.096,
+  DIRECT_FK_GOAL_SHARE: 0.02,
   /** Non-header set-piece goals: second balls and edge-of-the-box shots, mostly forwards and midfielders. */
   SET_PIECE_LINE_WEIGHT: { GK: 0, DEF: 0.38, MID: 0.5, FWD: 1.0 } as Record<LineGroup, number>,
 } as const;

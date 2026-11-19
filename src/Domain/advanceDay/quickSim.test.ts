@@ -285,7 +285,8 @@ describe("quickSimMatch", () => {
       teamLevel(teamStrength(strong.players)) / teamLevel(teamStrength(weak.players)),
       C.PASS_LEVEL_EXPONENT.MID,
     );
-    expect(expectedRatio).toBeGreaterThan(1.5);
+    // Level 7 vs 3: (7/3)^0.37 ≈ 1.37 since the kinematics recalibration (was ^0.59 ≈ 1.65).
+    expect(expectedRatio).toBeGreaterThan(1.25);
     expect(strongPasses / weakPasses).toBeGreaterThan(expectedRatio * 0.9);
     expect(strongPasses / weakPasses).toBeLessThan(expectedRatio * 1.1);
   });

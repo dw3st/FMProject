@@ -79,9 +79,19 @@ Unseeded check, `bun scripts/ai-formation-goals.ts --engine 800 --modes ai --qui
 branch): Premier 1.991 → 2.039 goals, 5.31 → 5.63 shots; Championship 1.710 → 1.565, 5.32 → 5.13; summed goals −2.6%,
 shots +1.2% (noise ~±3% per run).
 
-quickSim: goals and shots unchanged, so `BASE_GOALS` / `SHOTS_PER_XG` stay. Energy: `fatigue-calibrate.ts` part 1 with the
+quickSim: goals unchanged, so `BASE_GOALS` and the goal formula stay. The per-slot events (passes, interceptions, shots,
+assists, ratings) and the discipline, aerial and set-piece rates were refitted against the engine with the layer on:
+`.claude/rules/non-player-games.md` → "Recalibração com a cinemática". Energy: `fatigue-calibrate.ts` part 1 with the
 layer on implies `ENERGY_DRAIN_BY_LINE` GK 37.0 · DEF 47.8 · MID 45.6 · FWD 48.6 against 35.7 · 45.8 · 43.8 · 47.7 in the
 config: all within ±10%, not changed (energy cost is per action, not per yard).
+
+## Visual check (2026-11-18)
+
+Lab `/test`, 11v11 classic (team_red × team_blue, 4-3-3), 1×, 12 s from about 10 s after the page load, recorded at
+~10 fps over CDP: layer on and `ENABLED: false` (not the same play: the engine is unseeded). Checked on sampled runs of consecutive
+frames (open play and a corner being set): runs ease in and players slow onto their target, no snapping, sliding or
+jitter. GIFs kept outside the repository (user's desktop,
+`telas-fmproject/movimento-antes.gif` and `movimento-depois.gif`).
 
 ## Testes
 
@@ -89,8 +99,6 @@ config: all within ±10%, not changed (energy cost is per action, not per yard).
 
 ## Limitações
 
-- The quickSim per-slot events were calibrated on the engine before kinematics: passes (−8%), crosses (−10%) and offsides
-  (−19%) of the engine moved; the quickSim still makes the old numbers (not recalibrated).
 - Race estimates ignore turning and braking; the through-ball cells see the velocity of the tick they are scored.
 - The heading changes at once (the speed pays for it); no curved runs.
 - `FOUL_MULT` is a global lever, not a model of why the tackles from behind come.

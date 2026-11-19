@@ -1203,3 +1203,48 @@ Mesmo processo da 3.4.1 (26 ligas, 400 jogos do motor cada, formações da IA, f
 - **Eventos (`events --apply`, 3 rodadas):** partilhas, chutes, passes, desarmes, interceptações e notas. `NO_ASSIST_RATE` 0,151 à mão (assist./gol 0,670 × 0,679). `PASS_COMPLETION_BASE` 0,949 e `SKILL` 0 à mão (o ajuste deu um peso negativo): o motor acerta 94,9% desde que passes saem pela lateral. Notas por linha: diferença rms GK 0,041, DEF 0,017, MID 0,022, FWD 0,032.
 - **`extras`:** todas as taxas a ±2% do motor (por partida, motor × quick: faltas 10,57 × 10,55, amarelos 2,32 × 2,31, vermelhos 0,074 × 0,073, pênaltis 0,347 × 0,349, cruzamentos 13,0 × 13,0, certos 1,31 × 1,32, disputas aéreas 22,5 × 22,4, lançamentos 2,52 × 2,52, escanteios 5,68 × 5,69, gols de bola parada 26,5% × 26,9%), salvo chutes de falta direta (−6%) e lesões (−3%).
 - **Seleções:** `NATIONAL_MATCH.SLOPE` 0,3 → 0,2. Sem isso as confederações fracas subiam (CAF 3,23, CONCACAF 3,09); ciclo completo 2,50 gols por jogo (antes 2,48).
+
+## Recalibração com a cinemática (2026-11-18)
+
+O motor ganhou aceleração, frenagem e curva (`.claude/rules/game-engine/kinematics.md`): passes −8%, cruzamentos −10%,
+impedimentos −19%, interceptações −5%, gols iguais. Coleta: 9 ligas (Premier, La Liga, Bundesliga, Brasileirão A,
+Championship, Eredivisie, Liga MX, Allsvenskan, Quênia), 400 jogos do motor cada, `--fitness 88 --ai`.
+
+- **Gols:** a fórmula não mudou. Erro por liga com as constantes de hoje: rms 5,4% (piso de ruído 4,0%), pior Quênia
+  +11%; quick 1,72 × motor 1,68 gols por jogo (+2,7%).
+- **Eventos (`events --apply`, 3 rodadas):** passes, desarmes, desarmes errados, interceptações, partilhas, chutes.
+  `PASSES_PER_MATCH` GK 1,593 → 1,828 · DEF 1,977 → 1,878 · MID 2,467 → 2,288 · FWD 2,233 → 2,2, `PASS_LEVEL_EXPONENT`
+  −0,18 / 0,37 / 0,59 / 0,11 → −0,1 / 0,2 / 0,37 / 0,16; `INTERCEPTIONS_PER_MATCH` DEF 0,144 → 0,159, MID 0,196 → 0,199,
+  FWD 0,174 → 0,18; `SHOTS_PER_XG` 2,01 → 2,033, `SHOTS_LEVEL_EXPONENT` −0,69 → −0,91. `PASS_COMPLETION` ficou 0,949 / 0
+  (o ajuste deu de novo um peso negativo; motor 94,8%, quick 94,9%). `NO_ASSIST_RATE` 0,151 → 0,087 à mão: o motor dá
+  mais assistências por gol (0,758; quick 0,676 → 0,763).
+
+  | Por vaga, média das 9 ligas (motor \| quick antes → depois) | GK | DEF | MID | FWD |
+  |---|---|---|---|---|
+  | Passes | 1,84 \| 1,62 → 1,84 | 1,86 \| 1,92 → 1,85 | 2,22 \| 2,36 → 2,22 | 2,18 \| 2,22 → 2,17 |
+  | Interceptações | — | 0,14 \| 0,12 → 0,14 | 0,17 \| 0,17 → 0,17 | 0,14 \| 0,14 → 0,15 |
+  | Nota dos titulares, rms por liga | 0,041 → 0,035 | 0,010 → 0,008 | 0,030 → 0,021 | 0,083 → 0,041 |
+
+- **`extras`** (por partida, os dois times; motor \| quick antes → depois):
+
+  | | motor | antes | depois | constante |
+  |---|---|---|---|---|
+  | Faltas | 10,18 | 10,53 | 10,18 | `FOULS_PER_SIDE` 5,27 → 5,09 |
+  | Amarelos | 2,17 | 2,31 | 2,17 | `YELLOW_PER_FOUL` 0,225 → 0,219 |
+  | Vermelhos | 0,064 | 0,073 | 0,064 | `DIRECT_RED_PER_FOUL` 0,0011 → 0,001 |
+  | Pênaltis (gols) | 0,277 (0,219) | 0,353 (0,271) | 0,274 (0,211) | `PENALTIES_PER_SIDE` 0,175 → 0,137 |
+  | Impedimentos | 1,13 | 1,25 | 1,12 | `OFFSIDES_PER_SIDE` 0,64 → 0,6, `OFFSIDE_LEVEL_EXPONENT` 0,3 → 1 |
+  | Cruzamentos (certos) | 10,79 (1,15) | 13,02 (1,31) | 10,78 (1,13) | `CROSSES_PER_SIDE` 6,51 → 5,4, `CROSS_COMPLETION` 0,101 → 0,106 |
+  | Disputas aéreas | 17,2 | 22,4 | 17,2 | `AERIAL_DUELS_PER_MATCH` 11,2 → 8,6 |
+  | Lançamentos | 2,23 | 2,51 | 2,23 | `LONG_BALLS_PER_SIDE` 1,26 → 1,12 |
+  | Gols de cabeça | 0,289 | 0,324 | 0,304 | `HEADER_GOAL_SHARE` 0,212 → 0,194 |
+  | Escanteios | 4,19 | 4,40 | 4,20 | `CORNERS_PER_SIDE` 2,2 → 2,1 |
+  | Chutes de falta direta (gols) | 0,155 (0,031) | 0,171 (0,037) | 0,154 (0,032) | `DIRECT_FK_SHOTS_PER_SIDE` 0,068 → 0,062, `DIRECT_FK_GOAL_SHARE` 0,023 → 0,02 |
+  | Gols de bola parada (com pênaltis) | 0,367 | 0,469 | 0,368 | `SET_PIECE_GOAL_SHARE` 0,125 → 0,096 |
+  | Lesões | 0,334 | 0,303 | 0,337 | `INJURY.QUICKSIM_CONTACT_SCALE` 1,6 → 1,85 |
+
+  Parte da diferença das bolas paradas, dos pênaltis e do jogo aéreo já vinha de antes da cinemática (o motor mudou
+  desde a 8.8.31 e a cinemática só tirou 10% dos cruzamentos). O impedimento passou a depender do nível (Premier 1,52,
+  Quênia 0,79 no motor), por isso o expoente 1.
+- Limitações: 9 ligas em vez de 26 (os expoentes de nível saem de menos pontos); notas ≥ 8,5 do DEF e do MID continuam
+  abaixo do motor (0,10 × 0,24 e 0,27 × 0,41%).
