@@ -64,12 +64,13 @@ function SideCard({ title, total, lines, negative }: {
   );
 }
 
-/** The balance at the end of each month of the season, as columns around zero. */
+/** The balance at the end of each month of the season, as columns around zero (only the sides that are used). */
 function BalanceChart({ months }: { months: { month: string; balance: number }[] }) {
   const { t, i18n } = useTranslation();
   const max = Math.max(1, ...months.map((m) => Math.abs(m.balance)));
+  const hasPositive = months.some((m) => m.balance >= 0);
   const hasNegative = months.some((m) => m.balance < 0);
-  const area = 140;
+  const area = hasPositive && hasNegative ? 90 : 150;
   const label = (month: string) =>
     new Date(`${month}-15T12:00:00Z`).toLocaleDateString(i18n.language, { month: "short", timeZone: "UTC" }).replace(".", "");
   return (
@@ -79,24 +80,31 @@ function BalanceChart({ months }: { months: { month: string; balance: number }[]
         <p className="text-sm text-muted-foreground m-0 p-4">{t("financesScreen.noEntries")}</p>
       ) : (
         <div className="overflow-x-auto">
-          <div className="flex items-stretch gap-2 px-4 pt-4 pb-3 min-w-max sm:min-w-0">
+          <div className="flex items-stretch gap-2 px-4 pt-3 pb-3 min-w-max sm:min-w-0">
             {months.map((m, i) => {
               const h = Math.max(2, Math.round((Math.abs(m.balance) / max) * area));
               const last = i === months.length - 1;
-              const color = m.balance < 0 ? "bg-destructive" : last ? "bg-primary" : "bg-primary/45";
+              const negative = m.balance < 0;
+              const color = negative ? (last ? "bg-destructive" : "bg-destructive/55") : last ? "bg-primary" : "bg-primary/45";
+              const value = (
+                <span className={`text-sm tabular-nums whitespace-nowrap ${negative ? "text-destructive" : last ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                  {money(m.balance)}
+                </span>
+              );
               return (
                 <div key={m.month} className="flex-1 min-w-14 flex flex-col items-center gap-1.5" title={`${label(m.month)}: ${money(m.balance)}`}>
-                  <span className={`text-sm tabular-nums whitespace-nowrap ${m.balance < 0 ? "text-destructive" : last ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{money(m.balance)}</span>
-                  <div className="w-full flex flex-col" style={{ height: hasNegative ? area * 2 : area }}>
-                    <div className="flex-1 flex items-end justify-center border-b border-border">
-                      {m.balance >= 0 && <div className={`w-full max-w-10 rounded-t ${color}`} style={{ height: h }} />}
+                  {hasPositive && (
+                    <div className="w-full flex flex-col items-center justify-end gap-1 border-b border-border" style={{ height: area + 24 }}>
+                      {!negative && value}
+                      {!negative && <div className={`w-full max-w-10 rounded-t ${color}`} style={{ height: h }} />}
                     </div>
-                    {hasNegative && (
-                      <div className="flex-1 flex items-start justify-center">
-                        {m.balance < 0 && <div className={`w-full max-w-10 rounded-b ${color}`} style={{ height: h }} />}
-                      </div>
-                    )}
-                  </div>
+                  )}
+                  {hasNegative && (
+                    <div className={`w-full flex flex-col items-center justify-start gap-1 ${hasPositive ? "" : "border-t border-border"}`} style={{ height: area + 24 }}>
+                      {negative && <div className={`w-full max-w-10 rounded-b ${color}`} style={{ height: h }} />}
+                      {negative && value}
+                    </div>
+                  )}
                   <span className={LABEL}>{label(m.month)}</span>
                 </div>
               );
@@ -172,9 +180,8 @@ export function SponsorIncomeStrip({ weeklyNow, season }: { weeklyNow: number; s
   const { t } = useTranslation();
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Kpi label={t("financesScreen.overview.sponsorYear")} value={weeklyNow * 52} />
-        <Kpi label={t("financesScreen.overview.sponsorWeek")} value={weeklyNow} />
         <Kpi label={t("financesScreen.overview.sponsorSeason")} value={season.total} />
         <Kpi label={t("financesScreen.overview.sponsorBonus")} value={season.bonus} />
       </div>

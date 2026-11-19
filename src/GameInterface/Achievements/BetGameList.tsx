@@ -133,7 +133,7 @@ export function BetGameList({ games, today, mine, open, slip, query, scope, days
           <div key={key} className="border-b border-border/50 last:border-b-0">
             <div className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 px-4 py-2 ${g.own ? "bg-primary/5" : ""}`}>
               <span className="w-12 shrink-0 text-sm text-muted-foreground tabular-nums">{g.kickoff ?? ""}</span>
-              {withCompetition && <span className="basis-full sm:basis-auto sm:w-36 shrink-0 text-sm text-muted-foreground truncate order-first sm:order-none" title={name(g.competition)}>{name(g.competition)}</span>}
+              {withCompetition && <span className="basis-full sm:basis-auto sm:w-28 shrink-0 text-sm text-muted-foreground truncate order-first sm:order-none" title={name(g.competition)}>{name(g.competition)}</span>}
               <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2 font-semibold">
                 <span className="flex items-center justify-end gap-2 min-w-0">
                   {friends.home && <HumanBadge nickname={friends.home} />}
