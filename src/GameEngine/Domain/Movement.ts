@@ -4,7 +4,7 @@
  */
 import type { BackLineMode, BackLineState, GamePlayer } from '@/GameEngine/types';
 import { MOVEMENT as M, YD_PER_M, YDS_PER_MPH } from '@/GameEngine/Configs/MovementConfig';
-import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
+import { DECISION_FLAGS, HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { DEFAULT_MENTAL } from '@/GameEngine/Domain/HolderMind';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
@@ -139,9 +139,14 @@ export function shortSupportAnchor(supporter: GamePlayer, holder: GamePlayer): P
 
 // ── 5. Anticipation ────────────────────────────────────────────────────────────
 
+/** The player's anticipation 0..1; like every mental attribute it only counts with the holder's mind on (`HOLDER`). */
+function anticipationOf(player: GamePlayer): number {
+  return DECISION_FLAGS.HOLDER ? player.mental?.anticipation ?? DEFAULT_MENTAL.anticipation : DEFAULT_MENTAL.anticipation;
+}
+
 /** Anticipation on the world scale 0..1 (1 = the world's top, `HOLDER_MIND.MENTAL_TOP`). */
 export function anticipationScale(player: GamePlayer): number {
-  const a = player.mental?.anticipation ?? DEFAULT_MENTAL.anticipation;
+  const a = anticipationOf(player);
   return clamp(a / HOLDER_MIND.MENTAL_TOP, 0, 1);
 }
 
@@ -159,6 +164,6 @@ export function predictedPoint(p: GamePlayer, seconds: number): Pt {
 
 /** × on an interception chance by anticipation (1 at the world mean). */
 export function anticipationInterceptMult(player: GamePlayer): number {
-  const a = player.mental?.anticipation ?? DEFAULT_MENTAL.anticipation;
+  const a = anticipationOf(player);
   return clamp(1 + M.ANTICIPATION_INTERCEPT * (a - M.ANTICIPATION_MEAN), 0.6, 1.5);
 }

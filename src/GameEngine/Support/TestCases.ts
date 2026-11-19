@@ -515,7 +515,7 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Reyes',    'A', 'CDM',  44, 40, MIDFIELDER),
         makePlayer('Santos',   'A', 'ST',   82, 36, STRIKER),
         makePlayer('Mensah',   'B', 'CM',   61, 31, MIDFIELDER),
-        makePlayer('Kone',     'B', 'CDM',  66, 36, MIDFIELDER),
+        makePlayer('Kone',     'B', 'CDM',  63.5, 34, MIDFIELDER),
         makePlayer('Silva',    'B', 'CB',   88, 34, DEFENDER),
         makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
       ], 1);
