@@ -273,3 +273,51 @@ describe("stepWage", () => {
     expect(stepWage(50, -1)).toBe(0);
   });
 });
+
+describe("own-club renewal starts from the current wage (12.28.5)", () => {
+  const withWage = (wage: number): RosterPlayer => ({ ...player("r", 25, 6), contract: { until: END, wage } });
+  const club = (income: number, players: RosterPlayer[]): Squad => ({
+    ...squad(players), finances: { broadcasting: income, commercial: 0, total: income, budget: 0, followers: 0 },
+  });
+  const mates = [player("m1", 25, 4), player("m2", 25, 4)];
+
+  test("capped at current × (1 + tier cap): LOW 15%, MEDIUM 25%, HIGH/ELITE 40%", () => {
+    for (const [income, cap] of [[5_000_000, 0.15], [30_000_000, 0.25], [120_000_000, 0.4], [300_000_000, 0.4]] as const) {
+      const p = withWage(2_000);
+      const s = club(income, [p, ...mates]);
+      const b = demandBreakdown(p, s, END, { renewal: true });
+      expect(b.renewalCap).toBe(cap);
+      expect(b.demand).toBe(Math.round(2_000 * (1 + cap)));
+    }
+  });
+
+  test("never below current × 0.9, even when his market wage fell", () => {
+    const p = withWage(10_000_000);
+    const s = club(30_000_000, [p, ...mates]);
+    expect(contractDemand(p, s, END, { renewal: true })).toBe(9_000_000);
+  });
+
+  test("inside the band the demand of today stands; a signing is unchanged", () => {
+    const p0 = withWage(1);
+    const s = club(30_000_000, [p0, ...mates]);
+    const today = contractDemand({ ...p0, contract: undefined }, s, END, { renewal: true });
+    const p = withWage(today);
+    expect(contractDemand(p, s, END, { renewal: true })).toBe(today);
+    // No contract = the rule of before; not a renewal = no clamp.
+    expect(contractDemand({ ...p0, contract: undefined }, s, END, { renewal: true })).toBe(today);
+    expect(demandBreakdown(p0, s, END).renewalCap).toBeUndefined();
+    expect(contractDemand(p0, s, END)).toBe(today);
+  });
+
+  test("an unhappy player still asks more, within the cap", () => {
+    const p = { ...withWage(2_000), morale: 30 };
+    const s = club(5_000_000, [p, ...mates]);
+    expect(contractDemand(p, s, END, { renewal: true })).toBe(2_300);
+  });
+
+  test("the AI renewal is unchanged", () => {
+    const p = withWage(2_000);
+    const s = club(5_000_000, [p, ...mates]);
+    expect(renewalContract(p, s, END, 2).wage).toBeGreaterThan(2_300);
+  });
+});

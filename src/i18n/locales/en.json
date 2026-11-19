@@ -4245,6 +4245,9 @@
     "signed": "Player signed.",
     "currentWage": "Current wage: {{wage}}/wk",
     "wageChange": "{{pct}}% on the current",
+    "renewalCap": "Renewal: up to +{{pct}}% on the current wage",
+    "freeWait_one": "No club for {{count}} day: {{pct}}",
+    "freeWait_other": "No club for {{count}} days: {{pct}}",
     "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
     "refusal": {
       "lowWage": "The wage is too low for this player.",

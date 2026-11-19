@@ -48,6 +48,15 @@ export const CONTRACT_CONFIG = {
   /** A free agent from this age up to the veteran age leaves the pool after this many days (others: a year). */
   FREE_SENIOR_AGE: 30,
   FREE_SENIOR_DAYS: 180,
+  /**
+   * Renewal at his own club (report, 12.28.5): the demand starts from the current wage. It never asks more than
+   * current × (1 + cap of the club's natural tier) nor less than current × RENEWAL_FLOOR.
+   */
+  RENEWAL_RAISE_CAP: { LOW: 0.15, MEDIUM: 0.25, HIGH: 0.4, ELITE: 0.4 },
+  RENEWAL_FLOOR: 0.9,
+  /** A free agent asks less the longer he waits: × (1 − FREE_WAIT_DISCOUNT × min(1, days in the pool / FREE_WAIT_DAYS)). */
+  FREE_WAIT_DISCOUNT: 0.25,
+  FREE_WAIT_DAYS: 90,
 } as const;
 
 /**

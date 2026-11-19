@@ -79,11 +79,10 @@ export const NEGOTIATION = {
    * as a signing bonus (luvas), asks a little more wage, and other clubs compete for him.
    */
   FREE_SIGNING: {
-    /** Signing bonus asked: market value × share (pre-contract / free agent), × (1 + PER_RIVAL × clubs competing). */
+    /** Pre-contract signing bonus: market value × share, × (1 + PER_RIVAL × clubs competing). A free agent asks none (12.28.5). */
     BONUS_SHARE_PRE: 0.25,
-    BONUS_SHARE_FREE: 0.15,
     PER_RIVAL: 0.15,
-    /** Wage demand × this for a free arrival. */
+    /** Wage demand × this on a pre-contract (not a free agent, 12.28.5). */
     WAGE_PREMIUM: 1.1,
     /** Weight of the bonus (offered / asked, capped at 1,5) in his choice between clubs, beside `PREFERENCE`. */
     BONUS_WEIGHT: 0.2,

@@ -171,3 +171,12 @@ Id repetido do jovem de reposição (10.4.3, report do usuário): o id do jovem 
 ## Rescindir pelo Elenco (12.18.2)
 
 Report do usuário (não dava para dispensar um jogador ruim). O botão de rescisão (`TerminateButton compact`) fica na tabela do próprio Elenco, ao lado de vender e conversar; a janela mostra a multa antes de confirmar. Bloqueio só com o elenco de 14 jogadores ou menos (`terminationBreaksDepth`, a regra das vendas, `TERMINATION.MIN_SQUAD`); a posição abaixo do mínimo vira um aviso na janela (`terminationThinLine`, o `thin` do `GET .../terminate`).
+
+## Renovação parte do salário atual (12.28.5)
+
+Report de jogadores (ganha ~€2 mil, pedia €10 mil). Numa renovação no próprio clube (`DemandContext.renewal`: rota `renew`, `demand`, diretor e promessa de renovação; também o cedido por empréstimo, pelo contrato do clube dono) o pedido de hoje (curva × importância × jovem × moral × personalidade × negociação) é limitado ao salário atual: entre `atual × RENEWAL_FLOOR` (0,9) e `atual × (1 + RENEWAL_RAISE_CAP[tier natural pela receita])` (LOW 0,15 · MEDIUM 0,25 · HIGH 0,40 · ELITE 0,40), em `CONTRACT_CONFIG`. Sem contrato, a regra de antes. A IA (`renewalContract`, virada, renovação antecipada) não muda; a recusa do revoltado sem promessa continua. A rota `demand` devolve `renewalCap` e a janela mostra "Renovação: até +N% sobre o salário atual".
+
+## Jogador livre sem luvas (12.28.5)
+
+O humano contratando um livre: sem luvas, sem o prêmio de salário (`WAGE_PREMIUM` só no pré-contrato) e o pedido × `freeWaitMult` = 1 − `FREE_WAIT_DISCOUNT` (0,25) × min(1, dias no pool / `FREE_WAIT_DAYS` (90)), a partir de `FreeAgent.since` (`DemandContext.freeSince`, `freeArrivalCtx`). A disputa com rivais da IA continua pela preferência (salário, prestígio, titularidade). A rota `demand` devolve `freeDays` e `freeWait` ("Sem clube há N dias: −N%"); a rota `sign` ignora `bonus` e não lança luvas no extrato. A IA no `freeAgentTick` também não paga luvas.
+

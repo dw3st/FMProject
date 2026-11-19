@@ -4239,6 +4239,9 @@
     "signed": "Jogador contratado.",
     "currentWage": "Salário atual: {{wage}}/sem",
     "wageChange": "{{pct}}% sobre o atual",
+    "renewalCap": "Renovação: até +{{pct}}% sobre o salário atual",
+    "freeWait_one": "Sem clube há {{count}} dia: {{pct}}",
+    "freeWait_other": "Sem clube há {{count}} dias: {{pct}}",
     "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
     "refusal": {
       "lowWage": "O salário é baixo demais para esse jogador.",

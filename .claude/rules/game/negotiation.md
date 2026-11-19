@@ -281,3 +281,8 @@ Report do usuário. A proposta da IA e a proposta entre técnicos mostram no top
 ## Empréstimo barato e o filtro do olheiro (12.17)
 
 Report de tester. `LOAN.SHARE_MIN` 0,4 → 0: a parte do salário que o clube de origem quer cobrir é `0,75 + 0,5 × força relativa` sem piso (1,5 abaixo da média do elenco = 0; 1 abaixo = 25%; o médio continua 75%). Só muda o que o humano paga ao pedir emprestado (a IA não empresta à IA). `minLoanWageShare(player, parent)` (`loans.ts`, com teste) dá a menor parte aceita sem taxa (igual para qualquer duração; acima de 1 = só com taxa); a busca do olheiro guarda em `DisplayPlayer.loanShare`, e com "Aceitam empréstimo" ligado os chips "Pagando do salário no máximo" (Qualquer, 0, 25, 50, 75, 100%, `loanMaxShare`, `LOAN_SHARES`) filtram.
+
+## Livre sem luvas (12.28.5)
+
+Report de jogadores. A seção "Luvas e disputa de quem chega sem taxa" (8.7.9) vale agora só para o pré-contrato: `signingBonusAsk(..., "free")` é 0 (`BONUS_SHARE_FREE` saiu), o livre não tem o prêmio de salário e pede menos com o tempo sem clube (`contracts.md` → "Jogador livre sem luvas"). Os rivais de um livre oferecem luvas 0, e a escolha fica no `preferenceScore` (o termo das luvas empata). A janela do livre mostra só os clubes rivais, sem o campo de luvas.
+
