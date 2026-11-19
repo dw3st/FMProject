@@ -5,6 +5,7 @@ import type { SeasonSummary } from "@/types/seasonSummaryTypes";
 import { Modal } from "@/GameInterface/Components/Modal";
 import { SeasonSummaryView } from "@/GameInterface/Components/SeasonSummaryView";
 import { Icon } from "@/GameInterface/Icons";
+import { formatGameDate } from "@/GameInterface/formatDate";
 import type { FastForwardProgress, SeasonNotice } from "@/GameInterface/useAdvanceDay";
 
 function leagueNameOf(slug: string, leagues: LeagueData[]): string {
@@ -131,7 +132,10 @@ export function SeasonNoticeModal({
   );
 }
 
-/** Progress of "advance to next match": days done / days to the target, with a Stop button. */
+/**
+ * Progress of "advance to next match": days done / days to the target, the dates, and a Cancel that stops after the
+ * day in progress (the client asks for one day at a time). Escape cancels too.
+ */
 export function FastForwardModal({
   progress,
   onStop,
@@ -144,13 +148,15 @@ export function FastForwardModal({
   /** Without a club the fast-forward runs until the next job offers, not a match. */
   unemployed?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const total = Math.max(1, progress.totalDays);
   const pct = Math.min(100, Math.round((progress.daysAdvanced / total) * 100));
   const failed = progress.error !== null;
+  const date = formatGameDate(progress.currentDate, i18n.language, "dayMonth");
+  const target = progress.targetDate ? formatGameDate(progress.targetDate, i18n.language, "dayMonth") : null;
 
   return (
-    <Modal open onClose={failed ? onDismiss : () => {}} size="sm">
+    <Modal open onClose={failed ? onDismiss : progress.stopping ? () => {} : onStop} size="sm">
       <div className="p-6 flex flex-col gap-4">
         <h2 className="font-display font-black uppercase text-xl leading-none m-0 flex items-center gap-2">
           <Icon name="fast-forward" size={18} className="text-primary" />
@@ -161,23 +167,30 @@ export function FastForwardModal({
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
         </div>
 
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground tabular-nums" role="status">
           <span>{t("fastForward.progress", { done: progress.daysAdvanced, total })}</span>
-          <span>{t("fastForward.currentDate", { date: progress.currentDate })}</span>
+          <span>{target ? t("fastForward.dates", { date, target }) : t("fastForward.currentDate", { date })}</span>
         </div>
 
         {failed && (
           <p className="text-sm text-destructive">{t("fastForward.error", { error: progress.error })}</p>
         )}
 
-        <button
-          type="button"
-          onClick={failed ? onDismiss : onStop}
-          disabled={!failed && progress.stopping}
-          className="self-end px-4 py-2 rounded-lg border border-border bg-foreground/5 text-sm font-bold uppercase tracking-[0.08em] text-foreground cursor-pointer transition-all hover:bg-foreground/10 disabled:opacity-50 disabled:cursor-not-allowed font-display"
-        >
-          {failed ? t("seasonNotice.ok") : progress.stopping ? t("fastForward.stopping") : t("fastForward.stop")}
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          {!failed && (
+            <span className="text-sm text-muted-foreground">
+              {progress.stopping ? t("fastForward.stoppingHint") : t("fastForward.cancelHint")}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={failed ? onDismiss : onStop}
+            disabled={!failed && progress.stopping}
+            className="ml-auto shrink-0 h-10 px-4 rounded-lg border border-border bg-foreground/5 text-sm font-bold uppercase tracking-[0.08em] text-foreground cursor-pointer transition-all hover:bg-foreground/10 disabled:opacity-50 disabled:cursor-not-allowed font-display"
+          >
+            {failed ? t("seasonNotice.ok") : progress.stopping ? t("fastForward.stopping") : t("fastForward.stop")}
+          </button>
+        </div>
       </div>
     </Modal>
   );

@@ -111,11 +111,30 @@ export function ReadyControl({ publicWorld = false }: { publicWorld?: boolean } 
   if (view && branch === "running") {
     const text = t("world.advance.running", { date: fmt(view.currentDate), target: fmt(view.target) });
     const short = t("world.advance.runningShort", { date: fmt(view.currentDate), target: fmt(view.target) });
-    return (
+    const status = (
       <span className={`flex items-center gap-1.5 text-sm font-semibold text-muted-foreground whitespace-nowrap tabular-nums ${RUNNING_TRUNC}`} role="status" title={text} aria-label={text}>
         <Icon name="clock" size={16} className="shrink-0" />
         <span className="truncate" aria-hidden="true">{short}</span>
       </span>
+    );
+    // The public world steps by the clock (part 5b): a mark does not hold its run.
+    if (!marked || view.kind === "public") return status;
+    // His own mark still holds the run: taking it off stops the world after the day in progress (the executor
+    // re-reads every "ready until" before each day), so a press by mistake can be cancelled.
+    return (
+      <div className="flex w-full min-w-0 items-center gap-2">
+        <div className="flex-1 min-w-0">{status}</div>
+        <button
+          type="button"
+          className={ICON_ONLY}
+          onClick={() => void markReady(null)}
+          disabled={busy}
+          title={t("world.advance.stopRunning")}
+          aria-label={t("world.advance.stopRunning")}
+        >
+          <Icon name="close" size={16} />
+        </button>
+      </div>
     );
   }
 

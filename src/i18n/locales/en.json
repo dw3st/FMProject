@@ -3768,8 +3768,11 @@
     "titleOffers": "Fast-forwarding to the next offers",
     "progress": "Day {{done}} of {{total}}",
     "currentDate": "Current date: {{date}}",
-    "stop": "Stop",
-    "stopping": "Stopping…",
+    "stop": "Cancel",
+    "stopping": "Cancelling…",
+    "cancelHint": "Stops after the day in progress.",
+    "stoppingHint": "Finishing the day in progress.",
+    "dates": "{{date}} → {{target}}",
     "error": "Fast-forward stopped: {{error}}"
   },
   "seasonSummary": {
@@ -7459,6 +7462,7 @@
       "waiting_one": "waiting for {{count}}",
       "waiting_other": "waiting for {{count}}",
       "unmark": "Not ready",
+      "stopRunning": "Cancel: the advance stops after the day in progress",
       "dateInvalid": "Pick {{min}} or a later date.",
       "retry": "Try again",
       "band": {

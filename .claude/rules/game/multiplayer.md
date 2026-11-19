@@ -1029,3 +1029,7 @@ Ideia de tester, aprovada pelo usuário. `src/Domain/rivals/reactionShop.ts` (co
 ### Pênaltis manuais e velocidade do amigo (12.14.2)
 
 Reports do usuário. Na partida entre dois técnicos os pênaltis são sempre em 2D para os dois lados (`penalty2d` começa ligado na sala e o `h2h_ready` não muda mais; a sala mostra a regra no lugar dos chips). Um lado desconectado ou suspenso continua com a escolha da IA. A barra da partida mostra sempre a velocidade escolhida pelo amigo ("Fabio está em 2×"), em âmbar quando ela segura a partida.
+
+### Cancelar o avanço (tester report)
+
+Solo: "Avançar até o próximo jogo" pede ao servidor um dia por requisição (`FAST_FORWARD_STEP_DAYS`, `GameInterface/fastForwardStep.ts`, `nextFastForwardAction`), então Cancelar (ou Esc) para depois do dia em andamento; a janela mostra "Dia 2 de 5" e "19 de ago. → 22 de ago.". As paradas continuam as do servidor (`runAdvanceBatch`). Grupo: com o mundo avançando e a marca de pronto do assento ainda valendo, o "Avançando…" da barra ganha o X que tira a marca (`ready { until: null }`): o executor relê as marcas antes de cada dia e para depois do dia em andamento (no mundo público, que anda pelo relógio, o X não aparece).

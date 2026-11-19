@@ -335,7 +335,7 @@ export const advanceUntilRoutes = {
     }
 
     // The lock is taken PER DAY (around the position check + the day), not for the whole batch:
-    // a batch can take ~20 s, and the frontend's "Parar" and any plain advance-day must not wait
+    // a batch can take ~20 s, and the frontend asks for one day per request (its Cancel stops after the day) and a plain advance-day must not wait
     // for all of it. Checking the target inside the same lock keeps a concurrent advance-day from
     // pushing the save onto the player's match day between the check and the day.
     const result = await runAdvanceBatch(maxDays, {

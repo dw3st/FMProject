@@ -7,6 +7,7 @@ import type { AdvanceDayResponse } from "@/types/dayLogTypes";
 import { daysBetween } from "@/Domain/dates";
 import type { ClubMove } from "@/types/pyramidTypes";
 import { navigate } from "@/GameInterface/router/navigation";
+import { FAST_FORWARD_STEP_DAYS, nextFastForwardAction } from "@/GameInterface/fastForwardStep";
 
 /** A board renewal offer waits for an answer: the dashboard opens it (4.41.4). */
 export const RENEWAL_URL = "/dashboard?renewal=1";
@@ -16,7 +17,6 @@ export const RENEWAL_URL = "/dashboard?renewal=1";
  * (fast-forward stops ON the match day, so a match tomorrow is one plain Continuar).
  */
 const FAST_FORWARD_MIN_DAYS = 1;
-const FAST_FORWARD_BATCH_DAYS = 7;
 
 /** One season rollover of the player's country, as the notice modal shows it. */
 export interface SeasonNotice {
@@ -35,6 +35,8 @@ export interface FastForwardProgress {
   /** Days from the start of the run to the current target (the target moves after a rollover). */
   totalDays: number;
   currentDate: string;
+  /** The day the run stops at (the match day; after a rollover it moves), null before the first reply. */
+  targetDate: string | null;
   stopping: boolean;
   error: string | null;
 }
@@ -46,6 +48,8 @@ interface AdvanceUntilResponse {
   matchDate: string | null;
   done: boolean;
   seasonEvents: SeasonNotice[];
+  sacked?: boolean;
+  renewalOffer?: boolean;
   error?: string;
 }
 
@@ -138,7 +142,7 @@ export function useAdvanceDay() {
     stopRequested.current = false;
     const initialTotal = nextMatchDate ? Math.max(1, daysBetween(simDate, nextMatchDate)) : 1;
     let progress: FastForwardProgress = {
-      daysAdvanced: 0, totalDays: initialTotal, currentDate: simDate, stopping: false, error: null,
+      daysAdvanced: 0, totalDays: initialTotal, currentDate: simDate, targetDate: nextMatchDate, stopping: false, error: null,
     };
     setFastForward(progress);
     setAdvancing(true);
@@ -152,7 +156,8 @@ export function useAdvanceDay() {
         const res = await fetch(`/api/saves/${session.saveId}/advance-until`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ maxDays: FAST_FORWARD_BATCH_DAYS }),
+          // One day per request: Cancel stops after the day that is running.
+          body: JSON.stringify({ maxDays: FAST_FORWARD_STEP_DAYS }),
         });
         const body = (await res.json().catch(() => null)) as AdvanceUntilResponse | null;
         if (!body) throw new Error(`HTTP ${res.status}`);
@@ -163,23 +168,27 @@ export function useAdvanceDay() {
         matchDate = body.matchDate ?? null;
         const advanced = progress.daysAdvanced + (body.daysAdvanced ?? 0);
         const remaining = body.target && body.newDate ? Math.max(0, daysBetween(body.newDate, body.target)) : 0;
-        progress = { ...progress, daysAdvanced: advanced, totalDays: advanced + remaining, currentDate: lastDate };
+        progress = {
+          ...progress, daysAdvanced: advanced, totalDays: advanced + remaining, currentDate: lastDate,
+          targetDate: body.target ?? progress.targetDate,
+        };
         setFastForward(progress);
         if (body.seasonEvents?.length) notice = body.seasonEvents[body.seasonEvents.length - 1]!;
-        if ((body as { sacked?: boolean }).sacked) {
+        const action = nextFastForwardAction(body, res.ok, stopRequested.current);
+        if (action === "fired") {
           navigate("/fired");
           return;
         }
-        if (body.error === "renewalPending" || (body as { renewalOffer?: boolean }).renewalOffer) {
+        if (action === "renewal") {
           navigate(RENEWAL_URL);
           return;
         }
-        if (!res.ok || body.error) throw new Error(body.error ?? `HTTP ${res.status}`);
-        if (body.done) {
+        if (action === "error") throw new Error(body.error ?? `HTTP ${res.status}`);
+        if (action === "done") {
           reachedMatchDay = matchDate !== null && lastDate === matchDate;
           break;
         }
-        if (stopRequested.current || body.daysAdvanced === 0) break;
+        if (action === "cancelled") break;
       }
     } catch (err) {
       progress = { ...progress, error: err instanceof Error ? err.message : String(err) };

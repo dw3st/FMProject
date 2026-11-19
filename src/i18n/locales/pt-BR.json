@@ -3768,8 +3768,11 @@
     "titleOffers": "Avançando até as próximas propostas",
     "progress": "Dia {{done}} de {{total}}",
     "currentDate": "Data atual: {{date}}",
-    "stop": "Parar",
-    "stopping": "Parando…",
+    "stop": "Cancelar",
+    "stopping": "Cancelando…",
+    "cancelHint": "Para depois do dia em andamento.",
+    "stoppingHint": "Terminando o dia em andamento.",
+    "dates": "{{date}} → {{target}}",
     "error": "Avanço interrompido: {{error}}"
   },
   "seasonSummary": {
@@ -7456,6 +7459,7 @@
       "waiting_one": "esperando {{count}}",
       "waiting_other": "esperando {{count}}",
       "unmark": "Não estou pronto",
+      "stopRunning": "Cancelar: o avanço para depois do dia em andamento",
       "dateInvalid": "Escolha uma data a partir de {{min}}.",
       "retry": "Tentar de novo",
       "band": {
