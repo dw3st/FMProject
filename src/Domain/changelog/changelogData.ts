@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.23",
+    date: "2026-11-18",
+    time: "23:00",
+    items: [
+      { tab: "manager", pt: "Apostas novas: busca por time, filtros por dia e competição, jogos agrupados com as cotações clicáveis na linha e um cupom ao lado.", en: "New bets: search by club, filters by day and competition, games grouped with clickable odds on the row and a bet slip on the side." },
+      { tab: "manager", pt: "Meu desempenho nas apostas: greens e reds, lucro, retorno, a curva do lucro e tabelas por faixa de cotação e por mercado.", en: "My betting record: greens and reds, profit, return, the profit curve and tables by odds band and by market." },
+    ],
+  },
+  {
     version: "12.22.1",
     date: "2026-11-18",
     time: "22:01",
