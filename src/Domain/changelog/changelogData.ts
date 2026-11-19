@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.28",
     date: "2026-11-19",
-    time: "23:00",
+    time: "10:47",
     items: [
       { tab: "club", pt: "Aba Clube reorganizada em quatro abas: Visão geral, com o que precisa de reforma e o que dá para melhorar; Estádio, com o público; Obras, com tudo de uma obra num lugar só; e Materiais, com a loja e o estoque.", en: "Club tab reorganised into four tabs: Overview, with what needs repair and what can be upgraded; Stadium, with the crowd; Works, with everything about a job in one place; and Materials, with the shop and the stock." },
     ],
