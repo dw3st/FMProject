@@ -46,7 +46,8 @@ export interface BaselineTotals {
   releasedPick?: Record<string, number>;
 }
 export const MIND_KEYS = ["holderMindDecisions", "holderOffArgmax", "holderWindows", "holderLapses", "holderReleases",
-  "holderHighPressure", "holderReleasesHigh", "holderPanics", "holderSimple"] as const;
+  "holderHighPressure", "holderReleasesHigh", "holderPanics", "holderSimple",
+  "moveShield", "moveShieldHeld", "moveCutInside", "moveLayOff", "moveChip", "moveChipGoals", "moveRound", "moveRoundWon"] as const;
 export type MindKey = (typeof MIND_KEYS)[number];
 
 const emptyFamily = (): FamilyTally => ({ n: 0, nearTies: 0, offArgmax: 0, mix: {}, buckets: Array.from({ length: 12 }, () => ({})) });

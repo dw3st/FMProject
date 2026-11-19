@@ -173,10 +173,49 @@ Tuning history: σ 0.01 + 0.09 (design): 1.35 goals / 3.96 shots (−30%), off-a
 cost nothing). σ 0.005 + 0.02 kept. Release `D·k/(5n+10)` with k = 40: 1.3% with no open pass, 12% with one (the
 opposite of FM27): reformulated.
 
+## Holder moves (phase 3, flags `SHIELD`, `CUT_INSIDE`, `LAY_OFF`, `CHIP`, `ROUND_KEEPER`, on by default)
+
+Approved scope addition. Each move is its own scored option of `decideBallHolder` (`Domain/HolderMoves.ts`, pure),
+compressed like the other actions (`HOLDER_MOVES.STRONG_RAW` 0.8), executed by an existing action with a `move` tag
+(`PlayerDecision.move`); with the holder's mind on it shares the noise of that action. The mental profile only counts
+with `HOLDER` on (off, every player reads the default: no mental effect, identity test). Constants `HOLDER_MOVES`
+(`DecisionConfig.ts`, `HOLDER_MOVES_OVERRIDES` env). Set-piece takers and the keeper never use them.
+
+| Move | When | Score (raw) | Execution |
+|---|---|---|---|
+| Shield / turn | back to goal (last movement > 112° from goal, or the nearest opponent ≤ 4 yd on his goal side) and an opponent ≤ 2.5 yd | 0.45 × (strength + composure)/2 × (0.5 + pN) | carry away from the presser at 0.3 × speed; a tackle on him × (1 − 0.35 × strength), its foul chance × 1.4. He turns when the carry wins again |
+| Cut inside | 14+ yd off the centre line, 16–40 yd from the goal line, first 6 yd toward the box edge (20 yd out, 8 yd wide) clear by 3 yd | 0.8 × (0.4 + 0.6 × (dribbling + flair)/2) × (0.5 on the natural foot) × 1.3 if the full-back shows him outside | carry along the diagonal |
+| First-time lay-off | just received, back to goal, an opponent ≤ 5 yd, a teammate 4–18 yd away, ≤ 3 yd ahead, arriving (≥ 0.8 yd/s), lane clear by 2.5 yd | 1.0 × (0.35 + 0.3 × passing + 0.35 × decisions) | pass to him at once (before the reception burst) |
+| Chip | keeper ≥ 5 yd off his line and within 3 yd of the shot line, shooter 10–26 yd out and 4+ yd beyond him | chance = 0.8 × depth factor × angle × (0.4 + 0.6 × (finishing + composure + flair)/3); score = 2 × compressed like a shot | decided at the strike (`resolveChip`): a goal flies in, a miss lands wide; the keeper never meets it |
+| Round the keeper | one-on-one gate on, keeper ≤ 5 yd in front, not recovering | 1.6 × (0.3 + 0.7 × (dribbling + composure)/2) × (1 − d/7) | dribble at the keeper; P(win) = skill / (skill + smother) (`resolveRoundKeeper`); beaten, the keeper is out 1.4 s |
+
+Event `holderMove { move, phase: start | success | fail }` (start counted once per streak). `Statistics` team counters
+`moveShield`, `moveShieldHeld` (a challenge held off), `moveCutInside`, `moveLayOff`, `moveChip`, `moveChipGoals`,
+`moveRound`, `moveRoundWon`. `/lab` rows "Shields", "Cut-ins", "Lay-offs", "Chips", "Chip goals", "Round the keeper",
+"Keeper rounded". `/test` scenarios `move-shield`, `move-cut-inside`, `move-lay-off`, `move-chip`, `move-round-keeper`.
+`decision-baseline.ts` prints the moves per match. Test `HolderMoves.test.ts`.
+
+Measurements (2026-11-19; `decision-baseline.ts 200 <league> --chunks 4`, seed 9000; world =
+`ai-formation-goals.ts --engine 800 --chunks 4 --modes ai --quick 0`; "mind only" = the phase-3 commit before the moves):
+
+| | premier mind only | premier + moves | championship mind only | championship + moves |
+|---|---|---|---|---|
+| Moves / match (shield · cut · lay-off · chip · round) | — | 0.41 · 0.85 · 0.55 · 0.42 · 0.56 | — | 0.32 · 0.41 · 0.43 · 0.28 · 0.22 |
+| Successes (shield held · chip goals · keeper rounded) | — | 0.02 · 0.13 · 0.38 | — | 0.04 · 0.08 · 0.14 |
+| World goals / shots | 2.053 / 5.73 | 1.960 / 5.51 (−4.5% / −3.8%) | 1.603 / 5.10 | 1.623 / 5.00 (+1.2% / −2.0%) |
+
+Against the engine without the decision layer (`HOLDER` off, 2.031 / 1.583) the two leagues together are −0.8% in goals.
+Tuning: the first weights (shield 0.65, cut 1, lay-off 1.3, chip 3, round 2.5) gave 2.5 · 4 · 3.5 · 0.4 · 1.1 moves per
+match and −5% / −9% goals and shots in the Premier League; one move off at a time showed each costing goals (shield
+−0.25, round −0.16, lay-off −0.14, cut −0.13 per match): the holder picked them over better actions. The frequency of
+each move falls steeply with its weight; at the final weights each is under one per match.
+
 ## Limitations
 
 - The pressure scale is raw FM; phase 3 normalises it (pN = P/60) for its gates.
 - Holder mind: the lapse share doubles in weak leagues (9.7% in the Championship); the facing direction is the last
   movement (no body orientation); the mental effect size of the holder alone is ~+1 pp.
+- Holder moves: each under one per match (the brief asked for a few); more of them cost world goals. No dedicated
+  animation (the drawing shows a carry, pass, shot or dribble); the AI never reacts to a shielding holder.
 - Shot pressure reads the shooter's last holder decision (set-piece shots and shots after a foul have none).
 - Entropy depends on the bucket grid; compare runs only with the same `PRESSURE_HIGH` and channel split.

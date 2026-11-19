@@ -210,6 +210,18 @@ export interface TeamStats extends PlayerStats {
   holderReleasesHigh: number;
   holderPanics: number;
   holderSimple: number;
+  /**
+   * Holder moves (`HolderMoves.ts`): shields started and the challenges held off, cut-ins, lay-offs, chips and chip
+   * goals, attempts to round the keeper and the ones that beat him.
+   */
+  moveShield: number;
+  moveShieldHeld: number;
+  moveCutInside: number;
+  moveLayOff: number;
+  moveChip: number;
+  moveChipGoals: number;
+  moveRound: number;
+  moveRoundWon: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -297,6 +309,7 @@ type TeamFlags = {
   holderPressureSum: number; shotPressureSum: number; shotPressureCount: number;
   holderMindDecisions: number; holderOffArgmax: number; holderWindows: number; holderLapses: number;
   holderReleases: number; holderHighPressure: number; holderReleasesHigh: number; holderPanics: number; holderSimple: number;
+  moveShield: number; moveShieldHeld: number; moveCutInside: number; moveLayOff: number; moveChip: number; moveChipGoals: number; moveRound: number; moveRoundWon: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -305,6 +318,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   holderPressureSum: 0, shotPressureSum: 0, shotPressureCount: 0,
   holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0,
   holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, holderPanics: 0, holderSimple: 0,
+  moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -612,6 +626,22 @@ gameBus.on('holderMind', e => {
     if (e.lapse) { f.holderLapses++; if (high) f.holderPanics++; }
   }
   lastMind.set(e.playerId, e);
+});
+
+// ── Holder moves (`HolderMoves.ts`) ────────────────────────────────────────────
+gameBus.on('holderMove', e => {
+  const f = teamFlags[e.team];
+  if (e.phase === 'start') {
+    if (e.move === 'shield') f.moveShield++;
+    else if (e.move === 'cut_inside') f.moveCutInside++;
+    else if (e.move === 'lay_off') f.moveLayOff++;
+  } else if (e.move === 'shield') {
+    if (e.phase === 'success') f.moveShieldHeld++;
+  } else if (e.move === 'chip') {
+    f.moveChip++; if (e.phase === 'success') f.moveChipGoals++;
+  } else if (e.move === 'round_keeper') {
+    f.moveRound++; if (e.phase === 'success') f.moveRoundWon++;
+  }
 });
 
 /** The last holder-mind event of a player this match (`/test`). */

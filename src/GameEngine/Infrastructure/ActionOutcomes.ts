@@ -467,7 +467,7 @@ export function gkClaimChance(gk: GamePlayer, attackersNear: number, weatherMult
  */
 export const TACKLE_SUCCESS_SCALE = 0.97;
 
-export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingLoad = 0): TackleResult {
+export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingLoad = 0, shieldResist = 0): TackleResult {
   // A keeper smothers the ball at the holder's feet: his own base chance, not the outfield tackle (`Keeper.ts`).
   const base     = tackler.role === 'GK' ? smotherBase(tackler) : tackler.runtimeStats.withoutBall.tackleChance;
   const rawAngle = tackleAngleModifier(tackler, holder);
@@ -495,9 +495,26 @@ export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingL
   const MAX_PRESS_TACKLE_BONUS = 0.20;
   const pressBonus = suppression * MAX_PRESS_TACKLE_BONUS;
 
-  const chance  = Math.max(0, Math.min(1, (base + angleMod + pressBonus) * dribbleReduction * TACKLE_SUCCESS_SCALE));
+  // A holder shielding the ball (`HolderMoves.ts`) holds off the challenge by his strength (0 = no shield).
+  const shield  = 1 - shieldResist * holderStrength;
+  const chance  = Math.max(0, Math.min(1, (base + angleMod + pressBonus) * dribbleReduction * TACKLE_SUCCESS_SCALE * shield));
   const success = Math.random() < chance;
   return { success, chance };
+}
+
+/** A chip over an advanced keeper (`HolderMoves.ts`): decided at the strike. */
+export function resolveChip(chance: number): boolean {
+  return Math.random() < chance;
+}
+
+/**
+ * Round the keeper (`HolderMoves.ts`): the attacker's skill (dribbling and composure, 0..1) plus `base` against the
+ * keeper's smother chance.
+ */
+export function resolveRoundKeeper(attackerSkill: number, keeper: GamePlayer, base: number): { wins: boolean; winProb: number } {
+  const a = attackerSkill + base;
+  const winProb = a / (a + smotherBase(keeper) + 0.001);
+  return { wins: Math.random() < winProb, winProb };
 }
 
 // ── Interception ─────────────────────────────────────────────────────────────

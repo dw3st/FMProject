@@ -326,6 +326,15 @@ export interface TeamRawStats {
   holderReleases: number;
   holderHighPressure: number;
   holderReleasesHigh: number;
+  /** Holder moves (`HolderMoves.ts`), summed across games. */
+  moveShield: number;
+  moveShieldHeld: number;
+  moveCutInside: number;
+  moveLayOff: number;
+  moveChip: number;
+  moveChipGoals: number;
+  moveRound: number;
+  moveRoundWon: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -514,6 +523,14 @@ export interface PerMatchView {
   holderLapsePct: number;
   holderReleasePct: number;
   holderReleaseHighPct: number;
+  /** Holder moves per match (`HolderMoves.ts`). */
+  avgShields: number;
+  avgCutIns: number;
+  avgLayOffs: number;
+  avgChips: number;
+  avgChipGoals: number;
+  avgRoundKeeper: number;
+  avgRoundKeeperWon: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -660,6 +677,14 @@ export interface VariantSummary {
   holderLapsePct: number;
   holderReleasePct: number;
   holderReleaseHighPct: number;
+  /** Holder moves per match (`HolderMoves.ts`). */
+  avgShields: number;
+  avgCutIns: number;
+  avgLayOffs: number;
+  avgChips: number;
+  avgChipGoals: number;
+  avgRoundKeeper: number;
+  avgRoundKeeperWon: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

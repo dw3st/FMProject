@@ -63,8 +63,10 @@ import {
   MAX_INTERCEPTION_CORRIDOR, playerInterceptionCorridor,
   computeShotAim, computeXG, computeOpenAngle, computeWeightedPressure,
   resolveShot, resolveTackle, resolveInterception, resolveDribble, resolveLooseBallDuel,
-  resolveAerialDuel, gkClaimChance,
+  resolveAerialDuel, gkClaimChance, resolveChip, resolveRoundKeeper,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
+import { HOLDER_MOVES } from '@/GameEngine/Configs/DecisionConfig';
+import { chipMove, chipTargetY, roundKeeperSkill } from '@/GameEngine/Domain/HolderMoves';
 import { getInterceptionPerpDist, tackleAngleModifier, type RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
 import { foulChance, cardRoll, isClearChance, type FoulKind } from '@/GameEngine/Domain/Fouls';
 import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
@@ -305,6 +307,7 @@ function buildGamePlayerForSlot(
     ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
     temperament:      matchTemperamentOf(team, rp),
     mental:           matchMentalOf(team, rp),
+    foot:             rp.preferredFoot,
   };
 }
 
@@ -380,6 +383,7 @@ function buildTeam(
       ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
       temperament:      matchTemperamentOf(team, rp),
       mental:           matchMentalOf(team, rp),
+      foot:             rp.preferredFoot,
     });
   }
 
@@ -1508,7 +1512,10 @@ export function foulCheck(
   const strictness = strictnessFor(state, offender.team);
   const discipline = state.managerDiscipline?.[offender.team];
   // Kinematics (`kinematics.md`): × the foul compensation while the layer is on (× 1 off: the old chance bit for bit).
-  const chance = (KINEMATICS_CONFIG.ENABLED ? KINEMATICS_CONFIG.FOUL_MULT : 1) * foulChance({
+  // A shielding holder (`HolderMoves.ts`) draws more fouls from the challenge.
+  const fouledDec = state.decisions[fouled.id];
+  const shieldMult = kind === 'tackle' && fouledDec?.type === 'carry' && fouledDec.move === 'shield' ? HOLDER_MOVES.SHIELD_FOUL_MULT : 1;
+  const chance = shieldMult * (KINEMATICS_CONFIG.ENABLED ? KINEMATICS_CONFIG.FOUL_MULT : 1) * foulChance({
     kind, angle, inOwnBox, tackleWon, onYellow, temperament, strictness, discipline,
     aggression: getDefenseConfig(offender.team).TACKLE_AGGRESSION,
     // A keeper's challenge reads his positioning as technique and fouls less (`Keeper.ts`).
@@ -2387,6 +2394,30 @@ function startShot(state: GameState): GameState {
     ...state,
     shot: { shooterId: shooter.id, fromX: shooter.x, fromY: shooter.y, toX, toY, t: 0, xg },
     // Clear any active set piece — once the ball is struck, play is live
+    setPiece: null,
+  };
+}
+
+/**
+ * A chip over an advanced keeper (`HolderMoves.ts`): decided at the strike (the ball goes over him, so the keeper never
+ * meets it). A goal flies into the net, a miss lands wide of the post.
+ */
+function startChip(state: GameState): GameState {
+  const shooter = state.players.find(p => p.id === state.ballHolderId)!;
+  const keeper = state.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
+  const chance = chipMove(shooter, keeper, 0.5, 1.6)?.chance ?? 0;
+  if (chance <= 0) return startShot(state);
+  const isGoal = resolveChip(chance);
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  gameBus.emit('shot', { player: shooter.id, xg: chance });
+  gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: isGoal ? 'success' : 'fail' });
+  debugLog('keeper', `${shooter.name} chips ${keeper?.name ?? 'the keeper'} (${(chance * 100).toFixed(0)}%)`, { playerId: shooter.id });
+  return {
+    ...state,
+    shot: {
+      shooterId: shooter.id, fromX: shooter.x, fromY: shooter.y, toX: goalX, toY: chipTargetY(shooter, isGoal), t: 0, xg: chance,
+      chip: true, ...(isGoal ? { outcome: { isGoal: true, goalChance: chance } } : {}),
+    },
     setPiece: null,
   };
 }
@@ -4244,6 +4275,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       s.matchTime,
     );
     newDecisions[p.id] = fresh;
+    // A holder move starting (`HolderMoves.ts`): counted once, not every tick it is held.
+    if (isBallHolder && 'move' in fresh && fresh.move) {
+      const prevMove = mem.decision && 'move' in mem.decision ? mem.decision.move : undefined;
+      if (prevMove !== fresh.move) {
+        gameBus.emit('holderMove', { playerId: p.id, team: p.team, move: fresh.move, phase: 'start' });
+        debugLog('decision', `${p.name}: ${fresh.move.replace('_', ' ')}`, { playerId: p.id });
+      }
+    }
     if (isBallHolder) {
       // The holder's mind window (phase 3, `decisions.md`): kept while he keeps the ball, one tick spent per decision.
       const m = takeHolderMind();
@@ -4704,7 +4743,10 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         }
         pressingLoad = Math.min(1, pressingLoad); // cap at 1
 
-        const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad);
+        const holderDec = s.decisions[updatedHolder.id];
+        const shielding = holderDec?.type === 'carry' && holderDec.move === 'shield';
+        const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad, shielding ? HOLDER_MOVES.SHIELD_TACKLE_RESIST : 0);
+        if (shielding) gameBus.emit('holderMove', { playerId: updatedHolder.id, team: updatedHolder.team, move: 'shield', phase: success ? 'fail' : 'success' });
         if (tacklerNow.role === 'GK') {
           gameBus.emit('keeperSortie', { keeperId: tacklerNow.id, kind: 'rush' });
           debugLog('keeper', `${tacklerNow.name} rushes out at ${updatedHolder.name} (${(chance * 100).toFixed(0)}%)`, { playerId: tacklerNow.id });
@@ -4769,7 +4811,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     const holderDecision = s.decisions[s.ballHolderId];
 
     if (holderDecision?.type === 'shoot') {
-      return { state: startShot(s), passCompleted: false, tackled: false, goalScored: null };
+      return { state: holderDecision.move === 'chip' ? startChip(s) : startShot(s), passCompleted: false, tackled: false, goalScored: null };
     }
 
     // Through balls fire IMMEDIATELY — they're a release decision that doesn't
@@ -4791,6 +4833,11 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         state: startAerialBall(s, 'long_ball', { x: holderDecision.toX, y: holderDecision.toY }, holderDecision.targetId),
         passCompleted: false, tackled: false, goalScored: null,
       };
+    }
+
+    // First-time lay-off (`HolderMoves.ts`): one touch to the arriving teammate, no burst nor carry.
+    if (holderDecision?.type === 'pass' && holderDecision.move === 'lay_off') {
+      return { state: startPass(s, holderDecision.targetId), passCompleted: false, tackled: false, goalScored: null };
     }
 
     // ── Post-reception burst — "receive and turn" ─────────────────────────────
@@ -4838,7 +4885,9 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
       );
       const accelBurst   = isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
       const recoveryMult = carrier.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
-      const step = (wb.carrySpeed + accelBurst) * recoveryMult * dt * weatherEffectOf(s.weather).carrySpeed;
+      // Shielding (`HolderMoves.ts`): he edges away from the presser, ball kept on the far foot.
+      const shieldMult = holderDecision.move === 'shield' ? HOLDER_MOVES.SHIELD_SPEED_MULT : 1;
+      const step = (wb.carrySpeed + accelBurst) * recoveryMult * shieldMult * dt * weatherEffectOf(s.weather).carrySpeed;
       // Role bounds don't restrict the ball carrier — only the pitch boundary does.
       // Off-ball positioning is where bounds apply.
       const newX = Math.max(0, Math.min(PITCH_LENGTH, carrier.x + holderDecision.dx * step));
@@ -4846,7 +4895,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
 
       const carryLog = newMoveLog();
       const carried = carryAlong(carrier, s, dt, holderDecision.dx, holderDecision.dy,
-        (wb.carrySpeed + accelBurst) * recoveryMult * weatherEffectOf(s.weather).carrySpeed, { x: newX, y: newY }, carryLog);
+        (wb.carrySpeed + accelBurst) * recoveryMult * shieldMult * weatherEffectOf(s.weather).carrySpeed, { x: newX, y: newY }, carryLog);
       emitMoveLog(carryLog);
       const updatedCarrier = { ...carried, targetPosition: { x: carried.x, y: carried.y } };
       s = { ...s, players: s.players.map(p => p.id === updatedCarrier.id ? updatedCarrier : p) };
@@ -4895,7 +4944,17 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         }
         dribblePressLoad = Math.min(1, dribblePressLoad);
 
-        const { attackerWins, winProb } = resolveDribble(attacker, defender, dribblePressLoad);
+        // Round the keeper (`HolderMoves.ts`): skill against his smother, not the outfield 1v1.
+        const rounding = holderDecision.move === 'round_keeper' && defender.role === 'GK';
+        let attackerWins: boolean;
+        let winProb: number;
+        if (rounding) {
+          const rk = resolveRoundKeeper(roundKeeperSkill(attacker), defender, HOLDER_MOVES.ROUND_BASE);
+          attackerWins = rk.wins; winProb = rk.winProb;
+          gameBus.emit('holderMove', { playerId: attacker.id, team: attacker.team, move: 'round_keeper', phase: attackerWins ? 'success' : 'fail' });
+        } else {
+          ({ attackerWins, winProb } = resolveDribble(attacker, defender, dribblePressLoad));
+        }
         // Foul check (`.claude/rules/game-engine/fouls.md`): the defender may bring the dribbler
         // down — beaten (a cynical stop) or winning the ball unfairly; either way the attacker's
         // team gets the restart.
@@ -4911,7 +4970,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           s = {
             ...s,
             players: s.players.map(p => {
-              if (p.id === defender.id) return { ...p, recoveryTime: DUEL_DRIBBLE_LOSS_RECOVERY };
+              if (p.id === defender.id) return { ...p, recoveryTime: rounding ? HOLDER_MOVES.ROUND_KEEPER_RECOVERY : DUEL_DRIBBLE_LOSS_RECOVERY };
               if (p.id === attacker.id) return { ...p, recoveryTime: DUEL_DRIBBLE_WIN_RECOVERY };
               return p;
             }),

@@ -120,7 +120,7 @@ function emptyTeamRaw(): TeamRawStats {
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
-    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -209,6 +209,14 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.holderReleases += src.holderReleases;
   dst.holderHighPressure += src.holderHighPressure;
   dst.holderReleasesHigh += src.holderReleasesHigh;
+  dst.moveShield += src.moveShield;
+  dst.moveShieldHeld += src.moveShieldHeld;
+  dst.moveCutInside += src.moveCutInside;
+  dst.moveLayOff += src.moveLayOff;
+  dst.moveChip += src.moveChip;
+  dst.moveChipGoals += src.moveChipGoals;
+  dst.moveRound += src.moveRound;
+  dst.moveRoundWon += src.moveRoundWon;
   dst.corners                     += src.corners;
   dst.throwIns                    += src.throwIns;
   dst.setPieceRoutines                    += src.setPieceRoutines;
@@ -514,6 +522,14 @@ function runOneMatch(
   teamA.holderReleases += sA.holderReleases ?? 0; teamB.holderReleases += sB.holderReleases ?? 0;
   teamA.holderHighPressure += sA.holderHighPressure ?? 0; teamB.holderHighPressure += sB.holderHighPressure ?? 0;
   teamA.holderReleasesHigh += sA.holderReleasesHigh ?? 0; teamB.holderReleasesHigh += sB.holderReleasesHigh ?? 0;
+  teamA.moveShield += sA.moveShield ?? 0; teamB.moveShield += sB.moveShield ?? 0;
+  teamA.moveShieldHeld += sA.moveShieldHeld ?? 0; teamB.moveShieldHeld += sB.moveShieldHeld ?? 0;
+  teamA.moveCutInside += sA.moveCutInside ?? 0; teamB.moveCutInside += sB.moveCutInside ?? 0;
+  teamA.moveLayOff += sA.moveLayOff ?? 0; teamB.moveLayOff += sB.moveLayOff ?? 0;
+  teamA.moveChip += sA.moveChip ?? 0; teamB.moveChip += sB.moveChip ?? 0;
+  teamA.moveChipGoals += sA.moveChipGoals ?? 0; teamB.moveChipGoals += sB.moveChipGoals ?? 0;
+  teamA.moveRound += sA.moveRound ?? 0; teamB.moveRound += sB.moveRound ?? 0;
+  teamA.moveRoundWon += sA.moveRoundWon ?? 0; teamB.moveRoundWon += sB.moveRoundWon ?? 0;
   teamA.corners             += sA.corners;             teamB.corners             += sB.corners;
   teamA.throwIns            += sA.throwIns ?? 0;       teamB.throwIns            += sB.throwIns ?? 0;
   teamA.setPieceRoutines            += sA.setPieceRoutines ?? 0;       teamB.setPieceRoutines            += sB.setPieceRoutines ?? 0;

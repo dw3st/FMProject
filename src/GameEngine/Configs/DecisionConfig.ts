@@ -25,6 +25,16 @@ export interface DecisionFlags {
   DISCIPLINE_LAG: boolean;
   /** Consistency caps stacked bonuses (§7 phase 5). */
   CONSISTENCY_CAP: boolean;
+  /** Holder moves (phase 3, `Domain/HolderMoves.ts`): shield / turn with the back to goal. */
+  SHIELD: boolean;
+  /** Holder moves: a wide holder cuts inside onto his stronger foot. */
+  CUT_INSIDE: boolean;
+  /** Holder moves: first-time lay-off to an arriving teammate. */
+  LAY_OFF: boolean;
+  /** Holder moves: chip over an advanced keeper. */
+  CHIP: boolean;
+  /** Holder moves: round the keeper in a one-on-one. */
+  ROUND_KEEPER: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -35,7 +45,77 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   SECOND_PRESSER: false,
   DISCIPLINE_LAG: false,
   CONSISTENCY_CAP: false,
+  SHIELD: true,
+  CUT_INSIDE: true,
+  LAY_OFF: true,
+  CHIP: true,
+  ROUND_KEEPER: true,
 };
+
+/**
+ * The holder's extra moves (`Domain/HolderMoves.ts`, `decisions.md` → "Holder moves"). Distances in yards. Scores are
+ * compressed with `STRONG_RAW` like the other actions (0.632 at raw = STRONG_RAW).
+ */
+export const HOLDER_MOVES = {
+  STRONG_RAW: 0.8,
+  /** "Back to goal": the last movement more than this many degrees from the goal, at this speed (yd/s) or more. */
+  FACING_AWAY_DEG: 112,
+  FACING_MIN_SPEED: 0.5,
+  /** ... or the nearest opponent within this distance on his goal side (a defender on his back). */
+  BACK_MARKER_YD: 4,
+  /** Shield: an opponent within this distance; raw = weight × (strength + composure)/2 × (0.5 + pN). */
+  SHIELD_NEAR_YD: 2.5,
+  SHIELD_WEIGHT: 0.45,
+  /** Shielding he edges away at this share of his carry speed. */
+  SHIELD_SPEED_MULT: 0.3,
+  /** A tackle on a shielding holder succeeds × (1 − this × strength); fouls × FOUL_MULT. */
+  SHIELD_TACKLE_RESIST: 0.35,
+  SHIELD_FOUL_MULT: 1.4,
+  /** Cut inside: from at least CUT_WIDE_YD off the centre line, CUT_MIN..MAX from the goal line, toward the box edge. */
+  CUT_WIDE_YD: 14,
+  CUT_MIN_YD: 16,
+  CUT_MAX_YD: 40,
+  CUT_TARGET_DEPTH_YD: 20,
+  CUT_TARGET_WIDE_YD: 8,
+  /** No opponent within CUT_CLEAR_YD of the first CUT_LANE_YD of the run. */
+  CUT_LANE_YD: 6,
+  CUT_CLEAR_YD: 3,
+  /** On the natural foot (not inverted) the score × this; the full-back showing him outside × SHOW_BONUS. */
+  CUT_NATURAL_FOOT: 0.5,
+  CUT_SHOW_YD: 6,
+  CUT_SHOW_BONUS: 1.3,
+  CUT_WEIGHT: 0.8,
+  /** Lay-off: right after a reception (justReceivedTicks ≥ this), an opponent within PRESSURE_YD, a teammate
+   *  MIN..MAX away, at most MAX_AHEAD in front, arriving (≥ RUN_SPEED yd/s), lane clear by LANE_YD. */
+  LAYOFF_RECEIVED_TICKS: 1,
+  LAYOFF_PRESSURE_YD: 5,
+  LAYOFF_MIN_YD: 4,
+  LAYOFF_MAX_YD: 18,
+  LAYOFF_MAX_AHEAD_YD: 3,
+  LAYOFF_RUN_SPEED: 0.8,
+  LAYOFF_LANE_YD: 2.5,
+  LAYOFF_WEIGHT: 1,
+  /** Chip: keeper at least MIN_DEPTH off his line and within KEEPER_OFF_LINE of the shot line, the shooter
+   *  MIN..MAX from goal and MIN_GAP beyond him. Chance = XG × depth factor × angle × skill. */
+  CHIP_MIN_DEPTH_YD: 5,
+  CHIP_MIN_YD: 10,
+  CHIP_MAX_YD: 26,
+  CHIP_MIN_GAP_YD: 4,
+  CHIP_KEEPER_OFF_LINE_YD: 3,
+  CHIP_XG: 0.8,
+  CHIP_DEPTH_SPAN_YD: 8,
+  CHIP_WEIGHT: 2,
+  /** Round the keeper: keeper within RANGE in a one-on-one. P(win) = (skill + BASE)/(skill + BASE + smother). */
+  ROUND_RANGE_YD: 5,
+  ROUND_WEIGHT: 1.6,
+  ROUND_BASE: 0,
+  /** A rounded keeper is beaten for this long (s). */
+  ROUND_KEEPER_RECOVERY: 1.4,
+};
+{
+  const raw = typeof process !== 'undefined' ? process.env?.HOLDER_MOVES_OVERRIDES : undefined;
+  if (raw) { try { Object.assign(HOLDER_MOVES, JSON.parse(raw)); } catch { /* ignored */ } }
+}
 
 /** Telemetry constants (pressure scalar and situation buckets). */
 export const DECISION_TELEMETRY = {

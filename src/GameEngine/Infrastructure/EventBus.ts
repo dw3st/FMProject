@@ -226,6 +226,8 @@ export interface GameEvents {
    * unscored early returns (tackle range, recovery, keeper) emit nothing.
    */
   holderDecision:    DecisionTelemetryEvent;
+  /** One of the holder's extra moves (`HolderMoves.ts`): started, and for shield / chip / round the outcome. */
+  holderMove: { playerId: number; team: TeamId; move: 'shield' | 'cut_inside' | 'lay_off' | 'chip' | 'round_keeper'; phase: 'start' | 'success' | 'fail' };
   holderMind:        HolderMindEvent;
   offBallDecision:   DecisionTelemetryEvent;
   defensiveDecision: DecisionTelemetryEvent;

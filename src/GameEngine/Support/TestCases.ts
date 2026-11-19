@@ -67,6 +67,9 @@ const DUMMY_FORMATION: Formation = {
 
 let _nextId = 1;
 
+/** A composed, inventive holder for the holder-move scenarios (`HolderMoves.ts`). */
+const SKILLED_MIND: NonNullable<GamePlayer['mental']> = { decisions: 0.7, composure: 0.85, flair: 0.85, anticipation: 0.6, consistency: 0.7, mood: 0.3 };
+
 function makePlayer(
   name: string,
   team: TeamId,
@@ -621,6 +624,88 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const low = (p: GamePlayer): GamePlayer => p.team !== 'A' ? p
         : { ...p, mental: { decisions: 0.15, composure: 0.15, flair: 0.2, anticipation: 0.15, consistency: 0.1, mood: -0.5 } };
       return { ...tired, players: tired.players.map(low), benchA: tired.benchA.map(low) };
+    },
+  },
+
+  {
+    id:          'move-shield',
+    name:        'Holder move — shield with the back to goal',
+    description: 'Striker at 80 yd facing his own goal (moving back), two defenders tight on him and his midfielder far. He shields (slow edging away, a tackle on him succeeds less and fouls more) and turns when a lane opens (`HolderMoves.ts`). Decision log: "shield".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   80, 37, STRIKER),
+        makePlayer('Garcia',   'A', 'CM',   55, 22, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB',   81.5, 37, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   81, 39.5, DEFENDER),
+        makePlayer('Mensah',   'B', 'CDM',  77, 35, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, players: st.players.map(p => (p.id === 1 ? { ...p, vel: { x: -2, y: 0 }, mental: SKILLED_MIND } : p)) };
+    },
+  },
+
+  {
+    id:          'move-cut-inside',
+    name:        'Holder move — cut inside onto the stronger foot',
+    description: 'A right-footed left winger 30 yd from goal on the touchline, the full-back standing in his path on the line: he carries diagonally to the edge of the box (`HolderMoves.ts`). Decision log: "cut inside".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Diaz',     'A', 'LW',   84, 12, WINGER),
+        makePlayer('Santos',   'A', 'ST',   78, 52, STRIKER),
+        makePlayer('Lopez',    'B', 'RB',   92, 13, DEFENDER),
+        makePlayer('Mensah',   'B', 'CDM',  97, 17, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB',  103, 34, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, players: st.players.map(p => (p.id === 1 ? { ...p, foot: 'right' as const, mental: SKILLED_MIND } : p)) };
+    },
+  },
+
+  {
+    id:          'move-lay-off',
+    name:        'Holder move — first-time lay-off',
+    description: 'Striker just received with a CB on his back; a midfielder arrives behind him. One touch back to the runner, no carry (`HolderMoves.ts`). Decision log: "lay off".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   88, 37, STRIKER),
+        makePlayer('Garcia',   'A', 'CAM',  78, 33, MIDFIELDER),
+        makePlayer('Silva',    'B', 'CB',   90, 37, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   92, 45, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, players: st.players.map(p => p.id === 1 ? { ...p, justReceivedTicks: 3 } : p.id === 2 ? { ...p, vel: { x: 4, y: 0.5 } } : p) };
+    },
+  },
+
+  {
+    id:          'move-chip',
+    name:        'Holder move — chip over an advanced keeper',
+    description: 'Striker 20 yd out, the keeper 9 yd off his line in front of him: he chips (chance from the gap behind the keeper, decided at the strike, the keeper never reaches it). Debug "keeper": "chips".',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Santos',   'A', 'ST',   95, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   88, 42, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  106, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'move-round-keeper',
+    name:        'Holder move — round the keeper',
+    description: 'One-on-one: striker 12 yd out on the left of the box, the keeper rushing 2.5 yd in front of him. He takes the keeper on (dribbling + composure against the smother); beaten, the keeper is out for 1.4 s (`HolderMoves.ts`).',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',  103, 29, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   95, 32, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  105.5, 30, GOALKEEPER),
+      ], 1);
+      return { ...st, players: st.players.map(p => (p.id === 1 ? { ...p, mental: SKILLED_MIND } : p)) };
     },
   },
 

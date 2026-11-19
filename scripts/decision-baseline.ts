@@ -90,6 +90,11 @@ console.log(`passes completed ${fmt((100 * tot.passesCompleted) / Math.max(1, to
   const vd = (100 * (w.A - w.B)) / tot.n;
   console.log(`side A (${mental ? `mental ${mental.A}` : "home"}) V/E/D ${fmt((100 * w.A) / tot.n, 1)} / ${fmt((100 * w.D) / tot.n, 1)} / ${fmt((100 * w.B) / tot.n, 1)}%  V−D ${fmt(vd, 1)} pp${same ? "  (same club)" : ""}`);
   const m = tot.mind;
+  {
+    const pm = (k: number) => fmt(k / tot.n, 2);
+    console.log(`holder moves/match: shield ${pm(m.moveShield)} (held ${pm(m.moveShieldHeld)})  cut inside ${pm(m.moveCutInside)}`
+      + `  lay-off ${pm(m.moveLayOff)}  chip ${pm(m.moveChip)} (goals ${pm(m.moveChipGoals)})  round keeper ${pm(m.moveRound)} (won ${pm(m.moveRoundWon)})`);
+  }
   if (m.holderMindDecisions > 0) {
     const p = (a: number, b: number) => fmt((100 * a) / Math.max(1, b), 2);
     console.log(`holder mind: ${fmt(m.holderMindDecisions / tot.n, 0)} decisions/match  off-argmax ${p(m.holderOffArgmax, m.holderMindDecisions)}%`

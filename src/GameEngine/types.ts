@@ -438,6 +438,8 @@ export interface GamePlayer {
    * starts him from standstill). Absent = standing.
    */
   vel?: { x: number; y: number };
+  /** Preferred foot (roster); cut inside reads it (`HolderMoves.ts`). Absent = unknown. */
+  foot?: 'left' | 'right';
   /** Where (x, y) and when (`matchTime`) the last kinematic step ended, and the turn factor it applied (1 = none). */
   kin?: { x: number; y: number; t: number; turn: number };
   /** Sprint tracking for the statistics: seconds above the sprint speed in a row, and whether this run already counted. */
@@ -656,6 +658,8 @@ export interface ShotState {
    * flies on past him to the line. Absent until then.
    */
   outcome?: { isGoal: boolean; goalChance: number };
+  /** A chip over an advanced keeper (`HolderMoves.ts`): decided at the strike, never met by the keeper. */
+  chip?: true;
 }
 
 /** What the end of a VAR check does to the match (data only: `gameState.ts` applies it). */

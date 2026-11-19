@@ -57,15 +57,16 @@ import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { evaluateBoxSetPiece, routineOption } from '@/GameEngine/Domain/SetPieces';
+import { chipMove, cutInsideMove, layOffMove, roundKeeperMove, shieldMove, type HolderMove } from '@/GameEngine/Domain/HolderMoves';
 
 export type PlayerDecision =
-  | { type: 'carry'; dx: number; dy: number }          // withBall  → advancing with the ball
-  | { type: 'shoot' }                                   // withBall  → will shoot
-  | { type: 'pass'; targetId?: number }                // withBall  → will pass to a teammate (targetId: forced receiver, one-on-one gate)
+  | { type: 'carry'; dx: number; dy: number; move?: HolderMove } // withBall → advancing with the ball (move: shield / cut inside)
+  | { type: 'shoot'; move?: HolderMove }                // withBall  → will shoot (move: chip)
+  | { type: 'pass'; targetId?: number; move?: HolderMove } // withBall → pass (targetId: forced receiver, one-on-one gate / lay-off)
   | { type: 'through_ball'; cellX: number; cellY: number; intendedRunnerId: number | null } // withBall → ball into space
   | { type: 'cross'; toX: number; toY: number; intendedRunnerId: number | null } // withBall → high ball into the box
   | { type: 'long_ball'; toX: number; toY: number; targetId: number } // withBall → high ball over the line
-  | { type: 'dribble'; targetId: number }               // withBall  → attempt to beat a close defender 1v1
+  | { type: 'dribble'; targetId: number; move?: HolderMove } // withBall → beat a close defender 1v1 (move: round the keeper)
   | { type: 'tackle'; targetId: number }                // withoutBall → close enough to attempt a tackle
   | { type: 'press';  targetId: number }                // withoutBall → sprinting toward the ball holder
   | { type: 'support_run';  dx: number; dy: number }   // offBall   → move into receiving position
@@ -447,6 +448,8 @@ interface ActionScore {
   passBreakdown?:    PassActionBreakdown;
   /** Pass: teammates with a pass score >= `HOLDER_MIND.OPEN_PASS` (the release gate's n). */
   openCount?: number;
+  /** One of the holder's extra moves (`HolderMoves.ts`), executed by the action of `type`. */
+  move?:           HolderMove;
   carryBreakdown?:   CarryActionBreakdown | null;
   dribbleBreakdown?: DribbleBreakdown;
 }
@@ -759,6 +762,7 @@ function holderMind(
   targets: ReturnType<typeof evaluateCrossTargets>,
   lb: ActionScore,
   matchTime: number,
+  moves: ActionScore[] = [],
 ): { best: ActionScore; release: boolean } {
   const M = HOLDER_MIND;
   const mental = player.mental ?? DEFAULT_MENTAL;
@@ -800,7 +804,19 @@ function holderMind(
   const bias = [shotYd > M.LONG_SHOT_FROM_YD ? fb : 0, 0, 0, fb, fb, 0, 0];
   const perceived = perceiveScores(gated, bias, st);
   const idx = argmaxIndex(perceived);
-  const pick = { ...options[idx]!, score: perceived[idx]! };
+  let pick = { ...options[idx]!, score: perceived[idx]! };
+  // The extra moves share the noise of the action that executes them; a simple-minded holder never chips.
+  for (const mv of moves) {
+    const bi = HOLDER_ACTIONS.indexOf(mv.type);
+    const g = simple && mv.move === 'chip' ? 0 : mv.score;
+    const b = mv.move === 'chip' || mv.move === 'round_keeper' || mv.move === 'cut_inside' ? fb : 0;
+    const one = new Array(HOLDER_ACTIONS.length).fill(0) as number[];
+    one[bi] = g;
+    const bs = new Array(HOLDER_ACTIONS.length).fill(0) as number[];
+    bs[bi] = b;
+    const v = perceiveScores(one, bs, st)[bi]!;
+    if (v > pick.score) pick = { ...mv, score: v };
+  }
 
   setHolderMind({
     state: st, fresh, pressure, pN, release, openOptions: pass.openCount ?? 0, distM, simple, widen, longShotRange: range,
@@ -809,8 +825,30 @@ function holderMind(
     perceived: Object.fromEntries(HOLDER_ACTIONS.map((k, i) => [k, perceived[i]!])),
     trueBest: HOLDER_ACTIONS[argmaxIndex(actions.map(a => a.score))]!,
     picked: HOLDER_ACTIONS[idx]!,
+    ...(pick.move ? { move: pick.move } : {}),
   });
   return { best: pick, release };
+}
+
+/** The holder's extra moves as scored options (`HolderMoves.ts`); each flag off leaves its move out. */
+function holderMoves(
+  player: GamePlayer, allPlayers: GamePlayer[], opponents: GamePlayer[], outfieldOpponents: GamePlayer[], oneOnOne: boolean,
+): ActionScore[] {
+  if (player.role === 'GK') return [];
+  const out: ActionScore[] = [];
+  const keeper = opponents.find(o => o.role === 'GK') ?? null;
+  const pN = normalisedPressure(holderPressure(player.x, player.y, allPlayers.filter(o => o.team !== player.team)));
+  const sh = shieldMove(player, outfieldOpponents, pN);
+  if (sh && sh.score > 0) out.push({ type: 'carry', score: sh.score, dx: sh.dx, dy: sh.dy, move: 'shield' });
+  const cu = cutInsideMove(player, outfieldOpponents);
+  if (cu && cu.score > 0) out.push({ type: 'carry', score: cu.score, dx: cu.dx, dy: cu.dy, move: 'cut_inside' });
+  const lo = layOffMove(player, allPlayers.filter(p => p.team === player.team), outfieldOpponents);
+  if (lo && lo.score > 0) out.push({ type: 'pass', score: lo.score, targetId: lo.targetId, move: 'lay_off' });
+  const ch = chipMove(player, keeper, SHOOT_THRESHOLD[player.role] ?? 0.5, SHOOT_STRONG_RAW);
+  if (ch && ch.score > 0) out.push({ type: 'shoot', score: ch.score, move: 'chip' });
+  const rk = roundKeeperMove(player, keeper, oneOnOne);
+  if (rk && rk.score > 0) out.push({ type: 'dribble', score: rk.score, targetId: rk.targetId, move: 'round_keeper' });
+  return out;
 }
 
 function decideBallHolder(
@@ -841,13 +879,16 @@ function decideBallHolder(
   const cr = crResult.action;
   const lb = evalLongBall(player, allPlayers);
   const actions: ActionScore[] = [sh, ca, ps, dr, tb, cr, lb];
+  const moves = mind ? holderMoves(player, allPlayers, opponents, outfieldOpponents, !!gate) : [];
 
   let best = actions.reduce((a, b) => b.score > a.score ? b : a);
   // The holder's mind (phase 3, `decisions.md`): rolls, gates and perceived scores. Off for the keeper, a set-piece
   // taker (`mind` null) and under the one-on-one gate, which keep their rules.
   if (mind && DECISION_FLAGS.HOLDER && player.role !== 'GK' && !gate) {
-    const r = holderMind(player, allPlayers, actions, tbResult.cells, crResult.targets, lb, mind.matchTime);
+    const r = holderMind(player, allPlayers, actions, tbResult.cells, crResult.targets, lb, mind.matchTime, moves);
     best = r.best;
+  } else {
+    for (const mv of moves) if (mv.score > best.score) best = mv;
   }
 
   // Decision telemetry (`decisions.md`): the score vector, only while somebody listens.
@@ -946,11 +987,12 @@ function decideBallHolder(
   }
 
   switch (best.type) {
-    case 'shoot':         return { type: 'shoot' };
-    // Under the one-on-one gate the receiver is fixed (startPass must not pick an ungated one).
-    case 'pass':          return gate && best.targetId !== undefined ? { type: 'pass', targetId: best.targetId } : { type: 'pass' };
-    case 'carry':         return { type: 'carry', dx: best.dx!, dy: best.dy! };
-    case 'dribble':       return { type: 'dribble', targetId: best.targetId! };
+    case 'shoot':         return best.move ? { type: 'shoot', move: best.move } : { type: 'shoot' };
+    // Under the one-on-one gate (and for a lay-off) the receiver is fixed (startPass must not pick another).
+    case 'pass':          return best.move ? { type: 'pass', targetId: best.targetId!, move: best.move }
+      : gate && best.targetId !== undefined ? { type: 'pass', targetId: best.targetId } : { type: 'pass' };
+    case 'carry':         return best.move ? { type: 'carry', dx: best.dx!, dy: best.dy!, move: best.move } : { type: 'carry', dx: best.dx!, dy: best.dy! };
+    case 'dribble':       return best.move ? { type: 'dribble', targetId: best.targetId!, move: best.move } : { type: 'dribble', targetId: best.targetId! };
     case 'through_ball':  return {
       type: 'through_ball',
       cellX:            best.cellX!,

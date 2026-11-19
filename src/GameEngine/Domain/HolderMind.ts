@@ -198,6 +198,8 @@ export interface HolderMindOutput {
   perceived: Record<string, number>;
   trueBest: string;
   picked: string;
+  /** The extra move picked (`HolderMoves.ts`), when one won. */
+  move?: string;
 }
 
 let lastMind: HolderMindOutput | null = null;
