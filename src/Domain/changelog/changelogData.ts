@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.28.1",
+    date: "2026-11-19",
+    time: "23:00",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "O placar da partida mostra a posição de cada time na tabela, ao lado do escudo.", en: "The match scoreboard shows each team's league position next to its crest." },
+      { tab: "leagues", pt: "A liga de um amigo não aparece mais como simulada.", en: "A friend's league no longer shows as simulated." },
+    ],
+  },
+  {
     version: "12.28",
     date: "2026-11-19",
     time: "10:47",
