@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.29",
+    date: "2026-11-19",
+    time: "23:00",
+    items: [
+      { tab: "squad", pt: "Empréstimos podem ser renovados por mais uma temporada: o clube dono de quem está emprestado com você oferece, e o clube que está com um jogador seu pede para ficar com ele quando ele jogou bem. A proposta chega na caixa de entrada alguns dias antes da volta.", en: "Loans can be renewed for one more season: the owner of a player on loan with you offers it, and the club holding one of your players asks to keep him when he played well. The offer arrives in the inbox a few days before he goes back." },
+    ],
+    fixes: [
+      { tab: "squad", pt: "Na renovação o jogador parte do salário que já ganha: pede no máximo 15% a mais num clube pequeno, 25% num médio e 40% num grande.", en: "On a renewal the player starts from the wage he already earns: he asks at most 15% more at a small club, 25% at a mid club and 40% at a big one." },
+      { tab: "market", pt: "Jogador livre não pede mais luvas nem salário extra, e pede menos quanto mais tempo fica sem clube (até 25% a menos depois de 3 meses).", en: "A free agent no longer asks a signing bonus or a wage premium, and asks less the longer he stays without a club (up to 25% less after 3 months)." },
+    ],
+  },
+  {
     version: "12.28.4",
     date: "2026-11-19",
     time: "15:29",
