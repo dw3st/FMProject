@@ -1,4 +1,5 @@
-import { describe, expect, spyOn, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
@@ -27,7 +28,7 @@ describe("engine identity with the mental keys", () => {
   test("same seeded match", () => {
     const F = formationForSimId("4-3-3");
     const run = (mental: boolean) => {
-      const spy = spyOn(Math, "random").mockImplementation(mulberry32(4242));
+      const spy = spyMatchRandom().mockImplementation(mulberry32(4242));
       try {
         const r = simulateMatch(load("33.json", mental), load("34.json", mental), F, F, undefined, undefined, {
           tactics: { A: { style: "balanced" }, B: { style: "balanced" } },

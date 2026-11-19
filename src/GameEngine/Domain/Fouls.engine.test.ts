@@ -1,4 +1,5 @@
-import { describe, expect, test, spyOn, afterEach } from "bun:test";
+import { describe, expect, test, afterEach } from "bun:test";
+import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState, tickState, maybeFoul, bookPlayer, restartHoldsPeriod } from "@/GameEngine/Domain/gameState";
@@ -47,7 +48,7 @@ function boxSituation(x: number): { s: GameState; attacker: GamePlayer; defender
 const always = () => 0;     // every roll succeeds (foul, red first)
 const seq = (...v: number[]) => { let i = 0; return () => v[Math.min(i++, v.length - 1)]!; };
 
-let randomSpy: ReturnType<typeof spyOn> | null = null;
+let randomSpy: MatchRandomSpy | null = null;
 afterEach(() => { randomSpy?.mockRestore(); randomSpy = null; });
 
 describe("fouls in the engine", () => {
@@ -84,7 +85,7 @@ describe("fouls in the engine", () => {
     expect(taker.x).toBeCloseTo(PITCH_LENGTH - 12, 5);
 
     // Score it: Math.random() 0 → goal.
-    randomSpy = spyOn(Math, "random").mockImplementation(() => 0);
+    randomSpy = spyMatchRandom().mockImplementation(() => 0);
     const resolved: Array<{ scored: boolean }> = [];
     const unsubR = gameBus.on("penaltyResolved", e => resolved.push(e));
     let state: GameState = { ...out, setPiece: { ...out.setPiece!, countdown: 0.1 } };
@@ -101,7 +102,7 @@ describe("fouls in the engine", () => {
   test("a missed penalty gives the goalkeeper a goal kick", () => {
     const { s, attacker, defender } = boxSituation(PITCH_LENGTH - 10);
     const out = maybeFoul(s, defender, attacker, "tackle", false, seq(0, 0.99, 0.99))!;
-    randomSpy = spyOn(Math, "random").mockImplementation(() => 0.9999);
+    randomSpy = spyMatchRandom().mockImplementation(() => 0.9999);
     const r = tickState({ ...out, setPiece: { ...out.setPiece!, countdown: 0.1 } }, 0.2);
     expect(r.state.score.A).toBe(0);
     expect(r.state.setPiece?.type).toBe("goal_kick");
@@ -146,7 +147,7 @@ describe("fouls in the engine", () => {
     const { s, attacker, defender } = boxSituation(PITCH_LENGTH - 10);
     const out = maybeFoul({ ...s, extraTimeFirst: 0, matchTime: 2700 - 5 }, defender, attacker, "tackle", false, seq(0, 0.99, 0.99))!;
     expect(out.setPiece?.type).toBe("penalty");
-    randomSpy = spyOn(Math, "random").mockImplementation(() => 0);
+    randomSpy = spyMatchRandom().mockImplementation(() => 0);
     const resolved: unknown[] = [];
     const unsub = gameBus.on("penaltyResolved", e => resolved.push(e));
     let state = out;

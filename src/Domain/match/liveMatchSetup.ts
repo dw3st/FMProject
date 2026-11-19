@@ -75,6 +75,8 @@ export interface LiveMatchInput {
   /** The weather that plays (a closed roof: neutral). */
   weather?: EngineWeather;
   referee?: EngineReferee;
+  /** Seed of the match generator (`GameEngine/Infrastructure/MatchRng.ts`); absent = drawn. */
+  seed?: number;
 }
 
 const SIDES: TeamId[] = ["A", "B"];
@@ -130,7 +132,7 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
   const some = (o: object) => Object.keys(o).length > 0;
 
   let state: GameState = {
-    ...createMatchState(input.A.players, input.A.formation, input.B.players, input.B.formation, lineupA, lineupB, injuryMult),
+    ...createMatchState(input.A.players, input.A.formation, input.B.players, input.B.formation, lineupA, lineupB, injuryMult, input.seed),
     knockout: input.knockout,
     ...(input.weather ? { weather: input.weather } : {}),
     ...(input.referee ? { referee: input.referee } : {}),

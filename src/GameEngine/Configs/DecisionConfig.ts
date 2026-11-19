@@ -2,7 +2,7 @@
  * FM-style decisions (`docs/superpowers/specs/2026-11-18-fm-style-decisions-design.md`, `.claude/rules/game-engine/decisions.md`).
  *
  * Phase 2 added the telemetry (pure, no dice). Phase 3 (`HOLDER`, on by default) is the ball holder's mind: mental
- * rolls, gates, perceived scores (`HOLDER_MIND`, `Domain/HolderMind.ts`). A flag off makes no `Math.random` call, so a
+ * rolls, gates, perceived scores (`HOLDER_MIND`, `Domain/HolderMind.ts`). A flag off makes no `matchRandom` call, so a
  * match is game-for-game identical to the engine without it with a fixed engine seed.
  *
  * Overrides: `DECISION_OVERRIDES='{"HOLDER":true}'` (env, read once at load, scripts and workers) and

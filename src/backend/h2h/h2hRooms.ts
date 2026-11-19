@@ -29,6 +29,7 @@ import {
   canPause, canResume, closeRoom as closeRoomState, endPause, finishRoom, joinRoom, leaveRoom, newRoom, pauseExpired,
   matchSpeed, roomView, setReady, setSideSpeed, startPause, type H2HRoom,
 } from "@/Domain/h2h/h2hRules";
+import { newMatchSeed } from "@/GameEngine/Infrastructure/MatchRng";
 import { eligibleLivePlayers, type LiveMatchInput, type LiveSideInput } from "@/Domain/match/liveMatchSetup";
 import { buildPlayedMatchRecording } from "@/Domain/advanceDay/buildPlayedMatchRecording";
 import type { ManagerCardRecord } from "@/Domain/advanceDay/matches";
@@ -754,6 +755,8 @@ async function startMatch(rec: Rec): Promise<void> {
     return;
   }
   const input = h2hMatchInput(home, away);
+  // The server draws the seed of the match generator: the worker's match is reproducible from it.
+  input.seed = newMatchSeed();
   for (const side of SIDES) if (rec.penalty2d[side]) input[side].penalty2d = true;
   const ok = await withSaveLock(saveId, async () => {
     const world = await service.getMeta(saveId);

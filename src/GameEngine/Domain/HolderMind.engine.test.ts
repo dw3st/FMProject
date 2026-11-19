@@ -1,4 +1,5 @@
-import { describe, expect, spyOn, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
@@ -18,7 +19,7 @@ function run(holder: boolean, mental?: { A?: number; B?: number }) {
   const F = formationForSimId("4-3-3");
   let draws = 0;
   const rng = mulberry32(4242);
-  const spy = spyOn(Math, "random").mockImplementation(() => { draws++; return rng(); });
+  const spy = spyMatchRandom().mockImplementation(() => { draws++; return rng(); });
   try {
     const r = simulateMatch(load("33.json"), load("34.json"), F, F, undefined, undefined, {
       tactics: { A: { style: "balanced" }, B: { style: "balanced" } },

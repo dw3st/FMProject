@@ -1,4 +1,5 @@
-import { describe, expect, test, spyOn, afterEach } from "bun:test";
+import { describe, expect, test, afterEach } from "bun:test";
+import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState, tickState, startAerialBall, resolveAerialLanding } from "@/GameEngine/Domain/gameState";
@@ -55,7 +56,7 @@ function collect<K extends keyof GameEvents>(name: K): { events: GameEvents[K][]
   return { events, off };
 }
 
-let spy: ReturnType<typeof spyOn> | null = null;
+let spy: MatchRandomSpy | null = null;
 afterEach(() => { spy?.mockRestore(); spy = null; });
 
 describe("high ball flight", () => {
@@ -259,7 +260,7 @@ describe("header goals", () => {
       ballHolderId: st.id,
       shot: { shooterId: st.id, fromX: 108, fromY: 37, toX: PITCH_LENGTH, toY: 37, t: 0.99, xg: 1, header: true },
     };
-    spy = spyOn(Math, "random").mockReturnValue(0);
+    spy = spyMatchRandom().mockReturnValue(0);
     const goals = collect("goalScored");
     const r = tickState(s, 0.2);
     goals.off();

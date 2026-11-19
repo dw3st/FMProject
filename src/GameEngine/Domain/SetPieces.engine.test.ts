@@ -1,4 +1,5 @@
-import { describe, expect, test, spyOn, afterEach } from "bun:test";
+import { describe, expect, test, afterEach } from "bun:test";
+import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import {
@@ -51,7 +52,7 @@ const seq = (...v: number[]) => { let i = 0; return () => v[Math.min(i++, v.leng
 const foul = (s: GameState, off: GamePlayer, vic: GamePlayer) => maybeFoul(s, off, vic, "tackle", false, seq(0, 0.99, 0.99))!;
 const holder = (s: GameState) => s.players.find(p => p.id === s.ballHolderId)!;
 
-let randomSpy: ReturnType<typeof spyOn> | null = null;
+let randomSpy: MatchRandomSpy | null = null;
 afterEach(() => { randomSpy?.mockRestore(); randomSpy = null; });
 
 describe("free kicks", () => {
@@ -192,7 +193,7 @@ describe("corners", () => {
     initStats(s.players.map(p => ({ id: p.id, team: p.team })));
     const goals: unknown[] = [];
     const unsub = gameBus.on("goalScored", e => goals.push(e));
-    randomSpy = spyOn(Math, "random").mockReturnValue(0);
+    randomSpy = spyMatchRandom().mockReturnValue(0);
     tickState(s, 0.2);
     unsub();
     expect(goals).toHaveLength(1);
@@ -289,7 +290,7 @@ describe("loose ball over the goal line", () => {
 
   test("an outfield defender on it: corner, and the through ball is not 'lost in race' to the passer's own team", () => {
     const { s } = outOver("CB");
-    randomSpy = spyOn(Math, "random").mockReturnValue(0);
+    randomSpy = spyMatchRandom().mockReturnValue(0);
     const lost: unknown[] = [];
     const unsub = gameBus.on("throughBallLostInRace", e => lost.push(e));
     const out = tickState(s, 0.2).state;
@@ -301,7 +302,7 @@ describe("loose ball over the goal line", () => {
 
   test("only the keeper on it: goal kick", () => {
     const { s } = outOver("GK");
-    randomSpy = spyOn(Math, "random").mockReturnValue(0);
+    randomSpy = spyMatchRandom().mockReturnValue(0);
     const out = tickState(s, 0.2).state;
     expect(out.setPiece?.type).toBe("goal_kick");
   });

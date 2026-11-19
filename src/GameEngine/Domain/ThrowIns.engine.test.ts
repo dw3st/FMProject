@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { DEFAULT_SIM_FORMATION_ID, formationForSimId } from "@/Domain/matchFormations";
@@ -13,7 +14,7 @@ const load = (f: string): Squad => {
 };
 
 describe("throw-ins", () => {
-  let spy: ReturnType<typeof spyOn> | null = null;
+  let spy: MatchRandomSpy | null = null;
   afterEach(() => { spy?.mockRestore(); spy = null; });
 
   test("a match has throw-ins, taken by the team with the restart at the touchline", () => {
@@ -23,7 +24,7 @@ describe("throw-ins", () => {
     // About one match in nine has no throw-in at all: a few seeded matches, until one has them.
     for (const seed of [1, 2, 3, 4, 5]) {
       spy?.mockRestore();
-      spy = spyOn(Math, "random").mockImplementation(mulberry32(seed));
+      spy = spyMatchRandom().mockImplementation(mulberry32(seed));
       let last: unknown = null;
       const m = simulateMatch(load("40.json"), load("33.json"), f, f, undefined, undefined, {
         tactics: { A: { style: "balanced" }, B: { style: "balanced" } },

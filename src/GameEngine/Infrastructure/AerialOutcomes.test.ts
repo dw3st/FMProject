@@ -1,4 +1,5 @@
-import { describe, expect, test, spyOn, afterEach } from "bun:test";
+import { describe, expect, test, afterEach } from "bun:test";
+import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState } from "@/GameEngine/Domain/gameState";
@@ -26,7 +27,7 @@ function aerial(p: GamePlayer, heading: number, jump = 0.1, strength = 0.5): Gam
   return { ...p, runtimeStats: { ...p.runtimeStats, withoutBall: { ...p.runtimeStats.withoutBall, heading, jump, strength } } };
 }
 
-let spy: ReturnType<typeof spyOn> | null = null;
+let spy: MatchRandomSpy | null = null;
 afterEach(() => { spy?.mockRestore(); spy = null; });
 
 describe("resolveAerialDuel", () => {
@@ -65,7 +66,7 @@ describe("headers", () => {
     expect(bad).toBeCloseTo(A.HEADER_EFFECT_MIN, 6);
   });
   test("resolveShot uses the header effect for a header", () => {
-    spy = spyOn(Math, "random").mockReturnValue(0.999);
+    spy = spyMatchRandom().mockReturnValue(0.999);
     const shooter = aerial({ ...st, x: 105, y: 37 }, 1);
     const shot: ShotState = { shooterId: shooter.id, fromX: 105, fromY: 37, toX: 115, toY: 37, t: 1, xg: 0.3 };
     const foot = resolveShot(shooter, null, shot);

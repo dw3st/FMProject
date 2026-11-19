@@ -1,4 +1,5 @@
-import { describe, expect, spyOn, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
@@ -21,7 +22,7 @@ const AWAY = loadSquad("34.json");
 const TACTICS = { A: { style: "balanced" as const }, B: { style: "balanced" as const } };
 
 function seeded<T>(seed: number, f: () => T): T {
-  const spy = spyOn(Math, "random").mockImplementation(mulberry32(seed));
+  const spy = spyMatchRandom().mockImplementation(mulberry32(seed));
   try { return f(); } finally { spy.mockRestore(); }
 }
 const ref = (strictness: number) => ({ id: "ref_test", name: "Test Referee", country: "England", strictness });

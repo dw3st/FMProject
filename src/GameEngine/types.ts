@@ -726,6 +726,10 @@ export interface VarReviewRecord {
 }
 
 export interface GameState {
+  /** Seed the match was created with (`createMatchState`, `Infrastructure/MatchRng.ts`). */
+  seed?: number;
+  /** State of the match generator (mulberry32, one uint32): loaded by `tickState`, written back after every tick. */
+  rng?: number;
   players: GamePlayer[];
   /** Bench players for Team A — waiting to come on. */
   benchA: GamePlayer[];

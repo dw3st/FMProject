@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState, endVarReview, foulCheck, tickState } from "@/GameEngine/Domain/gameState";
@@ -50,13 +51,13 @@ const finishReview = (s: GameState) => {
   return st;
 };
 
-let randomSpy: ReturnType<typeof spyOn> | null = null;
+let randomSpy: MatchRandomSpy | null = null;
 afterEach(() => { randomSpy?.mockRestore(); randomSpy = null; });
 
 describe("referee errors in the engine", () => {
   test("no referee quality: the match is the one before (same random rolls)", () => {
     const run = (ref?: ReturnType<typeof referee>) => {
-      const spy = spyOn(Math, "random").mockImplementation(mulberry32(21));
+      const spy = spyMatchRandom().mockImplementation(mulberry32(21));
       try {
         return simulateMatch(HOME, AWAY, F433, F433, undefined, undefined, {
           tactics: { A: { style: "balanced" }, B: { style: "balanced" } }, ...(ref ? { referee: ref } : {}),
@@ -149,7 +150,7 @@ describe("referee errors in the engine", () => {
     // The striker scores straight away.
     const st = s.players.find((p) => p.id === attacker.id)!;
     s = { ...s, pass: null, ballHolderId: st.id, shot: { shooterId: st.id, fromX: st.x, fromY: 37, toX: PITCH_LENGTH, toY: 37, t: 0.99, xg: 0.9 } };
-    randomSpy = spyOn(Math, "random").mockImplementation(() => 0);
+    randomSpy = spyMatchRandom().mockImplementation(() => 0);
     const disallowed: unknown[] = [];
     const unsub = gameBus.on("goalDisallowed", (e) => disallowed.push(e));
     const r = tickState(s, 0.2);

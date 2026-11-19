@@ -1,4 +1,5 @@
-import { describe, expect, spyOn, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import {
   argmaxIndex, facingAwayWiden, fatigueLapseMult, formOf, formWindow, moodBand, moodOf, perceiveScores, releaseFires,
   rollMindWindow, sigmaOf, windowedRoll, longShotRange,
@@ -71,7 +72,7 @@ describe("holder mind rules", () => {
     const m = { decisions: 0.8, composure: 0.5, flair: 0.5, anticipation: 0.5, consistency: 0.5, mood: 0 };
     let n = 0;
     const rng = mulberry32(1);
-    const spy = spyOn(Math, "random").mockImplementation(() => { n++; return rng(); });
+    const spy = spyMatchRandom().mockImplementation(() => { n++; return rng(); });
     try {
       const w = rollMindWindow(m, 100, 3);
       expect(w.ticks).toBe(HOLDER_MIND.WINDOW_TICKS);

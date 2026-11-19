@@ -1,4 +1,5 @@
-import { describe, expect, test, spyOn, afterEach } from "bun:test";
+import { describe, expect, test, afterEach } from "bun:test";
+import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState, tickState, forceInjurySubstitution, stopForInjury } from "@/GameEngine/Domain/gameState";
@@ -38,7 +39,7 @@ function buildFreshState(): GameState {
   } as GameState;
 }
 
-let randomSpy: ReturnType<typeof spyOn> | null = null;
+let randomSpy: MatchRandomSpy | null = null;
 
 afterEach(() => {
   randomSpy?.mockRestore();
@@ -53,7 +54,7 @@ describe("in-match injuries — tickState integration", () => {
     // Math.random() call (every other player's roll, plus rollSeverity()) gets 0.999, which
     // never satisfies `< prob` (prob is always « 1) and rolls "severe" for the one that did.
     let calls = 0;
-    randomSpy = spyOn(Math, "random").mockImplementation(() => (calls++ === 0 ? 0 : 0.999));
+    randomSpy = spyMatchRandom().mockImplementation(() => (calls++ === 0 ? 0 : 0.999));
 
     const injuredEvents: Array<{ playerId: number; team: string; severity: string }> = [];
     const unsub = gameBus.on("injury", (e) => injuredEvents.push(e));

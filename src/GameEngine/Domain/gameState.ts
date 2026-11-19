@@ -114,6 +114,7 @@ import {
 } from '@/Domain/injury/injury';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
 import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
+import { matchRandom, loadMatchRng, matchRngState, newMatchSeed } from '@/GameEngine/Infrastructure/MatchRng';
 
 // ── Offside config ────────────────────────────────────────────────────────────
 
@@ -268,6 +269,7 @@ function buildGamePlayerForSlot(
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
+    matchRandom,
   ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
@@ -362,6 +364,7 @@ function buildTeam(
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
+    matchRandom,
     ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
@@ -428,7 +431,9 @@ export function createMatchState(
   lineupA?:   string[],
   lineupB?:   string[],
   injuryMult: { A?: number; B?: number } = {},
+  seed: number = newMatchSeed(),
 ): GameState {
+  loadMatchRng(seed);
   resetDefensiveIntentCache();
   resetOffBallIntentCache();
   const withMult = (r: ReturnType<typeof buildTeam>, m: number | undefined) =>
@@ -455,6 +460,8 @@ export function createMatchState(
   players = enforceKickoffCircleRule(players, 'B');
 
   const kickoffHolder = players.find(p => p.team === 'A' && p.role === 'ST') ?? teamA[teamA.length - 1]!;
+  const extraTimeFirst  = Math.floor(matchRandom() * 6) * 60;
+  const extraTimeSecond = Math.floor(matchRandom() * 6) * 60;
 
   return {
     players,
@@ -479,13 +486,15 @@ export function createMatchState(
     decisions:             {},
     matchPhase:            'preMatch',
     matchTime:             0,
-    extraTimeFirst:        Math.floor(Math.random() * 6) * 60,
-    extraTimeSecond:       Math.floor(Math.random() * 6) * 60,
+    extraTimeFirst,
+    extraTimeSecond,
     presentationCountdown: PRESENTATION_DURATION,
     possessionTime:        0,
     lastPasserId:          null,
     teamIntent:            { A: 'balanced', B: 'balanced' },
     throughBallCellsCache: null,
+    seed:                  seed >>> 0,
+    rng:                   matchRngState(),
   };
 }
 
@@ -978,8 +987,8 @@ function rollInMatchInjuries(state: GameState, dt: number): GameState {
     // Guard against a player removed earlier THIS tick by a prior roll.
     if (!s.players.some(p => p.id === player.id)) continue;
     const prob = injuryRatePerMinute(injuryFactorsOf(player, weatherEffectOf(state.weather).injury)) * gameMinutes;
-    if (Math.random() < prob) {
-      s = forceInjurySubstitution(s, player, matchMinute(s), rollSeverity());
+    if (matchRandom() < prob) {
+      s = forceInjurySubstitution(s, player, matchMinute(s), rollSeverity(matchRandom));
     }
   }
   return s.injuries.length > state.injuries.length ? stopForInjury(s, side, spot, matchMinute(s)) : s;
@@ -997,8 +1006,8 @@ function rollContactInjuries(state: GameState, ids: [number, number], minute: nu
   for (const id of ids) {
     const player = s.players.find(p => p.id === id);
     if (!player) continue; // already left the pitch this tick
-    if (Math.random() < contactInjuryChance(injuryFactorsOf(player, weatherEffectOf(state.weather).injury))) {
-      s = forceInjurySubstitution(s, player, minute, rollSeverity());
+    if (matchRandom() < contactInjuryChance(injuryFactorsOf(player, weatherEffectOf(state.weather).injury))) {
+      s = forceInjurySubstitution(s, player, minute, rollSeverity(matchRandom));
     }
   }
   return s.injuries.length > state.injuries.length ? stopForInjury(s, side, spot, minute) : s;
@@ -1135,7 +1144,7 @@ function missOffside(state: GameState, receiver: GamePlayer, at: { x: number; y:
 function checkGoalForOffside(
   stateBefore: GameState, after: GameState,
   goal: { team: TeamId; scorerId: number; assistId?: number; header?: boolean; setPiece?: import('@/GameEngine/types').SetPieceGoalKind },
-  rng: () => number = Math.random,
+  rng: () => number = matchRandom,
 ): GameState {
   const chain = stateBefore.missedOffside;
   if (!chain) return after;
@@ -1279,7 +1288,7 @@ function setPieceGoalOf(state: GameState, team: TeamId): SetPieceGoalKind | unde
 
 /** The routine `team` plays at this corner / crossed free kick (one of the manager's, drawn), announced when there is one. */
 function drawRoutine(state: GameState, team: TeamId, kind: 'corner' | 'free_kick', takerId: number): SetPieceRoutine | undefined {
-  const routine = pickRoutine(state.setPieceTakers?.[team]?.routines?.[kind === 'corner' ? 'corners' : 'freeKicks'], Math.random);
+  const routine = pickRoutine(state.setPieceTakers?.[team]?.routines?.[kind === 'corner' ? 'corners' : 'freeKicks'], matchRandom);
   if (routine) {
     gameBus.emit('setPieceRoutine', { team, takerId, kind, target: routine.target, attackers: routine.attackers });
     debugLog('setPiece', `Routine for team ${team} (${kind}): ${routine.target}, ${routine.attackers} in the box`, { data: { ...routine } });
@@ -1353,7 +1362,7 @@ function applyDirectFreeKick(
  * the wall takes `wallBlockChance(n)` of it — the shot strikes the wall with that chance and drops
  * loose (rebound off a defender), else it flies with the unblocked xG. Counts as a shot either way.
  */
-export function startDirectFreeKick(state: GameState, rng: () => number = Math.random): GameState {
+export function startDirectFreeKick(state: GameState, rng: () => number = matchRandom): GameState {
   const sp = state.setPiece!;
   const taker = state.players.find(p => p.id === state.ballHolderId)!;
   const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
@@ -1453,7 +1462,7 @@ function awardFoulRestart(
     let wallIds: number[] | undefined;
     const routine = box ? drawRoutine(state, fouledTeam, 'free_kick', taker.id) : undefined;
     if (direct) ({ players, wallIds } = applyDirectFreeKick(state, players, taker, pos));
-    else if (box) players = applyBoxSetPiece(players, taker, pos, 'free_kick', Math.random, routine);
+    else if (box) players = applyBoxSetPiece(players, taker, pos, 'free_kick', matchRandom, routine);
     players = players.map(p => (p.id === taker.id ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p));
     setPiece = direct
       ? { type: 'free_kick', takerId: taker.id, countdown: SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN, position: pos, variant: 'direct', wallIds }
@@ -1501,7 +1510,7 @@ export function maybeFoul(
   fouled: GamePlayer,
   kind: FoulKind,
   tackleWon: boolean,
-  rng: () => number = Math.random,
+  rng: () => number = matchRandom,
 ): GameState | null {
   return foulCheck(state, offender, fouled, kind, tackleWon, rng).foul;
 }
@@ -1517,7 +1526,7 @@ export function foulCheck(
   fouled: GamePlayer,
   kind: FoulKind,
   tackleWon: boolean,
-  rng: () => number = Math.random,
+  rng: () => number = matchRandom,
 ): { foul: GameState | null; state: GameState } {
   const ownGoalX = offender.attackDir === 1 ? 0 : PITCH_LENGTH;
   const inOwnBox = isInGoalScoreArea(fouled.x, fouled.y, ownGoalX);
@@ -1629,7 +1638,7 @@ function phantomPenalty(
  * Resolves an in-match penalty once its freeze ends: `penaltyChance` for the taker against the
  * defending goalkeeper. Goal → kickoff for the conceding team; miss/save → the goalkeeper's goal kick.
  */
-function resolveInMatchPenalty(state: GameState, rng: () => number = Math.random): TickResult {
+function resolveInMatchPenalty(state: GameState, rng: () => number = matchRandom): TickResult {
   const sp = state.setPiece!;
   const taker = state.players.find(p => p.id === sp.takerId) ?? state.players.find(p => p.id === state.ballHolderId)!;
   const gk = state.players.find(p => p.team !== taker.team && p.role === 'GK') ?? null;
@@ -2347,7 +2356,7 @@ function startPenalties(state: GameState): GameState {
       },
     };
   }
-  const r = resolvePenaltyShootout(penaltySide(state, 'A'), penaltySide(state, 'B'), Math.random);
+  const r = resolvePenaltyShootout(penaltySide(state, 'A'), penaltySide(state, 'B'), matchRandom);
   return {
     ...state,
     matchPhase: 'penalties',
@@ -2378,8 +2387,8 @@ export function endCurrentPeriod(state: GameState, newMatchTime: number = state.
           ...s, matchPhase: 'extraTimeBreak', presentationCountdown: PRESENTATION_DURATION,
           pass: null, shot: null, looseBall: null,
           scoreAtRegulation: { ...s.score },
-          etStoppageFirst:  Math.floor(Math.random() * 3) * 60,
-          etStoppageSecond: Math.floor(Math.random() * 3) * 60,
+          etStoppageFirst:  Math.floor(matchRandom() * 3) * 60,
+          etStoppageSecond: Math.floor(matchRandom() * 3) * 60,
         };
       }
       return finishMatch(s);
@@ -2507,7 +2516,7 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
   const forced  = forcedTargetId !== undefined ? lanes.find(l => l.toId === forcedTargetId) : undefined;
   if (forced) chosen = forced;
   else if (total > 0) {
-    let roll = Math.random() * total;
+    let roll = matchRandom() * total;
     for (let i = 0; i < top3.length; i++) {
       roll -= weights[i]!;
       if (roll <= 0) { chosen = top3[i]!; break; }
@@ -2526,10 +2535,10 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
   if (DECISION_FLAGS.PASS_ERROR && !state.setPiece && distance > 0.5) {
     if (distance > FM_NUMBERS.LOFT_YD) {
       debugLog('pass', `${holder.name} lofts a ${distance.toFixed(0)}-yd pass to ${to.name}`, { playerId: holder.id });
-      return startAerialBall({ ...state, setPiece: null }, 'long_ball', { x: to.x, y: to.y }, to.id, Math.random, true);
+      return startAerialBall({ ...state, setPiece: null }, 'long_ball', { x: to.x, y: to.y }, to.id, matchRandom, true);
     }
     const pressure = holderPressure(holder.x, holder.y, opponents);
-    const [z0, z1] = gaussianPair(Math.random);
+    const [z0, z1] = gaussianPair(matchRandom);
     const l = passLaunch(holder.runtimeStats.withBall.passingSkill, distance, pressure, to.runtimeStats.withBall.firstTouch, z0, z1);
     if (l.miss) {
       const ux = (to.x - holder.x) / distance, uy = (to.y - holder.y) / distance;
@@ -2904,8 +2913,8 @@ export function startThroughBall(
   // Box-Muller approximation.
   const skill   = holder.runtimeStats.withBall.passingSkill;
   const sigma   = (1 - skill) * THROUGH_BALL_CONFIG.MAX_THROUGH_BALL_ERROR / 2;
-  const u1      = Math.max(1e-6, Math.random());
-  const u2      = Math.random();
+  const u1      = Math.max(1e-6, matchRandom());
+  const u2      = matchRandom();
   const z0      = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   const z1      = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
   const landingX = decision.cellX + z0 * sigma;
@@ -3152,7 +3161,7 @@ export function awardCorner(
   const taker = setPieceTakerOf(s0, awardedTeam, 'corners')
     ?? pickOOBTaker('corner', awardedTeam, position, s0.players);
   const routine = drawRoutine(s0, awardedTeam, 'corner', taker.id);
-  const players = applyBoxSetPiece(s0.players, taker, position, 'corner', Math.random, routine);
+  const players = applyBoxSetPiece(s0.players, taker, position, 'corner', matchRandom, routine);
   // A through ball out for a corner to the other team was lost; one out for the passer's own team was not.
   const passer = s0.players.find(p => p.id === fromPasserId);
   if (source === 'through' && passer && passer.team !== awardedTeam) {
@@ -3248,7 +3257,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
       // The keeper letting it run out is a goal kick, not a corner.
       const touched = s.players.some(p => p.team === awardedTeam && p.role !== 'GK'
         && Math.hypot(p.x - exit.x, p.y - exit.y) <= SET_PIECE_CONFIG.LOOSE_CORNER_RADIUS);
-      if (touched && Math.random() < SET_PIECE_CONFIG.LOOSE_CORNER_CHANCE) {
+      if (touched && matchRandom() < SET_PIECE_CONFIG.LOOSE_CORNER_CHANCE) {
         return resolveOOBSetPiece(s, 'corner', lb.fromTeamLastTouch, x, y, lb.fromPasserId, source, 'loose');
       }
     }
@@ -3349,7 +3358,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     (lb.receiverOffside && lb.intendedRunnerId !== null && winner.id === lb.intendedRunnerId) ||
     (winner.team === lb.fromTeamLastTouch && (lb.offsideIds ?? []).includes(winner.id));
   // The assistant may miss it (`var.md`): play goes on, a goal soon after is checked by the VAR.
-  if (flaggedOffside && refereeErrs(s, 'missed_offside', Math.random)) {
+  if (flaggedOffside && refereeErrs(s, 'missed_offside', matchRandom)) {
     s = missOffside(s, winner, { x: lb.x, y: lb.y }, lb.offsideLineX);
     flaggedOffside = false;
   }
@@ -3385,7 +3394,7 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
     const [aId, bId] = duelParticipants;
     const pa = s.players.find(p => p.id === aId)!;
     const pb = s.players.find(p => p.id === bId)!;
-    const [offender, victim] = Math.random() < 0.5 ? [pa, pb] : [pb, pa];
+    const [offender, victim] = matchRandom() < 0.5 ? [pa, pb] : [pb, pa];
     const fc = foulCheck(s, offender, victim, 'duel', false);
     s = fc.state;
     const fouledState = fc.foul;
@@ -3531,7 +3540,7 @@ const uniform = (rng: () => number, lo: number, hi: number) => lo + rng() * (hi 
  * his team's touch (a `clearance`), slow and in a random direction.
  */
 function dropLooseAt(s: GameState, gk: GamePlayer, point: { x: number; y: number }): GameState {
-  const a = Math.random() * 2 * Math.PI;
+  const a = matchRandom() * 2 * Math.PI;
   const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * 0.5 * weatherEffectOf(s.weather).looseSpeed;
   const prevHolderId = s.ballHolderId;
   return onPossessionTransfer({
@@ -3644,7 +3653,7 @@ export function startAerialBall(
   kind:   'cross' | 'long_ball',
   target: { x: number; y: number },
   intendedId: number | null,
-  rng: () => number = Math.random,
+  rng: () => number = matchRandom,
   lofted = false,
 ): GameState {
   const C = AERIAL_CONFIG;
@@ -3753,7 +3762,7 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
  * goal, else he controls it. Defending winner in his box or under challenge → clearance (behind for
  * a corner sometimes); uncontested elsewhere → he controls it. Nobody there → loose ball.
  */
-export function resolveAerialLanding(state: GameState, rng: () => number = Math.random): TickResult {
+export function resolveAerialLanding(state: GameState, rng: () => number = matchRandom): TickResult {
   const C = AERIAL_CONFIG;
   const pass = state.pass!;
   const kind = pass.kind as 'cross' | 'long_ball' | 'clearance';
@@ -4079,7 +4088,17 @@ function holderActionTicks(d: PlayerDecision): number {
   return 0;
 }
 
+/**
+ * One engine tick. The match generator (`MatchRng.ts`) is loaded from `state.rng` first and its advanced state is
+ * written into the returned state, so every draw of the tick is reproducible from the state.
+ */
 export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickResult {
+  if (state.rng !== undefined) loadMatchRng(state.rng);
+  const r = tickStateCore(state, dt, passSpeed);
+  return { ...r, state: { ...r.state, rng: matchRngState() } };
+}
+
+function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResult {
   const noop = (s: GameState): TickResult =>
     ({ state: s, passCompleted: false, tackled: false, goalScored: null });
 
@@ -4816,7 +4835,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         if (inPosts && defendingGK) {
           // Held, spilled loose or parried behind, by his skill and how hard the shot was (12.10).
           const odds = saveOutcomeChances(shotStoppingSkill(defendingGK), goalChance);
-          const roll = Math.random();
+          const roll = matchRandom();
           const kind = roll < odds.parry ? 'parry' : roll < odds.parry + odds.spill ? 'spill' : 'hold';
           gameBus.emit('keeperSave', { keeperId: defendingGK.id, kind });
           debugLog('keeper', `${defendingGK.name} ${kind === 'hold' ? 'holds' : kind === 'spill' ? 'spills' : 'parries'} the shot (hold ${(odds.hold * 100).toFixed(0)}%, spill ${(odds.spill * 100).toFixed(0)}%)`, {
@@ -4837,7 +4856,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
         } else if (!inPosts) {
           const deflector = s.players.some(p => p.team !== shooter.team && p.role !== 'GK'
             && Math.hypot(p.x - flying.fromX, p.y - flying.fromY) <= SET_PIECE_CONFIG.SHOT_DEFLECT_RADIUS);
-          if (deflector && Math.random() < SET_PIECE_CONFIG.OFF_TARGET_CORNER_CHANCE) cornerSource = 'deflection';
+          if (deflector && matchRandom() < SET_PIECE_CONFIG.OFF_TARGET_CORNER_CHANCE) cornerSource = 'deflection';
         }
         if (cornerSource) {
           const goalLineX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
@@ -4967,14 +4986,14 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
           const hGoalX = updatedHolder.attackDir === 1 ? PITCH_LENGTH : 0;
           if (Math.abs(hGoalX - updatedHolder.x) <= SET_PIECE_CONFIG.TACKLE_CORNER_DEPTH
             && (updatedHolder.y < GOAL_Y_MIN || updatedHolder.y > GOAL_Y_MAX)
-            && Math.random() < SET_PIECE_CONFIG.TACKLE_CORNER_CHANCE) {
+            && matchRandom() < SET_PIECE_CONFIG.TACKLE_CORNER_CHANCE) {
             const exitX = hGoalX === 0 ? -1 : PITCH_LENGTH + 1;
             const r = resolveOOBSetPiece(s, 'corner', updatedHolder.team, exitX, updatedHolder.y, tackler.id, 'clearance', 'tackle');
             return { ...r, state: rollContactInjuries(r.state, [tackler.id, updatedHolder.id], matchMinute(r.state)), tackled: true };
           }
           // Won by the touchline: it goes off the tackler for a throw-in sometimes.
           const edge = Math.min(updatedHolder.y, PITCH_WIDTH - updatedHolder.y);
-          if (edge <= SET_PIECE_CONFIG.TACKLE_THROW_DEPTH && Math.random() < SET_PIECE_CONFIG.TACKLE_THROW_CHANCE) {
+          if (edge <= SET_PIECE_CONFIG.TACKLE_THROW_DEPTH && matchRandom() < SET_PIECE_CONFIG.TACKLE_THROW_CHANCE) {
             const exitY = updatedHolder.y < PITCH_WIDTH / 2 ? -1 : PITCH_WIDTH + 1;
             const r = resolveOOBSetPiece(s, 'throw_in', updatedHolder.team, updatedHolder.x, exitY, tackler.id, 'clearance');
             return { ...r, state: rollContactInjuries(r.state, [tackler.id, updatedHolder.id], matchMinute(r.state)), tackled: true };
@@ -5359,7 +5378,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     // Enforce only at the moment the receiver would touch the ball (t=1).
     // The assistant may miss it (`var.md`): play goes on, a goal soon after is checked by the VAR.
     let flagged = activePass.receiverOffside;
-    if (flagged && refereeErrs(s, 'missed_offside', Math.random)) {
+    if (flagged && refereeErrs(s, 'missed_offside', matchRandom)) {
       s = missOffside(s, receiver, { x: receiver.x, y: receiver.y }, activePass.offsideLineX);
       flagged = false;
     }
@@ -5410,7 +5429,7 @@ export function tickState(state: GameState, dt: number, passSpeed = 0.85): TickR
     // Played to the feet by the touchline: a heavy touch runs out for a throw-in to the other side.
     const passEdge = Math.min(receiver.y, PITCH_WIDTH - receiver.y);
     if (!activePass.fromSetPiece && passEdge <= SET_PIECE_CONFIG.PASS_OUT_EDGE
-      && Math.random() < SET_PIECE_CONFIG.PASS_OUT_CHANCE * (1 - SET_PIECE_CONFIG.PASS_OUT_TOUCH * receiver.runtimeStats.withBall.firstTouch)) {
+      && matchRandom() < SET_PIECE_CONFIG.PASS_OUT_CHANCE * (1 - SET_PIECE_CONFIG.PASS_OUT_TOUCH * receiver.runtimeStats.withBall.firstTouch)) {
       gameBus.emit('passFailed', { player: activePass.fromId, toId: activePass.toId! });
       const exitY = receiver.y < PITCH_WIDTH / 2 ? -1 : PITCH_WIDTH + 1;
       return resolveOOBSetPiece({ ...s, pass: null }, 'throw_in', receiver.team === 'A' ? 'B' : 'A', receiver.x, exitY, receiver.id, 'clearance');

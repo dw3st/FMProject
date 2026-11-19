@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState } from "@/GameEngine/Domain/gameState";
@@ -20,7 +21,7 @@ const f = formation433Json as Formation;
 /** Builds the state with the same pre-match random rolls every time. */
 function build(home: RosterPlayer[], away: RosterPlayer[]) {
   const rng = mulberry32(42);
-  const spy = spyOn(Math, "random").mockImplementation(rng);
+  const spy = spyMatchRandom().mockImplementation(rng);
   try {
     return createMatchState(home, f, away, f);
   } finally {

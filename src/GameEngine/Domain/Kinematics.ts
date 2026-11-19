@@ -3,7 +3,7 @@
  * accelerates toward his top speed (the speed the engine computes for his action), brakes to arrive at his target
  * instead of stopping dead, never overshoots it, and loses top speed on a sharp turn.
  *
- * Units: yards, yards per second, seconds. No `Math.random`, no state.
+ * Units: yards, yards per second, seconds. No randomness, no state.
  */
 import { KINEMATICS_CONFIG, M_PER_YD, type KinematicsConfig } from "@/GameEngine/Configs/KinematicsConfig";
 

@@ -14,6 +14,8 @@ alwaysApply: false
 - `GameState` (`types.ts`) is plain data: no Pixi, no DOM, no React
 - State updates are pure functions (`tickState`, `startPass`, …) in `Domain/gameState.ts`
 - Pass targeting always filters by `team`; never pass to opponents
+- **No `Math.random` in the engine.** Every draw is `matchRandom()` (`Infrastructure/MatchRng.ts`); see
+  "Seeded match generator" below
 
 ## Files
 | Folder | Files |
@@ -21,8 +23,25 @@ alwaysApply: false
 | root | `types.ts` (GameState, GamePlayer, PlayerStats, SetPiece…), `FormationSlots.ts`, `PlayerDevelopment.ts` (DP model) |
 | `Domain/` | `gameState.ts` (state factory + tick, executes decisions), `DecisionTree.ts` (every player choice), `CarryLaneEval.ts`, `PassLanes.ts`, `ThroughBallCells.ts`, `Aerial.ts`, `OffBallMovement.ts`, `DefensivePositioning.ts`, `AttackingPositioning.ts`, `Positioning.ts`, `PositionalAwareness.ts`, `Offside.ts`, `Fouls.ts`, `SetPieces.ts` / `SetPieceLayouts.ts` / `SetPiecePositioning.ts`, `IntentDetection.ts`, `AiSubstitution.ts`, `TeamLineup.ts` (roster attributes → engine stats), `RuntimeLineup.ts` (fatigue, energy), `roleEngineData.ts` (per-role tuning from `roles.json`), `SimulateMatch.ts` (headless match), `Statistics.ts`, `PlayerRating.ts`, `advanceSim.ts`, `pitch.ts`, `Kinematics.ts` (acceleration, braking, turning; `kinematics.md`), `Movement.ts` (back line, second presser, short support, anticipation, shot-block geometry; `movement.md`) |
 | `Configs/` | One tunable constant set per system: Attack (team pass/carry weights per tactic), Carry, Pass, Defense, DefensiveIntent, OffBall, Intent, ThroughBall, Aerial, Foul, SetPiece, Penalty, Familiarity, PlayerRating, QuickSim, Keeper (`keeper.md`), Kinematics (`kinematics.md`), Cohesion (`defensive-position.md`), Movement (`movement.md`) |
-| `Infrastructure/` | `ActionOutcomes.ts` (every dice roll: shot, save, tackle, interception, dribble, duels), `EventBus.ts`, `CrowdGrid.ts`, `SpatialEvaluation.ts`, `PenaltyShootout.ts` |
-| `Support/` | `DebugLog.ts`, `DebugSubscriber.ts`, `TestCases.ts` (`/test` scenarios) |
+| `Infrastructure/` | `ActionOutcomes.ts` (every dice roll: shot, save, tackle, interception, dribble, duels), `MatchRng.ts` (the seeded generator), `EventBus.ts`, `CrowdGrid.ts`, `SpatialEvaluation.ts`, `PenaltyShootout.ts` |
+| `Support/` | `DebugLog.ts`, `DebugSubscriber.ts`, `TestCases.ts` (`/test` scenarios), `spyMatchRandom.ts` (tests: force the generator) |
+
+## Seeded match generator (engine rebuild stage 0)
+- `Infrastructure/MatchRng.ts`: mulberry32 whose whole state is one uint32. `createMatchState(..., seed)` loads the
+  seed (absent: `newMatchSeed()`, the only `Math.random` call) and stores `GameState.seed` and `GameState.rng`;
+  every tick (`tickState`) loads `state.rng` first and writes the advanced value into the state it returns, so ticks
+  of different matches can interleave. Same seed and inputs → same match (`MatchRng.test.ts`).
+- Covered: outcomes (`ActionOutcomes.ts`), decisions, fouls and cards (`cardRoll`), VAR and referee errors, in-match
+  injuries (`rollSeverity(matchRandom)`), set pieces, penalties and shoot-outs, stoppage time, the pre-match buffs
+  (`computeBuffedStats(..., matchRandom)`). Not covered (outside the engine): the quickSim (own `rng`), the day
+  advance's post-match rolls, the UI's own draws (manager complaint, assistant orders, the 2D penalty AI choice).
+- Seeds: `simulateMatch(..., { seed })` (result `.seed`), `buildLiveMatchState({ seed })` (live match: drawn), the
+  head-to-head worker gets one drawn by the room (`h2hRooms.startMatch`). A script that replaces `Math.random`
+  with a seeded one stays reproducible (the default seed comes from it).
+- A draw made outside a tick (a `/test` command, a UI substitution) uses the generator as the last tick left it:
+  deterministic, but not saved into the state. Module-level caches (intent hysteresis, team configs) are still outside
+  `GameState`: a mid-match clone does not replay exactly until they move into the state (stage 19).
+- Tests force the generator with `spyMatchRandom()` (same API as `spyOn(Math, "random")`) or `forceMatchRandom`.
 
 ## Decision ownership
 - **All player-level choices** belong in `DecisionTree.ts` (`decide()`); `gameState.ts` only

@@ -12,6 +12,7 @@ import { clamp } from '@/Domain/math';
 import { temperamentFoulMult, temperamentRedMult, temperamentYellowMult } from '@/Domain/personality/personality';
 import { refereeFoulMult, refereeRedMult, refereeYellowMult } from '@/Domain/referees/strictness';
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
+import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
 
 /** `tackle` = tackle attempt, `dribble` = 1v1 dribble duel, `duel` = contested loose ball, `aerial` = aerial duel. */
 export type FoulKind = 'tackle' | 'dribble' | 'duel' | 'aerial';
@@ -99,7 +100,7 @@ function cardTemper(mult: (t: number) => number, t: number | undefined): number 
 }
 
 /** Card for a foul: straight red rolled first (one `rng()` draw), then yellow (a second draw). */
-export function cardRoll(ctx: CardContext, rng: () => number = Math.random): CardRollResult {
+export function cardRoll(ctx: CardContext, rng: () => number = matchRandom): CardRollResult {
   const behind = ctx.angle === 'behind';
   const yellowChance = clamp(
     C.YELLOW_BASE

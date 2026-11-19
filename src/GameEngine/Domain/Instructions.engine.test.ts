@@ -1,4 +1,5 @@
-import { describe, expect, spyOn, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import {
@@ -178,7 +179,7 @@ describe("man-marking", () => {
     // the engine keeps between ticks (cached defensive intents) must not leak into the next match — it made
     // this test depend on the test files run before it.
     simulateMatch(loadSquad("40.json"), loadSquad("33.json"), F433, F433);
-    const spy = spyOn(Math, "random").mockImplementation(mulberry32(MARK_SEED));
+    const spy = spyMatchRandom().mockImplementation(mulberry32(MARK_SEED));
     let result: ReturnType<typeof run>;
     try {
       for (let i = 0; i < 5; i++) run();

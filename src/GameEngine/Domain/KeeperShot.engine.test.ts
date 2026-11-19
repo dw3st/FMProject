@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { forceMatchRandom } from '@/GameEngine/Infrastructure/MatchRng';
 import { ballMeetsKeeper, shotInterceptPoint } from "@/GameEngine/Domain/Keeper";
 import { createMatchState, tickState } from "@/GameEngine/Domain/gameState";
 import { readFileSync } from "fs";
@@ -30,8 +31,7 @@ function shooting(gkX: number, gkY: number): { s: GameState; gkId: number; shoot
     gkId: gk.id, shooterId: shooter.id,
   };
 }
-const realRandom = Math.random;
-afterEach(() => { Math.random = realRandom; });
+afterEach(() => { forceMatchRandom(null); });
 
 function run(state: GameState): { end: GameState; flightTicks: number; goal: boolean } {
   let s = state;
@@ -56,7 +56,7 @@ describe("keeper and the shot", () => {
   });
 
   test("an advanced keeper who saves stops the ball where he is, before the line", () => {
-    Math.random = () => 0.999;
+    forceMatchRandom(() => 0.999);
     const { s, gkId } = shooting(10, 37);
     const { end, goal } = run(s);
     expect(goal).toBe(false);
@@ -67,20 +67,20 @@ describe("keeper and the shot", () => {
   });
 
   test("a shot he does not stop flies on past him and is a goal, with no second roll", () => {
-    Math.random = () => 0;
+    forceMatchRandom(() => 0);
     const { s } = shooting(10, 37);
     const first = run(s);
     expect(first.goal).toBe(true);
   });
 
   test("on target and out of his reach: goal, even with a roll that would be a save", () => {
-    Math.random = () => 0.999;
+    forceMatchRandom(() => 0.999);
     const { s } = shooting(10, 70);
     expect(run(s).goal).toBe(true);
   });
 
   test("off target: no save, no goal", () => {
-    Math.random = () => 0;
+    forceMatchRandom(() => 0);
     const { s } = shooting(1, 37);
     const off = { ...s, shot: { ...s.shot!, toY: 50 } };
     expect(run(off).goal).toBe(false);

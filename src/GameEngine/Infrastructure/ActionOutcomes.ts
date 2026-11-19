@@ -6,7 +6,7 @@
  *
  * Rules:
  *   - Pure functions only — no state mutation, no side-effects.
- *   - Randomness is allowed (Math.random) but all probability formulas
+ *   - Randomness is allowed (matchRandom) but all probability formulas
  *     must be co-located here, never scattered in gameState.ts.
  *   - Imports ONLY from types.ts (same rule as DecisionTree).
  */
@@ -24,6 +24,7 @@ import {
   GOAL_Y_MAX,
 } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
+import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
 import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
 
 export const SHOT_SPEED      = 2.0;
@@ -94,7 +95,7 @@ export function computeShotAim(shooter: GamePlayer, opts: { keeperOut?: boolean;
   const spread    = (GOAL_Y_MAX - GOAL_Y_MIN) * (1 - shootAccuracy) * range * (opts.keeperOut ? SHOT_AIM.OPEN_GOAL : 1);
   const aimCenter = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
   const halfRange = (GOAL_Y_MAX - GOAL_Y_MIN) / 2 + spread;
-  const toY       = aimCenter + (Math.random() * 2 - 1) * halfRange;
+  const toY       = aimCenter + (matchRandom() * 2 - 1) * halfRange;
 
   return { toX, toY };
 }
@@ -289,7 +290,7 @@ export function resolveShot(
   const fromGoalLine = Math.abs(shot.toX - shot.fromX);
   const weather = !shot.header && fromGoalLine > LONG_SHOT_DISTANCE ? longShotMult : 1;
   const goalChance = clamp(shot.xg * shooterEffect * gkEffect * weather * SHOT_AIM.CONVERSION, 0, 1);
-  return { isGoal: Math.random() < goalChance, goalChance, inPosts };
+  return { isGoal: matchRandom() < goalChance, goalChance, inPosts };
 }
 
 // ── Tackle ───────────────────────────────────────────────────────────────────
@@ -334,7 +335,7 @@ export function resolveDribble(attacker: GamePlayer, defender: GamePlayer, press
   // Weak-vs-weak ≈ 50/50; the 0.85 keeps the attacker's slight initiative edge.
   const defenderScore = defender.runtimeStats.withoutBall.tackling * 0.85;
   const winProb = attackerScore / (attackerScore + defenderScore + 0.001); // guard div/0
-  return { attackerWins: Math.random() < winProb, winProb };
+  return { attackerWins: matchRandom() < winProb, winProb };
 }
 
 // ── Loose-ball duel (through balls) ───────────────────────────────────────────
@@ -381,7 +382,7 @@ export function resolveLooseBallDuel(
   const sA = score(a, true);
   const sB = score(b, false);
   const probA = sA / (sA + sB + 0.001);
-  return { winnerId: Math.random() < probA ? a.id : b.id, probA };
+  return { winnerId: matchRandom() < probA ? a.id : b.id, probA };
 }
 
 // ── Aerial duel / goalkeeper claim (`aerial.md`) ─────────────────────────────
@@ -401,7 +402,7 @@ export function resolveAerialDuel(
   a: GamePlayer,
   b: GamePlayer,
   point: { x: number; y: number },
-  rng: () => number = Math.random,
+  rng: () => number = matchRandom,
   /** Multiplies `b`'s score — the set defender at a set-piece delivery (`set-pieces-play.md`). */
   bMult = 1,
 ): AerialDuelResult {
@@ -499,13 +500,13 @@ export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingL
   // A holder shielding the ball (`HolderMoves.ts`) holds off the challenge by his strength (0 = no shield).
   const shield  = 1 - shieldResist * holderStrength;
   const chance  = Math.max(0, Math.min(1, (base + angleMod + pressBonus) * dribbleReduction * TACKLE_SUCCESS_SCALE * shield));
-  const success = Math.random() < chance;
+  const success = matchRandom() < chance;
   return { success, chance };
 }
 
 /** A chip over an advanced keeper (`HolderMoves.ts`): decided at the strike. */
 export function resolveChip(chance: number): boolean {
-  return Math.random() < chance;
+  return matchRandom() < chance;
 }
 
 /**
@@ -515,7 +516,7 @@ export function resolveChip(chance: number): boolean {
 export function resolveRoundKeeper(attackerSkill: number, keeper: GamePlayer, base: number): { wins: boolean; winProb: number } {
   const a = attackerSkill + base;
   const winProb = a / (a + smotherBase(keeper) + 0.001);
-  return { wins: Math.random() < winProb, winProb };
+  return { wins: matchRandom() < winProb, winProb };
 }
 
 // ── Interception ─────────────────────────────────────────────────────────────
@@ -548,7 +549,7 @@ export function resolveInterception(
   // A 10/10 passer (passerSkill=1) reduces the final chance by 40%
   const passerFactor = 1 - passerSkill * 0.4;
   const chance       = baseChance * distFactor * passerFactor;
-  const success      = Math.random() < chance;
+  const success      = matchRandom() < chance;
   return { success, chance };
 }
 
@@ -557,18 +558,18 @@ export function resolveInterception(
 /** A long pass to feet miscontrolled: chance = base × lengthFactor × (1 − firstTouch). */
 export function resolveHeavyTouch(lengthFactor: number, firstTouch: number): boolean {
   const chance = MOVEMENT.HEAVY_TOUCH_BASE * clamp(lengthFactor, 0, 1) * (1 - clamp(firstTouch, 0, 1));
-  return chance > 0 && Math.random() < chance;
+  return chance > 0 && matchRandom() < chance;
 }
 
 /** A successful interception that deflects the ball loose instead of controlling it. */
 export function resolveDeflection(): boolean {
-  return Math.random() < MOVEMENT.DEFLECT_SHARE;
+  return matchRandom() < MOVEMENT.DEFLECT_SHARE;
 }
 
 /** Direction (unit vector) turned by a uniform angle in ±maxDeg. */
 export function scatterDirection(dx: number, dy: number, maxDeg: number): { x: number; y: number } {
   const len = Math.hypot(dx, dy) || 1;
-  const a = (Math.random() * 2 - 1) * (maxDeg * Math.PI) / 180;
+  const a = (matchRandom() * 2 - 1) * (maxDeg * Math.PI) / 180;
   const ux = dx / len, uy = dy / len;
   return { x: ux * Math.cos(a) - uy * Math.sin(a), y: ux * Math.sin(a) + uy * Math.cos(a) };
 }
@@ -576,12 +577,12 @@ export function scatterDirection(dx: number, dy: number, maxDeg: number): { x: n
 /** A defender on the shot line blocks it: chance = base × (1 − perp / width). */
 export function resolveShotBlock(perp: number): boolean {
   const chance = MOVEMENT.SHOT_BLOCK_BASE * Math.max(0, 1 - perp / MOVEMENT.SHOT_BLOCK_WIDTH);
-  return chance > 0 && Math.random() < chance;
+  return chance > 0 && matchRandom() < chance;
 }
 
 /** Speed of a blocked shot's rebound (yd/s). */
 export function reboundSpeed(): number {
-  return MOVEMENT.SHOT_REBOUND_MIN + Math.random() * (MOVEMENT.SHOT_REBOUND_MAX - MOVEMENT.SHOT_REBOUND_MIN);
+  return MOVEMENT.SHOT_REBOUND_MIN + matchRandom() * (MOVEMENT.SHOT_REBOUND_MAX - MOVEMENT.SHOT_REBOUND_MIN);
 }
 
 // ── Holder mind dice (`decisions.md` → phase 3) ──────────────────────────────
@@ -593,20 +594,20 @@ export type MoodBand = 'good' | 'normal' | 'bad';
  * U1·U2·(a + plus) in a bad one. Raw (not floored): the caller applies the form window (lapse or floor at 1).
  */
 export function mentalRoll(a100: number, mood: MoodBand, plus: number): number {
-  const u = mood === 'good' ? Math.max(Math.random(), Math.random())
-    : mood === 'bad' ? Math.random() * Math.random()
-    : Math.random();
+  const u = mood === 'good' ? Math.max(matchRandom(), matchRandom())
+    : mood === 'bad' ? matchRandom() * matchRandom()
+    : matchRandom();
   return u * (a100 + plus);
 }
 
 /** A standard normal draw (Box–Muller, two uniforms). */
 export function gaussianDraw(): number {
-  const u = Math.max(1e-12, Math.random());
-  const v = Math.random();
+  const u = Math.max(1e-12, matchRandom());
+  const v = matchRandom();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
 /** The score multiplier of one option during a lapse: U(min, 1). */
 export function lapseScale(min: number): number {
-  return min + (1 - min) * Math.random();
+  return min + (1 - min) * matchRandom();
 }

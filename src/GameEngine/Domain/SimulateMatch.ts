@@ -57,6 +57,8 @@ export function matchInjuryMults(
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface MatchResult {
+  /** Seed the match was played with (replays it with `options.seed`). */
+  seed:          number;
   score:         { A: number; B: number };
   teamStats:     { A: TeamStats; B: TeamStats };
   playerStats:   Map<number, MatchPlayerStats>;
@@ -77,6 +79,8 @@ export interface MatchResult {
 }
 
 export interface SimulateMatchOptions {
+  /** Seed of the match generator (`Infrastructure/MatchRng.ts`): same seed and inputs → same match. Absent = drawn. */
+  seed?: number;
   /** Step in real-seconds (default `SIM_DT` 0.2). Measurements only: the live match steps `advanceSim`'s 1/60. */
   simDt?: number;
   /** Knockout: a draw after 90' goes to extra time and penalties. */
@@ -275,7 +279,7 @@ export function simulateMatch(
 
   // Build state — skip preMatch presentation so the loop starts in firstHalf
   let s: GameState = {
-    ...createMatchState(squadA.players, formationA, squadB.players, formationB, lineupA, lineupB, matchInjuryMults(squadA, squadB, options)),
+    ...createMatchState(squadA.players, formationA, squadB.players, formationB, lineupA, lineupB, matchInjuryMults(squadA, squadB, options), options.seed),
     matchPhase:            'firstHalf',
     presentationCountdown: 0,
     knockout:              options.knockout === true,
@@ -328,6 +332,7 @@ export function simulateMatch(
   }
 
   return {
+    seed:          s.seed!,
     score:         s.score,
     teamStats:     { A: getTeamStats('A'), B: getTeamStats('B') },
     playerStats:   getAllPlayerStats(),
