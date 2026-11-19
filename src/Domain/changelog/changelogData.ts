@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.27",
+    date: "2026-11-19",
+    time: "23:00",
+    items: [
+      { tab: "match", pt: "A bola agora rola: o passe forte demais pode sair pela linha, o domínio pode escapar, a bola desvia em quem corta e o chute pode bater no zagueiro.", en: "The ball now rolls: a pass hit too hard can go out, a first touch can get away, the ball deflects off whoever blocks it and a shot can hit a defender." },
+      { tab: "match", pt: "Defesa mais organizada: a linha sobe e recua junta, o segundo marcador fica de longe fechando o caminho e um companheiro vem curto quando quem tem a bola está apertado.", en: "A better organised defence: the line steps up and drops together, the second presser stays off closing the route and a teammate comes short when the man on the ball is pressed." },
+      { tab: "match", pt: "Quem antecipa bem chega antes na bola, e as jogadas novas (proteger, cortar para dentro, tocar de primeira, cobertura, driblar o goleiro) aparecem mais.", en: "Players who read the game get to the ball first, and the new moves (shield, cut inside, lay-off, chip, round the keeper) happen more often." },
+    ],
+  },
+  {
     version: "12.26",
     date: "2026-11-19",
     time: "08:24",
@@ -6698,7 +6708,8 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Movimento sem bola mais real: linha de defesa, segunda marcação, apoio curto e bola rolando para fora", en: "More realistic off-ball movement: defensive line, second presser, short support and the ball running out of play" },
+  { pt: "Partida mais parecida com a real: passe longo errando mais, pressão mais calma, o time subindo e descendo junto", en: "A match closer to the real thing: long passes failing more, calmer pressing, the team moving up and down together" },
+  { pt: "Táticas novas: forma com e sem a bola, transições, linha de pressão e mais instruções", en: "New tactics: in and out of possession shapes, transitions, line of engagement and more instructions" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];
