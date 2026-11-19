@@ -176,3 +176,21 @@ Sem qualidade do árbitro nenhum sorteio novo. Ver `.claude/rules/game/var.md`.
 `FoulContext.discipline` / `CardContext.discipline` (o atributo 1..20 do técnico do time do infrator, `GameState.managerDiscipline`,
 só o clube do jogador): falta, amarelo e vermelho direto × (1 − 5% t); 10 / ausente = exatamente o de antes. Log `discMult`.
 Ver `.claude/rules/game/achievements.md`.
+
+## Faltas do FM (etapa 13 da reforma do motor, `FM_FOULS`)
+
+- **Contato no portador** (`FoulKind` `contact`, `contactFoul` em `gameState.ts`, `FOUL_CONFIG.FM`): num tick sem
+  desarme, um adversário fora de recuperação a até 1,6 jd do portador "se apoia" nele: momentos de contato a 0,25 por
+  segundo de jogo (× 1 conduzindo, × 1,2 logo depois de receber, × 0,7 segurando / girando), cada um é um teste de
+  falta de base 0,35 com os multiplicadores de sempre (ângulo real, agressividade, técnica, fôlego, área…). Em 14% das
+  vezes quem comete é o portador (FM: a condução ou o segurar do time que fez a falta, R8). Evento `contactFoul`.
+- **Contexto e terço:** o evento `foul` leva `third` (0 próprio, 1 meio, 2 último, do ponto de vista de quem sofreu)
+  e `context` (`carry`, `reception`, `hold`, `loose`, `aerial`, `off_ball`). `Statistics.ts`: `foulsWonOwnThird /
+  MidThird / FinalThird`, `foulsWonCarrying / Receiving / Holding` (de quem sofreu), `contactFouls` (de quem cometeu).
+- **Cartão por falta do FM** (`cardRoll({ fm, promising })`): amarelo = 0,13 × 1,5 por trás × 2 quando para um ataque
+  promissor (`isPromisingAttack`: quem sofreu com a bola, a até 45 jd do gol que ataca, o infrator no nível dele ou
+  atrás); 0,13 = 0,16 do FM (R9) sobre a severidade de uma mistura suposta (25% por trás, 15% parando ataque). Chance
+  clara, cartão anterior, temperamento, árbitro e técnico multiplicam como antes; o vermelho não mudou.
+- `/test`: cenário `contact-foul-carrier`, colunas FW (faltas sofridas) e o log "foul" com contexto e terço. `/lab`:
+  "Contact fouls", "Fouls won own / mid / final 3rd%", "Fouls on carrier%".
+- Sem calibrar (etapa 21). Números: `fm-numbers.md` → "Stage 13".

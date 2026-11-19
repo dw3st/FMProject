@@ -477,6 +477,25 @@ export interface GamePlayer {
   mental?: PlayerMental;
   /** The holder mind's rolls and noise, held for `HOLDER_MIND.WINDOW_TICKS` while he keeps the ball. Absent off the ball. */
   decisionNoise?: HolderMindState;
+  /** His last read of the offside line (stage 13, `Domain/OffsideRuns.ts`). Absent = reads the true line every tick. */
+  lineRead?: LineRead;
+}
+
+/** An attacker's read of the offside line (`Domain/OffsideRuns.ts`). */
+export interface LineRead {
+  /** The true line when he read it. */
+  lineX: number;
+  /** Yards he stands past where he should (negative = deeper). */
+  err: number;
+  /** matchTime of the next read. */
+  nextAt: number;
+  /** This read is a lapse (he forgot the line). */
+  lapse: boolean;
+  /** matchTime of the read, the line's speed since the previous read (yd per game second) and how much of that
+   *  movement he projects (anticipation 0..1). Absent on hand-built reads = no projection. */
+  at?: number;
+  vel?: number;
+  look?: number;
 }
 
 /** A player's mental profile in a match (`GamePlayer.mental`). */

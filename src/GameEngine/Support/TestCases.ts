@@ -1103,6 +1103,59 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'offside-mistimed-run',
+    name:        '11v11 — Mistimed run (offside, stage 13)',
+    description: 'Team A CM has the ball on the halfway line; the Team A ST has misread the offside line (a lapse: he believes it is 3 yd deeper than it is, `OffsideRuns.ts`) and runs past it. A pass to him is flagged offside. Watch the "offside" debug log (misreads, the call), the OFF column and the line-misread count.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cm = base.players.find(p => p.team === 'A' && p.role === 'CM');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cm || !st) return base;
+      const dir = cm.attackDir;
+      const mid = PITCH_LENGTH / 2;
+      const lineX = mid + dir * 22;
+      const placed: GameState = {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cm.id,
+        players: base.players.map(p => {
+          if (p.id === cm.id) return { ...p, x: mid, y: 37 };
+          if (p.id === st.id) return { ...p, x: lineX - dir * 0.5, y: 34, lineRead: { lineX, err: 3, nextAt: 1e9, lapse: true } };
+          if (p.team === 'B' && (p.role === 'CB' || p.role === 'LB' || p.role === 'RB')) return { ...p, x: lineX, y: p.y };
+          return p;
+        }),
+      };
+      return placed;
+    },
+  },
+
+  {
+    id:          'contact-foul-carrier',
+    name:        '11v11 — Contact foul on a carrier (stage 13)',
+    description: 'Team A RW carries down the right with a Team B LB 1.2 yd off his shoulder. Contact moments (`FOUL_CONFIG.FM.CONTACT_RATE` per second) are foul checks of kind "contact" on the carrier (`fouls.md` → "FM fouls"). Watch the "foul" debug log (context carry, third) and the FL column.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const rw = base.players.find(p => p.team === 'A' && p.role === 'RW');
+      const lb = base.players.find(p => p.team === 'B' && p.role === 'LB');
+      if (!rw || !lb) return base;
+      const dir = rw.attackDir;
+      const x = PITCH_LENGTH / 2 + dir * 15;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: rw.id,
+        players: base.players.map(p =>
+          p.id === rw.id ? { ...p, x, y: 64 } :
+          p.id === lb.id ? { ...p, x: x - dir * 0.9, y: 63.2 } : p),
+      };
+    },
+  },
+
+  {
     id:          'var-penalty',
     name:        '11v11 — VAR: phantom penalty overturned',
     description: 'Team B CB challenges Team A ST in the box cleanly, but the referee (quality 30, VAR on) gives a penalty (forced `phantom_penalty`). The VAR check freezes play for 3 s and rules it out: indirect free kick to Team B. Watch the "var" debug log and the EnergyPanel referee line (`.claude/rules/game/var.md`).',

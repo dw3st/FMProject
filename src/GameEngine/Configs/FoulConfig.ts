@@ -13,6 +13,7 @@ export const FOUL_CONFIG = {
   DRIBBLE_BASE: 0.55,
   /** Base foul chance for a contested loose-ball duel. */
   DUEL_BASE: 0.4,
+  /** Base foul chance of a contact moment on the holder (stage 13): `FM.CONTACT_BASE`. */
   /** Base foul chance for an aerial duel (`.claude/rules/game-engine/aerial.md`) — either player may be the offender. */
   AERIAL_BASE: 0.06,
   /** Multiplier when the tackle itself won the ball — most fouls come from mistimed (failed) challenges. */
@@ -79,4 +80,28 @@ export const FOUL_CONFIG = {
   PENALTY_COUNTDOWN: 2.0,
   /** Penalty spot distance from the goal line (yards). */
   PENALTY_SPOT_DIST: 12,
+
+  // ── FM fouls (stage 13 of the engine rebuild, `FM_FOULS` flag, `fouls.md` → "FM fouls") ──────────────────────
+  FM: {
+    /** Contact foul (`contact`): an opponent this close (yd) to the holder, out of recovery, leans on him. */
+    CONTACT_RANGE: 1.6,
+    /** Contact moments per second of play while somebody is that close. Each one is a foul check of kind `contact`. */
+    CONTACT_RATE: 0.25,
+    /** Base foul chance of a contact moment (then the usual angle, aggression, technique, energy… multipliers). */
+    CONTACT_BASE: 0.35,
+    /** × on the contact rate by what the holder is doing: carrying at speed, just received, holding / turning. */
+    CONTEXT_MULT: { carry: 1, reception: 1.2, hold: 0.7 },
+    /** Share of the contact fouls committed by the holder on the man leaning on him (FM: the fouling team's own
+     *  carry or hold, 14% of the fouls, R8). */
+    HOLDER_OFFENDER_SHARE: 0.14,
+    /** FM card per foul (R9: 0.16 yellow per foul). The yellow chance is YELLOW_BASE × severity; severity = 1 for a
+     *  plain foul, × BEHIND_MULT from behind, × PROMISING_MULT when it stops a promising attack. YELLOW_BASE is
+     *  0.16 over the severity of an assumed foul mix (25% from behind, 15% stopping an attack): 0.16 / 1.24. */
+    YELLOW_BASE: 0.13,
+    BEHIND_MULT: 1.5,
+    PROMISING_MULT: 2.0,
+    /** A promising attack: the fouled player on the ball, at most this far from the goal he attacks, past the
+     *  offender (the offender is level or behind). */
+    PROMISING_DIST: 45,
+  },
 } as const;
