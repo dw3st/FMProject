@@ -223,3 +223,7 @@ lay-off 3.0, chip 1.5, round 1.3) and the M4 effect to +5.8 pp with the anticipa
   an existing pose (`movement.md` § 6); the AI never reacts to a shielding holder.
 - Shot pressure reads the shooter's last holder decision (set-piece shots and shots after a foul have none).
 - Entropy depends on the bucket grid; compare runs only with the same `PRESSURE_HIGH` and channel split.
+
+## FM numbers (stage 4b)
+
+With `ACTION_CADENCE` the holder decides per action (2.2 yd carry steps, hold, turn), interrupted by a closing opponent or near goal; `SHOT_LIMIT` removes shots beyond 33 yd. Flags and numbers in `fm-numbers.md`.

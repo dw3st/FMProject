@@ -149,3 +149,7 @@ lay-off 1.3 gave 5.2 and 5.5 (each move's frequency is steep in its weight); cut
   same for everyone).
 - Heavy touch and deflection share one loose-ball model with the through ball (deceleration, chasers); no spin or bounce
   height.
+
+## FM numbers (stage 4b)
+
+Stage 4b adds a sliding block (shape up behind the ball in possession, dropped out of it), calm pressing (press intent scaled by the holder third, shape shift toward the ball), short movement steps (DEF 4.4 / MID 6 / FWD 7 yd) and intent hysteresis. See `fm-numbers.md`.

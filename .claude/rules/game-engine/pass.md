@@ -528,3 +528,7 @@ quickSim has no build_up/style effect on goals (it uses team strength only), so 
 800 jogos por liga; antes = main 6.2.2): Premier 2,250 → 2,243 gols (−0,3%), 5,40 → 5,46 chutes (+1,1%); Championship
 1,779 → 1,774 gols (−0,3%), 4,90 → 5,15 chutes (+5,1%). Gols iguais: o quickSim (`BASE_GOALS`, `SHOTS_PER_XG`) não mudou.
 A sonda de lances (Premier, estilo equilibrado, 900 jogos) dava +8% de chutes; com as formações da IA o efeito é menor.
+
+## FM numbers (stage 4b)
+
+With `PASS_ERROR` on a pass to feet has a launch error (technique margin, distance, pressure) and can miss the receiver and run loose; beyond 30 yd it is lofted and contested; the chooser multiplies the pass quality by the estimated keep rate. See `fm-numbers.md`.
