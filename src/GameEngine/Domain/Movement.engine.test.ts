@@ -8,10 +8,11 @@ import type { GameState } from "@/GameEngine/types";
 // Stage 4 (`.claude/rules/game-engine/movement.md`): the /test scenarios show each mechanic.
 function play(id: string, seconds: number, until?: (s: GameState) => boolean): GameState {
   const sc = TEST_SCENARIOS.find(t => t.id === id)!;
-  let s: GameState = {
+  const defaults: Partial<GameState> = {
     injuries: [], cards: [], substitutions: [], pendingSubsA: [], pendingSubsB: [], benchA: [], benchB: [],
-    subsRemainingA: 5, subsRemainingB: 5, ...sc.createState(), testMode: true,
-  } as GameState;
+    subsRemainingA: 5, subsRemainingB: 5,
+  };
+  let s: GameState = { ...defaults, ...sc.createState(), testMode: true } as GameState;
   for (let i = 0; i < seconds / 0.2; i++) {
     s = tickState(s, 0.2).state;
     if (until?.(s)) break;
