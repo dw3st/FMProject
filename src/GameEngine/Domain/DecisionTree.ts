@@ -74,7 +74,7 @@ export type PlayerDecision =
   | { type: 'press';  targetId: number; standOff?: true } // withoutBall → toward the holder (standOff: second presser, stage 4)
   | { type: 'support_run';  dx: number; dy: number }   // offBall   → move into receiving position
   | { type: 'create_space'; dx: number; dy: number }   // offBall   → move away from pressure
-  | { type: 'chase_loose_ball'; toX: number; toY: number } // both → sprint to a contested loose ball
+  | { type: 'chase_loose_ball'; toX: number; toY: number; meet?: true } // both → sprint to a contested loose ball (meet: the receiver of a physical pass going to meet it)
   | { type: 'hold_shape' }                              // defending → maintain formation shape
   | { type: 'track_mark'; markTargetId: number }        // defending → track assigned mark
   | { type: 'step_into_carry_lane' }                    // defending → block carry path to goal

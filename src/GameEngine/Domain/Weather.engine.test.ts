@@ -1,3 +1,4 @@
+import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
@@ -23,7 +24,8 @@ function run(weather?: EngineWeather, seed = 7) {
   const orig = Math.random;
   Math.random = mulberry32(seed);
   try {
-    return simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], weather ? { weather } : {});
+    // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep the test fast and its tick counts as written (stage 2).
+    return simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], { ...(weather ? { weather } : {}), clockScale: LEGACY_CLOCK_SCALE });
   } finally {
     Math.random = orig;
   }
@@ -39,7 +41,7 @@ describe("weather in the engine", () => {
     expect(sunny.teamStats.A.shots).toBe(base.teamStats.A.shots);
     expect(sunny.teamStats.B.passesCompleted).toBe(base.teamStats.B.passesCompleted);
     expect(sunny.teamStats.A.avgEndEnergy).toBe(base.teamStats.A.avgEndEnergy);
-  });
+  }, 60_000);
 
   test("heat drains more energy", () => {
     // Energy spent in the first 20 ticks, same seed: too little drain to move any fatigue recompute, so both runs
@@ -54,6 +56,7 @@ describe("weather in the engine", () => {
       try {
         simulateMatch(A, B, DEFAULT_FORMATION, DEFAULT_FORMATION, [], [], {
           ...(weather ? { weather } : {}),
+          clockScale: LEGACY_CLOCK_SCALE,
           onTick: (s) => {
             const total = s.players.reduce((t, p) => t + p.energy, 0);
             if (++ticks === 1) start = total;
@@ -68,7 +71,7 @@ describe("weather in the engine", () => {
     const base = spentAt20();
     expect(base).toBeGreaterThan(0);
     expect(spentAt20("hot")).toBeGreaterThan(base);
-  });
+  }, 60_000);
 
   test("gkClaimChance takes the weather multiplier", () => {
     const gk = { runtimeStats: { withoutBall: { gkPositioning: 0.6, gkReflex: 0.6 } } } as never;

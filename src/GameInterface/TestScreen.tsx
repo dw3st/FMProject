@@ -21,6 +21,8 @@ import { QuickSimPanel } from "@/GameInterface/QuickSimPanel";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { EnergyPanel } from "@/GameInterface/EnergyPanel";
 import { FmTargetsPanel } from "@/GameInterface/FmTargetsPanel";
+import { HighlightTimeline } from "@/GameInterface/HighlightTimeline";
+import { resetHighlights } from "@/GameEngine/Domain/HighlightTracker";
 import { PossessionHeatmap } from "@/GameInterface/Components/PossessionHeatmap";
 import { createPossessionHeatmap, samplePossessionHeatmap, type PossessionHeatmap as HeatmapAcc } from "@/Domain/match/possessionHeatmap";
 import { CrowdHeatmapPanel } from "@/GameInterface/CrowdHeatmapPanel";
@@ -40,7 +42,7 @@ import "@/GameEngine/Support/DebugSubscriber";
 import "@/GameInterface/Broadcast/BroadcastSubscriber";
 import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
 import type { TestScenario } from "@/GameEngine/Support/TestCases";
-import { createMatchState, getBallPos, applyTeamInstructions, setManMarksBySlot, withReferee } from "@/GameEngine/Domain/gameState";
+import { createMatchState, getBallPos, applyTeamInstructions, setManMarksBySlot, withReferee, withClockScale, LEGACY_CLOCK_SCALE, matchMinute, clockScaleOf } from "@/GameEngine/Domain/gameState";
 import { refereeFoulMult, refereeYellowMult } from "@/Domain/referees/strictness";
 import { faceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { REFEREE_ERROR_KINDS, resolveComplaint, type RefereeErrorKind } from "@/GameEngine/Domain/Var";
@@ -109,6 +111,10 @@ const SPEEDS = [
   { label: '0.5×',  value: 0.5  },
   { label: '1×',    value: 1    },
   { label: '2×',    value: 2    },
+  { label: '4×',    value: 4    },
+  { label: '8×',    value: 8    },
+  { label: '16×',   value: 16   },
+  { label: '32×',   value: 32   },
 ];
 
 /** Familiarity values offered per team in /test (50 = neutral; `src/Domain/familiarity`). */
@@ -542,6 +548,10 @@ export function TestScreen() {
   const [resetKey, setResetKey]   = useState(0);
   const [paused, setPaused]       = useState(false);
   const [speed, setSpeed]         = useState(1);
+  /** Mode A (stage 2): the 11v11 match plays its 90 physical minutes with the periods ending (off = test mode, no whistle). */
+  const [fullMatch, setFullMatch] = useState(false);
+  /** The compressed clock of before stage 2 (`LEGACY_CLOCK_SCALE`), for comparison. */
+  const [legacyClock, setLegacyClock] = useState(false);
   /** Draw-time meter: filled by the pitch every 30 frames, read once a second. */
   const pitchPerfRef = useRef<PitchPerf | null>(null);
   const [pitchPerf, setPitchPerf] = useState<PitchPerf | null>(null);
@@ -588,6 +598,7 @@ export function TestScreen() {
   const [quickSimOpen, setQuickSimOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [fmTargetsOpen, setFmTargetsOpen] = useState(false);
+  const [highlightsOpen, setHighlightsOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
   /** Optional possession heat map (Etapa 35): filled on every emitted state, reset with the match. */
   const [heatmapOpen, setHeatmapOpen] = useState(false);
@@ -770,19 +781,21 @@ export function TestScreen() {
       A: staffOfTestSquad(SQUADS[squadA]!).injuryMult,
       B: staffOfTestSquad(SQUADS[squadB]!).injuryMult,
     });
-    let state: GameState = withTestWeather(withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc), lightWeather);
+    let state: GameState = withTestWeather(withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: !fullMatch, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc), lightWeather);
+    if (legacyClock) state = withClockScale(state, LEGACY_CLOCK_SCALE);
     for (const team of ['A', 'B'] as const) {
       state = applyTeamInstructions(state, team, instrRef.current[team]);
       state = setManMarksBySlot(state, team, manMarksRef.current[team]);
     }
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old match back
     heatmapRef.current = createPossessionHeatmap();
+    resetHighlights(state.players);
     setMatchState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
     setLivePlayer(null);
     setLiveGameState(null); // clear stale state so sidebar uses the new playerList immediately
-  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc, lightWeather]);
+  }, [squadA, squadB, formObjA, formObjB, famA, famB, moraleA, moraleB, tempA, tempB, pitch, turf, refS, refErr, varOn, mgrDisc, lightWeather, fullMatch, legacyClock]);
 
   useEffect(() => {
     setTeamMoraleOverride('A', moraleA);
@@ -793,6 +806,7 @@ export function TestScreen() {
     const state = withTestWeather(withManagerDiscipline(withTestReferee(withPitch({ ...base, testMode: true, players: applyAttrOverride(base.players, attrARef.current, attrBRef.current) }, pitch, turf), refS), mgrDisc), lightWeather);
     uiThrottleRef.current?.cancel(); // a pending delivery would bring the old scenario back
     heatmapRef.current = createPossessionHeatmap();
+    resetHighlights(state.players);
     setScenarioState(state);
     setPlayerList(state.players);
     setSelectedPlayerId(null);
@@ -1685,6 +1699,21 @@ export function TestScreen() {
           }`}>
           <Icon name="target" size={14} />Penalties 2D A
         </button>
+        <button onClick={() => setFullMatch(v => !v)} title="Mode A: the 11v11 match plays its 90 minutes and the periods end (off: test mode, no whistle)"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
+            fullMatch ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:text-foreground'
+          }`}>
+          90' match
+        </button>
+        <button onClick={() => setLegacyClock(v => !v)} title="The compressed clock of before the rebuild (game clock ×18 against the physics), for comparison"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
+            legacyClock ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:text-foreground'
+          }`}>
+          Clock ×18
+        </button>
+        <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap" title="Match clock: minute, phase and the clock scale (game-seconds per physical second)">
+          {liveGameState ? `${matchMinute(liveGameState)}' · ${liveGameState.matchPhase} · clock ×${clockScaleOf(liveGameState)}` : "—"}
+        </span>
         <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/30 p-0.5">
           {SPEEDS.map(s => (
             <button key={s.value} onClick={() => setSpeed(s.value)}
@@ -1812,6 +1841,7 @@ export function TestScreen() {
               { key: 'cohesion'              as const, label: 'Cohesion',      color: 'text-amber-300'   },
               { key: 'movement'              as const, label: 'Movement',      color: 'text-teal-300'    },
               { key: 'ball3d'                as const, label: 'Ball 3D',       color: 'text-amber-200'   },
+              { key: 'passError'             as const, label: 'Pass error',    color: 'text-cyan-300'    },
               { key: 'setPieces'             as const, label: 'Set pieces',    color: 'text-lime-300'    },
               { key: 'instructions'          as const, label: 'Instructions',  color: 'text-sky-300'     },
             ] as const
@@ -1897,6 +1927,12 @@ export function TestScreen() {
         >
           FM targets
         </button>
+        <button
+          className="px-2 py-1 text-xs border border-white/10 rounded hover:bg-white/10"
+          onClick={() => setHighlightsOpen((o) => !o)}
+        >
+          Lances
+        </button>
       </div>
       {heatmapOpen && (
         <div className="mt-2 w-72 rounded border border-white/10 p-3">
@@ -1912,6 +1948,11 @@ export function TestScreen() {
             teamColorA="#2d6cdf"
             teamColorB="#df3b2d"
           />
+        </div>
+      )}
+      {highlightsOpen && (
+        <div className="mt-2 rounded border border-white/10 overflow-hidden">
+          <HighlightTimeline gameState={liveGameState} />
         </div>
       )}
       {fmTargetsOpen && (

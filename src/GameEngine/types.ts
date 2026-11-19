@@ -580,6 +580,14 @@ export interface PassState {
   /** A lofted pass (`fm-numbers.md` → pass error): flies over the lane, contested where it lands. */
   lofted?: boolean;
   /**
+   * Stage 4 (`pass-physics.md`): the launch of a physical pass. The 3D ball leaves the passer at (vx, vy, vz) from z0
+   * (yd, yd/s), passer's error included; `T` is the expected flight to the target (s), only an estimate for the readers
+   * of `t` (the ball arrives where and when the physics takes it); (aimX, aimY) is where he meant it to go.
+   */
+  physics?: PassPhysicsLaunch;
+  /** A headed lay-off (knock-down) of a high ball (`aerial.md`). */
+  header?: boolean;
+  /**
    * Regular pass whose launch error missed the receiver's reach (`fm-numbers.md`): the ball flies to (toX, toY) and
    * runs loose from there at (vx, vy) yd/s.
    */
@@ -680,6 +688,23 @@ export interface LooseBallState {
   cause?: LooseBallCause;
 }
 
+/** Kind of pass by its launch (stage 4, `pass-physics.md`). */
+export type PassType =
+  | 'ground' | 'driven' | 'chip' | 'high'
+  | 'through_low' | 'through_high'
+  | 'cross' | 'corner' | 'long' | 'clearance' | 'header';
+
+export interface PassPhysicsLaunch {
+  vx: number; vy: number; vz: number; z0: number;
+  /** Where it was kicked from (yd). */
+  ox: number; oy: number;
+  T: number;
+  type: PassType;
+  aimX: number; aimY: number;
+  /** Launch speed |v| (yd/s) and error factor, for the statistics. */
+  speed: number;
+}
+
 /** Which part of the play the 3D ball belongs to. */
 export type BallPhase = 'held' | 'pass' | 'shot' | 'loose';
 /** Kind of flight, for the statistics (`ballFlight` event). */
@@ -705,6 +730,8 @@ export interface BallState {
   arriveZ?: number;
   /** Horizontal distance of the flight at launch (yd). */
   distance: number;
+  /** A physical pass (stage 4, `pass-physics.md`): launched with its own vector, then free physics (no guidance). */
+  free?: boolean;
   /** The phase that ended this tick (set on the tick it ended): its kind, peak and the height it ended at (yd). */
   ended?: { kind: BallFlightKind; phase: BallPhase; peak: number; z: number };
 }
@@ -840,8 +867,14 @@ export interface GameState {
 
   // ── Match flow ─────────────────────────────────────────────────────────────
   matchPhase: MatchPhase;
-  /** Game-seconds elapsed this half (advances at TIME_SCALE × real-time). */
+  /** Game-seconds elapsed this half (advances `clockScale` × the physical step). */
   matchTime: number;
+  /**
+   * Game-seconds of match clock per physical second of simulation. Absent = 1: the 90 minutes play in real physics
+   * (stage 2). `LEGACY_CLOCK_SCALE` (18) is the compressed clock of before, kept for comparisons and, provisionally,
+   * the live match until stage 19.
+   */
+  clockScale?: number;
   /** Extra game-seconds (stoppage time) for first half — set once at match start. */
   extraTimeFirst: number;
   /** Extra game-seconds (stoppage time) for second half — set once at match start. */

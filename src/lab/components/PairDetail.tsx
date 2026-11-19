@@ -134,9 +134,23 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Lofted passes", key: "avgPassesLofted" },
     { stat: "High balls (peak > 1.2 m)", key: "avgHighBalls" },
     { stat: "Ball in the air (s)", key: "avgBallAirSeconds" },
+    { stat: "Lances: main", key: "avgHighlightsMain" },
+    { stat: "Lances: extended", key: "avgHighlightsExtended" },
+    { stat: "Lances: full", key: "avgHighlightsFull" },
+    { stat: "Lance time main (% of play)", key: "highlightShareMain" },
+    { stat: "Lance time extended (%)", key: "highlightShareExtended" },
+    { stat: "Lance time full (%)", key: "highlightShareFull" },
     { stat: "Cross peak (m, FM 4.0)", key: "crossPeakM" },
     { stat: "Corner peak (m, FM 5.6)", key: "cornerPeakM" },
     { stat: "Long-ball peak (m, FM 4.4)", key: "longPeakM" },
+    { stat: "Passes along the ground (vz < 1 m/s)", key: "avgPassGround" },
+    { stat: "Driven passes (vz 1–3 m/s)", key: "avgPassDriven" },
+    { stat: "Chipped passes (vz ≥ 3 m/s)", key: "avgPassChip" },
+    { stat: "Lofted passes to feet", key: "avgPassHigh" },
+    { stat: "Through balls low", key: "avgPassThroughLow" },
+    { stat: "Through balls high", key: "avgPassThroughHigh" },
+    { stat: "Headed lay-offs", key: "avgPassHeader" },
+    { stat: "Pass launch speed (m/s)", key: "passLaunchMps" },
     { stat: "Holder holds", key: "avgHolderHolds" },
     { stat: "Holder turns", key: "avgHolderTurns" },
     { stat: "Corners",           key: "avgCorners" },
@@ -188,7 +202,9 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
           <h3 className="font-semibold">
             {labelFor(aId)} <span className="text-white/40">vs</span> {labelFor(bId)}
           </h3>
-          <div className="text-xs text-white/50">{pair.matches} matches</div>
+          <div className="text-xs text-white/50">
+            {pair.matches} matches{pair.msPerMatch !== undefined ? ` · ${(pair.msPerMatch / 1000).toFixed(1)} s/match` : ""}
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-4 text-center">
           <ResultBadge label={labelFor(aId)} pct={winA} colour="emerald" />

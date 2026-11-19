@@ -46,6 +46,17 @@ export function predictBallPoint(state: GameState, ballPos: Pt, seconds: number 
   }
 
   const pass = state.pass;
+  // A physical pass (stage 4, `pass-physics.md`): the 3D ball's own velocity (rolling friction on the ground).
+  const b = state.ball;
+  if (pass && pass.physics && b && b.phase === 'pass' && b.free) {
+    const v = Math.hypot(b.vx, b.vy);
+    if (v < 0.01) return ballPos;
+    const a = b.profile === 'ground' ? THROUGH_BALL_CONFIG.LOOSE_BALL_DECELERATION : 0;
+    const tStop = a > 0 ? v / a : seconds;
+    const t = Math.min(seconds, tStop);
+    const dist = v * t - 0.5 * a * t * t;
+    return capLead(ballPos, { x: ballPos.x + (b.vx / v) * dist, y: ballPos.y + (b.vy / v) * dist });
+  }
   if (pass) {
     const from = state.players.find(p => p.id === pass.fromId);
     if (!from || pass.distance <= 0) return ballPos;

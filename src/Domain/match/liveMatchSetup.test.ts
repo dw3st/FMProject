@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { matchMoraleOf, setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
-import { applyTeamInstructions, createMatchState, setManMarksBySlot } from "@/GameEngine/Domain/gameState";
+import { applyTeamInstructions, createMatchState, setManMarksBySlot, withClockScale, LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import type { GameState } from "@/GameEngine/types";
 import { variantsForRole } from "@/GameEngine/Configs/RoleVariantConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
@@ -110,7 +110,8 @@ describe("buildLiveMatchState", () => {
     expect(after.setPieceTakers).toEqual(before.setPieceTakers);
     expect(after.slotInstructions).toEqual(before.slotInstructions);
     expect(after.manMarks).toEqual(before.manMarks);
-    expect(after).toEqual(before);
+    // The live match keeps the compressed clock for now (stage 2): the only difference.
+    expect(after).toEqual(withClockScale(before, LEGACY_CLOCK_SCALE));
   });
 
   test("a banned manager: the assistant makes every change", () => {

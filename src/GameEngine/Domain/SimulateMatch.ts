@@ -21,7 +21,9 @@ import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import type { GameState, GamePlayer, Formation, KnockoutDecider, SetPieceTakers } from '@/GameEngine/types';
-import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans, TIME_SCALE } from '@/GameEngine/Domain/gameState';
+import { tickState, createMatchState, knockoutDecider, applyTeamInstructions, setManMarksBySlot, emitStudyPlans, clockScaleOf, withClockScale } from '@/GameEngine/Domain/gameState';
+import { getHighlights, getHighlightLiveSeconds } from '@/GameEngine/Domain/HighlightTracker';
+import type { Highlight } from '@/GameEngine/Domain/Highlights';
 import { initStats, getAllPlayerStats, getGoalLog, getTeamStats, type GoalLogEntry } from '@/GameEngine/Domain/Statistics';
 import { initRatings, getAllRatings } from '@/GameEngine/Domain/PlayerRating';
 import { evaluateAiSubstitutions, shouldCheckAiSubs } from '@/GameEngine/Domain/AiSubstitution';
@@ -75,14 +77,22 @@ export interface MatchResult {
   decider:       KnockoutDecider | null;
   /** Every goal with minute and shot position, in order (engine ids; data for the season awards). */
   goals:         GoalLogEntry[];
+  /** Highlight windows of the match (`highlights.md`), in sim seconds of live play, and the live sim seconds. */
+  highlights:    Highlight[];
+  liveSeconds:   number;
   durationMs:    number;
 }
 
 export interface SimulateMatchOptions {
   /** Seed of the match generator (`Infrastructure/MatchRng.ts`): same seed and inputs → same match. Absent = drawn. */
   seed?: number;
-  /** Step in real-seconds (default `SIM_DT` 0.2). Measurements only: the live match steps `advanceSim`'s 1/60. */
+  /** Step in physical seconds (default `SIM_DT` 0.2, the live match's `SIM_STEP`). Measurements only. */
   simDt?: number;
+  /**
+   * Game-seconds per physical second (`GameState.clockScale`). Absent = 1: the 90 minutes in real physics. Comparison
+   * runs only (`LEGACY_CLOCK_SCALE` = the compressed clock before stage 2).
+   */
+  clockScale?: number;
   /** Knockout: a draw after 90' goes to extra time and penalties. */
   knockout?: boolean;
   /** Second leg of a two-legged tie: first-leg goals per side of THIS match. */
@@ -299,6 +309,8 @@ export function simulateMatch(
         : {}),
   };
 
+  if (options.clockScale !== undefined && options.clockScale !== 1) s = withClockScale(s, options.clockScale);
+
   if (options.weather) debugLog('weather', `Weather: ${options.weather}`, { data: { ...weatherEffectOf(options.weather) } });
 
   // Player instructions (manager's slots) and man-marking — the AI never sets either.
@@ -322,7 +334,7 @@ export function simulateMatch(
     }
     // In headless simulation both teams are AI-controlled — evaluate subs for Team A too
     const subsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
-    if (subsWindow && shouldCheckAiSubs(s.matchTime, dt * TIME_SCALE)) {
+    if (subsWindow && shouldCheckAiSubs(s.matchTime, dt * clockScaleOf(s))) {
       const subsA = evaluateAiSubstitutions(s, 'A');
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
@@ -343,6 +355,8 @@ export function simulateMatch(
     cards:         s.cards,
     decider:       knockoutDecider(s),
     goals:         getGoalLog(),
+    highlights:    getHighlights(),
+    liveSeconds:   getHighlightLiveSeconds(),
     durationMs:    performance.now() - startMs,
   };
 }

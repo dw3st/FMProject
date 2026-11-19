@@ -1,3 +1,4 @@
+import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { describe, expect, test } from "bun:test";
 import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
@@ -32,6 +33,8 @@ describe("engine identity with the mental keys", () => {
       try {
         const r = simulateMatch(load("33.json", mental), load("34.json", mental), F, F, undefined, undefined, {
           tactics: { A: { style: "balanced" }, B: { style: "balanced" } },
+          // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep this mechanism test fast: the code paths are the same (stage 2).
+          clockScale: LEGACY_CLOCK_SCALE,
         });
         return { score: r.score, teamStats: r.teamStats, ratings: r.playerRatings, stats: [...r.playerStats], subs: r.substitutions };
       } finally {

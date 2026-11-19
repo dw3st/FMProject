@@ -12,6 +12,7 @@
 import type { BallFlightKind, BallState, GameState, LooseBallState, PassState, ShotState, TeamId } from '@/GameEngine/types';
 import { isAerialKind } from '@/GameEngine/types';
 import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
+import { PASS_PHYSICS } from '@/GameEngine/Configs/PassPhysicsConfig';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { PASS_YARDS_PER_SEC } from '@/GameEngine/Configs/PassConfig';
 import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
@@ -20,7 +21,7 @@ import { SHOT_SPEED } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import {
-  geomFraction, isAirborne, launchToward, reachHeight, stepFree, stepGuided, stepVertical, type BallEnv,
+  geomFraction, isAirborne, launchToward, reachHeight, stepFree, stepGuided, stepVertical, type Ball3D, type BallEnv,
 } from '@/GameEngine/Domain/Ball3D';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 
@@ -37,6 +38,8 @@ export const looseKey = (l: LooseBallState) => `l:${r3(l.startTime)}:${l.fromPas
 
 /** Flight progress per second of a pass (the engine's own rate, `gameState.ts` pass in flight). */
 export function passRate(p: PassState, passSpeed: number): number {
+  // A physical pass (stage 4): its expected flight to the target.
+  if (p.physics) return 1 / Math.max(0.05, p.physics.T);
   const v = isAerialKind(p.kind) ? AERIAL_CONFIG.AERIAL_YARDS_PER_SEC : PASS_YARDS_PER_SEC;
   return p.distance > 0 ? v / p.distance : passSpeed;
 }
@@ -69,6 +72,8 @@ export function ballOf(s: GameState): BallState {
 /** Height of a flight where it ended inside this step (it arrived, or something met it on the way). */
 function endHeight(prev: GameState, b: BallState, dt: number, passSpeed: number, env: BallEnv): { z: number; vz: number } {
   if (b.phase !== 'pass' && b.phase !== 'shot') return { z: b.z, vz: b.vz };
+  // A physical ground pass was moved by the core up to where it ended (`advancePassBall`).
+  if (b.free && b.profile === 'ground') return { z: b.z, vz: b.vz };
   const total = flightLeft(prev, b, passSpeed);
   const left = Math.min(dt, Math.max(0, total));
   if (b.profile === 'air' && b.arriveZ !== undefined && left >= total - 1e-6) {
@@ -122,6 +127,17 @@ function launchPass(prev: GameState, next: GameState, prevBall: BallState, p: Pa
     : p.kind === 'long_ball' ? 'long_ball'
       : p.kind === 'clearance' ? 'clearance'
         : p.lofted ? 'lofted' : 'ground';
+  if (p.physics) {
+    // Stage 4 (`pass-physics.md`): the launch the passer gave it, error included; then free physics.
+    const ph = p.physics;
+    const profile = isAerialKind(p.kind) ? 'air' : 'ground';
+    return {
+      x: from.x, y: from.y, z: ph.z0, vx: ph.vx, vy: ph.vy, vz: ph.vz,
+      phase: 'pass', key: passKey(p), kind: ph.type === 'chip' || ph.type === 'through_high' ? 'lofted' : kind,
+      team: passer?.team ?? null, peak: Math.max(ph.z0, ph.vz > 0 ? ph.z0 + (ph.vz * ph.vz) / (2 * BALL_PHYSICS.GRAVITY) : ph.z0),
+      air: 0, elapsed: 0, bounces: 0, profile, distance: p.distance, free: true,
+    };
+  }
   const T = Math.max(0.05, (1 - p.t) / passRate(p, passSpeed));
   const z0 = launchZ(prevBall, false);
   const target = passTarget(next, p);
@@ -203,6 +219,15 @@ export function syncBall(prev: GameState, next: GameState, dt: number, passSpeed
   }
   if (next.pass) {
     const key = passKey(next.pass);
+    if (b0.phase === 'pass' && b0.key === key && prev.pass && b0.free) {
+      // A physical pass: a high ball flies freely here; a ground pass was moved by the core (`advancePassBall`).
+      if (b0.profile === 'ground') return { ...b0, ended: undefined };
+      const st = stepFree(b0, dt, env);
+      return {
+        ...b0, ...st.ball, ended: undefined, peak: Math.max(b0.peak, st.peak), air: b0.air + st.air,
+        elapsed: b0.elapsed + dt, bounces: b0.bounces + st.bounces,
+      };
+    }
     if (b0.phase === 'pass' && b0.key === key && prev.pass) {
       const Trem = (1 - prev.pass.t) / passRate(prev.pass, passSpeed);
       return stepFlight(b0, passTarget(next, next.pass), Trem, dt, env);
@@ -243,4 +268,48 @@ export function advanceLooseBall(s: GameState, lb: LooseBallState, dt: number): 
 export function ballWithinReach(ball: BallState | undefined, isKeeper: boolean): boolean {
   if (!ball || !isAirborne(ball)) return true;
   return ball.z <= reachHeight(isKeeper);
+}
+
+/** Someone who can take a physical pass on its way: within `reach` (yd) of the ball and under his reach height. */
+export interface PassCatcher { id: number; x: number; y: number; reach: number; keeper: boolean }
+
+export interface PassBallStep {
+  ball: BallState;
+  /** The first catcher the ball reached during the step (null: nobody). */
+  contactId: number | null;
+  /** It stopped short (rolling slower than `STOP_SPEED_YD`) or left the pitch. */
+  stopped: boolean;
+  out: boolean;
+}
+
+/**
+ * One tick of a physical ground pass / through ball (stage 4, `pass-physics.md`): the 3D ball flies, bounces and rolls
+ * on its own in sub-steps of `PASS_PHYSICS.SUBSTEP`; at each one the catchers (their positions this tick) are checked
+ * along the path. No draws.
+ */
+export function advancePassBall(s: GameState, dt: number, catchers: readonly PassCatcher[]): PassBallStep {
+  const b0 = s.ball!;
+  const env = ballEnv(s.weather);
+  let b: Ball3D = { x: b0.x, y: b0.y, z: b0.z, vx: b0.vx, vy: b0.vy, vz: b0.vz };
+  let peak = b0.peak, air = 0, bounces = 0, left = dt, used = 0;
+  let contactId: number | null = null;
+  let out = false;
+  const done = (): BallState => ({
+    ...b0, ...b, ended: undefined, peak: Math.max(peak, b.z), air: b0.air + air, elapsed: b0.elapsed + used, bounces: b0.bounces + bounces,
+  });
+  while (left > 1e-9) {
+    const h = Math.min(PASS_PHYSICS.SUBSTEP, left);
+    const st = stepFree(b, h, env);
+    b = st.ball; peak = Math.max(peak, st.peak); air += st.air; bounces += st.bounces;
+    left -= h; used += h;
+    for (const c of catchers) {
+      if (b.z > reachHeight(c.keeper)) continue;
+      if (Math.hypot(b.x - c.x, b.y - c.y) <= c.reach) { contactId = c.id; break; }
+    }
+    if (contactId !== null) break;
+    if (b.x < 0 || b.x > PITCH_LENGTH || b.y < 0 || b.y > PITCH_WIDTH) { out = true; break; }
+    if (!isAirborne(b) && Math.hypot(b.vx, b.vy) < PASS_PHYSICS.STOP_SPEED_YD) break;
+  }
+  const stopped = contactId === null && (out || (!isAirborne(b) && Math.hypot(b.vx, b.vy) < PASS_PHYSICS.STOP_SPEED_YD));
+  return { ball: done(), contactId, stopped, out };
 }

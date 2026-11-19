@@ -19,7 +19,7 @@
  *
  * Only the seats' matches run in the full engine (engine rebuild, stage 1), in the match pool (`matchPool.ts`):
  * `full` = pool jobs of the day, `fullMatch` = engine time in this thread (`MATCH_WORKERS=0`), `poolBusy` = engine time
- * summed over the workers (overlaps the day's wall time). `FULL_DURATION=1` reaches the workers through the env.
+ * summed over the workers (overlaps the day's wall time). The engine plays the 90 physical minutes (stage 2).
  *
  * Timing is instrumented inside this script only: engine / quickSim / training /
  * market / standings functions are wrapped via `mock.module` before the backend is

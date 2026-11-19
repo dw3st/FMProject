@@ -56,8 +56,11 @@ import {
 } from "@/GraficsEngine/pitchEffects";
 import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/GraficsEngine/effectsRender";
 import { formationForSimId } from "@/Domain/matchFormations";
-import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute, getBallPos } from "@/GameEngine/Domain/gameState";
+import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute, getBallPos, restartFreeze } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
+
+/** Match phases whose countdown is a presentation pause (real seconds, never sped up). */
+const PRESENTATION_PHASES: ReadonlySet<string> = new Set(["preMatch", "halfTime", "extraTimeBreak", "penalties"]);
 import { startSimClock } from "@/GraficsEngine/simClock";
 import { createPump, defaultNow } from "@/GraficsEngine/pump";
 import { reconcileMatchStateSync } from "@/GraficsEngine/matchStateSync";
@@ -69,6 +72,7 @@ import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
 import { ballFlightPath } from "@/GraficsEngine/ballFlightPath";
+import { passErrorOverlay } from "@/GraficsEngine/passErrorOverlay";
 import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
@@ -423,6 +427,8 @@ export interface DebugOverlays {
   movement:              boolean;
   /** Stage 3 (`ball-3d.md`): the 3D ball's predicted path (dots raised by their height), its peak and landing point. */
   ball3d:                boolean;
+  /** Stage 4 (`pass-physics.md`): 1-σ spread of the holder's pass error at each teammate; a physical pass's aim. */
+  passError:             boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -441,6 +447,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   cohesion:              false,
   movement:              false,
   ball3d:                false,
+  passError:             false,
 };
 
 interface Props {
@@ -1615,8 +1622,11 @@ export function PixiPitch({
         if (celebration && !framesVisible()) celebration = null;
         const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null || celebration !== null || stretcherHolds());
         if (elapsedRealSeconds <= 0) return;
-        const gameSeconds = elapsedRealSeconds * gameSpeedRef.current;
         const prevState = stateRef.current;
+        // Presentation pauses (kick-off show, half time, the extra-time break, the shootout, a VAR check) run in real
+        // seconds, apart from the match speed (stage 2): at 32× the half-time pause still lasts its 4 s.
+        const presenting = prevState.varReview != null || PRESENTATION_PHASES.has(prevState.matchPhase);
+        const gameSeconds = elapsedRealSeconds * (presenting ? 1 : gameSpeedRef.current);
         const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
         simCarryRef.current = result.carry;
         renderPair = nextRenderPair(renderPair, { prevState, result, steps: result.steps });
@@ -4401,7 +4411,7 @@ export function PixiPitch({
           if (sp?.type === 'free_kick' && sp.variant === 'direct' && sp.position && !replayRun) {
             const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
             if (taker) {
-              const k = 1 - sp.countdown / SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN;
+              const k = 1 - sp.countdown / restartFreeze(drawState, SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN);
               const off = penaltyRunUp(k);
               const next = new Map(drawnPos);
               next.set(taker.id, { x: sp.position.x - taker.attackDir * off.back, y: sp.position.y + taker.attackDir * off.side });
@@ -4425,7 +4435,7 @@ export function PixiPitch({
             const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
             const spot = sp.position ?? (taker ? { x: taker.x, y: taker.y } : null);
             if (taker && spot) {
-              const k = 1 - sp.countdown / FOUL_CONFIG.PENALTY_COUNTDOWN;
+              const k = 1 - sp.countdown / restartFreeze(drawState, FOUL_CONFIG.PENALTY_COUNTDOWN);
               const off = penaltyRunUp(k);
               const next = new Map(drawnPos);
               next.set(taker.id, { x: spot.x - taker.attackDir * off.back, y: spot.y + taker.attackDir * off.side });
@@ -4973,6 +4983,21 @@ export function PixiPitch({
             if (land) {
               const g = toPixel(land.x, land.y);
               throughBallGfx.circle(g.px, g.py, 6).stroke({ width: 2, color: 0xfb923c, alpha: 0.95 });
+            }
+          }
+
+          // ── Pass error: σ across the pass at each teammate; aim and real target of a physical pass (`pass-physics.md`) ──
+          if (ovl.passError) {
+            const pe = passErrorOverlay(stateRef.current);
+            for (const r of pe.rings) {
+              const g = toPixel(r.x, r.y);
+              throughBallGfx.circle(g.px, g.py, Math.max(2, r.r * m.scale)).stroke({ width: 1.5, color: 0x22d3ee, alpha: 0.8 });
+            }
+            if (pe.aim) {
+              const o = toPixel(pe.aim.ox, pe.aim.oy), a = toPixel(pe.aim.aimX, pe.aim.aimY), t = toPixel(pe.aim.toX, pe.aim.toY);
+              throughBallGfx.moveTo(o.px, o.py).lineTo(a.px, a.py).stroke({ width: 1, color: 0x22d3ee, alpha: 0.6 });
+              throughBallGfx.moveTo(a.px - 4, a.py - 4).lineTo(a.px + 4, a.py + 4).moveTo(a.px + 4, a.py - 4).lineTo(a.px - 4, a.py + 4).stroke({ width: 2, color: 0x22d3ee, alpha: 0.95 });
+              throughBallGfx.circle(t.px, t.py, 4).stroke({ width: 2, color: 0xf472b6, alpha: 0.95 });
             }
           }
 

@@ -65,6 +65,11 @@ export interface DecisionFlags {
   /** Stage 3 of the rebuild (`ball-3d.md`): the ball is a 3D object (height, flight, bounce, roll); passes, shots and
    *  loose balls move it physically; a loose ball above a player's reach can't be collected. */
   BALL_3D: boolean;
+  /** Stage 4 of the rebuild (`pass-physics.md`): passes are launched with FM's speed and loft by type and distance, the
+   *  passer's error on the 3D vector; the ball arrives where and when the physics takes it (needs `BALL_3D`). */
+  PASS_PHYSICS: boolean;
+  /** Stage 18 (`highlights.md`): the highlight layer (observation only: marks the lances, never changes the play). */
+  HIGHLIGHTS: boolean;
   /** Stage 13 (`game-rules/offside.md`): attackers read the offside line every few tenths of a second with an error
    *  (anticipation, decisions, consistency) instead of being held on it; mistimed runs are caught offside. */
   OFFSIDE_RUNS: boolean;
@@ -100,6 +105,8 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   TACTIC_DAMP: true,
   FM_XG: true,
   BALL_3D: true,
+  PASS_PHYSICS: true,
+  HIGHLIGHTS: true,
   OFFSIDE_RUNS: true,
   FM_FOULS: true,
 };

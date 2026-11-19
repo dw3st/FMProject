@@ -352,6 +352,23 @@ export function assignMarkTargets(
     return pa - pb;
   });
 
+  // Pair costs without the danger discount, computed once (stage 2, cost): the greedy pass, the swap-improve and the
+  // totals read the same numbers `markAssignmentCost` returns.
+  const defIndex = new Map<number, number>(defenders.map((d, i) => [d.id, i]));
+  const oppIndex = new Map<number, number>(opponents.map((o, i) => [o.id, i]));
+  const baseCost = defenders.map(d => opponents.map(o => markAssignmentCost(d, o)));
+  const pairCost = (defId: number, oppId: number): number => baseCost[defIndex.get(defId)!]![oppIndex.get(oppId)!]!;
+  const dangerOf = (oppId: number): number => oppDangerById.get(oppId) ?? 0;
+  const totalCost = (ids: number[]): number => {
+    let total = 0;
+    for (const defId of ids) {
+      const oppId = assignments.get(defId);
+      if (oppId === undefined) continue;
+      total += pairCost(defId, oppId) - dangerOf(oppId) * CROWD_AWARE_DEFENSE.ASSIGN_DANGER_DISCOUNT;
+    }
+    return total;
+  };
+
   const assignments = new Map<number, number>();
   const assignedOpps = new Set<number>();
 
@@ -377,7 +394,7 @@ export function assignMarkTargets(
     let bestCost  = Infinity;
     for (const opp of opponents) {
       if (assignedOpps.has(opp.id)) continue;
-      const cost = markAssignmentCost(def, opp, oppDangerById.get(opp.id) ?? 0);
+      const cost = pairCost(def.id, opp.id) - dangerOf(opp.id) * CROWD_AWARE_DEFENSE.ASSIGN_DANGER_DISCOUNT;
       if (cost < bestCost) {
         bestCost  = cost;
         bestOppId = opp.id;
@@ -397,30 +414,27 @@ export function assignMarkTargets(
   // worst case. A cap of MAX_SWAP_PASSES=20 is ample — if we hit it, we accept the
   // current assignment (still valid, just sub-optimal). This prevents any chance
   // of an infinite loop from floating-point pathology or NaN propagation.
-  const playerById = new Map(allPlayers.map(p => [p.id, p]));
   const defIds = [...assignments.keys()].filter(id => !fixedDefs.has(id));
   const MAX_SWAP_PASSES = 20;
   let improved = true;
   let passCount = 0;
   // Track best-so-far cost so improvements must actually strictly decrease
   // total cost (not just pair cost). Robust against weird float edge cases.
-  let bestCost = computeAssignmentCost(assignments, playerById, defIds, oppDangerById);
+  let bestCost = totalCost(defIds);
   while (improved && passCount < MAX_SWAP_PASSES) {
     improved = false;
     passCount++;
     for (let i = 0; i < defIds.length; i++) {
       for (let j = i + 1; j < defIds.length; j++) {
-        const defA = playerById.get(defIds[i]!)!;
-        const defB = playerById.get(defIds[j]!)!;
-        const oppAId = assignments.get(defIds[i]!)!;
-        const oppBId = assignments.get(defIds[j]!)!;
-        const oppA = playerById.get(oppAId)!;
-        const oppB = playerById.get(oppBId)!;
+        const defAId = defIds[i]!;
+        const defBId = defIds[j]!;
+        const oppAId = assignments.get(defAId)!;
+        const oppBId = assignments.get(defBId)!;
 
         // Danger discount is opp-only and each opp appears once on each side
         // of the swap → it cancels out, so we omit it here for cheaper math.
-        const currentCost = markAssignmentCost(defA, oppA) + markAssignmentCost(defB, oppB);
-        const swappedCost = markAssignmentCost(defA, oppB) + markAssignmentCost(defB, oppA);
+        const currentCost = pairCost(defAId, oppAId) + pairCost(defBId, oppBId);
+        const swappedCost = pairCost(defAId, oppBId) + pairCost(defBId, oppAId);
 
         // Require a minimum improvement to avoid oscillation from float noise.
         // 1e-6 yards² is ~1 micrometer — orders of magnitude below gameplay scale.
@@ -433,7 +447,7 @@ export function assignMarkTargets(
     }
     // Global invariant: total assignment cost must strictly decrease each pass.
     // If it doesn't, bail out — something is off (NaN positions, degenerate input).
-    const newCost = computeAssignmentCost(assignments, playerById, defIds, oppDangerById);
+    const newCost = totalCost(defIds);
     if (!(newCost < bestCost - 1e-6)) break;
     bestCost = newCost;
   }
@@ -463,25 +477,6 @@ function markAssignmentCost(def: GamePlayer, opp: GamePlayer, oppDanger = 0): nu
   return distSq
     + outDist * outDist * ASSIGN_ZONE_COST_WEIGHT
     - oppDanger * CROWD_AWARE_DEFENSE.ASSIGN_DANGER_DISCOUNT;
-}
-
-/** Total cost of the current mark assignment (sum of pair costs). */
-function computeAssignmentCost(
-  assignments: Map<number, number>,
-  playerById:  Map<number, GamePlayer>,
-  defIds:      number[],
-  oppDangerById: Map<number, number>,
-): number {
-  let total = 0;
-  for (const defId of defIds) {
-    const def = playerById.get(defId);
-    const oppId = assignments.get(defId);
-    if (oppId === undefined) continue;
-    const opp = playerById.get(oppId);
-    if (!def || !opp) continue;
-    total += markAssignmentCost(def, opp, oppDangerById.get(opp.id) ?? 0);
-  }
-  return total;
 }
 
 /**

@@ -362,12 +362,30 @@ export interface TeamRawStats {
   /** Stage 3 (`ball-3d.md`), summed across games: high balls, seconds in the air, peak sums (yd) and counts. */
   highBalls: number;
   ballAirSeconds: number;
+  /** Stage 18 (`highlights.md`), summed across games: lances about this team per level (cumulative), their sim seconds, live sim seconds. */
+  highlightsMain: number;
+  highlightsExtended: number;
+  highlightsFull: number;
+  highlightSecondsMain: number;
+  highlightSecondsExtended: number;
+  highlightSecondsFull: number;
+  highlightLiveSeconds: number;
   crossPeakSum: number;
   crossPeakN: number;
   cornerPeakSum: number;
   cornerPeakN: number;
   longPeakSum: number;
   longPeakN: number;
+  /** Stage 4 (`pass-physics.md`), summed across games: passes by launch type and launch speeds (yd/s, summed). */
+  passGround: number;
+  passDriven: number;
+  passChip: number;
+  passHigh: number;
+  passThroughLow: number;
+  passThroughHigh: number;
+  passHeader: number;
+  passLaunchSpeedSum: number;
+  passLaunchN: number;
   holderHolds: number;
   holderTurns: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
@@ -593,9 +611,25 @@ export interface PerMatchView {
   /** Stage 3 (`ball-3d.md`): per match; peak heights are means, in metres. */
   avgHighBalls: number;
   avgBallAirSeconds: number;
+  /** Stage 18: lances per match about this team (main / extended / full) and the share of the play they cover (%, the side's half). */
+  avgHighlightsMain: number;
+  avgHighlightsExtended: number;
+  avgHighlightsFull: number;
+  highlightShareMain: number;
+  highlightShareExtended: number;
+  highlightShareFull: number;
   crossPeakM: number;
   cornerPeakM: number;
   longPeakM: number;
+  /** Stage 4 (`pass-physics.md`): passes by launch type per match, mean launch speed (m/s, FM 7 + 0.45·d). */
+  avgPassGround: number;
+  avgPassDriven: number;
+  avgPassChip: number;
+  avgPassHigh: number;
+  avgPassThroughLow: number;
+  avgPassThroughHigh: number;
+  avgPassHeader: number;
+  passLaunchMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
@@ -628,6 +662,8 @@ export interface PairResult {
   variantBId: string;
   matches: number;
   draws: number;
+  /** Wall time of the pair in the worker divided by its matches (engine cost per match, stage 2). */
+  msPerMatch?: number;
   teamA: PerMatchView;
   teamB: PerMatchView;
   /** Present only when the scenario set `congestion` — one row per match-in-sequence index. */
@@ -778,9 +814,25 @@ export interface VariantSummary {
   /** Stage 3 (`ball-3d.md`): per match; peak heights are means, in metres. */
   avgHighBalls: number;
   avgBallAirSeconds: number;
+  /** Stage 18: lances per match about this team (main / extended / full) and the share of the play they cover (%, the side's half). */
+  avgHighlightsMain: number;
+  avgHighlightsExtended: number;
+  avgHighlightsFull: number;
+  highlightShareMain: number;
+  highlightShareExtended: number;
+  highlightShareFull: number;
   crossPeakM: number;
   cornerPeakM: number;
   longPeakM: number;
+  /** Stage 4 (`pass-physics.md`): passes by launch type per match, mean launch speed (m/s, FM 7 + 0.45·d). */
+  avgPassGround: number;
+  avgPassDriven: number;
+  avgPassChip: number;
+  avgPassHigh: number;
+  avgPassThroughLow: number;
+  avgPassThroughHigh: number;
+  avgPassHeader: number;
+  passLaunchMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */

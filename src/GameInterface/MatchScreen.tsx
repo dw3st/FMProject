@@ -11,7 +11,7 @@ import type { Squad } from "@/types/playerTypes";
 import { PixiPitch } from "@/GraficsEngine/PixiPitch";
 import { h2hFormationCommand, userFormationsOf } from "@/GameInterface/userFormations";
 import type { UserFormation } from "@/GameInterface/SubstitutionPanel";
-import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMinute, PRESENTATION_DURATION, TIME_SCALE, applyPlayerInstruction, setManMarks, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
+import { applyPenaltyOutcome, changeFormation, getBallPos, isLivePhase, matchMinute, PRESENTATION_DURATION, clockScaleOf, applyPlayerInstruction, setManMarks, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy } from "@/GameEngine/Domain/gameState";
 import { useH2HSocket } from "@/GameInterface/H2H/useH2HSocket";
 import { PauseBar } from "@/GameInterface/H2H/PauseBar";
 import { otherSide } from "@/GameInterface/H2H/h2hState";
@@ -1922,7 +1922,7 @@ export function MatchScreen() {
   const h2hSpeed = h2h.room?.speed ?? 1;
   // H2H clock: the last state's time, run on by the real time since it arrived (at most 1.5 s, frozen in a pause).
   const shownMatchTime = h2hMode && isLivePhase(gameState.matchPhase) && !h2h.pause
-    ? (gameState.matchTime ?? 0) + Math.min(1.5, Math.max(0, (clockNow - h2hStateAtRef.current) / 1000)) * TIME_SCALE * h2hSpeed
+    ? (gameState.matchTime ?? 0) + Math.min(1.5, Math.max(0, (clockNow - h2hStateAtRef.current) / 1000)) * clockScaleOf(gameState) * h2hSpeed
     : gameState.matchTime ?? 0;
   const mySubsRemaining = mySide === "A" ? gameState.subsRemainingA : gameState.subsRemainingB;
   const myPendingSubs = (mySide === "A" ? gameState.pendingSubsA : gameState.pendingSubsB).length;

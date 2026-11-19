@@ -89,10 +89,11 @@ export const SET_PIECE_CONFIG = {
    */
   SET_PIECE_HEADER_PRESSURE_MULT: 0,
 
-  // ── Countdowns (real seconds) ──────────────────────────────────────────────
-  CORNER_COUNTDOWN: 1.2,
-  BOX_FREE_KICK_COUNTDOWN: 1.0,
-  DIRECT_FREE_KICK_COUNTDOWN: 1.5,
+  // ── Countdowns (game-seconds of dead ball; the physical freeze is this / clockScale, `restartFreeze`) ──
+  // Stage 2: the compressed clock's freezes × 18, the game time each restart already took (1.2 / 1.0 / 1.5 s).
+  CORNER_COUNTDOWN: 21.6,
+  BOX_FREE_KICK_COUNTDOWN: 18,
+  DIRECT_FREE_KICK_COUNTDOWN: 27,
 
   // ── Throw-in ───────────────────────────────────────────────────────────────
   /** A throw-in reaches teammates within this distance (yards); no long throws. */
@@ -126,8 +127,26 @@ export const SET_PIECE_CONFIG = {
   PASS_OUT_TOUCH: 0.6,
 
   // ── Set-piece goal attribution ─────────────────────────────────────────────
-  /** A goal within this many game-seconds of a corner / free kick in the attacking third / penalty, with the ball kept, is a set-piece goal. */
-  SET_PIECE_PHASE_SECONDS: 45,
+  /**
+   * A goal within this many game-seconds of a corner / free kick in the attacking third / penalty, with the ball kept,
+   * is a set-piece goal. Stage 2: 45 game-s was 2.5 s of play on the compressed clock; 10 s of play covers the
+   * delivery and the second ball of a set piece (the phase still closes when the other side has the ball).
+   */
+  SET_PIECE_PHASE_SECONDS: 10,
   /** Free kicks closer than this to the goal they attack open a set-piece phase (yards). */
   SET_PIECE_FK_ZONE: 40,
+} as const;
+
+/**
+ * Game-seconds of dead ball of the other restarts (stage 2, `match-flow.md` → "Clock and time constants"): the
+ * compressed clock's physical freezes × 18 (kick-off 2 s, goal kick 1 s, throw-in 1.5 s, corner out of play 2 s,
+ * offside free kick 2 s), so each restart takes the game time it took before. FM27 (R8, R9): goal kick ~19 s,
+ * offside ~24 s of dead ball.
+ */
+export const RESTART_DEAD_S = {
+  KICKOFF:    36,
+  GOAL_KICK:  18,
+  THROW_IN:   27,
+  OOB_CORNER: 36,
+  OFFSIDE_FK: 36,
 } as const;

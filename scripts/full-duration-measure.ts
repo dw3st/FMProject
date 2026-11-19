@@ -1,12 +1,12 @@
 /**
- * Cost and raw volume of a full-engine match, today's compressed clock or `FULL_DURATION=1` (90 game minutes of
- * physics). One process, matches in sequence, seeded per match (mulberry32), AI formations, balanced, fitness 88.
+ * Cost and raw volume of a full-engine match: the 90 physical minutes (default) or `--clock 18` (the compressed
+ * clock of before stage 2, `LEGACY_CLOCK_SCALE`). One process, matches in sequence, seeded per match (mulberry32), AI formations, balanced, fitness 88.
  *
- *   [FULL_DURATION=1] bun scripts/full-duration-measure.ts [matches=20] [league=premier_league] [--offset 0] [--out f.json]
+ *   bun scripts/full-duration-measure.ts [matches=20] [league=premier_league] [--offset 0] [--clock 1] [--out f.json]
  */
 import { writeFileSync } from "node:fs";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
-import { FULL_DURATION, matchMinute, isLivePhase, tickState } from "@/GameEngine/Domain/gameState";
+import { matchMinute, isLivePhase, tickState } from "@/GameEngine/Domain/gameState";
 import { aiMatchFormation, autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
 import { loadLeagueAt88, pairAt } from "@/../scripts/ai-formation-goals-shared";
 import { mulberry32 } from "@/Domain/rng";
@@ -19,6 +19,7 @@ const matches = Number(positional[0] ?? "20");
 const league = positional[1] ?? "premier_league";
 const offset = Number(flag("--offset", "0"));
 const out = flag("--out", "");
+const clock = Number(flag("--clock", "1"));
 
 const KEYS = ["goals", "shots", "passesAttempted", "passesCompleted", "throughBallsAttempted", "crosses", "longBalls",
   "corners", "throwIns", "offsides", "fouls", "interceptions", "tackles", "yellowCards", "freeKicks"] as const;
@@ -46,6 +47,7 @@ for (let m = 0; m < matches; m++) {
   let ticks = 0; let prevPhase = ""; const seen = new Set<string>(); let last: GameState | null = null;
   const t0 = performance.now();
   const r = simulateMatch(home, away, fH, fA, lH, lA, {
+    ...(clock !== 1 ? { clockScale: clock } : {}),
     tactics: { A: { style: "balanced" }, B: { style: "balanced" } },
     onTick: (s) => {
       ticks++;
@@ -73,7 +75,7 @@ const mean = msList.reduce((a, b) => a + b, 0) / matches;
 const p90 = sorted[Math.min(sorted.length - 1, Math.floor(0.9 * sorted.length))]!;
 const ticksMean = ticksList.reduce((a, b) => a + b, 0) / matches;
 const res = {
-  mode: FULL_DURATION ? "full" : "today", league, matches, msMean: mean, msP90: p90, ticksMean, msPerTick: mean / ticksMean,
+  mode: clock === 1 ? "full" : `clock ${clock}`, league, matches, msMean: mean, msP90: p90, ticksMean, msPerTick: mean / ticksMean,
   rssPeakMB: rssPeak / 2 ** 20, rssEndMB: rssList.at(-1)! / 2 ** 20,
   perMatch: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, v / matches])),
   energy: Object.fromEntries(Object.entries(energy).map(([k, v]) => [k, v.sum / v.n])),

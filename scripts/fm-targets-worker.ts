@@ -8,7 +8,7 @@ import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 interface Input { league: string; matches: number; offset: number; seed: number }
 export interface FmWorkerOut { fm: FmTargetTotals; world: Record<string, number>; counts: FmMatchCounts; ms: number }
 
-const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions", "crosses", "throughBallsAttempted", "throughBallsCompleted", "throughBallsLostInFlight", "throughBallsLostInRace", "throughBallsLostInDuel", "ballNearTicks", "ballCrowdTicks"] as const;
+const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions", "crosses", "throughBallsAttempted", "throughBallsCompleted", "throughBallsLostInFlight", "throughBallsLostInRace", "throughBallsLostInDuel", "ballNearTicks", "ballCrowdTicks", "highlightsMain", "highlightsExtended", "highlightsFull", "highlightSecondsMain", "highlightSecondsExtended", "highlightSecondsFull"] as const;
 
 self.onmessage = (e: MessageEvent<Input>) => {
   const { league, matches, offset, seed } = e.data;
@@ -33,6 +33,7 @@ self.onmessage = (e: MessageEvent<Input>) => {
     const c = fmCountsOf({ ...r.teamStats.A, goals: r.score.A }, { ...r.teamStats.B, goals: r.score.B });
     for (const k of FM_COUNT_KEYS) counts[k] = (counts[k] ?? 0) + (c[k] ?? 0);
     world.goals! += r.score.A + r.score.B;
+    world.liveSeconds = (world.liveSeconds ?? 0) + r.liveSeconds;
     for (const side of [r.teamStats.A, r.teamStats.B]) {
       for (const k of WORLD_KEYS) if (k !== "goals") world[k]! += (side as unknown as Record<string, number>)[k] ?? 0;
     }

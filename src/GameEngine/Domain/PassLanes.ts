@@ -16,7 +16,7 @@
  *   - PixiPitch.tsx          → debug overlay (green = open, red = below threshold)
  */
 
-import type { GamePlayer, GameState, TeamIntent } from '@/GameEngine/types';
+import type { GamePlayer, GameState, TeamId, TeamIntent } from '@/GameEngine/types';
 import { normalizeGamePlayers } from '@/GameEngine/Domain/RuntimeLineup';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { getTeamPassConfig, getTeamWidth } from '@/GameEngine/Configs/AttackConfig';
@@ -28,6 +28,9 @@ import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { passMissChance } from '@/GameEngine/Domain/PassError';
 import { holderPressure } from '@/GameEngine/Domain/Pressure';
+import { arrivalLaneScore } from '@/GameEngine/Domain/PassPhysics';
+import { PASS_PHYSICS } from '@/GameEngine/Configs/PassPhysicsConfig';
+import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
 
 /**
  * Loss estimate of a pass (stage 4b, `fm-numbers.md`): a lofted pass (beyond LOFT_YD) keeps the ball ~LOFT_KEEP of the
@@ -287,18 +290,31 @@ export interface PassBreakdown {
   score:              number;
 }
 
+/** The holder's team pass weights with the team intent applied (what `scorePassToReceiverBreakdown` reads). */
+export type PassCfg = ReturnType<typeof getTeamPassConfig> & ReturnType<typeof applyPassIntent>;
+
+/** `PassCfg` of a team and intent — built once by callers that score many targets for the same holder. */
+export function passCfgFor(team: TeamId, intent: TeamIntent): PassCfg {
+  const baseCfg = getTeamPassConfig(team);
+  return { ...baseCfg, ...applyPassIntent(baseCfg, intent) };
+}
+
 export function scorePassToReceiverBreakdown(
   holder:    GamePlayer,
   receiver:  GamePlayer,
   opponents: GamePlayer[],
   intent:    TeamIntent = 'balanced',
   pressure?: number,
+  passCfg?:  PassCfg,
 ): PassBreakdown {
-  const baseCfg     = getTeamPassConfig(holder.team);
-  const cfg         = { ...baseCfg, ...applyPassIntent(baseCfg, intent) };
+  const cfg         = passCfg ?? passCfgFor(holder.team, intent);
   const widthTactic = getTeamWidth(holder.team);
 
-  const laneScore          = getLaneScore(holder, receiver, opponents, widthTactic);
+  // Stage 4 (`pass-physics.md`): a pass along the ground reads the ball's arrival time against the defenders'.
+  const laneScore          = DECISION_FLAGS.PASS_PHYSICS && DECISION_FLAGS.BALL_3D && PASS_PHYSICS.ARRIVAL_LANE
+    && Math.hypot(receiver.x - holder.x, receiver.y - holder.y) <= FM_NUMBERS.LOFT_YD
+    ? arrivalLaneScore(holder, receiver, opponents.map(o => ({ x: o.x, y: o.y, speed: o.runtimeStats.withoutBall.pressSpeed })), THROUGH_BALL_CONFIG.LOOSE_BALL_DECELERATION)
+    : getLaneScore(holder, receiver, opponents, widthTactic);
   const progressScore      = getProgressScore(holder, receiver);
   const receiverSpaceScore = getReceiverSpaceScore(receiver, opponents);
   const distancePenalty    = getDistancePenalty(holder, receiver);

@@ -69,7 +69,36 @@ export interface FmTargetTotals {
   ballPeak: Record<BallGroup, number[]>;
   ballContact: Record<BallGroup, number[]>;
   ballAirSeconds: number;
+  /**
+   * Stage 4 (`pass-physics.md`), physical passes only: outcome by launch vz band (`VZ_LABELS`), launch |v| and vz (m/s)
+   * by launch-distance band (`LAUNCH_LABELS`), flight to the intended receiver (s) by distance band (`FLIGHT_LABELS`),
+   * and the distance (m) between where a high ball lands and where it was aimed.
+   */
+  passVz: Outcome3[];
+  launchSpeed: number[][];
+  launchVz: number[][];
+  flight: number[][];
+  landingErr: Record<LandingGroup, number[]>;
 }
+
+/** FM's launch-vz bands (m/s, report 7) and the share to the intended receiver in each. */
+export const VZ_LABELS = ["≤1", "1–3", "3–6", "6–10", ">10"] as const;
+export const FM_PASS_VZ = [92, 90, 79, 32, 30] as const;
+/** FM's launch table (report 6): distance bands (m), median launch |v| and vz (m/s). */
+export const LAUNCH_LABELS = ["0–10", "10–20", "20–30", "30–45", "45+"] as const;
+export const FM_LAUNCH = { speed: [9.7, 14.2, 19.6, 24.5, 31.3], vz: [0.85, 1.8, 4.7, 10.2, 14.3] } as const;
+/** Flight to the receiver's decision (report 7): bands (m) and FM's fit t ≈ 0.43 + 0.05·d s at the band centres. */
+export const FLIGHT_LABELS = ["0–8", "8–13", "13–18", "18–23", "23–30", "30+"] as const;
+export const FM_FLIGHT_S = [0.65, 0.95, 1.18, 1.45, 1.75, 2.4] as const;
+/** Landing / first contact against the decided target (m, R9 §3): median and p90. */
+export const LANDING_GROUPS = ["cross", "corner", "long", "lofted"] as const;
+export type LandingGroup = (typeof LANDING_GROUPS)[number];
+export const FM_LANDING: Record<LandingGroup, [number, number]> = { cross: [6.8, 12], corner: [4.9, 19], long: [4.6, 11], lofted: [7.4, 17] };
+const vzBand = (vzM: number) => (vzM <= 1 ? 0 : vzM <= 3 ? 1 : vzM <= 6 ? 2 : vzM <= 10 ? 3 : 4);
+const launchBand = (dM: number) => (dM < 10 ? 0 : dM < 20 ? 1 : dM < 30 ? 2 : dM < 45 ? 3 : 4);
+const flightBand = (dM: number) => (dM < 8 ? 0 : dM < 13 ? 1 : dM < 18 ? 2 : dM < 23 ? 3 : dM < 30 ? 4 : 5);
+const landingGroupOf = (type: string): LandingGroup | null =>
+  type === "cross" ? "cross" : type === "corner" ? "corner" : type === "long" || type === "clearance" ? "long" : type === "high" || type === "chip" || type === "through_high" ? "lofted" : null;
 
 export const BALL_GROUPS = ["cross", "corner", "long"] as const;
 export type BallGroup = (typeof BALL_GROUPS)[number];
@@ -96,6 +125,8 @@ export function emptyFmTargets(): FmTargetTotals {
     shotDist: SHOT_LABELS.map(() => 0), shots: 0, shotXgHist: new Array(XG_HIST_BINS).fill(0), realSeconds: 0,
     condition: CONDITION_MINUTES.map(() => ({ sum: 0, n: 0 })), keeperEnd: { sum: 0, n: 0 },
     ballPeak: { cross: [], corner: [], long: [] }, ballContact: { cross: [], corner: [], long: [] }, ballAirSeconds: 0,
+    passVz: VZ_LABELS.map(o3), launchSpeed: LAUNCH_LABELS.map(() => []), launchVz: LAUNCH_LABELS.map(() => []),
+    flight: FLIGHT_LABELS.map(() => []), landingErr: { cross: [], corner: [], long: [], lofted: [] },
   };
 }
 
@@ -124,6 +155,11 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
   dst.keeperEnd.sum += src.keeperEnd.sum; dst.keeperEnd.n += src.keeperEnd.n;
   for (const g of BALL_GROUPS) { dst.ballPeak[g].push(...(src.ballPeak?.[g] ?? [])); dst.ballContact[g].push(...(src.ballContact?.[g] ?? [])); }
   dst.ballAirSeconds += src.ballAirSeconds ?? 0;
+  src.passVz?.forEach((b, i) => add3(dst.passVz[i]!, b));
+  src.launchSpeed?.forEach((v, i) => dst.launchSpeed[i]!.push(...v));
+  src.launchVz?.forEach((v, i) => dst.launchVz[i]!.push(...v));
+  src.flight?.forEach((v, i) => dst.flight[i]!.push(...v));
+  for (const g of LANDING_GROUPS) dst.landingErr[g].push(...(src.landingErr?.[g] ?? []));
 }
 
 const ballGroupOf = (kind: string): BallGroup | null =>
@@ -154,7 +190,7 @@ const pressureBand = (p: number) => (p <= 0 ? 0 : p < 15 ? 1 : p < 30 ? 2 : p < 
 const isDefaultIntent = (t: string) => t === "hold_shape" || t === "idle" || t === "track_mark" || t === "support_run";
 const runKey = (t: string) => (isDefaultIntent(t) ? "default" : t);
 
-interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean }
+interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean; t0: number; vzM: number | null }
 interface Stint { id: number; t0: number; decisions: number }
 interface HoldRun { type: string; since: number; line: Line }
 
@@ -186,6 +222,10 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
     bump(acc.passPressure[pressureBand(pending.pressure)]!);
     bump(acc.passKind[pending.kind] ??= o3());
     if (pending.kind === 'regular') bump(acc.passBandRegular[bandOfYd(pending.dist)]!);
+    if (pending.vzM !== null) {
+      bump(acc.passVz[vzBand(pending.vzM)]!);
+      if (k === 0) acc.flight[flightBand(pending.dist / YD)]!.push(realT - pending.t0);
+    }
     pending = null;
   };
 
@@ -212,11 +252,21 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
     const held = !s.pass && !s.looseBall && !s.shot;
     // ── passes ──
     if (s.pass && (!prev || !prev.pass || prev.pass.fromId !== s.pass.fromId || s.pass.t < prev.pass.t)) {
+      const ph = s.pass.physics;
+      if (ph) {
+        // Stage 4: the launch against FM's table, and where a high ball lands against where it was aimed.
+        const dAim = Math.hypot(ph.aimX - ph.ox, ph.aimY - ph.oy) / YD;
+        acc.launchSpeed[launchBand(dAim)]!.push(ph.speed / YD); acc.launchVz[launchBand(dAim)]!.push(ph.vz / YD);
+        const g = landingGroupOf(ph.type);
+        if (g && (g !== "lofted" || s.pass.kind === "cross" || s.pass.kind === "long_ball" || s.pass.kind === "clearance")) {
+          acc.landingErr[g].push(Math.hypot(s.pass.toX - ph.aimX, s.pass.toY - ph.aimY) / YD);
+        }
+      }
       if (s.pass.kind !== "clearance") {
         const src = (prev ?? s).players.find(p => p.id === s.pass!.fromId) ?? s.players.find(p => p.id === s.pass!.fromId)!;
         const opps = (prev ?? s).players.filter(p => p.team !== src.team);
         const lofted = s.pass.kind === "cross" || s.pass.kind === "long_ball" || !!s.pass.lofted;
-        pending = { kind: s.pass.lofted ? 'lofted' : s.pass.kind, team: src.team, from: src.id, intended: s.pass.toId ?? s.pass.intendedRunnerId, dist: s.pass.distance, lofted, pressure: holderPressure(src.x, src.y, opps), held: false };
+        pending = { kind: s.pass.lofted ? 'lofted' : s.pass.kind, team: src.team, from: src.id, intended: s.pass.toId ?? s.pass.intendedRunnerId, dist: s.pass.distance, lofted, pressure: holderPressure(src.x, src.y, opps), held: false, t0: realT, vzM: ph ? ph.vz / YD : null };
       }
     }
     if (pending && held && s.ballHolderId !== pending.from) resolvePass(s, s.ballHolderId);

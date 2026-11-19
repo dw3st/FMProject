@@ -127,6 +127,32 @@ error); shots 4.82 / 4.46, 4.75 / 4.55, 4.75 / 4.74 (4.77 / 4.62, −3.1%, 1.4 s
 - Interceptions +24%: on a ground pass the physical ball is fast early and slow late (the old smoothstep was slow early),
   so it reaches a defender's corridor sooner.
 
+### Stage 4: the physical pass (`pass-physics.md`)
+
+`fm-targets.ts 60 premier_league --chunks 1` (seed 9000, compressed clock), before = stage 3 / after = `PASS_PHYSICS` on.
+Only recorded, nothing tuned. `DECISION_OVERRIDES='{"PASS_PHYSICS":false}'` gives the stage-3 pass.
+
+| Per match, both teams | Before | After | FM |
+|---|---|---|---|
+| Launch \|v\| by 0–10 / 10–20 / 20–30 / 30–45 / 45+ m (m/s) | — | 9.7 / 13.3 / 17.3 / 21.3 / 28.6 | 9.7 / 14.2 / 19.6 / 24.5 / 31.3 (R6) |
+| Launch vz by the same bands (m/s) | — | 0.97 / 1.82 / 5.19 / 9.26 / 9.69 | 0.85 / 1.8 / 4.7 / 10.2 / 14.3 |
+| To the intended receiver by vz ≤1 / 1–3 / 3–6 / 6–10 / >10 m/s | — | 97 / 96 / 81 / 40 / 18% | 92 / 90 / 79 / 32 / 30% (R7) |
+| Flight 0–8 / 8–13 / 13–18 / 18–23 / 23–30 / 30+ m (s) | — | 0.6 / 1.0 / 1.4 / 1.4 / 1.6 / 1.8 | 0.65 / 0.95 / 1.18 / 1.45 / 1.75 / 2.4 |
+| Peak cross / corner / long ball (m) | 1.31 / 2.15 / 1.85 | 3.97 / 5.78 / 4.40 | 4.0 / 5.6 / 4.4 (R9 §3) |
+| Landing vs aim median (p90): cross / corner / long / lofted (m) | — | 2.7 (7.1) / 3.0 (6.3) / 0 (8.2) / 4.6 (9.2) | 6.8 (12) / 4.9 (19) / 4.6 (11) / 7.4 (17) |
+| Regular passes / through balls to the receiver | 90.3 / 71.5% | 96.4 / 55.3% | — |
+| All kinds to the receiver (to the opponent) | 78.6% (15.2%) | 84.2% (11.5%) | 82% (13.5%) |
+| Pass completion (official) | 75.7% | 83.7% | 86% |
+| Goals / shots / xG | 1.48 / 4.70 / 2.25 | 1.03 / 2.80 / 1.40 | 1.5 / 21.5 / — |
+| Interceptions / corners / crosses | 3.13 / 3.70 / 8.45 | 2.90 / 2.40 / 5.45 | 59 / 12.5 / 64 |
+| Holder mix carry / pass / turn / hold | 55.9 / 33.4 / 7.6 / 2.5 | 54.2 / 38.6 / 3.0 / 3.8 | 44 / 34 / 12 / 9 |
+| Ball in the air (s, compressed) | 38.9 | 82.6 | — |
+
+- Launch, loft, peaks and flight times follow FM; the speed falls 10–13% short beyond 20 m and the landing error of
+  high balls is about half of FM's.
+- Shots and goals fall (passes take FM's time and the defence recovers; the arrival lane score picks safer passes).
+  Volume is calibrated at the end of the rebuild.
+
 ## Target against ours
 
 Premier League, 150 seeded matches each (`fm-targets.ts`, AI formations, balanced). "main" = the seven flags off;
@@ -166,6 +192,33 @@ Isolated with `ball-cluster.ts` (150 matches, AI formations, flags and `FM_NUMBE
 (`TB_RISK` 0: −1.5). Misses (reach ×10: no change), the out-of-possession drop and depth, the shape shift and the
 crowd-edge rule moved little.
 
+## 90 minutes of physics (engine rebuild stage 2)
+
+The engine plays the 90 minutes on the real clock (`match-flow.md` → "Clock and time constants"). Premier League,
+24 seeded matches (`fm-targets.ts 24 --chunks 1 --seed 9000`), raw counts per match, both teams; "before" = the
+`FULL_DURATION` switch of stage 0 (90 minutes but the restarts still 0.4–2 physical s of dead ball). Recorded only:
+nothing calibrated.
+
+| Measure | FM | before | stage 2 |
+|---|---|---|---|
+| Goals | 1.5 | 37 | 14.8 |
+| Shots | 21.5 | 114 | 45.8 |
+| Passes (all kinds) | 978 | 975 | 746 |
+| Corners | 12.5 | 81 | 39.1 |
+| Fouls | 19 | 107 | 59.1 |
+| Throw-ins | 23 | 45 | 22.8 |
+| Penalties | 0.2 | — | 2.7 |
+| Outfield energy at 15' / 45' / 90' | 87 / 77.5 / 73.5 | — / — / 52 | 83.7 / 75.0 / 65.6 |
+| Keepers' energy at the end | 96.5 | — | 68.8 |
+
+Restarts now take their dead time on the match clock (a corner 21.6 game-s, a goal kick 18…), so about half the
+match the ball is out of play, as in football; the counts fell by about half. Shots are still about twice FM's and
+goals ten times (xG per shot 0.48 against 0.15): the next stages (shot choice, keeper, blocks) have to move them.
+
+Cost (`engine-cost.ts`, same 3 seeded matches, machine loaded by other runs): 1.35 → 0.93 ms per tick wall, 0.66
+CPU ms per tick, 38 → 26 s per match (15.3 s in the fm-targets run), ~28 100 ticks, RSS 135 MB. Unloaded, 0.48 ms
+per tick (13.8 s per match).
+
 ## Limitations
 
 - Ball crowding with every team in 4-3-3 (Premier) is still 6.6% against main's 5.8%; with the AI formations and in
@@ -199,6 +252,27 @@ O modelo bate com os exemplos do FM (`FmXg.test.ts`); a diferença que sobra é 
 quase só de perto e sem bloqueio (77% dos chutes a menos de 18 jd, bloqueados 0,4%), o FM chuta 21,5 vezes de toda
 parte, metade de longe e 38% bloqueados. Isso é das etapas 8 e 9. Os gols caem porque a resolução de hoje ainda sorteia
 sobre o xG (~30% menor por chute); a etapa 7 troca isso pela trajetória. Custo: ~9 µs por avaliação do xG.
+
+## Etapa 18: camada de lances (só registro)
+
+`bun scripts/highlights-measure.ts` (Premier League, semente 9000, formações da IA, equilibrado). Antes: não havia
+lances. Os níveis se contêm (`highlights.md`); segundos = tempo de exibição a 1×. Nada calibrado.
+
+| Por partida, os dois times | Relógio comprimido (24 partidas) | `FULL_DURATION=1` (6 partidas) | Referência |
+|---|---|---|---|
+| Jogo vivo simulado (s) | 317 | 5651 | — |
+| Gols / chances claras no motor | 1,17 / 1,2 | 26 / 32,5 | FM 1,5 / 3,5 |
+| Lances principais (duração somada, % do jogo) | 2,5 (47 s, 15%) | 62,8 (19,8 min, 21%) | FM ~15–25 lances principais; meta de produto 2–4 min |
+| Lances estendidos | 7,2 (120 s, 38%) | 136,5 (40 min, 43%) | — |
+| Lances completos | 10,9 (171 s, 54%) | 203,8 (55 min, 59%) | — |
+| Mediana de um lance principal / estendido / completo (s) | 18,8 / 15,4 / 14,0 | 18,0 / 16,4 / 15,0 | — |
+
+- Todo gol fica dentro de um lance principal (28 de 28, 156 de 156).
+- Com `FULL_DURATION` o motor ainda faz ~26 gols e ~33 chances claras por jogo (sem calibração): quase todo lance
+  principal é um gol ou uma chance clara, então a contagem segue esse volume. No volume do FM (1,5 gols, 3,5 chances
+  claras, poucos pênaltis e vermelhos) o nível principal daria ~5–6 lances (~1,7 min); os "15–25 lances principais" do
+  FM ficam mais perto do nosso nível estendido (chutes, defesas, escanteios, faltas perigosas, cartões).
+- Custo: o `simStep` por passo e o rastreador ficaram dentro do ruído do tempo por partida (PC carregado).
 
 ## Etapa 13: impedimento, faltas e cartões (antes / depois)
 

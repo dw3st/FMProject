@@ -19,7 +19,7 @@ const AWAY = load("34.json");
 
 /** Team A shoots at x = 115 from (95, 37); the keeper of B stands where the test says. */
 function shooting(gkX: number, gkY: number): { s: GameState; gkId: number; shooterId: number } {
-  const base = { ...createMatchState(HOME.players, F433, AWAY.players, F433), matchPhase: "firstHalf" as const, presentationCountdown: 0 };
+  const base = { ...createMatchState(HOME.players, F433, AWAY.players, F433), matchPhase: "firstHalf" as const, presentationCountdown: 0, setPiece: null };
   const shooter = base.players.find((p) => p.team === "A" && p.role === "ST")!;
   const gk = base.players.find((p) => p.team === "B" && p.role === "GK")!;
   const dir = shooter.attackDir;

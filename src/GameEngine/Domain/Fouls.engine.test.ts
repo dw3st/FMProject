@@ -151,7 +151,8 @@ describe("fouls in the engine", () => {
     const resolved: unknown[] = [];
     const unsub = gameBus.on("penaltyResolved", e => resolved.push(e));
     let state = out;
-    for (let i = 0; i < 40 && state.matchPhase === "firstHalf"; i++) state = tickState(state, 0.2).state;
+    // The penalty takes its 36 s of dead ball (stage 2) before the kick: well inside the 60 s the whistle waits.
+    for (let i = 0; i < 400 && state.matchPhase === "firstHalf"; i++) state = tickState(state, 0.2).state;
     unsub();
     expect(resolved).toHaveLength(1);
     expect(state.score.A).toBe(1);
