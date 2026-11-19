@@ -134,7 +134,7 @@ function buildState(players: GamePlayer[], ballHolderId: number): GameState {
     injuries:              [],
     substitutions:         [],
     teamIntent:            { A: 'balanced', B: 'balanced' },
-  } as GameState;
+  } as unknown as GameState;
 }
 
 // ── Scenario type ─────────────────────────────────────────────────────────────
