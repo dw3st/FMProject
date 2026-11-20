@@ -551,3 +551,45 @@ ligada (`aerial.md` → "Stage 10"). Nada calibrado.
   (46% de fora da área): é a etapa 9 (portão e chute de longe) e a calibração (21), não o goleiro.
 - Reposição: com menos bolas recolhidas o goleiro passa menos (4,9 por jogo, FM 47); o goleiro como portador é o
   escolhedor antigo (a etapa 8 o deixa de fora). Fica para a calibração.
+
+## Etapa 20: instruções da equipe e por vaga (antes / depois, só registro)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` com `DECISION_OVERRIDES='{"TEAM_INSTRUCTIONS":false}'`
+(antes) e com a etapa ligada (depois): **saída idêntica** (só o tempo por jogo muda). O fm-targets joga cada clube no
+estilo equilibrado sem instrução nenhuma, e no modelo do estilo toda instrução está no nível do modelo: identidade por
+construção (`tactical-config.md` → "Stage 20"). Os números de volume continuam os da branch antes da calibração (gols
+11,9, chutes 51,2, xG 8,0 por jogo; FM 1,5 / 21,5 / 3,3). Nada calibrado.
+
+`bun scripts/style-matrix.ts premier_league 20 --part 0/2 | 1/2` (20 jogos por par, erro ~±19 p.p.): ligado e desligado
+dão a mesma matriz, jogo a jogo. Vantagem média: equilibrado +18,8, posse −37,5, pressão alta +62,5, contra-ataque
+−67,5, jogo direto +23,8; espelho do contra-ataque 17,5 gols e 96 chutes por jogo (já era assim antes desta etapa).
+`formation-matrix.ts --matches 4` (16–64 jogos por formação): amplitude 75 p.p., só ruído.
+
+**Vantagem de cada instrução da equipe** (`instruction-matrix.ts --parts team --matches 6`, Premier, 4-3-3, o lado X com
+a instrução em ±2, o Y no modelo; **6 jogos por linha, erro ~±40 p.p.**: só um primeiro olhar, a medição de ±5 p.p. é da
+etapa 21). Saída em `debug/s20/team-instr.md` (não versionado).
+
+| Instrução | −2: vantagem, chutes X/Y | +2: vantagem, chutes X/Y |
+|---|---|---|
+| Passe | −100, 17,2 / 31,5 | −33, 34,3 / 32,3 |
+| Linha defensiva | −100, 23,0 / 29,3 | +67, 32,2 / 24,3 |
+| Intensidade da pressão | −83, 25,3 / **47,7** | −33, 34,5 / 23,3 |
+| Desarme | +67, 28,8 / 24,5 | −50, 20,8 / 28,8 |
+| Chute (chutar à vista em +2) | −33, 24,0 / 26,5 | +67, 29,3 / 24,8 |
+| Mentalidade | −17, 18,8 / 25,7 | +33, 31,7 / 26,8 |
+| Laterais (por dentro / por fora) | +50, 29,3 / 22,2 | −33, 30,7 / 29,0 |
+| Cruzamento | +67 | +67 |
+| Drible | +33 | −17 |
+| Ao ganhar a bola | 0 | −33 |
+| Ao perder a bola | 0 | +17 |
+| Engajamento | 0 | +33 |
+| Armadilha | −33 | +33 |
+| Liberdade | +67 | 0 |
+| Alvo do passe | +33 | +17 |
+| Ritmo, largura, largura sem a bola, cruzamentos do adversário, reposição do goleiro | −33 a +17 | −33 a +17 |
+
+- As assinaturas andam para o lado certo: chutar à vista +18% de chutes; pressão "bem menos" deixa o adversário com 48
+  chutes (o dobro); linha recuada tira as pressões do time (156 contra 1113 ticks); mentalidade defensiva passa mais
+  (466 contra 341) e chuta menos; "ao ganhar, manter a forma" passa mais (512 contra 315).
+- Candidatas fortes para a etapa 21 (as mais longe de zero com sinal coerente nas assinaturas): pressão −2, passe −2,
+  linha ±2, desarme ±2. Largura e ritmo ficam perto de zero, como no FM (efeito pequeno).
