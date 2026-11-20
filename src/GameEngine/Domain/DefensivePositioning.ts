@@ -16,6 +16,7 @@
  * No side effects. No gameState imports (avoids circular deps).
  */
 
+import { INSTR, instrExtra, instrMentality } from '@/GameEngine/Configs/InstructionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
@@ -92,8 +93,15 @@ function outOfZoneDistance(
  */
 function effectivePressRange(player: GamePlayer, intent: TeamIntent = 'balanced'): number {
   const base = player.runtimeStats.withoutBall.pressRange;
-  const pressingStyle = effectivePressingStyle(player.team, intent);
-  return base + PRESS_RANGE_TACTIC_DELTA_YARDS[pressingStyle];
+  // Stage 20 (4c-2): the range is the line of engagement's (the intent's override wins), + a step beyond at ±2
+  // and the mentality.
+  const engagement = getPressingStyleOverride(intent) ?? getDefenseTacticKeys(player.team).engagementStyle;
+  return base + PRESS_RANGE_TACTIC_DELTA_YARDS[engagement] + INSTR.ENGAGE_RANGE_YD * engagementExtra(player.team);
+}
+
+/** The line of engagement beyond its axis value (±2) plus the mentality's share (stage 20); 0 = as the axis. */
+function engagementExtra(team: TeamId): number {
+  return instrExtra(team, 'engagement') + INSTR.MENT_SHIFT * instrMentality(team);
 }
 
 /** Last-computed defensive intent per player id — written each tick, read by computeDefensivePosition. */
@@ -1089,7 +1097,15 @@ function scorePressHolderIntent(
     const h = ctx.ballHolder;
     const fromOwn = h.attackDir === 1 ? h.x : PITCH_LENGTH - h.x;
     s *= fromOwn < PITCH_LENGTH / 3 ? FM_NUMBERS.PRESS_OWN_THIRD : fromOwn < (2 * PITCH_LENGTH) / 3 ? FM_NUMBERS.PRESS_MID_THIRD : 1;
+    // Stage 20: a higher line of engagement presses more where the opponent builds up, a lower one less.
+    const e = engagementExtra(ctx.player.team);
+    if (e !== 0) {
+      s *= Math.max(0, fromOwn < PITCH_LENGTH / 3 ? 1 + INSTR.ENGAGE_OWN * e : fromOwn < (2 * PITCH_LENGTH) / 3 ? 1 + INSTR.ENGAGE_MID * e : 1);
+    }
   }
+  // Stage 20: pressing intensity beyond its axis value (±2).
+  const pe = instrExtra(ctx.player.team, 'pressing');
+  if (pe !== 0) s *= 1 + INSTR.PRESS_EXTRA * pe;
   // Range expansion uses rawPatienceT (not proximity-dampened) — patience exhaustion
   // should expand who is eligible to press regardless of their current distance.
   // The boost multiplier below still uses proximity-dampened patienceT so far-away

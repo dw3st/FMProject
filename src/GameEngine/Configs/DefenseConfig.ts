@@ -11,7 +11,9 @@ import type { TeamId } from '@/GameEngine/types';
 import type { PressingStyle, DefensiveLine, TeamWidth, TacticalStyle, TacticalAxes, Mentality } from '@/types/tacticsTypes';
 import { shiftAxesByMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 import type { TeamInstructions } from '@/types/tacticsTypes';
-import { axesOfLevels, resolveInstructions } from '@/Domain/tactics/teamInstructions';
+import { axesOfLevels, bucketOf, pressingStyleOf, resolveInstructions } from '@/Domain/tactics/teamInstructions';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { INSTR, instrExtra, instrMentality, instrVersion } from '@/GameEngine/Configs/InstructionConfig';
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import {
@@ -103,11 +105,14 @@ const TEAM_CONFIGS: Record<TeamId, DefenseConfigValues> = {
 
 /** Stores the raw tactic key strings for each team so intent selection can look them up. */
 const TEAM_TACTIC_KEYS: Record<TeamId, {
+  /** Pressing intensity's axis value (the intent multipliers, the marking). */
   pressingStyle: PressingStyle;
   defensiveLine: DefensiveLine;
+  /** Line of engagement's axis value (where the press starts: the press range), stage 20. */
+  engagementStyle: PressingStyle;
 }> = {
-  A: { pressingStyle: 'mid_block', defensiveLine: 'normal' },
-  B: { pressingStyle: 'mid_block', defensiveLine: 'normal' },
+  A: { pressingStyle: 'mid_block', defensiveLine: 'normal', engagementStyle: 'mid_block' },
+  B: { pressingStyle: 'mid_block', defensiveLine: 'normal', engagementStyle: 'mid_block' },
 };
 
 /** Returns the raw tactic key strings for intent multiplier lookup. */
@@ -115,12 +120,43 @@ export function getDefenseTacticKeys(team: TeamId) {
   return TEAM_TACTIC_KEYS[team];
 }
 
+/**
+ * The steps beyond the axis values (stage 20, 4c-2): the instructions at ±2 and the saved mentality move the line,
+ * the tackling and the defensive width a little. Cached per team on the instruction store's version.
+ */
+const TEAM_WITH_EXTRAS: Record<TeamId, { version: number; base: DefenseConfigValues | null; cfg: DefenseConfigValues }> = {
+  A: { version: -1, base: null, cfg: { ...DEFAULTS } },
+  B: { version: -1, base: null, cfg: { ...DEFAULTS } },
+};
+
+function withInstructionExtras(team: TeamId): DefenseConfigValues {
+  const c = TEAM_WITH_EXTRAS[team];
+  const v = instrVersion(team);
+  if (c.version === v && c.base === TEAM_CONFIGS[team]) return c.cfg;
+  const base = TEAM_CONFIGS[team];
+  const lineE = instrExtra(team, 'line') + INSTR.MENT_SHIFT * instrMentality(team);
+  c.cfg = {
+    ...base,
+    DEFENSIVE_LINE_HEIGHT: Math.max(0, Math.min(1, base.DEFENSIVE_LINE_HEIGHT + INSTR.LINE_EXTRA * lineE)),
+    TACKLE_AGGRESSION: Math.max(0, Math.min(1, base.TACKLE_AGGRESSION + INSTR.TACKLE_EXTRA * instrExtra(team, 'tackling'))),
+    HORIZONTAL_COMPACTNESS: Math.max(0, Math.min(1, base.HORIZONTAL_COMPACTNESS - INSTR.DEFWIDTH_EXTRA * instrExtra(team, 'defWidth'))),
+  };
+  c.version = v;
+  c.base = base;
+  return c.cfg;
+}
+
 /** Returns the defensive config for the given team. */
 export function getDefenseConfig(team: TeamId): DefenseConfigValues {
-  return TEAM_CONFIGS[team];
+  if (!DECISION_FLAGS.TEAM_INSTRUCTIONS) return TEAM_CONFIGS[team];
+  return withInstructionExtras(team);
 }
 
 // ── TacticalAxes → engine values ──────────────────────────────────────────────
+
+/** The engagement and tackling halves of the pressing map (stage 20): the same values `pressing_style` gave. */
+const PRESSING_LINE_OF: Record<PressingStyle, number> = { low_block: 0.28, mid_block: 0.55, high_press: 0.80 };
+const TACKLE_AGGRESSION_OF: Record<PressingStyle, number> = { low_block: 0.25, mid_block: 0.40, high_press: 0.65 };
 
 function mapAxesToDefense(t: TacticalAxes): Partial<DefenseConfigValues> {
   const pressingMap: Record<PressingStyle, Partial<DefenseConfigValues>> = {
@@ -175,12 +211,21 @@ export function applyTeamTacticsConfig(
   // Stage 20: the defending side's axes from the instruction levels (defensive width, pressing, line).
   const resolved = resolveInstructions(style, axesOverride, instructions, mentalityLevel);
   const axes = shiftAxesByMentality(axesOfLevels(resolved.levels).defense, mentality);
-  Object.assign(TEAM_CONFIGS[team], mapAxesToDefense(axes));
+  // 4c-2: pressing_style splits into engagement (press range), intensity (the intent table, marking, stamina) and
+  // tackling (aggression); the live mentality steps the three alike, as it stepped pressing_style.
+  const liveStep = mentality === 'attacking' ? 1 : mentality === 'defensive' ? -1 : 0;
+  const stepped = (level: number) => pressingStyleOf(Math.max(0, Math.min(2, bucketOf(level) + liveStep)) - 1);
+  const engagementStyle = stepped(resolved.levels.engagement);
+  const tacklingStyle = stepped(resolved.levels.tackling);
+  TEAM_CONFIGS[team] = { ...TEAM_CONFIGS[team], ...mapAxesToDefense(axes) };
+  TEAM_CONFIGS[team].PRESSING_LINE_HEIGHT = PRESSING_LINE_OF[engagementStyle];
+  TEAM_CONFIGS[team].TACKLE_AGGRESSION = TACKLE_AGGRESSION_OF[tacklingStyle];
   applyAdd(TEAM_CONFIGS[team], STYLE_FAMILIARITY_EFFECTS[style].defenseAdd, familiarityFactor(familiarity?.[style]));
   if (axes.defensive_line === 'high') {
     applyAdd(TEAM_CONFIGS[team], HIGH_LINE_TRAP_EFFECT.defenseAdd, familiarityFactor(familiarity?.high_line_trap));
   }
   TEAM_TACTIC_KEYS[team].pressingStyle = axes.pressing_style;
+  TEAM_TACTIC_KEYS[team].engagementStyle = engagementStyle;
   TEAM_TACTIC_KEYS[team].defensiveLine = axes.defensive_line;
 }
 

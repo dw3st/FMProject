@@ -144,6 +144,10 @@ function templateState(style: TacticalStyle): TeamInstructionState {
 
 const TEAM: Record<TeamId, TeamInstructionState> = { A: templateState('balanced'), B: templateState('balanced') };
 
+/** Bumped on every write of a team's instructions: readers that cache derived values (`DefenseConfig.ts`) key on it. */
+const VERSION: Record<TeamId, number> = { A: 0, B: 0 };
+export function instrVersion(team: TeamId): number { return VERSION[team]; }
+
 /** Write a team's instructions (called by `applyTeamAttackConfig`; nothing given = the style's template). */
 export function setTeamInstructions(
   team: TeamId,
@@ -154,6 +158,7 @@ export function setTeamInstructions(
     style: r.style, levels: { ...r.levels }, template: { ...r.template }, focus: r.focus, mentality: r.mentality,
     fam: { inPossession: fam?.inPossession ?? 1, transition: fam?.transition ?? 1, outOfPossession: fam?.outOfPossession ?? 1 },
   };
+  VERSION[team]++;
 }
 
 /** Change only the levels and the mentality during a match (the AI's rule): the axes stay as applied. */
@@ -161,6 +166,7 @@ export function setTeamInstructionLevels(team: TeamId, levels: Partial<Instructi
   const st = TEAM[team];
   st.levels = { ...st.levels, ...levels };
   st.mentality = mentality;
+  VERSION[team]++;
 }
 
 /** The levels a team plays now (for the UI of `/test` and the lab). */

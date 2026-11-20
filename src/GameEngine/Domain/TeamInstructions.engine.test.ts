@@ -37,3 +37,33 @@ describe("team instructions (stage 20): the template plays as the style always d
     expect(play({ style: "counter_attack" }, { style: "balanced" }, { TEAM_INSTRUCTIONS: false })).toBe(plain);
   }, 120_000);
 });
+
+describe("4c-2: pressing split into engagement, intensity and tackling", () => {
+  test("each moves its own value; the style fills the three", async () => {
+    const { applyTeamTacticsConfig, getDefenseConfig, getDefenseTacticKeys } = await import("@/GameEngine/Configs/DefenseConfig");
+    const { applyTeamAttackConfig } = await import("@/GameEngine/Configs/AttackConfig");
+    const { setDecisionFlags } = await import("@/GameEngine/Configs/DecisionConfig");
+    setDecisionFlags();
+    const apply = (instr?: Parameters<typeof applyTeamAttackConfig>[5], m?: number) => {
+      applyTeamTacticsConfig("A", "balanced", "balanced", undefined, undefined, instr, m);
+      applyTeamAttackConfig("A", "balanced", "balanced", undefined, undefined, instr, m);
+    };
+    apply();
+    const base = { ...getDefenseConfig("A") };
+    apply({ outOfPossession: { engagement: 1 } });
+    expect(getDefenseTacticKeys("A").engagementStyle).toBe("high_press");
+    expect(getDefenseTacticKeys("A").pressingStyle).toBe("mid_block");
+    expect(getDefenseConfig("A").TACKLE_AGGRESSION).toBe(base.TACKLE_AGGRESSION);
+    apply({ outOfPossession: { tackling: 2 } });
+    expect(getDefenseConfig("A").TACKLE_AGGRESSION).toBeCloseTo(0.65 + 0.1);
+    apply({ outOfPossession: { line: -2 } });
+    expect(getDefenseConfig("A").DEFENSIVE_LINE_HEIGHT).toBeCloseTo(0.40 - 0.05);
+    apply(undefined, 2);
+    expect(getDefenseConfig("A").DEFENSIVE_LINE_HEIGHT).toBeCloseTo(base.DEFENSIVE_LINE_HEIGHT + 0.05);
+    applyTeamTacticsConfig("A", "counter_attack");
+    applyTeamAttackConfig("A", "counter_attack");
+    expect(getDefenseTacticKeys("A").engagementStyle).toBe("low_block");
+    expect(getDefenseConfig("A").TACKLE_AGGRESSION).toBe(0.25);
+    apply();
+  });
+});

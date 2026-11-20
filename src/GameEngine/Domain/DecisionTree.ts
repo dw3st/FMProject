@@ -64,6 +64,7 @@ import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
 import { pickCandidate, qualityOf, riskOf, scoreCandidates, type HolderCandidate, type HolderCategory } from '@/GameEngine/Domain/HolderChoice';
 import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
+import { INSTR, instrDelta } from '@/GameEngine/Configs/InstructionConfig';
 import { getMainRole } from '@/Domain/roles';
 import { backToGoal, chipMove, cutInsideMove, layOffMove, roundKeeperMove, shieldMove, type HolderMove } from '@/GameEngine/Domain/HolderMoves';
 
@@ -1466,9 +1467,11 @@ export function decide(
     return { type: 'idle' };
   }
 
-  // Tackle is always available regardless of press rank
-  if (dist <= TACKLE_RANGE) {
-    return { type: 'tackle', targetId: ballHolder.id };
+  // Tackle is always available regardless of press rank. Stage 20 (4c-2): getting stuck in reaches a little further,
+  // staying on feet passes up a chance now and then (a draw only with that instruction).
+  const tk = instrDelta(player.team, 'tackling');
+  if (dist <= TACKLE_RANGE + (tk > 0 ? INSTR.TACKLE_REACH_YD * tk : 0)) {
+    if (!(tk < 0 && matchRandom() < INSTR.TACKLE_SKIP * -tk)) return { type: 'tackle', targetId: ballHolder.id };
   }
 
   // GK never presses — always holds position.
