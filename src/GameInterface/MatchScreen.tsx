@@ -1625,7 +1625,10 @@ export function MatchScreen() {
     setMentality(next);
     mentalityRef.current = next;
     if (h2hMode) sendH2H({ kind: "mentality", mentality: next });
-    else applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current, ...myInstrRef.current }, next, myFamiliarityRef.current);
+    else {
+      applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current, ...myInstrRef.current }, next, myFamiliarityRef.current);
+      gameBus.emit("tacticsChanged", { team: "A" });
+    }
     if (!cue) return;
     const kind = next === "attacking" ? "attack" : next === "defensive" ? "defend" : "balanced";
     setCoachCue((prev) => ({ team: mySideRef.current, kind, seq: (prev?.seq ?? 0) + 1 }));
@@ -1638,7 +1641,11 @@ export function MatchScreen() {
     myInstrRef.current = { instructions: next.instructions, mentalityLevel: next.mentalityLevel };
     setLiveTactics(next);
     if (h2hMode) sendH2H({ kind: "tactics", style: next.style, ...(next.axesOverride ? { axesOverride: next.axesOverride } : {}), ...(next.instructions ? { instructions: next.instructions } : {}), ...(next.mentalityLevel ? { mentalityLevel: next.mentalityLevel } : {}) });
-    else applyLiveTactics("A", next, mentalityRef.current, myFamiliarityRef.current);
+    else {
+      applyLiveTactics("A", next, mentalityRef.current, myFamiliarityRef.current);
+      // An order (stage 19, `live-modes.md`): re-tick with the new weights and drop the highlights forecast.
+      gameBus.emit("tacticsChanged", { team: "A" });
+    }
   }
 
   function handleLiveAxis<K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) {

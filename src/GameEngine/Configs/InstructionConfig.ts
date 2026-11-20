@@ -11,6 +11,7 @@
  * Every effect is a multiplier of 1 (or an addition of 0) at 0, and the consumers read nothing new then (no draw).
  * `INSTRUCTION_OVERRIDES='{"SHOT_STEP":1.3}'` (env, read once at load) tunes the numbers.
  */
+import { registerEngineMemory } from '@/GameEngine/Support/EngineMemory';
 import type { GamePlayer, TeamId } from '@/GameEngine/types';
 import type { PlayFocus, TacticalStyle } from '@/types/tacticsTypes';
 import {
@@ -234,6 +235,27 @@ export function resetInstructionState(): void {
   _onBall = null;
   _possessionTime = Infinity;
 }
+
+// Live-mode snapshots (stage 19): the instruction store and the transition clock are match state. Importing the
+// store bumps the version so the cached derived configs (`DefenseConfig.ts`) are rebuilt.
+registerEngineMemory('InstructionConfig.TEAM', {
+  export: () => structuredClone(TEAM),
+  import: (v) => {
+    const t = structuredClone(v as typeof TEAM);
+    TEAM.A = t.A;
+    TEAM.B = t.B;
+    VERSION.A++;
+    VERSION.B++;
+  },
+});
+registerEngineMemory('InstructionConfig.clock', {
+  export: () => ({ onBall: _onBall, time: _possessionTime }),
+  import: (v) => {
+    const c = v as { onBall: TeamId | null; time: number };
+    _onBall = c.onBall;
+    _possessionTime = c.time;
+  },
+});
 
 // ── Holder: one multiplier per candidate (`DecisionTree.ts` → `fmHolderChoice`) ──
 
