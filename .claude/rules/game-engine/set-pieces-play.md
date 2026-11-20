@@ -285,6 +285,7 @@ Flag `FM_SET_PIECES` (`DECISION_FLAGS`, on by default); numbers in `Configs/FmSe
   `drawGoalKickPlan`): short 62 % to the centre-back split to (12.5 m, 2.5 m off the line) on a side, long 38 % to
   64.5 m from the own line, 8 m off centre (`goalKickShortSpot` / `goalKickLongPoint`). The centre-backs stand on the
   short spots; the opponents wait outside the box (`outsideBox`).
+- **No offside** from a throw-in, a dead-ball goal kick or a corner (the law; `noOffsideRestart`).
 - **Direct free kick:** shot from up to 29 m from the goal centre (was 30 yd); the wall's distance for the dip is the
   distance along the shot (was x only).
 - **Event** `setPieceTaken { team, takerId, kind, delivery, distance, backward?, attInBox?, defInBox? }`. Statistics
