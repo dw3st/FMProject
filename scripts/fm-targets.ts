@@ -14,7 +14,7 @@ import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
   BALL_GROUPS, BAND_LABELS, FM_FOULS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
-  FLIGHT_LABELS, FM_FLIGHT_S, KEEPER_BANDS, FM_KEEPER_OFF_OPP, FM_KEEPER_OFF_OWN, FM_GOAL_BY_DIST, SHOT_M_LABELS, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
+  FLIGHT_LABELS, FM_FLIGHT_S, KEEPER_BANDS, FM_KEEPER_OFF_OPP, FM_KEEPER_OFF_OWN, FM_GOAL_BY_DIST, SHOT_M_LABELS, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS, FM_SHOT_DIST_SHARE,
   emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
@@ -204,6 +204,10 @@ console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) 
     const row = ends[i]!; const t = row.reduce((a, b) => a + b, 0);
     return `${l} n ${t} goal ${t ? f1((100 * row[0]!) / t) : "—"}% (FM ${FM_GOAL_BY_DIST[i]}) blk ${t ? f1((100 * row[2]!) / t) : "—"}%`;
   }).join(" · "));
+  // Stage 9 (`holder-choice.md` → "Stage 9"): where the shots come from.
+  const endT = ends.reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0) || 1;
+  console.log("  shot share by distance (m): " + SHOT_M_LABELS.map((l, i) => `${l} ${f1((100 * ends[i]!.reduce((a, b) => a + b, 0)) / endT)}% (FM ${FM_SHOT_DIST_SHARE[i]})`).join(" · "));
+  console.log(`  struck from outside the box ${f1((100 * (c.shotsOutsideBox ?? 0)) / launched)}% (FM 46 R9 · 27 R8) · mean distance ${f1((c.shotDistSumM ?? 0) / launched)} m (FM median 14.9) · low vz ≤ 3 m/s ${f1((100 * (c.shotsLowLaunch ?? 0)) / launched)}% (FM 28)`);
 }
 // Stage 11 (`keeper.md` → "Stage 11"): FM's keeper — off the line by band, sideways follow, high balls in his box, distribution.
 {

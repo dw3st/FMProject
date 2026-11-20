@@ -98,6 +98,10 @@ export interface DecisionFlags {
   /** Stage 7 (`shot-and-save.md` → "Stage 7"): the shot is a physical launch (aim, FM's error with base 105) and the
    *  goal, save, block or miss come from the ball against the keeper and the defenders, no goal dice (needs `BALL_3D`). */
   SHOT_PHYSICS: boolean;
+  /** Stage 9 (`holder-choice.md` → "Stage 9"): FM's shot gate — a shot candidate within 30 m of the goal centre, × 0.75
+   *  in the box and × 0.667 outside; valued from the shooter's own geometry (the blockers are physical, stage 7), so a
+   *  shot is offered with people in front; the chip only over a keeper really off his line. */
+  LONG_SHOTS: boolean;
   /** Stage 16 (`decisions.md` → "Stage 16"): the mental rolls off the ball and in defence — concentration (marking
    *  lapses), aggression (press, step in), anticipation (reads the mark's run), decisions (noise on the intent scores). */
   DEFENSIVE_MIND: boolean;
@@ -151,6 +155,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   ACTION_HOLD: true,
   SHOULDER_RUNS: true,
   SHOT_PHYSICS: true,
+  LONG_SHOTS: true,
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
   FM_KEEPER: true,

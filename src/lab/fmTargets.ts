@@ -113,6 +113,8 @@ const keeperBand = (dM: number) => (dM < 35 ? 0 : dM < 52.5 ? 1 : dM < 70 ? 2 : 
 /** Stage 7: shot distance bands (m, report 8 §2.1) and FM's goal share of the shots in each (%). */
 export const SHOT_M_LABELS = ["0–8", "8–12", "12–16", "16–20", "20–25", "25+"] as const;
 export const FM_GOAL_BY_DIST = [21, 11, 12, 13, 3, 0] as const;
+/** Share of shots by distance band (R8 §2.1, n 180: 24 / 36 / 42 / 38 / 32 / 8). */
+export const FM_SHOT_DIST_SHARE = [13, 20, 23, 21, 18, 4] as const;
 export const SHOT_END = ["goal", "saved", "blocked", "off"] as const;
 export type ShotEnd = (typeof SHOT_END)[number];
 const shotMBand = (dM: number) => (dM < 8 ? 0 : dM < 12 ? 1 : dM < 16 ? 2 : dM < 20 ? 3 : dM < 25 ? 4 : 5);
@@ -569,6 +571,8 @@ export interface FmMatchCounts {
   saves?: number; savesGood?: number; savesDifficult?: number;
   shotPower?: number; shotPlaced?: number; shotLob?: number; shotChip?: number; shotVolley?: number; shotHeaderLaunch?: number; shotFreeKick?: number;
   shotSpeedSum?: number; shotLaunchN?: number;
+  /** Stage 9: strike distance sum (m), shots from outside the box, low launches (vz ≤ 3 m/s). */
+  shotDistSumM?: number; shotsOutsideBox?: number; shotsLowLaunch?: number;
 }
 
 export const FM_COUNT_KEYS = [
@@ -581,7 +585,7 @@ export const FM_COUNT_KEYS = [
   "contactFouls", "lineMisreads",
   "shotsSaved", "shotsOffTarget", "shotsWoodwork", "shotsDeflected", "saves", "savesGood", "savesDifficult",
   "shotPower", "shotPlaced", "shotLob", "shotChip", "shotVolley", "shotHeaderLaunch", "shotFreeKick", "shotSpeedSum", "shotLaunchN",
-  "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
+  "shotDistSumM", "shotsOutsideBox", "shotsLowLaunch", "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
 /** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */

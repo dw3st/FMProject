@@ -123,6 +123,7 @@ function emptyTeamRaw(): TeamRawStats {
     holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0, holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0, holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
     shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
     airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0, headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0, boxHighBalls: 0, boxHighKeeper: 0, boxHighDef: 0, boxHighAtt: 0, keeperClaims: 0, keeperPunches: 0,
+    shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -294,6 +295,9 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.shotFreeKick += src.shotFreeKick;
   dst.shotSpeedSum += src.shotSpeedSum;
   dst.shotLaunchN += src.shotLaunchN;
+  dst.shotDistSumM += src.shotDistSumM;
+  dst.shotsOutsideBox += src.shotsOutsideBox;
+  dst.shotsLowLaunch += src.shotsLowLaunch;
   dst.cutControls += src.cutControls;
   dst.cutClears += src.cutClears;
   dst.cutDeflects += src.cutDeflects;
@@ -721,6 +725,9 @@ function runOneMatch(
   teamA.shotFreeKick += sA.shotFreeKick ?? 0; teamB.shotFreeKick += sB.shotFreeKick ?? 0;
   teamA.shotSpeedSum += sA.shotSpeedSum ?? 0; teamB.shotSpeedSum += sB.shotSpeedSum ?? 0;
   teamA.shotLaunchN += sA.shotLaunchN ?? 0; teamB.shotLaunchN += sB.shotLaunchN ?? 0;
+  teamA.shotDistSumM += sA.shotDistSumM ?? 0; teamB.shotDistSumM += sB.shotDistSumM ?? 0;
+  teamA.shotsOutsideBox += sA.shotsOutsideBox ?? 0; teamB.shotsOutsideBox += sB.shotsOutsideBox ?? 0;
+  teamA.shotsLowLaunch += sA.shotsLowLaunch ?? 0; teamB.shotsLowLaunch += sB.shotsLowLaunch ?? 0;
   teamA.cutControls += sA.cutControls ?? 0; teamB.cutControls += sB.cutControls ?? 0;
   teamA.cutClears += sA.cutClears ?? 0; teamB.cutClears += sB.cutClears ?? 0;
   teamA.cutDeflects += sA.cutDeflects ?? 0; teamB.cutDeflects += sB.cutDeflects ?? 0;

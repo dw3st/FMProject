@@ -18,6 +18,8 @@
 
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import { shotXg } from '@/GameEngine/Domain/ShotXg';
+import { SHOT_GATE } from '@/GameEngine/Configs/ShotGateConfig';
+import { distToGoalCentreM, shotGateFactor, shotCandidateValue } from '@/GameEngine/Domain/ShotGate';
 import { DECISION_FLAGS, HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { holderPressure } from '@/GameEngine/Domain/Pressure';
 import {
@@ -397,6 +399,8 @@ interface ShootBreakdown {
   score:       number;
   /** FM xG model breakdown (stage 6, `xg.md`), present with `FM_XG` on. */
   fm?:         { model: string; features: Record<string, number>; availableM: number; coveredM: number; inTriangle: number };
+  /** Stage 9 shot gate: FM's factor (null = beyond 30 m), the clean xG the value reads and the distance (m). */
+  gate?:       { factor: number | null; cleanXg: number; distM: number };
 }
 
 /** Dribble breakdown — debug-only view of how the dribble ActionScore is produced. */
@@ -522,9 +526,17 @@ function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamInte
   // Intent flat bonus (small — never large enough to force a shot from nowhere)
   const intentBonus = getShootIntentBonus(intent);
   let score = Math.max(roleScore, xgFloor) + intentBonus;
+  // Stage 9 (`holder-choice.md` → "Stage 9"): FM's shot gate (30 m from the goal centre, × 0.75 in the box, × 0.667
+  // outside) on a value from the shooter's own geometry: the defenders in front block it physically (stage 7).
+  let gate: ShootBreakdown['gate'];
+  if (DECISION_FLAGS.LONG_SHOTS && DECISION_FLAGS.FM_XG) {
+    const factor = shotGateFactor(player.x, player.y, player.attackDir);
+    const cleanXg = factor === null ? 0 : shotXg(player, allPlayers.filter(p => p.id === player.id || (p.role === 'GK' && p.team !== player.team)), 'ground').xg;
+    score = factor === null ? 0 : (shotCandidateValue(cleanXg, SHOT_GATE.XG_REF, factor) + intentBonus) * shotLevelMult(player.role);
+    gate = { factor, cleanXg, distM: distToGoalCentreM(player.x, player.y, player.attackDir) };
+  } else if (DECISION_FLAGS.SHOT_LIMIT) {
   // Shot limit (stage 4b, `fm-numbers.md`): no shot beyond SHOT_MAX_YD of the goal mouth; the shooting level of the
   // role (defenders "rarely") multiplies the score, never the limit.
-  if (DECISION_FLAGS.SHOT_LIMIT) {
     if (distToGoalMouth(player.x, player.y, player.attackDir) > FM_NUMBERS.SHOT_MAX_YD) score = 0;
     else score *= shotLevelMult(player.role);
   }
@@ -534,6 +546,7 @@ function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamInte
     shootBreakdown: {
       dist, openAngle, pressure, xg, threshold,
       roleScore, xgFloor, intentBonus, score,
+      ...(gate ? { gate } : {}),
       ...(sx?.fm ? { fm: { model: sx.fm.model, features: { ...sx.fm.features }, availableM: sx.fm.availableM, coveredM: sx.fm.coveredM, inTriangle: sx.fm.inTriangle } } : {}),
     },
   };
@@ -951,7 +964,7 @@ function fmHolderChoice(
     // A carry with no direction (two players on the same spot) is not an option.
     if (decision.type === 'carry' && !(Number.isFinite(decision.dx) && Number.isFinite(decision.dy))) return;
     // FM's category multiplier (relative to a carry); the corner-flag hold is a type of its own, copied as it is.
-    const mult = kind === 'flag' ? 1 : H.CAT_MULT[cat] ?? 1;
+    const mult = kind === 'flag' ? 1 : cat === 1 && DECISION_FLAGS.LONG_SHOTS ? SHOT_GATE.KICK_MULT : H.CAT_MULT[cat] ?? 1;
     cands.push({ cat, kind, label, value: Math.max(0, Math.min(1, value)), mult, risk, quality: qualityOf(value), decision });
   };
 

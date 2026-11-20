@@ -69,3 +69,28 @@ closing-in interrupt of stage 4b are off with the flag.
 - FM's value and multiplier functions were not read in full (report 5 §1): the values are our evaluators' scores, the
   multiplier only FM's 0.5 for turn and hold; the category weights are all 1 as in FM.
 - Measured against FM in `fm-numbers.md` → "Etapa 8"; nothing calibrated (stage 21).
+
+## Stage 9: shots from outside the box (`LONG_SHOTS`)
+
+Flag `DECISION_FLAGS.LONG_SHOTS` (on, needs `FM_XG`). Config `Configs/ShotGateConfig.ts` (`SHOT_GATE`, env
+`SHOT_GATE_OVERRIDES`), pure helpers `Domain/ShotGate.ts` (+ test). Off = the stage-4b shot (33-yd limit to the goal
+mouth, value = the role-compressed FM xG).
+
+- **Gate** (FM report 5/6): a shot candidate only within `GATE_M` (30 m) of the goal centre; factor × 0.75 in the box
+  (16.459 m deep, 20.117 m either side of the axis), × 0.6667 anywhere else in the gate.
+- **Value**: factor × (`VALUE_FLOOR` + (1 − floor) × min(1, (clean xG / `XG_REF`)^`VALUE_POW`)), floor 0, ref 0.25,
+  pow 0.5. The clean xG is the FM xG with only the keeper on the pitch: the defenders in the way are not read by the
+  decision (no "clear line" any more), they block the ball in flight (stage 7). Same reference for every role (FM's
+  kick multiplier is always 1); only the shooting level (`shotLevelMult`, defenders "rarely") scales it. FM's own value
+  function was not read: this is the stand-in.
+- **Kick multiplier** `KICK_MULT` = 1 / 0.36 (FM: kick multiplier 1.0, carry median 0.36), the same derivation stage 8
+  used for turn and hold; replaces the kick's 1 in `CAT_MULT` with the flag on. f24 still applies.
+- **Chip** (`chipMove`): only over a keeper `CHIP_KEEPER_OFF_YD` (8) off his line and within the gate, valued like any
+  shot (no `CHIP_WEIGHT` boost). It was ~50% of the shots at stage 7.
+- `/test`: scenario `long-shot-block` (nothing forced; Decision Scores → Shoot shows "gate ×f · m · clean xG").
+  `Statistics.ts` (team): `shotDistSumM`, `shotsOutsideBox`, `shotsLowLaunch` (vz ≤ 3 m/s) from `shotLaunched`
+  (`fromM`, `outsideBox`). `/lab` `PairDetail`: shot distance, outside-box %, struck-low %. `fm-targets.ts`: shot share
+  by distance against R8, outside-box %, mean distance, low launches.
+- Tests that read the stage-8 shot value now set `LONG_SHOTS: false` (`OneOnOne.test.ts` second case, the chip and
+  round-the-keeper rows of `HolderMoves.test.ts`): with the kick multiplier the plain shot wins those scenarios.
+- Not calibrated (stage 21): shots per match more than double; numbers in `fm-numbers.md` → "Etapa 9".

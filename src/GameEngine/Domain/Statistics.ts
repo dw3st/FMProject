@@ -322,7 +322,7 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
   /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
-  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
   /**
    * Stage 10 (`aerial.md` -> "Stage 10"), by the crossing team: open-play crosses resolved by the contact model, first
    * met in the air (above 1.2 m) / below it / not met before landing, first contact by the attack / defence / keeper,
@@ -454,7 +454,7 @@ type TeamFlags = {
   condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
   keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
-  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
   headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
   boxHighBalls: number; boxHighKeeper: number; boxHighDef: number; boxHighAtt: number; keeperClaims: number; keeperPunches: number;
@@ -479,7 +479,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
   condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
-  shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
+  shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0, shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0,
   airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0,
   headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
   boxHighBalls: 0, boxHighKeeper: 0, boxHighDef: 0, boxHighAtt: 0, keeperClaims: 0, keeperPunches: 0,
@@ -942,6 +942,10 @@ gameBus.on('shotLaunched', e => {
   const f = teamFlags[e.team];
   f[SHOT_TECHNIQUE_FIELD[e.technique]]++;
   f.shotSpeedSum += e.speedMs; f.shotLaunchN++;
+  // Stage 9: where the shots are struck from (FM: 46% from outside the box) and how low they leave (FM 28% vz ≤ 3 m/s).
+  f.shotDistSumM += e.fromM ?? 0;
+  if (e.outsideBox) f.shotsOutsideBox++;
+  if (e.vzMs <= 3) f.shotsLowLaunch++;
 });
 gameBus.on('shotResolved', e => {
   const t = playerTeam.get(e.player);

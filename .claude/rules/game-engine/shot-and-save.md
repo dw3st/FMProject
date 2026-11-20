@@ -381,3 +381,8 @@ Config `Configs/ShotPhysicsConfig.ts` (`SHOT_PHYSICS`, `SHOT_PHYSICS_OVERRIDES`)
 - Tests: `Domain/ShotPhysics.test.ts`, `Domain/ShotPhysics.engine.test.ts`; the wall-dice free-kick test runs with the
   flag off (`SetPieces.engine.test.ts`).
 - Not calibrated (stage 21). Numbers against FM: `fm-numbers.md` → "Etapa 7".
+
+## Stage 9: which shots are taken
+
+The decision to shoot (the gate of 30 m, × 0.75 / × 0.667, the clean-geometry value, the kick multiplier, the chip only
+over a keeper 8+ yd off his line) is in `holder-choice.md` → "Stage 9"; the flight, blocks and keeper above are unchanged.

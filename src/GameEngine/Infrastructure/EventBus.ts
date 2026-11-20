@@ -76,6 +76,8 @@ export interface GameEvents {
   shotLaunched: {
     player: number; team: TeamId; technique: import('@/GameEngine/types').ShotTechnique; speedMs: number; vzMs: number;
     aimY: number; aimZ: number; errDeg: number; distance: number; onTarget: boolean; blockers: number;
+    /** Stage 9: distance (m) from the strike point to the goal centre, and struck from outside the box. */
+    fromM?: number; outsideBox?: boolean;
   };
   /** Stage 7: a defender in the way sent the shot on (it keeps flying). */
   shotDeflected: { player: number; blockerId: number };
@@ -355,6 +357,8 @@ export interface GameEvents {
         score:       number;
         /** Stage 6 (`xg.md`): the FM xG model of the shot (with `FM_XG`). */
         fm?: { model: string; features: Record<string, number>; availableM: number; coveredM: number; inTriangle: number };
+        /** Stage 9: the FM shot gate (factor null = beyond 30 m) and the clean xG the value reads. */
+        gate?: { factor: number | null; cleanXg: number; distM: number };
       };
       pass: {
         toId:               number | null;
