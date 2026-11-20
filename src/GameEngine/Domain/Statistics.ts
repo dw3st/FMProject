@@ -22,6 +22,10 @@ import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
 import { isChance, isClearChance } from '@/GameEngine/Domain/FmXg';
 import { resetHighlights, highlightTeamStats, exportHighlightState, importHighlightState, type HighlightTeamStats } from '@/GameEngine/Domain/HighlightTracker';
 import type { HighlightState } from '@/GameEngine/Domain/Highlights';
+import { secondsOnBall } from '@/GameEngine/Configs/InstructionConfig';
+
+/** Stage 20: the windows of the transition statistics (game seconds). */
+const TRANSITION_STATS = { REGAIN_S: 5, SHOT_S: 10 } as const;
 
 /** One goal of the match, as emitted (engine ids). Data for the season awards; nothing reads it in-match. */
 export interface GoalLogEntry {
@@ -204,6 +208,9 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   injuryStoppages: number;
   /** 1 when this team came with a game plan against a studied manager (`studyPlan`, `study.md`). */
   studyPlans: number;
+  /** Stage 20 (4c-3): balls won back within 5 s of losing them (`possessionWon`), and shots within 10 s of winning it. */
+  counterPressRegains: number;
+  transitionShots: number;
   /** Referee errors that hurt this team (`refereeError`, `.claude/rules/game/var.md`). Match total = A + B. */
   refereeErrors: number;
   /**
@@ -434,7 +441,7 @@ type TeamFlags = {
   ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
   shadowPresses: number; zoneCovers: number; shoulderRuns: number; shoulderRunsEarly: number;
   pressStateOwnS: number; pressStateMidS: number; pressStateFinalS: number;
-  studyPlans: number;
+  studyPlans: number; counterPressRegains: number; transitionShots: number;
   holderNearTies: number; offBallNearTies: number; defenseNearTies: number;
   holderPressureSum: number; shotPressureSum: number; shotPressureCount: number;
   holderMindDecisions: number; holderOffArgmax: number; holderWindows: number; holderLapses: number;
@@ -461,7 +468,7 @@ type TeamFlags = {
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
-  ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0,
+  ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0, counterPressRegains: 0, transitionShots: 0,
   shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0, pressStateOwnS: 0, pressStateMidS: 0, pressStateFinalS: 0,
   holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0,
   holderPressureSum: 0, shotPressureSum: 0, shotPressureCount: 0,
@@ -564,8 +571,16 @@ gameBus.on('passCompleted', e => {
   notify();
 });
 gameBus.on('passFailed',    e => { get(e.player).passesFailed++;    notify(); });
+gameBus.on('possessionWon', e => {
+  if (e.sinceLost < TRANSITION_STATS.REGAIN_S) teamFlags[e.team].counterPressRegains++;
+});
+
 gameBus.on('shot',          e => {
   const s = get(e.player); s.shots++; s.xg += e.xg;
+  {
+    const team = playerTeam.get(e.player);
+    if (team && secondsOnBall(team) < TRANSITION_STATS.SHOT_S) teamFlags[team].transitionShots++;
+  }
   if (isChance(e.xg)) s.chances++;
   if (isClearChance(e.xg)) s.clearChances++;
   if (lastHolder && lastHolder.playerId === e.player) {

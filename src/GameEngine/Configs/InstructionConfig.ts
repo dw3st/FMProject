@@ -216,11 +216,23 @@ export function playerDelta(player: GamePlayer, key: 'shooting' | 'dribbling' | 
 
 let _onBall: TeamId | null = null;
 let _possessionTime = Infinity;
+/** The last side that had the ball (a loose ball keeps it) and when each side last lost it (match time). */
+let _lastOwner: TeamId | null = null;
+const _lostAt: Record<TeamId, number> = { A: -Infinity, B: -Infinity };
 
-/** The team on the ball and how long it has had it (game seconds); `null` = nobody (a loose ball, a restart). */
-export function setPossessionClock(team: TeamId | null, possessionTime: number): void {
+/**
+ * The team on the ball and how long it has had it (game seconds); `null` = nobody (a loose ball, a restart). Returns
+ * the change of owner, if any: the side that won it and the seconds since it last lost it (the counter-press regain).
+ */
+export function setPossessionClock(team: TeamId | null, possessionTime: number, matchTime = 0): { won: TeamId; sinceLost: number } | null {
   _onBall = team;
   _possessionTime = possessionTime;
+  if (team === null || team === _lastOwner) return null;
+  const prev = _lastOwner;
+  _lastOwner = team;
+  if (prev === null) return null;
+  _lostAt[prev] = matchTime;
+  return { won: team, sinceLost: matchTime - _lostAt[team] };
 }
 
 /** 'won' while the team has had the ball less than WIN_WINDOW_S, 'lost' while the other has had it less than LOSS_WINDOW_S. */
@@ -230,10 +242,18 @@ export function transitionOf(team: TeamId): 'won' | 'lost' | null {
   return _possessionTime < INSTR.LOSS_WINDOW_S ? 'lost' : null;
 }
 
-/** Back to the template of both teams and an empty clock (a new match). */
+/** Seconds the team has had the ball (Infinity when it has not got it). */
+export function secondsOnBall(team: TeamId): number {
+  return _onBall === team ? _possessionTime : Infinity;
+}
+
+/** An empty clock (a new match). */
 export function resetInstructionState(): void {
   _onBall = null;
   _possessionTime = Infinity;
+  _lastOwner = null;
+  _lostAt.A = -Infinity;
+  _lostAt.B = -Infinity;
 }
 
 // Live-mode snapshots (stage 19): the instruction store and the transition clock are match state. Importing the
@@ -249,11 +269,14 @@ registerEngineMemory('InstructionConfig.TEAM', {
   },
 });
 registerEngineMemory('InstructionConfig.clock', {
-  export: () => ({ onBall: _onBall, time: _possessionTime }),
+  export: () => ({ onBall: _onBall, time: _possessionTime, last: _lastOwner, lostA: _lostAt.A, lostB: _lostAt.B }),
   import: (v) => {
-    const c = v as { onBall: TeamId | null; time: number };
+    const c = v as { onBall: TeamId | null; time: number; last?: TeamId | null; lostA?: number; lostB?: number };
     _onBall = c.onBall;
     _possessionTime = c.time;
+    _lastOwner = c.last ?? null;
+    _lostAt.A = c.lostA ?? -Infinity;
+    _lostAt.B = c.lostB ?? -Infinity;
   },
 });
 

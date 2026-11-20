@@ -67,3 +67,32 @@ describe("4c-2: pressing split into engagement, intensity and tackling", () => {
     apply();
   });
 });
+
+describe("4c-3: the transition clock", () => {
+  test("windows and the regain time", async () => {
+    const { setPossessionClock, transitionOf, resetInstructionState } = await import("@/GameEngine/Configs/InstructionConfig");
+    resetInstructionState();
+    expect(setPossessionClock("A", 0, 10)).toBeNull();
+    expect(transitionOf("A")).toBe("won");
+    expect(setPossessionClock("B", 0, 20)).toEqual({ won: "B", sinceLost: Infinity });
+    expect(transitionOf("A")).toBe("lost");
+    setPossessionClock(null, 0, 21);
+    expect(transitionOf("A")).toBeNull();
+    expect(setPossessionClock("A", 0, 23)).toEqual({ won: "A", sinceLost: 3 });
+    setPossessionClock("A", 7, 30);
+    expect(transitionOf("A")).toBeNull();
+    resetInstructionState();
+  });
+
+  test("a counter-press instruction changes a seeded match; the regains are counted", () => {
+    const plain = simulateMatch(loadSquad("33.json"), loadSquad("34.json"), undefined, undefined, undefined, undefined, {
+      seed: 4242, clockScale: LEGACY_CLOCK_SCALE, tactics: { A: { style: "balanced" }, B: { style: "balanced" } },
+    });
+    const press = simulateMatch(loadSquad("33.json"), loadSquad("34.json"), undefined, undefined, undefined, undefined, {
+      seed: 4242, clockScale: LEGACY_CLOCK_SCALE,
+      tactics: { A: { style: "balanced", instructions: { transition: { onLoss: 2, onWin: 2 } } }, B: { style: "balanced" } },
+    });
+    expect(fingerprint(press)).not.toBe(fingerprint(plain));
+    expect(plain.teamStats.A.counterPressRegains + plain.teamStats.B.counterPressRegains).toBeGreaterThan(0);
+  }, 120_000);
+});

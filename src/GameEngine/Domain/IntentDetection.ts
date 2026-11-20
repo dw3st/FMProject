@@ -18,6 +18,7 @@
  * branch to detectTeamIntent and a new pure detector function.
  */
 
+import { INSTR, instrDelta } from '@/GameEngine/Configs/InstructionConfig';
 import type { GameState, TeamId, TeamIntent } from '@/GameEngine/types';
 import type { TacticalStyle } from '@/types/tacticsTypes';
 import { getTeamTacticalStyle } from '@/GameEngine/Configs/AttackConfig';
@@ -99,12 +100,40 @@ export function detectTeamIntent(
   if (allowSwitchPlay && hasBall && shouldSwitchPlay(state, team, style)) return 'switch_play';
 
   if (style === 'counter_attack') {
-    return detectCounterAttackTacticIntent(state, team);
+    const intent = detectCounterAttackTacticIntent(state, team);
+    // Stage 20 (4c-3): below the template (hold shape when the ball is won / regroup when lost) the counter's
+    // intents fire less often.
+    if (intent === 'counter_attack' && instrDelta(team, 'onWin') < 0 && !transitionRoll(state, team, 'onWin')) return 'balanced';
+    if (intent === 'press_now' && instrDelta(team, 'onLoss') < 0 && !transitionRoll(state, team, 'onLoss')) return 'hold_shape';
+    return intent;
+  }
+
+  // Stage 20 (4c-3): the transition instructions free the counter's intents for every style, in their window and
+  // with a chance per possession of INTENT_PER_LEVEL × the level above the template.
+  // The window is read from the state (an intent is re-judged at the possession change, before the tick's clock).
+  if (hasBall && state.possessionTime < INSTR.WIN_WINDOW_S && isCounterAttackOpportunity(state, team) && transitionRoll(state, team, 'onWin')) {
+    return 'counter_attack';
+  }
+  if (!hasBall && holder && state.possessionTime < INSTR.LOSS_WINDOW_S && transitionRoll(state, team, 'onLoss')) {
+    return 'press_now';
   }
 
   // Future: other tactic gates here. Today, every other tactic stays balanced
   // — they'll opt into specific intents one at a time as we balance them.
   return 'balanced';
+}
+
+/**
+ * The transition instruction's roll for a team (stage 20): above the template a chance of INTENT_PER_LEVEL per level
+ * to fire, below it a chance of the same size not to (the counter_attack style). Seeded per possession like
+ * switch_play; at the template it is always false above / true below, so no style changes.
+ */
+function transitionRoll(state: GameState, team: TeamId, key: 'onWin' | 'onLoss'): boolean {
+  const d = instrDelta(team, key);
+  if (d === 0) return getTeamTacticalStyle(team) === 'counter_attack';
+  const seed = Math.round(state.matchTime - state.possessionTime) + (key === 'onLoss' ? 7919 : 0);
+  const r = seededRandom(team, seed);
+  return d > 0 ? r < INSTR.INTENT_PER_LEVEL * d : r >= INSTR.INTENT_PER_LEVEL * -d;
 }
 
 // ── switch_play detector (offensive, general) ────────────────────────────────

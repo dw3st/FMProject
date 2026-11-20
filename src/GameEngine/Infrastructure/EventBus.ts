@@ -199,6 +199,8 @@ export interface GameEvents {
   // ── Shot event ───────────────────────────────────────────────────────────
   /** Emitted the moment a player takes a shot. */
   shot: { player: number; xg: number };
+  /** Stage 20 (4c-3): a side won the ball (open play); `sinceLost` = game seconds since it last lost it. */
+  possessionWon: { team: import('@/GameEngine/types').TeamId; sinceLost: number };
   /** Stage 4 (`movement.md`): an open-play shot blocked on its line (also counted as a shot). */
   shotBlocked: { player: number; blockerId: number };
 

@@ -16,7 +16,7 @@
  * No side effects. No gameState imports (avoids circular deps).
  */
 
-import { INSTR, instrExtra, instrMentality } from '@/GameEngine/Configs/InstructionConfig';
+import { INSTR, instrDelta, instrExtra, instrMentality, transitionOf } from '@/GameEngine/Configs/InstructionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
@@ -1253,6 +1253,25 @@ function selectDefensiveIntent(ctx: DefensiveIntentContext, possessionTime: numb
     press_holder:         pressHolderScore,
     step_into_carry_lane: stepIntoCarryLaneScore,
   };
+  // Stage 20 (4c-3): right after losing the ball the team counter-presses or regroups (when the ball is lost).
+  if (transitionOf(ctx.player.team) === 'lost') {
+    const d = instrDelta(ctx.player.team, 'onLoss');
+    if (d !== 0) {
+      scores.press_holder *= Math.max(0, 1 + INSTR.LOSS_PRESS * d);
+      scores.step_into_carry_lane *= Math.max(0, 1 + INSTR.LOSS_STEP * d);
+      scores.hold_shape *= Math.max(0, 1 - INSTR.LOSS_HOLD * d);
+    }
+  }
+  // Stage 20 (4c-2): stopping crosses goes out to the wide man in the final 35 yd; inviting them holds the box.
+  const cr = instrDelta(ctx.player.team, 'crosses');
+  if (cr !== 0 && ctx.ballHolder) {
+    const h = ctx.ballHolder;
+    const ownGoalX = ctx.player.attackDir === 1 ? 0 : PITCH_LENGTH;
+    if (Math.abs(h.x - ownGoalX) < INSTR.CROSSES_ZONE_YD && Math.abs(h.y - PITCH_WIDTH / 2) > INSTR.CROSSES_WIDE_YD) {
+      scores.press_holder *= Math.max(0, 1 + INSTR.CROSSES_PRESS * cr);
+      scores.hold_shape *= Math.max(0, 1 - INSTR.CROSSES_HOLD * cr);
+    }
+  }
   // The mind (stage 16, `DefensiveMind.ts`): noise, aggression and a concentration lapse modify the scores.
   const mind = DECISION_FLAGS.DEFENSIVE_MIND ? applyDefensiveMind(ctx.player, scores) : null;
   if (mind && mind.before !== mind.after) emitMindShift(ctx.player, mind);

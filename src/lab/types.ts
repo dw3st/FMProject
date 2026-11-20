@@ -281,6 +281,9 @@ export interface TeamRawStats {
   weatherActive: number;
   /** Matches in which the opponent came with a game plan against this side (`studyPlan`, `study.md`). */
   preparedAgainst: number;
+  /** Stage 20 (4c-3): balls won back within 5 s of losing them, shots within 10 s of winning it, summed. */
+  counterPressRegains: number;
+  transitionShots: number;
   /** Referee rigor of the match (0 when absent), summed across games. */
   refereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls of the match (both sides, `var.md`), summed across games. */
@@ -577,6 +580,9 @@ export interface PerMatchView {
   weatherShare: number;
   /** Share of matches in which the opponent came with a game plan against this side (`study.md`). */
   preparedShare: number;
+  /** Stage 20: counter-press regains (within 5 s) and transition shots (within 10 s of winning it) per match. */
+  avgCounterPressRegains: number;
+  avgTransitionShots: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */
   avgRefereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls per match (`var.md`). */
@@ -807,6 +813,9 @@ export interface VariantSummary {
   weatherShare: number;
   /** Share of matches in which the opponent came with a game plan against this side (`study.md`). */
   preparedShare: number;
+  /** Stage 20: counter-press regains (within 5 s) and transition shots (within 10 s of winning it) per match. */
+  avgCounterPressRegains: number;
+  avgTransitionShots: number;
   /** Referee rigor of the matches (−1..1, 0 = neutral). */
   avgRefereeStrictness: number;
   /** Referee errors / VAR checks / overturned calls per match (`var.md`). */

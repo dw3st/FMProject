@@ -1,3 +1,4 @@
+import { INSTR, instrDelta, transitionOf } from '@/GameEngine/Configs/InstructionConfig';
 import { heldAction, noteAction } from '@/GameEngine/Domain/ActionHold';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
@@ -195,6 +196,14 @@ function selectOffBallIntent(ctx: OffBallContext): {
 
   // ── Team intent multipliers (counter_attack, etc.) ────────────────────────
   const finalScores = applyOffBallIntent(scores, ctx.intent);
+  // Stage 20 (4c-3): right after winning the ball the team breaks (runs) or holds the shape (when the ball is won).
+  if (transitionOf(ctx.player.team) === 'won') {
+    const w = instrDelta(ctx.player.team, 'onWin');
+    if (w !== 0) {
+      finalScores.make_run *= Math.max(0, 1 + INSTR.WIN_RUN * w);
+      finalScores.hold_space *= Math.max(0, 1 - INSTR.WIN_STAY * w);
+    }
+  }
   // The mind (stage 16, `DefensiveMind.ts`): noise, anticipation and flair on the run, a concentration lapse.
   if (DECISION_FLAGS.DEFENSIVE_MIND) applyOffBallMind(ctx.player, finalScores);
 

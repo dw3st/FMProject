@@ -1,3 +1,4 @@
+import { setPossessionClock, resetInstructionState } from '@/GameEngine/Configs/InstructionConfig';
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun, ShotState, ShotPhysicsState, ShotBlockRun, ShotTechnique } from '@/GameEngine/types';
@@ -497,6 +498,7 @@ export function createMatchState(
   seed: number = newMatchSeed(),
 ): GameState {
   loadMatchRng(seed);
+  resetInstructionState();
   resetDefensiveIntentCache();
   resetOffBallIntentCache();
   resetActionHold();
@@ -5388,6 +5390,12 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // interception, dribble loss, offside, GK save) reset it to 0 when the
   // ball moves to the other team.
   s = { ...s, possessionTime: (state.possessionTime ?? 0) + dt };
+  // Stage 20 (4c-3): the transition windows of the instructions read this clock.
+  {
+    const passer = s.pass ? s.players.find(p => p.id === s.pass!.fromId) : undefined;
+    const change = setPossessionClock(holder?.team ?? passer?.team ?? null, s.possessionTime, s.matchTime);
+    if (change) gameBus.emit('possessionWon', { team: change.won, sinceLost: change.sinceLost });
+  }
 
   // ── Periodic team intent re-evaluation ────────────────────────────────
   // Possession-transfer recompute handles turnovers; this catches mid-possession
