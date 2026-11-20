@@ -194,7 +194,11 @@ export function axesWithMentality(
   mentality: Mentality,
   override?: Partial<TacticalAxes>,
 ): TacticalAxes {
-  const base = effectiveAxes(style, override);
+  return shiftAxesByMentality(effectiveAxes(style, override), mentality);
+}
+
+/** The live-match mentality step on top of any axis bundle (pure; see `axesWithMentality`). */
+export function shiftAxesByMentality(base: TacticalAxes, mentality: Mentality): TacticalAxes {
   if (mentality === "balanced") return base;
   if (mentality === "attacking") {
     return {
@@ -260,6 +264,76 @@ export interface TacticsSave {
    * every save (report 2026-11-16): a saved line-up with no starters comes back with it.
    */
   lastLineups?: Record<string, string[]>;
+  /**
+   * Saved mentality (stage 4c), -2 very defensive .. +2 very attacking; absent = 0. A bundle that shifts several
+   * instructions a little (`src/Domain/tactics/teamInstructions.ts`). The live-match mentality is a separate,
+   * unsaved shift on top.
+   */
+  mentality?: InstructionLevel;
+  /** Team instructions in five levels (stage 4c); absent fields = what the style (the template) gives. */
+  teamInstructions?: TeamInstructions;
+}
+
+// ── Team instructions (engine rebuild stage 20, the 4c proposal) ─────────────
+
+/** Every team instruction moves in five levels; 0 is the middle of its scale (not necessarily the template). */
+export type InstructionLevel = -2 | -1 | 0 | 1 | 2;
+
+/** Where the attack goes; `mixed` = no preference. */
+export type PlayFocus = "left" | "center" | "mixed" | "right" | "wings";
+
+export interface InPossessionInstructions {
+  /** Shorter .. more direct passing (the `build_up` axis). */
+  passing?: InstructionLevel;
+  /** Slower .. faster tempo. */
+  tempo?: InstructionLevel;
+  /** Narrower .. wider in possession (the attacking side of `width`). */
+  width?: InstructionLevel;
+  /** Pass to feet .. pass into space. */
+  passTarget?: InstructionLevel;
+  focus?: PlayFocus;
+  /** Underlap .. overlap (the full-backs). */
+  flanks?: InstructionLevel;
+  /** Cross early .. work the ball to the byline. */
+  crossing?: InstructionLevel;
+  /** Dribble less .. more. */
+  dribbling?: InstructionLevel;
+  /** Work the ball into the box .. shoot on sight. */
+  shooting?: InstructionLevel;
+  /** Disciplined .. expressive. */
+  freedom?: InstructionLevel;
+  /** Keeper: short .. long distribution. */
+  gkDistribution?: InstructionLevel;
+}
+
+export interface TransitionInstructions {
+  /** On losing the ball: regroup .. counter-press. */
+  onLoss?: InstructionLevel;
+  /** On winning the ball: hold the shape .. counter. */
+  onWin?: InstructionLevel;
+}
+
+export interface OutOfPossessionInstructions {
+  /** Line of engagement: lower .. higher (where the press starts). */
+  engagement?: InstructionLevel;
+  /** Defensive line: deeper .. higher (the `defensive_line` axis). */
+  line?: InstructionLevel;
+  /** Pressing intensity: less .. more. */
+  pressing?: InstructionLevel;
+  /** Pressing trap: force inside .. force outside (0 = none). */
+  trap?: InstructionLevel;
+  /** Tackling: stay on feet .. get stuck in. */
+  tackling?: InstructionLevel;
+  /** Crosses: stop them .. invite them. */
+  crosses?: InstructionLevel;
+  /** Defensive width: more compact .. wider (the defending side of `width`). */
+  defWidth?: InstructionLevel;
+}
+
+export interface TeamInstructions {
+  inPossession?: InPossessionInstructions;
+  transition?: TransitionInstructions;
+  outOfPossession?: OutOfPossessionInstructions;
 }
 
 // ── Saved lineups (#84) ──────────────────────────────────────────────────────
@@ -307,7 +381,27 @@ export type PressLevel = "less" | "normal" | "more";
 export interface SlotInstruction {
   variant?: RoleVariantId;
   press?: PressLevel;
+  /** Duty of the slot (stage 4c): defend / support / attack; absent = support (the role as it is). */
+  duty?: Duty;
+  /** Role out of possession (stage 4c, `OOP_ROLES`); absent = the role's own defending. */
+  oop?: OopRoleId;
+  /** Player instructions on the team's five-level scales; absent = the team's level. */
+  shooting?: InstructionLevel;
+  dribbling?: InstructionLevel;
+  crossing?: InstructionLevel;
+  /** Hold position .. roam from it (the player's own freedom). */
+  positioning?: InstructionLevel;
 }
+
+export type Duty = "defend" | "support" | "attack";
+
+/** Roles out of possession (`src/GameEngine/Configs/RoleVariantConfig.ts` → `OOP_ROLES`). */
+export type OopRoleId =
+  | "fb_press" | "fb_stay"
+  | "cb_step" | "cb_cover"
+  | "dm_screen" | "cm_press"
+  | "w_track" | "w_stay"
+  | "st_press" | "st_rest";
 
 /** One man-marking pair of a match: the user's slot marks an opponent (roster id). */
 export interface MatchMark {

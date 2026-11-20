@@ -29,8 +29,6 @@ import {
   TACTICAL_STYLE_OPTIONS,
   DEFAULT_TACTICAL_STYLE,
   getTacticalStyleMeta,
-  axesFor,
-  effectiveAxes,
   hasAxesOverride,
 } from "@/types/tacticsTypes";
 import type { TacticalStyle, TacticsSave, TacticalAxes, CustomFormation, CustomFormationSlot, SlotInstruction, LineupPresetKey, LineupPresets } from "@/types/tacticsTypes";
@@ -80,6 +78,7 @@ import { spreadMarkers } from "@/Domain/formation/pitchMarkers";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { navigate, useRoute } from "@/GameInterface/router/navigation";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
+import { TeamInstructionsPanel, type InstructionsValue } from "@/GameInterface/Tactics/TeamInstructionsPanel";
 
 /** Painted pitch behind the formation board (data_process/assets/formation_art.py, FLUX-refined). */
 const PITCH_BOARD = "formation/pitch-board.webp";
@@ -194,6 +193,11 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
   const [persistedLineup, setPersistedLineup] = useState<string[]>([]);
   const [customFormation, setCustomFormation] = useState<CustomFormation | null>(null);
   const [axesOverride, setAxesOverride] = useState<Partial<TacticalAxes> | undefined>(undefined);
+  /** Team instructions and the saved mentality (stage 20). */
+  const [instructions, setInstructions] = useState<InstructionsValue>({});
+  /** The pitch shows the shape with the ball or without it (stage 20). */
+  const [pitchPhase, setPitchPhase] = useState<"in" | "out">("in");
+  const [defending, setDefending] = useState<{ role: string; x: number; y: number }[] | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<{ slot: CustomFormationSlot; playerId: string }[] | null>(null);
   const [assistantRotation, setAssistantRotation] = useState(false);
@@ -224,6 +228,11 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
     [draft],
   );
   const slots = editing && draftSlots ? draftSlots : baseSlots;
+  // Without the ball (stage 20): the same slots, drawn where the formation defends.
+  const pitchSlots = useMemo(() => {
+    if (editing || pitchPhase === "in" || !defending || defending.length !== baseSlots.length) return slots;
+    return getFormationSlots({ id: formationId, attacking: defending } as FormationShape);
+  }, [editing, pitchPhase, defending, baseSlots.length, slots, formationId]);
   // A starter not registered for the next match is not shown in the XI: the match day would replace him anyway.
   // The stored XI only changes when the manager saves, since it also serves the competitions he is registered for.
   const shownLineup = useMemo(
@@ -263,6 +272,7 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
         if (t.lineup?.length) commitLineup(t.lineup);
         setCustomFormation(t.customFormation ?? null);
         setAxesOverride(t.axesOverride);
+        setInstructions({ teamInstructions: t.teamInstructions, mentality: t.mentality });
         setAssistantRotation(t.assistantRotation === true);
         setRotationFitness(t.assistantRotationFitness ?? 75);
         setLineupPresets(t.lineupPresets ?? {});
@@ -428,13 +438,15 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
       if (!customFormation) return;
       const f = customToFormation(customFormation);
       setAttacking(f.attacking);
+      setDefending(f.defending ?? null);
       setSlots(getFormationSlots(f as unknown as FormationShape));
       return;
     }
     fetch(`/api/formations/${formationId}`)
       .then((r) => r.json())
-      .then((data: { id: string; attacking: { role: string; x: number; y: number }[] }) => {
+      .then((data: { id: string; attacking: { role: string; x: number; y: number }[]; defending?: { role: string; x: number; y: number }[] }) => {
         setAttacking(data.attacking);
+        setDefending(data.defending ?? null);
         setSlots(getFormationSlots(data));
       })
       .catch(() => setSlots([]));
@@ -506,16 +518,18 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
 
   async function handleStyleChange(style: TacticalStyle) {
     if (!session || tacticsUpdating) return;
-    if (activeStyle === style && !hasAxesOverride(style, axesOverride)) return;
+    if (activeStyle === style && !hasAxesOverride(style, axesOverride) && !instructions.teamInstructions) return;
     setTacticsUpdating(true);
     try {
       if (national) {
         // Picking a style fills the four axes again, as in the club.
-        await putNational({ tactical_style: style, axesOverride: {} });
+        await putNational({ tactical_style: style, axesOverride: {}, teamInstructions: null as never });
         setAxesOverride(undefined);
+        setInstructions((v) => ({ mentality: v.mentality }));
       } else {
         const updated = await updateSaveTacticalStyle(session.saveId, style);
         setAxesOverride(undefined);
+        setInstructions((v) => ({ mentality: v.mentality }));
         mergeSession(updated);
       }
     } finally {
@@ -523,24 +537,25 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
     }
   }
 
-  /** Edits one axis on top of the style; going back to the style's own value drops the override. */
-  async function handleAxis<K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) {
+  /**
+   * Team instructions and the saved mentality (stage 20): the panel sends only what differs from the style's
+   * template; the old axes edits are folded into the instructions on the first change.
+   */
+  async function handleInstructions(next: InstructionsValue) {
     if (!session) return;
-    const style = activeStyle;
-    const next: Partial<TacticalAxes> = { ...axesOverride, [key]: value };
-    if (axesFor(style)[key] === value) delete next[key];
-    const nextOrUndefined = Object.keys(next).length ? next : undefined;
-    const prev = axesOverride;
-    setAxesOverride(nextOrUndefined);
+    const prev = { instructions, axesOverride };
+    setInstructions(next);
+    setAxesOverride(undefined);
     try {
       const res = await fetch(tacticsUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ axesOverride: nextOrUndefined ?? {} }),
+        body: JSON.stringify({ teamInstructions: next.teamInstructions ?? null, mentality: next.mentality ?? 0, axesOverride: {} }),
       });
-      if (!res.ok) setAxesOverride(prev);
+      if (!res.ok) { setInstructions(prev.instructions); setAxesOverride(prev.axesOverride); }
     } catch {
-      setAxesOverride(prev);
+      setInstructions(prev.instructions);
+      setAxesOverride(prev.axesOverride);
     }
   }
 
@@ -918,8 +933,22 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
                   </button>
                 </div>
               )}
+              {!editing && defending && (
+                <div className="mb-3">
+                  <SegmentedTabs
+                    compact
+                    aria-label={t("tactics.instr.shapeSwitch")}
+                    active={pitchPhase}
+                    onChange={(k) => setPitchPhase(k as "in" | "out")}
+                    tabs={[
+                      { key: "in", label: t("tactics.instr.groups.inPossession") },
+                      { key: "out", label: t("tactics.instr.groups.outOfPossession") },
+                    ]}
+                  />
+                </div>
+              )}
               <FormationPitch
-                slots={slots}
+                slots={pitchSlots}
                 formationId={formationId === CUSTOM_FORMATION_ID ? `${t("formations.custom")} ${shapeLabel}` : formationId}
                 editing={editing}
                 occupiedZones={occupiedZones}
@@ -1165,49 +1194,16 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
             </div>
           )}
 
-          {/* Team instructions (the four axes) */}
+          {/* Team instructions (stage 20): mentality and the three groups, five levels each */}
           <div className="rounded-md border border-border p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-              <h3 className="font-display font-black uppercase text-xl leading-none m-0">
-                {t("tactics.axes.title")}
-              </h3>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-primary font-semibold">
-                  {hasAxesOverride(activeStyle, axesOverride)
-                    ? t("tactics.axes.custom", { style: getTacticalStyleMeta(activeStyle, t as never).label })
-                    : getTacticalStyleMeta(activeStyle, t as never).label}
-                </span>
-                {hasAxesOverride(activeStyle, axesOverride) && (
-                  <button
-                    type="button"
-                    onClick={() => handleStyleChange(activeStyle)}
-                    disabled={tacticsUpdating}
-                    className="text-sm text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
-                  >
-                    {t("tactics.axes.reset")}
-                  </button>
-                )}
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground m-0 mb-4">{t("tactics.axes.hint")}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              {AXIS_CHOICES.map((axis) => {
-                const current = effectiveAxes(activeStyle, axesOverride)[axis.key];
-                return (
-                  <div key={axis.key}>
-                    <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">
-                      {t(`tactics.axes.${axis.key}` as never)}
-                    </p>
-                    <OptionChips
-                      aria-label={t(`tactics.axes.${axis.key}` as never)}
-                      options={axis.values.map((v) => ({ key: v as string, label: t(`tactics.axes.values.${v}` as never) }))}
-                      value={current as string}
-                      onChange={(v) => handleAxis(axis.key, v as never)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+            <TeamInstructionsPanel
+              style={activeStyle}
+              axesOverride={axesOverride}
+              value={instructions}
+              onChange={handleInstructions}
+              onReset={() => handleInstructions({ mentality: instructions.mentality })}
+              disabled={tacticsUpdating}
+            />
           </div>
         <DragGhost drag={drag} />
     </ScreenContainer>
@@ -1245,12 +1241,6 @@ function NationalTabLabel({ teamId, name }: { teamId: string; name?: string }) {
   );
 }
 
-const AXIS_CHOICES: { key: keyof TacticalAxes; values: string[] }[] = [
-  { key: "pressing_style", values: ["low_block", "mid_block", "high_press"] },
-  { key: "defensive_line", values: ["deep", "normal", "high"] },
-  { key: "width", values: ["narrow", "normal", "wide"] },
-  { key: "build_up", values: ["direct", "balanced", "possession"] },
-];
 
 /** Column labels of a squad list: position, player (with the count), rating, fitness. */
 function SquadListHeader({ title, count }: { title: string; count: number }) {

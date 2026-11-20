@@ -141,7 +141,8 @@ import {
   type PossessionHeatmap as HeatmapAcc,
 } from "@/Domain/match/possessionHeatmap";
 import { PossessionHeatmap, readHeatmapOpen, writeHeatmapOpen } from "@/GameInterface/Components/PossessionHeatmap";
-import { applyLiveTactics, withLiveAxis, withLiveStyle, type LiveTactics } from "@/Domain/tactics/liveTactics";
+import { applyLiveTactics, withLiveAxis, withLiveInstructions, withLiveStyle, type LiveTactics } from "@/Domain/tactics/liveTactics";
+import type { TeamInstructions } from "@/types/tacticsTypes";
 import type { TacticalAxes } from "@/types/tacticsTypes";
 import { PenaltyOverlay } from "@/GameInterface/Penalty/PenaltyOverlay";
 import { loadPenaltyMode } from "@/GameInterface/Penalty/penaltyMode";
@@ -328,6 +329,8 @@ export function MatchScreen() {
   /** Live style and axes of team A (Etapa 35): this match only, never saved. `saved` = the club's tactics. */
   const [liveTactics, setLiveTactics] = useState<LiveTactics>({ style: DEFAULT_TACTICAL_STYLE });
   const savedTacticsRef = useRef<LiveTactics>({ style: DEFAULT_TACTICAL_STYLE });
+  /** Team instructions and the saved mentality level of team A in this match (stage 20). */
+  const myInstrRef = useRef<Pick<LiveTactics, "instructions" | "mentalityLevel">>({});
   // The manager's own formations, offered in the live Formation tab (solo only: the H2H server only knows the ready ones).
   const [userFormations, setUserFormations] = useState<UserFormation[]>([]);
   /** Tactic shortcuts (11.0): the saved line-ups, the last use (the wait between two changes) and the one in use. */
@@ -595,10 +598,11 @@ export function MatchScreen() {
           const style = data.myTactics?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
           myTacticalStyleRef.current = style;
           myAxesOverrideRef.current = data.myTactics?.axesOverride;
-          savedTacticsRef.current = { style, axesOverride: data.myTactics?.axesOverride };
+          myInstrRef.current = { instructions: data.myTactics?.teamInstructions, mentalityLevel: data.myTactics?.mentality };
+          savedTacticsRef.current = { style, axesOverride: data.myTactics?.axesOverride, ...myInstrRef.current };
           setPresets(data.myTactics?.lineupPresets);
           setActiveShortcut(presetInUse(data.myTactics?.lineupPresets, data.myTactics?.formation ?? "", data.myLineup ?? []));
-          setLiveTactics({ style, axesOverride: data.myTactics?.axesOverride });
+          setLiveTactics({ style, axesOverride: data.myTactics?.axesOverride, ...myInstrRef.current });
           initRatings([]);
           initStats([]);
           setH2HTarget({ saveId: session.saveId, fixtureId: data.matchDay?.fixtureId ?? data.fixture.id });
@@ -631,6 +635,8 @@ export function MatchScreen() {
           style: tactics.tactical_style,
           mentality: DEFAULT_MENTALITY,
           axesOverride: tactics.axesOverride,
+          instructions: tactics.teamInstructions,
+          mentalityLevel: tactics.mentality,
           // Style familiarity (`src/Domain/familiarity`): the club's trained record; the AI its rule.
           familiarity: squadFamiliarityLevels(data.mySquad, tactics.tactical_style),
         };
@@ -640,11 +646,13 @@ export function MatchScreen() {
           style: aiStyle,
           mentality: DEFAULT_MENTALITY,
           familiarity: aiFamiliarity(aiStyle),
+          ai: true,
         };
         myTacticalStyleRef.current = teamA.style;
         myAxesOverrideRef.current = teamA.axesOverride;
-        savedTacticsRef.current = teamA.saved ?? { style: teamA.style, axesOverride: teamA.axesOverride };
-        setLiveTactics({ style: teamA.style, axesOverride: teamA.axesOverride });
+        myInstrRef.current = { instructions: teamA.instructions, mentalityLevel: teamA.mentalityLevel };
+        savedTacticsRef.current = teamA.saved ?? { style: teamA.style, axesOverride: teamA.axesOverride, ...myInstrRef.current };
+        setLiveTactics({ style: teamA.style, axesOverride: teamA.axesOverride, ...myInstrRef.current });
         myFamiliarityRef.current = teamA.familiarity;
         aiTacticsRef.current = teamB;
         mentalityRef.current = teamA.mentality;
@@ -1475,6 +1483,7 @@ export function MatchScreen() {
             style: myTacticalStyleRef.current,
             mentality: mentalityRef.current,
             axesOverride: myAxesOverrideRef.current,
+            ...myInstrRef.current,
             familiarity: myFamiliarityRef.current,
             saved: savedTacticsRef.current,
           },
@@ -1539,7 +1548,7 @@ export function MatchScreen() {
     setMentality(next);
     mentalityRef.current = next;
     if (h2hMode) sendH2H({ kind: "mentality", mentality: next });
-    else applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, next, myFamiliarityRef.current);
+    else applyLiveTactics("A", { style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current, ...myInstrRef.current }, next, myFamiliarityRef.current);
     if (!cue) return;
     const kind = next === "attacking" ? "attack" : next === "defensive" ? "defend" : "balanced";
     setCoachCue((prev) => ({ team: mySideRef.current, kind, seq: (prev?.seq ?? 0) + 1 }));
@@ -1549,13 +1558,14 @@ export function MatchScreen() {
   function setMyLiveTactics(next: LiveTactics) {
     myTacticalStyleRef.current = next.style;
     myAxesOverrideRef.current = next.axesOverride;
+    myInstrRef.current = { instructions: next.instructions, mentalityLevel: next.mentalityLevel };
     setLiveTactics(next);
-    if (h2hMode) sendH2H({ kind: "tactics", style: next.style, ...(next.axesOverride ? { axesOverride: next.axesOverride } : {}) });
+    if (h2hMode) sendH2H({ kind: "tactics", style: next.style, ...(next.axesOverride ? { axesOverride: next.axesOverride } : {}), ...(next.instructions ? { instructions: next.instructions } : {}), ...(next.mentalityLevel ? { mentalityLevel: next.mentalityLevel } : {}) });
     else applyLiveTactics("A", next, mentalityRef.current, myFamiliarityRef.current);
   }
 
   function handleLiveAxis<K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) {
-    setMyLiveTactics(withLiveAxis({ style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current }, key, value));
+    setMyLiveTactics(withLiveAxis({ style: myTacticalStyleRef.current, axesOverride: myAxesOverrideRef.current, ...myInstrRef.current }, key, value));
   }
 
   // #136: reporting a problem pauses the match so the text is not lost when the match ends. Closing
@@ -2489,8 +2499,9 @@ export function MatchScreen() {
             liveTactics: {
               live: liveTactics,
               saved: savedTacticsRef.current,
-              onStyle: (style: TacticalStyle) => { setActiveShortcut(null); setMyLiveTactics(withLiveStyle(style)); },
+              onStyle: (style: TacticalStyle) => { setActiveShortcut(null); setMyLiveTactics(withLiveStyle(style, liveTactics)); },
               onAxis: handleLiveAxis,
+              onInstructions: (next: { teamInstructions?: TeamInstructions; mentality?: number }) => { setActiveShortcut(null); setMyLiveTactics(withLiveInstructions(liveTactics, next)); },
               onReset: () => { setActiveShortcut(null); setMyLiveTactics({ ...savedTacticsRef.current }); },
             },
           })}

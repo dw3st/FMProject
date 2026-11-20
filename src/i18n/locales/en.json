@@ -1092,7 +1092,207 @@
       }
     },
     "rotationFitness": "Rest who is below",
-    "rotationFitnessHint": "Outfield starters with fitness below {{value}}% are swapped when a better-rested reserve is on the bench. The keeper only below 60%."
+    "rotationFitnessHint": "Outfield starters with fitness below {{value}}% are swapped when a better-rested reserve is on the bench. The keeper only below 60%.",
+    "instr": {
+      "title": "Team instructions",
+      "hint": "The style is the template: it fills everything. Each step moves the play a little.",
+      "custom": "Changed from the {{style}} template",
+      "template": "{{style}} template",
+      "reset": "Back to the template",
+      "mentality": "Mentality",
+      "groups": {
+        "inPossession": "In possession",
+        "transition": "Transition",
+        "outOfPossession": "Out of possession"
+      },
+      "groupHints": {
+        "inPossession": "How the team plays with the ball.",
+        "transition": "The seconds after the ball changes side.",
+        "outOfPossession": "Where and how much the team presses."
+      },
+      "familiarity": "Familiarity",
+      "keys": {
+        "mentality": [
+          "Very defensive",
+          "Defensive",
+          "Balanced",
+          "Attacking",
+          "Very attacking"
+        ],
+        "passing": [
+          "Much shorter",
+          "Shorter",
+          "Normal",
+          "Direct",
+          "Much more direct"
+        ],
+        "tempo": [
+          "Much slower",
+          "Slower",
+          "Normal",
+          "Faster",
+          "Much faster"
+        ],
+        "width": [
+          "Very narrow",
+          "Narrow",
+          "Normal",
+          "Wide",
+          "Very wide"
+        ],
+        "passTarget": [
+          "To feet",
+          "More to feet",
+          "Mixed",
+          "More into space",
+          "Into space"
+        ],
+        "flanks": [
+          "Always underlap",
+          "Underlap",
+          "Mixed",
+          "Overlap",
+          "Always overlap"
+        ],
+        "crossing": [
+          "Very early",
+          "Early",
+          "Mixed",
+          "Byline",
+          "Always the byline"
+        ],
+        "dribbling": [
+          "Much less",
+          "Less",
+          "Normal",
+          "More",
+          "Much more"
+        ],
+        "shooting": [
+          "Work the ball in",
+          "Shoot less",
+          "Normal",
+          "Shoot more",
+          "Shoot on sight"
+        ],
+        "freedom": [
+          "Very disciplined",
+          "Disciplined",
+          "Normal",
+          "Expressive",
+          "Very expressive"
+        ],
+        "gkDistribution": [
+          "Very short",
+          "Short",
+          "Mixed",
+          "Long",
+          "Very long"
+        ],
+        "onLoss": [
+          "Regroup at once",
+          "Regroup",
+          "Mixed",
+          "Counter-press",
+          "Full counter-press"
+        ],
+        "onWin": [
+          "Hold the shape",
+          "Calmer",
+          "Mixed",
+          "Counter",
+          "Full counter"
+        ],
+        "engagement": [
+          "Very low",
+          "Low",
+          "Mid",
+          "High",
+          "Very high"
+        ],
+        "line": [
+          "Very deep",
+          "Deep",
+          "Normal",
+          "High",
+          "Very high"
+        ],
+        "pressing": [
+          "Much less",
+          "Less",
+          "Normal",
+          "More",
+          "Much more"
+        ],
+        "trap": [
+          "Force inside",
+          "Inside",
+          "None",
+          "Outside",
+          "Force outside"
+        ],
+        "tackling": [
+          "Always stay up",
+          "Stay up",
+          "Normal",
+          "Hard",
+          "Very hard"
+        ],
+        "crosses": [
+          "Always stop",
+          "Stop",
+          "Mixed",
+          "Invite",
+          "Always invite"
+        ],
+        "defWidth": [
+          "Very compact",
+          "Compact",
+          "Normal",
+          "Wide",
+          "Very wide"
+        ],
+        "positioning": [
+          "Very fixed",
+          "Fixed",
+          "Normal",
+          "Free",
+          "Very free"
+        ]
+      },
+      "labels": {
+        "mentality": "Mentality",
+        "passing": "Passing",
+        "tempo": "Tempo",
+        "width": "Width",
+        "passTarget": "Pass target",
+        "focus": "Focus of play",
+        "flanks": "Full-backs going forward",
+        "crossing": "Crossing",
+        "dribbling": "Dribbling",
+        "shooting": "Shooting",
+        "freedom": "Creative freedom",
+        "gkDistribution": "Keeper distribution",
+        "onLoss": "On losing the ball",
+        "onWin": "On winning the ball",
+        "engagement": "Line of engagement",
+        "line": "Defensive line",
+        "pressing": "Pressing intensity",
+        "trap": "Pressing trap",
+        "tackling": "Tackling",
+        "crosses": "Opposition crosses",
+        "defWidth": "Width out of possession",
+        "positioning": "Position"
+      },
+      "focus": {
+        "left": "Left",
+        "center": "Centre",
+        "mixed": "Mixed",
+        "right": "Right",
+        "wings": "Wings"
+      },
+      "shapeSwitch": "Shape with or without the ball"
+    }
   },
   "formations": {
     "presets": {

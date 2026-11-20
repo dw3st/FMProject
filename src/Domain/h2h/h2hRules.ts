@@ -3,7 +3,8 @@ import { FORMATION_IDS } from "@/Domain/matchFormations";
 import { parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
 import { isRoleVariantId } from "@/GameEngine/Configs/RoleVariantConfig";
 import { MENTALITY_OPTIONS } from "@/types/tacticsTypes";
-import type { Mentality, PressLevel, SlotInstruction, TacticalStyle } from "@/types/tacticsTypes";
+import type { InstructionLevel, Mentality, PressLevel, SlotInstruction, TacticalStyle, TeamInstructions } from "@/types/tacticsTypes";
+import { isLevel, parseTeamInstructions } from "@/Domain/tactics/teamInstructions";
 import type { H2HCommand, H2HPhase, H2HRoomView, H2HSeatStatus, H2HSide, H2HSpeed } from "@/types/h2hTypes";
 
 /** One side of a room (pure state; the sockets live elsewhere). */
@@ -222,14 +223,25 @@ export function parseH2HCommand(raw: unknown): H2HCommand | null {
       if (!hasOnly(raw, ["kind", "mentality"]) || !MENTALITY_OPTIONS.includes(raw.mentality as Mentality)) return null;
       return { kind: "mentality", mentality: raw.mentality as Mentality };
     case "tactics": {
-      if (!hasOnly(raw, ["kind", "style", "axesOverride"])) return null;
+      if (!hasOnly(raw, ["kind", "style", "axesOverride", "instructions", "mentalityLevel"])) return null;
       if (typeof raw.style !== "string" || !Object.hasOwn(TACTICAL_STYLES, raw.style)) return null;
       const style = raw.style as TacticalStyle;
-      if (raw.axesOverride === undefined) return { kind: "tactics", style };
+      // Team instructions and the mentality level (stage 20): the same parser as a tactics PUT.
+      let extra: { instructions?: TeamInstructions; mentalityLevel?: InstructionLevel } = {};
+      if (raw.instructions !== undefined) {
+        const p = parseTeamInstructions(raw.instructions);
+        if (!p.ok) return null;
+        if (p.value) extra = { instructions: p.value };
+      }
+      if (raw.mentalityLevel !== undefined) {
+        if (!isLevel(raw.mentalityLevel)) return null;
+        if (raw.mentalityLevel !== 0) extra = { ...extra, mentalityLevel: raw.mentalityLevel };
+      }
+      if (raw.axesOverride === undefined) return { kind: "tactics", style, ...extra };
       if (!isObj(raw.axesOverride)) return null;
       const axes = parseAxesOverride(raw.axesOverride);
       if (axes === null) return null;
-      return { kind: "tactics", style, axesOverride: axes };
+      return { kind: "tactics", style, axesOverride: axes, ...extra };
     }
     case "formation": {
       if (!hasOnly(raw, ["kind", "formation", "custom"]) || typeof raw.formation !== "string") return null;

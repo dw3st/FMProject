@@ -109,6 +109,10 @@ export interface DecisionFlags {
    *  (the first contact along the 3D flight, contested at the contact; the jump, standing still and being goal-side
    *  win it); high balls nobody meets drop loose. */
   FM_AERIAL: boolean;
+  /** Stage 20 (`tactical-config.md` → "Stage 20"): the team instructions in five levels, the duty and the role out of
+   *  possession of a slot, the player instructions and the AI's instructions by the score. Off = the axes only (the
+   *  instructions' extra effects read 0, the AI keeps its style). */
+  TEAM_INSTRUCTIONS: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -154,6 +158,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   LONG_SHOTS: true,
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
+  TEAM_INSTRUCTIONS: true,
 };
 
 /**

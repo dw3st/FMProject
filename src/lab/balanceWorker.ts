@@ -802,10 +802,10 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     const styleB = sideStudy.B?.style ?? variantB.tacticalStyle;
     const famA = sideStudy.A ? aiFamiliarity(styleA) : variantFamiliarity(variantA);
     const famB = sideStudy.B ? aiFamiliarity(styleB) : variantFamiliarity(variantB);
-    applyTeamTacticsConfig("A", styleA, variantA.mentality ?? DEFAULT_MENTALITY, sideStudy.A ? undefined : variantA.axesOverride, famA);
-    applyTeamAttackConfig("A", styleA, variantA.mentality ?? DEFAULT_MENTALITY, sideStudy.A ? undefined : variantA.axesOverride, famA);
-    applyTeamTacticsConfig("B", styleB, variantB.mentality ?? DEFAULT_MENTALITY, sideStudy.B ? undefined : variantB.axesOverride, famB);
-    applyTeamAttackConfig("B", styleB, variantB.mentality ?? DEFAULT_MENTALITY, sideStudy.B ? undefined : variantB.axesOverride, famB);
+    applyTeamTacticsConfig("A", styleA, variantA.mentality ?? DEFAULT_MENTALITY, sideStudy.A ? undefined : variantA.axesOverride, famA, sideStudy.A ? undefined : variantA.teamInstructions, variantA.mentalityLevel);
+    applyTeamAttackConfig("A", styleA, variantA.mentality ?? DEFAULT_MENTALITY, sideStudy.A ? undefined : variantA.axesOverride, famA, sideStudy.A ? undefined : variantA.teamInstructions, variantA.mentalityLevel);
+    applyTeamTacticsConfig("B", styleB, variantB.mentality ?? DEFAULT_MENTALITY, sideStudy.B ? undefined : variantB.axesOverride, famB, sideStudy.B ? undefined : variantB.teamInstructions, variantB.mentalityLevel);
+    applyTeamAttackConfig("B", styleB, variantB.mentality ?? DEFAULT_MENTALITY, sideStudy.B ? undefined : variantB.axesOverride, famB, sideStudy.B ? undefined : variantB.teamInstructions, variantB.mentalityLevel);
     sideFamiliarity = {
       A: sideStudy.A ? famA?.[styleA] : variantA.familiarity,
       B: sideStudy.B ? famB?.[styleB] : variantB.familiarity,

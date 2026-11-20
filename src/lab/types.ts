@@ -78,6 +78,10 @@ export interface Variant {
   mentality?: Mentality;
   /** Axes edited on top of `tacticalStyle`'s bundle (Block C2). Absent = the style's own axes. */
   axesOverride?: Partial<TacticalAxes>;
+  /** Team instructions in five levels (stage 20); absent = the style's template. */
+  teamInstructions?: import("@/types/tacticsTypes").TeamInstructions;
+  /** Saved mentality −2..+2 (stage 20); absent = 0. */
+  mentalityLevel?: number;
   /** Free formation (zone grid). When set it replaces `formation` in the engine and quickSim. */
   customFormation?: CustomFormation;
   /**

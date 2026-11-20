@@ -1092,7 +1092,207 @@
       }
     },
     "rotationFitness": "Poupar quem estiver abaixo de",
-    "rotationFitnessHint": "Titulares de linha com fôlego abaixo de {{value}}% entram na troca quando há um reserva melhor descansado. O goleiro só abaixo de 60%."
+    "rotationFitnessHint": "Titulares de linha com fôlego abaixo de {{value}}% entram na troca quando há um reserva melhor descansado. O goleiro só abaixo de 60%.",
+    "instr": {
+      "title": "Instruções da equipe",
+      "hint": "O estilo é o modelo: ele preenche tudo. Cada nível mexe um pouco no jogo.",
+      "custom": "Alterado em relação ao modelo {{style}}",
+      "template": "Modelo {{style}}",
+      "reset": "Voltar ao modelo",
+      "mentality": "Mentalidade",
+      "groups": {
+        "inPossession": "Com a bola",
+        "transition": "Transição",
+        "outOfPossession": "Sem a bola"
+      },
+      "groupHints": {
+        "inPossession": "Como o time joga quando tem a bola.",
+        "transition": "Os segundos depois de a bola mudar de lado.",
+        "outOfPossession": "Onde e quanto o time pressiona."
+      },
+      "familiarity": "Entrosamento",
+      "keys": {
+        "mentality": [
+          "Muito defensiva",
+          "Defensiva",
+          "Equilibrada",
+          "Ofensiva",
+          "Muito ofensiva"
+        ],
+        "passing": [
+          "Bem curto",
+          "Curto",
+          "Normal",
+          "Direto",
+          "Bem direto"
+        ],
+        "tempo": [
+          "Bem lento",
+          "Lento",
+          "Normal",
+          "Rápido",
+          "Bem rápido"
+        ],
+        "width": [
+          "Bem estreita",
+          "Estreita",
+          "Normal",
+          "Larga",
+          "Bem larga"
+        ],
+        "passTarget": [
+          "No pé",
+          "Mais no pé",
+          "Misto",
+          "Mais no espaço",
+          "No espaço"
+        ],
+        "flanks": [
+          "Sempre por dentro",
+          "Por dentro",
+          "Misto",
+          "Por fora",
+          "Sempre por fora"
+        ],
+        "crossing": [
+          "Bem cedo",
+          "Cedo",
+          "Misto",
+          "Linha de fundo",
+          "Sempre da linha"
+        ],
+        "dribbling": [
+          "Bem menos",
+          "Menos",
+          "Normal",
+          "Mais",
+          "Muito mais"
+        ],
+        "shooting": [
+          "Trabalhar a bola",
+          "Chutar menos",
+          "Normal",
+          "Chutar mais",
+          "Chutar à vista"
+        ],
+        "freedom": [
+          "Bem disciplinado",
+          "Disciplinado",
+          "Normal",
+          "Expressivo",
+          "Bem expressivo"
+        ],
+        "gkDistribution": [
+          "Bem curta",
+          "Curta",
+          "Mista",
+          "Longa",
+          "Bem longa"
+        ],
+        "onLoss": [
+          "Recompor já",
+          "Recompor",
+          "Misto",
+          "Contra-pressionar",
+          "Pressão total"
+        ],
+        "onWin": [
+          "Manter a forma",
+          "Mais calma",
+          "Misto",
+          "Contra-atacar",
+          "Contra-ataque total"
+        ],
+        "engagement": [
+          "Bem baixa",
+          "Baixa",
+          "Média",
+          "Alta",
+          "Bem alta"
+        ],
+        "line": [
+          "Bem recuada",
+          "Recuada",
+          "Normal",
+          "Alta",
+          "Bem alta"
+        ],
+        "pressing": [
+          "Bem menos",
+          "Menos",
+          "Normal",
+          "Mais",
+          "Muito mais"
+        ],
+        "trap": [
+          "Forçar por dentro",
+          "Por dentro",
+          "Nenhuma",
+          "Por fora",
+          "Forçar por fora"
+        ],
+        "tackling": [
+          "Sempre em pé",
+          "Em pé",
+          "Normal",
+          "Forte",
+          "Bem forte"
+        ],
+        "crosses": [
+          "Impedir sempre",
+          "Impedir",
+          "Misto",
+          "Convidar",
+          "Convidar sempre"
+        ],
+        "defWidth": [
+          "Bem compacta",
+          "Compacta",
+          "Normal",
+          "Aberta",
+          "Bem aberta"
+        ],
+        "positioning": [
+          "Bem fixo",
+          "Fixo",
+          "Normal",
+          "Livre",
+          "Bem livre"
+        ]
+      },
+      "labels": {
+        "mentality": "Mentalidade",
+        "passing": "Passe",
+        "tempo": "Ritmo",
+        "width": "Largura",
+        "passTarget": "Alvo do passe",
+        "focus": "Foco do jogo",
+        "flanks": "Laterais no ataque",
+        "crossing": "Cruzamento",
+        "dribbling": "Drible",
+        "shooting": "Chute",
+        "freedom": "Liberdade criativa",
+        "gkDistribution": "Saída do goleiro",
+        "onLoss": "Ao perder a bola",
+        "onWin": "Ao ganhar a bola",
+        "engagement": "Linha de engajamento",
+        "line": "Linha defensiva",
+        "pressing": "Intensidade da pressão",
+        "trap": "Armadilha",
+        "tackling": "Desarme",
+        "crosses": "Cruzamentos do adversário",
+        "defWidth": "Largura sem a bola",
+        "positioning": "Posição"
+      },
+      "focus": {
+        "left": "Esquerda",
+        "center": "Centro",
+        "mixed": "Misto",
+        "right": "Direita",
+        "wings": "Pontas"
+      },
+      "shapeSwitch": "Forma com ou sem a bola"
+    }
   },
   "formations": {
     "presets": {

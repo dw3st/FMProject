@@ -1,30 +1,25 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  TACTICAL_STYLE_OPTIONS, effectiveAxes, getTacticalStyleMeta, hasAxesOverride,
-  type TacticalAxes, type TacticalStyle,
+  TACTICAL_STYLE_OPTIONS, getTacticalStyleMeta,
+  type InstructionLevel, type TacticalAxes, type TacticalStyle, type TeamInstructions,
 } from "@/types/tacticsTypes";
+import { resolveInstructions } from "@/Domain/tactics/teamInstructions";
+import { TeamInstructionsPanel } from "@/GameInterface/Tactics/TeamInstructionsPanel";
 import type { LiveTactics } from "@/Domain/tactics/liveTactics";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Button } from "@/GameInterface/ui/Button";
-import { PanelBlock, PanelColumns } from "@/GameInterface/Components/SubsPanelLayout";
-
-const AXIS_CHOICES: { key: keyof TacticalAxes; values: string[] }[] = [
-  { key: "pressing_style", values: ["low_block", "mid_block", "high_press"] },
-  { key: "defensive_line", values: ["deep", "normal", "high"] },
-  { key: "width", values: ["narrow", "normal", "wide"] },
-  { key: "build_up", values: ["direct", "balanced", "possession"] },
-];
+import { PanelColumns } from "@/GameInterface/Components/SubsPanelLayout";
 
 /**
- * "Tactics" tab of the live substitution panel (Etapa 35, #108): tactical style and the four axes for this
- * match only. Dumb: `MatchScreen` applies the choice to the engine and never saves it.
+ * "Tactics" tab of the live substitution panel (Etapa 35, #108): tactical style and, since stage 20, the team
+ * instructions and mentality level for this match only. Dumb: `MatchScreen` applies the choice to the engine and never saves it.
  */
 export function LiveTacticsPanel({
   live,
   saved,
   onStyle,
-  onAxis,
+  onInstructions,
   onReset,
   pitch,
 }: {
@@ -32,16 +27,19 @@ export function LiveTacticsPanel({
   /** The saved tactics (what "back to saved" restores). */
   saved: LiveTactics;
   onStyle: (style: TacticalStyle) => void;
-  onAxis: <K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) => void;
+  /** Old per-axis edit (kept for callers; the instructions panel replaces it). */
+  onAxis?: <K extends keyof TacticalAxes>(key: K, value: TacticalAxes[K]) => void;
+  /** Team instructions and mentality level for this match (stage 20). */
+  onInstructions: (next: { teamInstructions?: TeamInstructions; mentality?: number }) => void;
   onReset: () => void;
   /** The panel's mini pitch, on the left. */
   pitch?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const axes = effectiveAxes(live.style, live.axesOverride);
-  const isSaved = live.style === saved.style
-    && (Object.keys(axes) as (keyof TacticalAxes)[]).every((k) => axes[k] === effectiveAxes(saved.style, saved.axesOverride)[k]);
-  const styleLabel = getTacticalStyleMeta(live.style, t as never).label;
+  const now = resolveInstructions(live.style, live.axesOverride, live.instructions, live.mentalityLevel);
+  const was = resolveInstructions(saved.style, saved.axesOverride, saved.instructions, saved.mentalityLevel);
+  const isSaved = live.style === saved.style && now.focus === was.focus && now.mentality === was.mentality
+    && (Object.keys(now.levels) as (keyof typeof now.levels)[]).every((k) => now.levels[k] === was.levels[k]);
   return (
     <PanelColumns
       pitch={pitch}
@@ -59,27 +57,15 @@ export function LiveTacticsPanel({
         value={live.style}
         onChange={onStyle}
       />
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("tactics.axes.title")}</h3>
-          <span className="text-sm text-primary font-semibold">
-            {hasAxesOverride(live.style, live.axesOverride) ? t("tactics.axes.custom", { style: styleLabel }) : styleLabel}
-          </span>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
-          {AXIS_CHOICES.map((axis) => (
-            <PanelBlock key={axis.key} label={t(`tactics.axes.${axis.key}` as never)}>
-              <OptionChips
-                aria-label={t(`tactics.axes.${axis.key}` as never)}
-                options={axis.values.map((v) => ({ key: v, label: t(`tactics.axes.values.${v}` as never) }))}
-                value={axes[axis.key] as string}
-                onChange={(v) => onAxis(axis.key, v as never)}
-              />
-            </PanelBlock>
-          ))}
-        </div>
-        <p className="text-sm text-muted-foreground m-0">{t("match.liveTactics.mentalityNote")}</p>
-      </div>
+      <TeamInstructionsPanel
+        compact
+        style={live.style}
+        axesOverride={live.axesOverride}
+        value={{ teamInstructions: live.instructions, mentality: live.mentalityLevel as InstructionLevel | undefined }}
+        onChange={onInstructions}
+        onReset={() => onInstructions({ ...(live.mentalityLevel ? { mentality: live.mentalityLevel } : {}) })}
+      />
+      <p className="text-sm text-muted-foreground m-0">{t("match.liveTactics.mentalityNote")}</p>
     </PanelColumns>
   );
 }

@@ -36,8 +36,13 @@ export interface TeamTacticsSnapshot {
   mentality: Mentality;
   axesOverride?: TacticsSave["axesOverride"];
   familiarity?: FamiliarityLevels;
+  /** Team instructions and the saved mentality level (stage 20). */
+  instructions?: TacticsSave["teamInstructions"];
+  mentalityLevel?: number;
+  /** An AI side picks its instructions by the score (stage 20). */
+  ai?: boolean;
   /** The saved tactics the live panel restores (Etapa 35); absent = `style` / `axesOverride`. */
-  saved?: { style: TacticalStyle; axesOverride?: TacticsSave["axesOverride"] };
+  saved?: { style: TacticalStyle; axesOverride?: TacticsSave["axesOverride"]; instructions?: TacticsSave["teamInstructions"]; mentalityLevel?: number };
 }
 
 export interface MatchSnapshot {

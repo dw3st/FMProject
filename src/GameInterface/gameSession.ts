@@ -158,8 +158,8 @@ export async function updateSaveTacticalStyle(
   const res = await fetch(`/api/saves/${saveId}/tactics`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
-    // Picking a style fills the four axes again: any per-axis edit is dropped.
-    body: JSON.stringify({ tactical_style, axesOverride: {} }),
+    // Picking a style fills the instructions again (its template): any edit is dropped; the mentality stays.
+    body: JSON.stringify({ tactical_style, axesOverride: {}, teamInstructions: null }),
   });
   if (!res.ok) throw new Error("Failed to update tactics");
   const saved = await res.json() as TacticsSave;

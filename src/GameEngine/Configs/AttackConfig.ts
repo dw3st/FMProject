@@ -16,7 +16,11 @@
 
 import type { TeamId } from '@/GameEngine/types';
 import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality, TacticalAxes } from '@/types/tacticsTypes';
-import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
+import { shiftAxesByMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
+import type { TeamInstructions } from '@/types/tacticsTypes';
+import { axesOfLevels, resolveInstructions } from '@/Domain/tactics/teamInstructions';
+import { setTeamInstructions } from '@/GameEngine/Configs/InstructionConfig';
+import { instructionFamiliarity } from '@/Domain/familiarity/familiarity';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
@@ -332,8 +336,14 @@ export function applyTeamAttackConfig(
   mentality: Mentality = DEFAULT_MENTALITY,
   axesOverride?: Partial<TacticalAxes>,
   familiarity?: FamiliarityLevels,
+  instructions?: TeamInstructions,
+  mentalityLevel?: number,
 ): void {
-  const axes = axesWithMentality(style, mentality, axesOverride);
+  // Stage 20: the instructions resolve into levels (the style's template + the old axesOverride + the instructions);
+  // the axis instructions give the same axes as before at −1 / 0 / +1.
+  const resolved = resolveInstructions(style, axesOverride, instructions, mentalityLevel);
+  setTeamInstructions(team, resolved, instructionFamiliarity(familiarity));
+  const axes = shiftAxesByMentality(axesOfLevels(resolved.levels).attack, mentality);
   Object.assign(TEAM_PASS_WEIGHTS[team], BUILD_UP_PASS[axes.build_up]);
   Object.assign(TEAM_CARRY_WEIGHTS[team], BUILD_UP_CARRY[axes.build_up]);
   const styleFactor = familiarityFactor(familiarity?.[style]);

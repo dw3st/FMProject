@@ -9,7 +9,9 @@
 
 import type { TeamId } from '@/GameEngine/types';
 import type { PressingStyle, DefensiveLine, TeamWidth, TacticalStyle, TacticalAxes, Mentality } from '@/types/tacticsTypes';
-import { axesWithMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
+import { shiftAxesByMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
+import type { TeamInstructions } from '@/types/tacticsTypes';
+import { axesOfLevels, resolveInstructions } from '@/Domain/tactics/teamInstructions';
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import {
@@ -167,8 +169,12 @@ export function applyTeamTacticsConfig(
   mentality: Mentality = DEFAULT_MENTALITY,
   axesOverride?: Partial<TacticalAxes>,
   familiarity?: FamiliarityLevels,
+  instructions?: TeamInstructions,
+  mentalityLevel?: number,
 ): void {
-  const axes = axesWithMentality(style, mentality, axesOverride);
+  // Stage 20: the defending side's axes from the instruction levels (defensive width, pressing, line).
+  const resolved = resolveInstructions(style, axesOverride, instructions, mentalityLevel);
+  const axes = shiftAxesByMentality(axesOfLevels(resolved.levels).defense, mentality);
   Object.assign(TEAM_CONFIGS[team], mapAxesToDefense(axes));
   applyAdd(TEAM_CONFIGS[team], STYLE_FAMILIARITY_EFFECTS[style].defenseAdd, familiarityFactor(familiarity?.[style]));
   if (axes.defensive_line === 'high') {

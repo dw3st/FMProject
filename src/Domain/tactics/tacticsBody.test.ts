@@ -67,3 +67,17 @@ describe("mergeTacticsBody (club and national tactics PUT)", () => {
     }
   });
 });
+
+describe("team instructions in the body (stage 20)", () => {
+  const base = { formation: "4-3-3", tactical_style: "balanced" as const, lineup: [] as string[] };
+  test("stored, cleared with null, mentality 0 dropped, bad level refused", () => {
+    const a = mergeTacticsBody(base, { teamInstructions: { inPossession: { tempo: 2 } }, mentality: 1 });
+    expect(a.ok && a.value.teamInstructions).toEqual({ inPossession: { tempo: 2 } });
+    expect(a.ok && a.value.mentality).toBe(1);
+    const b = mergeTacticsBody(a.ok ? a.value : base, { teamInstructions: null as never, mentality: 0 });
+    expect(b.ok && b.value.teamInstructions).toBeUndefined();
+    expect(b.ok && b.value.mentality).toBeUndefined();
+    expect(mergeTacticsBody(base, { teamInstructions: { inPossession: { tempo: 5 as never } } }).ok).toBe(false);
+    expect(mergeTacticsBody(base, { mentality: 3 as never }).ok).toBe(false);
+  });
+});

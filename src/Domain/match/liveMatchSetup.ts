@@ -28,6 +28,11 @@ export interface LiveSideTactics {
   mentality: Mentality;
   axesOverride?: Partial<TacticalAxes>;
   familiarity?: FamiliarityLevels;
+  /** Team instructions and the saved mentality level (stage 20); absent = the style's template. */
+  instructions?: import("@/types/tacticsTypes").TeamInstructions;
+  mentalityLevel?: number;
+  /** An AI side picks its instructions by the score (stage 20, 4c-7). */
+  ai?: boolean;
 }
 
 export interface LiveSideInput {
@@ -85,8 +90,8 @@ const SIDES: TeamId[] = ["A", "B"];
 export function applyLiveSideConfigs(sides: Record<TeamId, Pick<LiveSideInput, "tactics" | "morale">>): void {
   for (const team of SIDES) {
     const t = sides[team].tactics;
-    applyTeamTacticsConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity);
-    applyTeamAttackConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity);
+    applyTeamTacticsConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity, t.instructions, t.mentalityLevel);
+    applyTeamAttackConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity, t.instructions, t.mentalityLevel);
   }
   for (const team of SIDES) {
     const m = sides[team].morale;

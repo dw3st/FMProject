@@ -9,6 +9,7 @@ import { parseSetPieceTakers } from "@/Domain/tactics/setPieceTakers";
 import { parseSlotInstructions, sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { parseLineupPresets } from "@/Domain/tactics/lineupPresets";
 import { lastLineupKey } from "@/Domain/tactics/lastLineups";
+import { isLevel, parseTeamInstructions } from "@/Domain/tactics/teamInstructions";
 import { ROTATION_FITNESS_OPTIONS } from "@/Domain/lineupHelpers";
 import type { Formation } from "@/GameEngine/types";
 import type { TacticsSave } from "@/types/tacticsTypes";
@@ -36,6 +37,19 @@ export function mergeTacticsBody(existing: TacticsSave, body: Partial<TacticsSav
     const parsed = parseSetPieceTakers(body.setPieceTakers);
     if (!parsed) return { ok: false, error: "invalid set-piece takers" };
     setPieceTakers = Object.keys(parsed).length ? parsed : undefined;
+  }
+  // Team instructions (stage 20): a body object replaces the stored ones whole (`null` / `{}` clears).
+  let teamInstructions = existing.teamInstructions;
+  if (body.teamInstructions !== undefined) {
+    const parsed = parseTeamInstructions(body.teamInstructions);
+    if (!parsed.ok) return { ok: false, error: parsed.error };
+    teamInstructions = parsed.value;
+  }
+  let mentality = existing.mentality;
+  if (body.mentality !== undefined) {
+    const m = body.mentality as unknown;
+    if (m !== null && !isLevel(m)) return { ok: false, error: "invalid mentality" };
+    mentality = m === null || m === 0 ? undefined : m;
   }
   let rotationFitness = existing.assistantRotationFitness;
   if (body.assistantRotationFitness !== undefined) {
@@ -78,6 +92,8 @@ export function mergeTacticsBody(existing: TacticsSave, body: Partial<TacticsSav
     ...(rotationFitness !== undefined ? { assistantRotationFitness: rotationFitness } : {}),
     ...(customFormation ? { customFormation } : {}),
     ...(axesOverride ? { axesOverride } : {}),
+    ...(teamInstructions ? { teamInstructions } : {}),
+    ...(mentality ? { mentality } : {}),
     ...(setPieceTakers ? { setPieceTakers } : {}),
     ...(slotInstructions.length > 0 ? { slotInstructions } : {}),
     ...(lineupPresets ? { lineupPresets } : {}),

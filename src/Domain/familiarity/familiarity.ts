@@ -72,3 +72,11 @@ export function trainFamiliarity(
   }
   return out;
 }
+
+/**
+ * The familiarity scale of each group of team instructions (stage 20, 4c-7): how much of an instruction's difference
+ * from the style's template the team plays. Absent = full (the lab, `/test`).
+ */
+export function instructionFamiliarity(_fam: FamiliarityLevels | undefined): Partial<Record<"inPossession" | "transition" | "outOfPossession", number>> | undefined {
+  return undefined;
+}

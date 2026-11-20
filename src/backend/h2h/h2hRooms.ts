@@ -705,6 +705,8 @@ function sideInput(body: SetupBody, date: string): LiveSideInput {
       mentality: DEFAULT_MENTALITY,
       axesOverride: tactics.axesOverride,
       familiarity: squadFamiliarityLevels(body.mySquad, tactics.tactical_style),
+      ...(tactics.teamInstructions ? { instructions: tactics.teamInstructions } : {}),
+      ...(tactics.mentality ? { mentalityLevel: tactics.mentality } : {}),
     },
     staffInjuryMult: staffEffectsOf(body.mySquad).injuryMult,
     morale: "own",

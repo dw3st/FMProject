@@ -215,8 +215,8 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
           retick();
           break;
         case "tactics":
-          tactics[side] = { ...tactics[side], style: cmd.style, axesOverride: cmd.axesOverride };
-          applyLiveTactics(side, tactics[side], tactics[side].mentality, tactics[side].familiarity);
+          tactics[side] = { ...tactics[side], style: cmd.style, axesOverride: cmd.axesOverride, instructions: cmd.instructions, mentalityLevel: cmd.mentalityLevel };
+          applyLiveTactics(side, { style: tactics[side].style, axesOverride: tactics[side].axesOverride, instructions: tactics[side].instructions, mentalityLevel: tactics[side].mentalityLevel }, tactics[side].mentality, tactics[side].familiarity);
           retick();
           break;
         case "formation": {

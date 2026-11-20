@@ -175,6 +175,12 @@ export interface TeamInstructions {
 export interface TeamTactics {
   style: TacticalStyle;
   axesOverride?: Partial<TacticalAxes>;
+  /** Team instructions in five levels (stage 20); absent = the style's template. */
+  instructions?: import('@/types/tacticsTypes').TeamInstructions;
+  /** Saved mentality −2..+2 (stage 20); absent = 0. */
+  mentality?: number;
+  /** An AI side: picks its instructions by the score during the match (stage 20, 4c-7). */
+  ai?: boolean;
   /** Manager's set-piece takers (roster ids); absent = automatic (`set-pieces-play.md`). */
   setPieceTakers?: SetPieceTakers;
   /** Style familiarity (`src/Domain/familiarity`); absent = neutral (no effect). */
@@ -270,8 +276,8 @@ export function simulateMatch(
   if (options.tactics) {
     for (const team of ['A', 'B'] as const) {
       const t = options.tactics[team];
-      applyTeamTacticsConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity);
-      applyTeamAttackConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity);
+      applyTeamTacticsConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity, t.instructions, t.mentality);
+      applyTeamAttackConfig(team, t.style, DEFAULT_MENTALITY, t.axesOverride, t.familiarity, t.instructions, t.mentality);
     }
   } else {
     for (const team of ['A', 'B'] as const) {

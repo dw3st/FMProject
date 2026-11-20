@@ -48,7 +48,7 @@ export type H2HCommand =
   /** A starter moves to a slot nobody holds (after a red card or an injury). */
   | { kind: "move"; id: number; slot: number }
   | { kind: "mentality"; mentality: Mentality }
-  | { kind: "tactics"; style: TacticalStyle; axesOverride?: Partial<TacticalAxes> }
+  | { kind: "tactics"; style: TacticalStyle; axesOverride?: Partial<TacticalAxes>; instructions?: import("@/types/tacticsTypes").TeamInstructions; mentalityLevel?: number }
   /**
    * A ready-made formation by id, or one of the manager's own (`user:free`, `user:A`…) with its slots in `custom`
    * (validated like the Formation screen's free formation).

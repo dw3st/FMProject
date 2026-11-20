@@ -234,7 +234,7 @@ export function computeMatchSimulationLineups(
   const idsOf = (s: Squad) => new Set(s.players.map((p) => p.id));
   const date = fixture.date;
   // AI clubs follow the implicit familiarity rule (`src/Domain/familiarity`), nothing stored.
-  const aiTactics: TeamTactics = { style: DEFAULT_TACTICAL_STYLE, familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE) };
+  const aiTactics: TeamTactics = { style: DEFAULT_TACTICAL_STYLE, familiarity: aiFamiliarity(DEFAULT_TACTICAL_STYLE), ai: true };
   const userPlays =
     Boolean(playerSquadId) && (fixture.home === playerSquadId || fixture.away === playerSquadId);
 
@@ -268,6 +268,8 @@ export function computeMatchSimulationLineups(
   const userTactics: TeamTactics = {
     style: t.tactical_style,
     axesOverride: t.axesOverride,
+    ...(t.teamInstructions ? { instructions: t.teamInstructions } : {}),
+    ...(t.mentality ? { mentality: t.mentality } : {}),
     familiarity: squadFamiliarityLevels(userSquad, t.tactical_style),
     ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
     ...userInstructions(userFormation, t, matchMarking, date),
@@ -345,6 +347,7 @@ export function studiedAiTactics(plan: StudyPlan): TeamTactics {
   return {
     style: plan.style,
     familiarity: aiFamiliarity(plan.style),
+    ai: true,
     study: { level: plan.level, style: plan.style },
     ...(plan.mark ? { manMarks: [{ slot: plan.mark.slot, targetRosterId: plan.mark.targetRosterId }] } : {}),
   };
@@ -394,6 +397,8 @@ export function computeSeatedMatchLineups(
     const tactics: TeamTactics = {
       style: t.tactical_style,
       axesOverride: t.axesOverride,
+      ...(t.teamInstructions ? { instructions: t.teamInstructions } : {}),
+      ...(t.mentality ? { mentality: t.mentality } : {}),
       familiarity: squadFamiliarityLevels(squad, t.tactical_style),
       ...(t.setPieceTakers ? { setPieceTakers: t.setPieceTakers } : {}),
       ...userInstructions(formation, t, side.matchMarking, date),
