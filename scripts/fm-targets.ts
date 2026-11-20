@@ -105,6 +105,12 @@ console.log(`  decisions / live s ${f2(fm.holderDecisions / fm.realSeconds)} (FM
   const q = (p: number) => { let c = 0; for (let i = 0; i < h.length; i++) { c += h[i]!; if (c >= p * tot) return i * 0.2; } return h.length * 0.2; };
   console.log(`  time on ball median ${f1(q(0.5))} s · p90 ${f1(q(0.9))} s   FM ${FM_TIMING.onBallMedian} · p90 ${FM_TIMING.onBallP90}`);
 }
+// Stage 8 (`holder-choice.md`): the FM chooser's candidates per decision, vetoes, decisions per stint, new actions.
+if (world.holderChoices) {
+  const hc = world.holderChoices;
+  console.log(`  FM chooser: ${f1(world.holderCandidatesSum! / hc)} candidates per decision (FM ~21), ${f1((100 * world.holderVetoedSum!) / world.holderCandidatesSum!)}% vetoed, ${f2(hc / Math.max(1, world.holderStints!))} decisions per stint, lapse ${f1((100 * world.holderLapseChoices!) / hc)}%`);
+  console.log(`  per match: sprints ${f1(world.holderSprints! / n)} · byline runs ${f1(world.holderBylines! / n)} · spins ${f1(world.holderSpins! / n)} · corner-flag holds ${f2(world.holderFlagHolds! / n)}`);
+}
 console.log("\n── Pressing ──");
 const ps = fm.pressSamples || 1;
 console.log(`  dedicated pressers (target ≤ 3 m): 0 ${f1((100 * fm.pressers[0]) / ps)}% · 1 ${f1((100 * fm.pressers[1]) / ps)}% · 2+ ${f1((100 * fm.pressers[2]) / ps)}%   FM ${FM_PRESSERS.join(" · ")}`);
@@ -124,7 +130,7 @@ console.log("  FM step DEF 4.4 · MID 6 · FWD 7 yd (target − position: in 9.8
 console.log("\n── Shots (distance to the goal mouth, yd) ──");
 console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) / Math.max(1, fm.shots))}%`).join(" · ") + "   FM: none beyond ~33 yd");
 console.log("\n── World / match ──");
-console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
+console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && !k.startsWith("holder") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
 // Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.
 if (world.ballNearTicks) console.log(`  crowd 3+ defenders ≤ 8 yd: ${(100 * world.ballCrowdTicks! / world.ballNearTicks).toFixed(1)}% of live ticks (main ~5.4–5.8%)`);
 // Stage 18 (`highlights.md`): lances per match by level and the share of the live play they cover (FM shows ~15–25 main).

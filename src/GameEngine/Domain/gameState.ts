@@ -20,7 +20,7 @@ import { matchMentalOf } from '@/GameEngine/Configs/MentalMatchConfig';
 import { argmaxAndMargin, setDecisionCapture, situationBucket, takeCapture, type CapturedDecision } from '@/GameEngine/Domain/DecisionTelemetry';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import { outfieldNearBall } from '@/GameEngine/Domain/BallCluster';
-import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
+import type { PlayerDecision, DecisionPath, HolderStep } from '@/GameEngine/Domain/DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
 import { resolveBasePosition, slotBasePosition } from '@/GameEngine/FormationSlots';
@@ -76,6 +76,7 @@ import {
   resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
 import { passErrorFactor, passLaunch } from '@/GameEngine/Domain/PassError';
@@ -4272,10 +4273,29 @@ function nearestOpponentDist(players: readonly GamePlayer[], p: GamePlayer): num
   return best;
 }
 
+/** Carry speed share of a holder step (stage 4b hold / turn; stage 8 spin / flag, `holder-choice.md`). */
+function holderStepSpeed(step: HolderStep | undefined): number {
+  const fm = DECISION_FLAGS.FM_HOLDER;
+  switch (step) {
+    case 'hold': return fm ? HOLDER_CHOICE.HOLD_SPEED : FM_NUMBERS.HOLD_SPEED;
+    case 'turn': return fm ? HOLDER_CHOICE.TURN_SPEED : FM_NUMBERS.TURN_SPEED;
+    case 'spin': return HOLDER_CHOICE.SPIN_SPEED;
+    case 'flag': return HOLDER_CHOICE.FLAG_SPEED;
+    default: return 1;
+  }
+}
+
 /** How long (ticks of 0.2 s) a holder action lasts before he re-decides (stage 4b, `fm-numbers.md`). */
 function holderActionTicks(d: PlayerDecision): number {
   if (d.type === 'carry') {
-    const sec = d.step === 'hold' ? FM_NUMBERS.HOLD_S : d.step === 'turn' ? FM_NUMBERS.TURN_S : FM_NUMBERS.CARRY_STEP_MAX_S;
+    const H = HOLDER_CHOICE;
+    const fm = DECISION_FLAGS.FM_HOLDER;
+    const sec = d.step === 'hold' ? (fm ? H.HOLD_S : FM_NUMBERS.HOLD_S)
+      : d.step === 'turn' ? (fm ? H.TURN_S : FM_NUMBERS.TURN_S)
+      : d.step === 'spin' ? H.SPIN_S
+      : d.step === 'flag' ? H.FLAG_S
+      : d.step === 'sprint' ? H.SPRINT_MAX_S
+      : FM_NUMBERS.CARRY_STEP_MAX_S;
     return sec / DECISION_REF_DT;
   }
   if (d.type === 'dribble') return COMMIT_TICKS.dribble;
@@ -4665,13 +4685,20 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       && !s.pass && !s.looseBall && !s.shot && !(s.setPiece && s.setPiece.takerId === p.id)) {
       const d = mem.decision;
       const moved = mem.from ? Math.hypot(p.x - mem.from.x, p.y - mem.from.y) : 0;
-      const stepDone = d.type === 'carry' && !d.step && moved >= FM_NUMBERS.CARRY_STEP_YD;
-      // A new threat ends the action at once: an opponent closing inside INTERRUPT_YD, nearer than at the start.
+      const stepLen = d.type !== 'carry' ? Infinity
+        : !d.step || d.step === 'byline' ? FM_NUMBERS.CARRY_STEP_YD
+        : d.step === 'sprint' ? HOLDER_CHOICE.SPRINT_STEP_YD : Infinity;
+      const stepDone = moved >= stepLen;
       const nd = nearestOpponentDist(s.players, p);
-      const interrupt = (nd <= FM_NUMBERS.INTERRUPT_YD && nd < (mem.nearD ?? Infinity) - FM_NUMBERS.INTERRUPT_CLOSE_YD)
-        || nd <= FM_NUMBERS.CHALLENGE_YD
-        // In the shooting zone a chance opens in a tick: he reads it every tick there.
-        || Math.hypot((p.attackDir === 1 ? PITCH_LENGTH : 0) - p.x, PITCH_WIDTH / 2 - p.y) <= FM_NUMBERS.CADENCE_FREE_YD;
+      // Stage 8 (`holder-choice.md`): FM decides when the action ends — only a challenge coming in (an opponent inside
+      // CHALLENGE_YD who was farther at the start) cuts it short. Stage 4b: a new threat closing in, any challenge and the
+      // shooting zone (read every tick) all re-decide at once.
+      const interrupt = DECISION_FLAGS.FM_HOLDER
+        ? nd <= HOLDER_CHOICE.CHALLENGE_YD && (mem.nearD ?? Infinity) > HOLDER_CHOICE.CHALLENGE_YD
+        : (nd <= FM_NUMBERS.INTERRUPT_YD && nd < (mem.nearD ?? Infinity) - FM_NUMBERS.INTERRUPT_CLOSE_YD)
+          || nd <= FM_NUMBERS.CHALLENGE_YD
+          // In the shooting zone a chance opens in a tick: he reads it every tick there.
+          || Math.hypot((p.attackDir === 1 ? PITCH_LENGTH : 0) - p.x, PITCH_WIDTH / 2 - p.y) <= FM_NUMBERS.CADENCE_FREE_YD;
       if (!stepDone && !interrupt) {
         newDecisions[p.id] = d;
         updatedMemory[p.id] = { ...mem, commitTicks: mem.commitTicks - dt / DECISION_REF_DT };
@@ -4686,6 +4713,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       s.setPiece, crowdGrid, s.teamIntent,
       isBallHolder ? tbCachedCells : null,
       s.matchTime,
+      isBallHolder ? { lead: p.team === 'A' ? s.score.A - s.score.B : s.score.B - s.score.A, minute: matchMinute(s) } : undefined,
     );
     newDecisions[p.id] = fresh;
     // A holder move starting (`HolderMoves.ts`): counted once, not every tick it is held.
@@ -4720,7 +4748,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       : { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
     if (isBallHolder && fresh.type === 'carry' && fresh.step) {
       gameBus.emit('holderStep', { playerId: p.id, team: p.team, step: fresh.step });
-      debugLog('decision', `${p.name} ${fresh.step === 'hold' ? 'holds the ball' : 'turns'}`, { playerId: p.id });
+      const what = { hold: 'holds the ball', turn: 'turns', sprint: 'sprints with the ball', byline: 'runs at the byline', spin: 'spins past his marker', flag: 'shields it at the corner flag' }[fresh.step];
+      debugLog('decision', `${p.name} ${what}`, { playerId: p.id });
     }
     if (telemetry) {
       const cap = takeCapture();
@@ -5323,11 +5352,13 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         p.team !== carrier.team &&
         (s.decisions[p.id]?.type === 'press' || s.decisions[p.id]?.type === 'tackle'),
       );
-      const accelBurst   = isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
+      // A sprint carry (stage 8) runs flat out: the acceleration boost always on.
+      const accelBurst   = holderDecision.step === 'sprint' ? wb.acceleration * HOLDER_CHOICE.SPRINT_ACCEL_BOOST
+        : isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
       const recoveryMult = carrier.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
       // Shielding (`HolderMoves.ts`): he edges away from the presser, ball kept on the far foot.
       const shieldMult = (holderDecision.move === 'shield' ? HOLDER_MOVES.SHIELD_SPEED_MULT : 1)
-        * (holderDecision.step === 'hold' ? FM_NUMBERS.HOLD_SPEED : holderDecision.step === 'turn' ? FM_NUMBERS.TURN_SPEED : 1);
+        * holderStepSpeed(holderDecision.step);
       const step = (wb.carrySpeed + accelBurst) * recoveryMult * shieldMult * dt * weatherEffectOf(s.weather).carrySpeed;
       // Role bounds don't restrict the ball carrier — only the pitch boundary does.
       // Off-ball positioning is where bounds apply.

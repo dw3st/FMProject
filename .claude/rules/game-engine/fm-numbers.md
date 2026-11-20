@@ -273,3 +273,33 @@ lances. Os níveis se contêm (`highlights.md`); segundos = tempo de exibição 
   claras, poucos pênaltis e vermelhos) o nível principal daria ~5–6 lances (~1,7 min); os "15–25 lances principais" do
   FM ficam mais perto do nosso nível estendido (chutes, defesas, escanteios, faltas perigosas, cartões).
 - Custo: o `simStep` por passo e o rastreador ficaram dentro do ruído do tempo por partida (PC carregado).
+
+## Etapa 8: escolha do portador do FM (antes / depois)
+
+Premier League, 16 partidas com semente (`fm-targets.ts 16 --chunks 1 --seed 9000`, 90 minutos de física, formações da
+IA, equilibrado). Antes = `DECISION_OVERRIDES='{"FM_HOLDER":false}'` (a escolha da 4b); depois = o escolhedor do FM
+(`holder-choice.md`). Nada calibrado.
+
+| Medida (por partida, os dois times) | FM | antes | depois |
+|---|---|---|---|
+| Mistura conduzir / passar / girar / segurar / chutar (%) | 44 / 34 / 12 / 9 / 1 | 57,5 / 34,7 / 3,5 / 3,8 / 0,5 | 53,9 / 39,7 / 5,3 / 0,7 / 0,5 |
+| Próprio terço conduzir / passar / girar / segurar | 26 / 37 / 23 / 14 | 67,8 / 24,2 / 5,4 / 2,6 | 62,1 / 28,4 / 9,1 / 0,4 |
+| Último terço conduzir / passar / chutar | 51 / 32 / 4 | 70,1 / 22,0 / 2,3 | 66,2 / 24,4 / 2,4 |
+| Decisões por s vivo / por posse | 0,65 / 2,5–3 | 0,80 / 5,9 | 0,67 / 4,8 |
+| Tempo com a bola mediana / p90 (s) | 0,7–1,0 / 2–3,4 | 1,2 / 7,8 | 1,2 / 7,8 |
+| Candidatos por decisão / vetados | ~21 / ~metade dos passes | — | 18,2 / 38% |
+| Arrancadas (passo de 5,5 jd) | ~26 (tipo 0x2c, R6) | — | 20,3 |
+| Segurar na bandeira | ~5 | — | 6,6 |
+| Corridas à linha de fundo / giros no marcador | — | — | 52 / 100 |
+| Passes ao receptor (todos os tipos) | 82% | 81,5% | 84,4% |
+| Bolas em profundidade / desarmes certos / interceptações | — / 17 / 59 | 124 / 44 / 30 | 69 / 80 / 18 |
+| Gols / chutes / xG | 1,5 / 21,5 / 3,3 | 7,8 / 32,4 / 10,6 | 7,7 / 27,3 / 9,3 |
+| Custo (ms por partida, máquina carregada) | — | 12 271 | 9 755 |
+
+- A cadência chega à do FM (0,67 contra 0,65 por s): sem a zona de 24 jd e o corte por adversário se aproximando, o
+  portador só decide de novo no fim da ação ou num desafio.
+- Girar sobe (5,3%) e segurar fica raro (0,7%): os valores de segurar e girar são os nossos avaliadores (as funções de
+  valor do FM não foram lidas); com os multiplicadores medianos do FM (girar × 2, segurar × 1,14 de uma condução)
+  segurar quase nunca vence um passe ou uma condução. Fica para a calibração (etapa 21).
+- Os passes dentro de risco alto agora são comprimidos e as bolas em profundidade, oferecidas célula a célula com risco,
+  caem pela metade; os desarmes sobem (conduções mais curtas perto do adversário).

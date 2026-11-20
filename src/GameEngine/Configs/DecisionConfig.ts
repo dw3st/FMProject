@@ -70,6 +70,9 @@ export interface DecisionFlags {
   PASS_PHYSICS: boolean;
   /** Stage 18 (`highlights.md`): the highlight layer (observation only: marks the lances, never changes the play). */
   HIGHLIGHTS: boolean;
+  /** Stage 8 (`holder-choice.md`): the FM holder chooser — every candidate with a risk byte (veto, compression), hard
+   *  argmax with noise only on a lapse; hold, turn, spin, sprint, byline run and corner-flag hold as real actions. */
+  FM_HOLDER: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -101,6 +104,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   BALL_3D: true,
   PASS_PHYSICS: true,
   HIGHLIGHTS: true,
+  FM_HOLDER: true,
 };
 
 /**

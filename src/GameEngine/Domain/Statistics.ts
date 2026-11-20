@@ -252,6 +252,16 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   holderHolds: number;
   holderTurns: number;
   /**
+   * Stage 8 (`holder-choice.md`): FM holder decisions by category (carry / pass / turn / hold / kick), per possession
+   * stint (a new holder starts one), the candidates offered and vetoed (risk 100) summed, decisions on a lapse, and the
+   * new actions (sprint, byline run, spin past the marker, corner-flag hold).
+   */
+  holderChoices: number;
+  holderChoiceCarry: number; holderChoicePass: number; holderChoiceTurn: number; holderChoiceHold: number; holderChoiceKick: number;
+  holderStints: number;
+  holderCandidatesSum: number; holderVetoedSum: number; holderLapseChoices: number;
+  holderSprints: number; holderBylines: number; holderSpins: number; holderFlagHolds: number;
+  /**
    * Stage 3 (`ball-3d.md`), by the team that played the ball: flights peaking above 1.2 m, seconds the ball spent in
    * the air, and the peak heights (yd, summed, with the counts) of crosses, corners and long balls / clearances.
    */
@@ -357,6 +367,9 @@ type TeamFlags = {
   ballsOutOfPlay: number; deflections: number; shotsBlocked: number; heavyTouches: number; lineStepUps: number; lineDrops: number;
   pressStandOffs: number; supportShort: number; anticipationReads: number;
   passesMissed: number; passesLofted: number; holderHolds: number; holderTurns: number;
+  holderChoices: number; holderChoiceCarry: number; holderChoicePass: number; holderChoiceTurn: number; holderChoiceHold: number; holderChoiceKick: number;
+  holderStints: number; holderCandidatesSum: number; holderVetoedSum: number; holderLapseChoices: number;
+  holderSprints: number; holderBylines: number; holderSpins: number; holderFlagHolds: number;
   highBalls: number; ballAirSeconds: number; crossPeakSum: number; crossPeakN: number;
   cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
   passGround: number; passDriven: number; passChip: number; passHigh: number; passThroughLow: number; passThroughHigh: number; passHeader: number;
@@ -373,6 +386,9 @@ const emptyTeamFlags = (): TeamFlags => ({
   ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0,
   pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
+  holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0,
+  holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderLapseChoices: 0,
+  holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
   highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
   passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
 });
@@ -745,8 +761,32 @@ gameBus.on('passLaunched', e => {
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
 gameBus.on('holderStep', e => {
-  if (e.step === 'hold') teamFlags[e.team].holderHolds++;
-  else if (e.step === 'turn') teamFlags[e.team].holderTurns++;
+  const f = teamFlags[e.team];
+  if (e.step === 'hold' || e.step === 'flag') f.holderHolds++;
+  else if (e.step === 'turn' || e.step === 'spin') f.holderTurns++;
+  if (e.step === 'sprint') f.holderSprints++;
+  else if (e.step === 'byline') f.holderBylines++;
+  else if (e.step === 'spin') f.holderSpins++;
+  else if (e.step === 'flag') f.holderFlagHolds++;
+});
+
+// ── Stage 8: the FM holder chooser (`holder-choice.md`) ─────────────────────────────
+/** The last holder of an FM decision per team: a different one starts a new possession stint. */
+const lastChoiceHolder: Record<TeamId, number | null> = { A: null, B: null };
+gameBus.on('holderChoice', e => {
+  const f = teamFlags[e.team];
+  f.holderChoices++;
+  if (e.cat === 0) f.holderChoicePass++;
+  else if (e.cat === 1) f.holderChoiceKick++;
+  else if (e.cat === 2) f.holderChoiceTurn++;
+  else if (e.cat === 3) f.holderChoiceHold++;
+  else f.holderChoiceCarry++;
+  f.holderCandidatesSum += e.candidates;
+  f.holderVetoedSum += e.vetoed;
+  if (e.lapse) f.holderLapseChoices++;
+  if (lastChoiceHolder[e.team] !== e.playerId) { f.holderStints++; lastChoiceHolder[e.team] = e.playerId; }
+  const other: TeamId = e.team === 'A' ? 'B' : 'A';
+  lastChoiceHolder[other] = null;
 });
 
 /** The last holder-mind event of a player this match (`/test`). */
@@ -827,6 +867,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   markedNow = new Set();
   teamFlags.A = emptyTeamFlags();
   teamFlags.B = emptyTeamFlags();
+  lastChoiceHolder.A = null; lastChoiceHolder.B = null;
   resetHighlights(players);
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();

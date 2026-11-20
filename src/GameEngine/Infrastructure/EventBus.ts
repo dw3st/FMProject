@@ -76,7 +76,15 @@ export interface GameEvents {
   /** Stage 4b (`fm-numbers.md`): the launch error missed the receiver; the ball runs loose. */
   passMissed:     { player: number; toId: number; distance: number };
   /** Stage 4b: the holder holds the ball or turns (a carry step of that kind starts). */
-  holderStep:     { playerId: number; team: TeamId; step: 'hold' | 'turn' };
+  holderStep:     { playerId: number; team: TeamId; step: 'hold' | 'turn' | 'sprint' | 'byline' | 'spin' | 'flag' };
+  /** Stage 8 (`holder-choice.md`): one FM holder decision — the chosen category (0 pass, 1 kick, 2 turn, 3 hold,
+   *  4 carry) and kind, how many candidates were offered, vetoed (risk 100) and compressed, and a decisions lapse. */
+  holderChoice:   { playerId: number; team: TeamId; cat: 0 | 1 | 2 | 3 | 4; kind: string; candidates: number; vetoed: number; compressed: number; lapse: boolean };
+  /** Stage 8, debug only: every candidate of the decision (value, multiplier, risk, raw and final score, veto). */
+  holderCandidates: {
+    playerId: number; playerName: string; lapse: boolean; chosen: number;
+    candidates: { cat: 0 | 1 | 2 | 3 | 4; kind: string; label: string; value: number; mult: number; risk: number; raw: number; score: number; vetoed: boolean; compressed: boolean }[];
+  };
   /**
    * Emitted at kick time when the chosen pass earned a positive far-flank
    * (switch-of-play) bonus. Derived generically from the active intent's

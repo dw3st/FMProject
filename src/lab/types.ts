@@ -380,6 +380,20 @@ export interface TeamRawStats {
   passLaunchN: number;
   holderHolds: number;
   holderTurns: number;
+  /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
+  holderChoices: number;
+  holderChoiceCarry: number;
+  holderChoicePass: number;
+  holderChoiceTurn: number;
+  holderChoiceHold: number;
+  holderChoiceKick: number;
+  holderStints: number;
+  holderCandidatesSum: number;
+  holderVetoedSum: number;
+  holderSprints: number;
+  holderBylines: number;
+  holderSpins: number;
+  holderFlagHolds: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -616,6 +630,11 @@ export interface PerMatchView {
   passLaunchMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -811,6 +830,11 @@ export interface VariantSummary {
   passLaunchMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

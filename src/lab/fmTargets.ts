@@ -168,7 +168,7 @@ const ballGroupOf = (kind: string): BallGroup | null =>
 /** FM category of a holder decision. */
 export function holderCategory(d: PlayerDecision): HolderCat {
   switch (d.type) {
-    case "carry": return d.move === "shield" || d.step === "hold" ? "hold" : d.step === "turn" ? "turn" : "carry";
+    case "carry": return d.move === "shield" || d.step === "hold" || d.step === "flag" ? "hold" : d.step === "turn" || d.step === "spin" ? "turn" : "carry";
     case "dribble": return "carry";
     case "shoot": return "kick";
     default: return "pass";

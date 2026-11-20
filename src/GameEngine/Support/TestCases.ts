@@ -391,6 +391,58 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-holder-hold',
+    name:        'FM holder — hold, turn and spin',
+    description: 'A CM in his own half with his back to goal (moving back toward his own goal), a marker tight on him and every teammate marked (stage 8, `holder-choice.md`). The FM chooser offers ~20 candidates with a risk byte; the marked passes are vetoed or compressed, so he holds, turns or spins past the marker. Open "Decision Scores" with the holder selected: "FM candidates" lists every one (value, risk, score; vetoed struck through, the pick in amber).',
+    createState() {
+      _nextId = 1;
+      const s = buildState([
+        makePlayer('Mendes',   'A', 'CM',   45, 37, MIDFIELDER),
+        makePlayer('Garcia',   'A', 'CB',   25, 30, DEFENDER),
+        makePlayer('Santos',   'A', 'ST',   70, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CM',   47.5, 37, MIDFIELDER),
+        makePlayer('Nunes',    'B', 'ST',   27, 31, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   71, 40.5, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+      return { ...s, players: s.players.map(p => (p.id === 1 ? { ...p, vel: { x: -1.5, y: 0 } } : p)) };
+    },
+  },
+
+  {
+    id:          'fm-holder-flag',
+    name:        'FM holder — keep it at the corner flag',
+    description: 'Team A leads 1–0 at 88 min; their winger has the ball 8 yd from the opponents’ corner flag, a full-back closing (stage 8, `holder-choice.md`). The FM chooser offers the corner-flag hold (category hold): he runs to the flag and shields it ("decision" log, "FM candidates" panel).',
+    createState() {
+      _nextId = 1;
+      const s = buildState([
+        makePlayer('Mendes',   'A', 'RW',  108, 68, WINGER),
+        makePlayer('Santos',   'A', 'ST',   95, 40, STRIKER),
+        makePlayer('Silva',    'B', 'LB',  100, 64, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  104, 42, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+      return { ...s, score: { A: 1, B: 0 }, matchPhase: 'secondHalf', matchTime: 43 * 60 };
+    },
+  },
+
+  {
+    id:          'fm-holder-sprint',
+    name:        'FM holder — sprint into space and run at the byline',
+    description: 'A winger 40 yd from goal on the right, open grass ahead of him and the full-back 12 yd away (stage 8, `holder-choice.md`). The chooser offers a 5.5-yd sprint step (carry category, full acceleration) and, nearer the end line, the byline run that sets up the cross.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Mendes',   'A', 'RW',   75, 64, WINGER),
+        makePlayer('Santos',   'A', 'ST',   92, 38, STRIKER),
+        makePlayer('Silva',    'B', 'LB',   88, 56, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   98, 38, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'keeper-sweeper',
     name:        'Keeper — sweeper on a ball over the top',
     description: 'CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. The keeper (Kowalski) leaves his box and gets there first (`Keeper.ts`, sweeper). Toggle "Keeper" for the sweeper zone and his target; watch the "keeper" debug log.',
