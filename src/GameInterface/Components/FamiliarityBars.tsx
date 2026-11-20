@@ -7,7 +7,7 @@ import type { TacticalStyle } from "@/types/tacticsTypes";
 
 /** Display name of a familiarity key: the style's own label, or the two transversal skills. */
 export function familiarityKeyLabel(key: FamiliarityKey, t: (k: string) => string): string {
-  return key === "high_line_trap" || key === "long_ball"
+  return key === "high_line_trap" || key === "long_ball" || key.startsWith("instr_")
     ? t(`familiarity.keys.${key}`)
     : t(`tactics.styles.${key}.label`);
 }

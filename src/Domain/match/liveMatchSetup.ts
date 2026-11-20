@@ -8,6 +8,7 @@
  */
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
+import { setTeamAi } from "@/GameEngine/Configs/InstructionConfig";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
 import { applyTeamInstructions, createMatchState, setManMarksBySlot, LEGACY_CLOCK_SCALE, withClockScale } from "@/GameEngine/Domain/gameState";
@@ -98,6 +99,7 @@ export function applyLiveSideConfigs(sides: Record<TeamId, Pick<LiveSideInput, "
     const t = sides[team].tactics;
     applyTeamTacticsConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity, t.instructions, t.mentalityLevel);
     applyTeamAttackConfig(team, t.style, t.mentality, t.axesOverride, t.familiarity, t.instructions, t.mentalityLevel);
+    setTeamAi(team, !!t.ai);
   }
   for (const team of SIDES) {
     const m = sides[team].morale;

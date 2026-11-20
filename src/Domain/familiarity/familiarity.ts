@@ -6,7 +6,11 @@
  * `.claude/rules/AI-clubs/finance.md`.
  */
 import { FAMILIARITY } from "@/Domain/familiarity/familiarityConfig";
-import { FAMILIARITY_KEYS, type FamiliarityKey, type FamiliarityLevels } from "@/types/familiarityTypes";
+import {
+  FAMILIARITY_KEYS, INSTRUCTION_FAMILIARITY_KEYS, type FamiliarityKey, type FamiliarityLevels, type InstructionFamiliarityKey,
+} from "@/types/familiarityTypes";
+
+const isInstrKey = (k: FamiliarityKey): k is InstructionFamiliarityKey => (INSTRUCTION_FAMILIARITY_KEYS as readonly string[]).includes(k);
 import type { TacticalStyle } from "@/types/tacticsTypes";
 import type { Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
@@ -34,7 +38,8 @@ export function familiarityOf(squad: Squad, key: FamiliarityKey): number {
 /** AI clubs: implicit, nothing stored. */
 export function aiFamiliarity(ownStyle: TacticalStyle): Record<FamiliarityKey, number> {
   const out = {} as Record<FamiliarityKey, number>;
-  for (const k of FAMILIARITY_KEYS) out[k] = k === ownStyle ? FAMILIARITY.AI_OWN_STYLE : FAMILIARITY.AI_OTHER;
+  // The AI knows its instructions as well as its own style (stage 20).
+  for (const k of FAMILIARITY_KEYS) out[k] = k === ownStyle || isInstrKey(k) ? FAMILIARITY.AI_OWN_STYLE : FAMILIARITY.AI_OTHER;
   return out;
 }
 
@@ -77,6 +82,11 @@ export function trainFamiliarity(
  * The familiarity scale of each group of team instructions (stage 20, 4c-7): how much of an instruction's difference
  * from the style's template the team plays. Absent = full (the lab, `/test`).
  */
-export function instructionFamiliarity(_fam: FamiliarityLevels | undefined): Partial<Record<"inPossession" | "transition" | "outOfPossession", number>> | undefined {
-  return undefined;
+export function instructionFamiliarity(fam: FamiliarityLevels | undefined): Partial<Record<"inPossession" | "transition" | "outOfPossession", number>> | undefined {
+  if (!fam) return undefined;
+  const scale = (k: InstructionFamiliarityKey) => {
+    const v = fam[k];
+    return v === undefined ? 1 : clamp(0.5 + 0.5 * v / FAMILIARITY.MAX, 0.5, 1);
+  };
+  return { inPossession: scale("instr_in_possession"), transition: scale("instr_transition"), outOfPossession: scale("instr_out_of_possession") };
 }

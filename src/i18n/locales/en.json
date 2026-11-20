@@ -3025,7 +3025,10 @@
     "current": "In use",
     "keys": {
       "high_line_trap": "High line & offside trap",
-      "long_ball": "Long ball"
+      "long_ball": "Long ball",
+      "instr_in_possession": "In-possession instructions",
+      "instr_transition": "Transition instructions",
+      "instr_out_of_possession": "Out-of-possession instructions"
     }
   },
   "dashboard": {

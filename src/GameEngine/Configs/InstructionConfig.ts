@@ -11,11 +11,11 @@
  * Every effect is a multiplier of 1 (or an addition of 0) at 0, and the consumers read nothing new then (no draw).
  * `INSTRUCTION_OVERRIDES='{"SHOT_STEP":1.3}'` (env, read once at load) tunes the numbers.
  */
-import { registerEngineMemory } from '@/GameEngine/Support/EngineMemory';
+import { recordPart, registerEngineMemory } from '@/GameEngine/Support/EngineMemory';
 import type { GamePlayer, TeamId } from '@/GameEngine/types';
 import type { PlayFocus, TacticalStyle } from '@/types/tacticsTypes';
 import {
-  GROUP_OF, axisExtraOf, styleTemplate, type InstructionGroup, type InstructionKey, type InstructionLevels,
+  GROUP_OF, aiInstructions, aiSituationKey, axisExtraOf, resolveInstructions, styleTemplate, type InstructionGroup, type InstructionKey, type InstructionLevels,
   type ResolvedInstructions,
 } from '@/Domain/tactics/teamInstructions';
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
@@ -259,6 +259,36 @@ export function resetInstructionState(): void {
   _lostAt.A = -Infinity;
   _lostAt.B = -Infinity;
 }
+
+// ── The AI's instructions by the score (stage 20, 4c-7) ──────────────────────
+
+/** Which sides pick their instructions by the score, and the last situation they were picked for. */
+const AI: Record<TeamId, { on: boolean; key: string }> = { A: { on: false, key: '0:0' }, B: { on: false, key: '0:0' } };
+
+/** A side the AI runs (`TeamTactics.ai`): it changes its instructions with the score and the clock. */
+export function setTeamAi(team: TeamId, on: boolean): void {
+  AI[team] = { on, key: '0:0' };
+}
+
+/**
+ * Called by the tick loop: an AI side whose situation changed (leading or trailing late, `aiSituationKey`) takes the
+ * levels of `aiInstructions`; the axes stay as applied (the changes act through their steps from the template).
+ * Returns true when the levels changed.
+ */
+export function stepAiInstructions(team: TeamId, lead: number, minute: number): boolean {
+  const a = AI[team];
+  if (!a.on || !DECISION_FLAGS.TEAM_INSTRUCTIONS) return false;
+  const key = aiSituationKey({ lead, minute });
+  if (key === a.key) return false;
+  a.key = key;
+  const st = TEAM[team];
+  const pick = aiInstructions(st.style, { lead, minute });
+  const r = resolveInstructions(st.style, undefined, pick.instructions, pick.mentality);
+  setTeamInstructionLevels(team, r.levels, r.mentality);
+  return true;
+}
+
+registerEngineMemory('InstructionConfig.AI', recordPart(AI as unknown as Record<string, unknown>));
 
 // Live-mode snapshots (stage 19): the instruction store and the transition clock are match state. Importing the
 // store bumps the version so the cached derived configs (`DefenseConfig.ts`) are rebuilt.

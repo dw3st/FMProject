@@ -138,3 +138,31 @@ describe("4c-5: anchors (overlap, underlap, trap)", () => {
     applyTeamAttackConfig("A", "balanced");
   });
 });
+
+describe("4c-7: the AI's instructions and the group familiarity", () => {
+  test("an AI side re-picks its levels when leading late; a human side never", async () => {
+    const { applyTeamAttackConfig } = await import("@/GameEngine/Configs/AttackConfig");
+    const { setTeamAi, stepAiInstructions, instrDelta, instrMentality } = await import("@/GameEngine/Configs/InstructionConfig");
+    applyTeamAttackConfig("A", "balanced");
+    setTeamAi("A", false);
+    expect(stepAiInstructions("A", 1, 80)).toBe(false);
+    setTeamAi("A", true);
+    expect(stepAiInstructions("A", 0, 30)).toBe(false);
+    expect(stepAiInstructions("A", 1, 80)).toBe(true);
+    expect(instrDelta("A", "onLoss")).toBeLessThan(0);
+    expect(instrMentality("A")).toBe(-1);
+    expect(stepAiInstructions("A", 1, 81)).toBe(false);
+    setTeamAi("A", false);
+    applyTeamAttackConfig("A", "balanced");
+  });
+
+  test("familiarity scales an instruction's step from the template", async () => {
+    const { applyTeamAttackConfig } = await import("@/GameEngine/Configs/AttackConfig");
+    const { instrDelta } = await import("@/GameEngine/Configs/InstructionConfig");
+    applyTeamAttackConfig("A", "balanced", "balanced", undefined, { instr_transition: 0 }, { transition: { onLoss: 2 } });
+    expect(instrDelta("A", "onLoss")).toBeCloseTo(1);
+    applyTeamAttackConfig("A", "balanced", "balanced", undefined, { instr_transition: 100 }, { transition: { onLoss: 2 } });
+    expect(instrDelta("A", "onLoss")).toBeCloseTo(2);
+    applyTeamAttackConfig("A", "balanced");
+  });
+});

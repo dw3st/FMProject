@@ -16,6 +16,7 @@ import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
 import { setDecisionFlags } from '@/GameEngine/Configs/DecisionConfig';
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
+import { setTeamAi } from '@/GameEngine/Configs/InstructionConfig';
 import { DEFAULT_MENTALITY, type TacticalStyle, type TacticalAxes, type SlotInstruction } from '@/types/tacticsTypes';
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
@@ -286,6 +287,9 @@ export function simulateMatch(
   }
 
   setDecisionFlags(options.decisions);
+  // Stage 20 (4c-7): an AI side changes its instructions with the score.
+  setTeamAi('A', !!options.tactics?.A.ai);
+  setTeamAi('B', !!options.tactics?.B.ai);
   setTeamMoraleOverride('A', options.morale?.A);
   setTeamMoraleOverride('B', options.morale?.B);
   setTeamTemperamentOverride('A', options.temperament?.A);

@@ -1,4 +1,4 @@
-import { INSTR, playerDelta, setPossessionClock, resetInstructionState } from '@/GameEngine/Configs/InstructionConfig';
+import { INSTR, playerDelta, setPossessionClock, resetInstructionState, stepAiInstructions } from '@/GameEngine/Configs/InstructionConfig';
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun, ShotState, ShotPhysicsState, ShotBlockRun, ShotTechnique } from '@/GameEngine/types';
@@ -5395,6 +5395,12 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     const passer = s.pass ? s.players.find(p => p.id === s.pass!.fromId) : undefined;
     const change = setPossessionClock(holder?.team ?? passer?.team ?? null, s.possessionTime, s.matchTime);
     if (change) gameBus.emit('possessionWon', { team: change.won, sinceLost: change.sinceLost });
+    // Stage 20 (4c-7): an AI side re-picks its instructions when the score or the late-game band changes.
+    const minute = matchMinute(s);
+    for (const t of ['A', 'B'] as const) {
+      const lead = s.score[t] - s.score[t === 'A' ? 'B' : 'A'];
+      if (stepAiInstructions(t, lead, minute)) debugLog('instruction', `team ${t} AI instructions for lead ${lead} at ${minute}'`);
+    }
   }
 
   // ── Periodic team intent re-evaluation ────────────────────────────────

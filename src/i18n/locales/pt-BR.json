@@ -3025,7 +3025,10 @@
     "current": "Em uso",
     "keys": {
       "high_line_trap": "Linha alta e impedimento",
-      "long_ball": "Bola longa"
+      "long_ball": "Bola longa",
+      "instr_in_possession": "Instruções com a bola",
+      "instr_transition": "Instruções de transição",
+      "instr_out_of_possession": "Instruções sem a bola"
     }
   },
   "dashboard": {
