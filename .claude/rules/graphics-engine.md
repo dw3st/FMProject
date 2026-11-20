@@ -627,3 +627,10 @@ Report do usuário (amontoado feio em alguns jogos), opção C de três renderiz
 between two steps of the same flight, the real bounces (the drawn `bounceHeight` hops are off). The illustrative arcs
 stay for states without the 3D ball and for the remote modes (no height in their frames yet). `/test` overlay
 **Ball 3D**: predicted path (`ballFlightPath.ts`), peak, landing point.
+
+## Highlights playback (stage 19)
+
+Prop `highlights` (`HighlightPlayback`) of `PixiPitch`: at every pump with time to spend the pitch asks the playback;
+`jump` restores the forecast snapshot (`restoreLiveSnapshot`, render pair, transitions, replay and celebration reset),
+`freeze` holds the clock. Orders outside a tick call `invalidate`. Prop `presentationSpeed` keeps the celebration at
+the label speed when the pitch runs faster (mode A). See `game-engine/live-modes.md`.

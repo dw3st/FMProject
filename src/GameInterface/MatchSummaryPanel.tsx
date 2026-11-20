@@ -135,6 +135,7 @@ export function MatchSummaryPanel({
   extra,
   referee,
   managers,
+  momentum,
 }: {
   /** Displayed left (home) and right sides: crest, colours and name (tooltip / screen readers). */
   teamA?: TeamMeta;
@@ -150,6 +151,8 @@ export function MatchSummaryPanel({
   referee?: RefereeBadgeData | null;
   /** Faces of the two managers, displayed left and right like the crests (tester report, 4.41.20). */
   managers?: { left: SummaryManager | null; right: SummaryManager | null };
+  /** Stage 17: the momentum bar, under the stat rows (a small slot; the screen owns the data). */
+  momentum?: ReactNode;
 }) {
   const { t } = useTranslation();
   const pA = Math.round(possessionA * 100);
@@ -193,6 +196,7 @@ export function MatchSummaryPanel({
         <StatRow label={t("match.summary.corners")} a={statsA.corners} b={statsB.corners} />
         <StatRow label={t("match.summary.freeKicks")} a={statsA.freeKicks} b={statsB.freeKicks} />
         <StatRow label={t("match.summary.offsides")} a={statsA.offsides} b={statsB.offsides} />
+        {momentum}
       </div>
       <div className="px-4 pt-2 pb-1 flex items-center justify-between gap-2">
         <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">

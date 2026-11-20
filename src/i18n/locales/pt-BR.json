@@ -1330,11 +1330,24 @@
       "CK": "Escanteios",
       "DFK": "Faltas Diretas (gols)",
       "SPG": "Gols de Bola Parada",
-      "NAME": "Nome"
+      "NAME": "Nome",
+      "RT": "Nota da partida (ganchos do FM; dica: de onde veio)"
     },
-    "subbedOff": "Substituído aos {{minute}}'"
+    "subbedOff": "Substituído aos {{minute}}'",
+    "momentumPoints": "Pontos de momento (tabela do FM): {{a}} – {{b}}"
   },
   "match": {
+    "mode": { "label": "Partida", "full": "Inteira", "highlights": "Só os lances", "hint": "Inteira: os 90 minutos acelerados. Só os lances: os lances em velocidade normal, o resto pulado." },
+    "highlights": {
+      "levelLabel": "Lances",
+      "level": { "main": "Principais", "extended": "Estendidos", "full": "Completos" },
+      "next": "Próximo lance",
+      "waiting": "Simulando os próximos lances",
+      "skipped": "{{from}}' a {{to}}'",
+      "timeline": "Lances da partida",
+      "count_one": "{{count}} lance",
+      "count_other": "{{count}} lances"
+    },
     "effects": {
       "save": "DEFESA",
       "wide": "PRA FORA",
@@ -1545,6 +1558,13 @@
       "attacking": "Ataque",
       "balanced": "Equil.",
       "defensive": "Defesa"
+    },
+    "momentum": {
+      "title": "Momento",
+      "even": "Equilibrado",
+      "left": "Time da esquerda",
+      "right": "Time da direita",
+      "onTop": "{{team}} por cima"
     }
   },
   "broadcast": {

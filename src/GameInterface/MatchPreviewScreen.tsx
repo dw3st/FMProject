@@ -45,6 +45,7 @@ import { groupAdvanceApi } from "@/GameInterface/World/groupAdvanceApi";
 import { groupAdvanceErrorKey } from "@/GameInterface/World/groupAdvanceErrors";
 import { inviteFor, readH2HInvite } from "@/GameInterface/H2H/h2hInvite";
 import { PenaltyModeChips } from "@/GameInterface/Penalty/PenaltyModeChips";
+import { MatchModeChips } from "@/GameInterface/Highlights/MatchModeChips";
 import {
   FALLBACK_AWAY_ACCENT,
   FALLBACK_HOME_ACCENT,
@@ -1166,6 +1167,8 @@ export function MatchPreviewScreen() {
             {playButtons}
           </div>
           <PenaltyModeChips />
+          {/* Mode A or B of the solo live match (stage 19); a match between two managers keeps its own clock. */}
+          {!seatOpponent && <MatchModeChips />}
           {seatOpponent && (
             <p className="text-sm text-muted-foreground m-0 text-center">
               {liveVsSeat ? (seatInvite ? t("h2h.preview.waiting", { name: seatInvite.from }) : t("h2h.preview.note")) : t("matchPreview.seatSimulateNote")}

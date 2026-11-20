@@ -49,7 +49,7 @@ import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type Pa
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
 import { pixelSprite } from "@/Domain/art/pixelSprite";
-import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, nextMatchMarkers, shownMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, nextMatchMarkers, shownMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS, readMatchMode, writeMatchMode, readHighlightLevel, writeHighlightLevel, MATCH_PLAY_MODES, HIGHLIGHT_LEVEL_PREFS, MODE_A_SPEED, type MatchPlayMode, type HighlightLevelPref } from "@/GameInterface/artPrefs";
 import { MatchAudio } from "@/GameInterface/MatchAudio/matchAudio";
 import { crowdExcitement } from "@/Domain/match/matchSound";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
@@ -85,6 +85,8 @@ import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { MatchEventBanner, type MatchBannerItem } from "@/GameInterface/MatchEventBanner";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/GameInterface/MatchSummaryPanel";
+import { MomentumBar } from "@/GameInterface/Momentum/MomentumBar";
+import { useMomentum } from "@/GameInterface/Momentum/useMomentum";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
@@ -140,6 +142,11 @@ import {
   createPossessionHeatmap, exportPossessionHeatmap, importPossessionHeatmap, samplePossessionHeatmap,
   type PossessionHeatmap as HeatmapAcc,
 } from "@/Domain/match/possessionHeatmap";
+import { accumulatePossession } from "@/Domain/match/possession";
+import { HighlightPlayback, workerForecastPort, type PlaybackJump, type PlaybackView } from "@/GameEngine/Support/HighlightPlayback";
+import { forecastWorkerUrl } from "@/Domain/match/forecastWorkerUrl";
+import { exportEngineMemory, importEngineMemory } from "@/GameEngine/Support/EngineMemory";
+import { HighlightStrip } from "@/GameInterface/Highlights/HighlightStrip";
 import { PossessionHeatmap, readHeatmapOpen, writeHeatmapOpen } from "@/GameInterface/Components/PossessionHeatmap";
 import { applyLiveTactics, withLiveAxis, withLiveStyle, type LiveTactics } from "@/Domain/tactics/liveTactics";
 import type { TacticalAxes } from "@/types/tacticsTypes";
@@ -187,21 +194,6 @@ function assertSavedMyClubTactics(t: TacticsSave): void {
       throw new Error(`my club: tactics.lineup[${i}] is not a valid player id`);
     }
   }
-}
-
-/** Possession: game-seconds with the ball per team, only while the ball is in play (read on every emission). */
-function accumulatePossession(
-  acc: { A: number; B: number; lastTime: number; lastPhase: string },
-  gs: GameState,
-): void {
-  const phase = gs.matchPhase ?? "";
-  const dtGame = phase === acc.lastPhase ? gs.matchTime - acc.lastTime : 0;
-  if (dtGame > 0 && isLivePhase(gs.matchPhase) && gs.ballHolderId != null) {
-    const holder = gs.players.find((p) => p.id === gs.ballHolderId);
-    if (holder) acc[holder.team] += dtGame;
-  }
-  acc.lastTime = gs.matchTime;
-  acc.lastPhase = phase;
 }
 
 export function MatchScreen() {
@@ -501,6 +493,15 @@ export function MatchScreen() {
   const mentalityRef = useRef<Mentality>(DEFAULT_MENTALITY);
   useEffect(() => { mentalityRef.current = mentality; }, [mentality]);
   const eventFeedRef = useRef<MatchFeedItem[]>([]);
+  // Stage 19 (`live-modes.md`): mode A (the 90 minutes sped up) or mode B (only the lances, a forecast worker ahead).
+  const [playMode, setPlayMode] = useState<MatchPlayMode>(() => (h2hMode ? "full" : readMatchMode()));
+  const [hlLevel, setHlLevel] = useState<HighlightLevelPref>(() => readHighlightLevel());
+  const hlLevelRef = useRef(hlLevel);
+  const [playback, setPlayback] = useState<HighlightPlayback | null>(null);
+  const [playbackView, setPlaybackView] = useState<PlaybackView | null>(null);
+  const [skipNote, setSkipNote] = useState<{ from: number; to: number; key: number } | null>(null);
+  const playModeRef = useRef(playMode);
+  useEffect(() => { playModeRef.current = playMode; }, [playMode]);
   useEffect(() => { eventFeedRef.current = eventFeed; }, [eventFeed]);
   const aiTacticsRef = useRef<TeamTacticsSnapshot>({ style: DEFAULT_TACTICAL_STYLE, mentality: DEFAULT_MENTALITY });
   /** Starts the full-time sequence (overlay + recording); set by the `matchEnd` handler below. */
@@ -701,6 +702,8 @@ export function MatchScreen() {
               },
               date: matchDate,
               knockout: data.fixture.knockout === true,
+              // Stage 19: the solo live match plays the 90 physical minutes (mode A sped up, mode B the lances).
+              clockScale: 1,
               ...(data.fixture.aggregate
                 ? { aggregate: data.fixture.home === data.mySquadId
                       ? { A: data.fixture.aggregate.home, B: data.fixture.aggregate.away }
@@ -719,6 +722,10 @@ export function MatchScreen() {
         if (snap) {
           importStatsState(snap.stats);
           importRatings(snap.ratings);
+          // The engine memory (stage 19): the resumed match goes on as it would have.
+          if (snap.memory) importEngineMemory(snap.memory);
+          if (snap.ui.mode) setPlayMode(snap.ui.mode);
+          if (snap.ui.level) { setHlLevel(snap.ui.level); hlLevelRef.current = snap.ui.level; }
           setGameSpeed(snap.ui.gameSpeed);
           setEventFeed(snap.ui.eventFeed);
           eventFeedRef.current = snap.ui.eventFeed;
@@ -734,7 +741,7 @@ export function MatchScreen() {
           else if (state.matchPhase === "extraTimeBreak") setMatchOverlay("extraTime");
           showNotice(t("match.resumed"), "info");
         } else {
-          initRatings(state.players.map(p => p.id));
+          initRatings(state.players.map(p => ({ id: p.id, team: p.team })));
           initStats(state.players.map(p => ({ id: p.id, team: p.team })));
         }
         setRatings(getAllRatings());
@@ -1179,6 +1186,75 @@ export function MatchScreen() {
     return () => offs.forEach((off) => off());
   }, [t, showNotice, showBanner]);
 
+  // Mode B (stage 19, `live-modes.md`): the playback and its forecast worker live while the mode is on. The pitch asks it
+  // at every pump; a jump hands over the possession accumulators and the skipped stretch's news (the feed, the cards to
+  // the friends), and the screen catches up at once.
+  const matchLoaded = gameState !== null;
+  useEffect(() => {
+    if (h2hMode || playMode !== "highlights" || !matchLoaded) { setPlayback(null); setPlaybackView(null); return; }
+    const pb = new HighlightPlayback(workerForecastPort(forecastWorkerUrl()), hlLevelRef.current, {
+      humanTeams: ["A"],
+      ui: () => ({
+        possession: { ...possessionRef.current },
+        heatmap: exportPossessionHeatmap(heatmapRef.current ?? createPossessionHeatmap()),
+      }),
+    });
+    const onJump = (j: PlaybackJump) => {
+      const st = j.point.snap.state;
+      possessionRef.current = { ...j.point.ui.possession };
+      heatmapRef.current = importPossessionHeatmap(j.point.ui.heatmap, st);
+      const all = [...st.players, ...st.benchA, ...st.benchB];
+      const nameOf = (id: number) => all.find((p) => p.id === id)?.name ?? "";
+      const teamOfId = (id: number): TeamId => all.find((p) => p.id === id)?.team ?? "A";
+      const items: MatchFeedItem[] = [];
+      for (const e of j.events) {
+        const minute = Math.max(0, e.minute);
+        if (e.name === "shotResolved") {
+          const p = e.payload as { player: number; isGoal: boolean; inPosts: boolean };
+          if (!p.isGoal) items.push({ minute, team: teamOfId(p.player), kind: p.inPosts ? "shotSaved" : "shotWide", player: nameOf(p.player) });
+        } else if (e.name === "offsideCalled") {
+          const p = e.payload as { team: TeamId; receiverId: number };
+          items.push({ minute, team: p.team, kind: "offside", player: nameOf(p.receiverId) });
+        } else if (e.name === "penaltyResolved") {
+          const p = e.payload as { team: TeamId; takerId: number; scored: boolean };
+          if (!p.scored) items.push({ minute, team: p.team, kind: "penaltyMissed", player: nameOf(p.takerId) });
+        } else if (e.name === "goalDisallowed") {
+          const p = e.payload as { team: TeamId; scorerId: number };
+          items.push({ minute, team: p.team, kind: "goalDisallowed", player: nameOf(p.scorerId) });
+        } else if (e.name === "varReview") {
+          const p = e.payload as { kind: string; outcome: "confirmed" | "overturned"; against: TeamId };
+          if (p.kind !== "goal") {
+            const overturned = p.outcome === "overturned";
+            items.push({ minute, team: p.against === "A" ? "B" : "A", kind: overturned ? "varOverturned" : "varConfirmed", player: "", what: t(`var.decision.${p.kind}.${p.outcome}`) });
+          }
+        } else if (e.name === "card") {
+          // The friends see the card of a skipped stretch too (`live_score`).
+          const p = e.payload as { playerName: string; team: TeamId; card: "yellow" | "red"; minute: number };
+          const fixtureId = liveFixtureRef.current;
+          if (fixtureId) sendLiveRef.current({
+            fixtureId, phase: p.card, minute: Math.max(0, Math.min(130, p.minute)),
+            score: { for: st.score.A, against: st.score.B }, scorer: p.playerName, side: p.team === "A" ? "for" : "against",
+          });
+        }
+      }
+      if (items.length) setEventFeed((f) => [...f, ...items]);
+      const fromMin = gameStateRef.current ? matchMinute(gameStateRef.current) : 0;
+      const toMin = matchMinute(st);
+      if (toMin > fromMin) setSkipNote((n) => ({ from: fromMin + 1, to: toMin + 1, key: (n?.key ?? 0) + 1 }));
+      setTimeout(() => uiThrottleRef.current?.flush(), 0);
+    };
+    const offJump = pb.onJump(onJump);
+    const offView = pb.subscribe(setPlaybackView);
+    setPlayback(pb);
+    return () => { offJump(); offView(); pb.dispose(); };
+  }, [playMode, h2hMode, matchLoaded, t]);
+  useEffect(() => { hlLevelRef.current = hlLevel; playback?.setLevel(hlLevel); }, [hlLevel, playback]);
+  useEffect(() => {
+    if (!skipNote) return;
+    const id = setTimeout(() => setSkipNote(null), 2200);
+    return () => clearTimeout(id);
+  }, [skipNote]);
+
   // Complaint (`var.md` §4): a call against the user's side (a foul, a card, a penalty, an offside, a VAR check)
   // opens the button for COMPLAINT_WINDOW real seconds; never with the manager off the touchline or no referee.
   useEffect(() => {
@@ -1470,6 +1546,7 @@ export function MatchScreen() {
         state: gs,
         stats: exportStatsState(),
         ratings: exportRatings(),
+        memory: exportEngineMemory(),
         tactics: {
           A: {
             style: myTacticalStyleRef.current,
@@ -1482,6 +1559,8 @@ export function MatchScreen() {
         },
         ui: {
           gameSpeed: gameSpeedRef.current,
+          mode: playModeRef.current,
+          level: hlLevelRef.current,
           eventFeed: eventFeedRef.current,
           possession: { A: possessionRef.current.A, B: possessionRef.current.B },
           ...(heatmapRef.current ? { heatmap: exportPossessionHeatmap(heatmapRef.current) } : {}),
@@ -1885,6 +1964,8 @@ export function MatchScreen() {
     const shown = displaySides(isAwayView(matchFixture, crestIds?.a));
     return { left: of(shown.left), right: of(shown.right) };
   }, [touchline, faceRoster, matchKitColors, mySide, matchFixture, crestIds]);
+  // Stage 17: FM's momentum bar (statistics and presentation only).
+  const momentum = useMomentum();
 
   if (loadError) {
     return (
@@ -2158,6 +2239,37 @@ export function MatchScreen() {
                   active={String(gameSpeed)}
                   onChange={(k) => { setGameSpeed(Number(k)); writeMatchSpeed(Number(k)); }}
                 />
+                {/* Mode A / mode B (stage 19). */}
+                <span title={t("match.mode.hint")}>
+                  <SegmentedTabs
+                    compact
+                    tabs={MATCH_PLAY_MODES.map((m) => ({ key: m, label: t(`match.mode.${m}`) }))}
+                    active={playMode}
+                    onChange={(k) => { setPlayMode(k as MatchPlayMode); writeMatchMode(k as MatchPlayMode); }}
+                  />
+                </span>
+                {playMode === "highlights" && (
+                  <>
+                    <span className="phone:hidden">
+                      <SegmentedTabs
+                        compact
+                        tabs={HIGHLIGHT_LEVEL_PREFS.map((l) => ({ key: l, label: t(`match.highlights.level.${l}`) }))}
+                        active={hlLevel}
+                        onChange={(k) => { setHlLevel(k as HighlightLevelPref); writeHighlightLevel(k as HighlightLevelPref); }}
+                      />
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => playback?.skip()}
+                      disabled={!playback || paused}
+                      title={t("match.highlights.next")}
+                      className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Icon name="fast-forward" className="w-4 h-4" />
+                      <span className="phone:hidden">{t("match.highlights.next")}</span>
+                    </button>
+                  </>
+                )}
               </>
             )}
             {managerOut && (
@@ -2351,7 +2463,9 @@ export function MatchScreen() {
                   debugMode={DEV_TOOLS && debug}
                   mirror={awayView}
                   initialState={gameState}
-                  gameSpeed={gameSpeed}
+                  gameSpeed={playMode === "full" ? gameSpeed * MODE_A_SPEED : gameSpeed}
+                  presentationSpeed={gameSpeed}
+                  highlights={playback}
                   teamAColor={matchKitColors.teamA}
                   teamBColor={matchKitColors.teamB}
                   {...secondKitColors}
@@ -2392,6 +2506,18 @@ export function MatchScreen() {
                     </button>
                   </div>
                 )}
+                {playbackView?.waiting && !paused && (
+                  <div className="absolute top-4 right-4 z-10 pointer-events-none flex items-center gap-2 rounded-md bg-background/90 border border-border px-3 py-1.5 text-sm font-semibold text-foreground">
+                    <Icon name="fast-forward" size={16} className="text-primary" />
+                    {t("match.highlights.waiting")}
+                  </div>
+                )}
+                {skipNote && !playbackView?.waiting && (
+                  <div key={skipNote.key} className="absolute top-4 right-4 z-10 pointer-events-none flex items-center gap-2 rounded-md bg-background/90 border border-border px-3 py-1.5 font-display font-bold tabular-nums text-sm text-foreground">
+                    <Icon name="fast-forward" size={16} className="text-primary" />
+                    {t("match.highlights.skipped", { from: skipNote.from, to: skipNote.to })}
+                  </div>
+                )}
                 {notice && (
                   <div
                     role="status"
@@ -2407,6 +2533,11 @@ export function MatchScreen() {
               <span className="text-muted-foreground text-sm">{t("common.sizingPitch")}</span>
             )}
           </div>
+          {playbackView && (
+            <div className="px-1 pt-2">
+              <HighlightStrip view={playbackView} />
+            </div>
+          )}
           {gameState && (
             <div className="contents phone:hidden">
             <MatchTacticsBar
@@ -2464,6 +2595,7 @@ export function MatchScreen() {
           feed={feed}
           extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} open={heatmapOpen} onToggle={toggleHeatmap} />}
           referee={touchline?.referee ?? null}
+          momentum={<MomentumBar bar={awayView ? -momentum.bar : momentum.bar} colorLeft={shownKits.A} colorRight={shownKits.B} nameLeft={shownTeams.A?.name} nameRight={shownTeams.B?.name} />}
         />
           </div>
         </div>

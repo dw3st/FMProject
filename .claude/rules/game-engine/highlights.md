@@ -58,3 +58,9 @@ Ver `fm-numbers.md` → "Etapa 18". `bun scripts/highlights-measure.ts [partidas
 - O tempo dos eventos é o do fim do passo em que saíram (0,2 s).
 - O anel de quadros para repetir fica para a etapa 19 (o `/test` usa um anel próprio só no "Next lance").
 - Um lance sem time conhecido (VAR) conta metade para cada time no `/lab`.
+
+## Highlights mode (stage 19)
+
+The windows drive the live match's mode B: a Worker forecasts ahead and the page plays only the windows of the chosen
+level, jumping over the rest. `HighlightTracker` registers its memory and exposes `openHighlight` / `closedHighlights`.
+See `live-modes.md`.

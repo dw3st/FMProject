@@ -321,6 +321,21 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'rating-chance-created',
+    name:        'Ratings — chance created and momentum',
+    description: 'Stage 17 (`player-scores.md` → "Stage 17"): a CM with the ball 28 yd out, a ST unmarked near the penalty spot, one CB and the keeper. The pass that leads to the shot is a chance created for the CM (key pass and open-play xA); the shot, the save or the goal move both ratings and FM momentum (final sixth, central). Watch the Stats panel: RT column (tooltip = the rating parts) and the momentum bar; the "rating" debug category logs the chance and the goal adders.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CM',   87, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  103, 34, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  100, 45, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'fm-xg-blocked',
     name:        'FM xG — shot through bodies',
     description: 'Stage 6 (`xg.md`): a striker 16 yd out, central, with a CB 3 yd in front of him on the shot line, a second CB near the six-yard box and the keeper on his line. The FM xG sees both CBs and the keeper in the shooter–posts triangle (between 3/22, the near CB pushes "occl" toward 1, the visible goal drops). Select him: Decision Scores → Shoot shows the FM model and the seven features; the "shot" debug line repeats them when he shoots. Move the near CB off the line and the xG jumps.',

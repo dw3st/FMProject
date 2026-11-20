@@ -5,6 +5,7 @@
  * `simulateMatch`.
  */
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
+import { registerEngineMemory } from '@/GameEngine/Support/EngineMemory';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { HIGHLIGHT_CONFIG } from '@/GameEngine/Configs/HighlightConfig';
 import { isClearChance } from '@/GameEngine/Domain/FmXg';
@@ -22,6 +23,27 @@ const teamOf = new Map<number, TeamId>();
 let attackDirA: 1 | -1 = 1;
 let lastShot: { team: TeamId; xg: number } | null = null;
 let loggedOpen = 0;
+// Stage 19 (`live-modes.md`): the tracker's last shot and attack direction travel with a mid-match snapshot (the
+// windows themselves are in `exportStatsState`).
+registerEngineMemory('highlightTracker', {
+  export: () => ({ attackDirA, lastShot: lastShot ? { ...lastShot } : null, teamOf: [...teamOf] }),
+  import: (v) => {
+    const m = v as { attackDirA: 1 | -1; lastShot: { team: TeamId; xg: number } | null; teamOf: Array<[number, TeamId]> };
+    attackDirA = m.attackDirA; lastShot = m.lastShot ? { ...m.lastShot } : null;
+    teamOf.clear(); for (const [id, t] of m.teamOf) teamOf.set(id, t);
+  },
+});
+
+/** Closed windows so far, by reference (read only: the highlights playback scans it every step). */
+export function closedHighlights(): readonly Highlight[] {
+  return state.closed;
+}
+
+/** The window open now (id, level and start in live seconds), or null: the highlights playback ends a lance on it. */
+export function openHighlight(): { id: number; level: HighlightLevel; start: number } | null {
+  const o = state.open;
+  return o ? { id: o.id, level: o.level, start: o.start } : null;
+}
 
 /** Resets the tracker for a new match (`initStats`). */
 export function resetHighlights(players: ReadonlyArray<{ id: number; team: TeamId }>): void {

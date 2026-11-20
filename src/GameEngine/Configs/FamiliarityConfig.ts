@@ -13,6 +13,7 @@ import type { TacticalStyle } from '@/types/tacticsTypes';
 import type { TeamId } from '@/GameEngine/types';
 import type { TeamPassWeights, TeamCarryWeights } from '@/GameEngine/Configs/AttackConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 export interface FamiliarityEffect {
   passMult?:   Partial<Record<keyof TeamPassWeights, number>>;
@@ -95,3 +96,6 @@ export function applyAdd<T extends { [K in keyof T]: number }>(
     target[k] = Math.max(0, Math.min(1, (target[k] as number) + (add[k] ?? 0) * factor)) as T[keyof T];
   }
 }
+
+// Stage 19 (`live-modes.md`): the per-team configs travel with a mid-match snapshot.
+registerEngineMemory('FamiliarityConfig.TEAM_EXECUTION_MULT', recordPart(TEAM_EXECUTION_MULT as unknown as Record<string, unknown>));

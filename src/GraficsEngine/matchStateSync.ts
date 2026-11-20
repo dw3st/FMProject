@@ -55,7 +55,8 @@ const PHASE_ORDER: Record<MatchPhase, number> = {
 };
 
 /** True when `a` represents an earlier point in the match than `b`. */
-function isBefore(a: GameState, b: GameState): boolean {
+/** `a` is earlier in the match than `b` (phase, then clock). */
+export function isBefore(a: GameState, b: GameState): boolean {
   const phaseA = PHASE_ORDER[a.matchPhase];
   const phaseB = PHASE_ORDER[b.matchPhase];
   if (phaseA !== phaseB) return phaseA < phaseB;
@@ -84,4 +85,11 @@ function applyUiOwnedFields(current: GameState, incoming: GameState): GameState 
  */
 export function reconcileMatchStateSync(current: GameState, incoming: GameState): GameState {
   return isBefore(incoming, current) ? applyUiOwnedFields(current, incoming) : incoming;
+}
+
+/** The UI-owned fields differ (an order from the page: the highlights mode re-forecasts, stage 19). */
+export function uiOwnedChanged(a: GameState, b: GameState): boolean {
+  return a.formationA !== b.formationA || a.formationB !== b.formationB
+    || JSON.stringify(a.pendingSubsA) !== JSON.stringify(b.pendingSubsA)
+    || JSON.stringify(a.pendingSubsB) !== JSON.stringify(b.pendingSubsB);
 }

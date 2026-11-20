@@ -417,11 +417,13 @@ cinco flags desligadas × ligadas:
   defensores ficam ~20 jd acima da linha e levam 5–10 s para descer) e a bola fica cercada (o bloco não se comprime
   na bola). A posição padrão segurada não sobe: o que a encerra é a troca de posse (~12 s por posse) e as bolas soltas.
 
-## Etapa 7: chute pela trajetória (antes / depois)
+## Etapa 19: modos da partida ao vivo
 
+Sem mudança no motor (`live-modes.md`): os dois modos jogam o mesmo `tickState` com o relógio físico, e o modo B
+reproduz a partida reta do mesmo gerador (teste). As metas do FM não mudam; nada a medir com `scripts/fm-targets.ts`.
+## Etapa 7: chute pela trajetória (antes / depois)
 `bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000`. Antes = `DECISION_OVERRIDES='{"SHOT_PHYSICS":false}'`
 (o sorteio sobre o xG). Regras em `shot-and-save.md` → "Stage 7". Nada calibrado.
-
 | Por partida, os dois times | Antes | Depois | FM |
 |---|---|---|---|
 | Gols / chutes / xG | 7,3 / 29,0 / 8,8 | 6,8 / 26,4 / 8,1 | 1,5 / 21,5 / 3,3 |
@@ -435,7 +437,6 @@ cinco flags desligadas × ligadas:
 | Velocidade de saída | — | 17,9 m/s | — |
 | Gol % por distância 0–8 / 8–12 / 12–16 / 16–20 / 20–25 m | — | 47 / 26 / 21 / 14 / 7% | 21 / 11 / 12 / 13 / 3% |
 | Escanteios | 23,4 | 16,8 | 12,5 |
-
 - O gol agora sai da bola: o goleiro defende 67% dos chutes no alvo (era 53% pelo dado) e os defensores bloqueiam
   8,8% (quase nada antes). Os dois ainda ficam abaixo do FM: os chutes seguem perto demais (18% de longe contra 46%) e
   sem gente na frente; a escolha do chute é a etapa 8 e a forma defensiva a 15.
@@ -445,13 +446,10 @@ cinco flags desligadas × ligadas:
   jardas fora com o atacante a 16–38 jardas).
 - Menos escanteios: o desvio de um chute para fora só vira escanteio quando alguém tocou de fato.
 - Custo: ~14,5 s por partida, igual a antes.
-
 ## Etapa 9: ataques que terminam fora da área (antes / depois)
-
 `bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000`. Antes = `DECISION_OVERRIDES='{"LONG_SHOTS":false}'`
 (o chute da 4b com o limite de 33 jd e o valor pelo xG com os bloqueadores). Regras em `holder-choice.md` → "Stage 9".
 Nada calibrado.
-
 | Por partida, os dois times | Antes | Depois | FM |
 |---|---|---|---|
 | Chutes / gols / xG | 31,8 / 9,2 / 11,0 | 51,5 / 12,8 / 8,1 | 21,5 / 1,5 / 3,3 |
@@ -466,7 +464,6 @@ Nada calibrado.
 | xG por chute (média / mediana) | 0,35 / 0,26 | 0,16 / 0,10 | 0,15 / 0,03 |
 | Gol % 20–25 m / 25+ m | 19 / 0% | 18 / 24% | 3 / 0% |
 | Escanteios | — | 17,6 | 12,5 |
-
 - A forma chega perto do FM: metade dos chutes de longe, o chute na mesma parte das decisões (1,1% contra 1%) e a
   cavadinha deixa de ser metade dos chutes (o goleiro de hoje fica a 3–6 jd da linha; ela só vale com 8+).
 - O volume de chutes mais que dobra contra o FM e eles ficam longe demais: poucos de 0–8 m e 15% além de 25 m (FM 4%).
@@ -554,6 +551,24 @@ ligada (`aerial.md` → "Stage 10"). Nada calibrado.
   (46% de fora da área): é a etapa 9 (portão e chute de longe) e a calibração (21), não o goleiro.
 - Reposição: com menos bolas recolhidas o goleiro passa menos (4,9 por jogo, FM 47); o goleiro como portador é o
   escolhedor antigo (a etapa 8 o deixa de fora). Fica para a calibração.
+
+## Etapa 17: notas e momento (só registro)
+
+`bun scripts/rating-distribution.ts 24 premier_league --seed 9100` (titulares, formações da IA, 90'), antes de juntar
+as etapas 10, 11 e 19. "Hoje" = a main com o relógio antigo e os pesos antigos (300 jogos). `--fm-scale` afina cada
+contagem até o volume do FM (R9) antes de dar a nota: é o ponto de desenho dos pesos `FM_RATING`. Nada calibrado.
+
+| Titulares (média ± dp) | GK | DEF | MID | FWD | FWD ≥ 8 |
+|---|---|---|---|---|---|
+| Hoje (main, pesos antigos) | 6,06 ± 0,20 | 6,18 ± 0,54 | 6,25 ± 0,47 | 6,65 ± 0,93 | 10,2% |
+| 90', pesos antigos | 5,99 ± 0,94 | 8,52 ± 1,46 | 9,16 ± 1,14 | 8,36 ± 1,70 | 63% |
+| 90', ganchos do FM (`FM_RATINGS`) | 5,48 ± 0,75 | 6,93 ± 1,23 | 7,30 ± 1,36 | 7,23 ± 1,79 | 32% |
+| 90', ganchos do FM no volume do FM | 6,11 ± 0,30 | 6,23 ± 0,50 | 6,51 ± 0,67 | 6,41 ± 0,96 | 5,6% |
+
+- O volume de 90' ainda não calibrado (gols ×4,8, desarmes ganhos ×6, faltas ×3,7, bloqueios ×0,26 do FM por jogo)
+  puxa as notas para cima; no volume do FM a forma volta à de hoje. Desenvolvimento, moral, prêmios e estrelas leem a
+  nota: a recalibração é da etapa 21.
+- Momento: 2152 pontos por jogo (os dois times), 861 de chutes; o time com mais fica com 56% deles.
 
 ## Etapa 12: bolas paradas do FM (antes / depois)
 

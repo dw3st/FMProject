@@ -8,6 +8,7 @@
  * Overrides: `DECISION_OVERRIDES='{"HOLDER":true}'` (env, read once at load, scripts and workers) and
  * `simulateMatch(..., { decisions: { HOLDER: true } })` (per match; reset to the base flags when absent).
  */
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 /** Behaviour switches of the decision layer (phases 3–5). Phase 3 turns `HOLDER` on; the others stay off. */
 export interface DecisionFlags {
@@ -109,6 +110,10 @@ export interface DecisionFlags {
    *  (the first contact along the 3D flight, contested at the contact; the jump, standing still and being goal-side
    *  win it); high balls nobody meets drop loose. */
   FM_AERIAL: boolean;
+  /** Stage 17 (`player-scores.md` → "Stage 17"): the rating from FM's hooks (goal quality, decisive goal, xG
+   *  shortfall, chances created, xA, blocks, clearances, mistakes leading to goals, saves by difficulty), computed from
+   *  per-player tallies with weights sized for the 90-minute event volume. Off = the legacy event weights. */
+  FM_RATINGS: boolean;
   /** Stage 11 (`keeper.md` → "Stage 11"): FM's keeper — on his line with the opponent on the ball within 35 m, a step
    *  up as the ball goes away (2.7 / 6 / 10.5 m), no 1-v-1 rush and no sweeper; he comes for a high ball only when he
    *  gets to it first, within his claim depth. Off = the active keeper of 7.7 (arc, rush, sweeper). */
@@ -163,6 +168,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   LONG_SHOTS: true,
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
+  FM_RATINGS: true,
   FM_KEEPER: true,
   FM_SET_PIECES: true,
 };
@@ -368,3 +374,6 @@ export const DECISION_FLAGS: DecisionFlags = { ...BASE_FLAGS };
 export function setDecisionFlags(partial?: Partial<DecisionFlags>): void {
   Object.assign(DECISION_FLAGS, BASE_FLAGS, partial ?? {});
 }
+
+// Stage 19 (`live-modes.md`): the flags (the `/test` toggles) travel with a mid-match snapshot.
+registerEngineMemory('decisionFlags', recordPart(DECISION_FLAGS as unknown as Record<string, unknown>));

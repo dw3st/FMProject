@@ -37,6 +37,7 @@ import { assignMarkTargets, resetDefensiveIntentCache, stayHomeTarget } from '@/
 import { resetOffBallIntentCache } from '@/GameEngine/Domain/OffBallMovement';
 import { advanceActionClock, resetActionHold } from '@/GameEngine/Domain/ActionHold';
 import { assignZoneCover, passShadowPoint, pressStateOf, setShapeFormations, setZoneCover, zonesOf, type ShapeZone } from '@/GameEngine/Domain/TeamShape';
+import { registerEngineMemory } from '@/GameEngine/Support/EngineMemory';
 import { resetShoulderRuns, shoulderRunGoing } from '@/GameEngine/Domain/ShoulderRuns';
 import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
@@ -1498,14 +1499,14 @@ export function startDirectFreeKick(state: GameState, rng: () => number = matchR
   if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
     const shot = physicalShot(state, taker, { technique: 'free_kick', skill: Math.min(1, taker.runtimeStats.withBall.shootAccuracy / 0.95), setPiece: true }, { xg: base, freeKick: true });
     if (shot) {
-      gameBus.emit('shot', { player: taker.id, xg });
+      gameBus.emit('shot', { player: taker.id, xg, setPiece: true });
       gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked: false });
       debugLog('setPiece', `${taker.name} shoots the free kick over a wall of ${wall.length} (xG ${xg.toFixed(3)})`, { playerId: taker.id, data: { base, xg, wallSize: wall.length } });
       return { ...state, setPiece: null, shot };
     }
   }
   const blocked = wall.length > 0 && rng() < pBlock;
-  gameBus.emit('shot', { player: taker.id, xg });
+  gameBus.emit('shot', { player: taker.id, xg, setPiece: true });
   gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked });
   debugLog('setPiece', `${taker.name} shoots the free kick (xG ${xg.toFixed(3)}, wall ${wall.length})${blocked ? ' — hits the wall' : ''}`, {
     playerId: taker.id, data: { base, xg, wallSize: wall.length, blocked },
@@ -1879,7 +1880,7 @@ export function applyPenaltyOutcome(state: GameState, outcome: PenaltyOutcome): 
 
 /** The end of a penalty in the match, once its outcome is known (automatic or 2D). */
 function finishInMatchPenalty(state: GameState, taker: GamePlayer, gk: GamePlayer | null, scored: boolean, chance: number): TickResult {
-  gameBus.emit('shot', { player: taker.id, xg: DECISION_FLAGS.FM_XG ? XG_PENALTY : chance });
+  gameBus.emit('shot', { player: taker.id, xg: DECISION_FLAGS.FM_XG ? XG_PENALTY : chance, penalty: true });
   gameBus.emit('penaltyResolved', { team: taker.team, takerId: taker.id, keeperId: gk?.id ?? null, scored, chance });
   debugLog('foul', `Penalty by ${taker.name}: ${scored ? 'GOAL' : 'saved/missed'} (chance ${(chance * 100).toFixed(0)}%)`, {
     playerId: taker.id, data: { chance, scored },
@@ -3056,6 +3057,12 @@ function shotCrossesLine(s: GameState, shooter: GamePlayer, gk: GamePlayer | nul
   return resolveOOBSetPiece({ ...s, shot: null }, 'goal_kick', defTeam, exitX, y, shooter.id, 'clearance');
 }
 
+/** Stage 17 (ratings): who set the shot up (`lastPasserId`) and whether a set piece is still on, for the `shot` event. */
+function shotOrigin(state: GameState, shooterId: number): { passerId?: number; setPiece?: true } {
+  const passerId = state.lastPasserId !== null && state.lastPasserId !== shooterId ? state.lastPasserId : undefined;
+  return { ...(passerId !== undefined ? { passerId } : {}), ...(state.setPiecePhase ? { setPiece: true as const } : {}) };
+}
+
 function startShot(state: GameState): GameState {
   if (state.setPiece?.variant === 'direct' && state.setPiece.takerId === state.ballHolderId) return startDirectFreeKick(state);
   const shooter = state.players.find(p => p.id === state.ballHolderId)!;
@@ -3072,7 +3079,7 @@ function startShot(state: GameState): GameState {
   const xg = fmXg ? fmXg.xg : computeXG(dist, openAngle, pressure);
   if (fmXg?.fm) logShotXg(shooter, fmXg.fm);
 
-  gameBus.emit('shot', { player: shooter.id, xg });
+  gameBus.emit('shot', { player: shooter.id, xg, ...shotOrigin(state, shooter.id) });
 
   // Stage 7: a physical strike; the blocks, the keeper and the line decide it in flight (`tickPhysicalShot`).
   if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
@@ -3127,7 +3134,7 @@ function startChip(state: GameState): GameState {
     const xg = DECISION_FLAGS.FM_XG ? shotXg(shooter, state.players, 'ground').xg : chance;
     const shot = physicalShot(state, shooter, { technique: 'chip', skill: Math.min(1, shooter.runtimeStats.withBall.shootAccuracy / 0.95) }, { xg, chip: true });
     if (shot) {
-      gameBus.emit('shot', { player: shooter.id, xg });
+      gameBus.emit('shot', { player: shooter.id, xg, ...shotOrigin(state, shooter.id) });
       gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: 'fail' });
       return { ...state, shot, setPiece: null };
     }
@@ -3135,7 +3142,7 @@ function startChip(state: GameState): GameState {
   const isGoal = resolveChip(chance);
   const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
   // Stage 6: the statistic is the FM xG of the shot; the chip's own chance still decides it.
-  gameBus.emit('shot', { player: shooter.id, xg: DECISION_FLAGS.FM_XG ? shotXg(shooter, state.players, 'ground').xg : chance });
+  gameBus.emit('shot', { player: shooter.id, xg: DECISION_FLAGS.FM_XG ? shotXg(shooter, state.players, 'ground').xg : chance, ...shotOrigin(state, shooter.id) });
   gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: isGoal ? 'success' : 'fail' });
   debugLog('keeper', `${shooter.name} chips ${keeper?.name ?? 'the keeper'} (${(chance * 100).toFixed(0)}%)`, { playerId: shooter.id });
   return {
@@ -4576,6 +4583,15 @@ function noteShadowPress(presser: GamePlayer, holder: GamePlayer, receiverId: nu
 
 /** Zone covers of the last tick per side (`zoneCover` is emitted once per spell). */
 const _lastCover: Partial<Record<TeamId, Map<number, number>>> = {};
+// Stage 19 (`live-modes.md`): the shape clock and the zone covers travel with a mid-match snapshot.
+registerEngineMemory('gameState.shape', {
+  export: () => ({ t: _lastShapeMatchTime, phase: _lastShapePhase, cover: { A: _lastCover.A ? [..._lastCover.A] : null, B: _lastCover.B ? [..._lastCover.B] : null } }),
+  import: (v) => {
+    const m = v as { t: number; phase: string; cover: Record<TeamId, Array<[number, number]> | null> };
+    _lastShapeMatchTime = m.t; _lastShapePhase = m.phase;
+    _lastCover.A = m.cover.A ? new Map(m.cover.A) : undefined; _lastCover.B = m.cover.B ? new Map(m.cover.B) : undefined;
+  },
+});
 
 /**
  * Stage 15 (`team-shape.md`): the defending side's out-of-possession zones (its shape anchors) and who covers a
@@ -4816,7 +4832,7 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
   if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
     const shot = physicalShot(state, p, { technique: 'header', skill: Math.min(1, headingOf(p)) }, { xg, header: true });
     if (shot) {
-      gameBus.emit('shot', { player: p.id, xg });
+      gameBus.emit('shot', { player: p.id, xg, ...shotOrigin(state, p.id) });
       gameBus.emit('header', { player: p.id, xg });
       debugLog('aerial', `${p.name} heads at goal (xG ${xg.toFixed(2)})`, { playerId: p.id, data: { xg, dist: Math.round(dist) } });
       return { ...state, ballHolderId: p.id, pass: null, setPiece: null, shot };
@@ -4828,7 +4844,7 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
     runtimeStats: { ...p.runtimeStats, withBall: { ...p.runtimeStats.withBall, shootAccuracy: Math.min(0.95, headingOf(p)) } },
   };
   const { toX, toY } = computeShotAim(aimAs);
-  gameBus.emit('shot', { player: p.id, xg });
+  gameBus.emit('shot', { player: p.id, xg, ...shotOrigin(state, p.id) });
   gameBus.emit('header', { player: p.id, xg });
   debugLog('aerial', `${p.name} heads at goal (xG ${xg.toFixed(2)})`, { playerId: p.id, data: { xg, dist: Math.round(dist) } });
   return {

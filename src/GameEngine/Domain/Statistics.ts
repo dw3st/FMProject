@@ -20,6 +20,7 @@ import { HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { BUCKET_COUNT, entropyBits } from '@/GameEngine/Domain/DecisionTelemetry';
 import { DECISION_TELEMETRY } from '@/GameEngine/Configs/DecisionConfig';
 import { isChance, isClearChance } from '@/GameEngine/Domain/FmXg';
+import { resetMomentum, exportMomentumState, importMomentumState, type MomentumState } from '@/GameEngine/Domain/Momentum';
 import { resetHighlights, highlightTeamStats, exportHighlightState, importHighlightState, type HighlightTeamStats } from '@/GameEngine/Domain/HighlightTracker';
 import type { HighlightState } from '@/GameEngine/Domain/Highlights';
 
@@ -321,6 +322,8 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
    */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 17 (`player-scores.md` → "Momentum"): FM's momentum points this team earned (all, and from shots). */
+  momentumPoints: number; momentumShotPoints: number;
   /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
   /**
@@ -462,6 +465,8 @@ type TeamFlags = {
   condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
   keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 17 (`player-scores.md` → "Momentum"): FM's momentum points this team earned (all, and from shots). */
+  momentumPoints: number; momentumShotPoints: number;
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
   headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
@@ -495,6 +500,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
   condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
+  momentumPoints: 0, momentumShotPoints: 0,
   shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0, shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0,
   airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0,
   headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
@@ -992,6 +998,11 @@ gameBus.on('shotResolved', e => {
   else if (outcome === 'wide' || outcome === 'over' || outcome === 'woodwork') teamFlags[t].shotsOffTarget++;
   if (outcome === 'woodwork') teamFlags[t].shotsWoodwork++;
 });
+gameBus.on('momentumPoints', e => {
+  const f = teamFlags[e.team];
+  f.momentumPoints += e.points;
+  if (e.kind !== 'touch' && e.kind !== 'pass') f.momentumShotPoints += e.points;
+});
 gameBus.on('shotDeflected', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].shotsDeflected++; });
 gameBus.on('keeperSave', e => {
   const t = playerTeam.get(e.keeperId);
@@ -1111,6 +1122,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   teamFlags.B = emptyTeamFlags();
   lastChoiceHolder.A = null; lastChoiceHolder.B = null;
   resetHighlights(players);
+  resetMomentum();
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();
   lastDecision.clear();
@@ -1240,6 +1252,21 @@ export interface StatsSnapshot {
   goals?: GoalLogEntry[];
   /** Highlight layer (`highlights.md`); absent in older snapshots. */
   highlights?: HighlightState;
+  /** Momentum bar (stage 17); absent in older snapshots. */
+  momentum?: MomentumState;
+  /** Decision telemetry (entropy, decision mix); absent in older snapshots. */
+  decisionMix?: {
+    buckets: Record<TeamId, Record<Family, Array<Array<[string, number]>>>>;
+    players: Array<[number, Record<Family, Array<[string, number]>>]>;
+  };
+  /** Cross-event memory of the counters (stage 19: a snapshot taken between two events goes on counting the same). */
+  carry?: {
+    lastHolder: { playerId: number; pressure: number } | null;
+    markedNow: number[];
+    lastChoiceHolder: Record<TeamId, number | null>;
+    lastDecision: Array<[number, DecisionTelemetryEvent]>;
+    lastMind: Array<[number, HolderMindEvent]>;
+  };
 }
 
 /** Everything accumulated so far, as plain data (no Maps). */
@@ -1251,6 +1278,21 @@ export function exportStatsState(): StatsSnapshot {
     teamFlags: { A: { ...teamFlags.A }, B: { ...teamFlags.B } },
     goals:     goalLog.map((g) => ({ ...g })),
     highlights: exportHighlightState(),
+    momentum: exportMomentumState(),
+    decisionMix: {
+      buckets: {
+        A: Object.fromEntries(FAMILIES.map((f) => [f, bucketMix.A[f].map((c) => [...c])])) as Record<Family, Array<Array<[string, number]>>>,
+        B: Object.fromEntries(FAMILIES.map((f) => [f, bucketMix.B[f].map((c) => [...c])])) as Record<Family, Array<Array<[string, number]>>>,
+      },
+      players: [...playerMix].map(([id, pm]) => [id, Object.fromEntries(FAMILIES.map((f) => [f, [...pm[f]]])) as Record<Family, Array<[string, number]>>]),
+    },
+    carry: {
+      lastHolder: lastHolder ? { ...lastHolder } : null,
+      markedNow: [...markedNow],
+      lastChoiceHolder: { ...lastChoiceHolder },
+      lastDecision: structuredClone([...lastDecision]),
+      lastMind: structuredClone([...lastMind]),
+    },
   };
 }
 
@@ -1264,6 +1306,23 @@ export function importStatsState(snap: StatsSnapshot): void {
   for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
   goalLog = (snap.goals ?? []).map((g) => ({ ...g }));
   if (snap.highlights) importHighlightState(snap.highlights);
+  if (snap.momentum) importMomentumState(snap.momentum);
+  bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
+  playerMix.clear();
+  const c = snap.carry;
+  lastHolder = c?.lastHolder ? { ...c.lastHolder } : null;
+  markedNow = new Set(c?.markedNow ?? []);
+  lastChoiceHolder.A = c?.lastChoiceHolder.A ?? null; lastChoiceHolder.B = c?.lastChoiceHolder.B ?? null;
+  lastDecision.clear(); for (const [id, e] of c?.lastDecision ?? []) lastDecision.set(id, e);
+  lastMind.clear(); for (const [id, e] of c?.lastMind ?? []) lastMind.set(id, e);
+  if (snap.decisionMix) {
+    for (const team of ['A', 'B'] as const) for (const f of FAMILIES) {
+      snap.decisionMix.buckets[team][f].forEach((cell, i) => { if (bucketMix[team][f][i]) bucketMix[team][f][i] = new Map(cell); });
+    }
+    for (const [id, pm] of snap.decisionMix.players) {
+      playerMix.set(id, { holder: new Map(pm.holder), offBall: new Map(pm.offBall), defense: new Map(pm.defense) });
+    }
+  }
   teamFlags.A = { ...emptyTeamFlags(), ...snap.teamFlags.A };
   teamFlags.B = { ...emptyTeamFlags(), ...snap.teamFlags.B };
   notify();
