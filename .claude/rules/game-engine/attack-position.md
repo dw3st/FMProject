@@ -330,3 +330,7 @@ All important weights and parameters must remain configurable to allow tuning wi
 
 There is no transition phase: when possession changes, both teams switch to the new phase's
 positioning instantly.
+
+## Etapa 15 (forma do FM)
+
+Com `FM_SHAPE` a âncora vem de `fmShapePoint` (linha de trás, alcance e largura do FM); com `ACTION_HOLD` as ações curtas ficam 5 s. Ver `team-shape.md`.

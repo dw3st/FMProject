@@ -387,6 +387,14 @@ export interface GameEvents {
    * ball (#145, `Domain/BallCluster.ts`). Feeds the ball-cluster statistics.
    */
   ballCluster: { defendingTeam: TeamId; defendersNear: number; attackersNear: number };
+  /** Stage 15 (`team-shape.md`): a forward presses in the pass shadow of the holder (once per holder–presser pair). */
+  shadowPress: { playerId: number; team: TeamId; holderId: number; receiverId: number };
+  /** Stage 15: a holder of the shape covers a teammate's vacated zone (once per spell). */
+  zoneCover: { playerId: number; team: TeamId; zoneOwnerId: number };
+  /** Stage 15: the defending side's pressing state this tick (the predicted ball in FM's 3×3 grid), and the tick's seconds. */
+  pressState: { team: TeamId; state: number; seconds: number };
+  /** Stage 15: a runner goes on the last defender's shoulder (early = before any pass, a mistimed run). */
+  shoulderRun: { playerId: number; team: TeamId; early: boolean };
 
   /**
    * Emitted every tick for the ball holder when debug mode is on — top-N

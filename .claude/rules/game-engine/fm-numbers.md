@@ -312,3 +312,30 @@ jogo com física (etapa 2 em paralelo), então vai também a taxa por segundo de
   ele fazia na hora). O cartão do FM baixa o amarelo por falta de 0,23 para 0,20 (0,16 no FM): nossa mistura tem mais
   faltas por trás e parando ataques do que a suposta.
 
+
+## Etapa 15: forma do time, pressão na sombra, ações seguradas, corridas no ombro
+
+`team-shape.md`. `bun scripts/fm-targets.ts 8 premier_league --chunks 1 --seed 9000` (relógio físico de 90 min), as
+cinco flags desligadas × ligadas:
+
+| Medida | FM | antes | depois |
+|---|---|---|---|
+| Linha de trás com / sem a bola (jd do próprio gol) | 58 / 24 | 42,5 / 35,2 | 49,7 / 38,8 |
+| Comprimento com / sem | 39 / 35 | 36,4 / 32,6 | 28,4 / 29,9 |
+| Largura com / sem | 40 / 37 | 54,0 / 36,8 | 40,5 / 33,4 |
+| Trás → meio, meio → frente sem a bola | 14 / 12,5 | 12,8 / 11,1 | 13,9 / 8,9 |
+| Pressionadores 0 / 1 / 2+ | 75 / 20 / 5% | 82,6 / 14,5 / 2,9% | 71,6 / 23,4 / 5,0% |
+| Adversários a 10 m do portador (próprio / meio / último terço) | 0,85 / 1,8 / 3,1 | 0,83 / 1,00 / 2,28 | 1,08 / 2,14 / 2,33 |
+| Ação curta segurada (DEF / MEI / ATA, s) | ~5 | 2,2 / 2,4 / 2,4 | 2,4 / 4,8 / 4,6 |
+| Posição padrão segurada (DEF / MEI / ATA, s) | 19 / 10 / 12 | 5,4 / 3,6 / 3,6 | 4,8 / 3,6 / 2,4 |
+| Passo com a bola (DEF / MEI / ATA, jd) | 4,4 / 6 / 7 | 0,8 / 2,3 / 3,9 | 1,5 / 3,0 / 4,5 |
+| Impedimentos por partida / por passe | 8 / 0,0082 | 12,3 / 0,016 | 10,8 / 0,0136 |
+| Corridas no ombro (adiantadas) | — | 0 | 37,4 (2,1) |
+| Pressões na sombra / coberturas de zona | — | 0 / 0 | 122 / 564 |
+| Bola com 3+ defensores a 8 jd | — | 5,6% | 11,5% |
+| Gols / chutes / passes | 1,5 / 21,5 / 978 | 6,8 / 26,0 / 764 | 9,3 / 38,3 / 790 |
+
+- A coluna "antes" das ações seguradas é da classificação antiga (pressão, desarme e bola solta ainda contavam).
+- O bloco do FM aproxima largura e pressionadores, mas a linha fica longe nas transições (depois da troca de posse os
+  defensores ficam ~20 jd acima da linha e levam 5–10 s para descer) e a bola fica cercada (o bloco não se comprime
+  na bola). A posição padrão segurada não sobe: o que a encerra é a troca de posse (~12 s por posse) e as bolas soltas.

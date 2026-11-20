@@ -95,3 +95,7 @@ The best cell becomes `support_run { dx, dy }` (unit direction to it). If the be
 
 With debug on, every evaluation emits `offBallScores` (intent scores, chosen intent, best cell
 score, decision); `/test` shows it in the decision panel and the MCP `score_off_ball` re-runs it.
+
+## Etapa 15 (forma do FM)
+
+Com `FM_SHAPE` a âncora vem de `fmShapePoint` (linha de trás, alcance e largura do FM); com `ACTION_HOLD` as ações curtas ficam 5 s. Ver `team-shape.md`.

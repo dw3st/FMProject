@@ -1237,6 +1237,57 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-shape-shadow',
+    name:        '11v11 — FM block and pass shadow (stage 15)',
+    description: "Team B CB has the ball deep in his own half with a CM and the full-backs as options; Team A sits in FM's out-of-possession block (back line ~24 yd from its goal, span 26, width 37) and its ST presses on the lane between the holder and the nearest receiver instead of the holder (`TeamShape.ts`). Turn on the Shape overlay: the two teams' back-line targets, the forward's shadow point, zone covers (yellow squares) and the held-action bars.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cb = base.players.find(p => p.team === 'B' && p.role === 'CB');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cb || !st) return base;
+      const own = cb.attackDir === 1 ? 0 : PITCH_LENGTH;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cb.id,
+        players: base.players.map(p =>
+          p.id === cb.id ? { ...p, x: own + cb.attackDir * 18, y: 30 } :
+          p.id === st.id ? { ...p, x: own + cb.attackDir * 34, y: 34 } : p),
+      };
+    },
+  },
+
+  {
+    id:          'shoulder-run',
+    name:        '11v11 — Run on the shoulder (stage 15)',
+    description: "Team A CM has the ball free on the halfway line; the Team A ST stands on the last defender's shoulder, making a run. He goes when the CM plays forward (a good reader at once, a poor one later) or now and then early: going early, a pass to him is offside (`ShoulderRuns.ts`). Watch the \"offside\" debug log (\"goes on the shoulder\"), the green ring of the Shape overlay and the OFF column.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cm = base.players.find(p => p.team === 'A' && p.role === 'CM');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cm || !st) return base;
+      const dir = cm.attackDir;
+      const mid = PITCH_LENGTH / 2;
+      const lineX = mid + dir * 24;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cm.id,
+        players: base.players.map(p => {
+          if (p.id === cm.id) return { ...p, x: mid, y: 37 };
+          if (p.id === st.id) return { ...p, x: lineX - dir * 1.5, y: 36 };
+          if (p.team === 'B' && (p.role === 'CB' || p.role === 'LB' || p.role === 'RB')) return { ...p, x: lineX, y: p.y };
+          return p;
+        }),
+      };
+    },
+  },
+
+  {
     id:          'contact-foul-carrier',
     name:        '11v11 — Contact foul on a carrier (stage 13)',
     description: 'Team A RW carries down the right with a Team B LB 1.2 yd off his shoulder. Contact moments (`FOUL_CONFIG.FM.CONTACT_RATE` per second) are foul checks of kind "contact" on the carrier (`fouls.md` → "FM fouls"). Watch the "foul" debug log (context carry, third) and the FL column.',

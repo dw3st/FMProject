@@ -124,6 +124,15 @@ const ps = fm.pressSamples || 1;
 console.log(`  dedicated pressers (target ≤ 3 m): 0 ${f1((100 * fm.pressers[0]) / ps)}% · 1 ${f1((100 * fm.pressers[1]) / ps)}% · 2+ ${f1((100 * fm.pressers[2]) / ps)}%   FM ${FM_PRESSERS.join(" · ")}`);
 const nb = fm.nearByThird.map(t => f2(t.sum / Math.max(1, t.n)));
 console.log(`  opponents ≤ 10 m of the holder by his third: own ${nb[0]} · middle ${nb[1]} · final ${nb[2]}   FM ${FM_NEAR_HOLDER.join(" · ")}`);
+{
+  // Stage 15 (`team-shape.md`): the pass shadow, the pressing states, the zone covers and the shoulder runs.
+  const w = (k: string) => (world[k] ?? 0) / Math.max(1, n);
+  const st = w("pressStateOwnS") + w("pressStateMidS") + w("pressStateFinalS") || 1;
+  console.log(`  shadow presses ${f1(w("shadowPresses"))} · pressing state own / mid / final third ${f1((100 * w("pressStateOwnS")) / st)} / ${f1((100 * w("pressStateMidS")) / st)} / ${f1((100 * w("pressStateFinalS")) / st)}% of defending s · zone covers ${f1(w("zoneCovers"))} per match`);
+  const allPasses = (counts.passesAttempted + counts.throughBallsAttempted + counts.crosses + counts.longBalls) / Math.max(1, n);
+  const offs = counts.offsides / Math.max(1, n);
+  console.log(`  shoulder runs ${f1(w("shoulderRuns"))} (early ${f1(w("shoulderRunsEarly"))}) · offsides ${f1(offs)} per match · ${allPasses ? (offs / allPasses).toFixed(4) : "—"} per pass (FM 8 / 978 = 0.0082)`);
+}
 console.log("\n── Shape (yd) ──");
 fm.shape.forEach((sh, i) => {
   const k = Math.max(1, sh.n); const fmr = FM_SHAPE[i]!;

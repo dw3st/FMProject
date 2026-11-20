@@ -295,6 +295,11 @@ export interface TeamRawStats {
   foulsWonCarrying: number;
   contactFouls: number;
   lineMisreads: number;
+  /** Stage 15 (`team-shape.md`): pass-shadow presses, zone covers, shoulder runs (early ones). */
+  shadowPresses: number;
+  zoneCovers: number;
+  shoulderRuns: number;
+  shoulderRunsEarly: number;
   // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
   crosses: number;
   crossesCompleted: number;
@@ -555,6 +560,11 @@ export interface PerMatchView {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 15 (`team-shape.md`) per match. */
+  avgShadowPresses: number;
+  avgZoneCovers: number;
+  avgShoulderRuns: number;
+  avgShoulderRunsEarly: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;
@@ -759,6 +769,11 @@ export interface VariantSummary {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 15 (`team-shape.md`) per match. */
+  avgShadowPresses: number;
+  avgZoneCovers: number;
+  avgShoulderRuns: number;
+  avgShoulderRunsEarly: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;

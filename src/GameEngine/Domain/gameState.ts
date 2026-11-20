@@ -28,6 +28,10 @@ import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
 import { assignMarkTargets, resetDefensiveIntentCache, stayHomeTarget } from '@/GameEngine/Domain/DefensivePositioning';
 import { resetOffBallIntentCache } from '@/GameEngine/Domain/OffBallMovement';
+import { advanceActionClock, resetActionHold } from '@/GameEngine/Domain/ActionHold';
+import { assignZoneCover, passShadowPoint, pressStateOf, setShapeFormations, setZoneCover, zonesOf, type ShapeZone } from '@/GameEngine/Domain/TeamShape';
+import { resetShoulderRuns, shoulderRunGoing } from '@/GameEngine/Domain/ShoulderRuns';
+import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import {
   applyContinuousFatigue,
@@ -467,6 +471,9 @@ export function createMatchState(
   loadMatchRng(seed);
   resetDefensiveIntentCache();
   resetOffBallIntentCache();
+  resetActionHold();
+  resetShoulderRuns();
+  _lastCover.A = undefined; _lastCover.B = undefined; _lastShadow = '';
   const withMult = (r: ReturnType<typeof buildTeam>, m: number | undefined) =>
     m === undefined || m === 1
       ? r
@@ -3785,6 +3792,56 @@ function updateBackLine(s: GameState, defendingTeam: TeamId, shapeBallPos: { x: 
   return { ...s, backLine: { [defendingTeam]: next } };
 }
 
+/** Last shadow press (holder:presser) announced: `shadowPress` once per pair. */
+let _lastShadow = '';
+let _lastShapeMatchTime = 0;
+let _lastShapePhase = '';
+function noteShadowPress(presser: GamePlayer, holder: GamePlayer, receiverId: number): void {
+  const key = `${holder.id}:${presser.id}`;
+  if (_lastShadow === key) return;
+  _lastShadow = key;
+  gameBus.emit('shadowPress', { playerId: presser.id, team: presser.team, holderId: holder.id, receiverId });
+  debugLog('movement', `${presser.name} presses in the pass shadow`, { playerId: presser.id });
+}
+
+/** Zone covers of the last tick per side (`zoneCover` is emitted once per spell). */
+const _lastCover: Partial<Record<TeamId, Map<number, number>>> = {};
+
+/**
+ * Stage 15 (`team-shape.md`): the defending side's out-of-possession zones (its shape anchors) and who covers a
+ * vacated one (`assignZoneCover`), handed to `DefensivePositioning` for this tick; the pressing state (the predicted
+ * ball in FM's 3×3 grid) counted per second.
+ */
+function updateTeamShape(s: GameState, defendingTeam: TeamId, shapeBallPos: { x: number; y: number }, dt: number): GameState {
+  const attackingTeam: TeamId = defendingTeam === 'A' ? 'B' : 'A';
+  setZoneCover(attackingTeam, null);
+  if (!isLivePhase(s.matchPhase) || s.setPiece) { setZoneCover(defendingTeam, null); return s; }
+  const side = s.players.filter(p => p.team === defendingTeam);
+  if (side.length === 0) return s;
+  const dir = side[0]!.attackDir;
+  gameBus.emit('pressState', { team: defendingTeam, state: pressStateOf(shapeBallPos, dir), seconds: dt });
+  if (!DECISION_FLAGS.OOP_ZONES) { setZoneCover(defendingTeam, null); return s; }
+  const formation = defendingTeam === 'A' ? s.formationA : s.formationB;
+  const cfg = getDefenseConfig(defendingTeam);
+  const anchors = new Map<number, { x: number; y: number }>();
+  for (const p of side) if (p.role !== 'GK') anchors.set(p.id, computeDefensiveShapeAnchor(p, shapeBallPos, formation, cfg));
+  const zones = zonesOf(side, anchors);
+  const holding = (p: GamePlayer) => s.decisions[p.id]?.type === 'hold_shape' && p.recoveryTime <= 0 && p.manMarkTargetId === undefined;
+  const prev = _lastCover[defendingTeam] ?? new Map<number, number>();
+  const cover = assignZoneCover(side, zones, holding, shapeBallPos, dir, prev);
+  setZoneCover(defendingTeam, cover);
+  const next = new Map<number, number>();
+  for (const [id, z] of cover as Map<number, ShapeZone>) {
+    next.set(id, z.ownerId);
+    if (prev.get(id) !== z.ownerId) {
+      gameBus.emit('zoneCover', { playerId: id, team: defendingTeam, zoneOwnerId: z.ownerId });
+      debugLog('movement', `Team ${defendingTeam}: ${s.players.find(p => p.id === id)?.name ?? id} covers ${s.players.find(p => p.id === z.ownerId)?.name ?? z.ownerId}'s zone`, { playerId: id });
+    }
+  }
+  _lastCover[defendingTeam] = next;
+  return s;
+}
+
 /**
  * Stage 4 (`movement.md`): the ball runs loose off `toucher` (a deflection, a blocked shot, a heavy touch) from (x, y)
  * at (vx, vy) yd/s. His team made the last touch; chasers of both sides are committed to where it will stop.
@@ -4593,6 +4650,14 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
   s = { ...s, throughBallCellsCache: nextTbCache };
 
+  // ── Team shape and held actions (stage 15, `team-shape.md`) ──────────────
+  setShapeFormations(s.formationA, s.formationB);
+  // A state that did not come from createMatchState (a /test scenario, a new period's clock): the held actions and
+  // shoulder runs of a previous match (the same player ids) must not carry over.
+  if (s.matchTime + 1 < _lastShapeMatchTime || s.matchPhase !== _lastShapePhase) { resetActionHold(); resetShoulderRuns(); }
+  _lastShapeMatchTime = s.matchTime; _lastShapePhase = s.matchPhase;
+  if (isLivePhase(s.matchPhase)) advanceActionClock(dt);
+
   // ── Offside line reads (stage 13, `OffsideRuns.ts`) ──────────────────────
   // An attacker reads the line every few tenths of a second with an error; his own movement and off-ball choices use
   // that read (`lineFor`), so a stepping-up line or a misread leaves him past it. The call itself uses the true line.
@@ -4865,6 +4930,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     // The defending shape reads where the ball is going (`BallPrediction.ts`, `COHESION.PREDICT_S`).
     const shapeBallPos = predictBallPoint(s, ballPos);
     s = updateBackLine(s, defendingTeam, shapeBallPos, dt);
+    s = updateTeamShape(s, defendingTeam, shapeBallPos, dt);
+    const pressState = pressStateOf(shapeBallPos, s.players.find(p => p.team === defendingTeam)?.attackDir ?? 1);
 
     const movedPlayers = s.players.map(player => {
       if (player.id === s.ballHolderId && !looseKeeper(s, player)) return player;
@@ -4918,9 +4985,16 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const legacy = { x: player.x + (cdx / cdist) * step, y: player.y + (cdy / cdist) * step };
         return { ...moveToward(player, s, dt, targetPt, sprintSpeed * recoveryMult, legacy, moveLog), targetPosition: targetPt };
       }
+      const shadow = isPressing && decision.type === 'press' && !decision.standOff && DECISION_FLAGS.PASS_SHADOW
+        && pressState >= TEAM_SHAPE.SHADOW_FROM_STATE && getMainRole(player.role) === 'Forward'
+        ? passShadowPoint(player, holder, s.players) : null;
       if (isPressing && decision.type === 'press' && decision.standOff) {
         // Second presser (stage 4, `movement.md`): stands off the holder, covering the inside route.
         target = standOffPoint(player, holder);
+      } else if (shadow) {
+        // Pass shadow (stage 15, `team-shape.md`): a forward presses on the lane between the holder and a receiver.
+        target = { x: shadow.x, y: shadow.y };
+        noteShadowPress(player, holder, shadow.receiverId);
       } else if (isPressing) {
         const holderDecision = s.decisions[holder.id];
         if (holderDecision?.type === 'carry') {
@@ -4959,14 +5033,19 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const base = attackingAnchor(slotBasePosition(player, formation, 'attacking'), player, ballPos);
         const pushUpT    = Math.min(1, s.possessionTime / POSSESSION_PUSH_UP.BASE_SECONDS);
         const pushUpBias = PUSH_UP_ROLE_BIAS[player.role] ?? 0;
-        const pushedBaseX = base.x + player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;
+        const pushedBaseX = DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_IN ? base.x : base.x + player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;
         const pull = 1 - OFF_BALL_CONFIG.FORMATION_PULL;
         let tx = pushedBaseX + (rawX - pushedBaseX) * pull;
         const ty = base.y + (rawY - base.y) * pull;
 
         // Clamp to stay onside — on his read of the line (stage 13), not the true one.
         const ownLine = lineFor(player);
-        if (ownLine !== null) {
+        // A run on the shoulder (stage 15, `ShoulderRuns.ts`): going on the pass (or early) he is not held on the line.
+        const going = DECISION_FLAGS.SHOULDER_RUNS
+          && shoulderRunGoing(player, holder, s.decisions[holder.id]?.type, ownLine, s.players, dt);
+        if (going) {
+          tx = Math.max(tx * player.attackDir, (player.x + player.attackDir * TEAM_SHAPE.GO_AHEAD_YD) * player.attackDir) * player.attackDir;
+        } else if (ownLine !== null) {
           const fwd   = player.attackDir;
           const safeX = ownLine - fwd * ATTACK_CONFIG.OFFSIDE_MARGIN;
           if ((tx - safeX) * fwd > 0) {

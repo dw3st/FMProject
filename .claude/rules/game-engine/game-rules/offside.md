@@ -238,3 +238,7 @@ with the holder mind on (`HOLDER`), like everywhere else.
 - Event `lineMisread` (once per spell of misjudged reads, only within 6 yd of the true line) → `Statistics.lineMisreads` → `/lab` "Line misreads",
   `/test` column MR and the "offside" debug log; `/test` scenario `offside-mistimed-run`.
 - Not calibrated (stage 21). Measured numbers: `fm-numbers.md` → "Stage 13".
+
+## Corridas no ombro (etapa 15)
+
+Quem faz `make_run` no ombro do último zagueiro sai no passe (ou antes, cedo); saindo, não fica preso em condição. Ver `.claude/rules/game-engine/team-shape.md`.

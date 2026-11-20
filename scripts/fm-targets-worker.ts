@@ -8,7 +8,7 @@ import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 interface Input { league: string; matches: number; offset: number; seed: number }
 export interface FmWorkerOut { fm: FmTargetTotals; world: Record<string, number>; counts: FmMatchCounts; ms: number }
 
-const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions", "crosses", "throughBallsAttempted", "throughBallsCompleted", "throughBallsLostInFlight", "throughBallsLostInRace", "throughBallsLostInDuel", "ballNearTicks", "ballCrowdTicks", "highlightsMain", "highlightsExtended", "highlightsFull", "highlightSecondsMain", "highlightSecondsExtended", "highlightSecondsFull"] as const;
+const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions", "crosses", "throughBallsAttempted", "throughBallsCompleted", "throughBallsLostInFlight", "throughBallsLostInRace", "throughBallsLostInDuel", "ballNearTicks", "ballCrowdTicks", "highlightsMain", "highlightsExtended", "highlightsFull", "highlightSecondsMain", "highlightSecondsExtended", "highlightSecondsFull", "shadowPresses", "zoneCovers", "shoulderRuns", "shoulderRunsEarly", "pressStateOwnS", "pressStateMidS", "pressStateFinalS"] as const;
 
 self.onmessage = (e: MessageEvent<Input>) => {
   const { league, matches, offset, seed } = e.data;

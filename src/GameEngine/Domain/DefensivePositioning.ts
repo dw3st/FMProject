@@ -41,6 +41,9 @@ import { keeperDefendingTarget } from '@/GameEngine/Domain/Keeper';
 import { COHESION, COHESION_LINE_ROLES } from '@/GameEngine/Configs/CohesionConfig';
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
+import { heldAction, noteAction } from '@/GameEngine/Domain/ActionHold';
+import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
+import { backLineTarget, fmShapePoint, fromOwnGoal, zoneCoverOf } from '@/GameEngine/Domain/TeamShape';
 import { blendLineX, firstPresserOf, anticipationLookahead, predictedPoint } from '@/GameEngine/Domain/Movement';
 import type { PressingStyle } from '@/types/tacticsTypes';
 
@@ -108,6 +111,11 @@ export function setBackLineX(team: TeamId, x: number | null): void {
 
 /** The ball-relative depth of the back line: the ball's x minus the tactic's depth offset (scaled near goal). */
 export function ballRelativeLineX(player: GamePlayer, ballPos: { x: number; y: number }, cfg: DefenseConfigValues): number {
+  // FM's block (stage 15, `team-shape.md`): the line is FM's depth for the ball.
+  if (DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_OUT > 0) {
+    const back = backLineTarget('defending', fromOwnGoal(ballPos.x, player.attackDir), cfg.DEFENSIVE_LINE_HEIGHT);
+    return player.attackDir === 1 ? back : PITCH_LENGTH - back;
+  }
   const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
   const depthOffset = (1.0 - cfg.DEFENSIVE_LINE_HEIGHT) * DEPTH_OFFSET_RANGE + DEPTH_OFFSET_BASE;
   const scale = Math.min(1, Math.abs(ballPos.x - ownGoalX) / 55) * (DECISION_FLAGS.SLIDING_BLOCK ? FM_NUMBERS.OUT_DEPTH_MULT : 1);
@@ -519,13 +527,19 @@ export function computeDefensiveShapeAnchor(
   formation: Formation,
   cfg: DefenseConfigValues,
 ): { x: number; y: number } {
-  const base = slotBasePosition(player, formation, 'defending');
+  const slot = slotBasePosition(player, formation, 'defending');
   const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
+  // FM's block (stage 15, `team-shape.md`): the slot placed in FM's out-of-possession shape (line, span, width).
+  const fmShape = DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_OUT > 0 && player.role !== 'GK';
+  // The lateral slide below pulls every anchor (BLOCK_SHIFT × its offset) toward the ball's y, so the shape is spread
+  // by the inverse first: after the slide it keeps FM's width.
+  const slide = cfg.BLOCK_SHIFT_WEIGHT * BLOCK_SHIFT_SCALE;
+  const base = fmShape ? fmShapePoint(slot, player, ballPos, 'defending', formation, cfg.DEFENSIVE_LINE_HEIGHT, 1 / Math.max(0.3, 1 - slide)) : slot;
 
   let rawX = base.x;
 
   // ── X: defensive line tracks the ball depth — driven by tactic only ─────
-  if (player.role !== 'GK') {
+  if (player.role !== 'GK' && !fmShape) {
     const depthOffset = (1.0 - cfg.DEFENSIVE_LINE_HEIGHT) * DEPTH_OFFSET_RANGE + DEPTH_OFFSET_BASE;
 
     // Scale depth offset by how far the ball is from our own goal.
@@ -552,8 +566,9 @@ export function computeDefensiveShapeAnchor(
   let rawY = base.y + blockShiftY;
 
   // ── Y: horizontal compactness — squeeze toward pitch center ─────────────
-  rawY += (PITCH_CENTER_Y - rawY) * cfg.HORIZONTAL_COMPACTNESS * COMPACTNESS_SCALE;
-  if (DECISION_FLAGS.SLIDING_BLOCK) rawY = PITCH_CENTER_Y + (rawY - PITCH_CENTER_Y) * FM_NUMBERS.OUT_WIDTH;
+  // In FM's block the width is already FM's: only the tactic's deviation from normal squeezes or widens it.
+  rawY += (PITCH_CENTER_Y - rawY) * (fmShape ? cfg.HORIZONTAL_COMPACTNESS - 0.6 : cfg.HORIZONTAL_COMPACTNESS) * COMPACTNESS_SCALE;
+  if (DECISION_FLAGS.SLIDING_BLOCK && !fmShape) rawY = PITCH_CENTER_Y + (rawY - PITCH_CENTER_Y) * FM_NUMBERS.OUT_WIDTH;
 
   // ── Calm pressing (stage 4b): the shape shifts toward the ball instead of sending players onto him ──
   if (DECISION_FLAGS.CALM_PRESS && player.role !== 'GK') {
@@ -581,7 +596,7 @@ export function computeDefensiveShapeAnchor(
 
   // ── X: lane blocking — nudge toward space between ball and own goal ─────
   const ballSide = ballPos.x - ownGoalX;
-  if (Math.abs(ballSide) > 0.1) {
+  if (Math.abs(ballSide) > 0.1 && !fmShape) {
     const laneTarget = ownGoalX + ballSide * 0.7;
     rawX += (laneTarget - rawX) * cfg.LANE_BLOCK_WEIGHT * 0.15;
   }
@@ -1241,6 +1256,15 @@ function selectDefensiveIntent(ctx: DefensiveIntentContext, possessionTime: numb
   if (DECISION_FLAGS.SHORT_STEPS && prev !== undefined && prev !== best && scores[best] < scores[prev] + FM_NUMBERS.INTENT_HYSTERESIS) {
     best = prev;
   }
+  // Short actions held by time (stage 15, `team-shape.md`; FM ~5 s): marking or stepping into a carry lane is kept
+  // while it lasts and the same side has the ball; only pressing the holder breaks it.
+  if (DECISION_FLAGS.ACTION_HOLD && ctx.ballHolder) {
+    const poss = ctx.ballHolder.team;
+    const held = heldAction(ctx.player.id, poss) as DefensiveIntent | undefined;
+    if (held && held !== best && best !== 'press_holder'
+      && (held !== 'track_mark' || ctx.markTarget != null)) best = held;
+    noteAction(ctx.player.id, best, best === 'track_mark' || best === 'step_into_carry_lane', poss);
+  }
   return { intent: best, scores, carryLaneBonus };
 }
 
@@ -1419,7 +1443,9 @@ export function computeDefensivePosition(
   // Intent was already decided (and cached) in evaluateDefensiveDecision()
   // during the decision phase — we just read it here for positioning.
   const intent      = _intentCache[player.id] ?? 'hold_shape';
-  const shapeAnchor = computeDefensiveShapeAnchor(player, shapeBallPos, formation, cfg);
+  // Zone cover (stage 15, `team-shape.md`): a holder assigned to a vacated zone takes it instead of his own.
+  const cover = DECISION_FLAGS.OOP_ZONES && intent === 'hold_shape' ? zoneCoverOf(player) : undefined;
+  const shapeAnchor = cover ? { x: cover.x, y: cover.y } : computeDefensiveShapeAnchor(player, shapeBallPos, formation, cfg);
 
   const ballHolder = allPlayers.find(p => p.id === ballHolderId) ?? null;
   const markTarget = markTargetId !== undefined
@@ -1456,6 +1482,14 @@ export function computeDefensivePosition(
   if (DECISION_FLAGS.BACK_LINE && lineX != null && COHESION_LINE_ROLES.has(player.role)
     && (intent === 'hold_shape' || (intent === 'track_mark' && MOVEMENT.LINE_TRACK_MARK > 0)) && player.manMarkTargetId === undefined) {
     rawX = blendLineX(rawX, lineX, ballRelativeLineX(player, shapeBallPos, cfg));
+  }
+  // FM's block (stage 15, `team-shape.md`): a back-liner holding or marking never drops behind the line (FM's
+  // defender manager clamps every target to the team's defensive line, so nobody plays the forwards onside); marking
+  // may still take him up, pressing or a carry lane out of it.
+  if (DECISION_FLAGS.FM_SHAPE && lineX != null && COHESION_LINE_ROLES.has(player.role)
+    && (intent === 'hold_shape' || intent === 'track_mark') && player.manMarkTargetId === undefined) {
+    const behind = (lineX - rawX) * player.attackDir;
+    if (behind > TEAM_SHAPE.LINE_SLACK_YD) rawX = lineX - player.attackDir * TEAM_SHAPE.LINE_SLACK_YD;
   }
 
   // Calm pressing (stage 4b): with two teammates already round the ball, a third holding shape or marking stays at

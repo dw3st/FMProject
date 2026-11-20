@@ -194,6 +194,16 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   ballNearTicks: number;
   ballNearSum: number;
   ballCrowdTicks: number;
+  /** Stage 15 (`team-shape.md`): forward pressing in the pass shadow (per holder–presser pair), zone covers out of
+   *  possession, runs on the shoulder (and those started early, before any pass). */
+  shadowPresses: number;
+  zoneCovers: number;
+  shoulderRuns: number;
+  shoulderRunsEarly: number;
+  /** Seconds this team defended with the pressing state in our third (0–2), the middle (3–5), their third (6–8). */
+  pressStateOwnS: number;
+  pressStateMidS: number;
+  pressStateFinalS: number;
   /** VAR checks whose final decision went against this team. Match total = A + B. */
   varReviews: number;
   /** Of those, overturned calls (the original call favoured this team). */
@@ -368,6 +378,8 @@ type TeamFlags = {
   extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; injuryStoppages: number;
   refereeErrors: number; varReviews: number; varOverturned: number;
   ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
+  shadowPresses: number; zoneCovers: number; shoulderRuns: number; shoulderRunsEarly: number;
+  pressStateOwnS: number; pressStateMidS: number; pressStateFinalS: number;
   studyPlans: number;
   holderNearTies: number; offBallNearTies: number; defenseNearTies: number;
   holderPressureSum: number; shotPressureSum: number; shotPressureCount: number;
@@ -385,6 +397,7 @@ type TeamFlags = {
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
   ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0,
+  shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0, pressStateOwnS: 0, pressStateMidS: 0, pressStateFinalS: 0,
   holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0,
   holderPressureSum: 0, shotPressureSum: 0, shotPressureCount: 0,
   holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0,
@@ -572,6 +585,15 @@ gameBus.on('ballCluster', e => {
   f.ballNearTicks++;
   f.ballNearSum += e.defendersNear;
   if (e.defendersNear >= BALL_CLUSTER_CONFIG.CROWD_COUNT) f.ballCrowdTicks++;
+});
+
+// ── Team shape, pass shadow, shoulder runs (stage 15, `team-shape.md`) ──────────
+gameBus.on('shadowPress', e => { teamFlags[e.team].shadowPresses++; });
+gameBus.on('zoneCover', e => { teamFlags[e.team].zoneCovers++; });
+gameBus.on('shoulderRun', e => { const f = teamFlags[e.team]; f.shoulderRuns++; if (e.early) f.shoulderRunsEarly++; });
+gameBus.on('pressState', e => {
+  const f = teamFlags[e.team];
+  if (e.state < 3) f.pressStateOwnS += e.seconds; else if (e.state < 6) f.pressStateMidS += e.seconds; else f.pressStateFinalS += e.seconds;
 });
 
 // ── Discipline stats ──────────────────────────────────────────────────────────
