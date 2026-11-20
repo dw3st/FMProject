@@ -19,6 +19,7 @@ import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import {
   STYLE_FAMILIARITY_EFFECTS, HIGH_LINE_TRAP_EFFECT, HIGH_PRESS_STAMINA_MULT, applyAdd,
 } from '@/GameEngine/Configs/FamiliarityConfig';
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 // ── Default values ────────────────────────────────────────────────────────────
 
@@ -229,3 +230,7 @@ export function applyTeamTacticsConfig(
   TEAM_TACTIC_KEYS[team].defensiveLine = axes.defensive_line;
 }
 
+
+// Stage 19 (`live-modes.md`): the per-team configs travel with a mid-match snapshot.
+registerEngineMemory('DefenseConfig.TEAM_CONFIGS', recordPart(TEAM_CONFIGS as unknown as Record<string, unknown>));
+registerEngineMemory('DefenseConfig.TEAM_TACTIC_KEYS', recordPart(TEAM_TACTIC_KEYS as unknown as Record<string, unknown>));

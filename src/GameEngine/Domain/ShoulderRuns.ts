@@ -16,6 +16,7 @@ import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { debugLog } from '@/GameEngine/Support/DebugLog';
 import type { GamePlayer } from '@/GameEngine/types';
+import { registerEngineMemory, mapPart } from '@/GameEngine/Support/EngineMemory';
 
 interface Run { until: number; cueAt?: number }
 const _runs = new Map<number, Run>();
@@ -76,3 +77,6 @@ export function shoulderRunGoing(
   debugLog('offside', `${player.name} goes on the shoulder${early ? ' (early)' : ''}`, { playerId: player.id });
   return true;
 }
+
+// Stage 19 (`live-modes.md`): the runs travel with a mid-match snapshot.
+registerEngineMemory('shoulderRuns', mapPart(_runs));

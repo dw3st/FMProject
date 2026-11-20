@@ -444,8 +444,8 @@ export const TEST_SCENARIOS: TestScenario[] = [
 
   {
     id:          'keeper-sweeper',
-    name:        'Keeper — sweeper on a ball over the top',
-    description: 'CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. The keeper (Kowalski) leaves his box and gets there first (`Keeper.ts`, sweeper). Toggle "Keeper" for the sweeper zone and his target; watch the "keeper" debug log.',
+    name:        'Keeper — ball over the top (FM: he stays in his box)',
+    description: "CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. Stage 11 (`keeper.md` → \"Stage 11\"): FM's keeper does not sweep outside his box (~0 decisions there), he waits; with FM_KEEPER off the 7.7 sweeper gets there first. Toggle \"Keeper\" for his claim depth and target; watch the \"keeper\" debug log.",
     createState() {
       _nextId = 1;
       return buildState([
@@ -460,8 +460,8 @@ export const TEST_SCENARIOS: TestScenario[] = [
 
   {
     id:          'keeper-one-on-one',
-    name:        'Keeper — rushing out in a 1v1',
-    description: 'Striker through on goal 22 yd out, the CB beaten behind him. The keeper comes off his line to ~13 yd and tries to smother the ball at his feet (`Keeper.ts`).',
+    name:        'Keeper — 1 v 1 (FM: he holds his line)',
+    description: "Striker through on goal 22 yd out, the CB beaten behind him. Stage 11: FM's keeper stands on his line with the opponent on the ball within 35 m (no rush); the shot is met by his reaction and dive on the ball's path (stage 7). If the striker runs into him, a challenge at the feet (`keeperFeet`). With FM_KEEPER off he rushes to ~10 yd (7.7).",
     createState() {
       _nextId = 1;
       return buildState([
@@ -554,7 +554,7 @@ export const TEST_SCENARIOS: TestScenario[] = [
   {
     id:          'keeper-attacking',
     name:        'Keeper — up with the play',
-    description: 'Team B holds the ball in the attacking half; their keeper steps up between the penalty spot and the edge of his box, and drops back as the ball comes back (`Keeper.ts`).',
+    description: "Team B holds the ball in the attacking half; their keeper steps up by FM's bands for his own team's ball (3.8 m at 25–35 m, 4.8 m at 35–52 m, 11 m at 52–70 m, ~18 m beyond) and drops back as the ball comes back (stage 11, `Keeper.ts` → `fmKeeperTarget`).",
     createState() {
       _nextId = 1;
       return buildState([
@@ -568,8 +568,8 @@ export const TEST_SCENARIOS: TestScenario[] = [
 
   {
     id:          'keeper-high-ball',
-    name:        'Keeper — coming for a cross to the penalty spot',
-    description: 'Winger crosses toward the penalty spot with one attacker arriving late; the keeper comes off his line for it beyond the small box (`Keeper.ts`). Harder to catch the further out it drops; a miss drops loose in the box.',
+    name:        'Keeper — a cross to the penalty spot (FM: past his claim depth)',
+    description: "Winger crosses toward the penalty spot with one attacker arriving late. Stage 11: the spot (12 yd) is past FM's claim depth (3 + 8 × command yd), so the keeper holds his line and the centre-back and striker contest it; with FM_KEEPER off he comes for it (7.7). Compare with \"Keeper — cross into the six-yard box\".",
     createState() {
       _nextId = 1;
       return buildState([
@@ -577,6 +577,36 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Santos',   'A', 'ST',   96, 40, STRIKER),
         makePlayer('Silva',    'B', 'CB',   99, 44, DEFENDER),
         makePlayer('Kowalski', 'B', 'GK',  111, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'keeper-six-yard-cross',
+    name:        'Keeper — cross into the six-yard box (FM claim)',
+    description: "Stage 11: a winger at the byline crosses into the six-yard box, the striker 8 yd behind the point and the centre-back marking him. The meeting point is inside the keeper's claim depth and he gets there first, so he comes for it (`keeperComeOut` high) and catches or punches it (`gkClaim`). Toggle \"Keeper\" for the claim depth.",
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW',  110, 8, WINGER),
+        makePlayer('Santos',   'A', 'ST',  100, 38, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  102, 40, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
+    id:          'keeper-far-ball',
+    name:        'Keeper — opponent on the ball far away',
+    description: "Stage 11: team A holds the ball 70 yd from team B's goal; FM's keeper stands ~10.5 m off his line (2.7 m at 35–52 m, 6 m at 52–70 m, on the line within 35 m) and follows the ball sideways by 0.18 of its offset. Let it play: as team A comes forward he drops back onto his line.",
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CM',   45, 50, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   70, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   80, 37, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
       ], 1);
     },
   },

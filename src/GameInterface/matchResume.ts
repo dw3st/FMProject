@@ -11,8 +11,8 @@
  * otherwise it starts fresh and drops the stale snapshot. The snapshot is cleared once the match
  * is recorded, and whenever the day advances by any other route.
  *
- * Pure apart from the injectable `Storage`; the engine is unseeded, so a resumed match simply
- * continues from the saved state (no determinism needed).
+ * Pure apart from the injectable `Storage`. The snapshot carries the match generator (in `state`) and the engine memory
+ * (stage 19), so a resumed match plays on as it would have.
  */
 import type { GameState } from "@/GameEngine/types";
 import type { StatsSnapshot } from "@/GameEngine/Domain/Statistics";
@@ -62,7 +62,15 @@ export interface MatchSnapshot {
     possession: { A: number; B: number };
     /** Possession heat map (Etapa 35); absent or malformed = empty. */
     heatmap?: HeatmapSnapshot;
+    /** Mode A / mode B of the live match and the level of the lances (stage 19); absent = mode A. */
+    mode?: "full" | "highlights";
+    level?: "main" | "extended" | "full";
   };
+  /**
+   * The engine memory (stage 19, `EngineMemory.ts`): the tactic configs and the decision caches, so the resumed match
+   * plays on as it would have (the generator is in `state`). Absent in older snapshots: the configs are re-applied.
+   */
+  memory?: import("@/GameEngine/Support/EngineMemory").EngineMemory;
 }
 
 /** Identity of a live match: save + match date + fixture. */

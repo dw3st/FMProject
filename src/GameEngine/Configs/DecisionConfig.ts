@@ -8,6 +8,7 @@
  * Overrides: `DECISION_OVERRIDES='{"HOLDER":true}'` (env, read once at load, scripts and workers) and
  * `simulateMatch(..., { decisions: { HOLDER: true } })` (per match; reset to the base flags when absent).
  */
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 /** Behaviour switches of the decision layer (phases 3–5). Phase 3 turns `HOLDER` on; the others stay off. */
 export interface DecisionFlags {
@@ -113,6 +114,10 @@ export interface DecisionFlags {
    *  possession of a slot, the player instructions and the AI's instructions by the score. Off = the axes only (the
    *  instructions' extra effects read 0, the AI keeps its style). */
   TEAM_INSTRUCTIONS: boolean;
+  /** Stage 11 (`keeper.md` → "Stage 11"): FM's keeper — on his line with the opponent on the ball within 35 m, a step
+   *  up as the ball goes away (2.7 / 6 / 10.5 m), no 1-v-1 rush and no sweeper; he comes for a high ball only when he
+   *  gets to it first, within his claim depth. Off = the active keeper of 7.7 (arc, rush, sweeper). */
+  FM_KEEPER: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -159,6 +164,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
   TEAM_INSTRUCTIONS: true,
+  FM_KEEPER: true,
 };
 
 /**
@@ -362,3 +368,6 @@ export const DECISION_FLAGS: DecisionFlags = { ...BASE_FLAGS };
 export function setDecisionFlags(partial?: Partial<DecisionFlags>): void {
   Object.assign(DECISION_FLAGS, BASE_FLAGS, partial ?? {});
 }
+
+// Stage 19 (`live-modes.md`): the flags (the `/test` toggles) travel with a mid-match snapshot.
+registerEngineMemory('decisionFlags', recordPart(DECISION_FLAGS as unknown as Record<string, unknown>));

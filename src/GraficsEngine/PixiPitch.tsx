@@ -1,6 +1,6 @@
 import { SURROUND_ART } from "@/Domain/art/surroundArt";
 import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
-import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
+import { GOAL_CENTRE_Y, fmClaimDepth, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
@@ -58,6 +58,8 @@ import { drawEffect, drawTrail, effectTextAnchor, type EffectCtx } from "@/Grafi
 import { formationForSimId } from "@/Domain/matchFormations";
 import { tickState, endCurrentPeriod, applyPenaltyOutcome, applyPlayerInstruction, changeFormation, setManMarksBySlot, swapPlayerPositions, moveToEmptySlot, fillInjuryVacancy, bookPlayer, matchMinute, getBallPos, restartFreeze } from "@/GameEngine/Domain/gameState";
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
+import { restoreLiveSnapshot } from "@/GameEngine/Support/LiveSnapshot";
+import { uiOwnedChanged, isBefore as stateIsBefore } from "@/GraficsEngine/matchStateSync";
 
 /** Match phases whose countdown is a presentation pause (real seconds, never sped up). */
 const PRESENTATION_PHASES: ReadonlySet<string> = new Set(["preMatch", "halfTime", "extraTimeBreak", "penalties"]);
@@ -425,7 +427,7 @@ export interface DebugOverlays {
   setPieces:             boolean;
   /** Player instructions: the role-variant tag under each player, man-marking pairs (dashed line + ring on the target). */
   instructions:          boolean;
-  /** Active keeper (`Keeper.ts`): sweeper zone, wide high-ball zone, 1v1 rush range and his current target. */
+  /** Keeper (`Keeper.ts`): with `FM_KEEPER` his claim depth and the 35 m on-the-line radius, else the 7.7 sweeper zone, wide high-ball zone and 1v1 rush range; his current target. */
   keeper:                boolean;
   /** Player kinematics (`kinematics.md`): velocity vectors (0.6 s ahead) and a ring on a player losing speed to a sharp turn. */
   kinematics:            boolean;
@@ -581,6 +583,18 @@ interface Props {
   onReplay?: (on: boolean) => void;
   /** A new value ends the goal replay that is playing (the page's Skip button). */
   skipReplaySeq?: number;
+  /**
+   * Highlights mode (stage 19, `live-modes.md`): the playback decides at every pump whether to play, jump to the next
+   * lance or wait for the forecast; an order (a command, a tactics change, a UI edit) re-forecasts from now. Absent: the
+   * whole match plays.
+   */
+  highlights?: import('@/GameEngine/Support/HighlightPlayback').HighlightPlayback | null;
+  /**
+   * Speed of the cosmetic timings (the goal celebration) when the simulation runs faster than the presentation: mode A
+   * plays the 90 physical minutes at ~13× (`gameSpeed`) and the celebration keeps the pace of the speed chosen (1×, 2×,
+   * 4×). Absent: `gameSpeed`.
+   */
+  presentationSpeed?: number;
   /** Graphics quality (art phase 8): `light` draws a calm pitch (no fireworks, flashes, crowd motion, weather). */
   quality?: PitchQuality;
   /** Art phase 9: the art pack's slimmer players ("Mais realista") instead of the current ones. Read at mount. */
@@ -680,6 +694,8 @@ export function PixiPitch({
   replay = false,
   onReplay,
   skipReplaySeq = 0,
+  highlights = null,
+  presentationSpeed,
   quality = "high",
   realPlayers = false,
   markers = "figures",
@@ -716,6 +732,10 @@ export function PixiPitch({
   const markersRef               = useRef(markers);
   const onReplayRef              = useRef(onReplay);
   const skipReplayFnRef          = useRef<(() => void) | null>(null);
+  const highlightsRef            = useRef(highlights);
+  /** Set by the pitch's setup: re-forecasts the highlights from the state now. */
+  const invalidateHighlightsRef  = useRef<(() => void) | null>(null);
+  const presentationSpeedRef     = useRef(presentationSpeed);
   const staminaTeamsRef          = useRef(staminaTeams);
   staminaTeamsRef.current = staminaTeams;
   const starsRef                 = useRef(stars);
@@ -757,6 +777,12 @@ export function PixiPitch({
   useEffect(() => { replayRef.current = replay; }, [replay]);
   useEffect(() => { onReplayRef.current = onReplay; }, [onReplay]);
   useEffect(() => { if (skipReplaySeq > 0) skipReplayFnRef.current?.(); }, [skipReplaySeq]);
+  useEffect(() => { presentationSpeedRef.current = presentationSpeed; }, [presentationSpeed]);
+  // A playback switched on (mode B chosen, or a new one) forecasts from the state the pitch holds now.
+  useEffect(() => {
+    highlightsRef.current = highlights;
+    if (highlights) invalidateHighlightsRef.current?.();
+  }, [highlights]);
   // Stadium flags read at event time (big game): the ref follows every prop change.
   useEffect(() => { stadiumRef.current = stadium; }, [stadium]);
   // Crowd texture: re-baked only when what it shows changes (never per frame).
@@ -1500,6 +1526,8 @@ export function PixiPitch({
 
       // ── Game state ──
       const stateRef = { current: normalizeGameState(initialState!) };
+      /** The state a highlights jump landed on, until the page's echoes catch up with it. */
+      const landedRef: { current: import('@/GameEngine/types').GameState | null } = { current: null };
 
       // React (MatchScreen) is the source of truth for UI-driven edits queued from a
       // paused UI (substitution panel: pending subs, formation change) — see
@@ -1516,7 +1544,15 @@ export function PixiPitch({
       const unsubMatchStateSync = gameBus.on("matchStateSync", (s) => {
         // Remote: the server's state is the truth (adopted below, with the set-piece walk).
         if (remote) return;
+        // After a highlights jump, an echo of the page from before the jump is dropped (its UI-owned fields are stale).
+        if (landedRef.current) {
+          if (stateIsBefore(s, landedRef.current)) return;
+          landedRef.current = null;
+        }
+        const before = stateRef.current;
         stateRef.current = reconcileMatchStateSync(stateRef.current, normalizeGameState(s));
+        // Highlights mode: a UI edit (a queued substitution, a formation) is an order.
+        if (highlightsRef.current && uiOwnedChanged(before, stateRef.current)) invalidateHighlightsRef.current?.();
       });
 
       // ── Simulation pump ──
@@ -1610,7 +1646,7 @@ export function PixiPitch({
             scorerId: e.scorerId, positions: lastDrawnPos,
             players: st.players.map((p) => ({ id: p.id, team: p.team, keeper: p.role === "GK" })),
             attackDir: scorer.attackDir, seed: `${e.minute}:${e.scorerId}:${e.score.A}:${e.score.B}`,
-            gameSpeed: gameSpeedRef.current,
+            gameSpeed: presentationSpeedRef.current ?? gameSpeedRef.current,
           })
           : null;
         if (plan && lastDrawnBall) {
@@ -1626,6 +1662,29 @@ export function PixiPitch({
 
       // The stretcher stops the match (user request, 4.47.13): set once the stretchers exist, below.
       let stretcherHolds: () => boolean = () => false;
+      /** Highlights mode: the pitch lands on a snapshot of the forecast (the next lance, or the frontier). */
+      const applyHighlightJump = (snap: import('@/GameEngine/Support/LiveSnapshot').LiveSnapshot) => {
+        const next = restoreLiveSnapshot(snap);
+        stateRef.current = next;
+        landedRef.current = next;
+        simCarryRef.current = 0;
+        renderPair = { prev: next, cur: next };
+        transition = null;
+        setPieceStartPending = false;
+        replayBuf = [];
+        replayPending = null;
+        celebration = null;
+        endReplay();
+        gameBus.emit('stateChanged', stateRef.current);
+        const injury = highlightsRef.current?.pendingInjury();
+        if (injury) gameBus.emit('injuryNeedsSub', injury);
+      };
+      invalidateHighlightsRef.current = () => {
+        if (remote) return;
+        highlightsRef.current?.invalidate(stateRef.current);
+      };
+      // A playback handed in before the pitch was ready forecasts from the first state.
+      invalidateHighlightsRef.current();
       const pumpSimulation = () => {
         // Remote mode: the server simulates; nothing to pump here.
         if (remote) return;
@@ -1634,6 +1693,13 @@ export function PixiPitch({
         if (celebration && !framesVisible()) celebration = null;
         const elapsedRealSeconds = pump(pausedRef.current || replayRun !== null || celebration !== null || stretcherHolds());
         if (elapsedRealSeconds <= 0) return;
+        // Highlights mode (stage 19): play the lance, jump to the next one, or wait for the forecast.
+        const pb = highlightsRef.current;
+        if (pb) {
+          const act = pb.step(stateRef.current);
+          if (act.kind === 'freeze') return;
+          if (act.kind === 'jump') { applyHighlightJump(act.point.snap); return; }
+        }
         const prevState = stateRef.current;
         // Presentation pauses (kick-off show, half time, the extra-time break, the shootout, a VAR check) run in real
         // seconds, apart from the match speed (stage 2): at 32× the half-time pause still lasts its 4 s.
@@ -2686,7 +2752,7 @@ export function PixiPitch({
         }),
         // A high ball brought down: on the chest.
         gameBus.on("aerialResolved", (e) => { if (e.outcome === "control" && topDownMoves()) act(e.winnerId, "chest"); }),
-        gameBus.on("keeperSmother", (e) => { if (topDownMoves()) act(e.keeperId, "smother"); }),
+        gameBus.on("keeperFeet", (e) => { if (e.won && topDownMoves()) act(e.keeperId, "smother"); }),
         // The holder's moves (`HolderMoves.ts`, stage 4 `movement.md`): an existing pose for each. Shielding he stands over
         // the ball (receive), cutting inside he turns (roulette), the lay-off is a first-time pass, the chip a lofted
         // strike (volley), rounding the keeper a step-over.
@@ -2740,6 +2806,17 @@ export function PixiPitch({
           // A shot straight at him is pushed over the bar; anything wider is a dive.
           if (topDownMoves() && Math.abs(e.toY - gk.y) < 1.2) act(gk.id, "tipOver");
           else act(gk.id, "dive", e.toY >= gk.y ? 1 : -1);
+        }),
+        // Stage 11: what the physical save did, at the point the hands met the ball (it follows the dive above).
+        gameBus.on("keeperSave", (e) => {
+          if (e.y === undefined) return;
+          const gk = playerPos(e.keeperId);
+          if (!gk) return;
+          const lateral = Math.abs(e.y - gk.y);
+          const side: 1 | -1 = e.y >= gk.y ? 1 : -1;
+          if (e.kind === "hold") act(gk.id, lateral < 1.2 ? (topDownMoves() && (e.z ?? 0) < 0.5 ? "collect" : "catch") : "dive", side);
+          else if (e.kind === "parry" && topDownMoves() && (e.z ?? 0) > 2) act(gk.id, "tipOver");
+          else act(gk.id, "dive", side);
         }),
       ];
 
@@ -5063,10 +5140,16 @@ export function PixiPitch({
                 ];
                 passLinesGfx.poly(pts.flatMap(q => [q.px, q.py])).stroke({ width: 1, color, alpha });
               };
-              rect(0, KEEPER_CONFIG.SWEEP_RANGE, KEEPER_CONFIG.SWEEP_HALF_WIDTH, 0xbef264, 0.35);
-              rect(6, PENALTY_AREA_DEPTH, (PENALTY_AREA_Y_MAX - PENALTY_AREA_Y_MIN) / 2, 0x5eead4, 0.5);
               const c = toPixel(goalX, GOAL_CENTRE_Y);
-              passLinesGfx.circle(c.px, c.py, KEEPER_CONFIG.RUSH_RANGE * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.25 });
+              if (DECISION_FLAGS.FM_KEEPER) {
+                // Stage 11: the claim depth he comes for high balls to (teal) and the 35 m he stays on his line inside (yellow).
+                rect(0, fmClaimDepth(gk), (PENALTY_AREA_Y_MAX - PENALTY_AREA_Y_MIN) / 2, 0x5eead4, 0.6);
+                passLinesGfx.circle(c.px, c.py, 35 * 1.0936 * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.3 });
+              } else {
+                rect(0, KEEPER_CONFIG.SWEEP_RANGE, KEEPER_CONFIG.SWEEP_HALF_WIDTH, 0xbef264, 0.35);
+                rect(6, PENALTY_AREA_DEPTH, (PENALTY_AREA_Y_MAX - PENALTY_AREA_Y_MIN) / 2, 0x5eead4, 0.5);
+                passLinesGfx.circle(c.px, c.py, KEEPER_CONFIG.RUSH_RANGE * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.25 });
+              }
               const { px: gx, py: gy } = toPixel(gk.x, gk.y);
               const { px: tx, py: ty } = toPixel(gk.targetPosition.x, gk.targetPosition.y);
               passLinesGfx.moveTo(gx, gy).lineTo(tx, ty).stroke({ width: 2, color: 0xbef264, alpha: 0.9 });
@@ -5753,6 +5836,7 @@ export function PixiPitch({
       // ── Test command handler (mutates stateRef directly for debug tools) ──
       const unsubTestCmd = gameBus.on('testCommand', cmd => {
         if (remote) return; // a server-run match is never edited from the page
+        const stateBefore = stateRef.current;
         if (cmd.type === 'movePlayer') {
           stateRef.current = {
             ...stateRef.current,
@@ -5870,6 +5954,16 @@ export function PixiPitch({
           const grid = computeCrowdGrid(s);
           decide(holder, holder, true, false, s.players, null, s.possessionTime, s.setPiece, grid, s.teamIntent);
         }
+        // Highlights mode: every command that changed the match is an order (taken after the debug re-decide above,
+        // which may touch the engine caches).
+        // The /test re-pins (intent, manual injury subs, 2D penalties) are re-sent at every change of the ball holder:
+        // only a real change counts.
+        const repinField = cmd.type === 'setTeamIntent' ? 'teamIntent' : cmd.type === 'setManualInjurySubs' ? 'manualInjurySubs'
+          : cmd.type === 'setPenaltyInteractive' ? 'penaltyInteractive' : null;
+        const changed = repinField
+          ? JSON.stringify(stateRef.current[repinField] ?? null) !== JSON.stringify(stateBefore[repinField] ?? null)
+          : stateRef.current !== stateBefore;
+        if (changed) invalidateHighlightsRef.current?.();
       });
 
       // ── Tactics-change handler ───────────────────────────────────────────
@@ -5881,6 +5975,7 @@ export function PixiPitch({
         const { state: next } = tickState(stateRef.current, 0);
         stateRef.current = next;
         gameBus.emit('stateChanged', stateRef.current);
+        invalidateHighlightsRef.current?.();
       });
 
       return () => {
@@ -5894,6 +5989,7 @@ export function PixiPitch({
         }
         pixelArt = null;
         simClock.destroy();
+        invalidateHighlightsRef.current = null;
         unsubMatchStateSync();
         unsubRemoteState?.();
         unsubTestCmd();

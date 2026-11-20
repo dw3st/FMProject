@@ -326,9 +326,9 @@ export interface TeamRawStats {
   longBalls: number;
   longBallsCompleted: number;
   /** Active keeper (`Keeper.ts`), summed across games. */
-  keeperSorties: number;
-  keeperSweeps: number;
-  keeperSmothers: number;
+  keeperComeOuts: number;
+  keeperCollects: number;
+  keeperFeetWins: number;
   keeperHolds: number;
   keeperSpills: number;
   /** Kinematics (`kinematics.md`), summed across games: yards covered by the team, sprints (≥ 85% of top speed for 1 s). */
@@ -412,7 +412,7 @@ export interface TeamRawStats {
   /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
   /** Stage 10 (`aerial.md`): open-play crosses by first contact (air / low / unmet; attack / defence / keeper), summed contact height (yd); headers won / contested by line. */
-  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number; headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
+  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number; headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number; boxHighBalls: number; boxHighKeeper: number; boxHighDef: number; boxHighAtt: number; keeperClaims: number; keeperPunches: number;
   holderHolds: number;
   holderTurns: number;
   /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
@@ -617,9 +617,9 @@ export interface PerMatchView {
   avgLongBalls: number;
   avgLongBallsCompleted: number;
   /** Active keeper per match (`Keeper.ts`). */
-  avgKeeperSorties: number;
-  avgKeeperSweeps: number;
-  avgKeeperSmothers: number;
+  avgKeeperComeOuts: number;
+  avgKeeperCollects: number;
+  avgKeeperFeetWins: number;
   avgKeeperHolds: number;
   avgKeeperSpills: number;
   /** Kinematics per match (`kinematics.md`): team yards covered, sprints. */
@@ -690,7 +690,7 @@ export interface PerMatchView {
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number; avgShotDistM: number; shotsOutsideBoxPct: number; shotsLowLaunchPct: number;
   /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
    *  headers won per match and the win % of defenders / midfielders / forwards. */
-  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number;
+  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number; avgBoxHighBalls: number; boxHighKeeperPct: number; boxHighDefPct: number; boxHighAttPct: number; keeperClaimPct: number;
   avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
@@ -846,9 +846,9 @@ export interface VariantSummary {
   avgHeaderGoals: number;
   avgLongBalls: number;
   /** Active keeper per match (`Keeper.ts`). */
-  avgKeeperSorties: number;
-  avgKeeperSweeps: number;
-  avgKeeperSmothers: number;
+  avgKeeperComeOuts: number;
+  avgKeeperCollects: number;
+  avgKeeperFeetWins: number;
   avgKeeperHolds: number;
   avgKeeperSpills: number;
   /** Kinematics per match (`kinematics.md`): team yards covered, sprints. */
@@ -919,7 +919,7 @@ export interface VariantSummary {
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number; avgShotDistM: number; shotsOutsideBoxPct: number; shotsLowLaunchPct: number;
   /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
    *  headers won per match and the win % of defenders / midfielders / forwards. */
-  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number;
+  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number; avgBoxHighBalls: number; boxHighKeeperPct: number; boxHighDefPct: number; boxHighAttPct: number; keeperClaimPct: number;
   avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;

@@ -15,7 +15,7 @@
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
-import { keeperAttackingTarget } from '@/GameEngine/Domain/Keeper';
+import { fmKeeperTarget, keeperAttackingTarget } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import type { GamePlayer, Formation } from '@/GameEngine/types';
 import { slotBasePosition } from '@/GameEngine/FormationSlots';
@@ -100,6 +100,8 @@ export function computeAttackingPosition(
   possessionTime: number = 0,
 ): { x: number; y: number } {
   // The keeper steps up with the play instead of holding his slot (`Keeper.ts`).
+  // Stage 11: FM's keeper steps up with his team's ball by the band of its distance (`Keeper.ts`).
+  if (player.role === 'GK' && DECISION_FLAGS.FM_KEEPER) return fmKeeperTarget(player, ballPos, true);
   if (player.role === 'GK' && KEEPER_CONFIG.ATTACK_ENABLED) return keeperAttackingTarget(player, ballPos);
   const { ballSupportScale, bounds } = player;
 

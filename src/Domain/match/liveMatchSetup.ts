@@ -82,6 +82,12 @@ export interface LiveMatchInput {
   referee?: EngineReferee;
   /** Seed of the match generator (`GameEngine/Infrastructure/MatchRng.ts`); absent = drawn. */
   seed?: number;
+  /**
+   * Game-seconds per physical second (`GameState.clockScale`). The solo live match (stage 19, `live-modes.md`) plays the
+   * 90 physical minutes (1); absent = `LEGACY_CLOCK_SCALE`, the compressed clock the broadcast and the match between two
+   * managers keep until stage 22.
+   */
+  clockScale?: number;
 }
 
 const SIDES: TeamId[] = ["A", "B"];
@@ -149,9 +155,10 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
     ...(input.aggregate ? { aggregate: input.aggregate } : {}),
     ...(SIDES.some((t) => input[t].penalty2d) ? { penaltyInteractive: SIDES.filter((t) => input[t].penalty2d) } : {}),
   };
-  // Provisional (stage 2): the live match, the broadcast and the match between two managers keep the compressed
-  // clock (5 real minutes at 1×) until stage 19 adapts them to the 90 physical minutes (`match-flow.md`).
-  state = withClockScale(state, LEGACY_CLOCK_SCALE);
+  // The solo live match plays the 90 physical minutes (stage 19); the match between two managers keeps the compressed
+  // clock (5 real minutes at 1×) until stage 22 adapts it (`match-flow.md`).
+  const scale = input.clockScale ?? LEGACY_CLOCK_SCALE;
+  if (scale !== 1) state = withClockScale(state, scale);
   // Player instructions of each human side: the saved slot instructions and this match's man-marking.
   for (const team of SIDES) {
     const side = input[team];
