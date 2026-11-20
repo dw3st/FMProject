@@ -7,9 +7,12 @@
  * `DRAIN_SCALE` × the headroom above `FLOOR` (the drain fades as the player tires: steep first half, flatter second),
  * keepers × `GK_DRAIN_SCALE`. These shape the curve itself, the behaviour of the stage; not a volume calibration.
  */
+import { applyEnvOverrides } from '@/GameEngine/Support/EnvOverrides';
+
 export const CONDITION = {
-  /** Multiplies the legacy per-action cost under the FM curve. */
-  DRAIN_SCALE: 2.0,
+  /** Multiplies the legacy per-action cost under the FM curve. Stage 21: 2.0 → 1.6 (with FM's carry acceleration the
+   *  players sprint more: 90' median fell to 66, FM 73.5). */
+  DRAIN_SCALE: 1.6,
   /** Condition the drain fades toward: cost × (energy − FLOOR) / (100 − FLOOR), 0 at the floor. */
   FLOOR: 60,
   /** Keepers barely tire (FM: 94–99 at the end). */
@@ -34,3 +37,5 @@ export const CONDITION = {
     PER_CHECK: 2,
   },
 } as const;
+
+applyEnvOverrides(CONDITION, 'CONDITION_OVERRIDES');

@@ -56,7 +56,9 @@ describe('long shot through a defender (stage 9)', () => {
   test('the shot is offered with a defender in front, valued above FM\'s f24 line', () => {
     const on = shotCandidate();
     expect(on).not.toBeNull();
-    expect(on!.value).toBeGreaterThan(0.3);
+    // Stage 21: the value curve is calibrated (VALUE_POW 1.5, XG_REF 0.28), so the test checks the mechanism (a positive
+    // value with a blocker in front, above the old blocker-read value), not the absolute level of the stage-9 curve.
+    expect(on!.value).toBeGreaterThan(0);
     const offFlag = shotCandidate({ LONG_SHOTS: false });
     // The old value read the blocker through the xG and was crushed by f24.
     expect(offFlag === null || offFlag.value < on!.value).toBe(true);

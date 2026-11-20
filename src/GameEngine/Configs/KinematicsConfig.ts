@@ -16,6 +16,8 @@
  * `ENABLED: false` switches the layer off (the engine before kinematics, bit for bit): `/lab` A/B (`Variant.kinematics`)
  * and the measurement script (`scripts/kinematics-measure.ts --off`).
  */
+import { applyEnvOverrides } from '@/GameEngine/Support/EnvOverrides';
+
 export const KINEMATICS_CONFIG = {
   ENABLED: true,
 
@@ -53,18 +55,22 @@ export const KINEMATICS_CONFIG = {
    * engine lost ~21% of its goals (carriers are caught from behind: tackle attempts +26%); 3 brings goals and shots back
    * within ±1% (measured, `kinematics.md`).
    */
-  CARRY_ACCEL_SCALE: 3,
+  /** Stage 21: back to FM's law (was 3). */
+  CARRY_ACCEL_SCALE: 1,
 
   /**
    * Global foul compensation while the layer is on: carriers caught from behind draw ~20% more tackle attempts and ~11%
    * more fouls in all (`kinematics.md`). × this on every foul chance, so the world's fouls, cards and suspensions stay.
    */
-  FOUL_MULT: 0.9,
+  /** Stage 21: 1 (the foul bases of `FoulConfig.ts` were refitted to FM's 19 fouls a match). */
+  FOUL_MULT: 1,
 
   /** A sprint: speed ≥ SPRINT_FRACTION × the player's top running speed (pressSpeed / carrySpeed) for SPRINT_SECONDS. */
   SPRINT_FRACTION: 0.85,
   SPRINT_SECONDS: 1,
 };
+
+applyEnvOverrides(KINEMATICS_CONFIG, 'KINEMATICS_OVERRIDES');
 
 export type KinematicsConfig = typeof KINEMATICS_CONFIG;
 

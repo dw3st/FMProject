@@ -18,9 +18,11 @@ export const HOLDER_CHOICE = {
   /**
    * Category multiplier relative to a carry: FM's measured medians (report 6: carry 0.36, hold 0.41, turn 0.72; they
    * include FM's own ×0.5 for turn and hold) divided by the carry's. Pass and kick keep 1 (their scores are the
-   * generator's own in FM).
+   * generator's own in FM). Stage 21 (`fm-numbers.md` → "Etapa 21"): order pass, kick, turn, hold, carry; turn 2 → 2.3,
+   * hold 1.14 → 1.4 and carry 1 → 0.95 bring the holder mix to FM's (carry 37 / pass 42 / turn 10.5 / hold 9). The
+   * argmax is knife-edged: carry 0.92 already drops carries to 33% and dribbles to a third, 0.85 to 18%.
    */
-  CAT_MULT: [1, 1, 2, 1.14, 1] as readonly number[],
+  CAT_MULT: [1, 1, 2.3, 1.4, 0.95] as readonly number[],
   /** Kicks: f24 = min(KICK_F24_K · v², 1) (FM: min(500·v², 100) / 100). */
   KICK_F24_K: 5,
   /** Lapse noise: each score × (1 + U(−LAPSE_NOISE, +LAPSE_NOISE)) only when the decisions roll lapsed (FM ±20%). */

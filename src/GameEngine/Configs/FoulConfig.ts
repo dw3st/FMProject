@@ -5,17 +5,22 @@
  * Calibrated with `bun scripts/fouls-calibrate.ts` against the targets (per match, both teams):
  * fouls 10–14, yellows ~3, reds 0.1–0.15, penalties 0.2–0.3.
  */
+import { applyEnvOverrides } from '@/GameEngine/Support/EnvOverrides';
+
 export const FOUL_CONFIG = {
   // ── Foul chance (`foulChance`) ──────────────────────────────────────────────
   /** Base foul chance for a resolved tackle attempt (side angle, neutral aggression/skill/energy). */
-  TACKLE_BASE: 0.75,
+  // Stage 21 (`fm-numbers.md` → "Etapa 21"): tackle 0.75 → 0.2, dribble 0.55 → 0.1, duel 0.4 → 0.12, aerial 0.06 →
+  // 0.03, contact rate 0.25 → 0.06: fouls 88 → ~25 a match (FM 19). With 90 minutes of physics every duel kind was
+  // ~4× FM's rate per minute.
+  TACKLE_BASE: 0.2,
   /** Base foul chance for a resolved 1v1 dribble duel (the defender is the possible offender). */
-  DRIBBLE_BASE: 0.55,
+  DRIBBLE_BASE: 0.1,
   /** Base foul chance for a contested loose-ball duel. */
-  DUEL_BASE: 0.4,
+  DUEL_BASE: 0.12,
   /** Base foul chance of a contact moment on the holder (stage 13): `FM.CONTACT_BASE`. */
   /** Base foul chance for an aerial duel (`.claude/rules/game-engine/aerial.md`) — either player may be the offender. */
-  AERIAL_BASE: 0.06,
+  AERIAL_BASE: 0.03,
   /** Multiplier when the tackle itself won the ball — most fouls come from mistimed (failed) challenges. */
   TACKLE_WON_MULT: 0.15,
   /** Approach-angle multipliers (`classifyPosition` of the tackler relative to the holder). */
@@ -89,7 +94,7 @@ export const FOUL_CONFIG = {
     /** Contact foul (`contact`): an opponent this close (yd) to the holder, out of recovery, leans on him. */
     CONTACT_RANGE: 1.6,
     /** Contact moments per second of play while somebody is that close. Each one is a foul check of kind `contact`. */
-    CONTACT_RATE: 0.25,
+    CONTACT_RATE: 0.06,
     /** Base foul chance of a contact moment (then the usual angle, aggression, technique, energy… multipliers). */
     CONTACT_BASE: 0.35,
     /** × on the contact rate by what the holder is doing: carrying at speed, just received, holding / turning. */
@@ -108,3 +113,5 @@ export const FOUL_CONFIG = {
     PROMISING_DIST: 45,
   },
 } as const;
+
+applyEnvOverrides(FOUL_CONFIG, 'FOUL_OVERRIDES');

@@ -1,3 +1,4 @@
+import { TACKLE_CONFIG } from '@/GameEngine/Configs/TackleConfig';
 import { INSTR, playerDelta, setPossessionClock, resetInstructionState, stepAiInstructions } from '@/GameEngine/Configs/InstructionConfig';
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
@@ -85,7 +86,7 @@ import { computeBuffedStats } from '@/Domain/PlayerBuffs';
 import { factorFromAptitudes, positionAptitudes, positionFactor, scaleStats } from '@/Domain/positions/positionAptitude';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
 import {
-  SHOT_SPEED, TACKLE_COOLDOWN, TACKLE_RANGE,
+  SHOT_SPEED, TACKLE_COOLDOWN, TACKLE_RANGE, tackleChanceOf,
   DUEL_RECOVERY_SPEED_FACTOR,
   DUEL_TACKLE_WIN_RECOVERY, DUEL_TACKLE_LOSS_RECOVERY, DUEL_TACKLE_FAILED_RECOVERY,
   DUEL_DRIBBLE_WIN_RECOVERY, DUEL_DRIBBLE_LOSS_RECOVERY,
@@ -6270,19 +6271,12 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         }
       }
 
+      // Pressing load: nearby defenders (not the tackler) create crowd pressure.
+      // Active pressers count fully; defenders holding shape/marking count at half
+      // weight — they're close but not actively collapsing on the carrier.
+      const PRESS_LOAD_RADIUS = 8; // yards — wide enough to capture compact blocks
+      let pressingLoad = 0;
       if (tackler !== null) {
-        s = {
-          ...s,
-          tackleCooldown: TACKLE_COOLDOWN,
-          players: applyStaminaCost(s.players, tackler.id, 'tackle'),
-        };
-        const tacklerNow = s.players.find(p => p.id === tackler!.id)!;
-
-        // Pressing load: nearby defenders (not the tackler) create crowd pressure.
-        // Active pressers count fully; defenders holding shape/marking count at half
-        // weight — they're close but not actively collapsing on the carrier.
-        const PRESS_LOAD_RADIUS = 8; // yards — wide enough to capture compact blocks
-        let pressingLoad = 0;
         for (const p of s.players) {
           if (p.team === updatedHolder.team) continue;
           if (p.id === tackler.id) continue;
@@ -6294,10 +6288,29 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
           pressingLoad += weight * (1 - d / PRESS_LOAD_RADIUS); // linear falloff
         }
         pressingLoad = Math.min(1, pressingLoad); // cap at 1
+      }
+      const holderDecNow = s.decisions[updatedHolder.id];
+      const shielding = holderDecNow?.type === 'carry' && holderDecNow.move === 'shield';
+      const shieldResist = shielding ? HOLDER_MOVES.SHIELD_TACKLE_RESIST : 0;
 
-        const holderDec = s.decisions[updatedHolder.id];
-        const shielding = holderDec?.type === 'carry' && holderDec.move === 'shield';
-        const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad, shielding ? HOLDER_MOVES.SHIELD_TACKLE_RESIST : 0);
+      // Stage 21 (`TackleConfig.ts`): an outfield defender in range commits to the tackle with a chance that grows with
+      // the tackle's own success chance (FM: ~20 attempts a match, ~85% won); otherwise he stays on his feet this tick
+      // (no cooldown, no stamina) and may commit later. The keeper's smother is exempt.
+      if (tackler !== null && tackler.role !== 'GK' && TACKLE_CONFIG.COMMIT_BASE < 1) {
+        const c = tackleChanceOf(tackler, updatedHolder, pressingLoad, shieldResist);
+        const commit = TACKLE_CONFIG.COMMIT_BASE * Math.pow(c, TACKLE_CONFIG.COMMIT_POW);
+        if (matchRandom() >= commit) tackler = null;
+      }
+
+      if (tackler !== null) {
+        s = {
+          ...s,
+          tackleCooldown: TACKLE_COOLDOWN,
+          players: applyStaminaCost(s.players, tackler.id, 'tackle'),
+        };
+        const tacklerNow = s.players.find(p => p.id === tackler!.id)!;
+
+        const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad, shieldResist);
         if (shielding) gameBus.emit('holderMove', { playerId: updatedHolder.id, team: updatedHolder.team, move: 'shield', phase: success ? 'fail' : 'success' });
         if (tacklerNow.role === 'GK' && !DECISION_FLAGS.FM_KEEPER) {
           gameBus.emit('keeperComeOut', { keeperId: tacklerNow.id, kind: 'rush', depth: depthFrom(tacklerNow.attackDir === 1 ? 0 : PITCH_LENGTH, tacklerNow.x) });

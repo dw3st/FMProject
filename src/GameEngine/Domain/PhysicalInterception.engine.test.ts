@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { INTERCEPT } from "@/GameEngine/Configs/InterceptConfig";
 import { tickState } from "@/GameEngine/Domain/gameState";
 import { TEST_SCENARIOS } from "@/GameEngine/Support/TestCases";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
@@ -33,6 +34,11 @@ function play(id: string, seed?: number, max = 40) {
 }
 
 describe("physical interception", () => {
+  // Stage 21 calibrated the defender's reach and reaction to FM's interception count (1.3 → 0.7 yd, 0.25 → 0.45 s); the
+  // scenarios were drawn at the stage-5 values, so the tests keep them to check the mechanism.
+  const saved = { REACH_BODY_YD: INTERCEPT.REACH_BODY_YD, REACTION_S: INTERCEPT.REACTION_S };
+  beforeAll(() => { INTERCEPT.REACH_BODY_YD = 1.3; INTERCEPT.REACTION_S = 0.25; });
+  afterAll(() => { Object.assign(INTERCEPT, saved); });
   test("a defender who reaches the path in time runs there and touches the ball", () => {
     setDecisionFlags();
     const r = play("pass-intercepted");

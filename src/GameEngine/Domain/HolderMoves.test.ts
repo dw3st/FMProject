@@ -4,6 +4,7 @@ import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { HOLDER_MOVES, setDecisionFlags } from "@/GameEngine/Configs/DecisionConfig";
 import { mulberry32 } from "@/Domain/rng";
 import { facingAngleDeg } from "@/GameEngine/Domain/HolderMoves";
+import { HOLDER_CHOICE } from "@/GameEngine/Configs/HolderChoiceConfig";
 
 /** The holder moves (`HolderMoves.ts`): each /test scenario makes its move, and the flag off removes it. */
 function firstMove(id: string, flags?: Record<string, boolean>): string | undefined {
@@ -26,7 +27,12 @@ function firstMove(id: string, flags?: Record<string, boolean>): string | undefi
 
 describe("holder moves", () => {
   // The scenarios are close calls at the calibrated weights: the test doubles them so each move clearly wins.
+  // Stage 21 raised the hold category (CAT_MULT 1.14 → 1.4), so a shield beats the lay-off in its scenario; the test keeps
+  // the stage-8 category weights to check each move on its own.
   const saved = { ...HOLDER_MOVES };
+  const savedCat = HOLDER_CHOICE.CAT_MULT;
+  beforeAll(() => { HOLDER_CHOICE.CAT_MULT = [1, 1, 2, 1.14, 1]; });
+  afterAll(() => { HOLDER_CHOICE.CAT_MULT = savedCat; });
   beforeAll(() => { for (const k of ["SHIELD_WEIGHT", "CUT_WEIGHT", "LAYOFF_WEIGHT", "CHIP_WEIGHT", "ROUND_WEIGHT"] as const) HOLDER_MOVES[k] *= 2; });
   afterAll(() => { Object.assign(HOLDER_MOVES, saved); });
 

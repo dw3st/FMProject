@@ -499,6 +499,12 @@ function createSpaceDirection(
 
 /** Last (holder, supporter) pair announced: `supportShort` is emitted once per pair, not per decision. */
 let lastSupport = '';
+// Stage 21: registered (it was allow-listed as a debug dedupe, but it gates the `supportShort` stat, so a restored
+// snapshot counted one more support).
+registerEngineMemory('OffBallMovement.lastSupport', {
+  export: () => lastSupport,
+  import: (v) => { lastSupport = typeof v === 'string' ? v : ''; },
+});
 
 function comesShort(player: GamePlayer, holder: GamePlayer, allPlayers: GamePlayer[], opponents: GamePlayer[]): boolean {
   const sup = shortSupportOf(holder, allPlayers, p => getMainRole(p.role));

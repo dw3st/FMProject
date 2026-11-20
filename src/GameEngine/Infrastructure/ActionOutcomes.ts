@@ -490,6 +490,13 @@ export function gkClaimChance(gk: GamePlayer, attackersNear: number, weatherMult
 export const TACKLE_SUCCESS_SCALE = 0.97;
 
 export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingLoad = 0, shieldResist = 0): TackleResult {
+  const chance  = tackleChanceOf(tackler, holder, pressingLoad, shieldResist);
+  const success = matchRandom() < chance;
+  return { success, chance };
+}
+
+/** The success chance of a tackle (pure; `resolveTackle` rolls it, the stage-21 commit gate reads it first). */
+export function tackleChanceOf(tackler: GamePlayer, holder: GamePlayer, pressingLoad = 0, shieldResist = 0): number {
   // A keeper smothers the ball at the holder's feet: his own base chance, not the outfield tackle (`Keeper.ts`).
   const base     = tackler.role === 'GK' ? smotherBase(tackler) : tackler.runtimeStats.withoutBall.tackleChance;
   const rawAngle = tackleAngleModifier(tackler, holder);
@@ -519,9 +526,7 @@ export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingL
 
   // A holder shielding the ball (`HolderMoves.ts`) holds off the challenge by his strength (0 = no shield).
   const shield  = 1 - shieldResist * holderStrength;
-  const chance  = Math.max(0, Math.min(1, (base + angleMod + pressBonus) * dribbleReduction * TACKLE_SUCCESS_SCALE * shield));
-  const success = matchRandom() < chance;
-  return { success, chance };
+  return Math.max(0, Math.min(1, (base + angleMod + pressBonus) * dribbleReduction * TACKLE_SUCCESS_SCALE * shield));
 }
 
 /** A chip over an advanced keeper (`HolderMoves.ts`): decided at the strike. */

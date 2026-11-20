@@ -38,7 +38,7 @@ export const SHOT_PHYSICS = {
 
   // ── Launch error (FM form: (1 − s/50)·(base/10 + P + G), base 105 for shots, 95 for passes) ──
   /** FM's base errors: shots and the pass base the 4b angle and speed errors are anchored to. */
-  BASE_SHOT: 105, BASE_PASS: 95,
+  BASE_SHOT: 98, BASE_PASS: 95, // stage 21: BASE_SHOT 105 → 98, on target 45 → 35% of the shots (FM 35%)
   /** FM's set-piece base (a direct free kick is a set-piece kick: 85, no pressure). */
   BASE_SET_PIECE: 85,
   /** FM's geometry term G ∋ 0.5·|launch velocity| (m/s): the shot error against a pass of the same distance. */
@@ -48,15 +48,17 @@ export const SHOT_PHYSICS = {
 
   // ── Keeper (design: reaction, dive and hands) ──
   /** Seconds before he moves to the shot: REACT_BASE − REACT_REFLEX × reflexes. */
-  REACT_BASE: 0.3, REACT_REFLEX: 0.15,
+  // Stage 21 (`fm-numbers.md` → "Etapa 21"): reaction 0.3 → 0.2, dive 4 → 7, hands 0.9 → 1.5, stop 0.9 → 0.98, edge
+  // 0.5 → 0.3, speed 0.02 → 0.01: the keeper saves ~85% of the shots on target (FM 80%), was 46%.
+  REACT_BASE: 0.2, REACT_REFLEX: 0.15,
   /** Dive speed (yd/s): DIVE_BASE + DIVE_SKILL × diving. */
-  DIVE_BASE: 4, DIVE_SKILL: 4,
+  DIVE_BASE: 7, DIVE_SKILL: 4,
   /** Hands from his centre (yd): HAND_BASE + HAND_SKILL × diving, up to HAND_MAX_Z high. */
-  HAND_BASE: 0.9, HAND_SKILL: 0.5, HAND_MAX_Z: 3.0,
+  HAND_BASE: 1.5, HAND_SKILL: 0.5, HAND_MAX_Z: 3.0,
   /** He leaves a ball predicted to miss the frame by more than this (yd) and does not dive. */
   LEAVE_MARGIN: 0.4,
   /** Stop chance = STOP_BASE + STOP_SKILL × (handling − 0.5) − STOP_EDGE × offset² − STOP_SPEED × (speed − STOP_FREE_MS)⁺. */
-  STOP_BASE: 0.9, STOP_SKILL: 0.2, STOP_EDGE: 0.5, STOP_SPEED: 0.02, STOP_FREE_MS: 18, STOP_MIN: 0.05, STOP_MAX: 0.98,
+  STOP_BASE: 0.98, STOP_SKILL: 0.2, STOP_EDGE: 0.3, STOP_SPEED: 0.01, STOP_FREE_MS: 18, STOP_MIN: 0.05, STOP_MAX: 0.98,
   /** A touched ball he does not stop runs on: speed × FINGERTIP_KEEP, turned up to FINGERTIP_DEG. */
   FINGERTIP_KEEP: 0.75, FINGERTIP_DEG: 12,
   /** Save grades: difficult from this offset or speed (m/s), good from these. */

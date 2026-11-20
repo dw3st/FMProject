@@ -50,7 +50,7 @@ export const FM_NUMBERS = {
   /** ...and × (1 − TB_LANE_RISK × lane risk): a ball past a defender's interception corridor is mostly lost in flight. */
   TB_LANE_RISK: 0.15,
   /** Cross score × this (the passes it competes with already carry their risk; most crosses are lost). */
-  CROSS_RISK_MULT: 0.85,
+  CROSS_RISK_MULT: 1, // stage 21: 0.85 → 1 (crosses)
 
   // ── 2. Decision timing (FM: ~0.65 decisions per second, a carry is a 2 m step) ──
   /** A carry is a step this long (yd); the holder re-decides when it is done. */
