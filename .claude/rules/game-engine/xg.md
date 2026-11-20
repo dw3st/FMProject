@@ -55,3 +55,8 @@ Branch `feat/engine-fm`, etapa 6. Sem calibração: as constantes são as do FM,
 - O quickSim não tem chances (0 no `/lab` com o quickSim).
 - A largura de 2 m do goleiro é inferida (marca do jogador na fonte); os outros cobrem 0,667 m.
 - Sem bola 3D, todo chute de pé é de chão (nenhum voleio) e toda cabeçada a 2 m.
+
+## Etapa 7
+
+Com `SHOT_PHYSICS` o xG não decide mais o gol: fica só como estatística e na nota de chutar; o gol sai da trajetória
+(`shot-and-save.md` → "Stage 7").

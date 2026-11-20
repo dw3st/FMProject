@@ -111,3 +111,10 @@ Medido (`bun scripts/keeper-measure.ts 400 all <liga> 5000`, 4-3-3, `Math.random
 Report do usuário. Numa bola solta o `ballHolderId` continua sendo o último a tocar, e o dono da bola não decide nem anda como os outros. Quando um goleiro soltava uma defesa ou espalmava um cruzamento (`dropLooseAt`), ele ficava parado até outro chegar ou até o vigia de 7 segundos entregar a bola. Agora o goleiro que é o último toque de uma bola solta (`looseKeeper`, `gameState.ts`) decide e anda como os demais, e a disputa dele (`keeperClaimsLooseBall`) passa a valer. Os outros jogadores não mudam: o vale para todos tirava 12% dos gols.
 
 Mundo (`ai-formation-goals.ts --engine 400 --chunks 4 --modes ai --quick 0`, contra a 12.19.3): Premier 2,123 → 1,982 gols, 5,77 → 5,51 chutes; Championship 1,875 → 1,702, 5,59 → 5,21; somadas −7,9% e −5,6%. Decisão do usuário: aceitar e acompanhar no quickSim, `BASE_GOALS` 0,798 → 0,735 e `SHOTS_PER_XG` 1,96 → 2,01 (quickSim 4000 jogos: Premier 2,150, Championship 1,604; somadas +1,9% sobre o motor).
+
+## The save by the ball (engine rebuild stage 7)
+
+With `SHOT_PHYSICS` the keeper's save is no dice on the xG: he reacts by reflexes, dives by diving to the path of the
+3D ball and stops it within his hands by handling, the offset and the speed; then holds, parries or spills. During a
+physical shot the shot moves him (`tickPhysicalShot`), not the formation. His behaviour outside the shot is stage 11.
+See `shot-and-save.md` → "Stage 7".

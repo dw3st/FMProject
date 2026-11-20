@@ -82,6 +82,9 @@ export interface DecisionFlags {
   /** Stage 14 (`fitness.md` → "FM condition"): FM's condition curve (kick-off 99, drain fading toward a floor, +2 at
    *  half time, keepers barely tire) and FM's AI substitutions (from 55', at 55–75 %, 3–4 a match). */
   FM_CONDITION: boolean;
+  /** Stage 7 (`shot-and-save.md` → "Stage 7"): the shot is a physical launch (aim, FM's error with base 105) and the
+   *  goal, save, block or miss come from the ball against the keeper and the defenders, no goal dice (needs `BALL_3D`). */
+  SHOT_PHYSICS: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -117,6 +120,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   OFFSIDE_RUNS: true,
   FM_FOULS: true,
   FM_CONDITION: true,
+  SHOT_PHYSICS: true,
 };
 
 /**

@@ -69,3 +69,8 @@ With `PASS_PHYSICS` (on) a pass is no longer guided to its target: it is launche
 and distance and the passer's error on the vector, and flies on free physics (`BallState.free`). A ground pass and a
 through ball are moved by the core (`advancePassBall`) and arrive where the ball reaches the receiver; a high ball's
 landing point is where it lands. Peaks now FM's (cross 4.0, corner 5.5, long 4.4 m). See `pass-physics.md`.
+
+## Shots on free physics (stage 7)
+
+With `SHOT_PHYSICS` a shot is launched like a physical pass (`launchShot` builds it from `ShotState.physics`, `free`,
+phase `shot`) and moved by the core (`tickPhysicalShot`); `syncBall` leaves it alone. See `shot-and-save.md` → "Stage 7".

@@ -295,6 +295,8 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
    */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -404,6 +406,7 @@ type TeamFlags = {
   condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
   keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -421,6 +424,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
   condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
+  shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -767,7 +771,8 @@ gameBus.on('holderMove', e => {
   } else if (e.move === 'shield') {
     if (e.phase === 'success') f.moveShieldHeld++;
   } else if (e.move === 'chip') {
-    f.moveChip++; if (e.phase === 'success') f.moveChipGoals++;
+    if (!e.counted) f.moveChip++;
+    if (e.phase === 'success') f.moveChipGoals++;
   } else if (e.move === 'round_keeper') {
     f.moveRound++; if (e.phase === 'success') f.moveRoundWon++;
   }
@@ -821,6 +826,31 @@ gameBus.on('interceptionTouch', e => {
   else if (e.outcome === 'clear') f.cutClears++;
   else if (e.outcome === 'deflect') f.cutDeflects++;
   else f.cutMisses++;
+});
+// ── Stage 7: the shot by its trajectory (`shot-and-save.md`) ─────────────────────
+const SHOT_TECHNIQUE_FIELD: Record<import('@/GameEngine/types').ShotTechnique, keyof TeamFlags> = {
+  power: 'shotPower', placed: 'shotPlaced', lob: 'shotLob', chip: 'shotChip', volley: 'shotVolley', header: 'shotHeaderLaunch', free_kick: 'shotFreeKick',
+};
+gameBus.on('shotLaunched', e => {
+  const f = teamFlags[e.team];
+  f[SHOT_TECHNIQUE_FIELD[e.technique]]++;
+  f.shotSpeedSum += e.speedMs; f.shotLaunchN++;
+});
+gameBus.on('shotResolved', e => {
+  const t = playerTeam.get(e.player);
+  if (!t) return;
+  const outcome = e.outcome ?? (e.isGoal ? 'goal' : e.inPosts ? 'saved' : 'wide');
+  if (outcome === 'saved') teamFlags[t].shotsSaved++;
+  else if (outcome === 'wide' || outcome === 'over' || outcome === 'woodwork') teamFlags[t].shotsOffTarget++;
+  if (outcome === 'woodwork') teamFlags[t].shotsWoodwork++;
+});
+gameBus.on('shotDeflected', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].shotsDeflected++; });
+gameBus.on('keeperSave', e => {
+  const t = playerTeam.get(e.keeperId);
+  if (!t) return;
+  teamFlags[t].saves++;
+  if (e.grade === 'good') teamFlags[t].savesGood++;
+  else if (e.grade === 'difficult') teamFlags[t].savesDifficult++;
 });
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });

@@ -2,7 +2,7 @@
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { aiMatchFormation, autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
 import { loadLeagueAt88, pairAt } from "@/../scripts/ai-formation-goals-shared";
-import { FM_COUNT_KEYS, addShotXg, emptyFmTargets, fmCountsOf, fmTargetCollector, type FmMatchCounts, type FmTargetTotals } from "@/lab/fmTargets";
+import { FM_COUNT_KEYS, addShotEnd, addShotXg, emptyFmTargets, fmCountsOf, fmTargetCollector, type FmMatchCounts, type FmTargetTotals } from "@/lab/fmTargets";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 
 interface Input { league: string; matches: number; offset: number; seed: number }
@@ -16,6 +16,17 @@ self.onmessage = (e: MessageEvent<Input>) => {
   const fm = emptyFmTargets();
   // Stage 6 (`xg.md`): every shot's xG (open play, headers, free kicks, penalties) for the median.
   gameBus.on("shot", ev => addShotXg(fm, ev.xg));
+  // Stage 7 (`shot-and-save.md`): where each physical shot ended, by its distance.
+  const shotDist = new Map<number, number>();
+  gameBus.on("shotLaunched", ev => { shotDist.set(ev.player, ev.distance); });
+  const end = (player: number, e: "goal" | "saved" | "blocked" | "off") => {
+    const d = shotDist.get(player);
+    if (d === undefined) return;
+    shotDist.delete(player);
+    addShotEnd(fm, d, e);
+  };
+  gameBus.on("shotBlocked", ev => end(ev.player, "blocked"));
+  gameBus.on("shotResolved", ev => end(ev.player, ev.isGoal ? "goal" : ev.outcome === "saved" ? "saved" : "off"));
   const world: Record<string, number> = Object.fromEntries(WORLD_KEYS.map(k => [k, 0]));
   const counts = Object.fromEntries(FM_COUNT_KEYS.map(k => [k, 0])) as unknown as FmMatchCounts;
   let ms = 0;

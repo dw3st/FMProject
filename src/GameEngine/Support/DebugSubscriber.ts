@@ -82,9 +82,9 @@ gameBus.on('shot', e => {
 
 gameBus.on('shotResolved', e => {
   const shooter = p(e.player);
-  const outcome = !e.inPosts ? 'off target' : e.isGoal ? 'GOAL' : 'saved';
+  const outcome = e.outcome ?? (!e.inPosts ? 'off target' : e.isGoal ? 'GOAL' : 'saved');
   debugLog('shot',
-    `${shooter?.name ?? e.player} → ${outcome} (xG ${pct(e.xg)} × effects = ${pct(e.goalChance)})`,
+    `${shooter?.name ?? e.player} → ${outcome} (xG ${pct(e.xg)}, danger ${pct(e.danger)})`,
     { playerId: e.player },
   );
 });

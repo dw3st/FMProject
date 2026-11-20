@@ -20,7 +20,7 @@ import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, testPhysicalShot, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import { counterStyle, pickMarkTarget, pickMarkerSlot } from '@/Domain/study/study';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
@@ -417,6 +417,53 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Silva',    'B', 'CB',   86, 39, DEFENDER),
         makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
       ], 1);
+    },
+  },
+
+  {
+    id:          'shot-blocked',
+    name:        'Shot — blocked on its line',
+    description: 'Stage 7 (`shot-and-save.md`): a power shot from 17 yd with a centre-back 3 yd in front of the shooter on the line to goal. No block dice: the defender reacts after 0.15 s and lunges at the path; if the ball passes within his reach (body + leg by tackling, up to 2.2 yd high) he touches it, then controls, deflects it on toward goal or it rebounds loose. Debug "shot" shows the launch (technique, speed, aim, error) and the planned blockers.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   97, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  100, 37.3, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  106, 33, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-long-range',
+    name:        'Shot — from 28 yd',
+    description: 'Stage 7: a midfielder strikes from 28 yd with nobody in front of him. The ball flies by its 3D physics (launch error with the FM shot base 105); the keeper reacts by reflexes, dives by diving and stops it by handling, holding, parrying wide or spilling it in front. Watch the "keeper" debug line for the save grade.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CM',   87, 40, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  100, 33, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  104, 30, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-lob',
+    name:        'Shot — lob over an advanced keeper',
+    description: 'Stage 7: the keeper is 13 yd off his line and the striker 27 yd out lifts it over him (a lob, `cobertura`): the flight is solved to clear the hands of the keeper where he stands and drop under the bar. He backpedals; whether he reaches it is his reaction, dive speed and hands against the ball.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   88, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   95, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  102, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'lob');
     },
   },
 

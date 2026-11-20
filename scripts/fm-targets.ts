@@ -14,7 +14,7 @@ import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
   BALL_GROUPS, BAND_LABELS, FM_FOULS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
-  FLIGHT_LABELS, FM_FLIGHT_S, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
+  FLIGHT_LABELS, FM_FLIGHT_S, FM_GOAL_BY_DIST, SHOT_M_LABELS, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
   emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
@@ -156,6 +156,23 @@ for (const l of LINES) {
 console.log("  FM step DEF 4.4 · MID 6 · FWD 7 yd (target − position: in 9.8/7.7/9.8, out 5.5/7.7/10.9); hold default DEF 19 · MID 10 · FWD 12 s, short ~5 s");
 console.log("\n── Shots (distance to the goal mouth, yd) ──");
 console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) / Math.max(1, fm.shots))}%`).join(" · ") + "   FM: none beyond ~33 yd");
+// Stage 7 (`shot-and-save.md`): the shot by its trajectory — where shots end, the keeper, the techniques.
+{
+  const c = counts;
+  const sh = Math.max(1, c.shots);
+  const onT = Math.max(1, c.shotsOnTarget);
+  console.log("\n── The shot by its trajectory (stage 7; R9 §1–2, R8 §2.1) ──");
+  console.log(`  of shots: goal ${f1((100 * c.goals) / sh)}% (FM 7) · on target ${f1((100 * c.shotsOnTarget) / sh)}% (FM 35) · blocked ${f1((100 * c.shotsBlocked) / sh)}% (FM 38) · off target ${f1((100 * (c.shotsOffTarget ?? 0)) / sh)}% (FM ~27) · woodwork ${f1((100 * (c.shotsWoodwork ?? 0)) / sh)}% · deflected on ${f1((100 * (c.shotsDeflected ?? 0)) / sh)}%`);
+  console.log(`  saved ${f1((100 * (c.shotsSaved ?? 0)) / onT)}% of on target (FM 80) · keeper saves ${f2((c.saves ?? 0) / n)} per match: good ${f1((100 * (c.savesGood ?? 0)) / Math.max(1, c.saves ?? 0))}% · difficult ${f1((100 * (c.savesDifficult ?? 0)) / Math.max(1, c.saves ?? 0))}%`);
+  const tech = ["Power", "Placed", "Lob", "Chip", "Volley", "HeaderLaunch", "FreeKick"] as const;
+  const launched = Math.max(1, c.shotLaunchN ?? 0);
+  console.log("  technique " + tech.map(k => `${k === "HeaderLaunch" ? "header" : k.toLowerCase()} ${f1((100 * ((c as unknown as Record<string, number>)[`shot${k}`] ?? 0)) / launched)}%`).join(" · ") + ` · launch ${f1((c.shotSpeedSum ?? 0) / launched)} m/s`);
+  const ends = fm.shotEnds;
+  console.log("  by distance (m): " + SHOT_M_LABELS.map((l, i) => {
+    const row = ends[i]!; const t = row.reduce((a, b) => a + b, 0);
+    return `${l} n ${t} goal ${t ? f1((100 * row[0]!) / t) : "—"}% (FM ${FM_GOAL_BY_DIST[i]}) blk ${t ? f1((100 * row[2]!) / t) : "—"}%`;
+  }).join(" · "));
+}
 console.log("\n── World / match ──");
 console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
 // Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.

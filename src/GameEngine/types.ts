@@ -647,7 +647,7 @@ export type LooseBallSource = 'through' | 'cross' | 'long_ball' | 'clearance';
 
 /** Why the ball runs loose (stage 4, `movement.md`): an overhit through ball, a heavy touch on a long pass, a pass
  *  deflected off a defender, a blocked shot. */
-export type LooseBallCause = 'overhit' | 'heavy_touch' | 'deflection' | 'block' | 'misplaced';
+export type LooseBallCause = 'overhit' | 'heavy_touch' | 'deflection' | 'block' | 'misplaced' | 'woodwork';
 
 /** The back line's movement state (stage 4, `movement.md`). */
 export type BackLineMode = 'hold' | 'step_up' | 'drop';
@@ -773,6 +773,39 @@ export interface ShotState {
   outcome?: { isGoal: boolean; goalChance: number };
   /** A chip over an advanced keeper (`HolderMoves.ts`): decided at the strike, never met by the keeper. */
   chip?: true;
+  /**
+   * Stage 7 (`shot-and-save.md` → "Stage 7"): the shot is a physical launch of the 3D ball; the core moves it and the
+   * goal, the save, the block or the miss come from where it goes. Absent with `SHOT_PHYSICS` off (the old dice).
+   */
+  physics?: ShotPhysicsState;
+}
+
+/** How a shot is struck (stage 7). */
+export type ShotTechnique = 'power' | 'placed' | 'lob' | 'chip' | 'volley' | 'header' | 'free_kick';
+
+/** A planned lunge at a shot's path (stage 7): the point and the ball's time there. */
+export interface ShotBlockRun { id: number; x: number; y: number; t: number }
+
+export interface ShotPhysicsState {
+  technique: ShotTechnique;
+  /** The launch (yd, yd/s), error included. */
+  z0: number; vx: number; vy: number; vz: number;
+  /** Launch speed (m/s), aimed crossing (yd) and the direction error drawn (degrees). */
+  speedMs: number; aimY: number; aimZ: number; errDeg: number;
+  /** Seconds since the strike, and the expected flight to the line. */
+  elapsed: number; T: number;
+  /** Defenders lunging at the path. */
+  blocks: ShotBlockRun[];
+  /** Players who touched it on the way (they can't touch it again). */
+  touched: number[];
+  /** The last defender (or keeper) who touched it: an off-target ball after it is a corner. */
+  deflectedBy?: number;
+  /** The keeper got a hand to it and failed (no second attempt). */
+  keeperBeaten?: boolean;
+  /** A deflection on: the keeper's reaction starts again from this time (s since the strike). */
+  reactFrom?: number;
+  /** Predicted on the frame at the strike (`onFrame`). */
+  onTarget: boolean;
 }
 
 /** What the end of a VAR check does to the match (data only: `gameState.ts` applies it). */

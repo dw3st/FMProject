@@ -359,3 +359,32 @@ números com as mesmas sementes). Regras em `interception.md` → "Stage 5". Nad
   ainda deixam mais passes por dentro dos defensores.
 - Mais desarmes: os desvios viram bola solta disputada.
 - Custo: ~14 s por partida contra ~13 s antes (o caminho previsto da bola a cada tick do passe em voo).
+
+## Etapa 7: chute pela trajetória (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000`. Antes = `DECISION_OVERRIDES='{"SHOT_PHYSICS":false}'`
+(o sorteio sobre o xG). Regras em `shot-and-save.md` → "Stage 7". Nada calibrado.
+
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Gols / chutes / xG | 7,3 / 29,0 / 8,8 | 6,8 / 26,4 / 8,1 | 1,5 / 21,5 / 3,3 |
+| Gols % dos chutes | 25,0% | 25,9% | 7% |
+| No alvo % dos chutes (com os gols) | 53,4% | 57,4% | 35% |
+| Bloqueados % | 0,6% | 8,8% | 38% |
+| Para fora % (trave incluída) | 42,8% | 24,3% (trave 3,8%) | ~27% |
+| Defendidos % dos no alvo | 53,2% | 67,0% | 80% |
+| Defesas do goleiro por partida (boas / difíceis) | 8,3 | 10,2 (1,6 / 45,9%) | — |
+| Técnica: força / colocado / cavadinha / cabeça / falta | — | 18 / 18 / 45 / 14 / 6% (cobertura 0, voleio 0) | — |
+| Velocidade de saída | — | 17,9 m/s | — |
+| Gol % por distância 0–8 / 8–12 / 12–16 / 16–20 / 20–25 m | — | 47 / 26 / 21 / 14 / 7% | 21 / 11 / 12 / 13 / 3% |
+| Escanteios | 23,4 | 16,8 | 12,5 |
+
+- O gol agora sai da bola: o goleiro defende 67% dos chutes no alvo (era 53% pelo dado) e os defensores bloqueiam
+  8,8% (quase nada antes). Os dois ainda ficam abaixo do FM: os chutes seguem perto demais (18% de longe contra 46%) e
+  sem gente na frente; a escolha do chute é a etapa 8 e a forma defensiva a 15.
+- A cavadinha é quase metade dos chutes: o movimento de portador `chip` (já existente) dispara muito com o goleiro
+  adiantado e agora sempre vira chute físico. Fica para a escolha do portador (etapa 8).
+- Cobertura e voleio não aparecem nessas 12 partidas (a bola raramente está alta no chute; o goleiro raramente fica 8+
+  jardas fora com o atacante a 16–38 jardas).
+- Menos escanteios: o desvio de um chute para fora só vira escanteio quando alguém tocou de fato.
+- Custo: ~14,5 s por partida, igual a antes.
