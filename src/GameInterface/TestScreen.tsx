@@ -91,6 +91,8 @@ const AXIS_ROWS: { key: keyof TacticalAxes; label: string; values: string[] }[] 
 import { factorFromAptitudes } from "@/Domain/positions/positionAptitude";
 import { createUiStateThrottle, isUrgentStateChange, type UiStateThrottle } from "@/GameInterface/uiStateThrottle";
 import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
+import { HighlightPlayback, workerForecastPort, type PlaybackView } from "@/GameEngine/Support/HighlightPlayback";
+import { forecastWorkerUrl } from "@/Domain/match/forecastWorkerUrl";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -552,6 +554,19 @@ export function TestScreen() {
   const [fullMatch, setFullMatch] = useState(false);
   /** The compressed clock of before stage 2 (`LEGACY_CLOCK_SCALE`), for comparison. */
   const [legacyClock, setLegacyClock] = useState(false);
+  /** Mode B (stage 19, `live-modes.md`): only the lances, the forecast worker ahead; null = off. */
+  const [hlMode, setHlMode] = useState<null | "main" | "extended" | "full">(null);
+  const [testPlayback, setTestPlayback] = useState<HighlightPlayback | null>(null);
+  const [testPlaybackView, setTestPlaybackView] = useState<PlaybackView | null>(null);
+  const hlOn = hlMode !== null;
+  useEffect(() => {
+    if (!hlOn) { setTestPlayback(null); setTestPlaybackView(null); return; }
+    const pb = new HighlightPlayback(workerForecastPort(forecastWorkerUrl()), "extended", { humanTeams: ["A"], ui: () => undefined });
+    const off = pb.subscribe(setTestPlaybackView);
+    setTestPlayback(pb);
+    return () => { off(); pb.dispose(); };
+  }, [hlOn]);
+  useEffect(() => { if (testPlayback && hlMode) testPlayback.setLevel(hlMode); }, [testPlayback, hlMode]);
   /** Draw-time meter: filled by the pitch every 30 frames, read once a second. */
   const pitchPerfRef = useRef<PitchPerf | null>(null);
   const [pitchPerf, setPitchPerf] = useState<PitchPerf | null>(null);
@@ -1151,7 +1166,7 @@ export function TestScreen() {
   const pitchKey    = loadedState
     ? `loaded-${loadKey}`
     : mode === '11v11'
-      ? `11v11-${squadA}-${squadB}-${formIdA}-${formIdB}-${resetKey}`
+      ? `11v11-${squadA}-${squadB}-${formIdA}-${formIdB}-${resetKey}-${matchState?.seed ?? 0}`
       : `scenario-${scenario.id}-${resetKey}`;
 
   const hasSave = useMemo(
@@ -1705,6 +1720,27 @@ export function TestScreen() {
           }`}>
           90' match
         </button>
+        {/* Mode B (stage 19): only the lances of the level, jumping with the forecast worker. */}
+        {(["off", "main", "extended", "full"] as const).map(l => (
+          <button key={l} onClick={() => { const v = l === "off" ? null : l; setHlMode(v); if (v) setFullMatch(true); }}
+            title="Mode B: only the lances (main / extended / full), the rest skipped with the forecast worker"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
+              (hlMode ?? "off") === l ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:text-foreground'
+            }`}>
+            {l === "off" ? "Lances off" : `Lances ${l}`}
+          </button>
+        ))}
+        {testPlayback && (
+          <button onClick={() => testPlayback.skip()} title="Mode B: end the lance playing now"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/30 text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-semibold text-sm">
+            <Icon name="fast-forward" size={14} />Next (B)
+          </button>
+        )}
+        {testPlaybackView && (
+          <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap" title="Mode B: lances known, forecast clock, waiting, time from the last restart to its first answer">
+            {`B: ${testPlaybackView.windows.length} lances · ahead ${testPlaybackView.forecastClock.toFixed(0)} s${testPlaybackView.waiting ? " · waiting" : ""}${testPlaybackView.lastLatencyMs !== null ? ` · first ${testPlaybackView.lastLatencyMs.toFixed(0)} ms` : ""}`}
+          </span>
+        )}
         <button onClick={() => setLegacyClock(v => !v)} title="The compressed clock of before the rebuild (game clock ×18 against the physics), for comparison"
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer font-semibold text-sm ${
             legacyClock ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-secondary/30 text-muted-foreground hover:text-foreground'
@@ -2021,6 +2057,7 @@ export function TestScreen() {
               debugOverlays={debugOverlays}
               showYardRefs={true}
               gameSpeed={speed}
+              highlights={testPlayback}
               initialState={activeState}
               onPlayerClick={handlePlayerClick}
               onPitchClick={handlePitchClick}

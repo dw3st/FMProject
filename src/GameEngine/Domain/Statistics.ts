@@ -1096,6 +1096,11 @@ export interface StatsSnapshot {
   goals?: GoalLogEntry[];
   /** Highlight layer (`highlights.md`); absent in older snapshots. */
   highlights?: HighlightState;
+  /** Decision telemetry (entropy, decision mix); absent in older snapshots. */
+  decisionMix?: {
+    buckets: Record<TeamId, Record<Family, Array<Array<[string, number]>>>>;
+    players: Array<[number, Record<Family, Array<[string, number]>>]>;
+  };
 }
 
 /** Everything accumulated so far, as plain data (no Maps). */
@@ -1107,6 +1112,13 @@ export function exportStatsState(): StatsSnapshot {
     teamFlags: { A: { ...teamFlags.A }, B: { ...teamFlags.B } },
     goals:     goalLog.map((g) => ({ ...g })),
     highlights: exportHighlightState(),
+    decisionMix: {
+      buckets: {
+        A: Object.fromEntries(FAMILIES.map((f) => [f, bucketMix.A[f].map((c) => [...c])])) as Record<Family, Array<Array<[string, number]>>>,
+        B: Object.fromEntries(FAMILIES.map((f) => [f, bucketMix.B[f].map((c) => [...c])])) as Record<Family, Array<Array<[string, number]>>>,
+      },
+      players: [...playerMix].map(([id, pm]) => [id, Object.fromEntries(FAMILIES.map((f) => [f, [...pm[f]]])) as Record<Family, Array<[string, number]>>]),
+    },
   };
 }
 
@@ -1120,6 +1132,16 @@ export function importStatsState(snap: StatsSnapshot): void {
   for (const [id, e] of snap.endEnergy) endEnergy.set(id, { ...e });
   goalLog = (snap.goals ?? []).map((g) => ({ ...g }));
   if (snap.highlights) importHighlightState(snap.highlights);
+  bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
+  playerMix.clear();
+  if (snap.decisionMix) {
+    for (const team of ['A', 'B'] as const) for (const f of FAMILIES) {
+      snap.decisionMix.buckets[team][f].forEach((cell, i) => { if (bucketMix[team][f][i]) bucketMix[team][f][i] = new Map(cell); });
+    }
+    for (const [id, pm] of snap.decisionMix.players) {
+      playerMix.set(id, { holder: new Map(pm.holder), offBall: new Map(pm.offBall), defense: new Map(pm.defense) });
+    }
+  }
   teamFlags.A = { ...emptyTeamFlags(), ...snap.teamFlags.A };
   teamFlags.B = { ...emptyTeamFlags(), ...snap.teamFlags.B };
   notify();

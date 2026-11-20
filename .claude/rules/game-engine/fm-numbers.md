@@ -416,3 +416,8 @@ cinco flags desligadas × ligadas:
 - O bloco do FM aproxima largura e pressionadores, mas a linha fica longe nas transições (depois da troca de posse os
   defensores ficam ~20 jd acima da linha e levam 5–10 s para descer) e a bola fica cercada (o bloco não se comprime
   na bola). A posição padrão segurada não sobe: o que a encerra é a troca de posse (~12 s por posse) e as bolas soltas.
+
+## Etapa 19: modos da partida ao vivo
+
+Sem mudança no motor (`live-modes.md`): os dois modos jogam o mesmo `tickState` com o relógio físico, e o modo B
+reproduz a partida reta do mesmo gerador (teste). As metas do FM não mudam; nada a medir com `scripts/fm-targets.ts`.

@@ -125,7 +125,6 @@ describe("mid-match snapshot (stage 19)", () => {
 import { HighlightPlayback, decidePlayback, type ForecastPort } from "@/GameEngine/Support/HighlightPlayback";
 import { getHighlightLiveSeconds } from "@/GameEngine/Domain/HighlightTracker";
 import { restoreLiveSnapshot as restore } from "@/GameEngine/Support/LiveSnapshot";
-import type { Forecast } from "@/GameEngine/Support/ForecastCore";
 
 /**
  * The forecast run inline (one thread): it runs to the end at once and the page's globals are put back from the very
