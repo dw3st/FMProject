@@ -551,3 +551,32 @@ ligada (`aerial.md` → "Stage 10"). Nada calibrado.
   (46% de fora da área): é a etapa 9 (portão e chute de longe) e a calibração (21), não o goleiro.
 - Reposição: com menos bolas recolhidas o goleiro passa menos (4,9 por jogo, FM 47); o goleiro como portador é o
   escolhedor antigo (a etapa 8 o deixa de fora). Fica para a calibração.
+
+## Etapa 22: jogo entre técnicos em 90 minutos (sem ajuste)
+
+`bun scripts/h2h-measure.ts 30 40` (Manchester United × Newcastle, 4-3-3, equilibrado, 30 s reais a 1×; Windows). "Antes"
+= a 7.6 (relógio ×18, um quadro por passo).
+
+| | Antes (×18) | Modo A (90', ×13) | Modo B (lances, previsão num worker) |
+|---|---|---|---|
+| CPU, 1 partida (de um núcleo) | 0,8% | 9,9% | 33,1% (pico da previsão) |
+| CPU, 3 partidas | 5,8% | 29,7% | 214,8% |
+| RSS 1 / 3 partidas | 88 / 137 MB | 120 / 212 MB | 167 / 378 MB (pico 569) |
+| Bytes por navegador | 36 KB/s | 75 KB/s | 82–101 KB/s |
+| Quadros por s | 5,4 | 5,4 (com o caminho da bola) | 5,4 |
+
+- O estado de 1 s quase dobrou (31 → 64 KB): mais jogadores com números, estatísticas maiores do jogo inteiro. O modo B
+  soma ~2,3 KB por mensagem de lances (129 em 30 s, a vista das janelas a cada atualização da previsão).
+- Gols por jogo no worker × `simulateMatch`, 40 jogos cada, mesmos XIs, 90': 12,35 ± 0,56 × 12,95 ± 0,60 (−4,6%, ruído).
+  O volume é o do motor de hoje em 90' (a calibração é a etapa 21), não do jogo entre técnicos.
+
+Mundo público (`MATCH_WORKERS=2 SEATS=<n> STEPS=3 bun scripts/public-world-measure.ts`, 90', pool de 2 workers; antes, na
+7.5 com ×18 e 10 assentos: 25,6 / 31,2 / 8,6 s):
+
+| Assentos | Passo 1 (1 dia) | Passo 2 (5 dias) | Passo 3 (1 dia) | Jogos no pool por passo | Motor por jogo | RSS |
+|---|---|---|---|---|---|---|
+| 10 | 38,8 s | 49,6 s | 18,1 s | 3 / 3 / 1 | ~17 s | 560–680 MB |
+| 40 | 106,3 s | 118,6 s | 35,1 s | 12 / 12 / 4 | ~16 s | 590–720 MB |
+
+Um jogo de assento em 90' custa ~16 s de motor; com 2 workers o passo de 40 assentos fica perto de 2 minutos. Mais
+workers baixam o tempo na proporção (o limite é a memória: ~120 MB por worker).

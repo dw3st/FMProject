@@ -148,18 +148,20 @@ async function runWorkers(n: number, seconds: number, mode: "full" | "highlights
 const mb = (n: number) => n.toFixed(0);
 console.log(`RSS before any match: ${mb(process.memoryUsage().rss / 1024 / 1024)} MB`);
 
-for (const n of [1, 3]) {
-  const r = await runWorkers(n, SECONDS);
-  console.log(`\n(a) ${n} match(es), ${r.wall.toFixed(1)} s at 1x: CPU ${r.cpuPct.toFixed(1)}% of one core, RSS ${mb(r.rssMB)} MB (peak ${mb(r.rssPeakMB)} MB)`);
+const MODES = (process.env.H2H_MODES ?? "full,highlights").split(",") as ("full" | "highlights")[];
+for (const mode of MODES) for (const n of [1, 3]) {
+  const r = await runWorkers(n, SECONDS, mode);
+  console.log(`\n(a) mode ${mode}, ${n} match(es), ${r.wall.toFixed(1)} s at 1x: CPU ${r.cpuPct.toFixed(1)}% of one core, RSS ${mb(r.rssMB)} MB (peak ${mb(r.rssPeakMB)} MB)`);
   console.log(`(b) bytes/s per browser: ${r.bps.map((b) => (b / 1024).toFixed(1) + " KB/s").join(", ")}`);
   if (n === 1) {
     const m = r.meter;
-    for (const t of ["frame", "state", "event"]) {
+    for (const t of ["frame", "state", "event", "other"]) {
       console.log(`    ${t}: ${m.count[t]} messages, avg ${m.count[t] ? Math.round(m.byType[t]! / m.count[t]!) : 0} B`);
     }
   }
 }
 
+if (process.env.H2H_SKIP_GOALS === "1") process.exit(0);
 // ── (c) goals per match ──────────────────────────────────────────────────────
 
 function stats(xs: number[]) {
