@@ -59,7 +59,7 @@ import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aerial';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
-import { evaluateBoxSetPiece, routineOption } from '@/GameEngine/Domain/SetPieces';
+import { evaluateBoxSetPiece, fmCornerPoint, goalKickLongPoint, goalKickShortSpot, routineOption } from '@/GameEngine/Domain/SetPieces';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
 import { pickCandidate, qualityOf, riskOf, scoreCandidates, type HolderCandidate, type HolderCategory } from '@/GameEngine/Domain/HolderChoice';
@@ -73,7 +73,7 @@ export type PlayerDecision =
   | { type: 'shoot'; move?: HolderMove }                // withBall  → will shoot (move: chip)
   | { type: 'pass'; targetId?: number; move?: HolderMove } // withBall → pass (targetId: forced receiver, one-on-one gate / lay-off)
   | { type: 'through_ball'; cellX: number; cellY: number; intendedRunnerId: number | null } // withBall → ball into space
-  | { type: 'cross'; toX: number; toY: number; intendedRunnerId: number | null } // withBall → high ball into the box
+  | { type: 'cross'; toX: number; toY: number; intendedRunnerId: number | null; delivery?: import('@/GameEngine/types').SetPieceDelivery } // withBall → high ball into the box (delivery: a set piece's)
   | { type: 'long_ball'; toX: number; toY: number; targetId: number } // withBall → high ball over the line
   | { type: 'dribble'; targetId: number; move?: HolderMove } // withBall → beat a close defender 1v1 (move: round the keeper)
   | { type: 'tackle'; targetId: number }                // withoutBall → close enough to attempt a tackle
@@ -1406,7 +1406,16 @@ function holderStepOf(player: GamePlayer, opponents: GamePlayer[], ca: ActionSco
  * — a cross to the near post / penalty spot / far post, or the short pass (`pass`, which
  * `startPass` sends to the nearest teammate).
  */
-function decideBoxSetPiece(player: GamePlayer, allPlayers: GamePlayer[], kind: 'corner' | 'free_kick', routine?: SetPieceRoutine): PlayerDecision {
+function decideBoxSetPiece(player: GamePlayer, allPlayers: GamePlayer[], kind: 'corner' | 'free_kick', routine?: SetPieceRoutine, fmCorner?: SetPiece['fmCorner']): PlayerDecision {
+  // Stage 12 (`set-pieces-play.md` → "Stage 12"): a corner goes to its decided FM target (drawn at the award), unless a
+  // rehearsed routine names the delivery.
+  if (fmCorner && (!routine || routine.target === 'auto')) {
+    if (fmCorner === 'short') return { type: 'pass' };
+    const t = fmCornerPoint(fmCorner, player, player.attackDir);
+    const mates = allPlayers.filter(p => p.team === player.team && p.id !== player.id && p.role !== 'GK');
+    const intended = mates.length > 0 ? mates.reduce((a, b) => (Math.hypot(b.x - t.x, b.y - t.y) < Math.hypot(a.x - t.x, a.y - t.y) ? b : a)).id : null;
+    return { type: 'cross', toX: t.x, toY: t.y, intendedRunnerId: intended, delivery: fmCorner };
+  }
   const options = evaluateBoxSetPiece(player, allPlayers, getTeamBuildUp(player.team), kind);
   // A rehearsed routine names the delivery; without one the taker plays his best option.
   const best = routineOption(options, routine);
@@ -1417,7 +1426,9 @@ function decideBoxSetPiece(player: GamePlayer, allPlayers: GamePlayer[], kind: '
     });
   }
   if (!best || best.kind === 'short' || best.raw <= 0) return { type: 'pass' };
-  return { type: 'cross', toX: best.x, toY: best.y, intendedRunnerId: best.targetId };
+  // Stage 12: an automatic crossed free kick is aimed at FM's cross zones at the kick (`delivery: 'zone'`).
+  const zone = DECISION_FLAGS.FM_SET_PIECES && DECISION_FLAGS.FM_AERIAL && kind === 'free_kick' && (!routine || routine.target === 'auto');
+  return { type: 'cross', toX: best.x, toY: best.y, intendedRunnerId: best.targetId, delivery: zone ? 'zone' : best.kind === 'near_post' || best.kind === 'far_post' || best.kind === 'penalty_spot' ? best.kind : 'zone' };
 }
 
 // ── Public decision entry point ───────────────────────────────────────────────
@@ -1461,7 +1472,18 @@ export function decide(
       // Set-piece play (`set-pieces-play.md`): a direct free kick is shot at goal; a corner or a
       // crossed free kick is delivered to the best zone in the box, or played short.
       if (setPiece.variant === 'direct') return { type: 'shoot' };
-      if (setPiece.variant === 'box') return decideBoxSetPiece(player, allPlayers, setPiece.type === 'corner' ? 'corner' : 'free_kick', setPiece.routine);
+      if (setPiece.variant === 'box') return decideBoxSetPiece(player, allPlayers, setPiece.type === 'corner' ? 'corner' : 'free_kick', setPiece.routine, setPiece.fmCorner);
+      // Stage 12: a dead-ball goal kick follows its plan — short to the centre-back off the box, or long past half-way.
+      if (setPiece.type === 'goal_kick' && setPiece.goalKick) {
+        const ownGoalX = player.attackDir === 1 ? 0 : PITCH_LENGTH;
+        const mates = allPlayers.filter(p => p.team === player.team && p.id !== player.id && p.role !== 'GK');
+        if (mates.length > 0) {
+          const t = setPiece.goalKick.kind === 'short' ? goalKickShortSpot(ownGoalX, setPiece.goalKick.side) : goalKickLongPoint(ownGoalX, setPiece.goalKick.side);
+          const near = mates.reduce((a, b) => (Math.hypot(b.x - t.x, b.y - t.y) < Math.hypot(a.x - t.x, a.y - t.y) ? b : a));
+          if (setPiece.goalKick.kind === 'short') return { type: 'pass', targetId: near.id };
+          return { type: 'long_ball', toX: t.x, toY: t.y, targetId: near.id };
+        }
+      }
       if (setPiece.type === 'free_kick' || setPiece.type === 'goal_kick') {
         const d = decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells);
         if (setPiece.type === 'free_kick' && (d.type === 'shoot' || d.type === 'through_ball' || d.type === 'cross')) return d;

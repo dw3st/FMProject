@@ -14,6 +14,8 @@ import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import type { H2HSide, H2HSideView } from "@/types/h2hTypes";
 import { navigate } from "@/GameInterface/router/navigation";
+import { MatchModeChips } from "@/GameInterface/Highlights/MatchModeChips";
+import { readHighlightLevel, readMatchMode } from "@/GameInterface/artPrefs";
 
 const STATUS_CLASS = { away: "text-muted-foreground", in: "text-foreground", ready: "text-primary" } as const;
 /** How long the reason a room closed stays on screen before the dashboard. */
@@ -80,6 +82,14 @@ export function MatchRoomScreen() {
     lastThem.current = themStatus;
   }, [themStatus]);
   useEffect(() => armReadySound(), []);
+
+  // The mode remembered in this browser goes to the room once (stage 22); the chips send every change.
+  const modeSent = useRef(false);
+  useEffect(() => {
+    if (!lobby || !mySide || modeSent.current) return;
+    modeSent.current = true;
+    h2h.setMode(readMatchMode(), readHighlightLevel());
+  }, [lobby, mySide]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!h2h.closed) return;
@@ -166,6 +176,21 @@ export function MatchRoomScreen() {
       </div>
       <p className="text-sm text-foreground m-0" role="status" aria-live="polite">{statusLine}</p>
       {error && <p className="text-sm text-destructive m-0" role="alert">{t(groupAdvanceErrorKey(error))}</p>}
+      <div className="flex flex-col gap-2">
+        <MatchModeChips onChange={(mode, level) => h2h.setMode(mode, level)} />
+        <p className="text-sm text-muted-foreground m-0">
+          {t("h2h.room.modeOther", {
+            name: nameOf(them),
+            mode: them.mode === "highlights" ? `${t("match.mode.highlights")} (${t(`match.highlights.level.${them.level}`)})` : t("match.mode.full"),
+          })}
+          {" · "}
+          <span className="text-foreground font-semibold">
+            {t("h2h.room.modeResult", {
+              mode: room.mode === "highlights" ? `${t("match.mode.highlights")} (${t(`match.highlights.level.${room.level}`)})` : t("match.mode.full"),
+            })}
+          </span>
+        </p>
+      </div>
       <p className="text-sm text-muted-foreground m-0">{t("h2h.room.penaltiesManual")}</p>
       <div className="flex flex-wrap items-center gap-4">
         <Button variant="secondary" onClick={() => { navigate("/formation"); }}>

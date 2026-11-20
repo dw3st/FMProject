@@ -3,7 +3,7 @@ import { CUSTOM_PRESETS } from "@/Domain/formation/zones";
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import {
   canPause, canResume, closeRoom, endPause, finishRoom, joinRoom, leaveRoom, newRoom,
-  isH2HSpeed, matchSpeed, parseH2HCommand, pauseExpired, roomView, setReady, setSideSpeed, startPause, type H2HRoom,
+  isH2HSpeed, matchHighlightLevel, matchPlayMode, matchSpeed, parseH2HCommand, setSideMode, pauseExpired, roomView, setReady, setSideSpeed, startPause, type H2HRoom,
 } from "@/Domain/h2h/h2hRules";
 
 const T0 = 1_000_000;
@@ -167,6 +167,31 @@ describe("match speed", () => {
   });
 });
 
+describe("play mode (stage 22)", () => {
+  const lobby = () => joinRoom(joinRoom(newRoom({
+    saveId: "s1", fixtureId: "f1", date: "2027-03-01",
+    sides: { A: { seatId: "a", nickname: "Ana", clubId: "33", clubName: "Home" }, B: { seatId: "b", nickname: null, clubId: "40", clubName: "Away" } },
+  }), "A").room, "B").room;
+
+  test("only the lances when both ask, at the more complete level", () => {
+    let r = setSideMode(lobby(), "A", "highlights", "main");
+    expect(matchPlayMode(r)).toBe("full");
+    r = setSideMode(r, "B", "highlights", "full");
+    expect(matchPlayMode(r)).toBe("highlights");
+    expect(matchHighlightLevel(r)).toBe("full");
+    expect(roomView(r).mode).toBe("highlights");
+  });
+
+  test("lobby only, valid choices only", () => {
+    const r = lobby();
+    expect(setSideMode(r, "A", "fast", "main")).toBe(r);
+    expect(setSideMode(r, "A", "highlights", "all")).toBe(r);
+    expect(setSideMode(liveRoom(), "A", "highlights", "main")).toEqual(liveRoom());
+    expect(parseH2HCommand({ kind: "skip" })).toEqual({ kind: "skip" });
+    expect(parseH2HCommand({ kind: "skip", x: 1 })).toBeNull();
+  });
+});
+
 describe("roomView", () => {
   test("copies the room state", () => {
     const r = startPause(liveRoom(), "A", T0);
@@ -174,11 +199,13 @@ describe("roomView", () => {
     expect(v).toEqual({
       saveId: "s1", fixtureId: "f1", date: "2027-03-01", phase: "live",
       sides: {
-        A: { seatId: "a", nickname: "Ana", clubId: "33", clubName: "Home", status: "ready", pausesLeft: 2, connected: true, speed: 1 },
-        B: { seatId: "b", nickname: null, clubId: "40", clubName: "Away", status: "ready", pausesLeft: 3, connected: true, speed: 1 },
+        A: { seatId: "a", nickname: "Ana", clubId: "33", clubName: "Home", status: "ready", pausesLeft: 2, connected: true, speed: 1, mode: "full", level: "extended" },
+        B: { seatId: "b", nickname: null, clubId: "40", clubName: "Away", status: "ready", pausesLeft: 3, connected: true, speed: 1, mode: "full", level: "extended" },
       },
       pause: { by: "A", until: T0 + 30_000 },
       speed: 1,
+      mode: "full",
+      level: "extended",
     });
     v.sides.A.pausesLeft = 0;
     expect(r.sides.A.pausesLeft).toBe(2);

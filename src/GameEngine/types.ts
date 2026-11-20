@@ -162,7 +162,14 @@ export interface SetPiece {
   wallIds?: number[];
   /** The manager's routine drawn for this corner / crossed free kick (`set-pieces-play.md` → "Jogadas ensaiadas"). */
   routine?: SetPieceRoutine;
+  /** Stage 12 (`FM_SET_PIECES`): a corner's decided target, drawn at the award by FM's shares. */
+  fmCorner?: 'six_centre' | 'near_post' | 'far_post' | 'short';
+  /** Stage 12: a dead-ball goal kick's plan, drawn at the award (short to the centre-back on `side`, or long). */
+  goalKick?: { kind: 'short' | 'long'; side: 1 | -1 };
 }
+
+/** How a set piece was taken (stage 12, `setPieceTaken`). */
+export type SetPieceDelivery = 'short' | 'six_centre' | 'near_post' | 'far_post' | 'penalty_spot' | 'zone' | 'long' | 'pass' | 'shot';
 
 
 /** What a set-piece goal came from (`GameState.setPiecePhase`, `goalScored.setPiece`). */

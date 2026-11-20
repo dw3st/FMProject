@@ -634,3 +634,10 @@ Prop `highlights` (`HighlightPlayback`) of `PixiPitch`: at every pump with time 
 `jump` restores the forecast snapshot (`restoreLiveSnapshot`, render pair, transitions, replay and celebration reset),
 `freeze` holds the clock. Orders outside a tick call `invalidate`. Prop `presentationSpeed` keeps the celebration at
 the label speed when the pitch runs faster (mode A). See `game-engine/live-modes.md`.
+
+## Remote frames of many steps (engine rebuild stage 22)
+
+The server (and the solo broadcast) sends frames at a fixed real rate (`H2H.FRAME_MS`); a frame covers `steps` sim steps
+(up to ~52 at 4× in mode A). `remotePositions` blends the players with the jump limit × `steps` and the ball along the
+frame's `path` (`ballAlong`, the ball at every step in between); a `jump` frame (mode B skipped a stretch) is drawn as
+is. The blend step is the frame gap whatever the speed.

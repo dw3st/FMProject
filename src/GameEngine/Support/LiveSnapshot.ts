@@ -9,14 +9,14 @@
  */
 import type { GameState } from '@/GameEngine/types';
 import { exportStatsState, importStatsState, type StatsSnapshot } from '@/GameEngine/Domain/Statistics';
-import { exportRatings, importRatings } from '@/GameEngine/Domain/PlayerRating';
+import { exportRatingState, importRatingState, type RatingState } from '@/GameEngine/Domain/PlayerRating';
 import { exportEngineMemory, importEngineMemory, type EngineMemory } from '@/GameEngine/Support/EngineMemory';
 import { loadMatchRng } from '@/GameEngine/Infrastructure/MatchRng';
 
 export interface LiveSnapshot {
   state: GameState;
   stats: StatsSnapshot;
-  ratings: Array<[number, number]>;
+  ratings: RatingState;
   memory: EngineMemory;
 }
 
@@ -34,13 +34,13 @@ export function snapshotState(state: GameState): GameState {
  * states are never mutated, a tick returns a new one.
  */
 export function captureLiveSnapshot(state: GameState): LiveSnapshot {
-  return { state: snapshotState(state), stats: exportStatsState(), ratings: exportRatings(), memory: exportEngineMemory() };
+  return { state: snapshotState(state), stats: exportStatsState(), ratings: exportRatingState(), memory: exportEngineMemory() };
 }
 
 /** Restores the counters, the memory and the generator; returns the state to tick from. */
 export function restoreLiveSnapshot(snap: LiveSnapshot): GameState {
   importStatsState(snap.stats);
-  importRatings(snap.ratings);
+  importRatingState(snap.ratings);
   importEngineMemory(snap.memory);
   if (snap.state.rng !== undefined) loadMatchRng(snap.state.rng);
   return snap.state;

@@ -11,7 +11,7 @@ import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { setTeamAi } from "@/GameEngine/Configs/InstructionConfig";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
 import type { EngineWeather } from "@/GameEngine/Configs/WeatherConfig";
-import { applyTeamInstructions, createMatchState, setManMarksBySlot, LEGACY_CLOCK_SCALE, withClockScale } from "@/GameEngine/Domain/gameState";
+import { applyTeamInstructions, createMatchState, setManMarksBySlot, withClockScale } from "@/GameEngine/Domain/gameState";
 import type { Formation, GameState, SetPieceTakers, TeamId } from "@/GameEngine/types";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { pitchInjury } from "@/Domain/facilities/turf";
@@ -84,9 +84,8 @@ export interface LiveMatchInput {
   /** Seed of the match generator (`GameEngine/Infrastructure/MatchRng.ts`); absent = drawn. */
   seed?: number;
   /**
-   * Game-seconds per physical second (`GameState.clockScale`). The solo live match (stage 19, `live-modes.md`) plays the
-   * 90 physical minutes (1); absent = `LEGACY_CLOCK_SCALE`, the compressed clock the broadcast and the match between two
-   * managers keep until stage 22.
+   * Game-seconds per physical second (`GameState.clockScale`). Absent = 1: the solo live match (stage 19) and the match
+   * between two managers (stage 22) play the 90 physical minutes; `LEGACY_CLOCK_SCALE` only for quick tests.
    */
   clockScale?: number;
 }
@@ -157,9 +156,8 @@ export function buildLiveMatchState(input: LiveMatchInput): GameState {
     ...(input.aggregate ? { aggregate: input.aggregate } : {}),
     ...(SIDES.some((t) => input[t].penalty2d) ? { penaltyInteractive: SIDES.filter((t) => input[t].penalty2d) } : {}),
   };
-  // The solo live match plays the 90 physical minutes (stage 19); the match between two managers keeps the compressed
-  // clock (5 real minutes at 1×) until stage 22 adapts it (`match-flow.md`).
-  const scale = input.clockScale ?? LEGACY_CLOCK_SCALE;
+  // Every live match plays the 90 physical minutes (stages 19 and 22); a compressed clock only on request (tests).
+  const scale = input.clockScale ?? 1;
   if (scale !== 1) state = withClockScale(state, scale);
   // Player instructions of each human side: the saved slot instructions and this match's man-marking.
   for (const team of SIDES) {

@@ -114,10 +114,19 @@ export interface DecisionFlags {
    *  possession of a slot, the player instructions and the AI's instructions by the score. Off = the axes only (the
    *  instructions' extra effects read 0, the AI keeps its style). */
   TEAM_INSTRUCTIONS: boolean;
+  /** Stage 17 (`player-scores.md` → "Stage 17"): the rating from FM's hooks (goal quality, decisive goal, xG
+   *  shortfall, chances created, xA, blocks, clearances, mistakes leading to goals, saves by difficulty), computed from
+   *  per-player tallies with weights sized for the 90-minute event volume. Off = the legacy event weights. */
+  FM_RATINGS: boolean;
   /** Stage 11 (`keeper.md` → "Stage 11"): FM's keeper — on his line with the opponent on the ball within 35 m, a step
    *  up as the ball goes away (2.7 / 6 / 10.5 m), no 1-v-1 rush and no sweeper; he comes for a high ball only when he
    *  gets to it first, within his claim depth. Off = the active keeper of 7.7 (arc, rush, sweeper). */
   FM_KEEPER: boolean;
+  /** Stage 12 (`set-pieces-play.md` → "Stage 12"): FM's set pieces — corners to the six-yard line centre / posts /
+   *  short by FM's shares with ten defenders in the box, short throw-ins (40 % backward) from short options, goal kicks
+   *  short to the centre-back off the box or long past half-way, the set-piece launch error (base 90), direct free
+   *  kicks from up to 29 m. Off = the set pieces of Etapa 14. */
+  FM_SET_PIECES: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -163,8 +172,9 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   LONG_SHOTS: true,
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
-  TEAM_INSTRUCTIONS: true,
+  TEAM_INSTRUCTIONS: true, FM_RATINGS: true,
   FM_KEEPER: true,
+  FM_SET_PIECES: true,
 };
 
 /**

@@ -3,7 +3,9 @@
 import type { WatchCloseReason, WatchEventPayload, WatchFramePayload, WatchInfo, WatchStatePayload } from "@/types/watchTypes";
 import type { KickOutcome, PenaltyChoice } from "@/Domain/penalty/penaltyKick";
 import type { LiveScoreFrame, LiveScoreView, SeatResult, TauntMeta } from "@/types/rivalsTypes";
-import type { H2HCloseReason, H2HCommand, H2HFrame, H2HRoomView, H2HSide, H2HSpeed, H2HWireState, H2HWireStats } from "@/types/h2hTypes";
+import type { H2HCloseReason, H2HCommand, H2HFrame, H2HHighlightsView, H2HJump, H2HRoomView, H2HSide, H2HSpeed, H2HWireState, H2HWireStats } from "@/types/h2hTypes";
+import type { MatchPlayMode } from "@/Domain/match/liveModes";
+import type { HighlightLevel } from "@/GameEngine/Domain/Highlights";
 
 export type FriendStatus = "online" | "offline" | "playing";
 
@@ -83,6 +85,8 @@ export type ClientEvent =
   | { type: "h2h_pause" }
   | { type: "h2h_resume" }
   | { type: "h2h_speed"; speed: H2HSpeed }
+  /** Lobby only (stage 22): how this manager wants the match to play. */
+  | { type: "h2h_mode"; mode: MatchPlayMode; level: HighlightLevel }
   | { type: "h2h_leave" }
   | { type: "h2h_penalty"; choice: PenaltyChoice }
   // Watching a friend's live match: the spectator joins and leaves; the friend's browser relays its match (only after
@@ -135,6 +139,11 @@ export type ServerEvent =
   | { type: "h2h_closed"; saveId: string; fixtureId: string; reason: H2HCloseReason }
   | { type: "h2h_done"; saveId: string; fixtureId: string }
   | { type: "h2h_penalty_result"; saveId: string; fixtureId: string; outcome: KickOutcome }
+  // Stage 22, mode B on the server: the lances, a jump (its news), the other manager's order, the skip votes.
+  | { type: "h2h_highlights"; saveId: string; fixtureId: string; view: H2HHighlightsView }
+  | { type: "h2h_jump"; saveId: string; fixtureId: string; jump: H2HJump }
+  | { type: "h2h_order"; saveId: string; fixtureId: string; side: H2HSide; kind: H2HCommand["kind"] }
+  | { type: "h2h_skip_votes"; saveId: string; fixtureId: string; sides: H2HSide[] }
   // Watching a friend's live match. To who plays: someone watches (relay your match) / nobody any more.
   | { type: "watch_on"; saveId: string }
   | { type: "watch_off"; saveId: string }

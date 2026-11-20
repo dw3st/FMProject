@@ -1039,3 +1039,29 @@ Solo: "Avançar até o próximo jogo" pede ao servidor um dia por requisição (
 Cada liga com assento não põe mais a rodada inteira no motor completo: só os jogos dos clubes com assento vão ao motor,
 num pool de workers, em paralelo (`non-player-games.md` → "Motor completo só nos jogos humanos"). Dia de rodada com 3
 assentos: 31,8 s → 7,4 s (compressão de hoje); com 90 minutos de física, 2 jogos de assentos no mesmo dia em 37 s, não 57.
+
+### 90 minutos e os dois modos (reforma do motor, etapa 22)
+
+- **Relógio:** o jogo entre técnicos joga os 90 minutos físicos (`clockScale` 1, padrão de `buildLiveMatchState`). Modo A:
+  tempo real × velocidade (a menor das duas escolhas) × `MODE_A_SPEED` (13, ~7 min a 1×); modo B: só os lances, a
+  previsão num worker aninhado do worker da partida (`h2hMatch.ts`, `HighlightPlayback`). As pausas de apresentação
+  (pré-jogo, intervalo, VAR, pênaltis) seguem em segundos reais nos dois modos.
+- **Sala:** chips Partida (Inteira / Só os lances e o nível) em `/match-room`, gravados no navegador e mandados por
+  `h2h_mode { mode, level }` (só no saguão); a sala mostra a escolha do outro e o que vai valer: só os lances quando os
+  dois pedem, no nível mais completo dos dois (`setSideMode`, `matchPlayMode`, `matchHighlightLevel`, `H2HRoomView.mode`).
+- **Modo B:** o servidor manda `h2h_highlights` (janelas sem os retratos, alcance, "Simulando…"), `h2h_jump` (as notícias do
+  trecho pulado, para o resumo) e quadros com `jump`. Uma ordem de qualquer um (troca, mentalidade, tática, formação,
+  instrução, marcação, posição; também o auxiliar entrando e o viés do árbitro) refaz a previsão a partir daquele
+  instante, e só o outro técnico recebe `h2h_order` (aviso "Fulano mudou a tática"). "Próximo lance" (`{ kind: "skip" }`)
+  pula quando todo técnico no comando pediu (`h2h_skip_votes`); quem está no auxiliar não segura.
+- **Quadros:** uma taxa real fixa, `H2H.FRAME_MS` (5 por s), nunca um por passo. Cada quadro leva `steps` (passos desde o
+  anterior), `path` (a bola em cada passo, 0,1 jarda, até 64 pontos), `rate` (segundos de jogo por segundo real, o relógio
+  da tela) e `jump`. O desenho (`remoteInterp.ts`) mistura os jogadores com o limite de salto × `steps` e a bola pelo
+  `path`; um `jump` é desenhado sem mistura.
+- **Transmissão (parte 8):** os quadros do servidor vão aos espectadores como antes, com os campos novos; a partida
+  sozinha manda `relay_frame` a cada 200 ms reais com os mesmos `steps` / `path` / `jump` (o `realtime.ts` aceita os campos
+  opcionais). O espectador vê o que quem joga está vendo, pulos do modo B inclusive.
+- **Avanço em grupo:** os jogos de clube dos assentos já iam ao pool (`matchPool.ts`, etapa 1); os jogos de seleção de um
+  assento simulados no motor também (`runRecording`, `nationalWorld.ts` começa todos antes de aplicar o primeiro).
+- Testes: `src/backend/h2h/h2hMatch.test.ts` (ritmo do modo A, quadros, modo B com previsão em linha, mesma ordem dá a
+  mesma partida, votos), `src/Domain/h2h/h2hRules.test.ts`, `src/GraficsEngine/remoteInterp.test.ts`.

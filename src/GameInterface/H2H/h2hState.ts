@@ -28,6 +28,7 @@ export type H2HServerEvent = Extract<ServerEvent, { type: `h2h_${string}` }>;
 
 const H2H_TYPES = new Set([
   "h2h_room", "h2h_frame", "h2h_state", "h2h_event", "h2h_paused", "h2h_closed", "h2h_done", "h2h_penalty_result",
+  "h2h_highlights", "h2h_jump", "h2h_order", "h2h_skip_votes",
 ]);
 
 /**
@@ -61,6 +62,18 @@ export function parseH2HEvent(raw: unknown, saveId: string, fixtureId: string): 
         : null;
     case "h2h_event":
       return typeof e.name === "string" ? (v as H2HServerEvent) : null;
+    case "h2h_highlights": {
+      const view = e.view as { windows?: unknown } | undefined;
+      return view && Array.isArray(view.windows) ? (v as H2HServerEvent) : null;
+    }
+    case "h2h_jump": {
+      const jump = e.jump as { events?: unknown } | undefined;
+      return jump && Array.isArray(jump.events) ? (v as H2HServerEvent) : null;
+    }
+    case "h2h_order":
+      return (e.side === "A" || e.side === "B") && typeof e.kind === "string" ? (v as H2HServerEvent) : null;
+    case "h2h_skip_votes":
+      return Array.isArray(e.sides) ? (v as H2HServerEvent) : null;
     case "h2h_penalty_result":
       return e.outcome && typeof e.outcome === "object" && typeof (e.outcome as { scored?: unknown }).scored === "boolean"
         ? (v as H2HServerEvent)

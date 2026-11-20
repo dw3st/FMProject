@@ -6,6 +6,8 @@ import { MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import type { InstructionLevel, Mentality, PressLevel, SlotInstruction, TacticalStyle, TeamInstructions } from "@/types/tacticsTypes";
 import { isLevel, parseTeamInstructions } from "@/Domain/tactics/teamInstructions";
 import type { H2HCommand, H2HPhase, H2HRoomView, H2HSeatStatus, H2HSide, H2HSpeed } from "@/types/h2hTypes";
+import { HIGHLIGHT_LEVELS, type HighlightLevel } from "@/GameEngine/Domain/Highlights";
+import { isMatchPlayMode, type MatchPlayMode } from "@/Domain/match/liveModes";
 
 /** One side of a room (pure state; the sockets live elsewhere). */
 export interface H2HRoomSide {
@@ -18,6 +20,9 @@ export interface H2HRoomSide {
   connected: boolean;
   /** The speed he asked for (1 until he picks another). */
   speed: H2HSpeed;
+  /** How he wants the match to play (stage 22): chosen in the room, before the start. */
+  mode: MatchPlayMode;
+  level: HighlightLevel;
 }
 
 /** The pure state of a live-match room. */
@@ -41,7 +46,7 @@ export interface H2HRoomChange {
 const SIDES: readonly H2HSide[] = ["A", "B"];
 
 function freshSide(id: H2HSideIdentity): H2HRoomSide {
-  return { ...id, status: "away", pausesLeft: H2H.PAUSES, connected: false, speed: 1 };
+  return { ...id, status: "away", pausesLeft: H2H.PAUSES, connected: false, speed: 1, mode: "full", level: "extended" };
 }
 
 function withSide(room: H2HRoom, side: H2HSide, patch: Partial<H2HRoomSide>): H2HRoom {
@@ -121,6 +126,31 @@ export function matchSpeed(room: H2HRoom): H2HSpeed {
   return asked.length === 0 ? 1 : (Math.min(...asked) as H2HSpeed);
 }
 
+export function isHighlightLevel(v: unknown): v is HighlightLevel {
+  return (HIGHLIGHT_LEVELS as readonly unknown[]).includes(v);
+}
+
+/** A manager picks how the match plays, in the lobby only (the same room otherwise or with nothing new). */
+export function setSideMode(room: H2HRoom, side: H2HSide, mode: unknown, level: unknown): H2HRoom {
+  if (room.phase !== "lobby" || !isMatchPlayMode(mode) || !isHighlightLevel(level)) return room;
+  const cur = room.sides[side];
+  if (cur.mode === mode && cur.level === level) return room;
+  return withSide(room, side, { mode, level });
+}
+
+/**
+ * How the match plays (stage 22): only the lances when both managers asked for them (one who wants the whole match
+ * gets it), at the more complete of their two levels (one who wants more lances sees them).
+ */
+export function matchPlayMode(room: H2HRoom): MatchPlayMode {
+  return SIDES.every((s) => room.sides[s].mode === "highlights") ? "highlights" : "full";
+}
+
+export function matchHighlightLevel(room: H2HRoom): HighlightLevel {
+  const rank = (l: HighlightLevel) => HIGHLIGHT_LEVELS.indexOf(l);
+  return SIDES.map((s) => room.sides[s].level).reduce((a, b) => (rank(b) > rank(a) ? b : a));
+}
+
 export function canPause(room: H2HRoom, side: H2HSide, _now: number): boolean {
   return room.phase === "live" && room.pause === null && room.sides[side].pausesLeft > 0;
 }
@@ -155,6 +185,8 @@ export function roomView(room: H2HRoom): H2HRoomView {
     sides: { A: side("A"), B: side("B") },
     pause: room.pause ? { ...room.pause } : null,
     speed: matchSpeed(room),
+    mode: matchPlayMode(room),
+    level: matchHighlightLevel(room),
   };
 }
 
@@ -219,6 +251,9 @@ export function parseH2HCommand(raw: unknown): H2HCommand | null {
     case "complain":
       if (!hasOnly(raw, ["kind"])) return null;
       return { kind: "complain" };
+    case "skip":
+      if (!hasOnly(raw, ["kind"])) return null;
+      return { kind: "skip" };
     case "mentality":
       if (!hasOnly(raw, ["kind", "mentality"]) || !MENTALITY_OPTIONS.includes(raw.mentality as Mentality)) return null;
       return { kind: "mentality", mentality: raw.mentality as Mentality };

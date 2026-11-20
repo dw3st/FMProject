@@ -19,6 +19,7 @@ import { computeOpenAngle } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
 import { ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
+import { FM_SET_PIECES as FS, SP_YD_PER_M } from '@/GameEngine/Configs/FmSetPieceConfig';
 
 /** A player told to stay back (`staysBack` role variant): he is not sent forward at a box set piece. */
 const staysBack = (p: GamePlayer): boolean => !!(p.instruction?.variant && ROLE_VARIANTS[p.instruction.variant]?.staysBack);
@@ -94,9 +95,9 @@ export function distToGoalCentre(pos: Pos, goalX: number): number {
 }
 
 /** Free kick at `pos` for a team attacking in `attackDir` is shot directly: within range, central, outside the box. */
-export function isDirectFreeKick(pos: Pos, attackDir: 1 | -1): boolean {
+export function isDirectFreeKick(pos: Pos, attackDir: 1 | -1, range: number = C.DIRECT_FK_RANGE): boolean {
   const goalX = goalXFor(attackDir);
-  if (distToGoalCentre(pos, goalX) > C.DIRECT_FK_RANGE) return false;
+  if (distToGoalCentre(pos, goalX) > range) return false;
   if ((goalX - pos.x) * attackDir < 0) return false;
   if (isInGoalScoreArea(pos.x, pos.y, goalX)) return false;
   return computeOpenAngle(pos.x, pos.y, goalX) >= C.DIRECT_FK_MIN_ANGLE;
@@ -142,7 +143,7 @@ export function wallSpots(ball: Pos, goalX: number, n: number): Pos[] {
  * The 10-yard rule: `pos` pushed out along the ball→pos direction to at least `min` yards from
  * `ball` (straight back toward `goalX` when it sits on the ball). Kept on the pitch.
  */
-export function keepDistanceFromBall(pos: Pos, ball: Pos, goalX: number, min = C.MIN_DEFENDER_DISTANCE): Pos {
+export function keepDistanceFromBall(pos: Pos, ball: Pos, goalX: number, min: number = C.MIN_DEFENDER_DISTANCE): Pos {
   const dx = pos.x - ball.x;
   const dy = pos.y - ball.y;
   const d = Math.hypot(dx, dy);
@@ -308,6 +309,8 @@ export function defendingBoxPositions(
   ball: Pos,
   goalX: number,
   kind: BoxSetPieceKind,
+  /** Stage 12 (FM): nobody on the edge player or the short option at a corner — ten defenders (keeper included) in the box. */
+  fm = false,
 ): DefendingBoxLayout {
   const s = goalX === PITCH_LENGTH ? 1 : -1; // +x toward the goal
   const fromLine = (d: number) => goalX - s * d;
@@ -358,8 +361,10 @@ export function defendingBoxPositions(
     positions.set(m.id, clampPos(p));
   };
   if (kind === 'corner') place({ x: fromLine(1.5), y: nearLow ? GOAL_Y_MIN + 0.5 : GOAL_Y_MAX - 0.5 });
-  if (att.edgeId !== null) { const e = posOf(att.edgeId); place(e ? towardGoal(e, 1.5) : null); }
-  if (att.shortId !== null) { const sh = posOf(att.shortId); place(sh ? towardGoal(sh, 3) : null); }
+  if (!fm || kind !== 'corner') {
+    if (att.edgeId !== null) { const e = posOf(att.edgeId); place(e ? towardGoal(e, 1.5) : null); }
+    if (att.shortId !== null) { const sh = posOf(att.shortId); place(sh ? towardGoal(sh, 3) : null); }
+  }
 
   // Zonal: the rest inside the box (or holding the line on a free kick).
   const lineDepth = kind === 'corner' ? 9 : freeKickLineDepth(ball, goalX);
@@ -446,4 +451,128 @@ export function evaluateBoxSetPiece(
     out.push({ kind: 'short', x: short.x, y: short.y, raw, targetId: short.id, attackers: 0, defenders: 0 });
   }
   return out.sort((a, b) => b.raw - a.raw);
+}
+
+// ── Stage 12: FM's set pieces (`set-pieces-play.md` → "Stage 12") ─────────────
+
+/** FM's decided corner targets (R8 §4.1). */
+export type FmCornerTarget = 'six_centre' | 'near_post' | 'far_post' | 'short';
+
+/** Draws the corner's decided target by FM's shares: six-yard line centre / near post / far post / short. */
+export function drawFmCornerTarget(rng: () => number): FmCornerTarget {
+  const u = rng();
+  if (u < FS.CORNER_SHORT_SHARE) return 'short';
+  if (u < FS.CORNER_SHORT_SHARE + FS.CORNER_POST_SHARE) return u < FS.CORNER_SHORT_SHARE + FS.CORNER_POST_SHARE / 2 ? 'near_post' : 'far_post';
+  return 'six_centre';
+}
+
+/** The point of a decided corner target for a corner from `ball` toward the goal at `attackDir`. */
+export function fmCornerPoint(target: Exclude<FmCornerTarget, 'short'>, ball: Pos, attackDir: 1 | -1): Pos {
+  const goalX = goalXFor(attackDir);
+  const x = goalX - attackDir * FS.CORNER_TARGET_DEPTH_M * SP_YD_PER_M;
+  const nearSign = ball.y < CENTRE_Y ? -1 : 1; // the near post is on the ball's side
+  const lat = FS.CORNER_POST_LATERAL_M * SP_YD_PER_M;
+  const y = target === 'six_centre' ? CENTRE_Y : CENTRE_Y + (target === 'near_post' ? nearSign : -nearSign) * lat;
+  return { x, y };
+}
+
+/** Players inside the penalty area of the goal at `goalX` (keepers counted unless `withKeeper` is false). */
+export function inBoxCount(players: readonly GamePlayer[], goalX: number, withKeeper = true): number {
+  return players.filter(p => (withKeeper || p.role !== 'GK') && isInGoalScoreArea(p.x, p.y, goalX)).length;
+}
+
+/** The three short options of a throw-in at `spot` (on a touchline) for a team attacking in `attackDir`. */
+export function throwInOptionSpots(spot: Pos, attackDir: 1 | -1): Pos[] {
+  const inward = spot.y <= CENTRE_Y ? 1 : -1;
+  const m = SP_YD_PER_M;
+  return [
+    { x: spot.x - attackDir * FS.THROW_OPTION_BACK_M * m, y: spot.y + inward * FS.THROW_OPTION_BACK_IN_M * m },
+    { x: spot.x + attackDir * FS.THROW_OPTION_FWD_M * m, y: spot.y + inward * FS.THROW_OPTION_FWD_IN_M * m },
+    { x: spot.x - attackDir * 1, y: spot.y + inward * FS.THROW_OPTION_IN_M * m },
+  ].map(clampPos);
+}
+
+/**
+ * Throw-in: the taker on the touchline, the nearest outfield teammates (one per short option, in order) on the short
+ * options; everyone else stays where he was. Opponents too close to the thrower step back to the 2 m law. Returns the
+ * moved players' new positions.
+ */
+export function throwInPositions(players: readonly GamePlayer[], takerId: number, spot: Pos): Map<number, Pos> {
+  const taker = players.find(p => p.id === takerId);
+  const out = new Map<number, Pos>();
+  if (!taker) return out;
+  out.set(takerId, { ...spot });
+  const used = new Set<number>([takerId]);
+  for (const s of throwInOptionSpots(spot, taker.attackDir)) {
+    const cand = players.filter(p => p.team === taker.team && p.role !== 'GK' && !used.has(p.id));
+    if (cand.length === 0) break;
+    const best = cand.reduce((a, b) => (Math.hypot(b.x - s.x, b.y - s.y) < Math.hypot(a.x - s.x, a.y - s.y) ? b : a));
+    used.add(best.id);
+    out.set(best.id, s);
+  }
+  const min = FS.THROW_OPP_MIN_M * SP_YD_PER_M;
+  for (const p of players) {
+    if (p.team === taker.team) continue;
+    if (Math.hypot(p.x - spot.x, p.y - spot.y) < min) out.set(p.id, keepDistanceFromBall(p, spot, goalXFor(taker.attackDir), min));
+  }
+  return out;
+}
+
+/** The throw-in's receivers: teammates within FM's range, then backward (THROW_BACK_SHARE) or forward as `u` picks
+ *  (the other side when that pool is empty). */
+export function throwInPool<T extends { x: number; y: number; role: PlayerRole }>(
+  thrower: { x: number; y: number; attackDir: 1 | -1 }, mates: readonly T[], u: number,
+): { pool: T[]; backward: boolean } {
+  const range = FS.THROW_RANGE_M * SP_YD_PER_M;
+  const inRange = mates.filter(p => p.role !== 'GK' && Math.hypot(p.x - thrower.x, p.y - thrower.y) <= range);
+  const all = inRange.length > 0 ? inRange : [...mates];
+  const back = all.filter(p => (p.x - thrower.x) * thrower.attackDir < 0);
+  const fwd = all.filter(p => (p.x - thrower.x) * thrower.attackDir >= 0);
+  const wantBack = u < FS.THROW_BACK_SHARE;
+  if (wantBack && back.length > 0) return { pool: back, backward: true };
+  if (!wantBack && fwd.length > 0) return { pool: fwd, backward: false };
+  return back.length > 0 ? { pool: back, backward: true } : { pool: fwd, backward: false };
+}
+
+/** A goal kick's plan: short to the centre-back off the box on `side` (+1 = high y), or long past half-way. */
+export interface GoalKickPlan { kind: 'short' | 'long'; side: 1 | -1 }
+
+export function drawGoalKickPlan(rng: () => number): GoalKickPlan {
+  const kind = rng() < FS.GOAL_KICK_SHORT_SHARE ? 'short' : 'long';
+  return { kind, side: rng() < 0.5 ? -1 : 1 };
+}
+
+/** Where the centre-back takes a short goal kick (own goal line at `ownGoalX`). */
+export function goalKickShortSpot(ownGoalX: number, side: 1 | -1): Pos {
+  const into = ownGoalX === 0 ? 1 : -1;
+  return { x: ownGoalX + into * FS.GK_SHORT_DEPTH_M * SP_YD_PER_M, y: CENTRE_Y + side * FS.GK_SHORT_LATERAL_M * SP_YD_PER_M };
+}
+
+/** Where a long goal kick lands (own goal line at `ownGoalX`). */
+export function goalKickLongPoint(ownGoalX: number, side: 1 | -1): Pos {
+  const into = ownGoalX === 0 ? 1 : -1;
+  return clampPos({ x: ownGoalX + into * FS.GK_LONG_FROM_LINE_M * SP_YD_PER_M, y: CENTRE_Y + side * FS.GK_LONG_LATERAL_M * SP_YD_PER_M });
+}
+
+/** The two centre-backs (else two defenders, else anyone outfield) on the two short goal-kick spots. */
+export function goalKickBackSpots(players: readonly GamePlayer[], team: 'A' | 'B', ownGoalX: number): Map<number, Pos> {
+  const out = new Map<number, Pos>();
+  const mates = players.filter(p => p.team === team && p.role !== 'GK');
+  const cbs = mates.filter(p => p.role === 'CB');
+  const defs = mates.filter(p => DEFENDER_ROLES.has(p.role));
+  const pool = cbs.length >= 2 ? cbs : defs.length >= 2 ? defs : mates;
+  for (const side of [-1, 1] as const) {
+    const s = goalKickShortSpot(ownGoalX, side);
+    const cand = pool.filter(p => !out.has(p.id));
+    if (cand.length === 0) break;
+    out.set(cand.reduce((a, b) => (Math.abs(b.y - s.y) < Math.abs(a.y - s.y) ? b : a)).id, s);
+  }
+  return out;
+}
+
+/** Opponents of a goal kick wait outside the penalty area of the goal at `goalX` (the law): pushed to its edge. */
+export function outsideBox(p: Pos, goalX: number): Pos {
+  if (!isInGoalScoreArea(p.x, p.y, goalX)) return p;
+  const into = goalX === 0 ? 1 : -1;
+  return { x: goalX + into * 19, y: p.y };
 }

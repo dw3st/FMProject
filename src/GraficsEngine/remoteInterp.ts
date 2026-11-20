@@ -12,11 +12,19 @@ import { arcHeight } from "@/GraficsEngine/ballHeight";
 import { BALL_HEIGHT } from "@/GraficsEngine/pitchStyle";
 import { lerpPos, type DrawnBall, type Pos } from "@/GraficsEngine/renderInterp";
 
-/** A position frame as the pitch keeps it: when it arrived (local ms), the ball and every player by id. */
+/**
+ * A position frame as the pitch keeps it: when it arrived (local ms), the ball and every player by id. Stage 22: frames
+ * come at a fixed real rate, so one may cover many sim steps (`steps`; a 4× mode A frame ~52): the players are blended
+ * with a jump limit that many times larger, the ball along `path` (where it was at each step in between); `jump` = the
+ * match skipped to another moment (mode B): drawn as is, never blended.
+ */
 export interface RemoteFrame {
   at: number;
   ball: Pos;
   players: Map<number, Pos>;
+  steps?: number;
+  path?: Pos[];
+  jump?: boolean;
 }
 
 /** The two frames the drawing blends between (`seq` grows with every frame, so readers can spot a new one). */
@@ -35,11 +43,32 @@ export interface RemoteFeed {
   stepMs: number;
 }
 
-/** A frame off the wire (`[id, x, y]` players, `[x, y]` ball) received at `at`. */
-export function toRemoteFrame(wire: { ball: [number, number]; players: [number, number, number][] }, at: number): RemoteFrame {
+/** A frame off the wire (`[id, x, y]` players, `[x, y]` ball, the optional steps / path / jump) received at `at`. */
+export function toRemoteFrame(
+  wire: { ball: [number, number]; players: [number, number, number][]; steps?: number; path?: [number, number][]; jump?: boolean },
+  at: number,
+): RemoteFrame {
   const players = new Map<number, Pos>();
   for (const [id, x, y] of wire.players) players.set(id, { x, y });
-  return { at, ball: { x: wire.ball[0], y: wire.ball[1] }, players };
+  return {
+    at, ball: { x: wire.ball[0], y: wire.ball[1] }, players,
+    ...(typeof wire.steps === "number" && wire.steps > 1 ? { steps: wire.steps } : {}),
+    ...(Array.isArray(wire.path) && wire.path.length > 0 ? { path: wire.path.map(([x, y]) => ({ x, y })) } : {}),
+    ...(wire.jump ? { jump: true } : {}),
+  };
+}
+
+/**
+ * The ball at `alpha` (0..1) of the way from `from` to `last`: along the steps' path when the frame has one (each step
+ * an equal share of the time), else straight.
+ */
+export function ballAlong(from: Pos, last: RemoteFrame, alpha: number, maxStep: number): Pos {
+  const pts = last.path;
+  if (!pts || pts.length === 0) return lerpPos(from, last.ball, alpha, maxStep * Math.max(1, last.steps ?? 1));
+  const all = [from, ...pts, last.ball];
+  const f = clamp(alpha, 0, 1) * (all.length - 1);
+  const i = Math.min(all.length - 2, Math.floor(f));
+  return lerpPos(all[i]!, all[i + 1]!, f - i, maxStep);
 }
 
 /** The pair after a new frame: the newest becomes `last`, the old `last` becomes `prev`. */
@@ -66,14 +95,16 @@ export function remotePositions(
   const last = frames.last;
   if (!last) return null;
   const prev = frames.prev;
-  if (!prev) return { players: new Map(last.players), ball: { ...last.ball } };
+  if (!prev || last.jump) return { players: new Map(last.players), ball: { ...last.ball } };
   const alpha = remoteAlpha(now, last.at, step);
   const players = new Map<number, Pos>();
+  // A frame of many steps: a player moves up to `maxStep` per step.
+  const playerMax = maxStep * Math.max(1, last.steps ?? 1);
   for (const [id, cur] of last.players) {
     const was = prev.players.get(id);
-    players.set(id, was ? lerpPos(was, cur, alpha, maxStep) : { x: cur.x, y: cur.y });
+    players.set(id, was ? lerpPos(was, cur, alpha, playerMax) : { x: cur.x, y: cur.y });
   }
-  return { players, ball: lerpPos(prev.ball, last.ball, alpha, ballMaxStep) };
+  return { players, ball: ballAlong(prev.ball, last, alpha, ballMaxStep) };
 }
 
 /** How far from the flight line (yards) a drawn ball may be and still be on that flight. */

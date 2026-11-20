@@ -92,3 +92,23 @@ describe("heldBallId", () => {
     expect(heldBallId({ ...(st as object), pass: {} } as never, players, { x: 50, y: 30 }, false)).toBeNull();
   });
 });
+
+describe("frames of many steps (stage 22)", () => {
+  test("the ball follows the steps' path, not the straight line", () => {
+    let f = pushRemoteFrame(EMPTY_REMOTE_FRAMES, frame(1000, [0, 0], [[1, 0, 0]]));
+    // A pass out to (10, 10) and back to (0, 20) within one frame of 4 steps.
+    f = pushRemoteFrame(f, toRemoteFrame({ ball: [0, 20], players: [[1, 12, 0]], steps: 4, path: [[5, 5], [10, 10], [5, 15]] }, 1200));
+    const mid = remotePositions(f, 1300, 200, 4, 30)!;
+    expect(mid.ball).toEqual({ x: 10, y: 10 });
+    // The player moved 12 yards in 4 steps (over the 4-yard limit of one step): blended, the limit is per step.
+    expect(mid.players.get(1)).toEqual({ x: 6, y: 0 });
+  });
+
+  test("a mode B jump is drawn as is", () => {
+    let f = pushRemoteFrame(EMPTY_REMOTE_FRAMES, frame(1000, [0, 0], [[1, 0, 0]]));
+    f = pushRemoteFrame(f, toRemoteFrame({ ball: [80, 30], players: [[1, 70, 30]], jump: true }, 1200));
+    const r = remotePositions(f, 1250, 200, 4)!;
+    expect(r.ball).toEqual({ x: 80, y: 30 });
+    expect(r.players.get(1)).toEqual({ x: 70, y: 30 });
+  });
+});

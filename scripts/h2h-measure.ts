@@ -4,7 +4,8 @@
  *   bun scripts/h2h-measure.ts [seconds=30] [matches=100]
  *
  * (a) CPU and RSS of the server process with 1 and then 3 matches running at the same time in real Bun Workers
- *     (`src/backend/h2h/h2hWorker.ts`) at 1× for `seconds` of real time each.
+ *     (`src/backend/h2h/h2hWorker.ts`) at 1× for `seconds` of real time each, in mode A (the 90' at ×13) and in mode B
+ *     (the lances, the forecast in a nested worker) — stage 22. `H2H_MODES=full` keeps only mode A.
  * (b) Bytes per second one browser receives: the worker messages slimmed and serialized the way the rooms do
  *     (`wireState` / `wirePlayer` of `h2hRooms.ts`, benches only when they change, the statistics snapshot every 3 s).
  *     Counted on the first 1× run, starting at kickoff of the measured window (the pre-match presentation included).
@@ -65,8 +66,8 @@ function wireMeter() {
   let bytes = 0;
   let benchSig = { A: "", B: "" };
   let lastSnapshotAt = -Infinity;
-  const count: Record<string, number> = { frame: 0, state: 0, event: 0 };
-  const byType: Record<string, number> = { frame: 0, state: 0, event: 0 };
+  const count: Record<string, number> = { frame: 0, state: 0, event: 0, other: 0 };
+  const byType: Record<string, number> = { frame: 0, state: 0, event: 0, other: 0 };
   return {
     count,
     byType,
@@ -91,18 +92,22 @@ function wireMeter() {
           type: "h2h_state", saveId: "x".repeat(12), fixtureId: "x".repeat(12),
           state: benches ? full : wireState(m.state, false), stats,
         });
+      } else if (m.type === "highlights" || m.type === "jump" || m.type === "skipVotes" || m.type === "order") {
+        const { type, ...rest } = m;
+        json = JSON.stringify({ type: `h2h_${type}`, saveId: "x".repeat(12), fixtureId: "x".repeat(12), ...rest });
       } else return;
       const n = Buffer.byteLength(json);
       bytes += n;
-      count[m.type] = (count[m.type] ?? 0) + 1;
-      byType[m.type] = (byType[m.type] ?? 0) + n;
+      const k = m.type in count ? m.type : "other";
+      count[k] = (count[k] ?? 0) + 1;
+      byType[k] = (byType[k] ?? 0) + n;
     },
   };
 }
 
 // ── (a) real workers at 1× ───────────────────────────────────────────────────
 
-async function runWorkers(n: number, seconds: number) {
+async function runWorkers(n: number, seconds: number, mode: "full" | "highlights" = "full") {
   const workerUrl = new URL("../src/backend/h2h/h2hWorker.ts", import.meta.url);
   const meters = Array.from({ length: n }, () => wireMeter());
   const workers: Worker[] = [];
@@ -111,7 +116,7 @@ async function runWorkers(n: number, seconds: number) {
     const w = new Worker(workerUrl);
     const meter = meters[i]!;
     w.onmessage = (e: MessageEvent<WorkerOut>) => meter.add(e.data, performance.now() - t0);
-    w.postMessage({ type: "init", input: input() });
+    w.postMessage({ type: "init", input: input(), mode, level: "extended" });
     workers.push(w);
   }
   // Let the workers load and start before measuring.
@@ -143,18 +148,20 @@ async function runWorkers(n: number, seconds: number) {
 const mb = (n: number) => n.toFixed(0);
 console.log(`RSS before any match: ${mb(process.memoryUsage().rss / 1024 / 1024)} MB`);
 
-for (const n of [1, 3]) {
-  const r = await runWorkers(n, SECONDS);
-  console.log(`\n(a) ${n} match(es), ${r.wall.toFixed(1)} s at 1x: CPU ${r.cpuPct.toFixed(1)}% of one core, RSS ${mb(r.rssMB)} MB (peak ${mb(r.rssPeakMB)} MB)`);
+const MODES = (process.env.H2H_MODES ?? "full,highlights").split(",") as ("full" | "highlights")[];
+for (const mode of MODES) for (const n of [1, 3]) {
+  const r = await runWorkers(n, SECONDS, mode);
+  console.log(`\n(a) mode ${mode}, ${n} match(es), ${r.wall.toFixed(1)} s at 1x: CPU ${r.cpuPct.toFixed(1)}% of one core, RSS ${mb(r.rssMB)} MB (peak ${mb(r.rssPeakMB)} MB)`);
   console.log(`(b) bytes/s per browser: ${r.bps.map((b) => (b / 1024).toFixed(1) + " KB/s").join(", ")}`);
   if (n === 1) {
     const m = r.meter;
-    for (const t of ["frame", "state", "event"]) {
+    for (const t of ["frame", "state", "event", "other"]) {
       console.log(`    ${t}: ${m.count[t]} messages, avg ${m.count[t] ? Math.round(m.byType[t]! / m.count[t]!) : 0} B`);
     }
   }
 }
 
+if (process.env.H2H_SKIP_GOALS === "1") process.exit(0);
 // ── (c) goals per match ──────────────────────────────────────────────────────
 
 function stats(xs: number[]) {

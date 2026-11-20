@@ -1530,9 +1530,11 @@
       "CK": "Escanteios",
       "DFK": "Faltas Diretas (gols)",
       "SPG": "Gols de Bola Parada",
-      "NAME": "Nome"
+      "NAME": "Nome",
+      "RT": "Nota da partida (ganchos do FM; dica: de onde veio)"
     },
-    "subbedOff": "Substituído aos {{minute}}'"
+    "subbedOff": "Substituído aos {{minute}}'",
+    "momentumPoints": "Pontos de momento (tabela do FM): {{a}} – {{b}}"
   },
   "match": {
     "mode": {
@@ -1765,6 +1767,13 @@
       "attacking": "Ataque",
       "balanced": "Equil.",
       "defensive": "Defesa"
+    },
+    "momentum": {
+      "title": "Momento",
+      "even": "Equilibrado",
+      "left": "Time da esquerda",
+      "right": "Time da direita",
+      "onTop": "{{team}} por cima"
     }
   },
   "broadcast": {
@@ -8220,7 +8229,12 @@
       "start": "Começar",
       "ready": "Pronto",
       "noMatch": "Hoje não há jogo ao vivo contra outro técnico.",
-      "penaltiesManual": "Pênaltis: nos jogos entre técnicos, cada um bate e defende os seus."
+      "penaltiesManual": "Pênaltis: nos jogos entre técnicos, cada um bate e defende os seus.",
+      "modeOther": "{{name}} quer: {{mode}}",
+      "modeResult": "A partida vai ser: {{mode}}",
+      "orderOther": "{{name}} mudou a tática",
+      "skipAsked": "Esperando {{name}} para pular",
+      "skipOther": "{{name}} quer o próximo lance"
     },
     "invite": {
       "popup": "{{name}} está te esperando para o jogo ao vivo",

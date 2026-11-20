@@ -2,10 +2,11 @@
 export const WATCH = {
   /** Spectators of one live match. */
   MAX_WATCHERS: 8,
-  /** The friend's browser: a position frame every this many real ms, a state every `STATE_MS` (and after events). */
+  /**
+   * The friend's browser: a position frame every this many real ms whatever the speed and the mode (stage 22: with the
+   * ball at every step in between), a state every `STATE_MS` (and after events).
+   */
   FRAME_MS: 200,
-  /** Never two relayed frames closer than this (a fast match sends at most ~10 a second). */
-  FRAME_MIN_MS: 90,
   STATE_MS: 1_000,
   /** Socket limits on what the friend's browser relays (per socket, per second; excess dropped in silence). */
   FRAMES_PER_SEC: 12,
@@ -21,5 +22,5 @@ export const WATCH_EVENTS: ReadonlySet<string> = new Set([
   "offsideCalled", "injury", "playerSubstituted", "positionsSwapped", "varCheck", "varReview", "halfTime", "extraTimeStart",
   "penaltyKick", "shootoutEnd", "matchStart", "matchEnd", "kickOff", "shot", "shotResolved", "header",
   // The players' sprite poses (art phase 2): passes and tackles.
-  "managerCard", "passAttempted", "passCompleted", "crossStarted", "longBallStarted", "throughBallStarted", "tackle", "gkClaim", "holderMove",
+  "managerCard", "passAttempted", "passCompleted", "crossStarted", "longBallStarted", "throughBallStarted", "tackle", "gkClaim", "holderMove", "momentumPoints",
 ]);

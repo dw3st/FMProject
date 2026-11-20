@@ -26,7 +26,7 @@ import { addDays } from "@/Domain/dates";
 import { isGroupWorld, laterDate } from "@/Domain/groupAdvance/groupAdvance";
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import {
-  canPause, canResume, closeRoom as closeRoomState, endPause, finishRoom, joinRoom, leaveRoom, newRoom, pauseExpired,
+  canPause, canResume, matchHighlightLevel, matchPlayMode, setSideMode, closeRoom as closeRoomState, endPause, finishRoom, joinRoom, leaveRoom, newRoom, pauseExpired,
   matchSpeed, roomView, setReady, setSideSpeed, startPause, type H2HRoom,
 } from "@/Domain/h2h/h2hRules";
 import { newMatchSeed } from "@/GameEngine/Infrastructure/MatchRng";
@@ -337,7 +337,18 @@ function onFrame(rec: Rec, m: Extract<WorkerOut, { type: "frame" }>): void {
 
 function onEngineMessage(rec: Rec, m: WorkerOut): void {
   if (rooms.get(rec.key) !== rec || rec.room.phase !== "live") return;
+  const at = { saveId: rec.room.saveId, fixtureId: rec.room.fixtureId };
   if (m.type === "frame") onFrame(rec, m);
+  else if (m.type === "highlights") toSockets(rec, { type: "h2h_highlights", ...at, view: m.view });
+  else if (m.type === "jump") toSockets(rec, { type: "h2h_jump", ...at, jump: m.jump });
+  else if (m.type === "skipVotes") toSockets(rec, { type: "h2h_skip_votes", ...at, sides: m.sides });
+  else if (m.type === "order") {
+    // Only the other manager is told (mode B forecasts again; his screen says the tactics changed).
+    const other: H2HSide = m.side === "A" ? "B" : "A";
+    const event: ServerEvent = { type: "h2h_order", ...at, side: m.side, kind: m.kind };
+    const json = JSON.stringify(event);
+    for (const [ws, side] of rec.sockets) if (side === other) sendRaw(ws, json);
+  }
   else if (m.type === "event") onEvent(rec, m.name, m.payload);
   else if (m.type === "state") onState(rec, m.state, m.stats);
   else if (m.type === "done") void finishMatch(rec, m.state, m.stats);
@@ -611,6 +622,17 @@ function speed(ws: SocialSocket, value: H2HSpeed): void {
   broadcastRoom(rec);
 }
 
+/** In the lobby a manager picks the whole match or only the lances (stage 22); both see both choices. */
+function modeChoice(ws: SocialSocket, mode: unknown, level: unknown): void {
+  const rec = recOf(ws);
+  const side = rec && sideOfSocket(rec, ws);
+  if (!rec || !side || rec.starting) return;
+  const next = setSideMode(rec.room, side, mode, level);
+  if (next === rec.room) return;
+  rec.room = next;
+  broadcastRoom(rec);
+}
+
 function armPauseTimer(rec: Rec): void {
   if (rec.pauseTimer) clearTimeout(rec.pauseTimer);
   rec.pauseTimer = null;
@@ -665,6 +687,7 @@ export async function handleH2HEvent(
     case "h2h_pause": pause(ws); break;
     case "h2h_resume": resume(ws); break;
     case "h2h_speed": speed(ws, event.speed); break;
+    case "h2h_mode": modeChoice(ws, event.mode, event.level); break;
     case "h2h_leave": leaveSocket(ws); break;
   }
 }
@@ -729,6 +752,8 @@ export function h2hMatchInput(home: SetupBody, away: SetupBody): LiveMatchInput 
     B: sideInput(away, date),
     date,
     knockout: fixture.knockout === true,
+    // The 90 physical minutes (stage 22): the worker runs them at the mode's pace.
+    clockScale: 1,
     ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),
     ...(home.pitch ? { pitch: { condition: home.pitch.condition, turf: home.pitch.turf } } : {}),
     ...(home.weatherEffect ? { weather: home.weatherEffect.effective } : {}),
@@ -788,7 +813,7 @@ async function startMatch(rec: Rec): Promise<void> {
       void failLive(rec);
     },
   );
-  rec.engine.post({ type: "init", input });
+  rec.engine.post({ type: "init", input, mode: matchPlayMode(rec.room), level: matchHighlightLevel(rec.room) });
   for (const side of SIDES) if (!rec.room.sides[side].connected) rec.engine.post({ type: "auto", side, on: true });
   // Rivals: the server sends both seats' live score (the browsers' frames for this game are ignored).
   const [homeSq, awaySq] = [home.mySquad, away.mySquad];

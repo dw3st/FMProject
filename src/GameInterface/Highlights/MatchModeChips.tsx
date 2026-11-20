@@ -6,8 +6,11 @@ import {
   type HighlightLevelPref, type MatchPlayMode,
 } from "@/GameInterface/artPrefs";
 
-/** "Partida: Inteira / Só os lances" and, for the lances, the level (match preview, stage 19). */
-export function MatchModeChips() {
+/**
+ * "Partida: Inteira / Só os lances" and, for the lances, the level (match preview, stage 19; match room, stage 22).
+ * `onChange` hears every choice (the room sends it to the other manager); it is remembered per browser either way.
+ */
+export function MatchModeChips({ onChange }: { onChange?: (mode: MatchPlayMode, level: HighlightLevelPref) => void } = {}) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<MatchPlayMode>(() => readMatchMode());
   const [level, setLevel] = useState<HighlightLevelPref>(() => readHighlightLevel());
@@ -16,14 +19,14 @@ export function MatchModeChips() {
       <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("match.mode.label")}</span>
       <OptionChips
         value={mode}
-        onChange={(k) => { setMode(k as MatchPlayMode); writeMatchMode(k as MatchPlayMode); }}
+        onChange={(k) => { setMode(k as MatchPlayMode); writeMatchMode(k as MatchPlayMode); onChange?.(k as MatchPlayMode, level); }}
         options={MATCH_PLAY_MODES.map((m) => ({ key: m, label: t(`match.mode.${m}`) }))}
         aria-label={t("match.mode.label")}
       />
       {mode === "highlights" && (
         <OptionChips
           value={level}
-          onChange={(k) => { setLevel(k as HighlightLevelPref); writeHighlightLevel(k as HighlightLevelPref); }}
+          onChange={(k) => { setLevel(k as HighlightLevelPref); writeHighlightLevel(k as HighlightLevelPref); onChange?.(mode, k as HighlightLevelPref); }}
           options={HIGHLIGHT_LEVEL_PREFS.map((l) => ({ key: l, label: t(`match.highlights.level.${l}`) }))}
           aria-label={t("match.highlights.levelLabel")}
         />

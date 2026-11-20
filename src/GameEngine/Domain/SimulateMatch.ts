@@ -332,7 +332,7 @@ export function simulateMatch(
 
   // Reset shared accumulators so live-game stats don't bleed in
   initStats(s.players.map(p => ({ id: p.id, team: p.team })));
-  initRatings(s.players.map(p => p.id));
+  initRatings(s.players.map(p => ({ id: p.id, team: p.team })));
   emitStudyPlans(s);
 
   const dt = options.simDt ?? SIM_DT;

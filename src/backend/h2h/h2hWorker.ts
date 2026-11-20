@@ -4,7 +4,7 @@
  * this file only wires messages and the real-time loop (`H2H.TICK_MS`).
  *
  * In : `WorkerIn` (init, cmd, pause, resume, auto, speed, penalty).
- * Out: `WorkerOut` (frame, state, event, done). The worker stops its loop after `done`.
+ * Out: `WorkerOut` (frame, state, event, highlights, jump, order, skipVotes, done). The worker stops its loop after `done`.
  */
 import { createH2HMatch, type H2HMatch } from "@/backend/h2h/h2hMatch";
 import { H2H } from "@/Domain/h2h/h2hConfig";
@@ -42,7 +42,7 @@ self.onmessage = (e: MessageEvent<WorkerIn>) => {
   const msg = e.data;
   if (msg.type === "init") {
     if (match) return;
-    match = createH2HMatch(msg.input);
+    match = createH2HMatch(msg.input, { mode: msg.mode, level: msg.level });
     if (pendingSpeed !== null) match.setSpeed(pendingSpeed);
     last = now();
     timer = setInterval(loop, H2H.TICK_MS);

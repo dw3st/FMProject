@@ -5,14 +5,14 @@
  *
  * In : `{ id, job }`. Out: `{ id, ok: true, result, ms }` or `{ id, ok: false, error }`.
  */
-import { runFullMatchJob, type FullMatchJob } from "@/backend/matchPoolJob";
+import { runPoolJob, type PoolJob } from "@/backend/matchPoolJob";
 
 declare const self: Worker;
 
-self.onmessage = (e: MessageEvent<{ id: number; job: FullMatchJob }>) => {
+self.onmessage = (e: MessageEvent<{ id: number; job: PoolJob }>) => {
   const { id, job } = e.data;
   try {
-    const { result, ms } = runFullMatchJob(job);
+    const { result, ms } = runPoolJob(job);
     postMessage({ id, ok: true, result, ms });
   } catch (err) {
     postMessage({ id, ok: false, error: err instanceof Error ? (err.stack ?? err.message) : String(err) });

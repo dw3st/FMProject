@@ -85,6 +85,8 @@ import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { MatchEventBanner, type MatchBannerItem } from "@/GameInterface/MatchEventBanner";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/GameInterface/MatchSummaryPanel";
+import { MomentumBar } from "@/GameInterface/Momentum/MomentumBar";
+import { useMomentum } from "@/GameInterface/Momentum/useMomentum";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
@@ -142,6 +144,7 @@ import {
 } from "@/Domain/match/possessionHeatmap";
 import { accumulatePossession } from "@/Domain/match/possession";
 import { HighlightPlayback, workerForecastPort, type PlaybackJump, type PlaybackView } from "@/GameEngine/Support/HighlightPlayback";
+import type { ForecastEvent } from "@/GameEngine/Support/ForecastCore";
 import { forecastWorkerUrl } from "@/Domain/match/forecastWorkerUrl";
 import { exportEngineMemory, importEngineMemory } from "@/GameEngine/Support/EngineMemory";
 import { HighlightStrip } from "@/GameInterface/Highlights/HighlightStrip";
@@ -193,6 +196,43 @@ function assertSavedMyClubTactics(t: TacticsSave): void {
       throw new Error(`my club: tactics.lineup[${i}] is not a valid player id`);
     }
   }
+}
+
+
+/**
+ * The feed of a stretch the highlights mode skipped (stage 19; between two managers, stage 22): the misses, offsides,
+ * missed penalties, disallowed goals and VAR calls the page did not play.
+ */
+function skippedFeedItems(
+  events: readonly ForecastEvent[], st: GameState, t: (k: string, o?: Record<string, unknown>) => string,
+): MatchFeedItem[] {
+  const all = [...st.players, ...st.benchA, ...st.benchB];
+  const nameOf = (id: number) => all.find((p) => p.id === id)?.name ?? "";
+  const teamOfId = (id: number): TeamId => all.find((p) => p.id === id)?.team ?? "A";
+  const items: MatchFeedItem[] = [];
+  for (const e of events) {
+    const minute = Math.max(0, e.minute);
+    if (e.name === "shotResolved") {
+      const p = e.payload as { player: number; isGoal: boolean; inPosts: boolean };
+      if (!p.isGoal) items.push({ minute, team: teamOfId(p.player), kind: p.inPosts ? "shotSaved" : "shotWide", player: nameOf(p.player) });
+    } else if (e.name === "offsideCalled") {
+      const p = e.payload as { team: TeamId; receiverId: number };
+      items.push({ minute, team: p.team, kind: "offside", player: nameOf(p.receiverId) });
+    } else if (e.name === "penaltyResolved") {
+      const p = e.payload as { team: TeamId; takerId: number; scored: boolean };
+      if (!p.scored) items.push({ minute, team: p.team, kind: "penaltyMissed", player: nameOf(p.takerId) });
+    } else if (e.name === "goalDisallowed") {
+      const p = e.payload as { team: TeamId; scorerId: number };
+      items.push({ minute, team: p.team, kind: "goalDisallowed", player: nameOf(p.scorerId) });
+    } else if (e.name === "varReview") {
+      const p = e.payload as { kind: string; outcome: "confirmed" | "overturned"; against: TeamId };
+      if (p.kind !== "goal") {
+        const overturned = p.outcome === "overturned";
+        items.push({ minute, team: p.against === "A" ? "B" : "A", kind: overturned ? "varOverturned" : "varConfirmed", player: "", what: t(`var.decision.${p.kind}.${p.outcome}`) });
+      }
+    }
+  }
+  return items;
 }
 
 export function MatchScreen() {
@@ -747,7 +787,7 @@ export function MatchScreen() {
           else if (state.matchPhase === "extraTimeBreak") setMatchOverlay("extraTime");
           showNotice(t("match.resumed"), "info");
         } else {
-          initRatings(state.players.map(p => p.id));
+          initRatings(state.players.map(p => ({ id: p.id, team: p.team })));
           initStats(state.players.map(p => ({ id: p.id, team: p.team })));
         }
         setRatings(getAllRatings());
@@ -991,6 +1031,8 @@ export function MatchScreen() {
   // two managers runs in the server, which relays it itself.
   const relayLive = liveRivals.relay;
   const watchLookRef = useRef<WatchLook | null>(null);
+  /** Mode B jumped (the broadcast's next frame snaps). */
+  const relayJumpRef = useRef(false);
   useEffect(() => {
     const saveId = liveTarget?.saveId;
     if (!liveRivals.watched || h2hModeRef.current || !saveId) return;
@@ -1003,15 +1045,28 @@ export function MatchScreen() {
       const s = gameStateRef.current;
       return fixtureId && s ? { fixtureId, s } : null;
     };
+    // Stage 22: a frame every FRAME_MS of real time with the ball at every step in between (mode A runs ~13 steps a
+    // frame), and the mode B jumps flagged so the spectator snaps instead of blending.
+    let path: [number, number][] = [];
+    let steps = 0;
     const sendFrame = () => {
       const cur = at();
       if (!cur) return;
       const ball = getBallPos(cur.s);
+      const jump = relayJumpRef.current;
+      relayJumpRef.current = false;
+      const pts = path.slice(0, -1);
+      const sample = pts.length > 64 ? Array.from({ length: 64 }, (_, i) => pts[Math.floor((i * pts.length) / 64)]!) : pts;
       relayLive({
         type: "relay_frame", saveId, fixtureId: cur.fixtureId, t: performance.now(), ball: [ball.x, ball.y],
         players: cur.s.players.map((p) => [p.id, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100] as [number, number, number]),
         minute: matchMinute(cur.s), phase: cur.s.matchPhase, score: { ...cur.s.score },
+        steps,
+        ...(sample.length > 0 && !jump ? { path: sample } : {}),
+        ...(jump ? { jump: true as const } : {}),
       });
+      path = [];
+      steps = 0;
     };
     const sendState = () => {
       soon = null;
@@ -1046,10 +1101,13 @@ export function MatchScreen() {
     }, 250);
     // Frames and states follow the simulation's steps (they keep coming with the tab hidden, where timers slow down).
     let lastFrameAt = 0;
-    const offStep = gameBus.on("stateChanged", () => {
+    const offStep = gameBus.on("stateChanged", (st) => {
       const now = performance.now();
-      // Every simulation step (5 a second at 1x), never closer than FRAME_MIN_MS (2x / 4x).
-      if (now - lastFrameAt >= WATCH.FRAME_MIN_MS) { lastFrameAt = now; sendFrame(); }
+      const b = getBallPos(st);
+      path.push([Math.round(b.x * 10) / 10, Math.round(b.y * 10) / 10]);
+      steps++;
+      // A fixed real rate (FRAME_MS), whatever the speed and the mode; a jump goes out at once.
+      if (now - lastFrameAt >= WATCH.FRAME_MS || relayJumpRef.current) { lastFrameAt = now; sendFrame(); }
       if (now - lastStateAt >= WATCH.STATE_MS) { lastStateAt = now; sendState(); }
     });
     const offs = [...WATCH_EVENTS].map((name) => gameBus.on(name as keyof GameEvents, (payload: unknown) => {
@@ -1078,6 +1136,17 @@ export function MatchScreen() {
     setNotice({ text, tone });
     injuryTimerRef.current = setTimeout(() => setNotice(null), 3500);
   }, []);
+
+  // Mode B between two managers (stage 22): the other manager's order makes the server forecast again; he says so.
+  const lastOtherOrder = useRef(0);
+  useEffect(() => {
+    const o = h2h.otherOrder;
+    if (!h2hMode || !o || o.seq === lastOtherOrder.current) return;
+    lastOtherOrder.current = o.seq;
+    if (h2h.room?.mode !== "highlights" || !h2h.mySide) return;
+    const them = h2h.room.sides[h2h.mySide === "A" ? "B" : "A"];
+    showNotice(t("h2h.room.orderOther", { name: them.nickname ?? them.clubName }), "info");
+  }, [h2hMode, h2h.otherOrder, h2h.room, h2h.mySide, showNotice, t]);
 
   useEffect(() => {
     const nameOf = (id: number) => gameStateRef.current?.players.find((p) => p.id === id)?.name ?? "";
@@ -1209,31 +1278,10 @@ export function MatchScreen() {
       const st = j.point.snap.state;
       possessionRef.current = { ...j.point.ui.possession };
       heatmapRef.current = importPossessionHeatmap(j.point.ui.heatmap, st);
-      const all = [...st.players, ...st.benchA, ...st.benchB];
-      const nameOf = (id: number) => all.find((p) => p.id === id)?.name ?? "";
-      const teamOfId = (id: number): TeamId => all.find((p) => p.id === id)?.team ?? "A";
-      const items: MatchFeedItem[] = [];
+      relayJumpRef.current = true;
+      const items = skippedFeedItems(j.events, st, t as never);
       for (const e of j.events) {
-        const minute = Math.max(0, e.minute);
-        if (e.name === "shotResolved") {
-          const p = e.payload as { player: number; isGoal: boolean; inPosts: boolean };
-          if (!p.isGoal) items.push({ minute, team: teamOfId(p.player), kind: p.inPosts ? "shotSaved" : "shotWide", player: nameOf(p.player) });
-        } else if (e.name === "offsideCalled") {
-          const p = e.payload as { team: TeamId; receiverId: number };
-          items.push({ minute, team: p.team, kind: "offside", player: nameOf(p.receiverId) });
-        } else if (e.name === "penaltyResolved") {
-          const p = e.payload as { team: TeamId; takerId: number; scored: boolean };
-          if (!p.scored) items.push({ minute, team: p.team, kind: "penaltyMissed", player: nameOf(p.takerId) });
-        } else if (e.name === "goalDisallowed") {
-          const p = e.payload as { team: TeamId; scorerId: number };
-          items.push({ minute, team: p.team, kind: "goalDisallowed", player: nameOf(p.scorerId) });
-        } else if (e.name === "varReview") {
-          const p = e.payload as { kind: string; outcome: "confirmed" | "overturned"; against: TeamId };
-          if (p.kind !== "goal") {
-            const overturned = p.outcome === "overturned";
-            items.push({ minute, team: p.against === "A" ? "B" : "A", kind: overturned ? "varOverturned" : "varConfirmed", player: "", what: t(`var.decision.${p.kind}.${p.outcome}`) });
-          }
-        } else if (e.name === "card") {
+        if (e.name === "card") {
           // The friends see the card of a skipped stretch too (`live_score`).
           const p = e.payload as { playerName: string; team: TeamId; card: "yellow" | "red"; minute: number };
           const fixtureId = liveFixtureRef.current;
@@ -1255,6 +1303,24 @@ export function MatchScreen() {
     return () => { offJump(); offView(); pb.dispose(); };
   }, [playMode, h2hMode, matchLoaded, t]);
   useEffect(() => { hlLevelRef.current = hlLevel; playback?.setLevel(hlLevel); }, [hlLevel, playback]);
+
+  // Mode B between two managers (stage 22): the server plays the lances; its view drives the timeline and the
+  // "Simulating" badge, its jumps the feed of the skipped stretch.
+  useEffect(() => {
+    if (!h2hMode) return;
+    const v = h2h.highlights;
+    setPlaybackView(v ? { level: v.level, windows: v.windows.map((w) => ({ ...w, at: null })), forecastClock: v.forecastClock, waiting: v.waiting, done: v.done, lastLatencyMs: null } : null);
+  }, [h2hMode, h2h.highlights]);
+  useEffect(() => {
+    if (!h2hMode) return;
+    return h2h.onJump((j) => {
+      const st = gameStateRef.current;
+      if (!st) return;
+      const items = skippedFeedItems(j.events, st, t as never);
+      if (items.length) setEventFeed((f) => [...f, ...items]);
+      if (j.toMinute > j.fromMinute) setSkipNote((n) => ({ from: j.fromMinute + 1, to: j.toMinute + 1, key: (n?.key ?? 0) + 1 }));
+    });
+  }, [h2hMode, h2h.onJump, t]);
   useEffect(() => {
     if (!skipNote) return;
     const id = setTimeout(() => setSkipNote(null), 2200);
@@ -1979,6 +2045,8 @@ export function MatchScreen() {
     const shown = displaySides(isAwayView(matchFixture, crestIds?.a));
     return { left: of(shown.left), right: of(shown.right) };
   }, [touchline, faceRoster, matchKitColors, mySide, matchFixture, crestIds]);
+  // Stage 17: FM's momentum bar (statistics and presentation only).
+  const momentum = useMomentum();
 
   if (loadError) {
     return (
@@ -2016,7 +2084,7 @@ export function MatchScreen() {
   const h2hSpeed = h2h.room?.speed ?? 1;
   // H2H clock: the last state's time, run on by the real time since it arrived (at most 1.5 s, frozen in a pause).
   const shownMatchTime = h2hMode && isLivePhase(gameState.matchPhase) && !h2h.pause
-    ? (gameState.matchTime ?? 0) + Math.min(1.5, Math.max(0, (clockNow - h2hStateAtRef.current) / 1000)) * clockScaleOf(gameState) * h2hSpeed
+    ? (gameState.matchTime ?? 0) + Math.min(1.5, Math.max(0, (clockNow - h2hStateAtRef.current) / 1000)) * (h2h.rate.current || clockScaleOf(gameState) * h2hSpeed)
     : gameState.matchTime ?? 0;
   const mySubsRemaining = mySide === "A" ? gameState.subsRemainingA : gameState.subsRemainingB;
   const myPendingSubs = (mySide === "A" ? gameState.pendingSubsA : gameState.pendingSubsB).length;
@@ -2233,6 +2301,28 @@ export function MatchScreen() {
                     {t("h2h.speed.waiting", { name: sideName(otherH2HSide), speed: h2h.room?.sides[otherH2HSide].speed ?? 1 })}
                   </span>
                 </span>
+                {h2h.room?.mode === "highlights" && (
+                  // Mode B on the server (stage 22): the next lance once both managers ask.
+                  <span className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => sendH2H({ kind: "skip" })}
+                      disabled={h2h.skipVotes.includes(mySide) || !!h2h.pause}
+                      title={t("match.highlights.next")}
+                      className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Icon name="fast-forward" className="w-4 h-4" />
+                      <span className="phone:hidden">{t("match.highlights.next")}</span>
+                    </button>
+                    {h2h.skipVotes.length === 1 && (
+                      <span className="text-sm whitespace-nowrap font-semibold phone:hidden text-muted-foreground">
+                        {h2h.skipVotes[0] === mySide
+                          ? t("h2h.room.skipAsked", { name: sideName(otherH2HSide) })
+                          : t("h2h.room.skipOther", { name: sideName(otherH2HSide) })}
+                      </span>
+                    )}
+                  </span>
+                )}
               </>
             ) : (
               <>
@@ -2608,6 +2698,7 @@ export function MatchScreen() {
           feed={feed}
           extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} open={heatmapOpen} onToggle={toggleHeatmap} />}
           referee={touchline?.referee ?? null}
+          momentum={<MomentumBar bar={awayView ? -momentum.bar : momentum.bar} colorLeft={shownKits.A} colorRight={shownKits.B} nameLeft={shownTeams.A?.name} nameRight={shownTeams.B?.name} />}
         />
           </div>
         </div>

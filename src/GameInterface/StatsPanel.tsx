@@ -5,14 +5,29 @@ import { emptyPlayerStats, getAllPlayerStats, getTeamStats } from "@/GameEngine/
 import type { PlayerStats, TeamStats } from "@/GameEngine/Domain/Statistics";
 import type { GamePlayer, SubstitutionRecord } from "@/GameEngine/types";
 import { kitDotStyle } from "@/GameInterface/matchTeamColors";
+import { getPlayerRating, getRatingTally } from "@/GameEngine/Domain/PlayerRating";
+import { ratingParts } from "@/GameEngine/Domain/RatingModel";
+import { MomentumBar } from "@/GameInterface/Momentum/MomentumBar";
+import { useMomentum } from "@/GameInterface/Momentum/useMomentum";
 
 interface Col {
   label: string;
   titleKey: string;
-  value: (s: PlayerStats) => number | string;
+  /** `id` is the player (absent on the team total row). */
+  value: (s: PlayerStats, id?: number) => number | string;
+  /** Tooltip of a player's cell (stage 17: the rating's parts). */
+  title?: (id: number) => string;
+}
+
+/** Stage 17: a player's rating parts (FM hooks, `ratingParts`) as a one-line tooltip. */
+function ratingTitle(id: number): string {
+  const tally = getRatingTally(id);
+  if (!tally) return "";
+  return Object.entries(ratingParts(tally)).filter(([, v]) => Math.abs(v) >= 0.005).map(([k, v]) => `${k} ${v >= 0 ? "+" : ""}${v.toFixed(2)}`).join(" · ");
 }
 
 const COLS: Col[] = [
+  { label: "RT",   titleKey: "stats.headers.RT",    value: (_s, id) => (id === undefined ? "—" : getPlayerRating(id).toFixed(1)), title: ratingTitle },
   { label: "G",    titleKey: "stats.headers.G",     value: (s) => s.goals },
   { label: "SH",   titleKey: "stats.headers.SH",    value: (s) => s.shots },
   { label: "PA",   titleKey: "stats.headers.PA",    value: (s) => s.passesAttempted },
@@ -121,8 +136,8 @@ function TeamTable({
                 {p.name}
               </div>
               {COLS.map((c) => (
-                <div key={c.label} className="text-center text-muted-foreground">
-                  {c.value(s)}
+                <div key={c.label} className="text-center text-muted-foreground" title={c.title?.(p.id)}>
+                  {c.value(s, p.id)}
                 </div>
               ))}
             </div>
@@ -146,8 +161,8 @@ function TeamTable({
                 {sub.playerOutName}
               </div>
               {COLS.map((c) => (
-                <div key={c.label} className="text-center text-muted-foreground">
-                  {c.value(s)}
+                <div key={c.label} className="text-center text-muted-foreground" title={c.title?.(sub.playerOutId)}>
+                  {c.value(s, sub.playerOutId)}
                 </div>
               ))}
             </div>
@@ -209,6 +224,18 @@ function FitnessSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }
         {t("stats.transitionShots", { defaultValue: "Transition shots" })}:{" "}
         <span className="text-foreground font-bold tabular-nums">{teamA.transitionShots ?? 0} – {teamB.transitionShots ?? 0}</span>
       </span>
+    </div>
+  );
+}
+
+/** Stage 17: FM's momentum bar and points (engine A on the left, as the tables). */
+function MomentumSummary({ colorA, colorB, nameA, nameB }: { colorA: string; colorB: string; nameA?: string; nameB?: string }) {
+  const { t } = useTranslation();
+  const m = useMomentum();
+  return (
+    <div className="px-4 border-b border-border/50">
+      <MomentumBar bar={m.bar} colorLeft={colorA} colorRight={colorB} nameLeft={nameA} nameRight={nameB} timeline={m.timeline} />
+      <p className="m-0 pb-1.5 text-sm text-muted-foreground tabular-nums">{t("stats.momentumPoints", { a: m.points.A, b: m.points.B })}</p>
     </div>
   );
 }
@@ -277,6 +304,7 @@ export function StatsPanel({
         </h3>
       </div>
       <FitnessSummary teamA={teamAStats} teamB={teamBStats} />
+      <MomentumSummary colorA={teamColorA} colorB={teamColorB} nameA={teamNameA} nameB={teamNameB} />
       <KnockoutSummary teamA={teamAStats} teamB={teamBStats} />
       <div className="flex gap-4 p-2">
         <TeamTable team="A" teamName={teamNameA} accentColor={teamColorA} players={teamA} substitutions={substitutions} stats={stats} side="left" />
