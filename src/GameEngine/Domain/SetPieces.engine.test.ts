@@ -7,6 +7,7 @@ import {
 } from "@/GameEngine/Domain/gameState";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
+import { setDecisionFlags } from "@/GameEngine/Configs/DecisionConfig";
 import { initStats, getTeamStats } from "@/GameEngine/Domain/Statistics";
 import { SET_PIECE_CONFIG as SP } from "@/GameEngine/Configs/SetPieceConfig";
 import { emptySeasonLog } from "@/types/playerTypes";
@@ -91,6 +92,8 @@ describe("free kicks", () => {
   });
 
   test("direct free kick: struck wall → loose ball; else a shot flagged freeKick", () => {
+    // The wall dice is the path without the stage-7 shot physics (with it the wall blocks only what flies into it).
+    setDecisionFlags({ SHOT_PHYSICS: false });
     const { s, attacker, defender } = foulSituation(PITCH_LENGTH - 22, 37);
     const fk = { ...foul(s, defender, attacker), setPiece: { ...foul(s, defender, attacker).setPiece!, countdown: 0 } };
     const shots: number[] = [];
@@ -104,6 +107,16 @@ describe("free kicks", () => {
     expect(struck.shot?.freeKick).toBe(true);
     expect(struck.shot?.xg).toBeGreaterThan(0);
     expect(shots).toHaveLength(2);
+    setDecisionFlags();
+  });
+
+  test("direct free kick (stage 7): a physical shot over the wall, no wall dice", () => {
+    const { s, attacker, defender } = foulSituation(PITCH_LENGTH - 22, 37);
+    const fk = { ...foul(s, defender, attacker), setPiece: { ...foul(s, defender, attacker).setPiece!, countdown: 0 } };
+    const struck = startDirectFreeKick(fk, () => 0);
+    expect(struck.shot?.freeKick).toBe(true);
+    expect(struck.shot?.physics?.technique).toBe("free_kick");
+    expect(struck.looseBall).toBeNull();
   });
 
   test("the 10-yard rule: every defender stands at least 10 yards from the ball", () => {

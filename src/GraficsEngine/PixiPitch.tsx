@@ -110,6 +110,11 @@ import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
 import { assignMarkTargets, lineCohesionPull } from "@/GameEngine/Domain/DefensivePositioning";
 import { predictBallPoint } from "@/GameEngine/Domain/BallPrediction";
+import { backLineTarget, fromOwnGoal, passShadowPoint, zoneCoverOf } from "@/GameEngine/Domain/TeamShape";
+import { heldFor } from "@/GameEngine/Domain/ActionHold";
+import { getMainRole } from "@/Domain/roles";
+import { shoulderRunActive } from "@/GameEngine/Domain/ShoulderRuns";
+import { TEAM_SHAPE } from "@/GameEngine/Configs/ShapeConfig";
 import { standOffPoint } from "@/GameEngine/Domain/Movement";
 import { THROUGH_BALL_CONFIG as TB_CFG } from "@/GameEngine/Configs/ThroughBallConfig";
 import {
@@ -431,6 +436,9 @@ export interface DebugOverlays {
   ball3d:                boolean;
   /** Stage 4 (`pass-physics.md`): 1-σ spread of the holder's pass error at each teammate; a physical pass's aim. */
   passError:             boolean;
+  /** Stage 15 (`team-shape.md`): both teams' FM back-line targets, the defending zones and their covers, forwards'
+   *  pass-shadow press points, shoulder runs, and a bar under each player for how long he has held a short action. */
+  shape:                 boolean;
 }
 
 export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
@@ -450,6 +458,7 @@ export const DEFAULT_DEBUG_OVERLAYS: DebugOverlays = {
   movement:              false,
   ball3d:                false,
   passError:             false,
+  shape:                 false,
 };
 
 interface Props {
@@ -5097,6 +5106,50 @@ export function PixiPitch({
               const a = toPixel(p.x, p.y), b = toPixel(mate.x, mate.y), t = toPixel(p.x, p.y + c.pull);
               passLinesGfx.moveTo(a.px, a.py).lineTo(b.px, b.py).stroke({ width: 1, color: 0xfbbf24, alpha: 0.45 });
               passLinesGfx.moveTo(a.px, a.py).lineTo(t.px, t.py).stroke({ width: 3, color: 0xfbbf24, alpha: 0.9 });
+            }
+          }
+
+          // ── Team shape (stage 15): FM back lines, zones and covers, pass shadows, shoulder runs, held actions ──
+          if (ovl.shape && ballHolder) {
+            const st = stateRef.current;
+            const real = getBallPos(st);
+            const pred = predictBallPoint(st, real);
+            for (const team of ['A', 'B'] as const) {
+              const side = st.players.filter(p => p.team === team);
+              if (!side.length) continue;
+              const dir = side[0]!.attackDir;
+              const inPoss = team === ballHolder.team;
+              const depth = backLineTarget(inPoss ? 'attacking' : 'defending', fromOwnGoal((inPoss ? real : pred).x, dir));
+              const lx = inPoss ? (dir === 1 ? depth : PITCH_LENGTH - depth) : (st.backLine?.[team]?.x ?? (dir === 1 ? depth : PITCH_LENGTH - depth));
+              const a = toPixel(lx, 0), b = toPixel(lx, PITCH_WIDTH);
+              passLinesGfx.moveTo(a.px, a.py).lineTo(b.px, b.py).stroke({ width: 2, color: team === 'A' ? 0x60a5fa : 0xf87171, alpha: 0.55 });
+              for (const p of side) {
+                const cover = !inPoss ? zoneCoverOf(p) : undefined;
+                if (cover) {
+                  const pp = toPixel(p.x, p.y), zp = toPixel(cover.x, cover.y);
+                  passLinesGfx.rect(zp.px - 5, zp.py - 5, 10, 10).stroke({ width: 2, color: 0xfacc15, alpha: 0.95 });
+                  passLinesGfx.moveTo(pp.px, pp.py).lineTo(zp.px, zp.py).stroke({ width: 2, color: 0xfacc15, alpha: 0.8 });
+                }
+                const held = heldFor(p.id);
+                if (held > 0) {
+                  const pp = toPixel(p.x, p.y);
+                  const w = Math.min(1, held / TEAM_SHAPE.SHORT_HOLD_S) * 18;
+                  passLinesGfx.rect(pp.px - 9, pp.py + 12, w, 3).fill({ color: 0xe879f9, alpha: 0.9 });
+                }
+                if (shoulderRunActive(p.id)) {
+                  const pp = toPixel(p.x, p.y);
+                  passLinesGfx.circle(pp.px, pp.py, 13).stroke({ width: 2, color: 0x34d399, alpha: 0.95 });
+                }
+                const d = st.decisions[p.id];
+                if (!inPoss && d?.type === 'press' && getMainRole(p.role) === 'Forward') {
+                  const sh = passShadowPoint(p, ballHolder, st.players);
+                  if (sh) {
+                    const pp = toPixel(p.x, p.y), sp = toPixel(sh.x, sh.y);
+                    passLinesGfx.moveTo(pp.px, pp.py).lineTo(sp.px, sp.py).stroke({ width: 1.5, color: 0xe879f9, alpha: 0.8 });
+                    passLinesGfx.circle(sp.px, sp.py, 4).fill({ color: 0xe879f9, alpha: 0.9 });
+                  }
+                }
+              }
             }
           }
 

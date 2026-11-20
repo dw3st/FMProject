@@ -214,6 +214,16 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   ballNearTicks: number;
   ballNearSum: number;
   ballCrowdTicks: number;
+  /** Stage 15 (`team-shape.md`): forward pressing in the pass shadow (per holder–presser pair), zone covers out of
+   *  possession, runs on the shoulder (and those started early, before any pass). */
+  shadowPresses: number;
+  zoneCovers: number;
+  shoulderRuns: number;
+  shoulderRunsEarly: number;
+  /** Seconds this team defended with the pressing state in our third (0–2), the middle (3–5), their third (6–8). */
+  pressStateOwnS: number;
+  pressStateMidS: number;
+  pressStateFinalS: number;
   /** VAR checks whose final decision went against this team. Match total = A + B. */
   varReviews: number;
   /** Of those, overturned calls (the original call favoured this team). */
@@ -284,6 +294,16 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   holderHolds: number;
   holderTurns: number;
   /**
+   * Stage 8 (`holder-choice.md`): FM holder decisions by category (carry / pass / turn / hold / kick), per possession
+   * stint (a new holder starts one), the candidates offered and vetoed (risk 100) summed, decisions on a lapse, and the
+   * new actions (sprint, byline run, spin past the marker, corner-flag hold).
+   */
+  holderChoices: number;
+  holderChoiceCarry: number; holderChoicePass: number; holderChoiceTurn: number; holderChoiceHold: number; holderChoiceKick: number;
+  holderStints: number;
+  holderCandidatesSum: number; holderVetoedSum: number; holderLapseChoices: number;
+  holderSprints: number; holderBylines: number; holderSpins: number; holderFlagHolds: number;
+  /**
    * Stage 3 (`ball-3d.md`), by the team that played the ball: flights peaking above 1.2 m, seconds the ball spent in
    * the air, and the peak heights (yd, summed, with the counts) of crosses, corners and long balls / clearances.
    */
@@ -301,6 +321,8 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
    */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -397,6 +419,8 @@ type TeamFlags = {
   extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; injuryStoppages: number;
   refereeErrors: number; varReviews: number; varOverturned: number;
   ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
+  shadowPresses: number; zoneCovers: number; shoulderRuns: number; shoulderRunsEarly: number;
+  pressStateOwnS: number; pressStateMidS: number; pressStateFinalS: number;
   studyPlans: number;
   holderNearTies: number; offBallNearTies: number; defenseNearTies: number;
   holderPressureSum: number; shotPressureSum: number; shotPressureCount: number;
@@ -406,6 +430,9 @@ type TeamFlags = {
   ballsOutOfPlay: number; deflections: number; shotsBlocked: number; heavyTouches: number; lineStepUps: number; lineDrops: number;
   pressStandOffs: number; supportShort: number; anticipationReads: number;
   passesMissed: number; passesLofted: number; holderHolds: number; holderTurns: number;
+  holderChoices: number; holderChoiceCarry: number; holderChoicePass: number; holderChoiceTurn: number; holderChoiceHold: number; holderChoiceKick: number;
+  holderStints: number; holderCandidatesSum: number; holderVetoedSum: number; holderLapseChoices: number;
+  holderSprints: number; holderBylines: number; holderSpins: number; holderFlagHolds: number;
   highBalls: number; ballAirSeconds: number; crossPeakSum: number; crossPeakN: number;
   cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
   passGround: number; passDriven: number; passChip: number; passHigh: number; passThroughLow: number; passThroughHigh: number; passHeader: number;
@@ -414,10 +441,12 @@ type TeamFlags = {
   condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
   keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
   ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0,
+  shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0, pressStateOwnS: 0, pressStateMidS: 0, pressStateFinalS: 0,
   holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0,
   holderPressureSum: 0, shotPressureSum: 0, shotPressureCount: 0,
   holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0,
@@ -426,11 +455,15 @@ const emptyTeamFlags = (): TeamFlags => ({
   ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0,
   pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
+  holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0,
+  holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderLapseChoices: 0,
+  holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
   highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
   passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
   aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
   condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
+  shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -626,6 +659,15 @@ gameBus.on('ballCluster', e => {
   if (e.defendersNear >= BALL_CLUSTER_CONFIG.CROWD_COUNT) f.ballCrowdTicks++;
 });
 
+// ── Team shape, pass shadow, shoulder runs (stage 15, `team-shape.md`) ──────────
+gameBus.on('shadowPress', e => { teamFlags[e.team].shadowPresses++; });
+gameBus.on('zoneCover', e => { teamFlags[e.team].zoneCovers++; });
+gameBus.on('shoulderRun', e => { const f = teamFlags[e.team]; f.shoulderRuns++; if (e.early) f.shoulderRunsEarly++; });
+gameBus.on('pressState', e => {
+  const f = teamFlags[e.team];
+  if (e.state < 3) f.pressStateOwnS += e.seconds; else if (e.state < 6) f.pressStateMidS += e.seconds; else f.pressStateFinalS += e.seconds;
+});
+
 // ── Discipline stats ──────────────────────────────────────────────────────────
 gameBus.on('foul', e => {
   get(e.offenderId).fouls++;
@@ -783,7 +825,8 @@ gameBus.on('holderMove', e => {
   } else if (e.move === 'shield') {
     if (e.phase === 'success') f.moveShieldHeld++;
   } else if (e.move === 'chip') {
-    f.moveChip++; if (e.phase === 'success') f.moveChipGoals++;
+    if (!e.counted) f.moveChip++;
+    if (e.phase === 'success') f.moveChipGoals++;
   } else if (e.move === 'round_keeper') {
     f.moveRound++; if (e.phase === 'success') f.moveRoundWon++;
   }
@@ -838,11 +881,60 @@ gameBus.on('interceptionTouch', e => {
   else if (e.outcome === 'deflect') f.cutDeflects++;
   else f.cutMisses++;
 });
+// ── Stage 7: the shot by its trajectory (`shot-and-save.md`) ─────────────────────
+const SHOT_TECHNIQUE_FIELD: Record<import('@/GameEngine/types').ShotTechnique, keyof TeamFlags> = {
+  power: 'shotPower', placed: 'shotPlaced', lob: 'shotLob', chip: 'shotChip', volley: 'shotVolley', header: 'shotHeaderLaunch', free_kick: 'shotFreeKick',
+};
+gameBus.on('shotLaunched', e => {
+  const f = teamFlags[e.team];
+  f[SHOT_TECHNIQUE_FIELD[e.technique]]++;
+  f.shotSpeedSum += e.speedMs; f.shotLaunchN++;
+});
+gameBus.on('shotResolved', e => {
+  const t = playerTeam.get(e.player);
+  if (!t) return;
+  const outcome = e.outcome ?? (e.isGoal ? 'goal' : e.inPosts ? 'saved' : 'wide');
+  if (outcome === 'saved') teamFlags[t].shotsSaved++;
+  else if (outcome === 'wide' || outcome === 'over' || outcome === 'woodwork') teamFlags[t].shotsOffTarget++;
+  if (outcome === 'woodwork') teamFlags[t].shotsWoodwork++;
+});
+gameBus.on('shotDeflected', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].shotsDeflected++; });
+gameBus.on('keeperSave', e => {
+  const t = playerTeam.get(e.keeperId);
+  if (!t) return;
+  teamFlags[t].saves++;
+  if (e.grade === 'good') teamFlags[t].savesGood++;
+  else if (e.grade === 'difficult') teamFlags[t].savesDifficult++;
+});
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
 gameBus.on('holderStep', e => {
-  if (e.step === 'hold') teamFlags[e.team].holderHolds++;
-  else if (e.step === 'turn') teamFlags[e.team].holderTurns++;
+  const f = teamFlags[e.team];
+  if (e.step === 'hold' || e.step === 'flag') f.holderHolds++;
+  else if (e.step === 'turn' || e.step === 'spin') f.holderTurns++;
+  if (e.step === 'sprint') f.holderSprints++;
+  else if (e.step === 'byline') f.holderBylines++;
+  else if (e.step === 'spin') f.holderSpins++;
+  else if (e.step === 'flag') f.holderFlagHolds++;
+});
+
+// ── Stage 8: the FM holder chooser (`holder-choice.md`) ─────────────────────────────
+/** The last holder of an FM decision per team: a different one starts a new possession stint. */
+const lastChoiceHolder: Record<TeamId, number | null> = { A: null, B: null };
+gameBus.on('holderChoice', e => {
+  const f = teamFlags[e.team];
+  f.holderChoices++;
+  if (e.cat === 0) f.holderChoicePass++;
+  else if (e.cat === 1) f.holderChoiceKick++;
+  else if (e.cat === 2) f.holderChoiceTurn++;
+  else if (e.cat === 3) f.holderChoiceHold++;
+  else f.holderChoiceCarry++;
+  f.holderCandidatesSum += e.candidates;
+  f.holderVetoedSum += e.vetoed;
+  if (e.lapse) f.holderLapseChoices++;
+  if (lastChoiceHolder[e.team] !== e.playerId) { f.holderStints++; lastChoiceHolder[e.team] = e.playerId; }
+  const other: TeamId = e.team === 'A' ? 'B' : 'A';
+  lastChoiceHolder[other] = null;
 });
 
 /** The last holder-mind event of a player this match (`/test`). */
@@ -923,6 +1015,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   markedNow = new Set();
   teamFlags.A = emptyTeamFlags();
   teamFlags.B = emptyTeamFlags();
+  lastChoiceHolder.A = null; lastChoiceHolder.B = null;
   resetHighlights(players);
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();

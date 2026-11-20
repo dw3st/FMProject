@@ -63,6 +63,7 @@ const PROMO_OVERLAYS: DebugOverlays = {
   movement: false,
   ball3d: false,
   passError: false,
+  shape: false,
 };
 
 // URL params.

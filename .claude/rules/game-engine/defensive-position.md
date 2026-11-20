@@ -311,6 +311,10 @@ The zonal back-liners holding shape also blend toward one robust-mean back line 
 defender pressing a holder already pressed stands off 5 yd covering the inside route; anticipation moves the press start to
 the holder's predicted point. Rules, constants and numbers: `movement.md`.
 
+## Etapa 15 (forma do FM)
+
+Com `FM_SHAPE` a âncora vem de `fmShapePoint` (linha de trás, alcance e largura do FM); com `ACTION_HOLD` as ações curtas ficam 5 s. Ver `team-shape.md`.
+
 ## Stage 16: the defender's mind
 
 With `DEFENSIVE_MIND` the intent scores are modified by the defender's mind window before the argmax (noise, aggression

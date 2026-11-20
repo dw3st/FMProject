@@ -65,6 +65,9 @@ export interface PassLaneInfo {
    * through-ball balance is judged on pass quality alone.
    */
   quality: number;
+  /** Lane clearance 0..1 and progress 0..1 of the breakdown (the FM holder chooser reads them, stage 8). */
+  laneScore?: number;
+  progressScore?: number;
 }
 
 // ── Scoring components ────────────────────────────────────────────────────────
@@ -426,6 +429,8 @@ export function evaluatePassLanes(
       score:      bd.score,
       switchPass: bd.passTargetBonus > 0,
       quality:    bd.quality,
+      laneScore:  bd.laneScore,
+      progressScore: bd.progressScore,
     };
   });
 }

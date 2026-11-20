@@ -302,6 +302,11 @@ export interface TeamRawStats {
   foulsWonCarrying: number;
   contactFouls: number;
   lineMisreads: number;
+  /** Stage 15 (`team-shape.md`): pass-shadow presses, zone covers, shoulder runs (early ones). */
+  shadowPresses: number;
+  zoneCovers: number;
+  shoulderRuns: number;
+  shoulderRunsEarly: number;
   /** Stage 16 (`DefensiveMind.ts`): concentration lapses defending / off the ball, mind-changed defensive intents, dropped marks. */
   mindLapsesDefence: number;
   mindLapsesOffBall: number;
@@ -400,8 +405,24 @@ export interface TeamRawStats {
   passLaunchN: number;
   /** Stage 5 (`interception.md`): touches on a physical pass by this team defending, by outcome; ball speed summed (m/s). */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
   holderHolds: number;
   holderTurns: number;
+  /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
+  holderChoices: number;
+  holderChoiceCarry: number;
+  holderChoicePass: number;
+  holderChoiceTurn: number;
+  holderChoiceHold: number;
+  holderChoiceKick: number;
+  holderStints: number;
+  holderCandidatesSum: number;
+  holderVetoedSum: number;
+  holderSprints: number;
+  holderBylines: number;
+  holderSpins: number;
+  holderFlagHolds: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -573,6 +594,11 @@ export interface PerMatchView {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 15 (`team-shape.md`) per match. */
+  avgShadowPresses: number;
+  avgZoneCovers: number;
+  avgShoulderRuns: number;
+  avgShoulderRunsEarly: number;
   /** Stage 16: per match. */
   avgMindLapses: number;
   avgMindMarkDrops: number;
@@ -654,8 +680,15 @@ export interface PerMatchView {
   passLaunchMps: number;
   /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
+  /** Stage 7: shot outcomes and techniques per match, saves by the keeper, launch speed (m/s) and the share of its shots on target the keeper saved. */
+  avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -787,6 +820,11 @@ export interface VariantSummary {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 15 (`team-shape.md`) per match. */
+  avgShadowPresses: number;
+  avgZoneCovers: number;
+  avgShoulderRuns: number;
+  avgShoulderRunsEarly: number;
   /** Stage 16: per match. */
   avgMindLapses: number;
   avgMindMarkDrops: number;
@@ -867,8 +905,15 @@ export interface VariantSummary {
   passLaunchMps: number;
   /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
+  /** Stage 7: shot outcomes and techniques per match, saves by the keeper, launch speed (m/s) and the share of its shots on target the keeper saved. */
+  avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

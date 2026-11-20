@@ -1,6 +1,6 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun, ShotState, ShotPhysicsState, ShotBlockRun, ShotTechnique } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning, ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
@@ -20,7 +20,7 @@ import { matchMentalOf } from '@/GameEngine/Configs/MentalMatchConfig';
 import { argmaxAndMargin, setDecisionCapture, situationBucket, takeCapture, type CapturedDecision } from '@/GameEngine/Domain/DecisionTelemetry';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import { outfieldNearBall } from '@/GameEngine/Domain/BallCluster';
-import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
+import type { PlayerDecision, DecisionPath, HolderStep } from '@/GameEngine/Domain/DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
 import { resolveBasePosition, slotBasePosition } from '@/GameEngine/FormationSlots';
@@ -28,6 +28,10 @@ import { attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { computeTargetPosition } from '@/GameEngine/Domain/Positioning';
 import { assignMarkTargets, resetDefensiveIntentCache, stayHomeTarget } from '@/GameEngine/Domain/DefensivePositioning';
 import { resetOffBallIntentCache } from '@/GameEngine/Domain/OffBallMovement';
+import { advanceActionClock, resetActionHold } from '@/GameEngine/Domain/ActionHold';
+import { assignZoneCover, passShadowPoint, pressStateOf, setShapeFormations, setZoneCover, zonesOf, type ShapeZone } from '@/GameEngine/Domain/TeamShape';
+import { resetShoulderRuns, shoulderRunGoing } from '@/GameEngine/Domain/ShoulderRuns';
+import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
 import {
   applyContinuousFatigue,
@@ -44,7 +48,13 @@ import { advanceLooseBall, advancePassBall, ballEnv, ballWithinReach, passKey, s
 import { buildAerialLaunch, buildGroundLaunch, loftVzYd, passTypeOf, vzForPeak, weightedSpeed } from '@/GameEngine/Domain/PassPhysics';
 import { PASS_PHYSICS, YD_PER_M_PASS } from '@/GameEngine/Configs/PassPhysicsConfig';
 import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
-import { predictPath, reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { predictPath, reachHeight, stepFree, type Ball3D as Ball3DState, type BallEnv as BallEnvState } from '@/GameEngine/Domain/Ball3D';
+import { SHOT_PHYSICS } from '@/GameEngine/Configs/ShotPhysicsConfig';
+import {
+  aimPoint, applyShotError, blockChances, blockReach as shotBlockReach, chooseTechnique, classifyCrossing, dipLaunch, directLaunch,
+  keeperDiveSpeed, keeperHandReach, keeperReaction, lineCrossing, onFrame, saveChances, shotErrorFactor, shotSpeedMs,
+  YD_PER_M as SHOT_YD_PER_M, type KeeperSkill as ShotKeeperSkill,
+} from '@/GameEngine/Domain/ShotPhysics';
 import { interceptPoint, interceptReachOf, resolveTouch, touchChances, type PathPoint } from '@/GameEngine/Domain/PhysicalInterception';
 import { INTERCEPT } from '@/GameEngine/Configs/InterceptConfig';
 import {
@@ -75,9 +85,10 @@ import {
   computeShotAim, computeXG, computeOpenAngle, computeWeightedPressure,
   resolveShot, resolveTackle, resolveInterception, resolveDribble, resolveLooseBallDuel,
   resolveAerialDuel, gkClaimChance, resolveChip, resolveRoundKeeper,
-  resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection,
+  resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection, gaussianDraw,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
 import { passErrorFactor, passLaunch } from '@/GameEngine/Domain/PassError';
@@ -484,6 +495,9 @@ export function createMatchState(
   loadMatchRng(seed);
   resetDefensiveIntentCache();
   resetOffBallIntentCache();
+  resetActionHold();
+  resetShoulderRuns();
+  _lastCover.A = undefined; _lastCover.B = undefined; _lastShadow = '';
   const withMult = (r: ReturnType<typeof buildTeam>, m: number | undefined) =>
     m === undefined || m === 1
       ? r
@@ -1432,6 +1446,16 @@ export function startDirectFreeKick(state: GameState, rng: () => number = matchR
   const fmBase = DECISION_FLAGS.FM_XG ? shotXg(taker, state.players, 'free_kick').xg : null;
   const base = fmBase ?? directFreeKickXG(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX));
   const xg = fmBase ?? base * (1 - pBlock);
+  // Stage 7: the free kick dips over the wall by its flight; the wall blocks it only if the ball goes into it.
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const shot = physicalShot(state, taker, { technique: 'free_kick', skill: Math.min(1, taker.runtimeStats.withBall.shootAccuracy / 0.95), setPiece: true }, { xg: base, freeKick: true });
+    if (shot) {
+      gameBus.emit('shot', { player: taker.id, xg });
+      gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked: false });
+      debugLog('setPiece', `${taker.name} shoots the free kick over a wall of ${wall.length} (xG ${xg.toFixed(3)})`, { playerId: taker.id, data: { base, xg, wallSize: wall.length } });
+      return { ...state, setPiece: null, shot };
+    }
+  }
   const blocked = wall.length > 0 && rng() < pBlock;
   gameBus.emit('shot', { player: taker.id, xg });
   gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked });
@@ -2517,13 +2541,471 @@ function logShotXg(shooter: GamePlayer, fm: FmXgResult): void {
   });
 }
 
+// ── Stage 7: the shot by its trajectory (`shot-and-save.md` → "Stage 7") ──────────────────────────────────────────
+
+const M_PER_YD_SHOT = 1 / SHOT_YD_PER_M;
+
+function teamOfId(s: GameState, id: number): TeamId | null {
+  return s.players.find(p => p.id === id)?.team ?? null;
+}
+
+/** The keeper's shot-stopping skills (0..1). */
+function keeperSkillOf(gk: GamePlayer): ShotKeeperSkill {
+  const w = gk.runtimeStats.withoutBall;
+  return { reflex: w.gkReflex, diving: w.gkDiving, positioning: w.gkPositioning };
+}
+
+/** /test (stage 7): a physical shot by `shooterId` with a chosen technique, struck now (null without the 3D ball). */
+export function testPhysicalShot(state: GameState, shooterId: number, technique: ShotTechnique): GameState {
+  const shooter = state.players.find(p => p.id === shooterId);
+  if (!shooter) return state;
+  const skill = technique === 'header' ? Math.min(1, headingOf(shooter)) : Math.min(1, shooter.runtimeStats.withBall.shootAccuracy / 0.95);
+  const shot = physicalShot(state, shooter, { technique, skill }, { xg: 0.1, chip: technique === 'chip' || undefined });
+  return shot ? { ...state, ballHolderId: shooterId, shot, setPiece: null } : state;
+}
+
+interface PhysicalStrike {
+  technique: ShotTechnique;
+  /** Skill driving the error (finishing 0..1, heading for a header). */
+  skill: number;
+  /** A set piece: FM's set-piece base, no pressure. */
+  setPiece?: boolean;
+}
+
+/**
+ * The physical launch of a shot (stage 7): technique, aim (corner and height), launch vector to the aim, FM's launch
+ * error with the shot base, the predicted crossing and the defenders who can lunge at the path. Null without the 3D
+ * ball (the old dice path stays).
+ */
+function physicalShot(state: GameState, shooter: GamePlayer, strike: PhysicalStrike, extra: Partial<ShotState> = {}): ShotState | null {
+  if (!DECISION_FLAGS.SHOT_PHYSICS || !DECISION_FLAGS.BALL_3D) return null;
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const keeper = state.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
+  const opps = state.players.filter(p => p.team !== shooter.team);
+  const header = strike.technique === 'header';
+  const z0 = header ? BALL_PHYSICS.HEAD_Z : Math.max(BALL_PHYSICS.FOOT_Z, state.ball?.z ?? 0);
+  const from = { x: shooter.x, y: shooter.y, z: z0 };
+  const technique = strike.technique;
+  const aim = aimPoint({ fromX: shooter.x, fromY: shooter.y, goalX, keeper, technique, skill: strike.skill }, matchRandom);
+  const aim3 = { x: goalX, y: aim.y, z: aim.z };
+  const dist = Math.hypot(goalX - shooter.x, aim.y - shooter.y);
+  const dirX = (goalX - shooter.x) / Math.max(1e-6, dist);
+  let base: { vx: number; vy: number; vz: number } | null = null;
+  if (technique === 'lob' || technique === 'chip') {
+    const along = keeper ? Math.max(1, (keeper.x - shooter.x) * dirX) : dist / 2;
+    base = dipLaunch(from, { d: along, z: SHOT_PHYSICS.HAND_MAX_Z + SHOT_PHYSICS.LOB_CLEAR_YD }, aim3);
+  } else if (technique === 'free_kick') {
+    const wall = (state.setPiece?.wallIds ?? []).map(id => state.players.find(p => p.id === id)).filter((p): p is GamePlayer => !!p);
+    const along = wall.length > 0 ? Math.min(...wall.map(w => Math.abs(w.x - shooter.x))) : SET_PIECE_CONFIG.WALL_DISTANCE;
+    base = dipLaunch(from, { d: along, z: SHOT_PHYSICS.BLOCK_MAX_Z + 0.25 }, aim3);
+  }
+  const speedMs0 = shotSpeedMs(technique === 'free_kick' || technique === 'lob' || technique === 'chip' ? 'placed' : technique, strike.skill);
+  if (!base) base = directLaunch(from, aim3, speedMs0 * SHOT_YD_PER_M);
+  const speedMs = Math.hypot(base.vx, base.vy, base.vz) * M_PER_YD_SHOT;
+  const pressure = strike.setPiece ? 0 : holderPressure(shooter.x, shooter.y, opps);
+  const factor = shotErrorFactor(strike.skill, dist, pressure, speedMs, technique === 'volley' ? SHOT_PHYSICS.VOLLEY_MARGIN : 0,
+    strike.setPiece ? SHOT_PHYSICS.BASE_SET_PIECE : SHOT_PHYSICS.BASE_SHOT);
+  const longShot = !header && dist > LONG_SHOT_DISTANCE ? weatherEffectOf(state.weather).longShot : 1;
+  const v = applyShotError(base, factor, gaussianDraw(), gaussianDraw(), gaussianDraw(), longShot > 0 ? 1 / longShot : 1);
+  const vh = Math.max(1, Math.hypot(v.vx, v.vy));
+  const T = dist / vh;
+  // Where it would cross the line by free flight (no one touching it).
+  const env = ballEnv(state.weather);
+  const launched = { x: from.x, y: from.y, z: z0, vx: v.vx, vy: v.vy, vz: v.vz };
+  const cross = predictCrossing(launched, goalX, env);
+  const onTarget = !!cross && onFrame(cross.y, cross.z);
+  const blocks = planShotBlocks(state, shooter, launched, Math.min(SHOT_PHYSICS.MAX_FLIGHT_S, T + 0.1), env);
+  const physics: ShotPhysicsState = {
+    technique, z0, vx: v.vx, vy: v.vy, vz: v.vz, speedMs, aimY: aim.y, aimZ: aim.z, errDeg: v.errDeg,
+    elapsed: 0, T, blocks, touched: [], onTarget,
+  };
+  gameBus.emit('shotLaunched', {
+    player: shooter.id, team: shooter.team, technique, speedMs, vzMs: v.vz * M_PER_YD_SHOT,
+    aimY: aim.y, aimZ: aim.z, errDeg: v.errDeg, distance: dist, onTarget, blockers: blocks.length,
+  });
+  if (isDebugEnabled()) {
+    debugLog('shot', `${shooter.name} ${technique} shot: ${speedMs.toFixed(1)} m/s, aim y ${aim.y.toFixed(1)} z ${(aim.z * M_PER_YD_SHOT).toFixed(2)} m, error ${v.errDeg.toFixed(1)}° (factor ${factor.toFixed(2)}), ${onTarget ? 'on target' : 'off target'}${cross ? ` (crosses y ${cross.y.toFixed(1)} z ${(cross.z * M_PER_YD_SHOT).toFixed(2)} m)` : ''}, ${blocks.length} blocker(s)`, {
+      playerId: shooter.id, data: { technique, speedMs, factor, errDeg: v.errDeg, onTarget, blocks: blocks.length },
+    });
+  }
+  return { shooterId: shooter.id, fromX: shooter.x, fromY: shooter.y, toX: goalX, toY: aim.y, t: 0, xg: 0, ...extra, physics };
+}
+
+/** Where a free ball crosses the goal line x = goalX within the flight limit (null: it never does). */
+function predictCrossing(ball: Ball3DState, goalX: number, env: BallEnvState): { y: number; z: number; t: number } | null {
+  let b = { ...ball };
+  let t = 0;
+  const h = SHOT_PHYSICS.SUBSTEP;
+  while (t < SHOT_PHYSICS.MAX_FLIGHT_S) {
+    const nb = stepFree(b, h, env).ball;
+    const c = lineCrossing(b, nb, goalX);
+    if (c) return { y: c.y, z: c.z, t: t + h * c.f };
+    if (nb.y < -2 || nb.y > PITCH_WIDTH + 2) return null;
+    if (nb.z <= 1e-6 && Math.hypot(nb.vx, nb.vy) < PASS_PHYSICS.STOP_SPEED_YD) return null;
+    b = nb; t += h;
+  }
+  return null;
+}
+
+/** The ball's path to the line every SUBSTEP (for the blockers' and the keeper's plans). */
+function shotPath(ball: Ball3DState, seconds: number, env: BallEnvState, goalX: number): PathPoint[] {
+  const out: PathPoint[] = [];
+  let b = { ...ball };
+  const h = SHOT_PHYSICS.SUBSTEP;
+  for (let t = h; t <= seconds + 1e-9; t += h) {
+    const nb = stepFree(b, h, env).ball;
+    if (lineCrossing(b, nb, goalX)) { out.push({ x: nb.x, y: nb.y, z: nb.z, t }); break; }
+    out.push({ x: nb.x, y: nb.y, z: nb.z, t });
+    b = nb;
+  }
+  return out;
+}
+
+/** The outfield defenders who can get a body to the shot's path in time (the earliest MAX_BLOCKERS lunge at it). */
+function planShotBlocks(state: GameState, shooter: GamePlayer, ball: Ball3DState, seconds: number, env: BallEnvState): ShotBlockRun[] {
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const path = shotPath(ball, seconds, env, goalX);
+  if (path.length === 0) return [];
+  const runs: ShotBlockRun[] = [];
+  for (const p of state.players) {
+    if (p.team === shooter.team || p.role === 'GK' || isPlayerInRecovery(p)) continue;
+    const plan = interceptPoint(path, {
+      x: p.x, y: p.y, speed: SHOT_PHYSICS.LUNGE_SPEED, reach: shotBlockReach(p.runtimeStats.withoutBall.tackling ?? 0.5),
+      reaction: SHOT_PHYSICS.BLOCK_REACTION_S, maxZ: SHOT_PHYSICS.BLOCK_MAX_Z,
+    });
+    if (plan) runs.push({ id: p.id, x: plan.x, y: plan.y, t: plan.t });
+  }
+  runs.sort((a, b) => a.t - b.t);
+  return runs.slice(0, SHOT_PHYSICS.MAX_BLOCKERS);
+}
+
+/** Closest point of the segment a → b to (px, py): the distance and the fraction along it. */
+function segmentApproach(ax: number, ay: number, bx: number, by: number, px: number, py: number): { d: number; f: number } {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const f = len2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return { d: Math.hypot(ax + dx * f - px, ay + dy * f - py), f };
+}
+
+/** Rotates (vx, vy) by `deg` degrees and scales it by `k`. */
+function turnVelocity(vx: number, vy: number, deg: number, k: number): { vx: number; vy: number } {
+  const a = (deg * Math.PI) / 180;
+  const c = Math.cos(a), s = Math.sin(a);
+  return { vx: (vx * c - vy * s) * k, vy: (vx * s + vy * c) * k };
+}
+
+/** The keeper holds the ball after a save: his ball, the goal-kick shape (as the old save did). */
+function keeperHoldsShot(s: GameState, gk: GamePlayer): TickResult {
+  const gkFormation = gk.team === 'A' ? s.formationA : s.formationB;
+  const goalKickLayout = resolveFormationSetPieces(gkFormation).goalKick;
+  let players = applyStaminaCost(s.players, gk.id, 'gkSave');
+  if (goalKickLayout) players = applySetPieceToTeam(players, gk.team, goalKickLayout);
+  const prevHolderId = s.ballHolderId;
+  return {
+    state: onPossessionTransfer({
+      ...s, shot: null, ballHolderId: gk.id, possessionTime: 0, lastPasserId: null, players,
+      setPiece: { type: 'goal_kick', takerId: gk.id, countdown: restartFreeze(s, RESTART_DEAD_S.GOAL_KICK) },
+    }, prevHolderId),
+    passCompleted: false, tackled: false, goalScored: null,
+  };
+}
+
+/** A goal from a shot in flight (both shot paths): the score, the event, the kick-off, the VAR check on a missed offside. */
+function scoreShotGoal(s: GameState, shooter: GamePlayer, flying: ShotState): TickResult {
+  if (flying.chip && flying.physics) gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: 'success', counted: true });
+  const newScore = { ...s.score, [shooter.team]: s.score[shooter.team] + 1 };
+  const assistId = s.lastPasserId !== null && s.lastPasserId !== shooter.id ? s.lastPasserId : undefined;
+  const setPieceKind = flying.freeKick ? 'direct_free_kick' : setPieceGoalOf(s, shooter.team);
+  gameBus.emit('goalScored', {
+    team: shooter.team, score: newScore, scorerId: shooter.id, assistId, header: flying.header === true,
+    ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+    fromX: flying.fromX, fromY: flying.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
+  });
+  const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
+  const kicked = resetToKickoff({ ...s, score: newScore }, concedingTeam);
+  return {
+    state: s.missedOffside
+      ? checkGoalForOffside(s, kicked, {
+        team: shooter.team, scorerId: shooter.id, ...(assistId !== undefined ? { assistId } : {}),
+        header: flying.header === true, ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+      })
+      : kicked,
+    passCompleted: false, tackled: false, goalScored: shooter.team,
+  };
+}
+
+/** Writes the physical shot's ball back on the state (the core moved it; `syncBall` keeps it). */
+function withShotBall(s: GameState, b: Ball3DState, extra: { peak: number; air: number; bounces: number; dt: number }): GameState {
+  const prev = s.ball;
+  if (!prev || prev.phase !== 'shot') return s;
+  return {
+    ...s,
+    ball: {
+      ...prev, x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, ended: undefined,
+      peak: Math.max(prev.peak, extra.peak), air: prev.air + extra.air, bounces: prev.bounces + extra.bounces,
+      elapsed: prev.elapsed + extra.dt,
+    },
+  };
+}
+
+/**
+ * One tick of a physical shot (stage 7): the ball flies on free physics in sub-steps; the keeper (after his reaction)
+ * dives to the point of the path he can reach, the planned blockers lunge at theirs. The first body the ball passes
+ * within reach of touches it; crossing the line decides goal, woodwork, wide or over. No goal dice.
+ */
+function tickPhysicalShot(s: GameState, dt: number): TickResult {
+  const shot = s.shot!;
+  let ph = shot.physics!;
+  const shooter = s.players.find(p => p.id === shot.shooterId)!;
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const gk0 = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
+  const env = ballEnv(s.weather);
+  const sb = s.ball && s.ball.phase === 'shot' && s.ball.key === shotKey(shot) ? s.ball : null;
+  let b: Ball3DState = sb
+    ? { x: sb.x, y: sb.y, z: sb.z, vx: sb.vx, vy: sb.vy, vz: sb.vz }
+    : { x: shot.fromX, y: shot.fromY, z: ph.z0, vx: ph.vx, vy: ph.vy, vz: ph.vz };
+  // Positions this tick (the keeper and the blockers move here, in sub-steps).
+  const pos = new Map<number, { x: number; y: number }>(s.players.map(p => [p.id, { x: p.x, y: p.y }]));
+  const moved = new Set<number>();
+  const skill = gk0 ? keeperSkillOf(gk0) : null;
+  const reactAt = (ph.reactFrom ?? 0) + (skill ? keeperReaction(skill) : 0);
+  // The keeper's plan from where the ball is now: the earliest point he reaches; none for a ball going wide.
+  let keeperTarget: { x: number; y: number } | null = null;
+  if (gk0 && skill && !ph.keeperBeaten && !ph.touched.includes(gk0.id)) {
+    const cross = predictCrossing(b, goalX, env);
+    if (cross && onFrame(cross.y, cross.z, SHOT_PHYSICS.LEAVE_MARGIN)) {
+      const path = shotPath(b, cross.t + 0.05, env, goalX);
+      const plan = interceptPoint(path, {
+        x: gk0.x, y: gk0.y, speed: keeperDiveSpeed(skill), reach: keeperHandReach(skill),
+        reaction: Math.max(0, reactAt - ph.elapsed), maxZ: SHOT_PHYSICS.HAND_MAX_Z,
+      });
+      keeperTarget = plan ? { x: plan.x, y: plan.y } : { x: goalX - shooter.attackDir * 0.5, y: Math.max(GOAL_Y_MIN, Math.min(GOAL_Y_MAX, cross.y)) };
+    }
+  }
+  const h = SHOT_PHYSICS.SUBSTEP;
+  let left = dt, peak = b.z, air = 0, bounces = 0, used = 0;
+  const finish = (state: GameState): GameState => {
+    // Movement of the keeper and the blockers this tick, through the kinematic bookkeeping.
+    const log = newMoveLog();
+    const players = state.players.map(p => {
+      if (!moved.has(p.id)) return p;
+      const q = pos.get(p.id)!;
+      const vx = (q.x - p.x) / dt, vy = (q.y - p.y) / dt;
+      return finishMove(p, state, dt, q.x, q.y, vx, vy, 1, p.runtimeStats.withoutBall.pressSpeed, log);
+    });
+    emitMoveLog(log);
+    return { ...state, players };
+  };
+  const done = (state: GameState) => withShotBall(state, b, { peak, air, bounces, dt: used });
+  while (left > 1e-9) {
+    const step = Math.min(h, left);
+    const t0 = ph.elapsed;
+    ph = { ...ph, elapsed: t0 + step };
+    // Bodies move.
+    if (gk0 && keeperTarget && ph.elapsed >= reactAt) {
+      const q = pos.get(gk0.id)!;
+      const d = Math.hypot(keeperTarget.x - q.x, keeperTarget.y - q.y);
+      if (d > 1e-3) {
+        const k = Math.min(1, (keeperDiveSpeed(skill!) * step) / d);
+        pos.set(gk0.id, { x: q.x + (keeperTarget.x - q.x) * k, y: q.y + (keeperTarget.y - q.y) * k });
+        moved.add(gk0.id);
+      }
+    }
+    if (ph.elapsed >= SHOT_PHYSICS.BLOCK_REACTION_S) {
+      for (const r of ph.blocks) {
+        if (ph.touched.includes(r.id)) continue;
+        const q = pos.get(r.id);
+        if (!q) continue;
+        const d = Math.hypot(r.x - q.x, r.y - q.y);
+        if (d < 1e-3) continue;
+        const k = Math.min(1, (SHOT_PHYSICS.LUNGE_SPEED * step) / d);
+        pos.set(r.id, { x: q.x + (r.x - q.x) * k, y: q.y + (r.y - q.y) * k });
+        moved.add(r.id);
+      }
+    }
+    // The ball flies.
+    const prev = b;
+    const st = stepFree(b, step, env);
+    b = st.ball; peak = Math.max(peak, st.peak); air += st.air; bounces += st.bounces;
+    left -= step; used += step;
+    // A body in the way (outfield defenders), then the keeper's hands. `close` books the movement when it ends here.
+    const unfinished = (): GameState => done({ ...s, shot: { ...shot, physics: ph } });
+    let touch: ShotTouchResult | null = null;
+    for (const p of s.players) {
+      if (p.team === shooter.team || p.role === 'GK' || ph.touched.includes(p.id) || isPlayerInRecovery(p)) continue;
+      const q = pos.get(p.id)!;
+      const ap = segmentApproach(prev.x, prev.y, b.x, b.y, q.x, q.y);
+      const z = prev.z + (b.z - prev.z) * ap.f;
+      if (z > SHOT_PHYSICS.BLOCK_MAX_Z || ap.d > shotBlockReach(p.runtimeStats.withoutBall.tackling ?? 0.5)) continue;
+      b = { ...b, x: prev.x + (b.x - prev.x) * ap.f, y: prev.y + (b.y - prev.y) * ap.f, z };
+      touch = shotBlockTouch(unfinished(), finish, shooter, p, b);
+      break;
+    }
+    if (!touch && gk0 && skill && !ph.keeperBeaten && !ph.touched.includes(gk0.id)) {
+      const q = pos.get(gk0.id)!;
+      const ap = segmentApproach(prev.x, prev.y, b.x, b.y, q.x, q.y);
+      const z = prev.z + (b.z - prev.z) * ap.f;
+      const reach = keeperHandReach(skill);
+      if (z <= SHOT_PHYSICS.HAND_MAX_Z && ap.d <= reach) {
+        b = { ...b, x: prev.x + (b.x - prev.x) * ap.f, y: prev.y + (b.y - prev.y) * ap.f, z };
+        touch = keeperShotTouch(unfinished(), finish, shooter, gk0, b, ap.d / reach, skill, goalX, env);
+      }
+    }
+    if (touch) {
+      if (touch.kind === 'end') return touch.result;
+      ph = touch.physics; b = touch.ball;
+      if (gk0 && ph.reactFrom !== undefined && ph.reactFrom === ph.elapsed) keeperTarget = null;
+      continue;
+    }
+    // The goal line.
+    const c = lineCrossing(prev, b, goalX);
+    if (c) {
+      b = { ...b, x: goalX, y: c.y, z: c.z };
+      return shotCrossesLine(finish(done({ ...s, shot: { ...shot, physics: ph } })), shooter, gk0, c.y, c.z);
+    }
+    const outSide = b.y < 0 || b.y > PITCH_WIDTH || b.x < 0 || b.x > PITCH_LENGTH;
+    const dead = b.z <= 1e-6 && Math.hypot(b.vx, b.vy) < PASS_PHYSICS.STOP_SPEED_YD;
+    if (outSide || dead || ph.elapsed >= SHOT_PHYSICS.MAX_FLIGHT_S) {
+      const st2 = finish(done({ ...s, shot: { ...shot, physics: ph } }));
+      if (outSide) {
+        const lastTeam = ph.deflectedBy !== undefined ? (st2.players.find(p => p.id === ph.deflectedBy)?.team ?? shooter.team) : shooter.team;
+        const award: TeamId = lastTeam === 'A' ? 'B' : 'A';
+        gameBus.emit('shotResolved', { player: shooter.id, xg: shot.xg, danger: 0, isGoal: false, inPosts: false, fromX: shot.fromX, fromY: shot.fromY, toX: b.x, toY: b.y, outcome: 'wide' });
+        return resolveOOBSetPiece({ ...st2, shot: null }, 'throw_in', award, b.x, b.y, shooter.id, 'clearance');
+      }
+      const toucher = ph.deflectedBy !== undefined ? (st2.players.find(p => p.id === ph.deflectedBy) ?? shooter) : shooter;
+      return { state: runLoose(st2, toucher, b.x, b.y, b.vx, b.vy, 'block', true), passCompleted: false, tackled: false, goalScored: null };
+    }
+  }
+  const next = finish(done({ ...s, shot: { ...shot, t: Math.min(0.99, ph.elapsed / Math.max(0.05, ph.T)), physics: ph } }));
+  return { state: next, passCompleted: false, tackled: false, goalScored: null };
+}
+
+type ShotTouchResult =
+  | { kind: 'on'; physics: ShotPhysicsState; ball: Ball3DState }
+  | { kind: 'end'; result: TickResult };
+
+/** A defender's body in the shot's way: he controls it (rare), sends it on, or it rebounds loose off him. */
+function shotBlockTouch(s: GameState, close: (st: GameState) => GameState, shooter: GamePlayer, d: GamePlayer, b: Ball3DState): ShotTouchResult {
+  const shot = s.shot!;
+  const ph = shot.physics!;
+  const speedMs = Math.hypot(b.vx, b.vy) * M_PER_YD_SHOT;
+  const c = blockChances(d.runtimeStats.withBall.firstTouch, speedMs);
+  const r = matchRandom();
+  if (r >= c.control && r < c.control + c.deflectOn) {
+    const turned = turnVelocity(b.vx, b.vy, (matchRandom() * 2 - 1) * SHOT_PHYSICS.DEFLECT_DEG, SHOT_PHYSICS.DEFLECT_KEEP);
+    gameBus.emit('shotDeflected', { player: shooter.id, blockerId: d.id });
+    debugLog('shot', `${d.name} deflects ${shooter.name}'s shot on (${speedMs.toFixed(1)} m/s)`, { playerId: d.id });
+    return {
+      kind: 'on',
+      physics: { ...ph, touched: [...ph.touched, d.id], deflectedBy: d.id, reactFrom: ph.elapsed },
+      ball: { ...b, vx: turned.vx, vy: turned.vy, vz: b.vz * SHOT_PHYSICS.DEFLECT_KEEP },
+    };
+  }
+  s = close(s);
+  gameBus.emit('shotBlocked', { player: shooter.id, blockerId: d.id });
+  s = { ...s, players: applyStaminaCost(s.players, d.id, 'interception') };
+  if (r < c.control) {
+    debugLog('shot', `${d.name} blocks and keeps ${shooter.name}'s shot`, { playerId: d.id });
+    const prevHolderId = s.ballHolderId;
+    return {
+      kind: 'end',
+      result: { state: onPossessionTransfer({ ...s, shot: null, ballHolderId: d.id, possessionTime: 0, lastPasserId: null }, prevHolderId), passCompleted: false, tackled: false, goalScored: null },
+    };
+  }
+  const dir = scatterDirection(-b.vx, -b.vy, SHOT_PHYSICS.REBOUND_DEG);
+  const k = SHOT_PHYSICS.REBOUND_KEEP_MIN + matchRandom() * (SHOT_PHYSICS.REBOUND_KEEP_MAX - SHOT_PHYSICS.REBOUND_KEEP_MIN);
+  const v = Math.hypot(b.vx, b.vy) * k;
+  debugLog('shot', `${d.name} blocks ${shooter.name}'s shot (${speedMs.toFixed(1)} m/s): it rebounds loose`, { playerId: d.id });
+  const st = s.ball ? { ...s, ball: { ...s.ball, vz: Math.abs(b.vz) * 0.3 } } : s;
+  return { kind: 'end', result: { state: runLoose(st, d, b.x, b.y, dir.x * v, dir.y * v, 'block', true), passCompleted: false, tackled: false, goalScored: null } };
+}
+
+/** The keeper gets his hands to the shot: he stops it (held, spilled or parried behind) or it goes on past his fingertips. */
+function keeperShotTouch(
+  s: GameState, close: (st: GameState) => GameState, shooter: GamePlayer, gk: GamePlayer, b: Ball3DState, offset: number, skill: ShotKeeperSkill, goalX: number, env: BallEnvState,
+): ShotTouchResult {
+  const shot = s.shot!;
+  const ph = shot.physics!;
+  const speedMs = Math.hypot(b.vx, b.vy, b.vz) * M_PER_YD_SHOT;
+  const sc = saveChances(skill, offset, speedMs);
+  const cross = predictCrossing(b, goalX, env);
+  const wasOnTarget = !!cross && onFrame(cross.y, cross.z);
+  if (matchRandom() >= sc.stop) {
+    const turned = turnVelocity(b.vx, b.vy, (matchRandom() * 2 - 1) * SHOT_PHYSICS.FINGERTIP_DEG, SHOT_PHYSICS.FINGERTIP_KEEP);
+    debugLog('keeper', `${gk.name} gets a hand to it but can't keep it out (stop ${(sc.stop * 100).toFixed(0)}%, offset ${offset.toFixed(2)}, ${speedMs.toFixed(1)} m/s)`, { playerId: gk.id });
+    return {
+      kind: 'on',
+      physics: { ...ph, touched: [...ph.touched, gk.id], deflectedBy: gk.id, keeperBeaten: true },
+      ball: { ...b, vx: turned.vx, vy: turned.vy, vz: b.vz * SHOT_PHYSICS.FINGERTIP_KEEP },
+    };
+  }
+  s = close(s);
+  const odds = saveOutcomeChances(shotStoppingSkill(gk), sc.difficulty);
+  const roll = matchRandom();
+  const kind = roll < odds.parry ? 'parry' : roll < odds.parry + odds.spill ? 'spill' : 'hold';
+  gameBus.emit('shotResolved', {
+    player: shooter.id, xg: shot.xg, danger: 1 - sc.stop, isGoal: false, inPosts: wasOnTarget,
+    fromX: shot.fromX, fromY: shot.fromY, toX: b.x, toY: b.y, outcome: 'saved',
+  });
+  gameBus.emit('keeperSave', { keeperId: gk.id, kind, grade: sc.grade });
+  debugLog('keeper', `${gk.name} ${kind === 'hold' ? 'holds' : kind === 'spill' ? 'spills' : 'parries'} the shot — ${sc.grade} save (stop ${(sc.stop * 100).toFixed(0)}%, offset ${offset.toFixed(2)}, ${speedMs.toFixed(1)} m/s)`, {
+    playerId: gk.id, data: { ...odds, stop: sc.stop, offset, speedMs, grade: sc.grade },
+  });
+  if (kind === 'hold') return { kind: 'end', result: keeperHoldsShot(s, gk) };
+  if (kind === 'spill') {
+    const point = {
+      x: Math.max(0, Math.min(PITCH_LENGTH, b.x - shooter.attackDir * KEEPER_CONFIG.SAVE.SPILL_DIST)),
+      y: Math.max(0, Math.min(PITCH_WIDTH, b.y)),
+    };
+    const players = applyStaminaCost(s.players, gk.id, 'gkSave');
+    return { kind: 'end', result: { state: dropLooseAt({ ...s, shot: null, players }, gk, point), passCompleted: false, tackled: false, goalScored: null } };
+  }
+  const exitX = goalX === 0 ? -1 : PITCH_LENGTH + 1;
+  const saved = { ...s, players: applyStaminaCost(s.players, gk.id, 'gkSave'), shot: null };
+  return { kind: 'end', result: resolveOOBSetPiece(saved, 'corner', shooter.team, exitX, b.y, gk.id, 'clearance', 'save') };
+}
+
+/** The ball reaches the goal line: in, off the woodwork, wide or over. */
+function shotCrossesLine(s: GameState, shooter: GamePlayer, gk: GamePlayer | null, y: number, z: number): TickResult {
+  const shot = s.shot!;
+  const ph = shot.physics!;
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const kind = classifyCrossing(y, z);
+  const base = { player: shooter.id, xg: shot.xg, fromX: shot.fromX, fromY: shot.fromY, toX: goalX, toY: y };
+  if (kind === 'goal') {
+    gameBus.emit('shotResolved', { ...base, danger: 1, isGoal: true, inPosts: true, outcome: 'goal' });
+    if (gk && !ph.touched.includes(gk.id)) debugLog('keeper', `${gk.name} beaten: the shot never came within his reach`, { playerId: gk.id });
+    return scoreShotGoal({ ...s, shot: null }, shooter, shot);
+  }
+  if (kind === 'post' || kind === 'bar') {
+    gameBus.emit('shotResolved', { ...base, danger: 0.8, isGoal: false, inPosts: false, outcome: 'woodwork' });
+    gameBus.emit('shotWoodwork', { player: shooter.id, team: shooter.team, part: kind });
+    debugLog('shot', `${shooter.name}'s shot hits the ${kind}`, { playerId: shooter.id });
+    const b = s.ball!;
+    const k = SHOT_PHYSICS.WOODWORK_KEEP;
+    const dir = scatterDirection(-b.vx, kind === 'post' ? -b.vy : b.vy, 35);
+    const v = Math.hypot(b.vx, b.vy) * k;
+    const x = goalX === 0 ? 0.4 : PITCH_LENGTH - 0.4;
+    const st = { ...s, ball: { ...b, x, vz: kind === 'bar' ? -Math.abs(b.vz) * k : b.vz * k } };
+    return { state: runLoose(st, shooter, x, y, dir.x * v, dir.y * v, 'woodwork', true), passCompleted: false, tackled: false, goalScored: null };
+  }
+  // Wide or over: how far from the frame it went (0 at 2 yd or more).
+  const wideBy = kind === 'wide' ? Math.min(Math.abs(y - GOAL_Y_MIN), Math.abs(y - GOAL_Y_MAX)) : Math.max(0, z - BALL_PHYSICS.CROSSBAR_Z);
+  gameBus.emit('shotResolved', { ...base, danger: Math.max(0, 0.6 * (1 - wideBy / 2)), isGoal: false, inPosts: false, outcome: kind });
+  const exitX = goalX === 0 ? -1 : PITCH_LENGTH + 1;
+  const toucher = ph.deflectedBy !== undefined ? s.players.find(p => p.id === ph.deflectedBy) : undefined;
+  if (toucher && toucher.team !== shooter.team) {
+    return resolveOOBSetPiece({ ...s, shot: null }, 'corner', shooter.team, exitX, y, toucher.id, 'clearance', toucher.role === 'GK' ? 'save' : 'deflection');
+  }
+  const defTeam: TeamId = shooter.team === 'A' ? 'B' : 'A';
+  return resolveOOBSetPiece({ ...s, shot: null }, 'goal_kick', defTeam, exitX, y, shooter.id, 'clearance');
+}
+
 function startShot(state: GameState): GameState {
   if (state.setPiece?.variant === 'direct' && state.setPiece.takerId === state.ballHolderId) return startDirectFreeKick(state);
   const shooter = state.players.find(p => p.id === state.ballHolderId)!;
   const shotKeeper = state.players.find((p) => p.team !== shooter.team && p.role === 'GK');
-  const { toX, toY } = computeShotAim(shooter, {
-    keeperOut: !shotKeeper || !keeperReachesShot(shotKeeper, shooter.x, shooter.y, shooter.attackDir === 1 ? PITCH_LENGTH : 0),
-  });
 
   // xG context: distance, open goal angle, and nearby defensive pressure
   const goalX     = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
@@ -2537,6 +3019,25 @@ function startShot(state: GameState): GameState {
   if (fmXg?.fm) logShotXg(shooter, fmXg.fm);
 
   gameBus.emit('shot', { player: shooter.id, xg });
+
+  // Stage 7: a physical strike; the blocks, the keeper and the line decide it in flight (`tickPhysicalShot`).
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const skill = Math.min(1, shooter.runtimeStats.withBall.shootAccuracy / 0.95);
+    const kDepth = shotKeeper ? Math.abs(shotKeeper.x - goalX) : Infinity;
+    const sDepth = Math.abs(shooter.x - goalX);
+    const lineY = shotKeeper ? shooter.y + ((GOAL_Y_MIN + GOAL_Y_MAX) / 2 - shooter.y) * ((sDepth - kDepth) / Math.max(1, sDepth)) : 0;
+    const keeperAhead = !!shotKeeper && kDepth < sDepth - 1 && Math.abs(shotKeeper.y - lineY) < 4;
+    const technique = chooseTechnique({
+      distYd: Math.hypot(goalX - shooter.x, (GOAL_Y_MIN + GOAL_Y_MAX) / 2 - shooter.y), keeperOffLine: kDepth, keeperAhead,
+      keeperGap: shotKeeper ? Math.hypot(shotKeeper.x - shooter.x, shotKeeper.y - shooter.y) : 0, ballZ: state.ball?.z ?? 0, skill,
+    }, matchRandom);
+    const shot = physicalShot(state, shooter, { technique, skill }, { xg });
+    if (shot) return { ...state, shot, setPiece: null };
+  }
+
+  const { toX, toY } = computeShotAim(shooter, {
+    keeperOut: !shotKeeper || !keeperReachesShot(shotKeeper, shooter.x, shooter.y, goalX),
+  });
 
   // Blocked on its line (stage 4, `movement.md`): the ball rebounds loose off the defender's body.
   if (DECISION_FLAGS.SHOT_BLOCKS) {
@@ -2567,6 +3068,16 @@ function startChip(state: GameState): GameState {
   const keeper = state.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
   const chance = chipMove(shooter, keeper, 0.5, 1.6)?.chance ?? 0;
   if (chance <= 0) return startShot(state);
+  // Stage 7: the chip is a physical lob over him; whether it goes in is the ball's flight against his hands.
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const xg = DECISION_FLAGS.FM_XG ? shotXg(shooter, state.players, 'ground').xg : chance;
+    const shot = physicalShot(state, shooter, { technique: 'chip', skill: Math.min(1, shooter.runtimeStats.withBall.shootAccuracy / 0.95) }, { xg, chip: true });
+    if (shot) {
+      gameBus.emit('shot', { player: shooter.id, xg });
+      gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: 'fail' });
+      return { ...state, shot, setPiece: null };
+    }
+  }
   const isGoal = resolveChip(chance);
   const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
   // Stage 6: the statistic is the FM xG of the shot; the chip's own chance still decides it.
@@ -3926,6 +4437,56 @@ function updateBackLine(s: GameState, defendingTeam: TeamId, shapeBallPos: { x: 
   return { ...s, backLine: { [defendingTeam]: next } };
 }
 
+/** Last shadow press (holder:presser) announced: `shadowPress` once per pair. */
+let _lastShadow = '';
+let _lastShapeMatchTime = 0;
+let _lastShapePhase = '';
+function noteShadowPress(presser: GamePlayer, holder: GamePlayer, receiverId: number): void {
+  const key = `${holder.id}:${presser.id}`;
+  if (_lastShadow === key) return;
+  _lastShadow = key;
+  gameBus.emit('shadowPress', { playerId: presser.id, team: presser.team, holderId: holder.id, receiverId });
+  debugLog('movement', `${presser.name} presses in the pass shadow`, { playerId: presser.id });
+}
+
+/** Zone covers of the last tick per side (`zoneCover` is emitted once per spell). */
+const _lastCover: Partial<Record<TeamId, Map<number, number>>> = {};
+
+/**
+ * Stage 15 (`team-shape.md`): the defending side's out-of-possession zones (its shape anchors) and who covers a
+ * vacated one (`assignZoneCover`), handed to `DefensivePositioning` for this tick; the pressing state (the predicted
+ * ball in FM's 3×3 grid) counted per second.
+ */
+function updateTeamShape(s: GameState, defendingTeam: TeamId, shapeBallPos: { x: number; y: number }, dt: number): GameState {
+  const attackingTeam: TeamId = defendingTeam === 'A' ? 'B' : 'A';
+  setZoneCover(attackingTeam, null);
+  if (!isLivePhase(s.matchPhase) || s.setPiece) { setZoneCover(defendingTeam, null); return s; }
+  const side = s.players.filter(p => p.team === defendingTeam);
+  if (side.length === 0) return s;
+  const dir = side[0]!.attackDir;
+  gameBus.emit('pressState', { team: defendingTeam, state: pressStateOf(shapeBallPos, dir), seconds: dt });
+  if (!DECISION_FLAGS.OOP_ZONES) { setZoneCover(defendingTeam, null); return s; }
+  const formation = defendingTeam === 'A' ? s.formationA : s.formationB;
+  const cfg = getDefenseConfig(defendingTeam);
+  const anchors = new Map<number, { x: number; y: number }>();
+  for (const p of side) if (p.role !== 'GK') anchors.set(p.id, computeDefensiveShapeAnchor(p, shapeBallPos, formation, cfg));
+  const zones = zonesOf(side, anchors);
+  const holding = (p: GamePlayer) => s.decisions[p.id]?.type === 'hold_shape' && p.recoveryTime <= 0 && p.manMarkTargetId === undefined;
+  const prev = _lastCover[defendingTeam] ?? new Map<number, number>();
+  const cover = assignZoneCover(side, zones, holding, shapeBallPos, dir, prev);
+  setZoneCover(defendingTeam, cover);
+  const next = new Map<number, number>();
+  for (const [id, z] of cover as Map<number, ShapeZone>) {
+    next.set(id, z.ownerId);
+    if (prev.get(id) !== z.ownerId) {
+      gameBus.emit('zoneCover', { playerId: id, team: defendingTeam, zoneOwnerId: z.ownerId });
+      debugLog('movement', `Team ${defendingTeam}: ${s.players.find(p => p.id === id)?.name ?? id} covers ${s.players.find(p => p.id === z.ownerId)?.name ?? z.ownerId}'s zone`, { playerId: id });
+    }
+  }
+  _lastCover[defendingTeam] = next;
+  return s;
+}
+
 /**
  * Stage 4 (`movement.md`): the ball runs loose off `toucher` (a deflection, a blocked shot, a heavy touch) from (x, y)
  * at (vx, vy) yd/s. His team made the last touch; chasers of both sides are committed to where it will stop.
@@ -4123,6 +4684,16 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
   const fmXg = DECISION_FLAGS.FM_XG ? shotXg(p, state.players, 'header') : null;
   const xg = fmXg ? fmXg.xg : computeXG(dist, openAngle, pressure) * AERIAL_CONFIG.HEADER_XG_MULT;
   if (fmXg?.fm) logShotXg(p, fmXg.fm);
+  // Stage 7: a physical header (from the head, heading as the skill).
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const shot = physicalShot(state, p, { technique: 'header', skill: Math.min(1, headingOf(p)) }, { xg, header: true });
+    if (shot) {
+      gameBus.emit('shot', { player: p.id, xg });
+      gameBus.emit('header', { player: p.id, xg });
+      debugLog('aerial', `${p.name} heads at goal (xG ${xg.toFixed(2)})`, { playerId: p.id, data: { xg, dist: Math.round(dist) } });
+      return { ...state, ballHolderId: p.id, pass: null, setPiece: null, shot };
+    }
+  }
   // Heading stands in for finishing in the aim spread.
   const aimAs: GamePlayer = {
     ...p,
@@ -4461,10 +5032,29 @@ function nearestOpponentDist(players: readonly GamePlayer[], p: GamePlayer): num
   return best;
 }
 
+/** Carry speed share of a holder step (stage 4b hold / turn; stage 8 spin / flag, `holder-choice.md`). */
+function holderStepSpeed(step: HolderStep | undefined): number {
+  const fm = DECISION_FLAGS.FM_HOLDER;
+  switch (step) {
+    case 'hold': return fm ? HOLDER_CHOICE.HOLD_SPEED : FM_NUMBERS.HOLD_SPEED;
+    case 'turn': return fm ? HOLDER_CHOICE.TURN_SPEED : FM_NUMBERS.TURN_SPEED;
+    case 'spin': return HOLDER_CHOICE.SPIN_SPEED;
+    case 'flag': return HOLDER_CHOICE.FLAG_SPEED;
+    default: return 1;
+  }
+}
+
 /** How long (ticks of 0.2 s) a holder action lasts before he re-decides (stage 4b, `fm-numbers.md`). */
 function holderActionTicks(d: PlayerDecision): number {
   if (d.type === 'carry') {
-    const sec = d.step === 'hold' ? FM_NUMBERS.HOLD_S : d.step === 'turn' ? FM_NUMBERS.TURN_S : FM_NUMBERS.CARRY_STEP_MAX_S;
+    const H = HOLDER_CHOICE;
+    const fm = DECISION_FLAGS.FM_HOLDER;
+    const sec = d.step === 'hold' ? (fm ? H.HOLD_S : FM_NUMBERS.HOLD_S)
+      : d.step === 'turn' ? (fm ? H.TURN_S : FM_NUMBERS.TURN_S)
+      : d.step === 'spin' ? H.SPIN_S
+      : d.step === 'flag' ? H.FLAG_S
+      : d.step === 'sprint' ? H.SPRINT_MAX_S
+      : FM_NUMBERS.CARRY_STEP_MAX_S;
     return sec / DECISION_REF_DT;
   }
   if (d.type === 'dribble') return COMMIT_TICKS.dribble;
@@ -4734,6 +5324,14 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
   s = { ...s, throughBallCellsCache: nextTbCache };
 
+  // ── Team shape and held actions (stage 15, `team-shape.md`) ──────────────
+  setShapeFormations(s.formationA, s.formationB);
+  // A state that did not come from createMatchState (a /test scenario, a new period's clock): the held actions and
+  // shoulder runs of a previous match (the same player ids) must not carry over.
+  if (s.matchTime + 1 < _lastShapeMatchTime || s.matchPhase !== _lastShapePhase) { resetActionHold(); resetShoulderRuns(); }
+  _lastShapeMatchTime = s.matchTime; _lastShapePhase = s.matchPhase;
+  if (isLivePhase(s.matchPhase)) advanceActionClock(dt);
+
   // ── Offside line reads (stage 13, `OffsideRuns.ts`) ──────────────────────
   // An attacker reads the line every few tenths of a second with an error; his own movement and off-ball choices use
   // that read (`lineFor`), so a stepping-up line or a misread leaves him past it. The call itself uses the true line.
@@ -4911,13 +5509,20 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       && !s.pass && !s.looseBall && !s.shot && !(s.setPiece && s.setPiece.takerId === p.id)) {
       const d = mem.decision;
       const moved = mem.from ? Math.hypot(p.x - mem.from.x, p.y - mem.from.y) : 0;
-      const stepDone = d.type === 'carry' && !d.step && moved >= FM_NUMBERS.CARRY_STEP_YD;
-      // A new threat ends the action at once: an opponent closing inside INTERRUPT_YD, nearer than at the start.
+      const stepLen = d.type !== 'carry' ? Infinity
+        : !d.step || d.step === 'byline' ? FM_NUMBERS.CARRY_STEP_YD
+        : d.step === 'sprint' ? HOLDER_CHOICE.SPRINT_STEP_YD : Infinity;
+      const stepDone = moved >= stepLen;
       const nd = nearestOpponentDist(s.players, p);
-      const interrupt = (nd <= FM_NUMBERS.INTERRUPT_YD && nd < (mem.nearD ?? Infinity) - FM_NUMBERS.INTERRUPT_CLOSE_YD)
-        || nd <= FM_NUMBERS.CHALLENGE_YD
-        // In the shooting zone a chance opens in a tick: he reads it every tick there.
-        || Math.hypot((p.attackDir === 1 ? PITCH_LENGTH : 0) - p.x, PITCH_WIDTH / 2 - p.y) <= FM_NUMBERS.CADENCE_FREE_YD;
+      // Stage 8 (`holder-choice.md`): FM decides when the action ends — only a challenge coming in (an opponent inside
+      // CHALLENGE_YD who was farther at the start) cuts it short. Stage 4b: a new threat closing in, any challenge and the
+      // shooting zone (read every tick) all re-decide at once.
+      const interrupt = DECISION_FLAGS.FM_HOLDER
+        ? nd <= HOLDER_CHOICE.CHALLENGE_YD && (mem.nearD ?? Infinity) > HOLDER_CHOICE.CHALLENGE_YD
+        : (nd <= FM_NUMBERS.INTERRUPT_YD && nd < (mem.nearD ?? Infinity) - FM_NUMBERS.INTERRUPT_CLOSE_YD)
+          || nd <= FM_NUMBERS.CHALLENGE_YD
+          // In the shooting zone a chance opens in a tick: he reads it every tick there.
+          || Math.hypot((p.attackDir === 1 ? PITCH_LENGTH : 0) - p.x, PITCH_WIDTH / 2 - p.y) <= FM_NUMBERS.CADENCE_FREE_YD;
       if (!stepDone && !interrupt) {
         newDecisions[p.id] = d;
         updatedMemory[p.id] = { ...mem, commitTicks: mem.commitTicks - dt / DECISION_REF_DT };
@@ -4932,6 +5537,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       s.setPiece, crowdGrid, s.teamIntent,
       isBallHolder ? tbCachedCells : null,
       s.matchTime,
+      isBallHolder ? { lead: p.team === 'A' ? s.score.A - s.score.B : s.score.B - s.score.A, minute: matchMinute(s) } : undefined,
     );
     newDecisions[p.id] = fresh;
     // A holder move starting (`HolderMoves.ts`): counted once, not every tick it is held.
@@ -4966,7 +5572,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       : { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
     if (isBallHolder && fresh.type === 'carry' && fresh.step) {
       gameBus.emit('holderStep', { playerId: p.id, team: p.team, step: fresh.step });
-      debugLog('decision', `${p.name} ${fresh.step === 'hold' ? 'holds the ball' : 'turns'}`, { playerId: p.id });
+      const what = { hold: 'holds the ball', turn: 'turns', sprint: 'sprints with the ball', byline: 'runs at the byline', spin: 'spins past his marker', flag: 'shields it at the corner flag' }[fresh.step];
+      debugLog('decision', `${p.name} ${what}`, { playerId: p.id });
     }
     if (telemetry) {
       const cap = takeCapture();
@@ -5051,10 +5658,15 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     // The defending shape reads where the ball is going (`BallPrediction.ts`, `COHESION.PREDICT_S`).
     const shapeBallPos = predictBallPoint(s, ballPos);
     s = updateBackLine(s, defendingTeam, shapeBallPos, dt);
+    s = updateTeamShape(s, defendingTeam, shapeBallPos, dt);
+    const pressState = pressStateOf(shapeBallPos, s.players.find(p => p.team === defendingTeam)?.attackDir ?? 1);
 
     const movedPlayers = s.players.map(player => {
       if (player.id === s.ballHolderId && !looseKeeper(s, player)) return player;
 
+      // Stage 7: the keeper and the planned blockers of a physical shot are moved by the shot itself (`tickPhysicalShot`).
+      if (s.shot?.physics && player.team !== teamOfId(s, s.shot.shooterId)
+        && (player.role === 'GK' || s.shot.physics.blocks.some(r => r.id === player.id))) return player;
       // GK override: sprint to the ball's path (an advanced keeper does not run back to the line)
       if (s.shot !== null && player.role === 'GK') {
         const shooter = s.players.find(p => p.id === s.shot!.shooterId);
@@ -5104,9 +5716,16 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const legacy = { x: player.x + (cdx / cdist) * step, y: player.y + (cdy / cdist) * step };
         return { ...moveToward(player, s, dt, targetPt, sprintSpeed * recoveryMult, legacy, moveLog), targetPosition: targetPt };
       }
+      const shadow = isPressing && decision.type === 'press' && !decision.standOff && DECISION_FLAGS.PASS_SHADOW
+        && pressState >= TEAM_SHAPE.SHADOW_FROM_STATE && getMainRole(player.role) === 'Forward'
+        ? passShadowPoint(player, holder, s.players) : null;
       if (isPressing && decision.type === 'press' && decision.standOff) {
         // Second presser (stage 4, `movement.md`): stands off the holder, covering the inside route.
         target = standOffPoint(player, holder);
+      } else if (shadow) {
+        // Pass shadow (stage 15, `team-shape.md`): a forward presses on the lane between the holder and a receiver.
+        target = { x: shadow.x, y: shadow.y };
+        noteShadowPress(player, holder, shadow.receiverId);
       } else if (isPressing) {
         const holderDecision = s.decisions[holder.id];
         if (holderDecision?.type === 'carry') {
@@ -5145,14 +5764,19 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const base = attackingAnchor(slotBasePosition(player, formation, 'attacking'), player, ballPos);
         const pushUpT    = Math.min(1, s.possessionTime / POSSESSION_PUSH_UP.BASE_SECONDS);
         const pushUpBias = PUSH_UP_ROLE_BIAS[player.role] ?? 0;
-        const pushedBaseX = base.x + player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;
+        const pushedBaseX = DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_IN ? base.x : base.x + player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;
         const pull = 1 - OFF_BALL_CONFIG.FORMATION_PULL;
         let tx = pushedBaseX + (rawX - pushedBaseX) * pull;
         const ty = base.y + (rawY - base.y) * pull;
 
         // Clamp to stay onside — on his read of the line (stage 13), not the true one.
         const ownLine = lineFor(player);
-        if (ownLine !== null) {
+        // A run on the shoulder (stage 15, `ShoulderRuns.ts`): going on the pass (or early) he is not held on the line.
+        const going = DECISION_FLAGS.SHOULDER_RUNS
+          && shoulderRunGoing(player, holder, s.decisions[holder.id]?.type, ownLine, s.players, dt);
+        if (going) {
+          tx = Math.max(tx * player.attackDir, (player.x + player.attackDir * TEAM_SHAPE.GO_AHEAD_YD) * player.attackDir) * player.attackDir;
+        } else if (ownLine !== null) {
           const fwd   = player.attackDir;
           const safeX = ownLine - fwd * ATTACK_CONFIG.OFFSIDE_MARGIN;
           if ((tx - safeX) * fwd > 0) {
@@ -5252,6 +5876,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
 
   // ── Shot in flight ─────────────────────────────────────────────────────────
+  if (s.shot?.physics) return tickPhysicalShot(s, dt);
   if (s.shot) {
     let flying = s.shot;
     const newT = flying.t + dt * SHOT_SPEED;
@@ -5282,7 +5907,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       }
       // A save ends where the ball met the keeper, so the pitch effects draw there and not on the goal line behind him.
       const endAt = savedByKeeper ? shotInterceptPoint(defendingGK!, flying) : { x: flying.toX, y: flying.toY };
-      gameBus.emit('shotResolved', { player: shooter.id, xg: flying.xg, goalChance, isGoal, inPosts, fromX: flying.fromX, fromY: flying.fromY, toX: endAt.x, toY: endAt.y });
+      gameBus.emit('shotResolved', { player: shooter.id, xg: flying.xg, danger: goalChance, isGoal, inPosts, fromX: flying.fromX, fromY: flying.fromY, toX: endAt.x, toY: endAt.y });
 
       if (inPosts && isGoal) {
         const newScore = { ...s.score, [shooter.team]: s.score[shooter.team] + 1 };
@@ -5589,11 +6214,13 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         p.team !== carrier.team &&
         (s.decisions[p.id]?.type === 'press' || s.decisions[p.id]?.type === 'tackle'),
       );
-      const accelBurst   = isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
+      // A sprint carry (stage 8) runs flat out: the acceleration boost always on.
+      const accelBurst   = holderDecision.step === 'sprint' ? wb.acceleration * HOLDER_CHOICE.SPRINT_ACCEL_BOOST
+        : isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
       const recoveryMult = carrier.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
       // Shielding (`HolderMoves.ts`): he edges away from the presser, ball kept on the far foot.
       const shieldMult = (holderDecision.move === 'shield' ? HOLDER_MOVES.SHIELD_SPEED_MULT : 1)
-        * (holderDecision.step === 'hold' ? FM_NUMBERS.HOLD_SPEED : holderDecision.step === 'turn' ? FM_NUMBERS.TURN_SPEED : 1);
+        * holderStepSpeed(holderDecision.step);
       const step = (wb.carrySpeed + accelBurst) * recoveryMult * shieldMult * dt * weatherEffectOf(s.weather).carrySpeed;
       // Role bounds don't restrict the ball carrier — only the pitch boundary does.
       // Off-ball positioning is where bounds apply.

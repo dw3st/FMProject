@@ -123,12 +123,14 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
   const [offBallMap, setOffBallMap]   = useState<Map<number, GameEvents['offBallScores']>>(new Map);
   const [defMap, setDefMap]           = useState<Map<number, GameEvents['defensiveScores']>>(new Map);
   const [tbScores, setTbScores]       = useState<GameEvents['throughBallScores'] | null>(null);
+  const [fmCands, setFmCands]         = useState<GameEvents['holderCandidates'] | null>(null);
   const selectedPlayerIdRef = useRef(selectedPlayerId);
   useEffect(() => { selectedPlayerIdRef.current = selectedPlayerId; }, [selectedPlayerId]);
 
   useEffect(() => onDebugLog(setEntries), []);
   useEffect(() => gameBus.on('decisionScores', setScores), []);
   useEffect(() => gameBus.on('throughBallScores', setTbScores), []);
+  useEffect(() => gameBus.on('holderCandidates', setFmCands), []);
   useEffect(() => gameBus.on('offBallScores', data => {
     setOffBallMap(prev => {
       const next = new Map(prev);
@@ -403,6 +405,28 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
                   </div>
                 );
               })()}
+
+              {/* ── FM holder chooser (stage 8, `holder-choice.md`): every candidate, its risk and veto ── */}
+              {fmCands && fmCands.playerId === scores.playerId && (
+                <div className="mt-1 pt-1.5 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold tracking-widest uppercase text-amber-400/80">FM candidates {fmCands.lapse ? '· lapse' : ''}</span>
+                    <span className="text-[9px] tabular-nums text-muted-foreground/60">
+                      {fmCands.candidates.length} · {fmCands.candidates.filter(c => c.vetoed).length} vetoed
+                    </span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto font-mono">
+                    {[...fmCands.candidates.map((c, i) => ({ c, i }))].sort((a, b) => b.c.score - a.c.score).map(({ c, i }) => (
+                      <div key={i} className={`grid grid-cols-[1fr_auto_auto_auto] gap-x-2 text-[9px] tabular-nums ${i === fmCands.chosen ? 'text-amber-300' : c.vetoed ? 'text-muted-foreground/30 line-through' : 'text-muted-foreground/70'}`}>
+                        <span className="truncate">{['pass', 'kick', 'turn', 'hold', 'carry'][c.cat]} · {c.kind} · {c.label}</span>
+                        <span>v {c.value.toFixed(2)}{c.mult !== 1 ? `×${c.mult}` : ''}</span>
+                        <span className={c.risk >= 100 ? 'text-rose-400' : c.risk >= 60 ? 'text-rose-400/70' : ''}>r {c.risk}</span>
+                        <span>{c.vetoed ? 'veto' : `${c.score}${c.compressed ? '*' : ''}`}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <span className="text-[11px] text-muted-foreground/40">waiting…</span>

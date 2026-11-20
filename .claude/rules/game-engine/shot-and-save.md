@@ -333,3 +333,51 @@ Same screen solo and between two managers (the server's `H2H.PENALTY_CHOICE_S` 2
 Com `DECISION_FLAGS.FM_XG` (ligado) o `xg` de todo chute (estatística, nota de chutar, entrada do `resolveShot`) vem
 da regressão logística do FM (`Domain/FmXg.ts`, `Domain/ShotXg.ts`), não do `computeXG` acima. A resolução ainda sorteia
 sobre esse xG até a etapa 7 (chute pela trajetória). Ver `.claude/rules/game-engine/xg.md`.
+
+## Stage 7: the shot by its trajectory (`SHOT_PHYSICS`)
+
+With `DECISION_FLAGS.SHOT_PHYSICS` (on, needs `BALL_3D`) a shot has no dice on the xG: `goalChance` is gone and the
+xG is only the statistic and the shooter's decision. The goal comes from the ball against the defenders and the keeper.
+Config `Configs/ShotPhysicsConfig.ts` (`SHOT_PHYSICS`, `SHOT_PHYSICS_OVERRIDES`), pure model `Domain/ShotPhysics.ts`
+(+ test), engine `physicalShot` / `tickPhysicalShot` in `gameState.ts`. Off = the old path, the same play as before.
+
+- **Technique** (`chooseTechnique`): volley (ball at 0.22+ yd at the strike), lob over a keeper 8+ yd off his line from
+  16–38 yd with him 6+ yd ahead, placed (side-foot) within 18 yd with chance 0.35 + 0.4 × finishing, else power. The
+  header, the chip (holder move) and the direct free kick choose theirs. Speeds (m/s): power 24 + 6s, placed 17 + 4s,
+  volley 22 + 6s, header 10 + 6s; lob, chip and free kick take theirs from the trajectory.
+- **Aim** (`aimPoint`): the side with more room past the keeper's shadow (0.6 + 0.35 × skill), inside the post by
+  0.4 + 0.4 × (1 − skill) m, low (0.3 m) or high (1.85 m) by technique (high: power 35%, placed 12%, volley 45%,
+  header 25%, free kick 70%).
+- **Launch**: straight to the aim (`directLaunch`), or a dip over the wall / the advanced keeper (`dipLaunch`: clears
+  his hands by 0.4 yd and crosses the line at 1.8 yd). Then FM's launch error on the vector (`shotErrorFactor`,
+  `applyShotError`): the stage-4 pass factor × 105/95 × the speed term (10.5 + 0.5·v) / (9.5 + 0.5·v_pass(d)); a free
+  kick uses the set-piece base 85 and no pressure, a volley loses 10 points of margin, the long-shot weather scales it.
+- **Flight**: the 3D ball on free physics (`stepFree`, `BallState.free`, phase `shot`), sub-stepped every 0.02 s. In
+  each sub-step the keeper and the blockers move, the ball flies, then contacts are checked (outfield first, then the
+  keeper's hands), then the goal line.
+- **Blocks** (stage 5's physical interception): up to 3 outfield defenders that can reach the path (`planShotBlocks`,
+  reaction 0.15 s, lunge 4.5 yd/s, reach 0.5 + 0.5 × tackling, up to 2.2 yd high). A ball within reach is touched:
+  controlled (0.08 + 0.15 × first touch, less at speed), deflected on toward goal (25% of the rest, 70% of its speed,
+  ±25°) or a rebound (loose ball `block`, 25–50% of the speed, ±70° around the way back). `shotBlocked` /
+  `shotDeflected`.
+- **Keeper**: reacts after 0.3 − 0.15 × reflexes s, then dives at 4 + 4 × diving yd/s toward the point of the path he
+  can reach; leaves a ball predicted 0.4+ yd off the frame. Hands 0.9 + 0.5 × diving yd from his centre, up to 3 yd
+  high. A ball within his hands: stop chance 0.9 + 0.2 × (handling − 0.5) − 0.5 × offset² − 0.02 × (speed − 18)⁺
+  (`saveChances`, 0.05–0.98); stopped = hold, parry (corner) or spill in front by `saveOutcomeChances`; not stopped =
+  the ball runs on, 75% of the speed, turned up to 12° (fingertips). Save grade: difficult at offset 0.65+ or 27+ m/s,
+  good at 0.35+ or 22+ m/s (`keeperSave.grade`).
+- **Line** (`lineCrossing`, `classifyCrossing`): goal; post or bar within 0.19 yd (rebounds at 45%, loose `woodwork`);
+  wide or over (corner when a defender or the keeper touched it last, else a goal kick). A stopped ball or 4 s of flight
+  is a loose ball; out over a touchline, a throw-in.
+- Events: `shotLaunched` (technique, speed, vz, aim, error, distance, on target, blockers), `shotDeflected`,
+  `shotWoodwork`; `shotResolved` has `danger` (the old `goalChance`, for the near-miss sound) and `outcome`.
+- **2D**: the ball is drawn on its real path (`ballFlightPath.ts` predicts the free flight for the /test overlay); a
+  save, a block or the woodwork happens where the ball meets the body.
+- **Statistics** (team): `shotsOffTarget`, `shotsWoodwork`, `shotsDeflected`, `shotsSaved`, `saves` / `savesGood` /
+  `savesDifficult` (the keeper's team), techniques (`shotPower`, `shotPlaced`, `shotLob`, `shotChip`, `shotVolley`,
+  `shotHeaderLaunch`, `shotFreeKick`), launch speed. `/lab` `PairDetail` rows; `fm-targets.ts` section "The shot by its
+  trajectory" (with the goal share by distance against FM).
+- `/test`: scenarios `shot-blocked`, `shot-long-range`, `shot-lob` (`testPhysicalShot` strikes the shot at once).
+- Tests: `Domain/ShotPhysics.test.ts`, `Domain/ShotPhysics.engine.test.ts`; the wall-dice free-kick test runs with the
+  flag off (`SetPieces.engine.test.ts`).
+- Not calibrated (stage 21). Numbers against FM: `fm-numbers.md` → "Etapa 7".

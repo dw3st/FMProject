@@ -22,6 +22,8 @@ import { slotBasePosition } from '@/GameEngine/FormationSlots';
 import { ATTACK_CONFIG, POSSESSION_PUSH_UP, PUSH_UP_ROLE_BIAS, getTeamAttackWidth } from '@/GameEngine/Configs/AttackConfig';
 import type { TeamId } from '@/GameEngine/types';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
+import { fmShapePoint, shapeFormationOf } from '@/GameEngine/Domain/TeamShape';
+import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
 
 /**
  * The attacking slot of a player adjusted to the moment:
@@ -41,7 +43,15 @@ const BOX_CONVERGENCE_SPAN   = 30;
  * The block slides with the ball (stage 4b, `fm-numbers.md`): in possession the whole shape moves up IN_ADVANCE_YD
  * plus IN_PUSH × (ball depth − halfway) — a uniform shift, never a squeeze toward the ball. 0 with the flag off.
  */
-export function blockShiftX(player: { attackDir: 1 | -1; role?: string }, ballPos: { x: number; y: number }): number {
+export function blockShiftX(
+  player: { attackDir: 1 | -1; role?: string; team?: TeamId; basePosition?: { x: number; y: number } },
+  ballPos: { x: number; y: number },
+): number {
+  // FM's block (stage 15): the shift is where the shape puts his slot, against the slot itself.
+  if (DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_IN && player.team && player.basePosition) {
+    const f = shapeFormationOf(player.team);
+    if (f) return fmShapePoint(player.basePosition, player, ballPos, 'attacking', f).x - player.basePosition.x;
+  }
   if (!DECISION_FLAGS.SLIDING_BLOCK) return 0;
   const relBall = player.attackDir === 1 ? ballPos.x : PITCH_LENGTH - ballPos.x;
   // The back of the team moves up most; the front already stands on the other side's line, and pushing it
@@ -58,12 +68,21 @@ export function attackingAnchor(
   ballPos: { x: number; y: number },
 ): { x: number; y: number } {
   const centre = PITCH_WIDTH / 2;
-  const spread = getTeamAttackWidth(player.team) / ATTACK_CONFIG.ATTACK_WIDTH
-    * (DECISION_FLAGS.SLIDING_BLOCK ? FM_NUMBERS.IN_WIDTH : 1);
-  let y = centre + (base.y - centre) * spread;
   const relBase = player.attackDir === 1 ? base.x : PITCH_LENGTH - base.x;
-  // The block slides with the ball (stage 4b, `fm-numbers.md`): in possession the whole shape moves up behind it.
-  const x = Math.max(1, Math.min(PITCH_LENGTH - 1, base.x + blockShiftX(player, ballPos)));
+  const tacticWidth = getTeamAttackWidth(player.team) / ATTACK_CONFIG.ATTACK_WIDTH;
+  const f = DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_IN ? shapeFormationOf(player.team) : undefined;
+  let x: number;
+  let y: number;
+  if (f) {
+    // FM's block (stage 15, `team-shape.md`): back line at FM's depth for the ball, span and width of FM's shape.
+    const p = fmShapePoint(base, player, ballPos, 'attacking', f, 0.6, tacticWidth);
+    x = p.x; y = p.y;
+  } else {
+    const spread = tacticWidth * (DECISION_FLAGS.SLIDING_BLOCK ? FM_NUMBERS.IN_WIDTH : 1);
+    y = centre + (base.y - centre) * spread;
+    // The block slides with the ball (stage 4b, `fm-numbers.md`): in possession the whole shape moves up behind it.
+    x = Math.max(1, Math.min(PITCH_LENGTH - 1, base.x + blockShiftX(player, ballPos)));
+  }
   if (relBase >= BOX_CONVERGENCE_FROM_X) {
     const relBall = player.attackDir === 1 ? ballPos.x : PITCH_LENGTH - ballPos.x;
     const t = Math.max(0, Math.min(1, (relBall - BOX_CONVERGENCE_FROM_X) / BOX_CONVERGENCE_SPAN));
@@ -127,7 +146,8 @@ export function computeAttackingPosition(
   // Defenders push furthest; forwards are already in their attacking zone.
   const pushUpT    = Math.min(1, possessionTime / POSSESSION_PUSH_UP.BASE_SECONDS);
   const pushUpBias = PUSH_UP_ROLE_BIAS[player.role] ?? 0;
-  if (pushUpBias > 0 && pushUpT > 0) {
+  // FM's block (stage 15) already puts the back line where it plays with the ball: no possession push-up on top.
+  if (pushUpBias > 0 && pushUpT > 0 && !(DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_IN && shapeFormationOf(player.team))) {
     rawX += player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;
   }
 

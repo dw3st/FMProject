@@ -20,7 +20,7 @@ import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, testPhysicalShot, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import { counterStyle, pickMarkTarget, pickMarkerSlot } from '@/Domain/study/study';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
@@ -391,6 +391,58 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-holder-hold',
+    name:        'FM holder — hold, turn and spin',
+    description: 'A CM in his own half with his back to goal (moving back toward his own goal), a marker tight on him and every teammate marked (stage 8, `holder-choice.md`). The FM chooser offers ~20 candidates with a risk byte; the marked passes are vetoed or compressed, so he holds, turns or spins past the marker. Open "Decision Scores" with the holder selected: "FM candidates" lists every one (value, risk, score; vetoed struck through, the pick in amber).',
+    createState() {
+      _nextId = 1;
+      const s = buildState([
+        makePlayer('Mendes',   'A', 'CM',   45, 37, MIDFIELDER),
+        makePlayer('Garcia',   'A', 'CB',   25, 30, DEFENDER),
+        makePlayer('Santos',   'A', 'ST',   70, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CM',   47.5, 37, MIDFIELDER),
+        makePlayer('Nunes',    'B', 'ST',   27, 31, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   71, 40.5, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+      return { ...s, players: s.players.map(p => (p.id === 1 ? { ...p, vel: { x: -1.5, y: 0 } } : p)) };
+    },
+  },
+
+  {
+    id:          'fm-holder-flag',
+    name:        'FM holder — keep it at the corner flag',
+    description: 'Team A leads 1–0 at 88 min; their winger has the ball 8 yd from the opponents’ corner flag, a full-back closing (stage 8, `holder-choice.md`). The FM chooser offers the corner-flag hold (category hold): he runs to the flag and shields it ("decision" log, "FM candidates" panel).',
+    createState() {
+      _nextId = 1;
+      const s = buildState([
+        makePlayer('Mendes',   'A', 'RW',  108, 68, WINGER),
+        makePlayer('Santos',   'A', 'ST',   95, 40, STRIKER),
+        makePlayer('Silva',    'B', 'LB',  100, 64, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  104, 42, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+      return { ...s, score: { A: 1, B: 0 }, matchPhase: 'secondHalf', matchTime: 43 * 60 };
+    },
+  },
+
+  {
+    id:          'fm-holder-sprint',
+    name:        'FM holder — sprint into space and run at the byline',
+    description: 'A winger 40 yd from goal on the right, open grass ahead of him and the full-back 12 yd away (stage 8, `holder-choice.md`). The chooser offers a 5.5-yd sprint step (carry category, full acceleration) and, nearer the end line, the byline run that sets up the cross.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Mendes',   'A', 'RW',   75, 64, WINGER),
+        makePlayer('Santos',   'A', 'ST',   92, 38, STRIKER),
+        makePlayer('Silva',    'B', 'LB',   88, 56, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   98, 38, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'keeper-sweeper',
     name:        'Keeper — sweeper on a ball over the top',
     description: 'CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. The keeper (Kowalski) leaves his box and gets there first (`Keeper.ts`, sweeper). Toggle "Keeper" for the sweeper zone and his target; watch the "keeper" debug log.',
@@ -417,6 +469,53 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Silva',    'B', 'CB',   86, 39, DEFENDER),
         makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
       ], 1);
+    },
+  },
+
+  {
+    id:          'shot-blocked',
+    name:        'Shot — blocked on its line',
+    description: 'Stage 7 (`shot-and-save.md`): a power shot from 17 yd with a centre-back 3 yd in front of the shooter on the line to goal. No block dice: the defender reacts after 0.15 s and lunges at the path; if the ball passes within his reach (body + leg by tackling, up to 2.2 yd high) he touches it, then controls, deflects it on toward goal or it rebounds loose. Debug "shot" shows the launch (technique, speed, aim, error) and the planned blockers.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   97, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  100, 37.3, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  106, 33, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-long-range',
+    name:        'Shot — from 28 yd',
+    description: 'Stage 7: a midfielder strikes from 28 yd with nobody in front of him. The ball flies by its 3D physics (launch error with the FM shot base 105); the keeper reacts by reflexes, dives by diving and stops it by handling, holding, parrying wide or spilling it in front. Watch the "keeper" debug line for the save grade.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CM',   87, 40, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  100, 33, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  104, 30, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-lob',
+    name:        'Shot — lob over an advanced keeper',
+    description: 'Stage 7: the keeper is 13 yd off his line and the striker 27 yd out lifts it over him (a lob, `cobertura`): the flight is solved to clear the hands of the keeper where he stands and drop under the bar. He backpedals; whether he reaches it is his reaction, dive speed and hands against the ball.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   88, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   95, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  102, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'lob');
     },
   },
 
@@ -1304,6 +1403,57 @@ export const TEST_SCENARIOS: TestScenario[] = [
         }),
       };
       return placed;
+    },
+  },
+
+  {
+    id:          'fm-shape-shadow',
+    name:        '11v11 — FM block and pass shadow (stage 15)',
+    description: "Team B CB has the ball deep in his own half with a CM and the full-backs as options; Team A sits in FM's out-of-possession block (back line ~24 yd from its goal, span 26, width 37) and its ST presses on the lane between the holder and the nearest receiver instead of the holder (`TeamShape.ts`). Turn on the Shape overlay: the two teams' back-line targets, the forward's shadow point, zone covers (yellow squares) and the held-action bars.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cb = base.players.find(p => p.team === 'B' && p.role === 'CB');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cb || !st) return base;
+      const own = cb.attackDir === 1 ? 0 : PITCH_LENGTH;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cb.id,
+        players: base.players.map(p =>
+          p.id === cb.id ? { ...p, x: own + cb.attackDir * 18, y: 30 } :
+          p.id === st.id ? { ...p, x: own + cb.attackDir * 34, y: 34 } : p),
+      };
+    },
+  },
+
+  {
+    id:          'shoulder-run',
+    name:        '11v11 — Run on the shoulder (stage 15)',
+    description: "Team A CM has the ball free on the halfway line; the Team A ST stands on the last defender's shoulder, making a run. He goes when the CM plays forward (a good reader at once, a poor one later) or now and then early: going early, a pass to him is offside (`ShoulderRuns.ts`). Watch the \"offside\" debug log (\"goes on the shoulder\"), the green ring of the Shape overlay and the OFF column.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cm = base.players.find(p => p.team === 'A' && p.role === 'CM');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cm || !st) return base;
+      const dir = cm.attackDir;
+      const mid = PITCH_LENGTH / 2;
+      const lineX = mid + dir * 24;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cm.id,
+        players: base.players.map(p => {
+          if (p.id === cm.id) return { ...p, x: mid, y: 37 };
+          if (p.id === st.id) return { ...p, x: lineX - dir * 1.5, y: 36 };
+          if (p.team === 'B' && (p.role === 'CB' || p.role === 'LB' || p.role === 'RB')) return { ...p, x: lineX, y: p.y };
+          return p;
+        }),
+      };
     },
   },
 

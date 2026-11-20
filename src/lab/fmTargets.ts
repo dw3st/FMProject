@@ -3,6 +3,7 @@
  * tick of a match (`simulateMatch(..., { onTick })`), state-based so it needs no listener on the engine. Pure apart from
  * the accumulator it fills. Distances in yards; FM's metre bands converted (1 m = 1.0936 yd).
  */
+import { offBallIntentOf } from "@/GameEngine/Domain/OffBallMovement";
 import type { GameState, GamePlayer, TeamId } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
 import { holderPressure } from "@/GameEngine/Domain/Pressure";
@@ -86,6 +87,22 @@ export interface FmTargetTotals {
    */
   lossEarly: number;
   lossLate: number;
+  /**
+   * Stage 7 (`shot-and-save.md`): where each shot ended (`SHOT_END`: goal, saved, blocked, off target incl. woodwork) by
+   * the distance from where it was struck to the aimed point (`SHOT_M_LABELS`, metres, report 8 §2.1's bands).
+   */
+  shotEnds: number[][];
+}
+
+/** Stage 7: shot distance bands (m, report 8 §2.1) and FM's goal share of the shots in each (%). */
+export const SHOT_M_LABELS = ["0–8", "8–12", "12–16", "16–20", "20–25", "25+"] as const;
+export const FM_GOAL_BY_DIST = [21, 11, 12, 13, 3, 0] as const;
+export const SHOT_END = ["goal", "saved", "blocked", "off"] as const;
+export type ShotEnd = (typeof SHOT_END)[number];
+const shotMBand = (dM: number) => (dM < 8 ? 0 : dM < 12 ? 1 : dM < 16 ? 2 : dM < 20 ? 3 : dM < 25 ? 4 : 5);
+/** One shot's end by its distance (yd). */
+export function addShotEnd(t: FmTargetTotals, distYd: number, end: ShotEnd): void {
+  t.shotEnds[shotMBand(distYd / YD)]![SHOT_END.indexOf(end)]!++;
 }
 
 /** R7: share of the possession losses after a pass that happen in flight (early) against later (%). */
@@ -140,6 +157,7 @@ export function emptyFmTargets(): FmTargetTotals {
     passVz: VZ_LABELS.map(o3), launchSpeed: LAUNCH_LABELS.map(() => []), launchVz: LAUNCH_LABELS.map(() => []),
     flight: FLIGHT_LABELS.map(() => []), landingErr: { cross: [], corner: [], long: [], lofted: [] },
     lossEarly: 0, lossLate: 0,
+    shotEnds: SHOT_M_LABELS.map(() => SHOT_END.map(() => 0)),
   };
 }
 
@@ -163,6 +181,7 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
     dst.holdDefault[l].push(...src.holdDefault[l]); dst.holdShort[l].push(...src.holdShort[l]);
   }
   src.shotDist.forEach((v, i) => { dst.shotDist[i]! += v; }); dst.shots += src.shots;
+  (src.shotEnds ?? []).forEach((row, i) => row.forEach((v, j) => { dst.shotEnds[i]![j]! += v; }));
   src.shotXgHist.forEach((v, i) => { dst.shotXgHist[i]! += v; });
   src.condition.forEach((v, i) => { dst.condition[i]!.sum += v.sum; dst.condition[i]!.n += v.n; });
   dst.keeperEnd.sum += src.keeperEnd.sum; dst.keeperEnd.n += src.keeperEnd.n;
@@ -182,7 +201,7 @@ const ballGroupOf = (kind: string): BallGroup | null =>
 /** FM category of a holder decision. */
 export function holderCategory(d: PlayerDecision): HolderCat {
   switch (d.type) {
-    case "carry": return d.move === "shield" || d.step === "hold" ? "hold" : d.step === "turn" ? "turn" : "carry";
+    case "carry": return d.move === "shield" || d.step === "hold" || d.step === "flag" ? "hold" : d.step === "turn" || d.step === "spin" ? "turn" : "carry";
     case "dribble": return "carry";
     case "shoot": return "kick";
     default: return "pass";
@@ -200,9 +219,24 @@ const fromOwnGoal = (p: GamePlayer) => (p.attackDir === 1 ? p.x : PITCH_LENGTH -
 const thirdOf = (p: GamePlayer) => Math.min(2, Math.floor(fromOwnGoal(p) / (PITCH_LENGTH / 3)));
 const bandOfYd = (d: number) => { const m = d / YD; let i = 0; while (i < FM_BANDS_M.length && m >= FM_BANDS_M[i]!) i++; return i; };
 const pressureBand = (p: number) => (p <= 0 ? 0 : p < 15 ? 1 : p < 30 ? 2 : p < 50 ? 3 : 4);
-/** FM's default "take up position" (0x58): holding the shape, marking, supporting; the rest are short actions. */
-const isDefaultIntent = (t: string) => t === "hold_shape" || t === "idle" || t === "track_mark" || t === "support_run";
-const runKey = (t: string) => (isDefaultIntent(t) ? "default" : t);
+/**
+ * FM's default "take up position" (0x58) against its short actions (0x53 shape / marking, 0x5c support, 0x5a runs…,
+ * report 7): holding the shape or the space is the default; marking, stepping into a lane, offering, a run, making
+ * space, pressing are short (stage 15: an off-ball `support_run` is classed by its intent).
+ */
+const runKey = (p: GamePlayer, t: string) => {
+  if (t === "hold_shape" || t === "idle") return "default";
+  if (t === "support_run") { const i = offBallIntentOf(p.id); return i === "hold_space" || i === undefined ? "default" : i; }
+  // Pressing, tackling and chasing a loose ball are FM's pressing managers and ball events, not off-ball actions:
+  // they end a run but are not counted themselves.
+  if (t === "press" || t === "tackle" || t === "chase_loose_ball") return "other";
+  return t;
+};
+/** Record a finished run (the "other" kinds are not off-ball actions). */
+const pushRun = (acc: FmTargetTotals, r: HoldRun, end: number) => {
+  if (r.type === "other") return;
+  (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(end - r.since);
+};
 
 interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean; t0: number; vzM: number | null }
 interface Stint { id: number; t0: number; decisions: number }
@@ -320,9 +354,9 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
       const d = s.decisions[p.id];
       if (!d) continue;
       const r = runs.get(p.id);
-      const key = runKey(d.type);
+      const key = runKey(p, d.type);
       if (!r || r.type !== key) {
-        if (r) (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(realT - r.since);
+        if (r) pushRun(acc, r, realT);
         runs.set(p.id, { type: key, since: realT, line: lineOf(p) });
       }
     }
@@ -371,7 +405,7 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
       for (const k of last.players.filter(p => p.role === "GK")) { acc.keeperEnd.sum += k.energy; acc.keeperEnd.n++; }
     }
     acc.matches++;
-    for (const r of runs.values()) (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(realT - r.since);
+    for (const r of runs.values()) pushRun(acc, r, realT);
     runs.clear();
   };
   void PITCH_WIDTH;
@@ -392,7 +426,7 @@ export const CONDITION_MINUTES = [15, 30, 45, 60, 75, 90] as const;
 export type FmConfidence = "H" | "M" | "L";
 export type FmMatchKey =
   | "goals" | "shots" | "shotsOnTargetPct" | "shotsBlockedPct" | "longShotsPct" | "xg" | "xgPerShot" | "xgMedian"
-  | "clearChances" | "conversionPct"
+  | "clearChances" | "conversionPct" | "savedPct" | "offTargetPct"
   | "corners" | "throwIns" | "passesAttempted" | "passCompletionPct" | "crosses" | "crossCompletionPct"
   | "aerialDuelsWon" | "tacklesWon" | "interceptions" | "dribbles" | "fouls" | "yellowCards" | "yellowsPerFoul"
   | "redCards" | "offsides" | "penalties";
@@ -411,6 +445,8 @@ export const FM_MATCH_TARGETS: readonly FmMatchTarget[] = [
   { key: "xgMedian",           label: "xG per shot, median",   fm: 0.03, confidence: "M", source: "R6" },
   { key: "clearChances",       label: "Clear-cut chances",     fm: 3.5,  confidence: "M", source: "R9" },
   { key: "conversionPct",      label: "Goals % of shots",      fm: 7, pct: true, confidence: "M", source: "R9" },
+  { key: "savedPct",           label: "Saved % of on target",  fm: 80, pct: true, confidence: "M", source: "R9" },
+  { key: "offTargetPct",       label: "Off target % of shots", fm: 27, pct: true, confidence: "M", source: "R9" },
   { key: "corners",            label: "Corners",               fm: 12.5, confidence: "H", source: "R9" },
   { key: "throwIns",           label: "Throw-ins",             fm: 23,   confidence: "L", source: "L" },
   { key: "passesAttempted",    label: "Passes (all kinds)",    fm: 978,  confidence: "H", source: "R9" },
@@ -483,6 +519,11 @@ export interface FmMatchCounts {
   longShots?: number;
   /** Median xG per shot, when a collector kept the histogram (`xgMedianOf`); else absent. */
   xgMedian?: number;
+  /** Stage 7 (`shot-and-save.md`): shots saved and off target (woodwork included), and the rest of the shot counters. */
+  shotsSaved?: number; shotsOffTarget?: number; shotsWoodwork?: number; shotsDeflected?: number;
+  saves?: number; savesGood?: number; savesDifficult?: number;
+  shotPower?: number; shotPlaced?: number; shotLob?: number; shotChip?: number; shotVolley?: number; shotHeaderLaunch?: number; shotFreeKick?: number;
+  shotSpeedSum?: number; shotLaunchN?: number;
 }
 
 export const FM_COUNT_KEYS = [
@@ -493,6 +534,8 @@ export const FM_COUNT_KEYS = [
   "fouls", "yellowCards", "redCards", "offsides", "penaltiesAwarded",
   "foulsWonOwnThird", "foulsWonMidThird", "foulsWonFinalThird", "foulsWonCarrying", "foulsWonReceiving", "foulsWonHolding",
   "contactFouls", "lineMisreads",
+  "shotsSaved", "shotsOffTarget", "shotsWoodwork", "shotsDeflected", "saves", "savesGood", "savesDifficult",
+  "shotPower", "shotPlaced", "shotLob", "shotChip", "shotVolley", "shotHeaderLaunch", "shotFreeKick", "shotSpeedSum", "shotLaunchN",
   "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
@@ -522,6 +565,8 @@ export function fmMatchValues(c: FmMatchCounts): Record<FmMatchKey, number | nul
     longShotsPct: c.longShots === undefined ? null : pc(c.longShots, c.shots),
     xg: c.xg, xgPerShot: ratio(c.xg, c.shots), xgMedian: c.xgMedian ?? null, clearChances: c.clearChances,
     conversionPct: pc(c.goals, c.shots),
+    savedPct: c.shotsSaved === undefined ? null : pc(c.shotsSaved, c.shotsOnTarget),
+    offTargetPct: c.shotsOffTarget === undefined ? null : pc(c.shotsOffTarget, c.shots),
     corners: c.corners, throwIns: c.throwIns,
     passesAttempted: all, passCompletionPct: pc(done, all),
     crosses: c.crosses, crossCompletionPct: pc(c.crossesCompleted, c.crosses),
@@ -583,6 +628,7 @@ export function fmCountsFromViews(a: PerMatchView, b: PerMatchView): FmMatchCoun
     aerialDuelsWon: v.avgAerialDuelsWon, tackles: v.avgTackles, interceptions: v.avgInterceptions, dribblesWon: v.avgDribblesWon,
     fouls: v.avgFouls, yellowCards: v.avgYellowCards, redCards: v.avgRedCards, offsides: v.avgOffsides,
     penaltiesAwarded: v.avgPenaltiesAwarded,
+    shotsSaved: v.avgShotsSaved, shotsOffTarget: v.avgShotsOffTarget,
   });
   return fmCountsOf(one(a), one(b));
 }

@@ -360,6 +360,92 @@ números com as mesmas sementes). Regras em `interception.md` → "Stage 5". Nad
 - Mais desarmes: os desvios viram bola solta disputada.
 - Custo: ~14 s por partida contra ~13 s antes (o caminho previsto da bola a cada tick do passe em voo).
 
+## Etapa 8: escolha do portador do FM (antes / depois)
+
+Premier League, 16 partidas com semente (`fm-targets.ts 16 --chunks 1 --seed 9000`, 90 minutos de física, formações da
+IA, equilibrado). Antes = `DECISION_OVERRIDES='{"FM_HOLDER":false}'` (a escolha da 4b); depois = o escolhedor do FM
+(`holder-choice.md`). Nada calibrado.
+
+| Medida (por partida, os dois times) | FM | antes | depois |
+|---|---|---|---|
+| Mistura conduzir / passar / girar / segurar / chutar (%) | 44 / 34 / 12 / 9 / 1 | 57,5 / 34,7 / 3,5 / 3,8 / 0,5 | 53,9 / 39,7 / 5,3 / 0,7 / 0,5 |
+| Próprio terço conduzir / passar / girar / segurar | 26 / 37 / 23 / 14 | 67,8 / 24,2 / 5,4 / 2,6 | 62,1 / 28,4 / 9,1 / 0,4 |
+| Último terço conduzir / passar / chutar | 51 / 32 / 4 | 70,1 / 22,0 / 2,3 | 66,2 / 24,4 / 2,4 |
+| Decisões por s vivo / por posse | 0,65 / 2,5–3 | 0,80 / 5,9 | 0,67 / 4,8 |
+| Tempo com a bola mediana / p90 (s) | 0,7–1,0 / 2–3,4 | 1,2 / 7,8 | 1,2 / 7,8 |
+| Candidatos por decisão / vetados | ~21 / ~metade dos passes | — | 18,2 / 38% |
+| Arrancadas (passo de 5,5 jd) | ~26 (tipo 0x2c, R6) | — | 20,3 |
+| Segurar na bandeira | ~5 | — | 6,6 |
+| Corridas à linha de fundo / giros no marcador | — | — | 52 / 100 |
+| Passes ao receptor (todos os tipos) | 82% | 81,5% | 84,4% |
+| Bolas em profundidade / desarmes certos / interceptações | — / 17 / 59 | 124 / 44 / 30 | 69 / 80 / 18 |
+| Gols / chutes / xG | 1,5 / 21,5 / 3,3 | 7,8 / 32,4 / 10,6 | 7,7 / 27,3 / 9,3 |
+| Custo (ms por partida, máquina carregada) | — | 12 271 | 9 755 |
+
+- A cadência chega à do FM (0,67 contra 0,65 por s): sem a zona de 24 jd e o corte por adversário se aproximando, o
+  portador só decide de novo no fim da ação ou num desafio.
+- Girar sobe (5,3%) e segurar fica raro (0,7%): os valores de segurar e girar são os nossos avaliadores (as funções de
+  valor do FM não foram lidas); com os multiplicadores medianos do FM (girar × 2, segurar × 1,14 de uma condução)
+  segurar quase nunca vence um passe ou uma condução. Fica para a calibração (etapa 21).
+- Os passes dentro de risco alto agora são comprimidos e as bolas em profundidade, oferecidas célula a célula com risco,
+  caem pela metade; os desarmes sobem (conduções mais curtas perto do adversário).
+
+## Etapa 15: forma do time, pressão na sombra, ações seguradas, corridas no ombro
+
+`team-shape.md`. `bun scripts/fm-targets.ts 8 premier_league --chunks 1 --seed 9000` (relógio físico de 90 min), as
+cinco flags desligadas × ligadas:
+
+| Medida | FM | antes | depois |
+|---|---|---|---|
+| Linha de trás com / sem a bola (jd do próprio gol) | 58 / 24 | 42,5 / 35,2 | 49,7 / 38,8 |
+| Comprimento com / sem | 39 / 35 | 36,4 / 32,6 | 28,4 / 29,9 |
+| Largura com / sem | 40 / 37 | 54,0 / 36,8 | 40,5 / 33,4 |
+| Trás → meio, meio → frente sem a bola | 14 / 12,5 | 12,8 / 11,1 | 13,9 / 8,9 |
+| Pressionadores 0 / 1 / 2+ | 75 / 20 / 5% | 82,6 / 14,5 / 2,9% | 71,6 / 23,4 / 5,0% |
+| Adversários a 10 m do portador (próprio / meio / último terço) | 0,85 / 1,8 / 3,1 | 0,83 / 1,00 / 2,28 | 1,08 / 2,14 / 2,33 |
+| Ação curta segurada (DEF / MEI / ATA, s) | ~5 | 2,2 / 2,4 / 2,4 | 2,4 / 4,8 / 4,6 |
+| Posição padrão segurada (DEF / MEI / ATA, s) | 19 / 10 / 12 | 5,4 / 3,6 / 3,6 | 4,8 / 3,6 / 2,4 |
+| Passo com a bola (DEF / MEI / ATA, jd) | 4,4 / 6 / 7 | 0,8 / 2,3 / 3,9 | 1,5 / 3,0 / 4,5 |
+| Impedimentos por partida / por passe | 8 / 0,0082 | 12,3 / 0,016 | 10,8 / 0,0136 |
+| Corridas no ombro (adiantadas) | — | 0 | 37,4 (2,1) |
+| Pressões na sombra / coberturas de zona | — | 0 / 0 | 122 / 564 |
+| Bola com 3+ defensores a 8 jd | — | 5,6% | 11,5% |
+| Gols / chutes / passes | 1,5 / 21,5 / 978 | 6,8 / 26,0 / 764 | 9,3 / 38,3 / 790 |
+
+- A coluna "antes" das ações seguradas é da classificação antiga (pressão, desarme e bola solta ainda contavam).
+- O bloco do FM aproxima largura e pressionadores, mas a linha fica longe nas transições (depois da troca de posse os
+  defensores ficam ~20 jd acima da linha e levam 5–10 s para descer) e a bola fica cercada (o bloco não se comprime
+  na bola). A posição padrão segurada não sobe: o que a encerra é a troca de posse (~12 s por posse) e as bolas soltas.
+
+## Etapa 7: chute pela trajetória (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000`. Antes = `DECISION_OVERRIDES='{"SHOT_PHYSICS":false}'`
+(o sorteio sobre o xG). Regras em `shot-and-save.md` → "Stage 7". Nada calibrado.
+
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Gols / chutes / xG | 7,3 / 29,0 / 8,8 | 6,8 / 26,4 / 8,1 | 1,5 / 21,5 / 3,3 |
+| Gols % dos chutes | 25,0% | 25,9% | 7% |
+| No alvo % dos chutes (com os gols) | 53,4% | 57,4% | 35% |
+| Bloqueados % | 0,6% | 8,8% | 38% |
+| Para fora % (trave incluída) | 42,8% | 24,3% (trave 3,8%) | ~27% |
+| Defendidos % dos no alvo | 53,2% | 67,0% | 80% |
+| Defesas do goleiro por partida (boas / difíceis) | 8,3 | 10,2 (1,6 / 45,9%) | — |
+| Técnica: força / colocado / cavadinha / cabeça / falta | — | 18 / 18 / 45 / 14 / 6% (cobertura 0, voleio 0) | — |
+| Velocidade de saída | — | 17,9 m/s | — |
+| Gol % por distância 0–8 / 8–12 / 12–16 / 16–20 / 20–25 m | — | 47 / 26 / 21 / 14 / 7% | 21 / 11 / 12 / 13 / 3% |
+| Escanteios | 23,4 | 16,8 | 12,5 |
+
+- O gol agora sai da bola: o goleiro defende 67% dos chutes no alvo (era 53% pelo dado) e os defensores bloqueiam
+  8,8% (quase nada antes). Os dois ainda ficam abaixo do FM: os chutes seguem perto demais (18% de longe contra 46%) e
+  sem gente na frente; a escolha do chute é a etapa 8 e a forma defensiva a 15.
+- A cavadinha é quase metade dos chutes: o movimento de portador `chip` (já existente) dispara muito com o goleiro
+  adiantado e agora sempre vira chute físico. Fica para a escolha do portador (etapa 8).
+- Cobertura e voleio não aparecem nessas 12 partidas (a bola raramente está alta no chute; o goleiro raramente fica 8+
+  jardas fora com o atacante a 16–38 jardas).
+- Menos escanteios: o desvio de um chute para fora só vira escanteio quando alguém tocou de fato.
+- Custo: ~14,5 s por partida, igual a antes.
+
 ## Etapa 16: camada mental na defesa e sem bola, teto de consistência (só registro)
 
 `fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (90 min, formações da IA, equilibrado). Antes =
@@ -387,3 +473,5 @@ número direto da mente: a meta é não quebrar as da forma e da pressão (etapa
 - `ball-cluster.ts --modes ai --engine 12 --chunks 1`, antes / depois (as duas): defensores a 8 jd da bola 0,73 /
   0,66 por tick, 3+ 6,3 / 5,4%, 4+ 2,1 / 1,8%; pressores simultâneos 1 / 2 / 3+ 10,0 / 2,6 / 1,0% → 9,0 / 2,5 / 0,7%;
   maior vão à frente do gol 36,8 / 36,2 jd.
+
+**Note for stage 21 (2026-11-19):** with stages 7, 8, 15 and 16 merged, the seeded match of `OffsideRuns.engine.test.ts` no longer shows more attackers past the true line with `OFFSIDE_RUNS` on (5.4% on vs 8.4% off, with the stage-15 shape flags off too). Misreads still happen; the offside volume (~1/3 of FM per pass) is tuned in stage 21.

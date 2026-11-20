@@ -538,3 +538,9 @@ With `PASS_ERROR` on a pass to feet has a launch error (technique margin, distan
 With `PASS_PHYSICS` the pass is a physical launch (FM's speed 7 + 0.45·d m/s, vz by distance, the error on the vector)
 that arrives where the ball reaches the receiver, and up to `LOFT_YD` the lane score is read from arrival times against
 the quickest defender (`arrivalLaneScore`) instead of the corridor clearance. See `pass-physics.md`.
+
+## FM holder chooser (stage 8)
+
+With `FM_HOLDER` every teammate is a pass candidate of its own with a risk byte (offside or a closed lane vetoes it;
+else (1 − lane)² + the miss loss), compressed above (100 − risk)³ / 10 and picked by a hard argmax against carries,
+turns and holds; the chosen receiver is passed to `startPass` (no top-three draw). `holder-choice.md`.

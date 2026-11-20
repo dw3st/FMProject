@@ -27,7 +27,9 @@ describe('one-on-one with the keeper (#156)', () => {
     // Holder at a tight angle near the byline, a teammate unmarked in front of goal.
     const d = holderDecision(ps => {
       ps[0]!.x = 107; ps[0]!.y = 52;
-      ps[1]!.x = 108; ps[1]!.y = 37;
+      // Stage 8 (`holder-choice.md`): the FM chooser vetoes a pass to an offside receiver, so the teammate stands level
+      // with the ball (onside), still closer to goal than the holder.
+      ps[1]!.x = 106; ps[1]!.y = 37;
       ps[2]!.x = 104; ps[2]!.y = 53;
       ps[3]!.x = 100; ps[3]!.y = 50;
       ps[4]!.x = 113.5; ps[4]!.y = 40;

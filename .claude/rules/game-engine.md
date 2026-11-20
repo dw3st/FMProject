@@ -55,7 +55,7 @@ alwaysApply: false
 | Situation | Decision |
 |---|---|
 | Ball holder (set-piece taker) | `decideBoxSetPiece` for corners / crossed free kicks, `shoot` on a direct free kick, otherwise pass (or the normal best action where allowed) |
-| Ball holder | `decideBallHolder`: compressed scores of `shoot`, `carry`, `pass`, `dribble`, `through_ball`, `cross`, `long_ball`; the best wins (`pass.md`, `carry.md`, `aerial.md`, `through-ball.md`) |
+| Ball holder | `decideBallHolder`: compressed scores of `shoot`, `carry`, `pass`, `dribble`, `through_ball`, `cross`, `long_ball`; the best wins (`pass.md`, `carry.md`, `aerial.md`, `through-ball.md`); with `FM_HOLDER` (stage 8) every candidate (each pass target, cells, lanes, sprint, byline run, turn, spin, hold, corner-flag hold) with a risk byte, veto and compression, hard argmax (`holder-choice.md`) |
 | Attacking teammate | `evaluateOffBall` → `support_run` / `create_space` / `idle` (`offball.md`); GK `idle` |
 | Defender in duel recovery | `idle` |
 | Defender ≤ `TACKLE_RANGE` (2 yds) | `tackle` |
