@@ -313,6 +313,83 @@ jogo com física (etapa 2 em paralelo), então vai também a taxa por segundo de
   faltas por trás e parando ataques do que a suposta.
 
 
+## Etapa 14: condição física e substituições (só registro)
+
+`fm-targets.ts 12 premier_league --chunks 1` (semente 9000, 90 min); antes = `DECISION_OVERRIDES='{"FM_CONDITION":false}'`.
+A curva é o comportamento da etapa (escala do FM); o volume não foi calibrado.
+
+| Medida | FM | antes | etapa 14 |
+|---|---|---|---|
+| Condição (mediana dos jogadores de linha) 15' / 30' / 45' | 87 / 86,5 / 77,5 | 83,2 / 77,5 / 72,6 | 91,0 / 83,9 / 78,4 |
+| 60' / 75' / 90' | 72,5 / 75 / 73,5 | 73,6 / 68,1 / 62,2 | 75,4 / 73,6 / 71,3 |
+| Goleiros no fim | 96,5 | 66,8 | 97,2 |
+| Trocas da IA por time | 3–4 | 0,1 | 3,6 |
+| Minuto médio da troca | a partir de ~55 (média ~68) | 85 | 61,9 |
+| Condição de quem sai | 55–75 (uma a 86) | 31,6 | 72,2 |
+| Gols / chutes / passes | 1,5 / 21,5 / 978 | 8,0 / 33,2 / 787 | 8,9 / 33,4 / 816 |
+| Faltas / desarmes ganhos | 19 / 17 | 58,6 / 45,5 | 62,1 / 49,3 |
+
+Em 3 partidas, quem jogou os 90' termina entre 66,6 e 74 (mediana 69,5; FM tem mínimo 60): o piso de 60 e o
+espalhamento pequeno do fôlego deixam a ponta de baixo mais alta que a do FM. As trocas saem cedo (quase todos passam
+de 75 % antes de 60') e em pares; o FM espalha de 54' a 89'. A largada a 99 (antes 88) deixa todo mundo menos cansado
+no jogo: mais passes, desarmes e faltas (fica para a calibração da etapa 21).
+
+## Etapa 5: interceptação física (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (90 minutos de física, formações da IA,
+equilibrado). Antes = `DECISION_OVERRIDES='{"PHYSICAL_INTERCEPTION":false}'`, idêntico ao branch antes da etapa (mesmos
+números com as mesmas sementes). Regras em `interception.md` → "Stage 5". Nada calibrado.
+
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Interceptações (domínio + afastar + desvio) | 29,3 | 129,8 (domínio + afastar 72) | 59 |
+| … por minuto de jogo vivo | 0,31 | 1,37 | ~0,76 (978 passes a 0,21/s) |
+| Toques de defensor no passe em voo: domínio / afastou / desviou / passou | — | 38 / 9,5 / 38 / 15% (152) | — |
+| Perdas depois de um passe: no voo / depois | 56 / 44% (107) | 70 / 30% (159) | 56 / 44% |
+| Passe comum ao receptor 0–5 / 5–9 / 9–13 / 13–18 / 18–22 / 22–27 m | 97 / 97 / 98 / 96 / 94 / 97% | 94 / 92 / 90 / 90 / 87 / 80% | (todos) 94 / 92 / 90 / 85 / 87 / 79% |
+| Todos os passes ao receptor (adversário) | 81,0% (13,7%) | 76,3% (17,4%) | 82% (13,5%) |
+| No chão / alto | 89,3 / 21,3% | 81,7 / 22,6% | 92 / 31% |
+| Bola em profundidade ao corredor | 57,4% | 40,4% | — |
+| Passes (todos os tipos) / acerto oficial | 787 / 81,3% | 921 / 75,7% | 978 / 86% |
+| Desarmes ganhos | 45,5 | 68,3 | 17 |
+| Gols / chutes / xG | 8,0 / 33,2 / 10,8 | 6,8 / 27,4 / 7,6 | 1,5 / 21,5 / 3,3 |
+
+- O passe curto ao pé agora erra como no FM por faixa (antes quase nunca era cortado: o dado do corredor só pegava quem
+  estava na linha). Os cortes passam do dobro do FM; a forma defensiva (etapa 15) e a escolha do portador (etapa 8)
+  ainda deixam mais passes por dentro dos defensores.
+- Mais desarmes: os desvios viram bola solta disputada.
+- Custo: ~14 s por partida contra ~13 s antes (o caminho previsto da bola a cada tick do passe em voo).
+
+## Etapa 8: escolha do portador do FM (antes / depois)
+
+Premier League, 16 partidas com semente (`fm-targets.ts 16 --chunks 1 --seed 9000`, 90 minutos de física, formações da
+IA, equilibrado). Antes = `DECISION_OVERRIDES='{"FM_HOLDER":false}'` (a escolha da 4b); depois = o escolhedor do FM
+(`holder-choice.md`). Nada calibrado.
+
+| Medida (por partida, os dois times) | FM | antes | depois |
+|---|---|---|---|
+| Mistura conduzir / passar / girar / segurar / chutar (%) | 44 / 34 / 12 / 9 / 1 | 57,5 / 34,7 / 3,5 / 3,8 / 0,5 | 53,9 / 39,7 / 5,3 / 0,7 / 0,5 |
+| Próprio terço conduzir / passar / girar / segurar | 26 / 37 / 23 / 14 | 67,8 / 24,2 / 5,4 / 2,6 | 62,1 / 28,4 / 9,1 / 0,4 |
+| Último terço conduzir / passar / chutar | 51 / 32 / 4 | 70,1 / 22,0 / 2,3 | 66,2 / 24,4 / 2,4 |
+| Decisões por s vivo / por posse | 0,65 / 2,5–3 | 0,80 / 5,9 | 0,67 / 4,8 |
+| Tempo com a bola mediana / p90 (s) | 0,7–1,0 / 2–3,4 | 1,2 / 7,8 | 1,2 / 7,8 |
+| Candidatos por decisão / vetados | ~21 / ~metade dos passes | — | 18,2 / 38% |
+| Arrancadas (passo de 5,5 jd) | ~26 (tipo 0x2c, R6) | — | 20,3 |
+| Segurar na bandeira | ~5 | — | 6,6 |
+| Corridas à linha de fundo / giros no marcador | — | — | 52 / 100 |
+| Passes ao receptor (todos os tipos) | 82% | 81,5% | 84,4% |
+| Bolas em profundidade / desarmes certos / interceptações | — / 17 / 59 | 124 / 44 / 30 | 69 / 80 / 18 |
+| Gols / chutes / xG | 1,5 / 21,5 / 3,3 | 7,8 / 32,4 / 10,6 | 7,7 / 27,3 / 9,3 |
+| Custo (ms por partida, máquina carregada) | — | 12 271 | 9 755 |
+
+- A cadência chega à do FM (0,67 contra 0,65 por s): sem a zona de 24 jd e o corte por adversário se aproximando, o
+  portador só decide de novo no fim da ação ou num desafio.
+- Girar sobe (5,3%) e segurar fica raro (0,7%): os valores de segurar e girar são os nossos avaliadores (as funções de
+  valor do FM não foram lidas); com os multiplicadores medianos do FM (girar × 2, segurar × 1,14 de uma condução)
+  segurar quase nunca vence um passe ou uma condução. Fica para a calibração (etapa 21).
+- Os passes dentro de risco alto agora são comprimidos e as bolas em profundidade, oferecidas célula a célula com risco,
+  caem pela metade; os desarmes sobem (conduções mais curtas perto do adversário).
+
 ## Etapa 15: forma do time, pressão na sombra, ações seguradas, corridas no ombro
 
 `team-shape.md`. `bun scripts/fm-targets.ts 8 premier_league --chunks 1 --seed 9000` (relógio físico de 90 min), as

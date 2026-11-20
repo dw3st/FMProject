@@ -14,7 +14,7 @@ import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
   BALL_GROUPS, BAND_LABELS, FM_FOULS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
-  FLIGHT_LABELS, FM_FLIGHT_S, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
+  FLIGHT_LABELS, FM_FLIGHT_S, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
   emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
@@ -79,6 +79,11 @@ for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShot
 console.log("\n── Condition (outfield median energy) by minute ──");
 console.log("  " + CONDITION_MINUTES.map((m, i) => `${m}' ${f1(fm.condition[i]!.sum / Math.max(1, fm.condition[i]!.n))} (FM ${FM_CONDITION[i]})`).join(" · "));
 console.log(`  keepers at the end ${f1(fm.keeperEnd.sum / Math.max(1, fm.keeperEnd.n))} (FM ${FM_KEEPER_END})`);
+// Stage 14: the AI's changes per team, their minute and the outgoing player's condition (R9 §6: 3–4 from ~55', 55–75 %).
+{
+  const subs = world.aiSubstitutions ?? 0, teams = 2 * fm.matches;
+  console.log(`  AI changes ${f1(subs / Math.max(1, teams))} per team (FM 3–4; tactical ${f1((world.tacticalSubstitutions ?? 0) / Math.max(1, teams))}) · minute ${f1((world.aiSubMinuteSum ?? 0) / Math.max(1, subs))} (FM from ~55) · condition ${f1((world.aiSubConditionSum ?? 0) / Math.max(1, subs))} (FM 55–75)`);
+}
 console.log("\n── The 3D ball (stage 3; R9 §3: median peak / contact height, m) ──");
 for (const g of BALL_GROUPS) {
   const pk = fm.ballPeak?.[g] ?? [], ct = fm.ballContact?.[g] ?? [];
@@ -106,6 +111,20 @@ for (const g of LANDING_GROUPS) {
   console.log(`  landing vs aim ${g.padEnd(7)} n ${String(a.length).padStart(5)}  median ${f1(median(a))} m, p90 ${f1(pctl(a, 0.9))} (FM ${FM_LANDING[g][0]}, ${FM_LANDING[g][1]})`);
 }
 
+console.log("\n── Interception (stage 5; R7 loss split, R9 interceptions) ──");
+{
+  const lt = (fm.lossEarly ?? 0) + (fm.lossLate ?? 0);
+  console.log(`  losses after a pass: early (in flight) ${f1((100 * (fm.lossEarly ?? 0)) / Math.max(1, lt))}% · late ${f1((100 * (fm.lossLate ?? 0)) / Math.max(1, lt))}% (n ${lt}, ${f1(lt / n)} per match)   FM ${FM_LOSS_SPLIT.early} / ${FM_LOSS_SPLIT.late}`);
+  const touches = (world.cutTouches ?? 0) / n;
+  if (touches > 0) {
+    const sh = (k: string) => f1((100 * (world[k] ?? 0)) / Math.max(1, world.cutTouches!));
+    console.log(`  defender touches on a pass in flight ${f2(touches)} / match: control ${sh("cutControls")}% · clear ${sh("cutClears")}% · deflect ${sh("cutDeflects")}% · ran past ${sh("cutMisses")}% · ball ${f1((world.cutSpeedSum ?? 0) / Math.max(1, world.cutTouches!))} m/s`);
+  }
+  const ints = (world.interceptions ?? 0) / n;
+  const liveS = fm.realSeconds / n;
+  console.log(`  interceptions ${f1(ints)} / match (FM 59) · ${f2((60 * ints) / Math.max(1, liveS))} per live min (FM ~${f2((60 * 59) / (978 / 0.21))}, FM live time from 978 passes at 0.21 / s)`);
+}
+
 console.log("\n── Holder decisions ──");
 const mix = (r: Record<string, number>) => { const t = HOLDER_CATS.reduce((a, k) => a + r[k]!, 0) || 1; return HOLDER_CATS.map(k => `${k} ${f1((100 * r[k]!) / t)}`).join(" · "); };
 const fmMix = (r: Partial<Record<string, number>>) => Object.entries(r).map(([k, v]) => `${k} ${v}`).join(" · ");
@@ -118,6 +137,12 @@ console.log(`  decisions / live s ${f2(fm.holderDecisions / fm.realSeconds)} (FM
   const h = fm.possessionHist; const tot = h.reduce((a, b) => a + b, 0);
   const q = (p: number) => { let c = 0; for (let i = 0; i < h.length; i++) { c += h[i]!; if (c >= p * tot) return i * 0.2; } return h.length * 0.2; };
   console.log(`  time on ball median ${f1(q(0.5))} s · p90 ${f1(q(0.9))} s   FM ${FM_TIMING.onBallMedian} · p90 ${FM_TIMING.onBallP90}`);
+}
+// Stage 8 (`holder-choice.md`): the FM chooser's candidates per decision, vetoes, decisions per stint, new actions.
+if (world.holderChoices) {
+  const hc = world.holderChoices;
+  console.log(`  FM chooser: ${f1(world.holderCandidatesSum! / hc)} candidates per decision (FM ~21), ${f1((100 * world.holderVetoedSum!) / world.holderCandidatesSum!)}% vetoed, ${f2(hc / Math.max(1, world.holderStints!))} decisions per stint, lapse ${f1((100 * world.holderLapseChoices!) / hc)}%`);
+  console.log(`  per match: sprints ${f1(world.holderSprints! / n)} · byline runs ${f1(world.holderBylines! / n)} · spins ${f1(world.holderSpins! / n)} · corner-flag holds ${f2(world.holderFlagHolds! / n)}`);
 }
 console.log("\n── Pressing ──");
 const ps = fm.pressSamples || 1;
@@ -147,7 +172,7 @@ console.log("  FM step DEF 4.4 · MID 6 · FWD 7 yd (target − position: in 9.8
 console.log("\n── Shots (distance to the goal mouth, yd) ──");
 console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) / Math.max(1, fm.shots))}%`).join(" · ") + "   FM: none beyond ~33 yd");
 console.log("\n── World / match ──");
-console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
+console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && !k.startsWith("holder") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
 // Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.
 if (world.ballNearTicks) console.log(`  crowd 3+ defenders ≤ 8 yd: ${(100 * world.ballCrowdTicks! / world.ballNearTicks).toFixed(1)}% of live ticks (main ~5.4–5.8%)`);
 // Stage 18 (`highlights.md`): lances per match by level and the share of the live play they cover (FM shows ~15–25 main).

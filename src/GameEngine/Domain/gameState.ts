@@ -1,6 +1,6 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning, ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
@@ -20,7 +20,7 @@ import { matchMentalOf } from '@/GameEngine/Configs/MentalMatchConfig';
 import { argmaxAndMargin, setDecisionCapture, situationBucket, takeCapture, type CapturedDecision } from '@/GameEngine/Domain/DecisionTelemetry';
 import { decide, COMMIT_TICKS, EMPTY_DECISION_MEMORY, isPlayerInRecovery } from '@/GameEngine/Domain/DecisionTree';
 import { outfieldNearBall } from '@/GameEngine/Domain/BallCluster';
-import type { PlayerDecision, DecisionPath } from '@/GameEngine/Domain/DecisionTree';
+import type { PlayerDecision, DecisionPath, HolderStep } from '@/GameEngine/Domain/DecisionTree';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
 import { resolveBasePosition, slotBasePosition } from '@/GameEngine/FormationSlots';
@@ -48,7 +48,9 @@ import { advanceLooseBall, advancePassBall, ballEnv, ballWithinReach, passKey, s
 import { buildAerialLaunch, buildGroundLaunch, loftVzYd, passTypeOf, vzForPeak, weightedSpeed } from '@/GameEngine/Domain/PassPhysics';
 import { PASS_PHYSICS, YD_PER_M_PASS } from '@/GameEngine/Configs/PassPhysicsConfig';
 import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
-import { reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { predictPath, reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { interceptPoint, interceptReachOf, resolveTouch, touchChances, type PathPoint } from '@/GameEngine/Domain/PhysicalInterception';
+import { INTERCEPT } from '@/GameEngine/Configs/InterceptConfig';
 import {
   THROUGH_BALL_CONFIG,
   CHASE_LOOSE_BALL_WEIGHT_ATTACK,
@@ -80,6 +82,7 @@ import {
   resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
 import { passErrorFactor, passLaunch } from '@/GameEngine/Domain/PassError';
@@ -126,7 +129,8 @@ import {
   type InjuryFactors, type InjurySeverity,
 } from '@/Domain/injury/injury';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
-import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
+import { drainMultiplier as loadDrainMultiplier, matchStartCondition, matchStartEnergy } from '@/Domain/fitness/fitness';
+import { conditionDrainMult, halfTimeCondition, outfieldMedianCondition } from '@/GameEngine/Domain/Condition';
 import { matchRandom, loadMatchRng, matchRngState, newMatchSeed } from '@/GameEngine/Infrastructure/MatchRng';
 
 // ── Offside config ────────────────────────────────────────────────────────────
@@ -152,6 +156,11 @@ const PRESS_INTERCEPT_MAX_LOOKAHEAD = 14;
 export const LEGACY_CLOCK_SCALE = 18;
 
 /** Game-seconds the match clock advances per physical second of simulation (1 = real time, the default). */
+/** Kick-off condition from the persisted fitness: FM's scale under `FM_CONDITION` (stage 14), else `matchStartEnergy`. */
+function startConditionOf(fitness: number): number {
+  return DECISION_FLAGS.FM_CONDITION ? matchStartCondition(fitness) : matchStartEnergy(fitness);
+}
+
 export function clockScaleOf(state: Pick<GameState, 'clockScale'>): number {
   return state.clockScale ?? 1;
 }
@@ -329,7 +338,7 @@ function buildGamePlayerForSlot(
   // only. `TestCases.ts` scenarios that want a genuinely fresh 100-energy match (most of them —
   // this default is for engine tuning, not fitness testing) give their roster an explicit
   // `seasonLog.fitness: 100` for that reason.
-  const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
+  const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
   return {
     id:               engineId,
     rosterId:         rp.id,
@@ -403,7 +412,7 @@ function buildTeam(
     ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
-    const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
+    const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
     // Bench players have placeholder positions — overwritten when they sub in
     const dummyPos = { x: 0, y: 0 };
     const dummyBounds = { minX: 0, maxX: PITCH_LENGTH, minY: 0, maxY: PITCH_WIDTH };
@@ -548,7 +557,8 @@ export function performSubstitution(
   team: TeamId,
   outPlayerId: number,
   inPlayerId: number,
-  reason?: 'fatigue' | 'injury',
+  reason?: import('../types').SubstitutionReason,
+  why?: string,
 ): GameState {
   const bench = team === 'A' ? state.benchA : state.benchB;
   const outPlayer = state.players.find(p => p.id === outPlayerId && p.team === team);
@@ -600,9 +610,14 @@ export function performSubstitution(
     playerInName:      inPlayer.name,
     playerInRosterId:  inPlayer.rosterId,
     matchMinute: minute,
+    ...(reason ? { reason } : {}),
+    ...(why ? { why } : {}),
   };
 
-  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason });
+  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason, minute });
+  if (reason === 'fatigue' || reason === 'tactical') {
+    debugLog('condition', `AI sub ${team}: ${inPlayer.name} for ${outPlayer.name} (${reason}${why ? `, ${why}` : ''})`, { playerId: outPlayerId, data: { minute, outEnergy: Math.round(outPlayer.energy), inEnergy: Math.round(inPlayer.energy) } });
+  }
 
   // Transfer ball if outgoing player held it
   let ballHolderId = state.ballHolderId;
@@ -656,7 +671,7 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
   for (const req of pending) {
     const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
     if (subsLeft <= 0) break;
-    s = performSubstitution(s, team, req.outId, req.inId, req.reason);
+    s = performSubstitution(s, team, req.outId, req.inId, req.reason, req.why);
   }
 
   return s;
@@ -2326,8 +2341,8 @@ function switchSides(
 ): GameState {
   state = clearAllChasers(state);
   const switched: GamePlayer[] = state.players.map(p => {
-    const recoveryRate = (0.30 + (p.stamina / 10) * 0.30) * recoveryScale; // 30% at stamina 0 → 60% at stamina 10
-    const recoveredEnergy = Math.min(p.startEnergy, p.energy + (p.startEnergy - p.energy) * recoveryRate);
+    // FM: +2 at the break (stage 14, `Condition.ts`); flag off: 30–60% of the gap to the kick-off value.
+    const recoveredEnergy = halfTimeCondition(p, recoveryScale);
     const energyChanged = recoveredEnergy !== p.energy;
     return {
       ...p,
@@ -3649,6 +3664,124 @@ function passerTeamOf(s: GameState, p: PassState): TeamId | undefined {
   return s.players.find(q => q.id === p.fromId)?.team;
 }
 
+// ── Stage 5: physical interception (`interception.md` → "Stage 5") ────────────
+
+/** Stage 5: physical passes are cut by defenders reaching their path (needs the physical pass). */
+function physicalInterceptionOn(): boolean {
+  return DECISION_FLAGS.PHYSICAL_INTERCEPTION && passPhysicsOn();
+}
+
+/** How far across the ball a defender gets a foot to it (yd): his body + a leg put in by his tackling. */
+function interceptReach(p: GamePlayer): number {
+  return interceptReachOf(p.runtimeStats.withoutBall.tackling ?? 0.5);
+}
+
+const ownGoalXOf = (p: GamePlayer) => (p.attackDir === 1 ? 0 : PITCH_LENGTH);
+
+/** The predicted path of the ball of a physical pass from now (times from now), until it stops or leaves the pitch. */
+function physicalPassPath(s: GameState): PathPoint[] {
+  const b = s.ball!;
+  const pts = predictPath({ x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz }, INTERCEPT.PLAN_HORIZON_S, INTERCEPT.PLAN_STEP_S, ballEnv(s.weather));
+  const out: PathPoint[] = [];
+  for (let i = 1; i < pts.length; i++) {
+    const q = pts[i]!;
+    if (q.x < 0 || q.x > PITCH_LENGTH || q.y < 0 || q.y > PITCH_WIDTH) break;
+    out.push({ x: q.x, y: q.y, z: q.z, t: i * INTERCEPT.PLAN_STEP_S });
+    if (q.z <= 1e-6 && Math.hypot(q.vx, q.vy) < PASS_PHYSICS.STOP_SPEED_YD) break;
+  }
+  return out;
+}
+
+/**
+ * The defenders of a physical pass's flight who reach a point of its path in time (before the receiver or the runner
+ * takes it): the earliest INTERCEPT.MAX_RUNNERS run there. A keeper only inside his own box.
+ */
+function planInterceptRuns(s: GameState, pass: PassState): InterceptRun[] {
+  const passerTeam = passerTeamOf(s, pass);
+  if (!passerTeam || !s.ball) return [];
+  const path = physicalPassPath(s);
+  if (path.length === 0) return [];
+  const mateId = pass.kind === 'through' ? pass.intendedRunnerId : pass.toId;
+  const mate = mateId !== null ? s.players.find(p => p.id === mateId) : undefined;
+  let cutoff = Infinity;
+  if (mate) {
+    const reach = pass.kind === 'through' ? PASS_PHYSICS.MOVING_TOUCH_YD : receiveReach(mate);
+    const m = interceptPoint(path, { x: mate.x, y: mate.y, speed: chaseSprintSpeed(mate), reach, reaction: 0, maxZ: reachHeight(mate.role === 'GK') });
+    if (m) cutoff = m.t;
+  }
+  const beaten = new Set(pass.beaten ?? []);
+  const runs: InterceptRun[] = [];
+  for (const p of s.players) {
+    if (p.team === passerTeam || beaten.has(p.id) || isPlayerInRecovery(p)) continue;
+    const dec = p.decisionMemory?.decision;
+    const running = dec?.type === 'chase_loose_ball' && !!dec.intercept;
+    const antMult = DECISION_FLAGS.ANTICIPATION_PRESS ? anticipationInterceptMult(p) : 1;
+    const plan = interceptPoint(path, {
+      x: p.x, y: p.y, speed: chaseSprintSpeed(p), reach: interceptReach(p),
+      reaction: running ? 0 : INTERCEPT.REACTION_S / antMult, maxZ: reachHeight(p.role === 'GK'),
+    }, cutoff);
+    if (!plan) continue;
+    if (p.role === 'GK' && !isInGoalScoreArea(plan.x, plan.y, ownGoalXOf(p))) continue;
+    runs.push({ playerId: p.id, team: p.team, x: plan.x, y: plan.y, z: plan.z, t: plan.t, margin: plan.margin });
+  }
+  runs.sort((a, b) => a.t - b.t || b.margin - a.margin);
+  return runs.slice(0, INTERCEPT.MAX_RUNNERS);
+}
+
+/**
+ * A defender touched a physical pass on its way (no dice for the touch to happen, only for what it does): he controls
+ * it, clears it, deflects it, or it runs past him.
+ */
+function resolveInterceptTouch(s: GameState, pass: PassState, d: GamePlayer): TickResult {
+  const b = s.ball!;
+  const speedYd = Math.hypot(b.vx, b.vy);
+  const reach = interceptReach(d);
+  // How far from his body the ball passes: its closest approach on its line, not where it entered his reach.
+  const across = speedYd > 1e-3 ? Math.abs(((d.x - b.x) * b.vy - (d.y - b.y) * b.vx) / speedYd) : Math.hypot(b.x - d.x, b.y - d.y);
+  const offset = Math.min(1, across / Math.max(0.1, reach));
+  const keeperHands = d.role === 'GK' && isInGoalScoreArea(b.x, b.y, ownGoalXOf(d));
+  const fromOwnGoal = Math.abs(b.x - ownGoalXOf(d));
+  const chances = touchChances({
+    touch: d.runtimeStats.withBall.firstTouch, offset, speedMs: speedYd / YD_PER_M_PASS, z: b.z, keeperHands, fromOwnGoal,
+  });
+  const outcome = resolveTouch(chances, matchRandom);
+  const kind: 'regular' | 'through' = pass.kind === 'through' ? 'through' : 'regular';
+  s = { ...s, players: applyStaminaCost(s.players, d.id, 'interception') };
+  const dNow = s.players.find(p => p.id === d.id) ?? d;
+  gameBus.emit('interceptionTouch', {
+    player: d.id, team: d.team, passerId: pass.fromId, kind, outcome,
+    speedMs: speedYd / YD_PER_M_PASS, zM: b.z / YD_PER_M_PASS, offset, control: chances.control, flight: b.elapsed,
+  });
+  gameBus.emit('interception', { player: d.id, success: outcome !== 'miss', chance: chances.control });
+  if (isDebugEnabled()) {
+    const verb = outcome === 'control' ? 'cuts out' : outcome === 'clear' ? 'clears' : outcome === 'deflect' ? 'deflects' : 'misses';
+    debugLog('interception', `${d.name} ${verb} the pass (${(speedYd / YD_PER_M_PASS).toFixed(1)} m/s, ${(b.z / YD_PER_M_PASS).toFixed(1)} m, offset ${offset.toFixed(2)}, control ${(chances.control * 100).toFixed(0)}%)`, { playerId: d.id });
+  }
+  if (outcome === 'miss') {
+    // The ball runs past him: he can't touch it again; it flies on.
+    const ph = pass.physics!;
+    const next: PassState = { ...pass, beaten: [...(pass.beaten ?? []), d.id], t: Math.min(0.99, b.elapsed / Math.max(0.05, ph.T)) };
+    return { state: { ...s, pass: next }, passCompleted: false, tackled: false, goalScored: null };
+  }
+  if (kind === 'through') gameBus.emit('throughBallLostInFlight', { player: pass.fromId, interceptorId: d.id });
+  else gameBus.emit('passFailed', { player: pass.fromId, toId: pass.toId ?? pass.fromId });
+  if (outcome === 'deflect') {
+    const dir = scatterDirection(b.vx, b.vy, INTERCEPT.DEFLECT_MAX_DEG);
+    const v = speedYd * INTERCEPT.DEFLECT_KEEP;
+    return { state: runLoose(s, dNow, b.x, b.y, dir.x * v, dir.y * v, 'deflection', true), passCompleted: false, tackled: true, goalScored: null };
+  }
+  if (outcome === 'clear') {
+    const dist = INTERCEPT.CLEAR_MIN_YD + matchRandom() * INTERCEPT.CLEAR_SPAN_YD;
+    return { state: clearanceBall({ ...s, pass: null }, dNow, { x: b.x, y: b.y }, dist, matchRandom), passCompleted: false, tackled: true, goalScored: null };
+  }
+  const prevHolderId = s.ballHolderId;
+  const players = s.players.map(p => (p.id === d.id ? { ...p, x: b.x, y: b.y } : p));
+  return {
+    state: onPossessionTransfer({ ...s, players, pass: null, ballHolderId: d.id, possessionTime: 0, lastPasserId: null }, prevHolderId),
+    passCompleted: false, tackled: true, goalScored: null,
+  };
+}
+
 /** Report a physical launch (`Statistics.ts` per type, `/lab`, `fmTargets.ts`). */
 function emitPassLaunched(holder: GamePlayer, p: PassState): void {
   const ph = p.physics;
@@ -4377,10 +4510,29 @@ function nearestOpponentDist(players: readonly GamePlayer[], p: GamePlayer): num
   return best;
 }
 
+/** Carry speed share of a holder step (stage 4b hold / turn; stage 8 spin / flag, `holder-choice.md`). */
+function holderStepSpeed(step: HolderStep | undefined): number {
+  const fm = DECISION_FLAGS.FM_HOLDER;
+  switch (step) {
+    case 'hold': return fm ? HOLDER_CHOICE.HOLD_SPEED : FM_NUMBERS.HOLD_SPEED;
+    case 'turn': return fm ? HOLDER_CHOICE.TURN_SPEED : FM_NUMBERS.TURN_SPEED;
+    case 'spin': return HOLDER_CHOICE.SPIN_SPEED;
+    case 'flag': return HOLDER_CHOICE.FLAG_SPEED;
+    default: return 1;
+  }
+}
+
 /** How long (ticks of 0.2 s) a holder action lasts before he re-decides (stage 4b, `fm-numbers.md`). */
 function holderActionTicks(d: PlayerDecision): number {
   if (d.type === 'carry') {
-    const sec = d.step === 'hold' ? FM_NUMBERS.HOLD_S : d.step === 'turn' ? FM_NUMBERS.TURN_S : FM_NUMBERS.CARRY_STEP_MAX_S;
+    const H = HOLDER_CHOICE;
+    const fm = DECISION_FLAGS.FM_HOLDER;
+    const sec = d.step === 'hold' ? (fm ? H.HOLD_S : FM_NUMBERS.HOLD_S)
+      : d.step === 'turn' ? (fm ? H.TURN_S : FM_NUMBERS.TURN_S)
+      : d.step === 'spin' ? H.SPIN_S
+      : d.step === 'flag' ? H.FLAG_S
+      : d.step === 'sprint' ? H.SPRINT_MAX_S
+      : FM_NUMBERS.CARRY_STEP_MAX_S;
     return sec / DECISION_REF_DT;
   }
   if (d.type === 'dribble') return COMMIT_TICKS.dribble;
@@ -4575,13 +4727,13 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   const inSubsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
   if (inSubsWindow && shouldCheckAiSubs(s.matchTime, dt * clockScaleOf(s))) {
     // Team B is always AI in live matches; `aiTeams` can override for headless sim
-    const subsB = evaluateAiSubstitutions(s, 'B');
+    const subsB = evaluateAiSubstitutions(s, 'B', matchMinute(s));
     if (subsB.length > 0) {
       s = { ...s, pendingSubsB: [...s.pendingSubsB, ...subsB] };
     }
     // The human side's assistant (manager banned or sent off, `var.md` §4) makes the changes by the same rule.
     if (s.autoSubs?.A) {
-      const subsA = evaluateAiSubstitutions(s, 'A');
+      const subsA = evaluateAiSubstitutions(s, 'A', matchMinute(s));
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
   }
@@ -4710,7 +4862,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   if (!chaseTarget && THROUGH_BALL_CONFIG.RACE_LOSS_RECOVERY > 0) {
     const losers = s.players.filter(p => {
       const d = p.decisionMemory?.decision;
-      return p.team !== holder.team && d?.type === 'chase_loose_ball' && !d.meet;
+      return p.team !== holder.team && d?.type === 'chase_loose_ball' && !d.meet && !d.intercept;
     });
     if (losers.length > 0) {
       const ids = new Set(losers.map(p => p.id));
@@ -4736,6 +4888,10 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     return { x: b.x + ux * a, y: b.y + uy * a };
   };
 
+  // Stage 5 (`interception.md`): the defenders who reach a point of a physical pass's path in time run to it.
+  const interceptRuns = s.pass && physicalInterceptionOn() && isPhysicalGroundPass(s, s.pass) ? planInterceptRuns(s, s.pass) : [];
+  const runOf = new Map(interceptRuns.map(r => [r.playerId, r]));
+
   // Decision telemetry (`decisions.md`): only while somebody listens. The situation (the ball's third and channel, the
   // holder's pressure) is computed once per tick; no dice, nothing here feeds back into a decision.
   const telemetry = gameBus.has('holderDecision') || gameBus.has('offBallDecision') || gameBus.has('defensiveDecision');
@@ -4756,6 +4912,14 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         : 'TEAM_WITHOUT_BALL';
 
     const mem = p.decisionMemory ?? EMPTY_DECISION_MEMORY;
+
+    const run = runOf.get(p.id);
+    if (run && !isBallHolder) {
+      const cut: PlayerDecision = { type: 'chase_loose_ball', toX: run.x, toY: run.y, intercept: true };
+      newDecisions[p.id] = cut;
+      updatedMemory[p.id] = { path: currentPath, decision: cut, commitTicks: COMMIT_TICKS.chase_loose_ball };
+      continue;
+    }
 
     // ── Pin chasers during through-ball flight + loose-ball wait ──────────
     // Override anything else: if this player was committed to chase, refresh
@@ -4804,13 +4968,20 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       && !s.pass && !s.looseBall && !s.shot && !(s.setPiece && s.setPiece.takerId === p.id)) {
       const d = mem.decision;
       const moved = mem.from ? Math.hypot(p.x - mem.from.x, p.y - mem.from.y) : 0;
-      const stepDone = d.type === 'carry' && !d.step && moved >= FM_NUMBERS.CARRY_STEP_YD;
-      // A new threat ends the action at once: an opponent closing inside INTERRUPT_YD, nearer than at the start.
+      const stepLen = d.type !== 'carry' ? Infinity
+        : !d.step || d.step === 'byline' ? FM_NUMBERS.CARRY_STEP_YD
+        : d.step === 'sprint' ? HOLDER_CHOICE.SPRINT_STEP_YD : Infinity;
+      const stepDone = moved >= stepLen;
       const nd = nearestOpponentDist(s.players, p);
-      const interrupt = (nd <= FM_NUMBERS.INTERRUPT_YD && nd < (mem.nearD ?? Infinity) - FM_NUMBERS.INTERRUPT_CLOSE_YD)
-        || nd <= FM_NUMBERS.CHALLENGE_YD
-        // In the shooting zone a chance opens in a tick: he reads it every tick there.
-        || Math.hypot((p.attackDir === 1 ? PITCH_LENGTH : 0) - p.x, PITCH_WIDTH / 2 - p.y) <= FM_NUMBERS.CADENCE_FREE_YD;
+      // Stage 8 (`holder-choice.md`): FM decides when the action ends — only a challenge coming in (an opponent inside
+      // CHALLENGE_YD who was farther at the start) cuts it short. Stage 4b: a new threat closing in, any challenge and the
+      // shooting zone (read every tick) all re-decide at once.
+      const interrupt = DECISION_FLAGS.FM_HOLDER
+        ? nd <= HOLDER_CHOICE.CHALLENGE_YD && (mem.nearD ?? Infinity) > HOLDER_CHOICE.CHALLENGE_YD
+        : (nd <= FM_NUMBERS.INTERRUPT_YD && nd < (mem.nearD ?? Infinity) - FM_NUMBERS.INTERRUPT_CLOSE_YD)
+          || nd <= FM_NUMBERS.CHALLENGE_YD
+          // In the shooting zone a chance opens in a tick: he reads it every tick there.
+          || Math.hypot((p.attackDir === 1 ? PITCH_LENGTH : 0) - p.x, PITCH_WIDTH / 2 - p.y) <= FM_NUMBERS.CADENCE_FREE_YD;
       if (!stepDone && !interrupt) {
         newDecisions[p.id] = d;
         updatedMemory[p.id] = { ...mem, commitTicks: mem.commitTicks - dt / DECISION_REF_DT };
@@ -4825,6 +4996,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       s.setPiece, crowdGrid, s.teamIntent,
       isBallHolder ? tbCachedCells : null,
       s.matchTime,
+      isBallHolder ? { lead: p.team === 'A' ? s.score.A - s.score.B : s.score.B - s.score.A, minute: matchMinute(s) } : undefined,
     );
     newDecisions[p.id] = fresh;
     // A holder move starting (`HolderMoves.ts`): counted once, not every tick it is held.
@@ -4859,7 +5031,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       : { path: currentPath, decision: fresh, commitTicks: COMMIT_TICKS[fresh.type] };
     if (isBallHolder && fresh.type === 'carry' && fresh.step) {
       gameBus.emit('holderStep', { playerId: p.id, team: p.team, step: fresh.step });
-      debugLog('decision', `${p.name} ${fresh.step === 'hold' ? 'holds the ball' : 'turns'}`, { playerId: p.id });
+      const what = { hold: 'holds the ball', turn: 'turns', sprint: 'sprints with the ball', byline: 'runs at the byline', spin: 'spins past his marker', flag: 'shields it at the corner flag' }[fresh.step];
+      debugLog('decision', `${p.name} ${what}`, { playerId: p.id });
     }
     if (telemetry) {
       const cap = takeCapture();
@@ -4880,6 +5053,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   });
 
   s = { ...s, decisions: newDecisions, players: playersWithMemory };
+  if (interceptRuns.length > 0) s = { ...s, interceptRuns };
+  else if (s.interceptRuns) s = { ...s, interceptRuns: undefined };
 
   if (shouldDrainStamina(s)) {
     const weatherDrain = weatherEffectOf(s.weather).drain;
@@ -4891,7 +5066,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
         const energy = consumeEnergy(
-          pl.energy, pl.stamina, action, dt * clockScaleOf(s), (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain,
+          pl.energy, pl.stamina, action, dt * clockScaleOf(s),
+          (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain * conditionDrainMult(pl),
         );
         if (energy === pl.energy) return p;
         // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
@@ -4904,6 +5080,17 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         return { ...pl, energy, runtimeStats, fatigueBaselineEnergy };
       }),
     };
+  }
+
+  // Condition by minute (stage 14, `Condition.ts`): one sample per team at every new match minute of live play.
+  if (isLivePhase(s.matchPhase) && (matchMinute(s) !== matchMinute(state) || s.matchPhase !== state.matchPhase)) {
+    const minute = matchMinute(s);
+    for (const team of ['A', 'B'] as const) {
+      const mine = s.players.filter(p => p.team === team);
+      if (mine.length === 0) continue;
+      const keeper = mine.find(p => p.role === 'GK');
+      gameBus.emit('conditionSample', { minute, team, median: outfieldMedianCondition(mine), keeper: keeper ? keeper.energy : null });
+    }
   }
 
   // Man-marking time (player instructions): the marked targets, for the marked-target statistics.
@@ -5482,11 +5669,13 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         p.team !== carrier.team &&
         (s.decisions[p.id]?.type === 'press' || s.decisions[p.id]?.type === 'tackle'),
       );
-      const accelBurst   = isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
+      // A sprint carry (stage 8) runs flat out: the acceleration boost always on.
+      const accelBurst   = holderDecision.step === 'sprint' ? wb.acceleration * HOLDER_CHOICE.SPRINT_ACCEL_BOOST
+        : isUnderPressure ? wb.acceleration * CARRY_ACCEL_SPEED_BOOST : 0;
       const recoveryMult = carrier.recoveryTime > 0 ? DUEL_RECOVERY_SPEED_FACTOR : 1;
       // Shielding (`HolderMoves.ts`): he edges away from the presser, ball kept on the far foot.
       const shieldMult = (holderDecision.move === 'shield' ? HOLDER_MOVES.SHIELD_SPEED_MULT : 1)
-        * (holderDecision.step === 'hold' ? FM_NUMBERS.HOLD_SPEED : holderDecision.step === 'turn' ? FM_NUMBERS.TURN_SPEED : 1);
+        * holderStepSpeed(holderDecision.step);
       const step = (wb.carrySpeed + accelBurst) * recoveryMult * shieldMult * dt * weatherEffectOf(s.weather).carrySpeed;
       // Role bounds don't restrict the ball carrier — only the pitch boundary does.
       // Off-ball positioning is where bounds apply.
@@ -5617,7 +5806,9 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // scaled by how close they are to the passing lane (perpDist) and pass speed.
   // For through balls the "target" is the landing position, not a player.
   // High balls (cross / long ball) fly over everyone — contested only where they land.
-  if (s.tackleCooldown === 0 && !aerialPass && !overHeads) {
+  // Stage 5: a physical ground pass has no interception dice — defenders touch the ball on its path (below).
+  const physCut = physGround && physicalInterceptionOn();
+  if (s.tackleCooldown === 0 && !aerialPass && !overHeads && !physCut) {
     const ballPos      = getBallPos(s);
     const targetPos    = activePass.kind === 'through' || activePass.toId === null || activePass.miss
       ? { x: activePass.toX, y: activePass.toY }
@@ -5693,7 +5884,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     const catchers: PassCatcher[] = [];
     if (receiver) {
       catchers.push({ id: receiver.id, x: receiver.x, y: receiver.y, reach: receiveReach(receiver), keeper: receiver.role === 'GK' });
-    } else if (through) {
+    }
+    if (through) {
       // Into space: the first player whose reach the ball passes through ends the flight (it runs loose to him).
       for (const p of s.players) {
         if (p.id === activePass.fromId || isPlayerInRecovery(p)) continue;
@@ -5703,9 +5895,22 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         catchers.push({ id: p.id, x: p.x, y: p.y, reach: PASS_PHYSICS.MOVING_TOUCH_YD, keeper: p.role === 'GK' });
       }
     }
+    if (physCut) {
+      // Stage 5 (`interception.md`): every defender the ball passes within reach of touches it.
+      const passerTeam = passerTeamOf(s, activePass);
+      const beaten = new Set(activePass.beaten ?? []);
+      for (const p of s.players) {
+        if (p.team === passerTeam || beaten.has(p.id) || isPlayerInRecovery(p)) continue;
+        catchers.push({ id: p.id, x: p.x, y: p.y, reach: interceptReach(p), keeper: p.role === 'GK' });
+      }
+    }
     const st = advancePassBall(s, dt, catchers);
     s = { ...s, ball: st.ball };
     physContact = st.contactId;
+    const toucher = physCut && st.contactId !== null ? s.players.find(p => p.id === st.contactId) : undefined;
+    if (toucher && toucher.team !== passerTeamOf(s, activePass)) {
+      return resolveInterceptTouch(s, activePass, toucher);
+    }
     const b = st.ball;
     if (through) {
       const h = Math.hypot(ph.vx, ph.vy) || 1;

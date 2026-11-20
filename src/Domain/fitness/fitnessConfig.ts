@@ -55,4 +55,9 @@ export const FITNESS = {
   FITNESS_REF: 88,
   /** 1 = no compression (matchStartEnergy = fitness); 0 = every match starts at FITNESS_REF. */
   START_COMPRESSION: 0.4,
+  /**
+   * Full engine only (`matchStartCondition`, engine rebuild stage 14): kick-off condition = `matchStartEnergy` + this,
+   * so the reference matchday starts at 99 as FM's 98–100.
+   */
+  CONDITION_OFFSET: 11,
 } as const;

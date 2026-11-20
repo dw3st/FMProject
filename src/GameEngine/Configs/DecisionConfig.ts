@@ -68,6 +68,9 @@ export interface DecisionFlags {
   /** Stage 4 of the rebuild (`pass-physics.md`): passes are launched with FM's speed and loft by type and distance, the
    *  passer's error on the 3D vector; the ball arrives where and when the physics takes it (needs `BALL_3D`). */
   PASS_PHYSICS: boolean;
+  /** Stage 5 of the rebuild (`interception.md` → "Stage 5"): no interception dice for a physical pass; a defender who
+   *  reaches a point of its path in time and at a playable height touches it (control, clearance, deflection, miss). */
+  PHYSICAL_INTERCEPTION: boolean;
   /** Stage 18 (`highlights.md`): the highlight layer (observation only: marks the lances, never changes the play). */
   HIGHLIGHTS: boolean;
   /** Stage 13 (`game-rules/offside.md`): attackers read the offside line every few tenths of a second with an error
@@ -76,6 +79,12 @@ export interface DecisionFlags {
   /** Stage 13 (`fouls.md`): contact fouls on the ball holder (carrying, receiving, holding), the foul's context and
    *  third, and the FM card per foul. */
   FM_FOULS: boolean;
+  /** Stage 14 (`fitness.md` → "FM condition"): FM's condition curve (kick-off 99, drain fading toward a floor, +2 at
+   *  half time, keepers barely tire) and FM's AI substitutions (from 55', at 55–75 %, 3–4 a match). */
+  FM_CONDITION: boolean;
+  /** Stage 8 (`holder-choice.md`): the FM holder chooser — every candidate with a risk byte (veto, compression), hard
+   *  argmax with noise only on a lapse; hold, turn, spin, sprint, byline run and corner-flag hold as real actions. */
+  FM_HOLDER: boolean;
   /** Stage 15 (`team-shape.md`): the block at FM's line, span and width in and out of possession, sliding with the ball. */
   FM_SHAPE: boolean;
   /** Stage 15: out of possession a holder covers a vacated zone by FM's position scores (home, neighbours, far). */
@@ -116,9 +125,12 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   FM_XG: true,
   BALL_3D: true,
   PASS_PHYSICS: true,
+  PHYSICAL_INTERCEPTION: true,
   HIGHLIGHTS: true,
   OFFSIDE_RUNS: true,
   FM_FOULS: true,
+  FM_CONDITION: true,
+  FM_HOLDER: true,
   FM_SHAPE: true,
   OOP_ZONES: true,
   PASS_SHADOW: true,

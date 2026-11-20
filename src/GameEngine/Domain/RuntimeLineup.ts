@@ -4,6 +4,7 @@
  */
 
 import type { GamePlayer, GameState, PlayerStats } from '@/GameEngine/types';
+import { conditionDrainMult } from '@/GameEngine/Domain/Condition';
 
 /**
  * Energy drain per game-second (0–100 scale).
@@ -252,7 +253,7 @@ export function applyStaminaCost(
     if (p.id !== playerId) return p;
     const pl = normalizeGamePlayer(p);
     if (pl.baseStats == null) return p;
-    const energy = consumeEnergy(pl.energy, pl.stamina, action, 1.0, pl.drainMultiplier ?? 1);
+    const energy = consumeEnergy(pl.energy, pl.stamina, action, 1.0, (pl.drainMultiplier ?? 1) * conditionDrainMult(pl));
     // A discrete action (tackle, save, interception) is rare enough that we always recompute,
     // rather than gating on FATIGUE_RECOMPUTE_THRESHOLD like the per-tick locomotion drain does.
     return {

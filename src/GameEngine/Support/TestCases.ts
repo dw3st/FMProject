@@ -391,6 +391,58 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-holder-hold',
+    name:        'FM holder — hold, turn and spin',
+    description: 'A CM in his own half with his back to goal (moving back toward his own goal), a marker tight on him and every teammate marked (stage 8, `holder-choice.md`). The FM chooser offers ~20 candidates with a risk byte; the marked passes are vetoed or compressed, so he holds, turns or spins past the marker. Open "Decision Scores" with the holder selected: "FM candidates" lists every one (value, risk, score; vetoed struck through, the pick in amber).',
+    createState() {
+      _nextId = 1;
+      const s = buildState([
+        makePlayer('Mendes',   'A', 'CM',   45, 37, MIDFIELDER),
+        makePlayer('Garcia',   'A', 'CB',   25, 30, DEFENDER),
+        makePlayer('Santos',   'A', 'ST',   70, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CM',   47.5, 37, MIDFIELDER),
+        makePlayer('Nunes',    'B', 'ST',   27, 31, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   71, 40.5, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+      return { ...s, players: s.players.map(p => (p.id === 1 ? { ...p, vel: { x: -1.5, y: 0 } } : p)) };
+    },
+  },
+
+  {
+    id:          'fm-holder-flag',
+    name:        'FM holder — keep it at the corner flag',
+    description: 'Team A leads 1–0 at 88 min; their winger has the ball 8 yd from the opponents’ corner flag, a full-back closing (stage 8, `holder-choice.md`). The FM chooser offers the corner-flag hold (category hold): he runs to the flag and shields it ("decision" log, "FM candidates" panel).',
+    createState() {
+      _nextId = 1;
+      const s = buildState([
+        makePlayer('Mendes',   'A', 'RW',  108, 68, WINGER),
+        makePlayer('Santos',   'A', 'ST',   95, 40, STRIKER),
+        makePlayer('Silva',    'B', 'LB',  100, 64, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  104, 42, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+      return { ...s, score: { A: 1, B: 0 }, matchPhase: 'secondHalf', matchTime: 43 * 60 };
+    },
+  },
+
+  {
+    id:          'fm-holder-sprint',
+    name:        'FM holder — sprint into space and run at the byline',
+    description: 'A winger 40 yd from goal on the right, open grass ahead of him and the full-back 12 yd away (stage 8, `holder-choice.md`). The chooser offers a 5.5-yd sprint step (carry category, full acceleration) and, nearer the end line, the byline run that sets up the cross.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Mendes',   'A', 'RW',   75, 64, WINGER),
+        makePlayer('Santos',   'A', 'ST',   92, 38, STRIKER),
+        makePlayer('Silva',    'B', 'LB',   88, 56, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',   98, 38, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'keeper-sweeper',
     name:        'Keeper — sweeper on a ball over the top',
     description: 'CM plays a through ball over a high back line into the space 20 yd out; the striker starts level with the CBs. The keeper (Kowalski) leaves his box and gets there first (`Keeper.ts`, sweeper). Toggle "Keeper" for the sweeper zone and his target; watch the "keeper" debug log.',
@@ -793,6 +845,38 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'pass-intercepted',
+    name:        'Interception — a defender cuts the pass',
+    description: 'A 22-yd pass to feet with a midfielder 4 yd off the line halfway (stage 5, `interception.md`): no interception dice. He works out the point of the path of the ball he reaches before it (reaction 0.25 s, then his sprint to within his reach) and runs there; when the ball passes within his reach he touches it, and his first touch, how far from his body he meets it and the speed of the ball decide control, deflection or the ball running past him. Toggle "Intercept" for the reach rings and his run to the point (green: spare time, amber: just in time). Debug log "interception".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CM',   40, 37, MIDFIELDER),
+        makePlayer('Lopes',    'A', 'CM',   62, 37, MIDFIELDER),
+        makePlayer('Nunes',    'B', 'CM',   51, 41, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'regular') };
+    },
+  },
+
+  {
+    id:          'pass-intercept-clear',
+    name:        'Interception — cut and cleared near his own goal',
+    description: 'A through ball across the edge of the box with a centre-back running across it (stage 5): he reaches the path in time; near his own goal a touch he does not control is a clearance (hooked away as a high ball), upfield it would be a deflection. Toggle "Intercept".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CAM',  78, 20, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   88, 44, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   96, 36, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'through', [0, 0, 0], 0, { x: 98, y: 44 }) };
+    },
+  },
+
+  {
     id:          'cross-to-box',
     name:        'Aerial — Cross to the Box',
     description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',
@@ -910,6 +994,29 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const f433 = formation433Json as Formation;
       const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
       return applyFatigue(base, 'A', 60, FITNESS.LOAD_HIGH);
+    },
+  },
+
+  {
+    id:          'fm-condition-subs',
+    name:        "11v11 — FM condition and AI changes (54')",
+    description: "Stage 14 (`fitness.md` → FM condition): second half at 54', every outfield player between 62 and 84 condition, both sides managed by the AI rule. From 55' the AI changes the players below 75 % (most tired first, at most 2 a check, 3–4 a match, a tactical one from 70' if fewer than 3). Open the Energy panel: the condition per player at 0/15/30/45/60/75/90', the outfield median next to FM's, and every change with its reason; the condition debug line logs each AI change.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = (p: GamePlayer, i: number): GamePlayer => {
+        if (p.role === 'GK') return { ...p, energy: 97, fatigueBaselineEnergy: 97, runtimeStats: getRuntimeLineup(p.baseStats, { energy: 97 }) };
+        const energy = 62 + ((i * 7) % 23);
+        return { ...p, energy, fatigueBaselineEnergy: energy, runtimeStats: getRuntimeLineup(p.baseStats, { energy }) };
+      };
+      return {
+        ...base,
+        matchPhase: 'secondHalf',
+        matchTime: 9 * 60 - 5,
+        presentationCountdown: 0,
+        autoSubs: { A: true },
+        players: base.players.map(tired),
+      };
     },
   },
 

@@ -76,7 +76,15 @@ export interface GameEvents {
   /** Stage 4b (`fm-numbers.md`): the launch error missed the receiver; the ball runs loose. */
   passMissed:     { player: number; toId: number; distance: number };
   /** Stage 4b: the holder holds the ball or turns (a carry step of that kind starts). */
-  holderStep:     { playerId: number; team: TeamId; step: 'hold' | 'turn' };
+  holderStep:     { playerId: number; team: TeamId; step: 'hold' | 'turn' | 'sprint' | 'byline' | 'spin' | 'flag' };
+  /** Stage 8 (`holder-choice.md`): one FM holder decision — the chosen category (0 pass, 1 kick, 2 turn, 3 hold,
+   *  4 carry) and kind, how many candidates were offered, vetoed (risk 100) and compressed, and a decisions lapse. */
+  holderChoice:   { playerId: number; team: TeamId; cat: 0 | 1 | 2 | 3 | 4; kind: string; candidates: number; vetoed: number; compressed: number; lapse: boolean };
+  /** Stage 8, debug only: every candidate of the decision (value, multiplier, risk, raw and final score, veto). */
+  holderCandidates: {
+    playerId: number; playerName: string; lapse: boolean; chosen: number;
+    candidates: { cat: 0 | 1 | 2 | 3 | 4; kind: string; label: string; value: number; mult: number; risk: number; raw: number; score: number; vetoed: boolean; compressed: boolean }[];
+  };
   /**
    * Emitted at kick time when the chosen pass earned a positive far-flank
    * (switch-of-play) bonus. Derived generically from the active intent's
@@ -157,6 +165,15 @@ export interface GameEvents {
   tackle: { player: number; targetId: number; success: boolean; chance: number };
   /** Emitted on every interception attempt (success or failure). */
   interception: { player: number; success: boolean; chance: number };
+  /**
+   * Stage 5 (`interception.md`): a defender touched a physical pass on its way (no dice for the touch to happen): what
+   * the touch did, the ball's speed (m/s) and height (m), how far from his body (0 feet .. 1 edge of reach) and the
+   * chance he had to control it.
+   */
+  interceptionTouch: {
+    player: number; team: TeamId; passerId: number; kind: 'regular' | 'through';
+    outcome: 'control' | 'clear' | 'deflect' | 'miss'; speedMs: number; zM: number; offset: number; control: number; flight: number;
+  };
   /** Emitted on every dribble attempt (success = attacker beats defender). */
   dribble: { player: number; targetId: number; success: boolean; chance: number };
 
@@ -510,7 +527,12 @@ export interface GameEvents {
    * from `evaluateAiSubstitutions` (AiSubstitution.ts); absent for a manual/tactical substitution
    * (e.g. the user's own sub in MatchScreen) — Statistics counts only the former as a fatigue sub.
    */
-  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: 'fatigue' | 'injury' };
+  /**
+   * Stage 14 (`fitness.md` → "FM condition"): once per match minute of live play per team, the outfield median
+   * condition and the keeper's (null without one). `Statistics.ts` keeps it by minute for `/lab`.
+   */
+  conditionSample: { minute: number; team: TeamId; median: number; keeper: number | null };
+  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: import('@/GameEngine/types').SubstitutionReason; minute?: number };
 
   /** Two starters of `team` swapped slots mid-match (`swapPlayerPositions`, #115) — no substitution used. */
   positionsSwapped: { team: TeamId; aId: number; bId: number };

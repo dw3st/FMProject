@@ -265,7 +265,14 @@ export interface SubstitutionRecord {
   playerInRosterId: string;
   /** Game-minute when the substitution was made. */
   matchMinute: number;
+  /** Why it was made: an AI change (`fatigue` / `tactical`, stage 14) or a forced `injury`; absent = the manager's. */
+  reason?: SubstitutionReason;
+  /** The AI's reason in words (`/test`, the debug log), e.g. "condition 68 < 75 at 61'". */
+  why?: string;
 }
+
+/** `tactical` (stage 14): the AI freshens its most tired player late with fewer than its planned changes. */
+export type SubstitutionReason = 'fatigue' | 'injury' | 'tactical';
 
 /** A queued substitution that will execute at the next dead-ball moment. */
 export interface PendingSub {
@@ -280,7 +287,9 @@ export interface PendingSub {
    * manual/tactical substitution. Threaded through to the `playerSubstituted` event so
    * Statistics.ts can count these separately.
    */
-  reason?: 'fatigue' | 'injury';
+  reason?: SubstitutionReason;
+  /** The AI's reason in words, copied to the `SubstitutionRecord`. */
+  why?: string;
 }
 
 /** One entry in the match injury log (`docs/superpowers/specs/2026-09-28-injuries-design.md` §1). */
@@ -623,7 +632,12 @@ export interface PassState {
   setPieceVariant?: 'box' | 'direct';
   /** Through balls (stage 4): yards the landing point is beyond the aimed cell along the pass (negative = short). */
   overhit?: number;
+  /** Stage 5 (`interception.md`): defenders the ball already ran past (their touch missed); they can't touch it again. */
+  beaten?: number[];
 }
+
+/** Stage 5 (`interception.md`): a defender running to the point of a physical pass's path he reaches in time. */
+export interface InterceptRun { playerId: number; team: TeamId; x: number; y: number; z: number; t: number; margin: number }
 
 /**
  * What put the ball loose: a through ball (default — through-ball stats), a high ball nobody
@@ -846,6 +860,11 @@ export interface GameState {
    * `shot` and `looseBall` by `syncBall` after every tick (the loose ball moves it itself). Absent with `BALL_3D` off.
    */
   ball?: BallState;
+  /**
+   * Stage 5 (`interception.md`): the defenders running to cut the physical pass in flight this tick (their point on the
+   * ball's path, the ball's time to it and his spare time). Observation for `/test`; absent with no pass.
+   */
+  interceptRuns?: InterceptRun[];
   /** Stage 4 (`movement.md`): each side's back line while it defends (robust mean + hold / step-up / drop). */
   backLine?: Partial<Record<TeamId, BackLineState>>;
   score: { A: number; B: number };

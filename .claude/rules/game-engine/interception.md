@@ -233,3 +233,70 @@ if (s.tackleCooldown === 0) {
 ## Debug visualisation
 
 In `/test` debug mode, each defending player's interception corridor is rendered as a **cyan ring** around them. The ring radius scales with the player's speed and acceleration, making it immediately visible which players have the widest reach.
+
+---
+
+# Stage 5: physical interception (engine rebuild)
+
+With `PHYSICAL_INTERCEPTION` (`DecisionConfig.ts`, on; needs `PASS_PHYSICS` and `BALL_3D`) a physical ground pass or
+through ball (`pass-physics.md`) has **no interception dice**: the corridor + `resolveInterception` above only runs for
+non-physical passes (flags off). Constants in `Configs/InterceptConfig.ts` (`INTERCEPT`, env `INTERCEPT_OVERRIDES`),
+design values of the model, not fitted to a match volume. With the flag off a match plays exactly as before (same seeds,
+same counts).
+
+## Rules
+
+- **Reaching the path** (`Domain/PhysicalInterception.ts` → `interceptPoint`): every tick of the flight the ball's path
+  is predicted by free physics (`predictPath`, 3 s, every 0.1 s, cut at the pitch edge or when it stops). A defender
+  reaches a point when `reaction + max(0, distance − reach) / sprint ≤ ball time`, with the ball at a height he can
+  play (`reachHeight`). Reaction 0.25 s (÷ the anticipation multiplier), 0 once he is running; sprint = the
+  `chase_loose_ball` speed; reach = 1.3 yd + 0.6 yd × tackling. Points after the time the receiver (or the runner of a
+  through ball) gets there are ignored.
+- **Running** (`planInterceptRuns`, the decision loop): the earliest `MAX_RUNNERS` (2) defenders run to their point
+  (`chase_loose_ball` with `intercept`, pinned while the pass flies, never counted as race losers); a keeper only inside
+  his box. `GameState.interceptRuns` carries them for `/test`.
+- **Touch** (`advancePassBall`): every defender not beaten and not in recovery is a catcher at his reach; the first the
+  ball passes within reach of (and under his reach height) touches it (`resolveInterceptTouch`). What the touch does is
+  one draw over `touchChances`: control = (0.45 + 0.45 × first touch, keeper's hands in his box 0.92) × (1 − 0.6 ×
+  offset) × speed factor (1 up to 10 m/s, −1/25 per m/s, floor 0.4) × 0.7 above the knee; offset = the ball's closest
+  approach to his body on its line / his reach. Of the rest, `0.6 × offset` runs past him (he can't touch it again:
+  `PassState.beaten`), the remainder is a **clearance** within 35 yd of his own goal (offset ≤ 0.6: `clearanceBall`,
+  16–28 yd) or a **deflection** (`runLoose` cause `deflection`, 40% of the ball speed, turned up to 70°).
+- Control = possession to him at the ball; a clearance, a deflection and a control all count as an interception
+  (`interception` success, the player's `interceptions`); a miss is `interception` with success false.
+- Events: `interceptionTouch { player, team, passerId, kind, outcome, speedMs, zM, offset, control, flight }`; debug
+  category `interception`.
+
+## Surfaces
+
+- `Statistics.ts` team counters (defending team): `cutTouches`, `cutControls`, `cutClears`, `cutDeflects`,
+  `cutMisses`, `cutSpeedSum` → `/lab` `TeamRawStats` → `avgCut*`, `cutSpeedMps` → `PairDetail`.
+- `fmTargets.ts`: `lossEarly` / `lossLate` (R7's split of the passes whose next holder is an opponent, by the time from
+  the kick against FM's expected flight + one tick); `fm-targets.ts` section "Interception": the split, the touches by
+  outcome and the interceptions per match and per live minute.
+- `/test`: scenarios `pass-intercepted` and `pass-intercept-clear`; overlay **Intercept** shows each defender's reach and
+  the runs to the path (green: spare time, amber: just in time) with the flag on, the old corridors with it off.
+
+## Measured (`fm-targets.ts 12 premier_league --chunks 1`, seed 9000, 90 physical minutes)
+
+Before = flag off (identical to the branch before the stage). Full table in `fm-numbers.md` → "Etapa 5".
+
+| Per match, both teams | Before | After | FM |
+|---|---|---|---|
+| Interceptions (control + clear + deflect) | 29.3 | 129.8 (control + clear 72) | 59 |
+| … per live minute | 0.31 | 1.37 | ~0.76 |
+| Touches on a pass in flight: control / clear / deflect / ran past | — | 38 / 9.5 / 38 / 15% (152) | — |
+| Losses after a pass: in flight / later | 56 / 44% | 70 / 30% | 56 / 44% |
+| Regular passes to the receiver 0–5 / 5–9 / 9–13 / 13–18 / 18–22 / 22–27 m | 97 / 97 / 98 / 96 / 94 / 97% | 94 / 92 / 90 / 90 / 87 / 80% | (all kinds) 94 / 92 / 90 / 85 / 87 / 79% |
+| All passes to the receiver (opponent) | 81.0% (13.7%) | 76.3% (17.4%) | 82% (13.5%) |
+| Goals / shots | 8.0 / 33.2 | 6.8 / 27.4 | 1.5 / 21.5 |
+
+Nothing tuned for volume.
+
+## Limitations
+
+- Interceptions per match are ~2× FM's: the defending shape (stage 15) and the holder's choice (stage 8) still leave
+  more passes through defenders; calibration is stage 21.
+- Through balls reach the runner 40% of the time (57% before).
+- High balls (cross, long ball, clearance) are still contested only where they land (contact in the air is stage 10).
+- A tackle on reception is unchanged; the late losses are fewer than FM's (30% against 44%).

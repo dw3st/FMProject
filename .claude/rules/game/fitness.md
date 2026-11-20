@@ -411,3 +411,29 @@ Report de tester. `SeatState.matchEve` ("rest" padrão, "training"): chave no ca
 ## Limiar do assistente (12.17)
 
 Report do usuário. `TacticsSave.assistantRotationFitness` (`ROTATION_FITNESS_OPTIONS`: 50, 60, 65, 70, 75, 80, 85, 90; ausente = 75; `PUT /tactics` recusa outro valor): abaixo desse fôlego um titular de linha entra na troca do assistente (`suggestRotation(..., fitnessThreshold)`, via `resolveUserLineup` no avanço do dia e no `match-setup`); o goleiro usa o menor entre 60 e esse valor. A razão de valor do reserva (`BENCH_SWAP_RATIO`) não muda, e a IA continua em 75. Tela: chips "Poupar quem estiver abaixo de" no cartão do assistente, na Formação.
+
+## FM condition (engine rebuild stage 14)
+
+Behind `DECISION_FLAGS.FM_CONDITION` (on); constants in `GameEngine/Configs/ConditionConfig.ts`, pure helpers in
+`GameEngine/Domain/Condition.ts`. Only the full engine changes; the quickSim, the lineup selector (`fitnessAdjustedValue`)
+and `matchStartEnergy` stay as they were until the refit of stage 21.
+
+- **Kick-off:** `matchStartCondition(fitness)` = `matchStartEnergy(fitness)` + `FITNESS.CONDITION_OFFSET` (11), clamped:
+  the reference matchday (fitness 88) kicks off at 99 as FM's 98–100, a tired squad nearer FM's 83–88. Bench the same.
+- **Drain:** `consumeEnergy` keeps its formula; the multiplier gains `conditionDrainMult` = `DRAIN_SCALE` (2.0) × the
+  headroom above `FLOOR` (60): cost × (energy − 60) / 40, so the drain fades as the player tires (steep first half,
+  flatter second, nobody below the floor). Keepers × `GK_DRAIN_SCALE` (0.07). Discrete costs (`applyStaminaCost`) too.
+- **Half time:** +`HALF_TIME_RECOVERY` (2) points × (0.75 + 0.5 × stamina/10), never above the kick-off value; × 0.5
+  before extra time, 0 between the extra-time halves (`halfTimeCondition`).
+- **AI changes** (`AiSubstitution.ts` → `evaluateFmSubstitutions`, needs the match minute): none before 55'; the
+  outfield players below 75 %, most tired first, when the bench player is 10+ fresher; at most 2 a check (every 5
+  game-minutes) and 4 planned a match (the fifth stays for injuries); from 70' a side with fewer than 3 changes freshens
+  its most tired player (`reason: 'tactical'`). `PendingSub` / `SubstitutionRecord` carry `reason` and `why` (debug
+  `condition`).
+- **Post-match** fitness is still the final energy (`postMatchFitness`): ~70 now instead of ~50, so an engine-played
+  squad recovers sooner between matches (risk for congestion, rotation `BENCH_SWAP_RATIO` and injuries, stage 21).
+- **Measures:** `Statistics.ts` → `conditionSample` (one per team per minute: outfield median, keeper), `TeamStats`
+  `condition15…condition90`, `keeperCondition`, `aiSubstitutions`, `tacticalSubstitutions`, `aiSubMinuteSum`,
+  `aiSubConditionSum`; `/lab` `PairDetail` rows (AI subs, minute, condition, condition 45'/90', keeper end); `/test`
+  Energy panel (per player at 0/15/…/90', median next to FM's, every change with its reason), scenario
+  `fm-condition-subs`; `fm-targets.ts` prints the AI changes. Pitch stamina bar: green ≥ 80, amber ≥ 70.

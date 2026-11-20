@@ -39,8 +39,9 @@ for measuring: `MEET` (the receiver goes to meet the ball) and `ARRIVAL_LANE` (t
   segment it travelled that tick.
 - **High balls:** the landing point is where the physics lands it (not the old Gaussian). The aerial duel at the
   landing point and everything after it are unchanged (contact in the air is stage 10).
-- **Interception:** the same dice as before (physical interception is stage 5), skipped while the ball is above an
-  outfield player's reach.
+- **Interception:** physical since stage 5 (`interception.md` → "Stage 5"): defenders who reach a point of the path in
+  time run there and touch the ball (no dice for the touch to happen); with `PHYSICAL_INTERCEPTION` off, the old dice,
+  skipped while the ball is above an outfield player's reach.
 - **Pass score:** up to `LOFT_YD` the lane is `arrivalLaneScore`: for each point of the path the time the ball needs
   (rolling at the ground deceleration) against the time the quickest defender needs (reaction 0.25 s + his press
   speed), clear when the ball is 0.5 s earlier everywhere.

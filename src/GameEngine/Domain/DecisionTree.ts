@@ -24,7 +24,7 @@ import {
   DEFAULT_MENTAL, HOLDER_ACTIONS, argmaxIndex, distToGoalM, facingAwayWiden, flairBias, longShotRange,
   moodBand, normalisedPressure, perceiveScores, releaseFires, rollMindWindow, setHolderMind, simpleMinded,
 } from '@/GameEngine/Domain/HolderMind';
-import type { GamePlayer, SetPiece, SetPieceRoutine, TeamIntent } from '@/GameEngine/types';
+import type { GamePlayer, HolderMindState, SetPiece, SetPieceRoutine, TeamIntent } from '@/GameEngine/types';
 
 const PITCH_CENTER_Y = PITCH_WIDTH / 2;
 
@@ -49,8 +49,8 @@ import {
   computeXG, computeOpenAngle, computeWeightedPressure,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
-import { evaluatePassLanes, scorePassToReceiverBreakdown } from '@/GameEngine/Domain/PassLanes';
-import type { PassBreakdown } from '@/GameEngine/Domain/PassLanes';
+import { evaluatePassLanes, passLossEstimate, scorePassToReceiverBreakdown } from '@/GameEngine/Domain/PassLanes';
+import type { PassBreakdown, PassLaneInfo } from '@/GameEngine/Domain/PassLanes';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
@@ -59,11 +59,14 @@ import { evaluateCrossTargets, evaluateLongBall } from '@/GameEngine/Domain/Aeri
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { evaluateBoxSetPiece, routineOption } from '@/GameEngine/Domain/SetPieces';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
+import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
+import { pickCandidate, qualityOf, riskOf, scoreCandidates, type HolderCandidate, type HolderCategory } from '@/GameEngine/Domain/HolderChoice';
+import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
 import { getMainRole } from '@/Domain/roles';
-import { chipMove, cutInsideMove, layOffMove, roundKeeperMove, shieldMove, type HolderMove } from '@/GameEngine/Domain/HolderMoves';
+import { backToGoal, chipMove, cutInsideMove, layOffMove, roundKeeperMove, shieldMove, type HolderMove } from '@/GameEngine/Domain/HolderMoves';
 
 export type PlayerDecision =
-  | { type: 'carry'; dx: number; dy: number; move?: HolderMove; step?: 'hold' | 'turn' } // withBall → advancing with the ball (move: shield / cut inside; step: hold the ball / turn, `fm-numbers.md`)
+  | { type: 'carry'; dx: number; dy: number; move?: HolderMove; step?: HolderStep } // withBall → advancing with the ball (move: shield / cut inside; step: hold / turn (`fm-numbers.md`), sprint / byline / spin / flag (`holder-choice.md`))
   | { type: 'shoot'; move?: HolderMove }                // withBall  → will shoot (move: chip)
   | { type: 'pass'; targetId?: number; move?: HolderMove } // withBall → pass (targetId: forced receiver, one-on-one gate / lay-off)
   | { type: 'through_ball'; cellX: number; cellY: number; intendedRunnerId: number | null } // withBall → ball into space
@@ -74,11 +77,15 @@ export type PlayerDecision =
   | { type: 'press';  targetId: number; standOff?: true } // withoutBall → toward the holder (standOff: second presser, stage 4)
   | { type: 'support_run';  dx: number; dy: number }   // offBall   → move into receiving position
   | { type: 'create_space'; dx: number; dy: number }   // offBall   → move away from pressure
-  | { type: 'chase_loose_ball'; toX: number; toY: number; meet?: true } // both → sprint to a contested loose ball (meet: the receiver of a physical pass going to meet it)
+  | { type: 'chase_loose_ball'; toX: number; toY: number; meet?: true; intercept?: true } // both → sprint to a contested loose ball (meet: the receiver of a physical pass going to meet it; intercept: a defender running to cut it, stage 5)
   | { type: 'hold_shape' }                              // defending → maintain formation shape
   | { type: 'track_mark'; markTargetId: number }        // defending → track assigned mark
   | { type: 'step_into_carry_lane' }                    // defending → block carry path to goal
   | { type: 'idle' }                                    // fallback  → no action
+
+/** A holder carry with its own length and speed: hold, turn (stage 4b); sprint, byline run, spin past the marker,
+ *  corner-flag hold (stage 8, `holder-choice.md`). */
+export type HolderStep = 'hold' | 'turn' | 'sprint' | 'byline' | 'spin' | 'flag';
 
 // ── Decision short-term memory ────────────────────────────────────────────────
 
@@ -216,6 +223,9 @@ function forwardPathClearness(player: GamePlayer, defendingOutfield: GridMatrix 
 }
 
 /** Best-lane carry result, including the underlying breakdown for debug emission. */
+/** One carry lane as an FM holder candidate (stage 8): direction, final lane score and clearance. */
+interface CarryLaneOption { dx: number; dy: number; score: number; clearance: number }
+
 interface BestCarryLane {
   dx: number;
   dy: number;
@@ -238,6 +248,7 @@ function getBestCarryLane(
   allPlayers: GamePlayer[],
   defendingOutfield: GridMatrix | null,
   intent: TeamIntent = 'balanced',
+  all: CarryLaneOption[] | null = null,
 ): BestCarryLane | null {
   const baseCfg = getTeamCarryConfig(player.team);
   const cfg     = { ...baseCfg, ...applyCarryIntent(baseCfg, intent) };
@@ -358,6 +369,7 @@ function getBestCarryLane(
     }
 
     const score = rawScore - rolePenalty - bylinePenalty + bylineRunAdj + (lane.scoreBonus ?? 0);
+    if (all) all.push({ dx: lane.dx, dy: lane.dy, score, clearance: breakdown.clearanceScore });
 
     if (score > bestScore) {
       bestScore = score;
@@ -456,6 +468,8 @@ interface ActionScore {
   passBreakdown?:    PassActionBreakdown;
   /** Pass: teammates with a pass score >= `HOLDER_MIND.OPEN_PASS` (the release gate's n). */
   openCount?: number;
+  /** Pass: every receiver's lane (the FM holder chooser offers each one, stage 8). */
+  lanes?: PassLaneInfo[];
   /** One of the holder's extra moves (`HolderMoves.ts`), executed by the action of `type`. */
   move?:           HolderMove;
   carryBreakdown?:   CarryActionBreakdown | null;
@@ -561,7 +575,7 @@ function evalPass(
   let openCount = 0;
   for (const l of lanes) if (l.score >= HOLDER_MIND.OPEN_PASS) openCount++;
   return {
-    type: 'pass', score, targetId: best.toId, openCount,
+    type: 'pass', score, targetId: best.toId, openCount, lanes,
     passBreakdown: breakdown
       ? { toId: best.toId, roleBias, rawScore: raw, ...breakdown }
       : {
@@ -579,9 +593,10 @@ function evalCarry(
   allPlayers: GamePlayer[],
   defendingOutfield: GridMatrix | null,
   intent: TeamIntent,
+  all: CarryLaneOption[] | null = null,
 ): ActionScore {
   // GK is already excluded by the caller — handled by the shoot decision (xG + GK effect).
-  const lane = getBestCarryLane(player, outfieldOpponents, allPlayers, defendingOutfield, intent);
+  const lane = getBestCarryLane(player, outfieldOpponents, allPlayers, defendingOutfield, intent, all);
   if (!lane) return { type: 'carry', score: 0, carryBreakdown: null };
 
   // CARRY_STRONG_RAW=0.8: a clear lane with a solid player (raw≈0.9) scores 0.632.
@@ -877,13 +892,267 @@ function holderMoves(
   return out;
 }
 
+/** Match situation the holder reads for the corner-flag hold (stage 8): his team's lead and the minute. */
+export interface HolderSituation { lead: number; minute: number }
+
+/**
+ * The FM holder chooser (stage 8, `holder-choice.md`): every candidate with a value, a category multiplier and a risk
+ * byte; vetoes at risk 100, compression above (100 − risk)³ / 10, hard argmax; noise only on a decisions lapse. The
+ * holder's mind gates (release, simple-minded, long-shot range, facing away, flair) shape the values first. Returns
+ * the decision; hands the window to `setHolderMind` and emits the candidate list.
+ */
+function fmHolderChoice(
+  player: GamePlayer,
+  allPlayers: GamePlayer[],
+  outfieldOpponents: GamePlayer[],
+  defendingOutfield: GridMatrix | null,
+  intent: TeamIntent,
+  a: {
+    sh: ActionScore; ps: ActionScore; dr: ActionScore; lb: ActionScore;
+    cells: ReturnType<typeof enumerateCandidateCells>;
+    targets: ReturnType<typeof evaluateCrossTargets>;
+    carryLanes: CarryLaneOption[];
+    moves: ActionScore[];
+  },
+  gate: ((x: number, y: number, receiverId: number | null, xgMult?: number) => boolean) | null,
+  mind: { matchTime: number; situ?: HolderSituation },
+): PlayerDecision {
+  const H = HOLDER_CHOICE;
+  const M = HOLDER_MIND;
+  // With the holder's mind off nothing is rolled nor read (a neutral window: no lapse, median rolls).
+  const mindOn = DECISION_FLAGS.HOLDER;
+  const mental = mindOn ? player.mental ?? DEFAULT_MENTAL : DEFAULT_MENTAL;
+  const prev = player.decisionNoise;
+  const fresh = !prev || prev.ticks <= 0;
+  const st: HolderMindState = !mindOn
+    ? { ticks: 0, dec: 100, comp: 100, flair: M.FLAIR_CENTER, lapse: false, sigma: 0, z: [], lapseMul: [] }
+    : fresh ? rollMindWindow(mental, player.energy, mind.matchTime) : prev!;
+  const opponents = allPlayers.filter(p => p.team !== player.team);
+  const pressure = holderPressure(player.x, player.y, opponents);
+  const pN = normalisedPressure(pressure);
+  const widen = facingAwayWiden(player, pN);
+  const distM = distToGoalM(player.x, player.y, player.attackDir);
+  const minded = DECISION_FLAGS.HOLDER && !gate;
+  const release = minded && releaseFires(pN, st.comp, distM, a.ps.openCount ?? 0, widen);
+  const simple = minded && simpleMinded(st);
+  const range = longShotRange(st);
+  const fb = minded ? flairBias(st) : 0;
+  const shotYd = distM / 0.9144;
+  const wb = player.runtimeStats.withBall;
+  const goalX = player.attackDir === 1 ? PITCH_LENGTH : 0;
+  const goalTargetY = Math.max(GOAL_Y_MIN, Math.min(GOAL_Y_MAX, player.y));
+  const cfgCarry = getTeamCarryConfig(player.team);
+  let near: GamePlayer | null = null; let nd = Infinity;
+  for (const o of outfieldOpponents) { const d = Math.hypot(o.x - player.x, o.y - player.y); if (d < nd) { nd = d; near = o; } }
+  const awayDir = (): { dx: number; dy: number } => near && nd > 0.01
+    ? { dx: (player.x - near.x) / nd, dy: (player.y - near.y) / nd } : { dx: -player.attackDir, dy: 0 };
+  const cands: HolderCandidate<PlayerDecision>[] = [];
+  const add = (cat: HolderCategory, kind: string, label: string, value: number, risk: number, decision: PlayerDecision) => {
+    // A carry with no direction (two players on the same spot) is not an option.
+    if (decision.type === 'carry' && !(Number.isFinite(decision.dx) && Number.isFinite(decision.dy))) return;
+    // FM's category multiplier (relative to a carry); the corner-flag hold is a type of its own, copied as it is.
+    const mult = kind === 'flag' ? 1 : H.CAT_MULT[cat] ?? 1;
+    cands.push({ cat, kind, label, value: Math.max(0, Math.min(1, value)), mult, risk, quality: qualityOf(value), decision });
+  };
+
+  // ── passes: one per teammate, plus the lay-off ──
+  const offsideLine = computeOffsideLine(player.attackDir, allPlayers, player.team, player.x);
+  const roleBias = engineOf(player).passBias * getTeamPassConfig(player.team).ROLE_BIAS_WEIGHT;
+  for (const l of a.ps.lanes ?? []) {
+    const r = allPlayers.find(p => p.id === l.toId);
+    if (!r) continue;
+    const d = Math.hypot(r.x - player.x, r.y - player.y);
+    const offside = offsideLine !== null && (player.attackDir === 1 ? r.x > offsideLine : r.x < offsideLine);
+    let v = compress(Math.max(0, l.quality + roleBias), PASS_STRONG_RAW);
+    if (release) v *= M.RELEASE_PASS_MULT;
+    if (widen > 0 && (l.progressScore ?? 1) <= M.BACK_PASS_PROGRESS) v *= 1 + widen;
+    const lane = l.laneScore ?? 1;
+    const loss = DECISION_FLAGS.PASS_ERROR ? passLossEstimate(player, r, pressure) : 0;
+    // Risk byte: an interception chance read from the arrival margin, (1 − lane)², plus the launch-miss loss.
+    const risk = offside || lane <= H.PASS_VETO_LANE ? 100 : riskOf((1 - lane) ** 2 + loss);
+    add(0, d > FM_NUMBERS.LOFT_YD ? 'pass_lofted' : 'pass', r.name, v, risk, { type: 'pass', targetId: r.id });
+  }
+  for (const mv of a.moves) {
+    if (mv.type === 'pass' && mv.targetId !== undefined) add(0, 'lay_off', 'lay-off', mv.score, 15, { type: 'pass', targetId: mv.targetId, move: mv.move! });
+  }
+  // ── through balls: the best cells ──
+  let tbn = 0;
+  for (const c of a.cells) {
+    if (tbn >= H.TB_CANDIDATES) break;
+    if (gate && !gate(c.x, c.y, c.components.bestAttackerId)) continue;
+    if (simple && c.components.raceMargin < M.SIMPLE_RACE_S) continue;
+    tbn++;
+    const t = throughBallAction(player, c);
+    const race = c.components.raceMarginScore;
+    const risk = race <= H.TB_VETO_RACE ? 100 : softRisk(1 - race * (1 - Math.max(0, Math.min(1, c.components.laneRiskPenalty))));
+    add(0, 'through_ball', `cell ${c.x.toFixed(0)},${c.y.toFixed(0)}`, t.score + fb, risk,
+      { type: 'through_ball', cellX: c.x, cellY: c.y, intendedRunnerId: c.components.bestAttackerId });
+  }
+  // ── crosses ──
+  const maxAerialYd = M.SIMPLE_MAX_AERIAL_M / 0.9144;
+  for (const t of a.targets) {
+    if (gate && !gate(t.x, t.y, t.bestAttackerId ?? null, AERIAL_CONFIG.HEADER_XG_MULT)) continue;
+    if (simple && Math.hypot(t.x - player.x, t.y - player.y) > maxAerialYd) continue;
+    const cr = crossAction(t);
+    const tot = t.attackers + t.defenders;
+    add(0, 'cross', t.kind, cr.score, cr.score > 0 ? softRisk(tot > 0 ? t.defenders / tot : 1) : 100,
+      { type: 'cross', toX: t.x, toY: t.y, intendedRunnerId: t.bestAttackerId });
+  }
+  // ── long ball ──
+  if (a.lb.score > 0 && a.lb.toX !== undefined && !(simple && Math.hypot(a.lb.toX - player.x, (a.lb.toY ?? player.y) - player.y) > maxAerialYd)) {
+    add(0, 'long_ball', 'long ball', a.lb.score * (release ? M.RELEASE_LONG_MULT : 1), riskOf(1 - FM_NUMBERS.LOFT_KEEP),
+      { type: 'long_ball', toX: a.lb.toX, toY: a.lb.toY!, targetId: a.lb.targetId! });
+  }
+  // ── shot and chip (category 1, kicks) ──
+  if (a.sh.score > 0 && !(minded && shotYd > range)) add(1, 'shot', `xG ${(a.sh.shootBreakdown?.xg ?? 0).toFixed(2)}`, a.sh.score + (shotYd > M.LONG_SHOT_FROM_YD ? fb : 0), 0, { type: 'shoot' });
+  for (const mv of a.moves) if (mv.type === 'shoot' && !simple) add(1, 'chip', 'chip', mv.score + fb, 0, { type: 'shoot', move: mv.move! });
+  // ── carries (category 4): every lane, the sprint, the byline run, the dribble, cut inside, round the keeper ──
+  const carryMult = release ? M.RELEASE_CARRY_MULT : 1;
+  let bestLane: CarryLaneOption | null = null;
+  for (const l of a.carryLanes) {
+    if (!bestLane || l.score > bestLane.score) bestLane = l;
+    if (!(l.score > 0)) continue;
+    const risk = l.clearance <= H.CARRY_VETO_CLEARANCE ? 100 : softRisk(1 - l.clearance);
+    add(4, 'carry', `lane ${Math.round((Math.atan2(l.dy, l.dx * player.attackDir) * 180) / Math.PI)}°`, compress(l.score, CARRY_STRONG_RAW) * carryMult, risk,
+      { type: 'carry', dx: l.dx, dy: l.dy });
+  }
+  if (bestLane && bestLane.score > 0 && laneOpen(player, bestLane.dx, bestLane.dy, H.SPRINT_CLEAR_YD, H.SPRINT_LANE_R_YD, outfieldOpponents)) {
+    add(4, 'sprint', 'sprint', compress(bestLane.score, CARRY_STRONG_RAW) * carryMult * (H.SPRINT_BASE + H.SPRINT_ACCEL * wb.acceleration), softRisk(1 - bestLane.clearance),
+      { type: 'carry', dx: bestLane.dx, dy: bestLane.dy, step: 'sprint' });
+  }
+  const toEnd = (goalX - player.x) * player.attackDir;
+  if (Math.abs(player.y - PITCH_CENTER_Y) >= H.BYLINE_WIDE_YD && toEnd <= H.BYLINE_ZONE_YD && toEnd > H.BYLINE_STOP_YD) {
+    const b = evaluateCarryLaneBreakdown(player, player.attackDir, 0, goalTargetY, outfieldOpponents, cfgCarry);
+    if (b.score > 0) {
+      add(4, 'byline', 'to the byline', compress(b.score * (0.6 + 0.4 * wb.passingSkill), CARRY_STRONG_RAW) * carryMult,
+        b.clearanceScore <= H.CARRY_VETO_CLEARANCE ? 100 : softRisk(1 - b.clearanceScore), { type: 'carry', dx: player.attackDir, dy: 0, step: 'byline' });
+    }
+  }
+  if (a.dr.score > 0 && !release && !(simple && engineOf(player).carryBias < M.SIMPLE_DRIBBLE_BIAS) && a.dr.targetId !== undefined) {
+    const target = allPlayers.find(p => p.id === a.dr.targetId);
+    const win = target ? wb.dribbling / (wb.dribbling + target.runtimeStats.withoutBall.tackleChance * 0.85 + 1e-3) : 0.5;
+    add(4, 'dribble', target?.name ?? 'dribble', a.dr.score + fb, riskOf(1 - win), { type: 'dribble', targetId: a.dr.targetId });
+  }
+  for (const mv of a.moves) {
+    if (mv.type === 'carry' && mv.move === 'cut_inside') add(4, 'cut_inside', 'cut inside', mv.score * carryMult + fb, 20, { type: 'carry', dx: mv.dx!, dy: mv.dy!, move: mv.move });
+    if (mv.type === 'dribble' && !release) add(4, 'round_keeper', 'round the keeper', mv.score + fb, 30, { type: 'dribble', targetId: mv.targetId!, move: mv.move! });
+  }
+  // ── turn (category 2): moving the wrong way, a short turn toward the best way forward ──
+  const v = player.vel;
+  const sp = v ? Math.hypot(v.x, v.y) : 0;
+  const nearRisk = riskOf(Math.max(0, Math.min(1, (4 - nd) / 4)) * 0.6);
+  if (v && sp >= H.TURN_MIN_SPEED) {
+    const way = bestLane && bestLane.score > 0 ? bestLane : { dx: goalX - player.x, dy: PITCH_CENTER_Y - player.y, score: 0.5 };
+    const wl = Math.hypot(way.dx, way.dy) || 1;
+    const deg = (Math.acos(Math.max(-1, Math.min(1, (v.x * way.dx + v.y * way.dy) / (sp * wl)))) * 180) / Math.PI;
+    if (deg > H.TURN_DEG) {
+      const off = (deg - H.TURN_DEG) / (180 - H.TURN_DEG);
+      add(2, 'turn', `${Math.round(deg)}°`, compress(Math.max(0.2, way.score), CARRY_STRONG_RAW) * (0.5 + 0.5 * off), nearRisk,
+        { type: 'carry', dx: way.dx / wl, dy: way.dy / wl, step: 'turn' });
+    }
+  }
+  // ── spin past the marker (category 2): back to goal, the marker tight on his goal side ──
+  if (near && nd > 0.1 && nd <= H.SPIN_MARKER_YD && backToGoal(player, { o: near, d: nd })) {
+    const px = -(near.y - player.y) / nd, py = (near.x - player.x) / nd;
+    const side = (y: number) => outfieldOpponents.filter(o => o !== near && Math.hypot(o.x - (player.x + px * y * 4), o.y - (player.y + py * y * 4)) < 6).length;
+    const s = side(1) <= side(-1) ? 1 : -1;
+    const dx = px * s * 0.8 + player.attackDir * 0.6, dy = py * s * 0.8;
+    const dl = Math.hypot(dx, dy);
+    const flairN = Math.max(0, Math.min(1, st.flair / (2 * M.FLAIR_CENTER)));
+    const win = wb.dribbling / (wb.dribbling + near.runtimeStats.withoutBall.tackleChance + 1e-3);
+    add(2, 'spin', near.name, compress(0.5 * wb.dribbling + 0.3 * wb.acceleration + 0.2 * flairN, CARRY_STRONG_RAW) * (1 - 0.5 * pN), riskOf(1 - win),
+      { type: 'carry', dx: dx / dl, dy: dy / dl, step: 'spin' });
+  }
+  // ── hold and shield (category 3) ──
+  let arriving = 0;
+  for (const t of allPlayers) {
+    if (t.team !== player.team || t.id === player.id || t.role === 'GK' || !t.vel) continue;
+    const d = Math.hypot(t.x - player.x, t.y - player.y);
+    if (d > H.HOLD_SUPPORT_YD || d < 0.5) continue;
+    if ((t.vel.x * (player.x - t.x) + t.vel.y * (player.y - t.y)) / d > 0.5) arriving++;
+  }
+  const away = awayDir();
+  add(3, 'hold', `${arriving} arriving`, (H.HOLD_BASE + H.HOLD_SUPPORT * arriving) * (1 - 0.5 * pN), nearRisk, { type: 'carry', dx: away.dx, dy: away.dy, step: 'hold' });
+  for (const mv of a.moves) if (mv.type === 'carry' && mv.move === 'shield') add(3, 'shield', 'shield', mv.score, 10, { type: 'carry', dx: mv.dx!, dy: mv.dy!, move: mv.move });
+  // ── corner-flag hold (category 3): leading late, near the opponents' corner flag ──
+  const situ = mind.situ;
+  if (situ && situ.lead > 0 && situ.minute >= H.FLAG_MINUTE) {
+    const fy = player.y < PITCH_CENTER_Y ? 0 : PITCH_WIDTH;
+    const fd = Math.hypot(goalX - player.x, fy - player.y);
+    if (fd <= H.FLAG_ZONE_YD) {
+      const dir = fd > 1.5 ? { dx: (goalX - player.x) / fd, dy: (fy - player.y) / fd } : away;
+      add(3, 'flag', 'corner flag', H.FLAG_VALUE, riskOf(pN * 0.5), { type: 'carry', dx: dir.dx, dy: dir.dy, step: 'flag' });
+    }
+  }
+
+  // ── pick: noise only on a lapse ──
+  const noise = st.lapse ? cands.map(() => 1 + (matchRandom() * 2 - 1) * H.LAPSE_NOISE) : null;
+  const scored = scoreCandidates(cands, i => (noise ? noise[i]! : 1));
+  let idx = pickCandidate(scored);
+  let decision: PlayerDecision;
+  if (idx < 0) {
+    decision = gate ? { type: 'shoot' } : { type: 'carry', dx: away.dx, dy: away.dy, step: 'hold' };
+  } else decision = scored[idx]!.decision;
+
+  // The mind side channel (trueScores / perceived per action slot) for the holderMind event and the /lab counters.
+  const slotOf = (d: PlayerDecision): string => (d.type === 'carry' ? 'carry' : d.type);
+  const trueBest: Record<string, number> = {}; const percBest: Record<string, number> = {};
+  for (const k of HOLDER_ACTIONS) { trueBest[k] = 0; percBest[k] = 0; }
+  scored.forEach((c, i) => {
+    const k = slotOf(c.decision);
+    if (k in trueBest) { trueBest[k] = Math.max(trueBest[k]!, cands[i]!.value); percBest[k] = Math.max(percBest[k]!, c.score / H.SCALE); }
+  });
+  const trueIdx = pickCandidate(scoreCandidates(cands));
+  if (mindOn) setHolderMind({
+    state: st, fresh, pressure, pN, release, openOptions: a.ps.openCount ?? 0, distM, simple, widen, longShotRange: range,
+    mood: moodBand(mental.mood), trueScores: trueBest, perceived: percBest,
+    trueBest: trueIdx >= 0 ? slotOf(cands[trueIdx]!.decision) : 'carry',
+    picked: slotOf(decision),
+    ...('move' in decision && decision.move ? { move: decision.move } : {}),
+  });
+
+  const counts = { candidates: scored.length, vetoed: scored.filter(c => c.vetoed).length, compressed: scored.filter(c => c.compressed).length };
+  const chosen = idx >= 0 ? scored[idx]! : null;
+  gameBus.emit('holderChoice', {
+    playerId: player.id, team: player.team, cat: chosen?.cat ?? 3, kind: chosen?.kind ?? 'hold', lapse: st.lapse, ...counts,
+  });
+  if (isDebugEnabled()) {
+    gameBus.emit('holderCandidates', {
+      playerId: player.id, playerName: player.name, lapse: st.lapse, chosen: idx,
+      candidates: scored.map(c => ({ cat: c.cat, kind: c.kind, label: c.label, value: c.value, mult: c.mult, risk: c.risk, raw: c.raw, score: c.score, vetoed: c.vetoed, compressed: c.compressed })),
+    });
+    debugLog('decision', `${player.name}: ${chosen ? `${chosen.kind} (${chosen.label}) ${chosen.score}` : 'all vetoed → hold'} of ${counts.candidates} candidates, ${counts.vetoed} vetoed${st.lapse ? ' (lapse)' : ''}`, { playerId: player.id });
+  }
+  void intent; void defendingOutfield;
+  return decision;
+}
+
+/**
+ * Risk byte of a soft 0..1 "badness" (1 − lane clearance, 1 − race score, defenders' share): its square, so a narrow
+ * margin is a modest risk and only a closed one reaches the cubic compression or the veto (stage 8).
+ */
+function softRisk(bad: number): number {
+  return riskOf(Math.max(0, Math.min(1, bad)) ** 2);
+}
+
+/** Nobody of `opps` within `r` yd of the segment from the holder along (dx, dy) for `len` yd (ahead of his first yard). */
+function laneOpen(p: GamePlayer, dx: number, dy: number, len: number, r: number, opps: readonly GamePlayer[]): boolean {
+  for (const o of opps) {
+    const along = (o.x - p.x) * dx + (o.y - p.y) * dy;
+    if (along < 1) continue;
+    const t = Math.min(along, len);
+    if (Math.hypot(o.x - (p.x + dx * t), o.y - (p.y + dy * t)) < r) return false;
+  }
+  return true;
+}
+
 function decideBallHolder(
   player: GamePlayer,
   allPlayers: GamePlayer[],
   crowdGrid: CrowdGrid | null,
   intent: TeamIntent,
   tbCachedCells: ReturnType<typeof enumerateCandidateCells> | null = null,
-  mind: { matchTime: number } | null = null,
+  mind: { matchTime: number; situ?: HolderSituation } | null = null,
 ): PlayerDecision {
   // Exclude recovering opponents — they are stumbling and pose no real threat to the carrier.
   const opponents         = allPlayers.filter(p => p.team !== player.team && !isPlayerInRecovery(p));
@@ -897,7 +1166,9 @@ function decideBallHolder(
   // One-on-one with the keeper (#156): only give the ball to a clearly better-placed teammate.
   const gate = oneOnOneGate(player, opponents, outfieldOpponents, allPlayers, sh.shootBreakdown?.xg ?? 0);
   const ps = evalPass(player, opponents, allPlayers, intent, gate && (r => gate(r.x, r.y, r.id)));
-  const ca = evalCarry(player, outfieldOpponents, allPlayers, defendingOutfield, intent);  // GK excluded — handled by shoot decision
+  const fmChoice = !!mind && DECISION_FLAGS.FM_HOLDER && player.role !== 'GK';
+  const carryLanes: CarryLaneOption[] = [];
+  const ca = evalCarry(player, outfieldOpponents, allPlayers, defendingOutfield, intent, fmChoice ? carryLanes : null);  // GK excluded — handled by shoot decision
   const dr = evalDribble(player, outfieldOpponents, allPlayers.filter(p => p.team === player.team)); // GK excluded — don't dribble the GK
   const tbResult = evalThroughBall(player, allPlayers, crowdGrid, tbCachedCells, gate);
   const tb = tbResult.action;
@@ -907,7 +1178,17 @@ function decideBallHolder(
   const actions: ActionScore[] = [sh, ca, ps, dr, tb, cr, lb];
   const moves = mind ? holderMoves(player, allPlayers, opponents, outfieldOpponents, !!gate) : [];
 
+  // Stage 8 (`holder-choice.md`): the FM chooser over every candidate (keeper and set-piece takers keep the old rules).
+  const fmDecision = fmChoice
+    ? fmHolderChoice(player, allPlayers, outfieldOpponents, defendingOutfield, intent,
+      { sh, ps, dr, lb, cells: tbResult.cells, targets: crResult.targets, carryLanes, moves }, gate, mind!)
+    : null;
+
   let best = actions.reduce((a, b) => b.score > a.score ? b : a);
+  if (fmDecision) {
+    // The debug panel's "best" is the FM pick's action.
+    best = actions.find(x => x.type === fmDecision.type) ?? best;
+  } else
   // The holder's mind (phase 3, `decisions.md`): rolls, gates and perceived scores. Off for the keeper, a set-piece
   // taker (`mind` null) and under the one-on-one gate, which keep their rules.
   if (mind && DECISION_FLAGS.HOLDER && player.role !== 'GK' && !gate) {
@@ -1003,6 +1284,8 @@ function decideBallHolder(
       })),
     });
   }
+
+  if (fmDecision) return fmDecision;
 
   // Hold and turn (stage 4b, `fm-numbers.md`): nothing better than a weak carry → keep the ball and wait for an option;
   // a carry against the way he was moving → a short turn first. Off for set-piece takers and the keeper.
@@ -1114,6 +1397,7 @@ export function decide(
   teamIntent: { A: TeamIntent; B: TeamIntent } = { A: 'balanced', B: 'balanced' },
   tbCachedCells: ReturnType<typeof enumerateCandidateCells> | null = null,
   matchTime = 0,
+  situ?: HolderSituation,
 ): PlayerDecision {
 
   // ── With ball — unified scoring ─────────────────────────────────────────
@@ -1133,7 +1417,7 @@ export function decide(
       }
       return { type: 'pass' };
     }
-    return decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells, { matchTime });
+    return decideBallHolder(player, allPlayers, crowdGrid, teamIntent[player.team], tbCachedCells, { matchTime, ...(situ ? { situ } : {}) });
   }
 
   // ── Attacking teammate (off-ball) ───────────────────────────────────────

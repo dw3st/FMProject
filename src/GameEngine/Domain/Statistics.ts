@@ -178,6 +178,20 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   avgEndEnergy: number;
   /** Count of substitutions this team made that were flagged `reason: 'fatigue'` by AiSubstitution. */
   fatigueSubstitutions: number;
+  /**
+   * Stage 14 (`fitness.md` → "FM condition"): the AI's changes (`fatigue` + `tactical`), the tactical ones, and the sum of
+   * their minutes and of the outgoing players' condition (averages = sum / aiSubstitutions).
+   */
+  aiSubstitutions: number;
+  tacticalSubstitutions: number;
+  aiSubMinuteSum: number;
+  aiSubConditionSum: number;
+  /**
+   * Stage 14: the outfield median condition of this side at 15' / 30' / 45' / 60' / 75' (first sample at or after the
+   * minute, `conditionSample`) and at the last sample (90' or the end), and the keeper's at the last sample. 0 = none.
+   */
+  condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
+  keeperCondition: number;
   /** Count of in-match injuries suffered by this team (`injury` event). */
   injuries: number;
   /** Injury stoppages after which this team restarted play (`injuryStoppage`). */
@@ -274,6 +288,16 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   holderHolds: number;
   holderTurns: number;
   /**
+   * Stage 8 (`holder-choice.md`): FM holder decisions by category (carry / pass / turn / hold / kick), per possession
+   * stint (a new holder starts one), the candidates offered and vetoed (risk 100) summed, decisions on a lapse, and the
+   * new actions (sprint, byline run, spin past the marker, corner-flag hold).
+   */
+  holderChoices: number;
+  holderChoiceCarry: number; holderChoicePass: number; holderChoiceTurn: number; holderChoiceHold: number; holderChoiceKick: number;
+  holderStints: number;
+  holderCandidatesSum: number; holderVetoedSum: number; holderLapseChoices: number;
+  holderSprints: number; holderBylines: number; holderSpins: number; holderFlagHolds: number;
+  /**
    * Stage 3 (`ball-3d.md`), by the team that played the ball: flights peaking above 1.2 m, seconds the ball spent in
    * the air, and the peak heights (yd, summed, with the counts) of crosses, corners and long balls / clearances.
    */
@@ -286,6 +310,11 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   passGround: number; passDriven: number; passChip: number; passHigh: number;
   passThroughLow: number; passThroughHigh: number; passHeader: number;
   passLaunchSpeedSum: number; passLaunchN: number;
+  /**
+   * Stage 5 (`interception.md`), by the defending team: touches on a physical pass in flight and what they did
+   * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
+   */
+  cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -389,10 +418,17 @@ type TeamFlags = {
   ballsOutOfPlay: number; deflections: number; shotsBlocked: number; heavyTouches: number; lineStepUps: number; lineDrops: number;
   pressStandOffs: number; supportShort: number; anticipationReads: number;
   passesMissed: number; passesLofted: number; holderHolds: number; holderTurns: number;
+  holderChoices: number; holderChoiceCarry: number; holderChoicePass: number; holderChoiceTurn: number; holderChoiceHold: number; holderChoiceKick: number;
+  holderStints: number; holderCandidatesSum: number; holderVetoedSum: number; holderLapseChoices: number;
+  holderSprints: number; holderBylines: number; holderSpins: number; holderFlagHolds: number;
   highBalls: number; ballAirSeconds: number; crossPeakSum: number; crossPeakN: number;
   cornerPeakSum: number; cornerPeakN: number; longPeakSum: number; longPeakN: number;
   passGround: number; passDriven: number; passChip: number; passHigh: number; passThroughLow: number; passThroughHigh: number; passHeader: number;
   passLaunchSpeedSum: number; passLaunchN: number;
+  aiSubstitutions: number; tacticalSubstitutions: number; aiSubMinuteSum: number; aiSubConditionSum: number;
+  condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
+  keeperCondition: number;
+  cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -406,8 +442,14 @@ const emptyTeamFlags = (): TeamFlags => ({
   ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0,
   pressStandOffs: 0, supportShort: 0, anticipationReads: 0,
   passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0,
+  holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0,
+  holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderLapseChoices: 0,
+  holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
   highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0,
   passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0,
+  aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
+  condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
+  cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -458,6 +500,22 @@ gameBus.on('playerSubstituted', e => {
   playerTeam.set(e.inId, e.team);
   endEnergy.set(e.outId, { team: e.team, energy: e.outEnergy });
   if (e.reason === 'fatigue') teamFlags[e.team].fatigueSubstitutions++;
+  if (e.reason === 'fatigue' || e.reason === 'tactical') {
+    const f = teamFlags[e.team];
+    f.aiSubstitutions++;
+    if (e.reason === 'tactical') f.tacticalSubstitutions++;
+    f.aiSubMinuteSum += e.minute ?? 0;
+    f.aiSubConditionSum += e.outEnergy;
+  }
+});
+
+// Condition by minute (stage 14): first sample at or after 15' … 75', and the last one (90' or the end).
+const CONDITION_KEYS = [[15, 'condition15'], [30, 'condition30'], [45, 'condition45'], [60, 'condition60'], [75, 'condition75']] as const;
+gameBus.on('conditionSample', e => {
+  const f = teamFlags[e.team];
+  for (const [m, k] of CONDITION_KEYS) if (e.minute >= m && f[k] === 0) f[k] = e.median;
+  f.condition90 = e.median;
+  if (e.keeper !== null) f.keeperCondition = e.keeper;
 });
 
 // Players still on the pitch at the final whistle — merged with the `playerSubstituted` exits
@@ -793,11 +851,44 @@ gameBus.on('passLaunched', e => {
 });
 
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
+// ── Stage 5: physical interception (`interception.md`) ───────────────────────────
+gameBus.on('interceptionTouch', e => {
+  const f = teamFlags[e.team];
+  f.cutTouches++; f.cutSpeedSum += e.speedMs;
+  if (e.outcome === 'control') f.cutControls++;
+  else if (e.outcome === 'clear') f.cutClears++;
+  else if (e.outcome === 'deflect') f.cutDeflects++;
+  else f.cutMisses++;
+});
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
 gameBus.on('holderStep', e => {
-  if (e.step === 'hold') teamFlags[e.team].holderHolds++;
-  else if (e.step === 'turn') teamFlags[e.team].holderTurns++;
+  const f = teamFlags[e.team];
+  if (e.step === 'hold' || e.step === 'flag') f.holderHolds++;
+  else if (e.step === 'turn' || e.step === 'spin') f.holderTurns++;
+  if (e.step === 'sprint') f.holderSprints++;
+  else if (e.step === 'byline') f.holderBylines++;
+  else if (e.step === 'spin') f.holderSpins++;
+  else if (e.step === 'flag') f.holderFlagHolds++;
+});
+
+// ── Stage 8: the FM holder chooser (`holder-choice.md`) ─────────────────────────────
+/** The last holder of an FM decision per team: a different one starts a new possession stint. */
+const lastChoiceHolder: Record<TeamId, number | null> = { A: null, B: null };
+gameBus.on('holderChoice', e => {
+  const f = teamFlags[e.team];
+  f.holderChoices++;
+  if (e.cat === 0) f.holderChoicePass++;
+  else if (e.cat === 1) f.holderChoiceKick++;
+  else if (e.cat === 2) f.holderChoiceTurn++;
+  else if (e.cat === 3) f.holderChoiceHold++;
+  else f.holderChoiceCarry++;
+  f.holderCandidatesSum += e.candidates;
+  f.holderVetoedSum += e.vetoed;
+  if (e.lapse) f.holderLapseChoices++;
+  if (lastChoiceHolder[e.team] !== e.playerId) { f.holderStints++; lastChoiceHolder[e.team] = e.playerId; }
+  const other: TeamId = e.team === 'A' ? 'B' : 'A';
+  lastChoiceHolder[other] = null;
 });
 
 /** The last holder-mind event of a player this match (`/test`). */
@@ -878,6 +969,7 @@ export function initStats(players: Array<{ id: number; team: TeamId }>): void {
   markedNow = new Set();
   teamFlags.A = emptyTeamFlags();
   teamFlags.B = emptyTeamFlags();
+  lastChoiceHolder.A = null; lastChoiceHolder.B = null;
   resetHighlights(players);
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();

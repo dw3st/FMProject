@@ -241,6 +241,13 @@ export interface TeamRawStats {
   avgEndEnergySum: number;
   /** Fatigue-driven AI substitutions made by this team, summed across `matches` games. */
   fatigueSubstitutions: number;
+  /**
+   * Stage 14 (`fitness.md` → "FM condition"), summed across games: the AI's changes (fatigue + tactical), the tactical
+   * ones, their minutes and the outgoing players' condition; the outfield median condition at 45' and 90' and the
+   * keeper's at the end (full engine only; 0 in the quickSim).
+   */
+  aiSubstitutions: number; tacticalSubstitutions: number; aiSubMinuteSum: number; aiSubConditionSum: number;
+  condition45Sum: number; condition90Sum: number; keeperConditionSum: number;
   /** In-match injuries suffered by this team, summed across `matches` games. */
   injuries: number;
   /** Injury stoppages after which this team restarted play, summed across `matches` games. */
@@ -391,8 +398,24 @@ export interface TeamRawStats {
   passHeader: number;
   passLaunchSpeedSum: number;
   passLaunchN: number;
+  /** Stage 5 (`interception.md`): touches on a physical pass by this team defending, by outcome; ball speed summed (m/s). */
+  cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
   holderHolds: number;
   holderTurns: number;
+  /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
+  holderChoices: number;
+  holderChoiceCarry: number;
+  holderChoicePass: number;
+  holderChoiceTurn: number;
+  holderChoiceHold: number;
+  holderChoiceKick: number;
+  holderStints: number;
+  holderCandidatesSum: number;
+  holderVetoedSum: number;
+  holderSprints: number;
+  holderBylines: number;
+  holderSpins: number;
+  holderFlagHolds: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -513,6 +536,10 @@ export interface PerMatchView {
   avgEndEnergy: number;
   /** Fatigue-driven AI substitutions per match. */
   avgFatigueSubs: number;
+  /** Stage 14: AI changes per match (FM 3–4), tactical ones, their mean minute and the outgoing player's condition. */
+  avgAiSubs: number; avgTacticalSubs: number; avgAiSubMinute: number; avgAiSubCondition: number;
+  /** Stage 14: outfield median condition at 45' and 90' (FM 77.5 / 73.5) and the keeper's at the end (FM 96.5). */
+  condition45: number; condition90: number; keeperCondition: number;
   /** Injuries per match. */
   avgInjuries: number;
   /** Injury stoppages per match after which this team restarted play. */
@@ -640,8 +667,15 @@ export interface PerMatchView {
   avgPassThroughHigh: number;
   avgPassHeader: number;
   passLaunchMps: number;
+  /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
+  avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -722,6 +756,10 @@ export interface VariantSummary {
   avgEndEnergy: number;
   /** Fatigue-driven AI substitutions per match. */
   avgFatigueSubs: number;
+  /** Stage 14: AI changes per match (FM 3–4), tactical ones, their mean minute and the outgoing player's condition. */
+  avgAiSubs: number; avgTacticalSubs: number; avgAiSubMinute: number; avgAiSubCondition: number;
+  /** Stage 14: outfield median condition at 45' and 90' (FM 77.5 / 73.5) and the keeper's at the end (FM 96.5). */
+  condition45: number; condition90: number; keeperCondition: number;
   /** Injuries per match. */
   avgInjuries: number;
   /** Injury stoppages per match after which this team restarted play. */
@@ -848,8 +886,15 @@ export interface VariantSummary {
   avgPassThroughHigh: number;
   avgPassHeader: number;
   passLaunchMps: number;
+  /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
+  avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
