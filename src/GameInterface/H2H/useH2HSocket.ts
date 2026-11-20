@@ -9,7 +9,9 @@ import { reconnectDelay } from "@/GameInterface/Social/socialState";
 import { mergeWireState, parseH2HEvent } from "@/GameInterface/H2H/h2hState";
 import type { ClientEvent } from "@/types/socialTypes";
 import type { KickOutcome, PenaltyChoice } from "@/Domain/penalty/penaltyKick";
-import type { H2HCloseReason, H2HCommand, H2HRoomView, H2HSide, H2HSpeed } from "@/types/h2hTypes";
+import type { H2HCloseReason, H2HCommand, H2HHighlightsView, H2HJump, H2HRoomView, H2HSide, H2HSpeed } from "@/types/h2hTypes";
+import type { MatchPlayMode } from "@/Domain/match/liveModes";
+import type { HighlightLevel } from "@/GameEngine/Domain/Highlights";
 
 const LOGOUT_CLOSE_CODE = 4001;
 
@@ -35,6 +37,16 @@ export interface H2HSocket {
   resume: () => void;
   /** Asks for a match speed; it runs at the lower of the two managers' choices (`room.speed`). */
   setSpeed: (speed: H2HSpeed) => void;
+  /** Lobby (stage 22): how this manager wants the match to play. */
+  setMode: (mode: MatchPlayMode, level: HighlightLevel) => void;
+  /** Mode B on the server: the lances known, the skip votes, the last order of the other manager. */
+  highlights: H2HHighlightsView | null;
+  skipVotes: H2HSide[];
+  otherOrder: { kind: H2HCommand["kind"]; seq: number } | null;
+  /** Mode B: listeners of the jumps (the screen's feed of the skipped stretch). */
+  onJump: (fn: (j: H2HJump) => void) => () => void;
+  /** Game-seconds per real second the match runs at now (from the frames): the screen's clock between states. */
+  rate: { current: number };
   /** Start: `penalty2d` = this manager kicks and saves his penalties (2D). */
   ready: (penalty2d: boolean) => void;
   leave: () => void;
@@ -56,6 +68,11 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
   const [pausesLeft, setPausesLeft] = useState<Record<H2HSide, number> | null>(null);
   const [closed, setClosed] = useState<H2HCloseReason | null>(null);
   const [done, setDone] = useState(false);
+  const [highlights, setHighlights] = useState<H2HHighlightsView | null>(null);
+  const [skipVotes, setSkipVotes] = useState<H2HSide[]>([]);
+  const [otherOrder, setOtherOrder] = useState<{ kind: H2HCommand["kind"]; seq: number } | null>(null);
+  const jumpListenersRef = useRef(new Set<(j: H2HJump) => void>());
+  const rateRef = useRef(0);
   const framesRef = useRef<RemoteFrames>(EMPTY_REMOTE_FRAMES);
   const feedRef = useRef<RemoteFeed>({ frames: framesRef, stepMs: H2H.FRAME_MS });
   const stateRef = useRef<GameState | null>(null);
@@ -87,13 +104,29 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
           case "h2h_room":
             setRoom(ev.room);
             setMySide(ev.mySide);
-            // A faster match sends its frames closer together: the drawing blends over that shorter step.
-            feedRef.current.stepMs = H2H.FRAME_MS / (ev.room.speed || 1);
+            // Frames come at a fixed real rate (stage 22), whatever the speed: the blend step is the frame gap.
+            feedRef.current.stepMs = H2H.FRAME_MS;
             setPause(ev.room.pause);
             setPausesLeft({ A: ev.room.sides.A.pausesLeft, B: ev.room.sides.B.pausesLeft });
             break;
-          case "h2h_frame":
-            framesRef.current = pushRemoteFrame(framesRef.current, toRemoteFrame(ev, performance.now()));
+          case "h2h_frame": {
+            const f = toRemoteFrame(ev, performance.now());
+            // A mode B jump is drawn as is: the frame before belongs to another moment.
+            framesRef.current = f.jump ? { prev: null, last: f, seq: framesRef.current.seq + 1 } : pushRemoteFrame(framesRef.current, f);
+            if (typeof ev.rate === "number") rateRef.current = ev.rate;
+            break;
+          }
+          case "h2h_highlights":
+            setHighlights(ev.view);
+            break;
+          case "h2h_jump":
+            for (const fn of jumpListenersRef.current) fn(ev.jump);
+            break;
+          case "h2h_skip_votes":
+            setSkipVotes(ev.sides);
+            break;
+          case "h2h_order":
+            setOtherOrder((o) => ({ kind: ev.kind, seq: (o?.seq ?? 0) + 1 }));
             break;
           case "h2h_state": {
             if (ev.stats.snapshot) importStatsState(ev.stats.snapshot);
@@ -158,9 +191,15 @@ export function useH2HSocket(target: { saveId: string; fixtureId: string } | nul
     sendEvent({ type: "h2h_penalty", choice });
   }), [sendEvent]);
   const leave = useCallback(() => sendEvent({ type: "h2h_leave" }), [sendEvent]);
+  const setMode = useCallback((mode: MatchPlayMode, level: HighlightLevel) => sendEvent({ type: "h2h_mode", mode, level }), [sendEvent]);
+  const onJump = useCallback((fn: (j: H2HJump) => void) => {
+    jumpListenersRef.current.add(fn);
+    return () => { jumpListenersRef.current.delete(fn); };
+  }, []);
 
   return {
     room, mySide, state, feed: feedRef.current, pause, pausesLeft, closed, done,
     send, requestPause, resume, setSpeed, ready, leave, choosePenalty,
+    setMode, highlights, skipVotes, otherOrder, onJump, rate: rateRef,
   };
 }

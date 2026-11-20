@@ -43,7 +43,8 @@ import { coachSide } from "@/Domain/national/nationalSquad";
 import {
   leaveNationalJob, nextCallUpDate, objectiveFailedBadly, objectiveMet, qualifierOutcome, rollNationalOffer, tournamentOutcome,
 } from "@/Domain/national/nationalCoach";
-import { simulateRecording, type PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
+import { runRecording } from "@/backend/matchPool";
 import type { NationalCoachNews } from "@/Domain/inbox/nationalCoachMessage";
 import type { MatchEvent, Scorer } from "@/types/dayLogTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -535,6 +536,40 @@ export async function playNationalDay(args: {
     }
     return { players, clubOf };
   };
+  const coachesOf = (fx: { home: string; away: string }) => [fx.home, fx.away].map((teamId) => ({ teamId, sid: coachOf(teamId) }))
+    .filter((c): c is { teamId: string; sid: string } => !!c.sid);
+  // A seat's game simulated in the full engine (no live recording): his full tactics (12.2: free formation, axes, slot
+  // instructions, takers and routines), the AI side plain. Every such game of the day starts in the match pool first
+  // (stage 22), so they run side by side; the loop below awaits each in fixture order.
+  const engineGames = new Map<string, Promise<PlayedMatchRecording>>();
+  for (const [, comp0] of comps) {
+    for (const fx of comp0.fixtures.filter((f) => f.date === date && !f.played)) {
+      const coaches = coachesOf(fx);
+      if (coaches.length === 0 || coaches.some((c) => args.playedMatches?.[c.sid]?.fixtureId === fx.id)) continue;
+      const home = await squadOfTeam(fx.home);
+      const away = await squadOfTeam(fx.away);
+      if (!home || !away) continue;
+      const sideOf = (teamId: string, players: RosterPlayer[]) => {
+        const sid = coaches.find((c) => c.teamId === teamId)?.sid;
+        return sid
+          ? coachSide(state.human?.[sid]?.tactics, players, date)
+          : { formation: formationForSimId(NATIONAL_SQUAD.FORMATION), lineup: nationalLineup(players, date), tactics: { style: "balanced" as const } };
+      };
+      const h = sideOf(fx.home, home.players);
+      const a = sideOf(fx.away, away.players);
+      engineGames.set(fx.id, runRecording({
+        fixture: fx,
+        home: nationalPseudoSquad(state, fx.home, home.players),
+        away: nationalPseudoSquad(state, fx.away, away.players),
+        sim: {
+          homeFormation: h.formation, homeLineup: h.lineup, awayFormation: a.formation, awayLineup: a.lineup,
+          tactics: { A: h.tactics, B: a.tactics },
+        },
+      }));
+    }
+  }
+  // A failed game fails the day (as in series), never an unhandled rejection meanwhile.
+  for (const p of engineGames.values()) p.catch(() => undefined);
   for (const [slug, comp0] of comps) {
     let comp = comp0;
     const todays = comp.fixtures.filter((f) => f.date === date && !f.played);
@@ -551,8 +586,7 @@ export async function playNationalDay(args: {
       }
       const pseudo = (teamId: string, players: RosterPlayer[]): Squad => nationalPseudoSquad(state, teamId, players);
       // The seats coaching a side of this game (both sides when two seats meet).
-      const coaches = [fx.home, fx.away].map((teamId) => ({ teamId, sid: coachOf(teamId) }))
-        .filter((c): c is { teamId: string; sid: string } => !!c.sid);
+      const coaches = coachesOf(fx);
       let recording: PlayedMatchRecording;
       if (coaches.length > 0) {
         // A seat's game (Etapa 41b): its live recording, or the full engine with the coaches' tactics.
@@ -561,19 +595,9 @@ export async function playNationalDay(args: {
           recording = args.playedMatches![live.sid]!;
           seatOut(live.sid).consumedRecording = true;
         } else {
-          // His full tactics (12.2): free formation, axes, slot instructions, takers and routines; the AI side plain.
-          const sideOf = (teamId: string, players: RosterPlayer[]) => {
-            const sid = coaches.find((c) => c.teamId === teamId)?.sid;
-            return sid
-              ? coachSide(state.human?.[sid]?.tactics, players, date)
-              : { formation: formationForSimId(NATIONAL_SQUAD.FORMATION), lineup: nationalLineup(players, date), tactics: { style: "balanced" as const } };
-          };
-          const h = sideOf(fx.home, home.players);
-          const a = sideOf(fx.away, away.players);
-          recording = simulateRecording(fx, pseudo(fx.home, home.players), pseudo(fx.away, away.players), {
-            homeFormation: h.formation, homeLineup: h.lineup, awayFormation: a.formation, awayLineup: a.lineup,
-            tactics: { A: h.tactics, B: a.tactics },
-          }).recording;
+          const game = engineGames.get(fx.id);
+          if (!game) throw new Error(`national ${fx.id}: no engine game started`);
+          recording = await game;
         }
         const event = nationalMatchEvent(fx, recording, home.players, away.players);
         for (const c of coaches) {

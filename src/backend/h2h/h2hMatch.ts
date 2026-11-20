@@ -5,29 +5,39 @@
  * It owns the engine globals of this match (`gameBus`, per-team tactic configs, `Statistics`, `PlayerRating`),
  * so one process (one Bun Worker) runs one match. Every method returns the messages to post (`WorkerOut[]`).
  *
- * Clock: real time × `speed` (1 in play), the same scaling the live pitch uses at 1× (`PixiPitch`:
- * `advanceSim(state, elapsedRealSeconds × gameSpeed, carry)`); `tickState` turns real seconds into game seconds
- * itself and drains the presentation countdowns (pre-match, half-time, extra-time break, shootout kicks) in real
- * seconds, so the match never waits for a screen.
+ * Clock (stage 22): the 90 physical minutes (`clockScale` 1). Mode A ("full") runs real time × `speed` ×
+ * `MODE_A_SPEED`, the pace of the solo page's mode A, the same for both managers (the speed is the lower of their two
+ * choices); mode B ("highlights") plays the lances at real time × `speed` and jumps over the rest with the snapshots
+ * of a forecast run ahead in another thread (`HighlightPlayback` + `ForecastCore`, the same rule as the solo page).
+ * The presentation pauses (pre-match, half time, the extra-time break, shootout kicks, a VAR check) run in real
+ * seconds in both modes.
+ *
+ * Frames go out at a fixed real rate (`H2H.FRAME_MS`) with the ball at every step in between (`path`), never one per
+ * step: at 13× a step-per-frame stream would be 65 frames a second.
  */
 import { advanceSim, SIM_STEP } from "@/GameEngine/Domain/advanceSim";
 import {
-  applyPenaltyOutcome, applyPlayerInstruction, changeFormation, fillInjuryVacancy, getBallPos, matchMinute, setManMarks,
-  moveToEmptySlot, swapPlayerPositions, tickState,
+  applyPenaltyOutcome, applyPlayerInstruction, changeFormation, clockScaleOf, fillInjuryVacancy, getBallPos, matchMinute,
+  setManMarks, moveToEmptySlot, swapPlayerPositions, tickState,
 } from "@/GameEngine/Domain/gameState";
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 // Statistics and PlayerRating subscribe to the gameBus when imported.
 import { exportStatsState, getGoalLog, getTeamStats, initStats } from "@/GameEngine/Domain/Statistics";
 import { exportRatings, initRatings } from "@/GameEngine/Domain/PlayerRating";
 import { effectiveInstruction } from "@/GameEngine/Configs/RoleVariantConfig";
+import { HighlightPlayback, workerForecastPort, type ForecastPort, type PlaybackView } from "@/GameEngine/Support/HighlightPlayback";
+import { createForecast, type ForecastChunk } from "@/GameEngine/Support/ForecastCore";
+import { captureLiveSnapshot, restoreLiveSnapshot } from "@/GameEngine/Support/LiveSnapshot";
+import type { HighlightLevel } from "@/GameEngine/Domain/Highlights";
 import type { GameState, PenaltyOutcome, TeamId } from "@/GameEngine/types";
 import { buildLiveMatchState, type LiveMatchInput, type LiveSideTactics } from "@/Domain/match/liveMatchSetup";
+import { MODE_A_SPEED, type MatchPlayMode } from "@/Domain/match/liveModes";
 import { applyLiveTactics } from "@/Domain/tactics/liveTactics";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { customToFormation } from "@/Domain/formation/zones";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { H2H } from "@/Domain/h2h/h2hConfig";
-import type { H2HCommand, H2HSide, H2HStatsPayload, WorkerOut } from "@/types/h2hTypes";
+import type { H2HCommand, H2HHighlightsView, H2HSide, H2HStatsPayload, WorkerOut } from "@/types/h2hTypes";
 
 /** gameBus events the match screen, its feed / summary and the pitch effects listen to. */
 export const H2H_FORWARDED_EVENTS = [
@@ -44,11 +54,31 @@ const NO_STATE_AFTER = new Set<string>([
   "passAttempted", "passCompleted", "crossStarted", "longBallStarted", "throughBallStarted", "tackle", "gkClaim", "holderMove",
 ]);
 
+/** Phases whose countdown is a presentation pause: real seconds whatever the pace (as `PixiPitch`). */
+const PRESENTATION_PHASES: ReadonlySet<GameState["matchPhase"]> = new Set(["preMatch", "halfTime", "extraTimeBreak", "penalties"]);
+/** Most ball points one frame carries (a 4× mode A frame covers ~52 steps). */
+export const PATH_MAX = 64;
+const round1 = (n: number) => Math.round(n * 10) / 10;
+/** Sim seconds per `advanceSim` call inside one tick (10 s = 50 steps). */
+const CHUNK_S = 10;
+const SIDES: readonly TeamId[] = ["A", "B"];
+
+export interface H2HMatchOptions {
+  mode?: MatchPlayMode;
+  level?: HighlightLevel;
+  /**
+   * Mode B's forecast: "worker" (default) = a nested Bun Worker running `forecastWorker.ts` (its own engine globals);
+   * "inline" = the whole forecast synchronously in this thread (tests), the forwarded events muted meanwhile; or a port.
+   */
+  forecast?: "worker" | "inline" | ForecastPort;
+}
+
 export interface H2HMatch {
   readonly state: GameState;
   readonly done: boolean;
   readonly paused: boolean;
-  /** Advance by `realMs` of real time (× speed) and return the messages due. */
+  readonly mode: MatchPlayMode;
+  /** Advance by `realMs` of real time (× speed, × the mode's pace) and return the messages due. */
   tick(realMs: number): WorkerOut[];
   command(side: H2HSide, cmd: H2HCommand): WorkerOut[];
   setPaused(paused: boolean): WorkerOut[];
@@ -57,13 +87,14 @@ export interface H2HMatch {
   setBias(team: H2HSide, amount: number): WorkerOut[];
   /** Answers the pending 2D penalty (the server resolved both managers' choices). */
   penalty(outcome: PenaltyOutcome): WorkerOut[];
-  /** Real-time multiplier (tests only; 1 in play). */
+  /** The managers' speed (1, 2 or 4; any factor in the measures). */
   setSpeed(factor: number): void;
-  /** Unsubscribes from the gameBus. */
+  /** Unsubscribes from the gameBus and stops mode B's forecast. */
   dispose(): void;
 }
 
-export function createH2HMatch(input: LiveMatchInput): H2HMatch {
+export function createH2HMatch(input: LiveMatchInput, opts: H2HMatchOptions = {}): H2HMatch {
+  const mode: MatchPlayMode = opts.mode ?? "full";
   let state = buildLiveMatchState(input);
   initRatings(state.players.map((p) => p.id));
   initStats(state.players.map((p) => ({ id: p.id, team: p.team })));
@@ -83,13 +114,95 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
   let clockMs = 0;
   let sinceFrame = 0;
   let sinceState = 0;
+  /** Since the last frame: the ball at each step, the steps, the game-seconds of play, a mode B jump. */
+  let path: [number, number][] = [];
+  let stepsSinceFrame = 0;
+  let playSinceFrame = 0;
+  let jumped = false;
+  /** The inline forecast (tests) runs in this thread: its events are not this match's. */
+  let muted = 0;
 
   const unsubs = H2H_FORWARDED_EVENTS.map((name) =>
     gameBus.on(name, (payload: unknown) => {
+      if (muted > 0) return;
       outbox.push({ type: "event", name, payload });
       if (!NO_STATE_AFTER.has(name)) stateDue = true;
     }),
   );
+
+  // ── Mode B: the playback of the lances (the solo page's rule, `HighlightPlayback`) ──
+  const inlinePort = (): ForecastPort => {
+    const port: ForecastPort = {
+      onChunk: null,
+      start(gen, snap, fopts) {
+        const keep = captureLiveSnapshot(state);
+        const chunks: ForecastChunk[] = [];
+        muted++;
+        try {
+          const fc = createForecast(structuredClone(snap), fopts);
+          while (!fc.done) chunks.push(fc.run(5000));
+          fc.dispose();
+        } finally {
+          state = restoreLiveSnapshot(keep);
+          muted--;
+        }
+        for (const c of chunks) port.onChunk?.(gen, c);
+      },
+      stop() {},
+    };
+    return port;
+  };
+  const forecastPort = (): ForecastPort => {
+    const f = opts.forecast ?? "worker";
+    if (f === "inline") return inlinePort();
+    if (f === "worker") return workerForecastPort(new URL("../../GameEngine/Support/forecastWorker.ts", import.meta.url).href);
+    return f;
+  };
+  const playback = mode === "highlights"
+    ? new HighlightPlayback(forecastPort(), opts.level ?? "extended", {
+      humanTeams: SIDES.filter((t) => manualByDefault[t]),
+      ui: () => undefined,
+    })
+    : null;
+  const viewOf = (v: PlaybackView): H2HHighlightsView => ({
+    level: v.level,
+    windows: v.windows.map(({ at: _at, ...w }) => ({ ...w, triggers: [...w.triggers] })),
+    forecastClock: Math.round(v.forecastClock),
+    waiting: v.waiting,
+    done: v.done,
+  });
+  let lastViewSig = "";
+  let lastViewClock = -Infinity;
+  playback?.subscribe((v) => {
+    const sig = `${v.windows.length}|${v.waiting}|${v.done}|${v.level}`;
+    // The reach moves with every chunk: sent with a change of the list, or every 10 s of play reached.
+    if (sig === lastViewSig && v.forecastClock - lastViewClock < 10) return;
+    lastViewSig = sig;
+    lastViewClock = v.forecastClock;
+    outbox.push({ type: "highlights", view: viewOf(v) });
+  });
+  playback?.onJump((j) => {
+    outbox.push({
+      type: "jump",
+      jump: {
+        from: j.from, to: j.to, fromMinute: matchMinute(state), toMinute: matchMinute(j.point.snap.state),
+        events: j.events.map((e) => ({ ...e })),
+      },
+    });
+  });
+  /** Mode B: who asked for the next lance. */
+  let skipVotes = new Set<H2HSide>();
+  const clearSkipVotes = () => {
+    if (skipVotes.size === 0) return;
+    skipVotes = new Set();
+    outbox.push({ type: "skipVotes", sides: [] });
+  };
+  /** Mode B: an order changed the state outside a tick: forecast again from now (same order, same match). */
+  const reforecast = () => {
+    if (!playback || state.matchPhase === "matchEnd") return;
+    clearSkipVotes();
+    playback.invalidate(state);
+  };
 
   const stats = (): H2HStatsPayload => ({
     snapshot: exportStatsState(),
@@ -99,9 +212,14 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
   });
   // The through-ball cell cache is engine bookkeeping (large, rebuilt on the next tick).
   const wireState = (): GameState => ({ ...state, throughBallCellsCache: null });
-  const frame = (): WorkerOut => {
+  const frame = (realMs: number): WorkerOut => {
     const ball = getBallPos(state);
-    return {
+    // The ball points but the last (the frame's own ball), at most PATH_MAX evenly picked.
+    const all = path.slice(0, -1);
+    const pts = all.length > PATH_MAX
+      ? Array.from({ length: PATH_MAX }, (_, i) => all[Math.floor((i * all.length) / PATH_MAX)]!)
+      : all;
+    const out: WorkerOut = {
       type: "frame",
       t: clockMs,
       ball: [ball.x, ball.y],
@@ -109,7 +227,16 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
       minute: matchMinute(state),
       phase: state.matchPhase,
       score: { ...state.score },
+      steps: stepsSinceFrame,
+      ...(pts.length > 0 && !jumped ? { path: pts } : {}),
+      rate: realMs > 0 ? Math.round((playSinceFrame / (realMs / 1000)) * 10) / 10 : 0,
+      ...(jumped ? { jump: true as const } : {}),
     };
+    path = [];
+    stepsSinceFrame = 0;
+    playSinceFrame = 0;
+    jumped = false;
+    return out;
   };
 
   /** Drains the outbox, appending a full state when an event asked for one. */
@@ -128,7 +255,7 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
     if (done || state.matchPhase !== "matchEnd") return;
     done = true;
     stateDue = false;
-    outbox.push(frame());
+    outbox.push(frame(sinceFrame));
     outbox.push({ type: "done", state: wireState(), stats: stats() });
   };
 
@@ -138,21 +265,32 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
     state = tickState(state, 0).state;
   };
 
-  /** Advances the match; returns how many sim steps ran (a frame goes out after each batch that moved). */
-  const advance = (gameSeconds: number): number => {
-    let ran = 0;
-    let budget = carry + gameSeconds;
+  /** One sim step, with the ball recorded for the next frame's path. */
+  const recordStep = (s: GameState, dt: number) => {
+    const r = tickState(s, dt);
+    const b = getBallPos(r.state);
+    path.push([round1(b.x), round1(b.y)]);
+    stepsSinceFrame++;
+    if (!PRESENTATION_PHASES.has(s.matchPhase) && s.varReview == null) playSinceFrame += dt * clockScaleOf(s);
+    return r;
+  };
+
+  /** Advances the match by `seconds` of sim time. */
+  const advance = (seconds: number): void => {
+    // A 2D penalty holds the match until both managers answered: no step would move (at 13× a tick is ~65 of them).
+    if (state.pendingPenalty) { carry = 0; return; }
+    let budget = carry + seconds;
     carry = 0;
     // A goal or a phase change stops `advanceSim` early; keep going with what is left of the budget.
-    while (budget > 0 && state.matchPhase !== "matchEnd") {
-      const r = advanceSim(state, budget, 0);
+    // In slices of CHUNK_S, so a 2D penalty that comes up mid-batch stops it (the held steps would all be no-ops). A goal
+    // or a phase change ends a slice early; the loop goes on with what is left.
+    while (state.matchPhase !== "matchEnd" && !state.pendingPenalty) {
+      if (budget < SIM_STEP - 1e-9) { carry = Math.max(0, budget); break; }
+      const r = advanceSim(state, Math.min(budget, CHUNK_S), 0, SIM_STEP, recordStep);
       state = r.state;
-      ran += r.steps;
-      if (!r.stoppedBy) { carry = r.carry; break; }
       budget -= r.steps * SIM_STEP;
-      if (r.steps === 0) break;
+      if (r.steps === 0) { carry = Math.max(0, budget); break; }
     }
-    return ran;
   };
 
   const queueSub = (side: TeamId, outId: number, inId: number) => {
@@ -169,23 +307,44 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
     stateDue = true;
   };
 
+  playback?.invalidate(state);
+
   return {
     get state() { return state; },
     get done() { return done; },
     get paused() { return paused; },
+    get mode() { return mode; },
 
     tick(realMs: number): WorkerOut[] {
       if (done) return flush();
       clockMs += realMs;
-      const ran = paused ? 0 : advance((realMs / 1000) * speed);
+      if (!paused) {
+        // Presentation pauses run in real seconds; the play at the mode's pace.
+        const presenting = state.varReview != null || PRESENTATION_PHASES.has(state.matchPhase);
+        const pace = presenting ? 1 : speed * (mode === "full" ? MODE_A_SPEED : 1);
+        const act = playback ? playback.step(state) : { kind: "play" as const };
+        if (act.kind === "jump") {
+          state = restoreLiveSnapshot(structuredClone(act.point.snap));
+          carry = 0;
+          jumped = true;
+          clearSkipVotes();
+          // What the skipped stretch left open: a 2D penalty to take, an injured player to replace by hand.
+          if (state.pendingPenalty) outbox.push({ type: "event", name: "penaltyPending", payload: { ...state.pendingPenalty } });
+          const injury = playback?.pendingInjury();
+          if (injury) outbox.push({ type: "event", name: "injuryNeedsSub", payload: { ...injury } });
+          stateDue = true;
+        } else if (act.kind === "play") {
+          advance((realMs / 1000) * pace);
+        }
+      }
       finishIfOver();
       if (done) return flush();
-      // Positions only change on a sim step: one frame per step that ran, never a duplicate in between.
+      // A frame every FRAME_MS of real time while the match moves (once a second when it does not).
       sinceFrame += realMs;
       sinceState += realMs;
-      if (ran > 0 || sinceFrame >= H2H.STATE_MS) {
+      if ((sinceFrame >= H2H.FRAME_MS && (stepsSinceFrame > 0 || jumped)) || sinceFrame >= H2H.STATE_MS) {
+        outbox.push(frame(sinceFrame));
         sinceFrame = 0;
-        outbox.push(frame());
       }
       if (sinceState >= H2H.STATE_MS) stateDue = true;
       return flush();
@@ -193,6 +352,18 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
 
     command(side: H2HSide, cmd: H2HCommand): WorkerOut[] {
       if (done) return [];
+      if (cmd.kind === "skip") {
+        if (!playback) return [];
+        skipVotes.add(side);
+        // Every manager in charge of his side (not on the assistant) must ask.
+        const needed = SIDES.filter((t) => !state.autoSubs?.[t]);
+        if (needed.every((t) => skipVotes.has(t))) {
+          playback.skip();
+          skipVotes = new Set();
+        }
+        outbox.push({ type: "skipVotes", sides: [...skipVotes] });
+        return flush();
+      }
       switch (cmd.kind) {
         case "sub":
           queueSub(side, cmd.outId, cmd.inId);
@@ -241,6 +412,8 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
           break;
       }
       stateDue = true;
+      outbox.push({ type: "order", side, kind: cmd.kind });
+      reforecast();
       return flush();
     },
 
@@ -252,11 +425,16 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
     },
 
     setBias(team: H2HSide, amount: number): WorkerOut[] {
-      if (!done && !state.refereeBias) state = { ...state, refereeBias: { team, amount } };
-      return [];
+      if (!done && !state.refereeBias) {
+        state = { ...state, refereeBias: { team, amount } };
+        reforecast();
+      }
+      return flush();
     },
+
     setAuto(side: H2HSide, on: boolean): WorkerOut[] {
       if (done) return [];
+      const changed = !!state.autoSubs?.[side] !== on;
       const autoSubs = { ...state.autoSubs };
       const manual = { ...state.manualInjurySubs };
       if (on) {
@@ -274,6 +452,8 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
         }
       }
       stateDue = true;
+      // The assistant makes other substitutions than the manager would: what was forecast is stale.
+      if (changed) reforecast();
       return flush();
     },
 
@@ -291,6 +471,7 @@ export function createH2HMatch(input: LiveMatchInput): H2HMatch {
 
     dispose() {
       for (const off of unsubs) off();
+      playback?.dispose();
     },
   };
 }

@@ -7,12 +7,12 @@
  * Size: `MATCH_WORKERS` (env; `0` = in process, no workers), else 2–4 by the cores (`defaultPoolSize`). Workers start on
  * the first job and stay; an idle worker never keeps the process alive (`unref`).
  */
-import { runFullMatchJob, type FullMatchJob } from "@/backend/matchPoolJob";
-import type { MatchSimResult } from "@/Domain/advanceDay/matches";
+import { runPoolJob, type FullMatchJob, type PoolJob, type PoolResult, type RecordingJob } from "@/backend/matchPoolJob";
+import type { MatchSimResult, PlayedMatchRecording } from "@/Domain/advanceDay/matches";
 import { logError } from "@/Logger";
 
-type Reply = { id: number; ok: true; result: MatchSimResult; ms: number } | { id: number; ok: false; error: string };
-type Pending = { id: number; job: FullMatchJob; resolve: (r: MatchSimResult) => void; reject: (e: unknown) => void };
+type Reply = { id: number; ok: true; result: PoolResult; ms: number } | { id: number; ok: false; error: string };
+type Pending = { id: number; job: PoolJob; resolve: (r: PoolResult) => void; reject: (e: unknown) => void };
 /** Bun's Worker also has `ref` / `unref` (the DOM type does not). */
 type PoolWorker = Worker & { ref(): void; unref(): void };
 type Slot = { worker: PoolWorker; busy: Pending | null };
@@ -100,11 +100,10 @@ function pump(): void {
   }
 }
 
-/** Runs one full-engine club match in the pool (or in process with `MATCH_WORKERS=0`). */
-export function runFullMatch(job: FullMatchJob): Promise<MatchSimResult> {
+function runJob(job: PoolJob): Promise<PoolResult> {
   if ((size ?? configuredSize()) === 0) {
     try {
-      const { result, ms } = runFullMatchJob(job);
+      const { result, ms } = runPoolJob(job);
       stats.jobs++;
       stats.busyMs += ms;
       return Promise.resolve(result);
@@ -112,8 +111,18 @@ export function runFullMatch(job: FullMatchJob): Promise<MatchSimResult> {
       return Promise.reject(err);
     }
   }
-  return new Promise<MatchSimResult>((resolve, reject) => {
+  return new Promise<PoolResult>((resolve, reject) => {
     queue.push({ id: nextId++, job, resolve, reject });
     pump();
   });
+}
+
+/** Runs one full-engine club match in the pool (or in process with `MATCH_WORKERS=0`). */
+export function runFullMatch(job: FullMatchJob): Promise<MatchSimResult> {
+  return runJob(job) as Promise<MatchSimResult>;
+}
+
+/** A human manager's simulated national game in the pool (stage 22): its recording. */
+export function runRecording(job: Omit<RecordingJob, "kind">): Promise<PlayedMatchRecording> {
+  return runJob({ kind: "recording", ...job }) as Promise<PlayedMatchRecording>;
 }

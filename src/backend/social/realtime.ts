@@ -16,7 +16,8 @@ import { acceptLiveScore } from "@/backend/rivals/liveScores";
 import { parseLiveFrame } from "@/Domain/rivals/liveScore";
 import { RIVALS } from "@/Domain/rivals/rivalsConfig";
 import { H2H } from "@/Domain/h2h/h2hConfig";
-import { isH2HSpeed, parseH2HCommand } from "@/Domain/h2h/h2hRules";
+import { isH2HSpeed, isHighlightLevel, parseH2HCommand } from "@/Domain/h2h/h2hRules";
+import { isMatchPlayMode } from "@/Domain/match/liveModes";
 import { handleH2HEvent, h2hSocketClosed, resendH2HInvites } from "@/backend/h2h/h2hRooms";
 import type { ClientEvent, FriendStatus, ServerEvent } from "@/types/socialTypes";
 
@@ -284,6 +285,9 @@ function parseH2HEvent(e: Record<string, unknown>): ClientEvent | null {
     }
     case "h2h_speed":
       return only("speed") && isH2HSpeed(e.speed) ? { type: "h2h_speed", speed: e.speed } : null;
+    case "h2h_mode":
+      return only("mode", "level") && isMatchPlayMode(e.mode) && isHighlightLevel(e.level)
+        ? { type: "h2h_mode", mode: e.mode, level: e.level } : null;
     case "h2h_pause":
     case "h2h_resume":
     case "h2h_leave":
@@ -315,9 +319,18 @@ function parseWatchEvent(e: Record<string, unknown>): ClientEvent | null {
     if (!score || !isNum(score.A) || !isNum(score.B)) return null;
     if (!Array.isArray(players) || players.length > 30) return null;
     if (!players.every((p) => Array.isArray(p) && p.length === 3 && p.every(isNum))) return null;
+    // Stage 22: the frame's steps, the ball at each of them, the clock's rate, a mode B jump (all optional).
+    if (e.steps !== undefined && !(isNum(e.steps) && e.steps >= 0 && e.steps <= 1000)) return null;
+    if (e.rate !== undefined && !(isNum(e.rate) && e.rate >= 0 && e.rate <= 1000)) return null;
+    if (e.jump !== undefined && e.jump !== true) return null;
+    if (e.path !== undefined && !(Array.isArray(e.path) && e.path.length <= 64 && e.path.every(isPair))) return null;
     return {
       type: "relay_frame", ...at, t: e.t, ball: e.ball, minute: e.minute, phase: e.phase as never,
       score: { A: score.A, B: score.B }, players: players as [number, number, number][],
+      ...(e.steps !== undefined ? { steps: e.steps as number } : {}),
+      ...(e.rate !== undefined ? { rate: e.rate as number } : {}),
+      ...(e.path !== undefined ? { path: e.path as [number, number][] } : {}),
+      ...(e.jump ? { jump: true as const } : {}),
     };
   }
   if (e.type === "relay_state") {

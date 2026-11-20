@@ -7960,7 +7960,12 @@
       "start": "Start",
       "ready": "Ready",
       "noMatch": "There is no live match against another manager today.",
-      "penaltiesManual": "Penalties: in games between managers, each takes and saves his own."
+      "penaltiesManual": "Penalties: in games between managers, each takes and saves his own.",
+      "modeOther": "{{name}} wants: {{mode}}",
+      "modeResult": "The match plays: {{mode}}",
+      "orderOther": "{{name}} changed the tactics",
+      "skipAsked": "Waiting for {{name}} to skip",
+      "skipOther": "{{name}} wants the next lance"
     },
     "invite": {
       "popup": "{{name}} is waiting for you for the live match",

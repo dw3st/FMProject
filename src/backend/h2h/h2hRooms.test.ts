@@ -187,7 +187,7 @@ describe("h2h rooms (live match between two managers)", () => {
     await until(() => h2hRoomOf(saveId, match.id)?.phase === "live");
     expect(engine!.match).not.toBeNull();
     expect((await saveService.getMeta(saveId))!.world!.h2hLive).toEqual([{ fixtureId: match.id, date: match.date, seats: [seatA, seatB] }]);
-    drive(500, 50);
+    drive(1500, 50); // the pre-match show runs in real seconds (stage 22): a state at 1 s
     expect(sockA.sent.some((e) => e.type === "h2h_frame")).toBe(true);
     expect(sockB.sent.some((e) => e.type === "h2h_state")).toBe(true);
   }, 120_000);

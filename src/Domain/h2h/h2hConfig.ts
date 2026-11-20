@@ -8,7 +8,7 @@ export const H2H = {
   SPEEDS: [1, 2, 4],
   /** Worker simulation step (real ms). */
   TICK_MS: 50,
-  /** Position frames to the browsers: one per sim step (`SIM_STEP`, 200 real ms). */
+  /** Position frames to the browsers: a fixed real rate (stage 22), 5 a second whatever the speed and the mode. */
   FRAME_MS: 200,
   /** Full state to the browsers (real ms), plus after every event. */
   STATE_MS: 1000,

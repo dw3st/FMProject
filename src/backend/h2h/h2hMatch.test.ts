@@ -73,7 +73,7 @@ describe("createH2HMatch", () => {
     expect(() => structuredClone(out)).not.toThrow();
   }, 60_000);
 
-  test("a frame per sim step (200 ms) and a state every second at 1x", () => {
+  test("a frame every 200 ms of real time and a state every second at 1x", () => {
     match = createH2HMatch(input());
     const out: WorkerOut[] = [];
     for (let i = 0; i < 20; i++) out.push(...match.tick(50)); // 1 s, still in the pre-match presentation
@@ -85,8 +85,8 @@ describe("createH2HMatch", () => {
 
   test("paused: the clock does not move", () => {
     match = createH2HMatch(input());
-    match.setSpeed(20);
-    for (let i = 0; i < 40; i++) match.tick(50); // into the first half
+    // The pre-match show runs in real seconds (stage 22), whatever the speed.
+    for (let i = 0; i < 400 && match.state.matchPhase !== "firstHalf"; i++) match.tick(50);
     expect(match.state.matchPhase).toBe("firstHalf");
     match.setPaused(true);
     const t0 = match.state.matchTime;
@@ -125,8 +125,7 @@ describe("createH2HMatch", () => {
 
   test("a sub command substitutes for that side at the next stoppage", () => {
     match = createH2HMatch(input());
-    match.setSpeed(20);
-    for (let i = 0; i < 40; i++) match.tick(50);
+    for (let i = 0; i < 400 && match.state.matchPhase !== "firstHalf"; i++) match.tick(50);
     const outPlayer = match.state.players.find((p) => p.team === "B" && p.role !== "GK")!;
     const inPlayer = match.state.benchB.find((p) => p.role !== "GK")!;
     match.command("B", { kind: "sub", outId: outPlayer.id, inId: inPlayer.id });
@@ -156,6 +155,86 @@ describe("createH2HMatch", () => {
     expect(match.state.autoSubs?.A).toBeUndefined();
     expect(match.state.manualInjurySubs?.A).toBe(true);
   });
+});
+
+describe("stage 22: 90 minutes, mode A pace, frames, mode B", () => {
+  const toFirstHalf = (m: H2HMatch) => { for (let i = 0; i < 400 && m.state.matchPhase !== "firstHalf"; i++) m.tick(50); };
+
+  test("mode A: the 90 physical minutes at speed x 13; a frame every 200 ms with the ball path", () => {
+    match = createH2HMatch(input());
+    expect(match.state.clockScale ?? 1).toBe(1);
+    toFirstHalf(match);
+    match.setSpeed(4);
+    const t0 = match.state.matchTime;
+    const out: WorkerOut[] = [];
+    for (let i = 0; i < 20; i++) out.push(...match.tick(50)); // 1 s real
+    const played = match.state.matchTime - t0;
+    // 4 x 13 = 52 game-seconds per real second (a goal's restart freeze aside).
+    expect(played).toBeGreaterThan(40);
+    expect(played).toBeLessThan(53);
+    const frames = ofType(out, "frame");
+    expect(frames.length).toBe(5);
+    const f = frames[2]!;
+    expect(f.steps).toBeGreaterThan(40);
+    expect(f.path!.length).toBe(Math.min(64, f.steps! - 1));
+    expect(f.rate).toBeGreaterThan(40);
+  });
+
+  /** A quick mode B match: the compressed clock so the inline forecast is cheap. */
+  const quick = (seed: number): LiveMatchInput => ({ ...input(), seed, clockScale: 18 });
+
+  test("mode B: plays the lances, jumps over the rest, reaches full time", () => {
+    match = createH2HMatch(quick(7), { mode: "highlights", level: "main", forecast: "inline" });
+    match.setSpeed(4);
+    const out = runToEnd(match, 200, 50_000);
+    expect(match.done).toBe(true);
+    const jumps = ofType(out, "jump");
+    expect(jumps.length).toBeGreaterThan(0);
+    expect(ofType(out, "frame").some((f) => f.jump)).toBe(true);
+    expect(ofType(out, "highlights").at(-1)!.view.done).toBe(true);
+    // Same result as the straight run of the same seed (the forecast never changes the match).
+    const straight = createH2HMatch(quick(7));
+    straight.setSpeed(400);
+    runToEnd(straight, 1000);
+    expect(match.state.score).toEqual(straight.state.score);
+    straight.dispose();
+  }, 120_000);
+
+  test("mode B: an order forecasts again, tells the other manager, and the same order gives the same match", () => {
+    const play = (order: boolean) => {
+      const m = createH2HMatch(quick(11), { mode: "highlights", level: "main", forecast: "inline" });
+      m.setSpeed(4);
+      const out: WorkerOut[] = [];
+      let sent = false;
+      for (let i = 0; i < 50_000 && !m.done; i++) {
+        out.push(...m.tick(200));
+        // The first tick past the 10th minute of play, wherever the jumps landed.
+        if (order && !sent && m.state.matchPhase === "firstHalf" && m.state.matchTime >= 600) {
+          sent = true;
+          out.push(...m.command("B", { kind: "mentality", mentality: "attacking" }));
+        }
+      }
+      const r = { score: { ...m.state.score }, orders: ofType(out, "order") };
+      m.dispose();
+      return r;
+    };
+    const a = play(true);
+    const b = play(true);
+    expect(a.orders).toEqual([{ type: "order", side: "B", kind: "mentality" }]);
+    expect(b.score).toEqual(a.score);
+  }, 240_000);
+
+  test("mode B: the next lance needs both managers in charge", () => {
+    match = createH2HMatch(quick(3), { mode: "highlights", level: "main", forecast: "inline" });
+    const first = match.command("A", { kind: "skip" });
+    expect(ofType(first, "skipVotes").at(-1)!.sides).toEqual(["A"]);
+    const second = match.command("B", { kind: "skip" });
+    expect(ofType(second, "skipVotes").at(-1)!.sides).toEqual([]);
+    // A manager on the assistant does not hold the skip.
+    match.setAuto("B", true);
+    const alone = match.command("A", { kind: "skip" });
+    expect(ofType(alone, "skipVotes").at(-1)!.sides).toEqual([]);
+  }, 120_000);
 });
 
 describe("h2hWorker", () => {

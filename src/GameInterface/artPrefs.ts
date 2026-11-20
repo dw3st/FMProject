@@ -238,10 +238,8 @@ export function writeMatchSpeed(v: number): void {
  * speed tabs = `MODE_A_SPEED`, ~7 real minutes); "highlights" = mode B, only the lances, at normal speed, the rest
  * skipped. Chosen in the preview and in the match, remembered per browser.
  */
-export type MatchPlayMode = "full" | "highlights";
-export const MATCH_PLAY_MODES: readonly MatchPlayMode[] = ["full", "highlights"];
-/** Game-seconds per real second at 1× in mode A: 5400 s of play in ~7 minutes. */
-export const MODE_A_SPEED = 13;
+export { MATCH_PLAY_MODES, MODE_A_SPEED, type MatchPlayMode } from "@/Domain/match/liveModes";
+import type { MatchPlayMode } from "@/Domain/match/liveModes";
 const MODE_KEY = "fm.match.mode";
 const LEVEL_KEY = "fm.match.highlightLevel";
 export type HighlightLevelPref = "main" | "extended" | "full";

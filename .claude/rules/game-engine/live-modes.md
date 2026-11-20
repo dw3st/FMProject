@@ -1,7 +1,7 @@
 # Live match modes: whole match (A) and highlights (B)
 
-Engine rebuild stage 19. Solo live match only; the match between two managers and the broadcast keep the provisional
-clock (`LEGACY_CLOCK_SCALE`, stage 22). The engine is the same in both modes: 0.2 s steps, `clockScale` 1.
+Engine rebuild stage 19 (solo live match) and stage 22 (the match between two managers, on the server, and the
+broadcast). The engine is the same in both modes: 0.2 s steps, `clockScale` 1.
 
 ## Mode A: whole match ("Inteira")
 
@@ -66,4 +66,14 @@ minutes for the 90. The goal celebration and the replay keep the label speed (`P
 
 - Statistics of the skipped stretch arrive with the jump (the summary panel catches up at once).
 - The skipped stretch's goals are always windows (main level), so they are never skipped.
-- No mode B between two managers nor in the broadcast (stage 22).
+- The broadcast shows what the player sees (mode B jumps included) but not the timeline of the lances.
+
+## Between two managers (stage 22)
+
+The server's H2H worker (`h2hMatch.ts`) runs the same two modes: mode A at real time × speed × `MODE_A_SPEED`
+(`src/Domain/match/liveModes.ts`, shared with the page); mode B with the same `HighlightPlayback`, its forecast in a
+nested Bun Worker (`forecastWorker.ts`; tests: an inline port that mutes the forwarded events). Both managers see the
+same lances; an order of either one re-forecasts from the order's state and the other gets `h2h_order` ("Fulano mudou a
+tática"); "next lance" needs every manager in charge of his side (a side on the assistant does not hold it). The mode
+is chosen in the match room: mode B only when both ask for it, at the more complete of the two levels
+(`matchPlayMode`, `matchHighlightLevel`). Details: `.claude/rules/game/multiplayer.md` → "Parte 7" → "90 minutos".
