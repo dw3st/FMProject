@@ -7,6 +7,7 @@ import { scorePassQuality, scorePassToReceiverBreakdown, passCfgFor, type PassCf
 import { engineOf, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
 import { blockShiftX, attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { applyOffBallIntent } from '@/GameEngine/Configs/IntentConfig';
+import { applyOffBallMind } from '@/GameEngine/Domain/DefensiveMind';
 import {
   OFF_BALL_CONFIG,
   INTENT_BUILD_UP,
@@ -194,6 +195,8 @@ function selectOffBallIntent(ctx: OffBallContext): {
 
   // ── Team intent multipliers (counter_attack, etc.) ────────────────────────
   const finalScores = applyOffBallIntent(scores, ctx.intent);
+  // The mind (stage 16, `DefensiveMind.ts`): noise, anticipation and flair on the run, a concentration lapse.
+  if (DECISION_FLAGS.DEFENSIVE_MIND) applyOffBallMind(ctx.player, finalScores);
 
   let best: OffBallIntent = 'offer_support';
   let bestScore = -Infinity;
@@ -210,7 +213,8 @@ function selectOffBallIntent(ctx: OffBallContext): {
   if (DECISION_FLAGS.ACTION_HOLD) {
     const poss = ctx.ballHolder.team;
     const held = heldAction(ctx.player.id, poss) as OffBallIntent | undefined;
-    if (held && held !== best && !ctx.comeShort) best = held;
+    // Only an off-ball intent (a defensive one kept under the same id belongs to the other phase).
+    if (held && held in finalScores && held !== best && !ctx.comeShort) best = held;
     noteAction(ctx.player.id, best, best !== 'hold_space', poss);
   }
   _offBallIntent.set(ctx.player.id, best);

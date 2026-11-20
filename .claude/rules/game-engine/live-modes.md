@@ -16,7 +16,12 @@ minutes for the 90. The goal celebration and the replay keep the label speed (`P
 - `LiveSnapshot` = `GameState` (the seeded generator lives in `state.rng`) + Statistics + ratings + the engine's module
   memory (`EngineMemory`: per-team tactic configs, decision flags, held actions, shoulder runs, intent caches, last
   shape, the highlight tracker). Every module with cross-tick state outside `GameState` registers there
-  (`registerEngineMemory`); a new one must too, or a restored snapshot drifts.
+  (`registerEngineMemory`); a new one must too, or a restored snapshot drifts. Two tests watch this:
+  `engineMemoryGuard.test.ts` fails on a new top-level `let`, Map, Set, WeakMap or per-team record in `src/GameEngine`
+  that is neither registered nor listed with a reason, and `LiveSnapshot.test.ts` ("tick by tick") restores a snapshot
+  after another future and names the first field that parts. The state goes whole (the through-ball cell cache too:
+  it is reused for two ticks) and the Statistics snapshot carries the counters' cross-event memory (`carry`) and the
+  decision telemetry.
 - The forecast posts the highlight windows (`highlights.md`) as they become final, each with the snapshot of its start,
   the engine events in between (feed, cards for the friends) and the possession accumulators. It stops at a frontier:
   the end (one step before the whistle), a pending 2D penalty, or a human injury under manual subs.

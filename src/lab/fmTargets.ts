@@ -87,6 +87,24 @@ export interface FmTargetTotals {
    */
   lossEarly: number;
   lossLate: number;
+  /**
+   * Stage 7 (`shot-and-save.md`): where each shot ended (`SHOT_END`: goal, saved, blocked, off target incl. woodwork) by
+   * the distance from where it was struck to the aimed point (`SHOT_M_LABELS`, metres, report 8 §2.1's bands).
+   */
+  shotEnds: number[][];
+}
+
+/** Stage 7: shot distance bands (m, report 8 §2.1) and FM's goal share of the shots in each (%). */
+export const SHOT_M_LABELS = ["0–8", "8–12", "12–16", "16–20", "20–25", "25+"] as const;
+export const FM_GOAL_BY_DIST = [21, 11, 12, 13, 3, 0] as const;
+/** Share of shots by distance band (R8 §2.1, n 180: 24 / 36 / 42 / 38 / 32 / 8). */
+export const FM_SHOT_DIST_SHARE = [13, 20, 23, 21, 18, 4] as const;
+export const SHOT_END = ["goal", "saved", "blocked", "off"] as const;
+export type ShotEnd = (typeof SHOT_END)[number];
+const shotMBand = (dM: number) => (dM < 8 ? 0 : dM < 12 ? 1 : dM < 16 ? 2 : dM < 20 ? 3 : dM < 25 ? 4 : 5);
+/** One shot's end by its distance (yd). */
+export function addShotEnd(t: FmTargetTotals, distYd: number, end: ShotEnd): void {
+  t.shotEnds[shotMBand(distYd / YD)]![SHOT_END.indexOf(end)]!++;
 }
 
 /** R7: share of the possession losses after a pass that happen in flight (early) against later (%). */
@@ -141,6 +159,7 @@ export function emptyFmTargets(): FmTargetTotals {
     passVz: VZ_LABELS.map(o3), launchSpeed: LAUNCH_LABELS.map(() => []), launchVz: LAUNCH_LABELS.map(() => []),
     flight: FLIGHT_LABELS.map(() => []), landingErr: { cross: [], corner: [], long: [], lofted: [] },
     lossEarly: 0, lossLate: 0,
+    shotEnds: SHOT_M_LABELS.map(() => SHOT_END.map(() => 0)),
   };
 }
 
@@ -164,6 +183,7 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
     dst.holdDefault[l].push(...src.holdDefault[l]); dst.holdShort[l].push(...src.holdShort[l]);
   }
   src.shotDist.forEach((v, i) => { dst.shotDist[i]! += v; }); dst.shots += src.shots;
+  (src.shotEnds ?? []).forEach((row, i) => row.forEach((v, j) => { dst.shotEnds[i]![j]! += v; }));
   src.shotXgHist.forEach((v, i) => { dst.shotXgHist[i]! += v; });
   src.condition.forEach((v, i) => { dst.condition[i]!.sum += v.sum; dst.condition[i]!.n += v.n; });
   dst.keeperEnd.sum += src.keeperEnd.sum; dst.keeperEnd.n += src.keeperEnd.n;
@@ -408,7 +428,7 @@ export const CONDITION_MINUTES = [15, 30, 45, 60, 75, 90] as const;
 export type FmConfidence = "H" | "M" | "L";
 export type FmMatchKey =
   | "goals" | "shots" | "shotsOnTargetPct" | "shotsBlockedPct" | "longShotsPct" | "xg" | "xgPerShot" | "xgMedian"
-  | "clearChances" | "conversionPct"
+  | "clearChances" | "conversionPct" | "savedPct" | "offTargetPct"
   | "corners" | "throwIns" | "passesAttempted" | "passCompletionPct" | "crosses" | "crossCompletionPct"
   | "aerialDuelsWon" | "tacklesWon" | "interceptions" | "dribbles" | "fouls" | "yellowCards" | "yellowsPerFoul"
   | "redCards" | "offsides" | "penalties";
@@ -427,6 +447,8 @@ export const FM_MATCH_TARGETS: readonly FmMatchTarget[] = [
   { key: "xgMedian",           label: "xG per shot, median",   fm: 0.03, confidence: "M", source: "R6" },
   { key: "clearChances",       label: "Clear-cut chances",     fm: 3.5,  confidence: "M", source: "R9" },
   { key: "conversionPct",      label: "Goals % of shots",      fm: 7, pct: true, confidence: "M", source: "R9" },
+  { key: "savedPct",           label: "Saved % of on target",  fm: 80, pct: true, confidence: "M", source: "R9" },
+  { key: "offTargetPct",       label: "Off target % of shots", fm: 27, pct: true, confidence: "M", source: "R9" },
   { key: "corners",            label: "Corners",               fm: 12.5, confidence: "H", source: "R9" },
   { key: "throwIns",           label: "Throw-ins",             fm: 23,   confidence: "L", source: "L" },
   { key: "passesAttempted",    label: "Passes (all kinds)",    fm: 978,  confidence: "H", source: "R9" },
@@ -493,10 +515,19 @@ export interface FmMatchCounts {
   foulsWonOwnThird?: number; foulsWonMidThird?: number; foulsWonFinalThird?: number;
   foulsWonCarrying?: number; foulsWonReceiving?: number; foulsWonHolding?: number;
   contactFouls?: number; lineMisreads?: number;
+  /** Stage 16: concentration lapses (defending, off the ball), mind-changed defensive intents and dropped marks. */
+  mindLapsesDefence?: number; mindLapsesOffBall?: number; mindDefenseShifts?: number; mindMarkDrops?: number;
   /** Shots from 18+ yd of the goal mouth, when a collector counted them (`longShotsOf`); else absent. */
   longShots?: number;
   /** Median xG per shot, when a collector kept the histogram (`xgMedianOf`); else absent. */
   xgMedian?: number;
+  /** Stage 7 (`shot-and-save.md`): shots saved and off target (woodwork included), and the rest of the shot counters. */
+  shotsSaved?: number; shotsOffTarget?: number; shotsWoodwork?: number; shotsDeflected?: number;
+  saves?: number; savesGood?: number; savesDifficult?: number;
+  shotPower?: number; shotPlaced?: number; shotLob?: number; shotChip?: number; shotVolley?: number; shotHeaderLaunch?: number; shotFreeKick?: number;
+  shotSpeedSum?: number; shotLaunchN?: number;
+  /** Stage 9: strike distance sum (m), shots from outside the box, low launches (vz ≤ 3 m/s). */
+  shotDistSumM?: number; shotsOutsideBox?: number; shotsLowLaunch?: number;
 }
 
 export const FM_COUNT_KEYS = [
@@ -507,6 +538,9 @@ export const FM_COUNT_KEYS = [
   "fouls", "yellowCards", "redCards", "offsides", "penaltiesAwarded",
   "foulsWonOwnThird", "foulsWonMidThird", "foulsWonFinalThird", "foulsWonCarrying", "foulsWonReceiving", "foulsWonHolding",
   "contactFouls", "lineMisreads",
+  "shotsSaved", "shotsOffTarget", "shotsWoodwork", "shotsDeflected", "saves", "savesGood", "savesDifficult",
+  "shotPower", "shotPlaced", "shotLob", "shotChip", "shotVolley", "shotHeaderLaunch", "shotFreeKick", "shotSpeedSum", "shotLaunchN",
+  "shotDistSumM", "shotsOutsideBox", "shotsLowLaunch", "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
 /** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */
@@ -535,6 +569,8 @@ export function fmMatchValues(c: FmMatchCounts): Record<FmMatchKey, number | nul
     longShotsPct: c.longShots === undefined ? null : pc(c.longShots, c.shots),
     xg: c.xg, xgPerShot: ratio(c.xg, c.shots), xgMedian: c.xgMedian ?? null, clearChances: c.clearChances,
     conversionPct: pc(c.goals, c.shots),
+    savedPct: c.shotsSaved === undefined ? null : pc(c.shotsSaved, c.shotsOnTarget),
+    offTargetPct: c.shotsOffTarget === undefined ? null : pc(c.shotsOffTarget, c.shots),
     corners: c.corners, throwIns: c.throwIns,
     passesAttempted: all, passCompletionPct: pc(done, all),
     crosses: c.crosses, crossCompletionPct: pc(c.crossesCompleted, c.crosses),
@@ -596,6 +632,7 @@ export function fmCountsFromViews(a: PerMatchView, b: PerMatchView): FmMatchCoun
     aerialDuelsWon: v.avgAerialDuelsWon, tackles: v.avgTackles, interceptions: v.avgInterceptions, dribblesWon: v.avgDribblesWon,
     fouls: v.avgFouls, yellowCards: v.avgYellowCards, redCards: v.avgRedCards, offsides: v.avgOffsides,
     penaltiesAwarded: v.avgPenaltiesAwarded,
+    shotsSaved: v.avgShotsSaved, shotsOffTarget: v.avgShotsOffTarget,
   });
   return fmCountsOf(one(a), one(b));
 }

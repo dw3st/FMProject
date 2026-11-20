@@ -488,6 +488,8 @@ export interface GamePlayer {
   decisionNoise?: HolderMindState;
   /** His last read of the offside line (stage 13, `Domain/OffsideRuns.ts`). Absent = reads the true line every tick. */
   lineRead?: LineRead;
+  /** Off-ball / defending mind rolls (stage 16). Absent = no mental noise off the ball. */
+  mind?: MindRolls;
 }
 
 /** An attacker's read of the offside line (`Domain/OffsideRuns.ts`). */
@@ -517,6 +519,26 @@ export interface PlayerMental {
   consistency: number;
   /** −1..1: half morale, half recent form, fixed at kickoff. */
   mood: number;
+  /** 0..1, derived per match (stage 16, `Domain/DefensiveMind.ts`): concentration (marking lapses) and aggression (press,
+   *  step in). Absent = derived from the four attributes above (`mindAttributes`). */
+  concentration?: number;
+  aggression?: number;
+}
+
+/** A player's off-ball / defending mind window (stage 16, `Domain/DefensiveMind.ts`): rolls on FM's 100 scale. */
+export interface MindRolls {
+  /** matchTime of the next window. */
+  nextAt: number;
+  dec: number;
+  antic: number;
+  conc: number;
+  aggr: number;
+  /** The concentration roll is a lapse this window (he loses his man / his zone). */
+  lapse: boolean;
+  /** Relative noise σ on the intent scores this window. */
+  sigma: number;
+  /** One draw per intent slot (defence: hold, mark, press, step; off-ball: support, hold, run). */
+  z: number[];
 }
 
 /** One holder-mind window (`Domain/HolderMind.ts`). Rolls on FM's 100 scale; `z` / `lapseMul` per action slot. */
@@ -647,7 +669,7 @@ export type LooseBallSource = 'through' | 'cross' | 'long_ball' | 'clearance';
 
 /** Why the ball runs loose (stage 4, `movement.md`): an overhit through ball, a heavy touch on a long pass, a pass
  *  deflected off a defender, a blocked shot. */
-export type LooseBallCause = 'overhit' | 'heavy_touch' | 'deflection' | 'block' | 'misplaced';
+export type LooseBallCause = 'overhit' | 'heavy_touch' | 'deflection' | 'block' | 'misplaced' | 'woodwork';
 
 /** The back line's movement state (stage 4, `movement.md`). */
 export type BackLineMode = 'hold' | 'step_up' | 'drop';
@@ -746,6 +768,8 @@ export interface BallState {
   distance: number;
   /** A physical pass (stage 4, `pass-physics.md`): launched with its own vector, then free physics (no guidance). */
   free?: boolean;
+  /** Stage 10 (`aerial.md`): a high ball met in flight this tick, at this height (yd): the flight ends there. */
+  metZ?: number;
   /** The phase that ended this tick (set on the tick it ended): its kind, peak and the height it ended at (yd). */
   ended?: { kind: BallFlightKind; phase: BallPhase; peak: number; z: number };
 }
@@ -773,6 +797,39 @@ export interface ShotState {
   outcome?: { isGoal: boolean; goalChance: number };
   /** A chip over an advanced keeper (`HolderMoves.ts`): decided at the strike, never met by the keeper. */
   chip?: true;
+  /**
+   * Stage 7 (`shot-and-save.md` → "Stage 7"): the shot is a physical launch of the 3D ball; the core moves it and the
+   * goal, the save, the block or the miss come from where it goes. Absent with `SHOT_PHYSICS` off (the old dice).
+   */
+  physics?: ShotPhysicsState;
+}
+
+/** How a shot is struck (stage 7). */
+export type ShotTechnique = 'power' | 'placed' | 'lob' | 'chip' | 'volley' | 'header' | 'free_kick';
+
+/** A planned lunge at a shot's path (stage 7): the point and the ball's time there. */
+export interface ShotBlockRun { id: number; x: number; y: number; t: number }
+
+export interface ShotPhysicsState {
+  technique: ShotTechnique;
+  /** The launch (yd, yd/s), error included. */
+  z0: number; vx: number; vy: number; vz: number;
+  /** Launch speed (m/s), aimed crossing (yd) and the direction error drawn (degrees). */
+  speedMs: number; aimY: number; aimZ: number; errDeg: number;
+  /** Seconds since the strike, and the expected flight to the line. */
+  elapsed: number; T: number;
+  /** Defenders lunging at the path. */
+  blocks: ShotBlockRun[];
+  /** Players who touched it on the way (they can't touch it again). */
+  touched: number[];
+  /** The last defender (or keeper) who touched it: an off-target ball after it is a corner. */
+  deflectedBy?: number;
+  /** The keeper got a hand to it and failed (no second attempt). */
+  keeperBeaten?: boolean;
+  /** A deflection on: the keeper's reaction starts again from this time (s since the strike). */
+  reactFrom?: number;
+  /** Predicted on the frame at the strike (`onFrame`). */
+  onTarget: boolean;
 }
 
 /** What the end of a VAR check does to the match (data only: `gameState.ts` applies it). */

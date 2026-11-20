@@ -99,3 +99,9 @@ score, decision); `/test` shows it in the decision panel and the MCP `score_off_
 ## Etapa 15 (forma do FM)
 
 Com `FM_SHAPE` a âncora vem de `fmShapePoint` (linha de trás, alcance e largura do FM); com `ACTION_HOLD` as ações curtas ficam 5 s. Ver `team-shape.md`.
+
+## Stage 16: the off-ball mind
+
+With `DEFENSIVE_MIND` the three intent scores (after the team-intent multipliers) get the player's mind window: noise,
+anticipation and flair on make_run, a concentration lapse leaving him in his zone (`Domain/DefensiveMind.ts`,
+`decisions.md` → "Stage 16").

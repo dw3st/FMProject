@@ -20,9 +20,13 @@ export interface LiveSnapshot {
   memory: EngineMemory;
 }
 
-/** The state as a snapshot carries it: the through-ball cell cache is rebuilt on the next tick. */
+/**
+ * The state as a snapshot carries it: whole, the through-ball cell cache included. The cache is reused for up to two
+ * ticks with the cells of the tick that computed them, so dropping it makes the next decision see other cells (a
+ * different through ball) and the match drifts.
+ */
 export function snapshotState(state: GameState): GameState {
-  return state.throughBallCellsCache ? { ...state, throughBallCellsCache: null } : state;
+  return state;
 }
 
 /**

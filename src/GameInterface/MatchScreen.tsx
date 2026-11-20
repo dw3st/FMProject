@@ -439,7 +439,7 @@ export function MatchScreen() {
       gameBus.on("shotResolved", (e) => {
         if (e.isGoal) return;
         if (e.inPosts) audio.play("save");
-        if (e.goalChance >= 0.25) audio.play("nearMiss");
+        if (e.danger >= 0.25) audio.play("nearMiss");
       }),
       gameBus.on("foul", () => audio.play("whistleShort")),
       gameBus.on("offsideCalled", () => audio.play("whistleShort")),

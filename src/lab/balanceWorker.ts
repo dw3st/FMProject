@@ -118,9 +118,10 @@ function emptyTeamRaw(): TeamRawStats {
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0, aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0, condition45Sum: 0, condition90Sum: 0, keeperConditionSum: 0,
-    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0, foulsWonOwnThird: 0, foulsWonMidThird: 0, foulsWonFinalThird: 0, foulsWonCarrying: 0, contactFouls: 0, lineMisreads: 0, shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0,
+    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0, foulsWonOwnThird: 0, foulsWonMidThird: 0, foulsWonFinalThird: 0, foulsWonCarrying: 0, contactFouls: 0, lineMisreads: 0, shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0, mindLapsesDefence: 0, mindLapsesOffBall: 0, mindDefenseShifts: 0, mindMarkDrops: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
     holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0, holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0, holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
+    shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0, shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0, airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0, headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -195,6 +196,10 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.zoneCovers += src.zoneCovers;
   dst.shoulderRuns += src.shoulderRuns;
   dst.shoulderRunsEarly += src.shoulderRunsEarly;
+  dst.mindLapsesDefence += src.mindLapsesDefence;
+  dst.mindLapsesOffBall += src.mindLapsesOffBall;
+  dst.mindDefenseShifts += src.mindDefenseShifts;
+  dst.mindMarkDrops += src.mindMarkDrops;
   dst.crosses                     += src.crosses;
   dst.crossesCompleted            += src.crossesCompleted;
   dst.aerialDuels                 += src.aerialDuels;
@@ -272,11 +277,44 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.passLaunchSpeedSum += src.passLaunchSpeedSum;
   dst.passLaunchN += src.passLaunchN;
   dst.cutTouches += src.cutTouches;
+  dst.shotsOffTarget += src.shotsOffTarget;
+  dst.shotsWoodwork += src.shotsWoodwork;
+  dst.shotsDeflected += src.shotsDeflected;
+  dst.shotsSaved += src.shotsSaved;
+  dst.saves += src.saves;
+  dst.savesGood += src.savesGood;
+  dst.savesDifficult += src.savesDifficult;
+  dst.shotPower += src.shotPower;
+  dst.shotPlaced += src.shotPlaced;
+  dst.shotLob += src.shotLob;
+  dst.shotChip += src.shotChip;
+  dst.shotVolley += src.shotVolley;
+  dst.shotHeaderLaunch += src.shotHeaderLaunch;
+  dst.shotFreeKick += src.shotFreeKick;
+  dst.shotSpeedSum += src.shotSpeedSum;
+  dst.shotLaunchN += src.shotLaunchN;
+  dst.shotDistSumM += src.shotDistSumM;
+  dst.shotsOutsideBox += src.shotsOutsideBox;
+  dst.shotsLowLaunch += src.shotsLowLaunch;
   dst.cutControls += src.cutControls;
   dst.cutClears += src.cutClears;
   dst.cutDeflects += src.cutDeflects;
   dst.cutMisses += src.cutMisses;
   dst.cutSpeedSum += src.cutSpeedSum;
+  dst.airCrosses += src.airCrosses;
+  dst.airCrossMetAir += src.airCrossMetAir;
+  dst.airCrossMetLow += src.airCrossMetLow;
+  dst.airCrossUnmet += src.airCrossUnmet;
+  dst.airCrossOwn += src.airCrossOwn;
+  dst.airCrossDef += src.airCrossDef;
+  dst.airCrossKeeper += src.airCrossKeeper;
+  dst.airCrossZSum += src.airCrossZSum;
+  dst.headWonDef += src.headWonDef;
+  dst.headWonMid += src.headWonMid;
+  dst.headWonFwd += src.headWonFwd;
+  dst.headAttDef += src.headAttDef;
+  dst.headAttMid += src.headAttMid;
+  dst.headAttFwd += src.headAttFwd;
   dst.holderHolds += src.holderHolds;
   dst.holderTurns += src.holderTurns;
   dst.holderChoices += src.holderChoices;
@@ -581,6 +619,10 @@ function runOneMatch(
   teamA.zoneCovers += sA.zoneCovers; teamB.zoneCovers += sB.zoneCovers;
   teamA.shoulderRuns += sA.shoulderRuns; teamB.shoulderRuns += sB.shoulderRuns;
   teamA.shoulderRunsEarly += sA.shoulderRunsEarly; teamB.shoulderRunsEarly += sB.shoulderRunsEarly;
+  teamA.mindLapsesDefence += sA.mindLapsesDefence; teamB.mindLapsesDefence += sB.mindLapsesDefence;
+  teamA.mindLapsesOffBall += sA.mindLapsesOffBall; teamB.mindLapsesOffBall += sB.mindLapsesOffBall;
+  teamA.mindDefenseShifts += sA.mindDefenseShifts; teamB.mindDefenseShifts += sB.mindDefenseShifts;
+  teamA.mindMarkDrops += sA.mindMarkDrops; teamB.mindMarkDrops += sB.mindMarkDrops;
   teamA.crosses            += sA.crosses;            teamB.crosses            += sB.crosses;
   teamA.crossesCompleted   += sA.crossesCompleted;   teamB.crossesCompleted   += sB.crossesCompleted;
   teamA.aerialDuels        += sA.aerialDuels;        teamB.aerialDuels        += sB.aerialDuels;
@@ -659,11 +701,44 @@ function runOneMatch(
   teamA.passLaunchSpeedSum += sA.passLaunchSpeedSum ?? 0; teamB.passLaunchSpeedSum += sB.passLaunchSpeedSum ?? 0;
   teamA.passLaunchN += sA.passLaunchN ?? 0; teamB.passLaunchN += sB.passLaunchN ?? 0;
   teamA.cutTouches += sA.cutTouches ?? 0; teamB.cutTouches += sB.cutTouches ?? 0;
+  teamA.shotsOffTarget += sA.shotsOffTarget ?? 0; teamB.shotsOffTarget += sB.shotsOffTarget ?? 0;
+  teamA.shotsWoodwork += sA.shotsWoodwork ?? 0; teamB.shotsWoodwork += sB.shotsWoodwork ?? 0;
+  teamA.shotsDeflected += sA.shotsDeflected ?? 0; teamB.shotsDeflected += sB.shotsDeflected ?? 0;
+  teamA.shotsSaved += sA.shotsSaved ?? 0; teamB.shotsSaved += sB.shotsSaved ?? 0;
+  teamA.saves += sA.saves ?? 0; teamB.saves += sB.saves ?? 0;
+  teamA.savesGood += sA.savesGood ?? 0; teamB.savesGood += sB.savesGood ?? 0;
+  teamA.savesDifficult += sA.savesDifficult ?? 0; teamB.savesDifficult += sB.savesDifficult ?? 0;
+  teamA.shotPower += sA.shotPower ?? 0; teamB.shotPower += sB.shotPower ?? 0;
+  teamA.shotPlaced += sA.shotPlaced ?? 0; teamB.shotPlaced += sB.shotPlaced ?? 0;
+  teamA.shotLob += sA.shotLob ?? 0; teamB.shotLob += sB.shotLob ?? 0;
+  teamA.shotChip += sA.shotChip ?? 0; teamB.shotChip += sB.shotChip ?? 0;
+  teamA.shotVolley += sA.shotVolley ?? 0; teamB.shotVolley += sB.shotVolley ?? 0;
+  teamA.shotHeaderLaunch += sA.shotHeaderLaunch ?? 0; teamB.shotHeaderLaunch += sB.shotHeaderLaunch ?? 0;
+  teamA.shotFreeKick += sA.shotFreeKick ?? 0; teamB.shotFreeKick += sB.shotFreeKick ?? 0;
+  teamA.shotSpeedSum += sA.shotSpeedSum ?? 0; teamB.shotSpeedSum += sB.shotSpeedSum ?? 0;
+  teamA.shotLaunchN += sA.shotLaunchN ?? 0; teamB.shotLaunchN += sB.shotLaunchN ?? 0;
+  teamA.shotDistSumM += sA.shotDistSumM ?? 0; teamB.shotDistSumM += sB.shotDistSumM ?? 0;
+  teamA.shotsOutsideBox += sA.shotsOutsideBox ?? 0; teamB.shotsOutsideBox += sB.shotsOutsideBox ?? 0;
+  teamA.shotsLowLaunch += sA.shotsLowLaunch ?? 0; teamB.shotsLowLaunch += sB.shotsLowLaunch ?? 0;
   teamA.cutControls += sA.cutControls ?? 0; teamB.cutControls += sB.cutControls ?? 0;
   teamA.cutClears += sA.cutClears ?? 0; teamB.cutClears += sB.cutClears ?? 0;
   teamA.cutDeflects += sA.cutDeflects ?? 0; teamB.cutDeflects += sB.cutDeflects ?? 0;
   teamA.cutMisses += sA.cutMisses ?? 0; teamB.cutMisses += sB.cutMisses ?? 0;
   teamA.cutSpeedSum += sA.cutSpeedSum ?? 0; teamB.cutSpeedSum += sB.cutSpeedSum ?? 0;
+  teamA.airCrosses += sA.airCrosses ?? 0; teamB.airCrosses += sB.airCrosses ?? 0;
+  teamA.airCrossMetAir += sA.airCrossMetAir ?? 0; teamB.airCrossMetAir += sB.airCrossMetAir ?? 0;
+  teamA.airCrossMetLow += sA.airCrossMetLow ?? 0; teamB.airCrossMetLow += sB.airCrossMetLow ?? 0;
+  teamA.airCrossUnmet += sA.airCrossUnmet ?? 0; teamB.airCrossUnmet += sB.airCrossUnmet ?? 0;
+  teamA.airCrossOwn += sA.airCrossOwn ?? 0; teamB.airCrossOwn += sB.airCrossOwn ?? 0;
+  teamA.airCrossDef += sA.airCrossDef ?? 0; teamB.airCrossDef += sB.airCrossDef ?? 0;
+  teamA.airCrossKeeper += sA.airCrossKeeper ?? 0; teamB.airCrossKeeper += sB.airCrossKeeper ?? 0;
+  teamA.airCrossZSum += sA.airCrossZSum ?? 0; teamB.airCrossZSum += sB.airCrossZSum ?? 0;
+  teamA.headWonDef += sA.headWonDef ?? 0; teamB.headWonDef += sB.headWonDef ?? 0;
+  teamA.headWonMid += sA.headWonMid ?? 0; teamB.headWonMid += sB.headWonMid ?? 0;
+  teamA.headWonFwd += sA.headWonFwd ?? 0; teamB.headWonFwd += sB.headWonFwd ?? 0;
+  teamA.headAttDef += sA.headAttDef ?? 0; teamB.headAttDef += sB.headAttDef ?? 0;
+  teamA.headAttMid += sA.headAttMid ?? 0; teamB.headAttMid += sB.headAttMid ?? 0;
+  teamA.headAttFwd += sA.headAttFwd ?? 0; teamB.headAttFwd += sB.headAttFwd ?? 0;
   teamA.holderHolds += sA.holderHolds ?? 0; teamB.holderHolds += sB.holderHolds ?? 0;
   teamA.holderTurns += sA.holderTurns ?? 0; teamB.holderTurns += sB.holderTurns ?? 0;
   teamA.holderChoices += sA.holderChoices ?? 0; teamB.holderChoices += sB.holderChoices ?? 0;

@@ -421,3 +421,100 @@ cinco flags desligadas × ligadas:
 
 Sem mudança no motor (`live-modes.md`): os dois modos jogam o mesmo `tickState` com o relógio físico, e o modo B
 reproduz a partida reta do mesmo gerador (teste). As metas do FM não mudam; nada a medir com `scripts/fm-targets.ts`.
+## Etapa 7: chute pela trajetória (antes / depois)
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000`. Antes = `DECISION_OVERRIDES='{"SHOT_PHYSICS":false}'`
+(o sorteio sobre o xG). Regras em `shot-and-save.md` → "Stage 7". Nada calibrado.
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Gols / chutes / xG | 7,3 / 29,0 / 8,8 | 6,8 / 26,4 / 8,1 | 1,5 / 21,5 / 3,3 |
+| Gols % dos chutes | 25,0% | 25,9% | 7% |
+| No alvo % dos chutes (com os gols) | 53,4% | 57,4% | 35% |
+| Bloqueados % | 0,6% | 8,8% | 38% |
+| Para fora % (trave incluída) | 42,8% | 24,3% (trave 3,8%) | ~27% |
+| Defendidos % dos no alvo | 53,2% | 67,0% | 80% |
+| Defesas do goleiro por partida (boas / difíceis) | 8,3 | 10,2 (1,6 / 45,9%) | — |
+| Técnica: força / colocado / cavadinha / cabeça / falta | — | 18 / 18 / 45 / 14 / 6% (cobertura 0, voleio 0) | — |
+| Velocidade de saída | — | 17,9 m/s | — |
+| Gol % por distância 0–8 / 8–12 / 12–16 / 16–20 / 20–25 m | — | 47 / 26 / 21 / 14 / 7% | 21 / 11 / 12 / 13 / 3% |
+| Escanteios | 23,4 | 16,8 | 12,5 |
+- O gol agora sai da bola: o goleiro defende 67% dos chutes no alvo (era 53% pelo dado) e os defensores bloqueiam
+  8,8% (quase nada antes). Os dois ainda ficam abaixo do FM: os chutes seguem perto demais (18% de longe contra 46%) e
+  sem gente na frente; a escolha do chute é a etapa 8 e a forma defensiva a 15.
+- A cavadinha é quase metade dos chutes: o movimento de portador `chip` (já existente) dispara muito com o goleiro
+  adiantado e agora sempre vira chute físico. Fica para a escolha do portador (etapa 8).
+- Cobertura e voleio não aparecem nessas 12 partidas (a bola raramente está alta no chute; o goleiro raramente fica 8+
+  jardas fora com o atacante a 16–38 jardas).
+- Menos escanteios: o desvio de um chute para fora só vira escanteio quando alguém tocou de fato.
+- Custo: ~14,5 s por partida, igual a antes.
+## Etapa 9: ataques que terminam fora da área (antes / depois)
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000`. Antes = `DECISION_OVERRIDES='{"LONG_SHOTS":false}'`
+(o chute da 4b com o limite de 33 jd e o valor pelo xG com os bloqueadores). Regras em `holder-choice.md` → "Stage 9".
+Nada calibrado.
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Chutes / gols / xG | 31,8 / 9,2 / 11,0 | 51,5 / 12,8 / 8,1 | 21,5 / 1,5 / 3,3 |
+| Chutar % das decisões do portador (todas / último terço) | 0,5 / 2,9 | 1,1 / 6,6 | 1 / 4 |
+| De fora da área (18+ jd da boca do gol) | 14,4% | 52,3% | 46% (R9) |
+| Batidos de fora da área (pelo ponto do chute) | 15,0% | 36,9% | 46% (R9) · 27% (R8) |
+| Chutes por distância 0–8 / 8–12 / 12–16 / 16–20 / 20–25 / 25+ m | 4 / 25 / 35 / 29 / 6 / 0% | 1 / 12 / 20 / 33 / 20 / 15% | 13 / 20 / 23 / 21 / 18 / 4% (R8) |
+| Distância média do chute | 14,3 m | 18,8 m | mediana 14,9 m (R8) |
+| Bloqueados % | 4,2% | 8,9% | 38% |
+| Técnica: força / colocado / cobertura / cavadinha / cabeça / falta | 13 / 16 / 0 / 53 / 14 / 5% | 80 / 9 / 1 / 1 / 9 / 1% | 72% sobem (vz > 3 m/s) |
+| Saem baixos (vz ≤ 3 m/s) | 18,3% | 32,0% | 28% |
+| xG por chute (média / mediana) | 0,35 / 0,26 | 0,16 / 0,10 | 0,15 / 0,03 |
+| Gol % 20–25 m / 25+ m | 19 / 0% | 18 / 24% | 3 / 0% |
+| Escanteios | — | 17,6 | 12,5 |
+- A forma chega perto do FM: metade dos chutes de longe, o chute na mesma parte das decisões (1,1% contra 1%) e a
+  cavadinha deixa de ser metade dos chutes (o goleiro de hoje fica a 3–6 jd da linha; ela só vale com 8+).
+- O volume de chutes mais que dobra contra o FM e eles ficam longe demais: poucos de 0–8 m e 15% além de 25 m (FM 4%).
+  O valor do chute ainda segue o xG limpo (ponto, ângulo, corpo), não a função do FM (não lida); o peso do chute é
+  a razão do FM (× 2,78 de uma condução).
+- Os bloqueios sobem pouco (8,9% contra 38%): os defensores ainda não ficam na linha do chute; é da forma (15) e do
+  bloqueio físico (7). Os chutes de longe entram demais (24% além de 25 m): é o goleiro (etapa 11).
+- Custo: ~11,6 s por partida (antes ~14,4).
+## Etapa 16: camada mental na defesa e sem bola, teto de consistência (só registro)
+`fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (90 min, formações da IA, equilibrado). Antes =
+`DECISION_OVERRIDES='{"DEFENSIVE_MIND":false,"CONSISTENCY_CAP":false}'` (idêntico jogo a jogo ao motor anterior,
+conferido com 3 partidas com semente); "mente" = só `DEFENSIVE_MIND`; "teto" = só `CONSISTENCY_CAP`. O FM não tem
+número direto da mente: a meta é não quebrar as da forma e da pressão (etapa 15). Nada calibrado (`decisions.md` →
+"Stage 16").
+| Por partida, os dois times | FM | antes | mente | teto | as duas |
+|---|---|---|---|---|---|
+| Lapsos de concentração defendendo / sem bola | — | 0 / 0 | 586 / 544 | 0 / 0 | 541 / 524 |
+| Intenções defensivas mudadas pela mente / marcações largadas | — | 0 / 0 | 1011 / 194 | 0 / 0 | 949 / 176 |
+| Pressores dedicados 0 / 1 / 2+ | 75 / 20 / 5 | 78,5 / 18,0 / 3,5 | 78,6 / 17,9 / 3,6 | 79,8 / 16,7 / 3,5 | 81,9 / 15,2 / 3,0 |
+| Adversários a 10 m do portador, terço próprio / meio / último | 0,85 / 1,8 / 3,1 | 0,80 / 1,41 / 2,31 | 0,85 / 1,48 / 2,34 | 0,84 / 1,22 / 2,26 | 0,86 / 1,10 / 2,28 |
+| 3+ defensores a 8 jd da bola (% dos ticks) | — | 7,5 | 7,7 | 7,1 | 6,7 |
+| Linha com / sem bola (jd) | 58 / 24 | 46,0 / 37,1 | 46,6 / 37,1 | 44,5 / 36,2 | 42,8 / 35,6 |
+| Portador conduz / passa / gira / segura | 44 / 34 / 12 / 9 | 54,6 / 35,5 / 4,3 / 5,2 | 56,1 / 35,8 / 3,7 / 4,0 | 52,5 / 33,8 / 4,8 / 8,6 | 51,1 / 33,8 / 6,2 / 8,5 |
+| Desarmes ganhos / interceptações | 17 / 59 | 66,4 / 126,6 | 63,9 / 127,3 | 63,4 / 119,0 | 56,2 / 117,3 |
+| Gols / chutes / passes (todos) | 1,5 / 21,5 / 978 | 7,3 / 29,0 / 874 | 6,7 / 28,3 / 882 | 6,1 / 27,0 / 839 | 6,5 / 28,0 / 839 |
+- Um lapso dura uma janela (0,8 s): ~1065 por partida = ~0,75% das janelas dos 20 jogadores de linha.
+- A mente sozinha deixa a forma e a pressão onde estavam (dentro do ruído de 12 partidas). Quem mexe é o teto de
+  consistência: os bônus do dia ficam menores, o portador segura mais (5,2 → 8,6%, mais perto do FM) e conduz menos,
+  e os adversários perto do portador no terço do meio caem (1,41 → 1,22; com as duas, 1,10, mais longe do FM 1,8).
+- `ball-cluster.ts --modes ai --engine 12 --chunks 1`, antes / depois (as duas): defensores a 8 jd da bola 0,73 /
+  0,66 por tick, 3+ 6,3 / 5,4%, 4+ 2,1 / 1,8%; pressores simultâneos 1 / 2 / 3+ 10,0 / 2,6 / 1,0% → 9,0 / 2,5 / 0,7%;
+  maior vão à frente do gol 36,8 / 36,2 jd.
+**Note for stage 21 (2026-11-19):** with stages 7, 8, 15 and 16 merged, the seeded match of `OffsideRuns.engine.test.ts` no longer shows more attackers past the true line with `OFFSIDE_RUNS` on (5.4% on vs 8.4% off, with the stage-15 shape flags off too). Misreads still happen; the offside volume (~1/3 of FM per pass) is tuned in stage 21.
+## Etapa 10: cruzamento e contato no ar (antes / depois)
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1` (mesmas sementes), antes = `FM_AERIAL` desligada, depois =
+ligada (`aerial.md` → "Stage 10"). Nada calibrado.
+| Medida | Antes | Depois | FM |
+| Cruzamentos por jogo | 56,8 | 24,7 | 64 |
+| Cruzamentos certos | 14,7% | 29,4% | 19% |
+| Cruzamento de jogo corrido tocado no ar (> 1,2 m) | — (a bola cai) | 38,9% | 82% |
+| Primeiro contato: defesa / goleiro / ataque | — | 27,8 / 48,1 / 18,5% (sem contato 5,6%) | 47 / 19 / — |
+| Altura média do contato no cruzamento | 0 (queda) | 1,14 m (mediana do `ballFlight` 0,77) | 1,8 m |
+| Altura do contato, lançamento / escanteio (mediana) | 0 / 0 | 0,39 / 0,34 m | 1,4 / 2,2 m |
+| Cabeceios ganhos por jogo | 96,2 (disputas somadas) | 11,4 (no ar) | 27 |
+| Vitória no alto: zagueiros / meias / atacantes | — | 50,4 / 46,5 / 47,4% | 90–100 / — / 10–30 |
+| Bolas altas (pico > 1,2 m) | 238 | 203 | ~150 |
+| Lançamentos (certos) | 42,3 (54,8%) | 43,2 (56,9%) | ~90 (56%) |
+| Chutes / gols | 28,2 / 7,8 | 22,7 / 7,7 | 21,5 / 1,5 |
+| Escanteios | 23,5 | 13,1 | 12,5 |
+- O contato no ar acontece, mas baixo: os jogadores chegam quando a bola já desce, e o goleiro (2,3 m de mãos e 1,5
+  de alcance) leva metade dos cruzamentos. O duelo ainda não dá a vantagem do FM ao zagueiro parado do lado do gol.
+- Os cruzamentos caem pela metade: a posição de cruzar ficou mais perto da linha (25 jardas) e o candidato único com o
+  valor médio das zonas perde para a condução mais vezes. Os escanteios caem junto (menos cortes perto da linha).
+- Fica para a calibração (21) e para as etapas 11 (goleiro), 12 (bola parada) e 7 (a cabeçada como técnica de chute).

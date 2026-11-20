@@ -1,12 +1,14 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun, ShotState, ShotPhysicsState, ShotBlockRun, ShotTechnique } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning, ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { LONG_SHOT_DISTANCE, weatherEffectOf, type WeatherEffect } from '@/GameEngine/Configs/WeatherConfig';
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
+import { aerialCatchers, contestantsOf, drawCrossZone, findAerialContact, headerLine, meetPoint, type AerialCatcher, type AerialContactHit } from '@/GameEngine/Domain/AerialContact';
+import { FM_AERIAL } from '@/GameEngine/Configs/FmAerialConfig';
 import { RESTART_DEAD_S, SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
 import {
   attackingBoxPositions, pickRoutine, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick, keepDistanceFromBall,
@@ -49,7 +51,13 @@ import { advanceLooseBall, advancePassBall, ballEnv, ballWithinReach, passKey, s
 import { buildAerialLaunch, buildGroundLaunch, loftVzYd, passTypeOf, vzForPeak, weightedSpeed } from '@/GameEngine/Domain/PassPhysics';
 import { PASS_PHYSICS, YD_PER_M_PASS } from '@/GameEngine/Configs/PassPhysicsConfig';
 import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
-import { predictPath, reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { predictPath, reachHeight, stepFree, type Ball3D as Ball3DState, type BallEnv as BallEnvState } from '@/GameEngine/Domain/Ball3D';
+import { SHOT_PHYSICS } from '@/GameEngine/Configs/ShotPhysicsConfig';
+import {
+  aimPoint, applyShotError, blockChances, blockReach as shotBlockReach, chooseTechnique, classifyCrossing, dipLaunch, directLaunch,
+  keeperDiveSpeed, keeperHandReach, keeperReaction, lineCrossing, onFrame, saveChances, shotErrorFactor, shotSpeedMs,
+  YD_PER_M as SHOT_YD_PER_M, type KeeperSkill as ShotKeeperSkill,
+} from '@/GameEngine/Domain/ShotPhysics';
 import { interceptPoint, interceptReachOf, resolveTouch, touchChances, type PathPoint } from '@/GameEngine/Domain/PhysicalInterception';
 import { INTERCEPT } from '@/GameEngine/Configs/InterceptConfig';
 import {
@@ -61,9 +69,10 @@ import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { ballMeetsKeeper, defenderCovers, saveOutcomeChances, shotStoppingSkill, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
+import { distToGoalCentreM, inBoxLane } from '@/GameEngine/Domain/ShotGate';
 import { shotXg, XG_PENALTY } from '@/GameEngine/Domain/ShotXg';
 import type { FmXgResult } from '@/GameEngine/Domain/FmXg';
-import type { RosterPlayer } from '@/types/playerTypes';
+import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
 import { computeBuffedStats } from '@/Domain/PlayerBuffs';
@@ -79,8 +88,8 @@ import {
   MAX_INTERCEPTION_CORRIDOR, playerInterceptionCorridor,
   computeShotAim, computeXG, computeOpenAngle, computeWeightedPressure,
   resolveShot, resolveTackle, resolveInterception, resolveDribble, resolveLooseBallDuel,
-  resolveAerialDuel, gkClaimChance, resolveChip, resolveRoundKeeper,
-  resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection,
+  resolveAerialDuel, resolveFmAerialDuel, gkClaimChance, resolveChip, resolveRoundKeeper,
+  resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection, gaussianDraw,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
@@ -114,6 +123,8 @@ import { withMoraleExecution } from '@/Domain/morale/morale';
 import { settlingMult, withSettlingExecution } from '@/Domain/settling/settling';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { refreshLineRead, perceivedLine } from '@/GameEngine/Domain/OffsideRuns';
+import { refreshMindRolls } from '@/GameEngine/Domain/DefensiveMind';
+import { capStatModifiers } from '@/GameEngine/Domain/ConsistencyCap';
 import { OFFSIDE_RUNS } from '@/GameEngine/Configs/OffsideRunsConfig';
 import { KINEMATICS_CONFIG } from '@/GameEngine/Configs/KinematicsConfig';
 import { etaTo as kinEta, stepAlong, stepToward, type KinStep } from '@/GameEngine/Domain/Kinematics';
@@ -298,6 +309,11 @@ function toValidPlayerRole(pos: string): PlayerRole {
   return POSITION_TO_ROLE[pos] ?? 'CM';
 }
 
+/** The day's attributes with the consistency cap on their modifiers (stage 16, `ConsistencyCap.ts`); flag off = as is. */
+function consistencyCapped(rp: RosterPlayer, buffed: PlayerStatsRecord, consistency: number): PlayerStatsRecord {
+  return DECISION_FLAGS.CONSISTENCY_CAP ? capStatModifiers(rp.stats, buffed, consistency) : buffed;
+}
+
 function buildGamePlayerForSlot(
   rp: RosterPlayer,
   slotDef: { role: PlayerRole; yRange?: number },
@@ -309,13 +325,14 @@ function buildGamePlayerForSlot(
   const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
   // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes, and the
   // player's morale his own (`.claude/rules/game/morale.md`; 65 / absent = unchanged).
-  const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+  const mental = matchMentalOf(team, rp);
+  const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
     rp.stats,
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
+  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
   const yRange   = slotDef.yRange ?? roleEng.yRange;
@@ -372,7 +389,7 @@ function buildGamePlayerForSlot(
     morale:           matchMoraleOf(team, rp.morale),
     ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
     temperament:      matchTemperamentOf(team, rp),
-    mental:           matchMentalOf(team, rp),
+    mental,
     foot:             rp.preferredFoot,
   };
 }
@@ -404,13 +421,14 @@ function buildTeam(
     const naturalRole = toValidPlayerRole(rp.positions?.[0] ?? 'CM');
     const roleEng = roleEngine(naturalRole);
     const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-    const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+    const mental = matchMentalOf(team, rp);
+    const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
       rp.stats,
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
+    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
     const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
@@ -449,7 +467,7 @@ function buildTeam(
       morale:           matchMoraleOf(team, rp.morale),
       ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
       temperament:      matchTemperamentOf(team, rp),
-      mental:           matchMentalOf(team, rp),
+      mental,
       foot:             rp.preferredFoot,
     });
   }
@@ -1432,6 +1450,16 @@ export function startDirectFreeKick(state: GameState, rng: () => number = matchR
   const fmBase = DECISION_FLAGS.FM_XG ? shotXg(taker, state.players, 'free_kick').xg : null;
   const base = fmBase ?? directFreeKickXG(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX));
   const xg = fmBase ?? base * (1 - pBlock);
+  // Stage 7: the free kick dips over the wall by its flight; the wall blocks it only if the ball goes into it.
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const shot = physicalShot(state, taker, { technique: 'free_kick', skill: Math.min(1, taker.runtimeStats.withBall.shootAccuracy / 0.95), setPiece: true }, { xg: base, freeKick: true });
+    if (shot) {
+      gameBus.emit('shot', { player: taker.id, xg });
+      gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked: false });
+      debugLog('setPiece', `${taker.name} shoots the free kick over a wall of ${wall.length} (xG ${xg.toFixed(3)})`, { playerId: taker.id, data: { base, xg, wallSize: wall.length } });
+      return { ...state, setPiece: null, shot };
+    }
+  }
   const blocked = wall.length > 0 && rng() < pBlock;
   gameBus.emit('shot', { player: taker.id, xg });
   gameBus.emit('directFreeKick', { player: taker.id, xg, wallSize: wall.length, blocked });
@@ -2517,13 +2545,472 @@ function logShotXg(shooter: GamePlayer, fm: FmXgResult): void {
   });
 }
 
+// ── Stage 7: the shot by its trajectory (`shot-and-save.md` → "Stage 7") ──────────────────────────────────────────
+
+const M_PER_YD_SHOT = 1 / SHOT_YD_PER_M;
+
+function teamOfId(s: GameState, id: number): TeamId | null {
+  return s.players.find(p => p.id === id)?.team ?? null;
+}
+
+/** The keeper's shot-stopping skills (0..1). */
+function keeperSkillOf(gk: GamePlayer): ShotKeeperSkill {
+  const w = gk.runtimeStats.withoutBall;
+  return { reflex: w.gkReflex, diving: w.gkDiving, positioning: w.gkPositioning };
+}
+
+/** /test (stage 7): a physical shot by `shooterId` with a chosen technique, struck now (null without the 3D ball). */
+export function testPhysicalShot(state: GameState, shooterId: number, technique: ShotTechnique): GameState {
+  const shooter = state.players.find(p => p.id === shooterId);
+  if (!shooter) return state;
+  const skill = technique === 'header' ? Math.min(1, headingOf(shooter)) : Math.min(1, shooter.runtimeStats.withBall.shootAccuracy / 0.95);
+  const shot = physicalShot(state, shooter, { technique, skill }, { xg: 0.1, chip: technique === 'chip' || undefined });
+  return shot ? { ...state, ballHolderId: shooterId, shot, setPiece: null } : state;
+}
+
+interface PhysicalStrike {
+  technique: ShotTechnique;
+  /** Skill driving the error (finishing 0..1, heading for a header). */
+  skill: number;
+  /** A set piece: FM's set-piece base, no pressure. */
+  setPiece?: boolean;
+}
+
+/**
+ * The physical launch of a shot (stage 7): technique, aim (corner and height), launch vector to the aim, FM's launch
+ * error with the shot base, the predicted crossing and the defenders who can lunge at the path. Null without the 3D
+ * ball (the old dice path stays).
+ */
+function physicalShot(state: GameState, shooter: GamePlayer, strike: PhysicalStrike, extra: Partial<ShotState> = {}): ShotState | null {
+  if (!DECISION_FLAGS.SHOT_PHYSICS || !DECISION_FLAGS.BALL_3D) return null;
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const keeper = state.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
+  const opps = state.players.filter(p => p.team !== shooter.team);
+  const header = strike.technique === 'header';
+  const z0 = header ? BALL_PHYSICS.HEAD_Z : Math.max(BALL_PHYSICS.FOOT_Z, state.ball?.z ?? 0);
+  const from = { x: shooter.x, y: shooter.y, z: z0 };
+  const technique = strike.technique;
+  const aim = aimPoint({ fromX: shooter.x, fromY: shooter.y, goalX, keeper, technique, skill: strike.skill }, matchRandom);
+  const aim3 = { x: goalX, y: aim.y, z: aim.z };
+  const dist = Math.hypot(goalX - shooter.x, aim.y - shooter.y);
+  const dirX = (goalX - shooter.x) / Math.max(1e-6, dist);
+  let base: { vx: number; vy: number; vz: number } | null = null;
+  if (technique === 'lob' || technique === 'chip') {
+    const along = keeper ? Math.max(1, (keeper.x - shooter.x) * dirX) : dist / 2;
+    base = dipLaunch(from, { d: along, z: SHOT_PHYSICS.HAND_MAX_Z + SHOT_PHYSICS.LOB_CLEAR_YD }, aim3);
+  } else if (technique === 'free_kick') {
+    const wall = (state.setPiece?.wallIds ?? []).map(id => state.players.find(p => p.id === id)).filter((p): p is GamePlayer => !!p);
+    const along = wall.length > 0 ? Math.min(...wall.map(w => Math.abs(w.x - shooter.x))) : SET_PIECE_CONFIG.WALL_DISTANCE;
+    base = dipLaunch(from, { d: along, z: SHOT_PHYSICS.BLOCK_MAX_Z + 0.25 }, aim3);
+  }
+  const speedMs0 = shotSpeedMs(technique === 'free_kick' || technique === 'lob' || technique === 'chip' ? 'placed' : technique, strike.skill);
+  if (!base) base = directLaunch(from, aim3, speedMs0 * SHOT_YD_PER_M);
+  const speedMs = Math.hypot(base.vx, base.vy, base.vz) * M_PER_YD_SHOT;
+  const pressure = strike.setPiece ? 0 : holderPressure(shooter.x, shooter.y, opps);
+  const factor = shotErrorFactor(strike.skill, dist, pressure, speedMs, technique === 'volley' ? SHOT_PHYSICS.VOLLEY_MARGIN : 0,
+    strike.setPiece ? SHOT_PHYSICS.BASE_SET_PIECE : SHOT_PHYSICS.BASE_SHOT);
+  const longShot = !header && dist > LONG_SHOT_DISTANCE ? weatherEffectOf(state.weather).longShot : 1;
+  const v = applyShotError(base, factor, gaussianDraw(), gaussianDraw(), gaussianDraw(), longShot > 0 ? 1 / longShot : 1);
+  const vh = Math.max(1, Math.hypot(v.vx, v.vy));
+  const T = dist / vh;
+  // Where it would cross the line by free flight (no one touching it).
+  const env = ballEnv(state.weather);
+  const launched = { x: from.x, y: from.y, z: z0, vx: v.vx, vy: v.vy, vz: v.vz };
+  const cross = predictCrossing(launched, goalX, env);
+  const onTarget = !!cross && onFrame(cross.y, cross.z);
+  const blocks = planShotBlocks(state, shooter, launched, Math.min(SHOT_PHYSICS.MAX_FLIGHT_S, T + 0.1), env);
+  const physics: ShotPhysicsState = {
+    technique, z0, vx: v.vx, vy: v.vy, vz: v.vz, speedMs, aimY: aim.y, aimZ: aim.z, errDeg: v.errDeg,
+    elapsed: 0, T, blocks, touched: [], onTarget,
+  };
+  gameBus.emit('shotLaunched', {
+    player: shooter.id, team: shooter.team, technique, speedMs, vzMs: v.vz * M_PER_YD_SHOT,
+    aimY: aim.y, aimZ: aim.z, errDeg: v.errDeg, distance: dist, onTarget, blockers: blocks.length,
+    fromM: distToGoalCentreM(shooter.x, shooter.y, shooter.attackDir), outsideBox: !inBoxLane(shooter.x, shooter.y, shooter.attackDir),
+  });
+  if (isDebugEnabled()) {
+    debugLog('shot', `${shooter.name} ${technique} shot: ${speedMs.toFixed(1)} m/s, aim y ${aim.y.toFixed(1)} z ${(aim.z * M_PER_YD_SHOT).toFixed(2)} m, error ${v.errDeg.toFixed(1)}° (factor ${factor.toFixed(2)}), ${onTarget ? 'on target' : 'off target'}${cross ? ` (crosses y ${cross.y.toFixed(1)} z ${(cross.z * M_PER_YD_SHOT).toFixed(2)} m)` : ''}, ${blocks.length} blocker(s)`, {
+      playerId: shooter.id, data: { technique, speedMs, factor, errDeg: v.errDeg, onTarget, blocks: blocks.length },
+    });
+  }
+  return { shooterId: shooter.id, fromX: shooter.x, fromY: shooter.y, toX: goalX, toY: aim.y, t: 0, xg: 0, ...extra, physics };
+}
+
+/** Where a free ball crosses the goal line x = goalX within the flight limit (null: it never does). */
+function predictCrossing(ball: Ball3DState, goalX: number, env: BallEnvState): { y: number; z: number; t: number } | null {
+  let b = { ...ball };
+  let t = 0;
+  const h = SHOT_PHYSICS.SUBSTEP;
+  while (t < SHOT_PHYSICS.MAX_FLIGHT_S) {
+    const nb = stepFree(b, h, env).ball;
+    const c = lineCrossing(b, nb, goalX);
+    if (c) return { y: c.y, z: c.z, t: t + h * c.f };
+    if (nb.y < -2 || nb.y > PITCH_WIDTH + 2) return null;
+    if (nb.z <= 1e-6 && Math.hypot(nb.vx, nb.vy) < PASS_PHYSICS.STOP_SPEED_YD) return null;
+    b = nb; t += h;
+  }
+  return null;
+}
+
+/** The ball's path to the line every SUBSTEP (for the blockers' and the keeper's plans). */
+function shotPath(ball: Ball3DState, seconds: number, env: BallEnvState, goalX: number): PathPoint[] {
+  const out: PathPoint[] = [];
+  let b = { ...ball };
+  const h = SHOT_PHYSICS.SUBSTEP;
+  for (let t = h; t <= seconds + 1e-9; t += h) {
+    const nb = stepFree(b, h, env).ball;
+    if (lineCrossing(b, nb, goalX)) { out.push({ x: nb.x, y: nb.y, z: nb.z, t }); break; }
+    out.push({ x: nb.x, y: nb.y, z: nb.z, t });
+    b = nb;
+  }
+  return out;
+}
+
+/** The outfield defenders who can get a body to the shot's path in time (the earliest MAX_BLOCKERS lunge at it). */
+function planShotBlocks(state: GameState, shooter: GamePlayer, ball: Ball3DState, seconds: number, env: BallEnvState): ShotBlockRun[] {
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const path = shotPath(ball, seconds, env, goalX);
+  if (path.length === 0) return [];
+  const runs: ShotBlockRun[] = [];
+  for (const p of state.players) {
+    if (p.team === shooter.team || p.role === 'GK' || isPlayerInRecovery(p)) continue;
+    const plan = interceptPoint(path, {
+      x: p.x, y: p.y, speed: SHOT_PHYSICS.LUNGE_SPEED, reach: shotBlockReach(p.runtimeStats.withoutBall.tackling ?? 0.5),
+      reaction: SHOT_PHYSICS.BLOCK_REACTION_S, maxZ: SHOT_PHYSICS.BLOCK_MAX_Z,
+    });
+    if (plan) runs.push({ id: p.id, x: plan.x, y: plan.y, t: plan.t });
+  }
+  runs.sort((a, b) => a.t - b.t);
+  return runs.slice(0, SHOT_PHYSICS.MAX_BLOCKERS);
+}
+
+/** Closest point of the segment a → b to (px, py): the distance and the fraction along it. */
+function segmentApproach(ax: number, ay: number, bx: number, by: number, px: number, py: number): { d: number; f: number } {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const f = len2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return { d: Math.hypot(ax + dx * f - px, ay + dy * f - py), f };
+}
+
+/** Rotates (vx, vy) by `deg` degrees and scales it by `k`. */
+function turnVelocity(vx: number, vy: number, deg: number, k: number): { vx: number; vy: number } {
+  const a = (deg * Math.PI) / 180;
+  const c = Math.cos(a), s = Math.sin(a);
+  return { vx: (vx * c - vy * s) * k, vy: (vx * s + vy * c) * k };
+}
+
+/** The keeper holds the ball after a save: his ball, the goal-kick shape (as the old save did). */
+function keeperHoldsShot(s: GameState, gk: GamePlayer): TickResult {
+  const gkFormation = gk.team === 'A' ? s.formationA : s.formationB;
+  const goalKickLayout = resolveFormationSetPieces(gkFormation).goalKick;
+  let players = applyStaminaCost(s.players, gk.id, 'gkSave');
+  if (goalKickLayout) players = applySetPieceToTeam(players, gk.team, goalKickLayout);
+  const prevHolderId = s.ballHolderId;
+  return {
+    state: onPossessionTransfer({
+      ...s, shot: null, ballHolderId: gk.id, possessionTime: 0, lastPasserId: null, players,
+      setPiece: { type: 'goal_kick', takerId: gk.id, countdown: restartFreeze(s, RESTART_DEAD_S.GOAL_KICK) },
+    }, prevHolderId),
+    passCompleted: false, tackled: false, goalScored: null,
+  };
+}
+
+/** A goal from a shot in flight (both shot paths): the score, the event, the kick-off, the VAR check on a missed offside. */
+function scoreShotGoal(s: GameState, shooter: GamePlayer, flying: ShotState): TickResult {
+  if (flying.chip && flying.physics) gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: 'success', counted: true });
+  const newScore = { ...s.score, [shooter.team]: s.score[shooter.team] + 1 };
+  const assistId = s.lastPasserId !== null && s.lastPasserId !== shooter.id ? s.lastPasserId : undefined;
+  const setPieceKind = flying.freeKick ? 'direct_free_kick' : setPieceGoalOf(s, shooter.team);
+  gameBus.emit('goalScored', {
+    team: shooter.team, score: newScore, scorerId: shooter.id, assistId, header: flying.header === true,
+    ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+    fromX: flying.fromX, fromY: flying.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
+  });
+  const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
+  const kicked = resetToKickoff({ ...s, score: newScore }, concedingTeam);
+  return {
+    state: s.missedOffside
+      ? checkGoalForOffside(s, kicked, {
+        team: shooter.team, scorerId: shooter.id, ...(assistId !== undefined ? { assistId } : {}),
+        header: flying.header === true, ...(setPieceKind ? { setPiece: setPieceKind } : {}),
+      })
+      : kicked,
+    passCompleted: false, tackled: false, goalScored: shooter.team,
+  };
+}
+
+/** Writes the physical shot's ball back on the state (the core moved it; `syncBall` keeps it). */
+function withShotBall(s: GameState, b: Ball3DState, extra: { peak: number; air: number; bounces: number; dt: number }): GameState {
+  const prev = s.ball;
+  if (!prev || prev.phase !== 'shot') return s;
+  return {
+    ...s,
+    ball: {
+      ...prev, x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, ended: undefined,
+      peak: Math.max(prev.peak, extra.peak), air: prev.air + extra.air, bounces: prev.bounces + extra.bounces,
+      elapsed: prev.elapsed + extra.dt,
+    },
+  };
+}
+
+/**
+ * One tick of a physical shot (stage 7): the ball flies on free physics in sub-steps; the keeper (after his reaction)
+ * dives to the point of the path he can reach, the planned blockers lunge at theirs. The first body the ball passes
+ * within reach of touches it; crossing the line decides goal, woodwork, wide or over. No goal dice.
+ */
+function tickPhysicalShot(s: GameState, dt: number): TickResult {
+  const shot = s.shot!;
+  let ph = shot.physics!;
+  const shooter = s.players.find(p => p.id === shot.shooterId)!;
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const gk0 = s.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
+  const env = ballEnv(s.weather);
+  const sb = s.ball && s.ball.phase === 'shot' && s.ball.key === shotKey(shot) ? s.ball : null;
+  let b: Ball3DState = sb
+    ? { x: sb.x, y: sb.y, z: sb.z, vx: sb.vx, vy: sb.vy, vz: sb.vz }
+    : { x: shot.fromX, y: shot.fromY, z: ph.z0, vx: ph.vx, vy: ph.vy, vz: ph.vz };
+  // Positions this tick (the keeper and the blockers move here, in sub-steps).
+  const pos = new Map<number, { x: number; y: number }>(s.players.map(p => [p.id, { x: p.x, y: p.y }]));
+  const moved = new Set<number>();
+  const skill = gk0 ? keeperSkillOf(gk0) : null;
+  const reactAt = (ph.reactFrom ?? 0) + (skill ? keeperReaction(skill) : 0);
+  // The keeper's plan from where the ball is now: the earliest point he reaches; none for a ball going wide.
+  let keeperTarget: { x: number; y: number } | null = null;
+  if (gk0 && skill && !ph.keeperBeaten && !ph.touched.includes(gk0.id)) {
+    const cross = predictCrossing(b, goalX, env);
+    if (cross && onFrame(cross.y, cross.z, SHOT_PHYSICS.LEAVE_MARGIN)) {
+      const path = shotPath(b, cross.t + 0.05, env, goalX);
+      const plan = interceptPoint(path, {
+        x: gk0.x, y: gk0.y, speed: keeperDiveSpeed(skill), reach: keeperHandReach(skill),
+        reaction: Math.max(0, reactAt - ph.elapsed), maxZ: SHOT_PHYSICS.HAND_MAX_Z,
+      });
+      keeperTarget = plan ? { x: plan.x, y: plan.y } : { x: goalX - shooter.attackDir * 0.5, y: Math.max(GOAL_Y_MIN, Math.min(GOAL_Y_MAX, cross.y)) };
+    }
+  }
+  const h = SHOT_PHYSICS.SUBSTEP;
+  let left = dt, peak = b.z, air = 0, bounces = 0, used = 0;
+  const finish = (state: GameState): GameState => {
+    // Movement of the keeper and the blockers this tick, through the kinematic bookkeeping.
+    const log = newMoveLog();
+    const players = state.players.map(p => {
+      if (!moved.has(p.id)) return p;
+      const q = pos.get(p.id)!;
+      const vx = (q.x - p.x) / dt, vy = (q.y - p.y) / dt;
+      return finishMove(p, state, dt, q.x, q.y, vx, vy, 1, p.runtimeStats.withoutBall.pressSpeed, log);
+    });
+    emitMoveLog(log);
+    return { ...state, players };
+  };
+  const done = (state: GameState) => withShotBall(state, b, { peak, air, bounces, dt: used });
+  while (left > 1e-9) {
+    const step = Math.min(h, left);
+    const t0 = ph.elapsed;
+    ph = { ...ph, elapsed: t0 + step };
+    // Bodies move.
+    if (gk0 && keeperTarget && ph.elapsed >= reactAt) {
+      const q = pos.get(gk0.id)!;
+      const d = Math.hypot(keeperTarget.x - q.x, keeperTarget.y - q.y);
+      if (d > 1e-3) {
+        const k = Math.min(1, (keeperDiveSpeed(skill!) * step) / d);
+        pos.set(gk0.id, { x: q.x + (keeperTarget.x - q.x) * k, y: q.y + (keeperTarget.y - q.y) * k });
+        moved.add(gk0.id);
+      }
+    }
+    if (ph.elapsed >= SHOT_PHYSICS.BLOCK_REACTION_S) {
+      for (const r of ph.blocks) {
+        if (ph.touched.includes(r.id)) continue;
+        const q = pos.get(r.id);
+        if (!q) continue;
+        const d = Math.hypot(r.x - q.x, r.y - q.y);
+        if (d < 1e-3) continue;
+        const k = Math.min(1, (SHOT_PHYSICS.LUNGE_SPEED * step) / d);
+        pos.set(r.id, { x: q.x + (r.x - q.x) * k, y: q.y + (r.y - q.y) * k });
+        moved.add(r.id);
+      }
+    }
+    // The ball flies.
+    const prev = b;
+    const st = stepFree(b, step, env);
+    b = st.ball; peak = Math.max(peak, st.peak); air += st.air; bounces += st.bounces;
+    left -= step; used += step;
+    // A body in the way (outfield defenders), then the keeper's hands. `close` books the movement when it ends here.
+    const unfinished = (): GameState => done({ ...s, shot: { ...shot, physics: ph } });
+    let touch: ShotTouchResult | null = null;
+    for (const p of s.players) {
+      if (p.team === shooter.team || p.role === 'GK' || ph.touched.includes(p.id) || isPlayerInRecovery(p)) continue;
+      const q = pos.get(p.id)!;
+      const ap = segmentApproach(prev.x, prev.y, b.x, b.y, q.x, q.y);
+      const z = prev.z + (b.z - prev.z) * ap.f;
+      if (z > SHOT_PHYSICS.BLOCK_MAX_Z || ap.d > shotBlockReach(p.runtimeStats.withoutBall.tackling ?? 0.5)) continue;
+      b = { ...b, x: prev.x + (b.x - prev.x) * ap.f, y: prev.y + (b.y - prev.y) * ap.f, z };
+      touch = shotBlockTouch(unfinished(), finish, shooter, p, b);
+      break;
+    }
+    if (!touch && gk0 && skill && !ph.keeperBeaten && !ph.touched.includes(gk0.id)) {
+      const q = pos.get(gk0.id)!;
+      const ap = segmentApproach(prev.x, prev.y, b.x, b.y, q.x, q.y);
+      const z = prev.z + (b.z - prev.z) * ap.f;
+      const reach = keeperHandReach(skill);
+      if (z <= SHOT_PHYSICS.HAND_MAX_Z && ap.d <= reach) {
+        b = { ...b, x: prev.x + (b.x - prev.x) * ap.f, y: prev.y + (b.y - prev.y) * ap.f, z };
+        touch = keeperShotTouch(unfinished(), finish, shooter, gk0, b, ap.d / reach, skill, goalX, env);
+      }
+    }
+    if (touch) {
+      if (touch.kind === 'end') return touch.result;
+      ph = touch.physics; b = touch.ball;
+      if (gk0 && ph.reactFrom !== undefined && ph.reactFrom === ph.elapsed) keeperTarget = null;
+      continue;
+    }
+    // The goal line.
+    const c = lineCrossing(prev, b, goalX);
+    if (c) {
+      b = { ...b, x: goalX, y: c.y, z: c.z };
+      return shotCrossesLine(finish(done({ ...s, shot: { ...shot, physics: ph } })), shooter, gk0, c.y, c.z);
+    }
+    const outSide = b.y < 0 || b.y > PITCH_WIDTH || b.x < 0 || b.x > PITCH_LENGTH;
+    const dead = b.z <= 1e-6 && Math.hypot(b.vx, b.vy) < PASS_PHYSICS.STOP_SPEED_YD;
+    if (outSide || dead || ph.elapsed >= SHOT_PHYSICS.MAX_FLIGHT_S) {
+      const st2 = finish(done({ ...s, shot: { ...shot, physics: ph } }));
+      if (outSide) {
+        const lastTeam = ph.deflectedBy !== undefined ? (st2.players.find(p => p.id === ph.deflectedBy)?.team ?? shooter.team) : shooter.team;
+        const award: TeamId = lastTeam === 'A' ? 'B' : 'A';
+        gameBus.emit('shotResolved', { player: shooter.id, xg: shot.xg, danger: 0, isGoal: false, inPosts: false, fromX: shot.fromX, fromY: shot.fromY, toX: b.x, toY: b.y, outcome: 'wide' });
+        return resolveOOBSetPiece({ ...st2, shot: null }, 'throw_in', award, b.x, b.y, shooter.id, 'clearance');
+      }
+      const toucher = ph.deflectedBy !== undefined ? (st2.players.find(p => p.id === ph.deflectedBy) ?? shooter) : shooter;
+      return { state: runLoose(st2, toucher, b.x, b.y, b.vx, b.vy, 'block', true), passCompleted: false, tackled: false, goalScored: null };
+    }
+  }
+  const next = finish(done({ ...s, shot: { ...shot, t: Math.min(0.99, ph.elapsed / Math.max(0.05, ph.T)), physics: ph } }));
+  return { state: next, passCompleted: false, tackled: false, goalScored: null };
+}
+
+type ShotTouchResult =
+  | { kind: 'on'; physics: ShotPhysicsState; ball: Ball3DState }
+  | { kind: 'end'; result: TickResult };
+
+/** A defender's body in the shot's way: he controls it (rare), sends it on, or it rebounds loose off him. */
+function shotBlockTouch(s: GameState, close: (st: GameState) => GameState, shooter: GamePlayer, d: GamePlayer, b: Ball3DState): ShotTouchResult {
+  const shot = s.shot!;
+  const ph = shot.physics!;
+  const speedMs = Math.hypot(b.vx, b.vy) * M_PER_YD_SHOT;
+  const c = blockChances(d.runtimeStats.withBall.firstTouch, speedMs);
+  const r = matchRandom();
+  if (r >= c.control && r < c.control + c.deflectOn) {
+    const turned = turnVelocity(b.vx, b.vy, (matchRandom() * 2 - 1) * SHOT_PHYSICS.DEFLECT_DEG, SHOT_PHYSICS.DEFLECT_KEEP);
+    gameBus.emit('shotDeflected', { player: shooter.id, blockerId: d.id });
+    debugLog('shot', `${d.name} deflects ${shooter.name}'s shot on (${speedMs.toFixed(1)} m/s)`, { playerId: d.id });
+    return {
+      kind: 'on',
+      physics: { ...ph, touched: [...ph.touched, d.id], deflectedBy: d.id, reactFrom: ph.elapsed },
+      ball: { ...b, vx: turned.vx, vy: turned.vy, vz: b.vz * SHOT_PHYSICS.DEFLECT_KEEP },
+    };
+  }
+  s = close(s);
+  gameBus.emit('shotBlocked', { player: shooter.id, blockerId: d.id });
+  s = { ...s, players: applyStaminaCost(s.players, d.id, 'interception') };
+  if (r < c.control) {
+    debugLog('shot', `${d.name} blocks and keeps ${shooter.name}'s shot`, { playerId: d.id });
+    const prevHolderId = s.ballHolderId;
+    return {
+      kind: 'end',
+      result: { state: onPossessionTransfer({ ...s, shot: null, ballHolderId: d.id, possessionTime: 0, lastPasserId: null }, prevHolderId), passCompleted: false, tackled: false, goalScored: null },
+    };
+  }
+  const dir = scatterDirection(-b.vx, -b.vy, SHOT_PHYSICS.REBOUND_DEG);
+  const k = SHOT_PHYSICS.REBOUND_KEEP_MIN + matchRandom() * (SHOT_PHYSICS.REBOUND_KEEP_MAX - SHOT_PHYSICS.REBOUND_KEEP_MIN);
+  const v = Math.hypot(b.vx, b.vy) * k;
+  debugLog('shot', `${d.name} blocks ${shooter.name}'s shot (${speedMs.toFixed(1)} m/s): it rebounds loose`, { playerId: d.id });
+  const st = s.ball ? { ...s, ball: { ...s.ball, vz: Math.abs(b.vz) * 0.3 } } : s;
+  return { kind: 'end', result: { state: runLoose(st, d, b.x, b.y, dir.x * v, dir.y * v, 'block', true), passCompleted: false, tackled: false, goalScored: null } };
+}
+
+/** The keeper gets his hands to the shot: he stops it (held, spilled or parried behind) or it goes on past his fingertips. */
+function keeperShotTouch(
+  s: GameState, close: (st: GameState) => GameState, shooter: GamePlayer, gk: GamePlayer, b: Ball3DState, offset: number, skill: ShotKeeperSkill, goalX: number, env: BallEnvState,
+): ShotTouchResult {
+  const shot = s.shot!;
+  const ph = shot.physics!;
+  const speedMs = Math.hypot(b.vx, b.vy, b.vz) * M_PER_YD_SHOT;
+  const sc = saveChances(skill, offset, speedMs);
+  const cross = predictCrossing(b, goalX, env);
+  const wasOnTarget = !!cross && onFrame(cross.y, cross.z);
+  if (matchRandom() >= sc.stop) {
+    const turned = turnVelocity(b.vx, b.vy, (matchRandom() * 2 - 1) * SHOT_PHYSICS.FINGERTIP_DEG, SHOT_PHYSICS.FINGERTIP_KEEP);
+    debugLog('keeper', `${gk.name} gets a hand to it but can't keep it out (stop ${(sc.stop * 100).toFixed(0)}%, offset ${offset.toFixed(2)}, ${speedMs.toFixed(1)} m/s)`, { playerId: gk.id });
+    return {
+      kind: 'on',
+      physics: { ...ph, touched: [...ph.touched, gk.id], deflectedBy: gk.id, keeperBeaten: true },
+      ball: { ...b, vx: turned.vx, vy: turned.vy, vz: b.vz * SHOT_PHYSICS.FINGERTIP_KEEP },
+    };
+  }
+  s = close(s);
+  const odds = saveOutcomeChances(shotStoppingSkill(gk), sc.difficulty);
+  const roll = matchRandom();
+  const kind = roll < odds.parry ? 'parry' : roll < odds.parry + odds.spill ? 'spill' : 'hold';
+  gameBus.emit('shotResolved', {
+    player: shooter.id, xg: shot.xg, danger: 1 - sc.stop, isGoal: false, inPosts: wasOnTarget,
+    fromX: shot.fromX, fromY: shot.fromY, toX: b.x, toY: b.y, outcome: 'saved',
+  });
+  gameBus.emit('keeperSave', { keeperId: gk.id, kind, grade: sc.grade });
+  debugLog('keeper', `${gk.name} ${kind === 'hold' ? 'holds' : kind === 'spill' ? 'spills' : 'parries'} the shot — ${sc.grade} save (stop ${(sc.stop * 100).toFixed(0)}%, offset ${offset.toFixed(2)}, ${speedMs.toFixed(1)} m/s)`, {
+    playerId: gk.id, data: { ...odds, stop: sc.stop, offset, speedMs, grade: sc.grade },
+  });
+  if (kind === 'hold') return { kind: 'end', result: keeperHoldsShot(s, gk) };
+  if (kind === 'spill') {
+    const point = {
+      x: Math.max(0, Math.min(PITCH_LENGTH, b.x - shooter.attackDir * KEEPER_CONFIG.SAVE.SPILL_DIST)),
+      y: Math.max(0, Math.min(PITCH_WIDTH, b.y)),
+    };
+    const players = applyStaminaCost(s.players, gk.id, 'gkSave');
+    return { kind: 'end', result: { state: dropLooseAt({ ...s, shot: null, players }, gk, point), passCompleted: false, tackled: false, goalScored: null } };
+  }
+  const exitX = goalX === 0 ? -1 : PITCH_LENGTH + 1;
+  const saved = { ...s, players: applyStaminaCost(s.players, gk.id, 'gkSave'), shot: null };
+  return { kind: 'end', result: resolveOOBSetPiece(saved, 'corner', shooter.team, exitX, b.y, gk.id, 'clearance', 'save') };
+}
+
+/** The ball reaches the goal line: in, off the woodwork, wide or over. */
+function shotCrossesLine(s: GameState, shooter: GamePlayer, gk: GamePlayer | null, y: number, z: number): TickResult {
+  const shot = s.shot!;
+  const ph = shot.physics!;
+  const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
+  const kind = classifyCrossing(y, z);
+  const base = { player: shooter.id, xg: shot.xg, fromX: shot.fromX, fromY: shot.fromY, toX: goalX, toY: y };
+  if (kind === 'goal') {
+    gameBus.emit('shotResolved', { ...base, danger: 1, isGoal: true, inPosts: true, outcome: 'goal' });
+    if (gk && !ph.touched.includes(gk.id)) debugLog('keeper', `${gk.name} beaten: the shot never came within his reach`, { playerId: gk.id });
+    return scoreShotGoal({ ...s, shot: null }, shooter, shot);
+  }
+  if (kind === 'post' || kind === 'bar') {
+    gameBus.emit('shotResolved', { ...base, danger: 0.8, isGoal: false, inPosts: false, outcome: 'woodwork' });
+    gameBus.emit('shotWoodwork', { player: shooter.id, team: shooter.team, part: kind });
+    debugLog('shot', `${shooter.name}'s shot hits the ${kind}`, { playerId: shooter.id });
+    const b = s.ball!;
+    const k = SHOT_PHYSICS.WOODWORK_KEEP;
+    const dir = scatterDirection(-b.vx, kind === 'post' ? -b.vy : b.vy, 35);
+    const v = Math.hypot(b.vx, b.vy) * k;
+    const x = goalX === 0 ? 0.4 : PITCH_LENGTH - 0.4;
+    const st = { ...s, ball: { ...b, x, vz: kind === 'bar' ? -Math.abs(b.vz) * k : b.vz * k } };
+    return { state: runLoose(st, shooter, x, y, dir.x * v, dir.y * v, 'woodwork', true), passCompleted: false, tackled: false, goalScored: null };
+  }
+  // Wide or over: how far from the frame it went (0 at 2 yd or more).
+  const wideBy = kind === 'wide' ? Math.min(Math.abs(y - GOAL_Y_MIN), Math.abs(y - GOAL_Y_MAX)) : Math.max(0, z - BALL_PHYSICS.CROSSBAR_Z);
+  gameBus.emit('shotResolved', { ...base, danger: Math.max(0, 0.6 * (1 - wideBy / 2)), isGoal: false, inPosts: false, outcome: kind });
+  const exitX = goalX === 0 ? -1 : PITCH_LENGTH + 1;
+  const toucher = ph.deflectedBy !== undefined ? s.players.find(p => p.id === ph.deflectedBy) : undefined;
+  if (toucher && toucher.team !== shooter.team) {
+    return resolveOOBSetPiece({ ...s, shot: null }, 'corner', shooter.team, exitX, y, toucher.id, 'clearance', toucher.role === 'GK' ? 'save' : 'deflection');
+  }
+  const defTeam: TeamId = shooter.team === 'A' ? 'B' : 'A';
+  return resolveOOBSetPiece({ ...s, shot: null }, 'goal_kick', defTeam, exitX, y, shooter.id, 'clearance');
+}
+
 function startShot(state: GameState): GameState {
   if (state.setPiece?.variant === 'direct' && state.setPiece.takerId === state.ballHolderId) return startDirectFreeKick(state);
   const shooter = state.players.find(p => p.id === state.ballHolderId)!;
   const shotKeeper = state.players.find((p) => p.team !== shooter.team && p.role === 'GK');
-  const { toX, toY } = computeShotAim(shooter, {
-    keeperOut: !shotKeeper || !keeperReachesShot(shotKeeper, shooter.x, shooter.y, shooter.attackDir === 1 ? PITCH_LENGTH : 0),
-  });
 
   // xG context: distance, open goal angle, and nearby defensive pressure
   const goalX     = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
@@ -2537,6 +3024,25 @@ function startShot(state: GameState): GameState {
   if (fmXg?.fm) logShotXg(shooter, fmXg.fm);
 
   gameBus.emit('shot', { player: shooter.id, xg });
+
+  // Stage 7: a physical strike; the blocks, the keeper and the line decide it in flight (`tickPhysicalShot`).
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const skill = Math.min(1, shooter.runtimeStats.withBall.shootAccuracy / 0.95);
+    const kDepth = shotKeeper ? Math.abs(shotKeeper.x - goalX) : Infinity;
+    const sDepth = Math.abs(shooter.x - goalX);
+    const lineY = shotKeeper ? shooter.y + ((GOAL_Y_MIN + GOAL_Y_MAX) / 2 - shooter.y) * ((sDepth - kDepth) / Math.max(1, sDepth)) : 0;
+    const keeperAhead = !!shotKeeper && kDepth < sDepth - 1 && Math.abs(shotKeeper.y - lineY) < 4;
+    const technique = chooseTechnique({
+      distYd: Math.hypot(goalX - shooter.x, (GOAL_Y_MIN + GOAL_Y_MAX) / 2 - shooter.y), keeperOffLine: kDepth, keeperAhead,
+      keeperGap: shotKeeper ? Math.hypot(shotKeeper.x - shooter.x, shotKeeper.y - shooter.y) : 0, ballZ: state.ball?.z ?? 0, skill,
+    }, matchRandom);
+    const shot = physicalShot(state, shooter, { technique, skill }, { xg });
+    if (shot) return { ...state, shot, setPiece: null };
+  }
+
+  const { toX, toY } = computeShotAim(shooter, {
+    keeperOut: !shotKeeper || !keeperReachesShot(shotKeeper, shooter.x, shooter.y, goalX),
+  });
 
   // Blocked on its line (stage 4, `movement.md`): the ball rebounds loose off the defender's body.
   if (DECISION_FLAGS.SHOT_BLOCKS) {
@@ -2567,6 +3073,16 @@ function startChip(state: GameState): GameState {
   const keeper = state.players.find(p => p.team !== shooter.team && p.role === 'GK') ?? null;
   const chance = chipMove(shooter, keeper, 0.5, 1.6)?.chance ?? 0;
   if (chance <= 0) return startShot(state);
+  // Stage 7: the chip is a physical lob over him; whether it goes in is the ball's flight against his hands.
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const xg = DECISION_FLAGS.FM_XG ? shotXg(shooter, state.players, 'ground').xg : chance;
+    const shot = physicalShot(state, shooter, { technique: 'chip', skill: Math.min(1, shooter.runtimeStats.withBall.shootAccuracy / 0.95) }, { xg, chip: true });
+    if (shot) {
+      gameBus.emit('shot', { player: shooter.id, xg });
+      gameBus.emit('holderMove', { playerId: shooter.id, team: shooter.team, move: 'chip', phase: 'fail' });
+      return { ...state, shot, setPiece: null };
+    }
+  }
   const isGoal = resolveChip(chance);
   const goalX = shooter.attackDir === 1 ? PITCH_LENGTH : 0;
   // Stage 6: the statistic is the FM xG of the shot; the chip's own chance still decides it.
@@ -3648,6 +4164,11 @@ function passPhysicsOn(): boolean {
   return DECISION_FLAGS.PASS_PHYSICS && DECISION_FLAGS.BALL_3D;
 }
 
+/** Stage 10 (`aerial.md` -> "Stage 10"): FM's crosses and the contact in the air (needs the physical pass). */
+function fmAerialOn(): boolean {
+  return DECISION_FLAGS.FM_AERIAL && passPhysicsOn();
+}
+
 /** Three standard normals for a launch error (direction, speed, height). */
 function launchNormals(rng: () => number): [number, number, number] {
   const [a, b] = gaussianPair(rng);
@@ -3867,7 +4388,9 @@ function clearanceBall(
     lastPasserId: null,
   }, prevHolderId);
   if (st.pass) emitPassLaunched(player, st.pass);
-  return commitLooseBallChasers(st, player.id, toXp, toY, player.team, {
+  // Stage 10: the second ball is attacked where it comes down through head height.
+  const meet = fmAerialOn() && physics ? meetPoint(physics, FM_AERIAL.MEET_Z_YD, BALL_PHYSICS.GRAVITY) : null;
+  return commitLooseBallChasers(st, player.id, meet?.x ?? toXp, meet?.y ?? toY, player.team, {
     maxPerTeam: AERIAL_CONFIG.MAX_CHASERS_PER_TEAM,
     etaHorizon: AERIAL_CONFIG.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
@@ -4139,7 +4662,9 @@ export function startAerialBall(
   emitPassLaunched(holder, pass);
   // A set-piece delivery into the box: everyone who went up attacks it (`set-pieces-play.md`).
   const boxDelivery = kind === 'cross' && state.setPiece?.variant === 'box';
-  return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, toX, toY, holder.team, {
+  // Stage 10: the chasers attack the spot where the ball comes down through head height, to meet it in the air.
+  const meet = fmAerialOn() && physics ? meetPoint(physics, FM_AERIAL.MEET_Z_YD, BALL_PHYSICS.GRAVITY) : null;
+  return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, meet?.x ?? toX, meet?.y ?? toY, holder.team, {
     // A lofted pass to feet (stage 4b) is the receiver against his marker, not a crowd under the ball.
     maxPerTeam: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASERS : lofted ? FM_NUMBERS.LOFT_CHASERS : C.MAX_CHASERS_PER_TEAM,
     etaHorizon: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASE_ETA_HORIZON : C.CHASE_ETA_HORIZON,
@@ -4182,6 +4707,16 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
   const fmXg = DECISION_FLAGS.FM_XG ? shotXg(p, state.players, 'header') : null;
   const xg = fmXg ? fmXg.xg : computeXG(dist, openAngle, pressure) * AERIAL_CONFIG.HEADER_XG_MULT;
   if (fmXg?.fm) logShotXg(p, fmXg.fm);
+  // Stage 7: a physical header (from the head, heading as the skill).
+  if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
+    const shot = physicalShot(state, p, { technique: 'header', skill: Math.min(1, headingOf(p)) }, { xg, header: true });
+    if (shot) {
+      gameBus.emit('shot', { player: p.id, xg });
+      gameBus.emit('header', { player: p.id, xg });
+      debugLog('aerial', `${p.name} heads at goal (xG ${xg.toFixed(2)})`, { playerId: p.id, data: { xg, dist: Math.round(dist) } });
+      return { ...state, ballHolderId: p.id, pass: null, setPiece: null, shot };
+    }
+  }
   // Heading stands in for finishing in the aim spread.
   const aimAs: GamePlayer = {
     ...p,
@@ -4208,11 +4743,35 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
  * goal, else he controls it. Defending winner in his box or under challenge → clearance (behind for
  * a corner sometimes); uncontested elsewhere → he controls it. Nobody there → loose ball.
  */
-export function resolveAerialLanding(state: GameState, rng: () => number = matchRandom): TickResult {
+/** The contact found in flight (stage 10), handed to `resolveAerialLanding`. */
+export interface AerialContactAt {
+  point: { x: number; y: number };
+  z: number;
+  toucherId: number;
+  contestantIds: number[];
+  flightS: number;
+}
+
+/**
+ * Stage 10 (`aerial.md` -> "Stage 10"): the high ball met `hit` along its flight. The ball stops there (its height is the
+ * contact's); the contestants are the toucher and whoever reaches the same ball within `CONTEST_YD`; the rest is the
+ * landing resolution at the contact point.
+ */
+export function resolveAerialContact(s: GameState, hit: AerialContactHit, catchers: readonly AerialCatcher[], rng: () => number = matchRandom): TickResult {
+  const ball = s.ball!;
+  const st: GameState = { ...s, ball: { ...ball, ...hit.ball, elapsed: ball.elapsed + hit.at, metZ: hit.z } };
+  const contestants = contestantsOf(hit, catchers);
+  return resolveAerialLanding(st, rng, {
+    point: hit.point, z: hit.z, toucherId: hit.id, contestantIds: contestants.map(c => c.id), flightS: ball.elapsed + hit.at,
+  });
+}
+
+export function resolveAerialLanding(state: GameState, rng: () => number = matchRandom, contact?: AerialContactAt): TickResult {
   const C = AERIAL_CONFIG;
   const pass = state.pass!;
   const kind = pass.kind as 'cross' | 'long_ball' | 'clearance';
-  const point = { x: pass.toX, y: pass.toY };
+  const fm = fmAerialOn();
+  const point = contact ? { ...contact.point } : { x: pass.toX, y: pass.toY };
   const passer = state.players.find(p => p.id === pass.fromId);
   const passerTeam: TeamId = passer?.team ?? state.players.find(p => p.id === state.ballHolderId)?.team ?? 'A';
   const defTeam: TeamId = passerTeam === 'A' ? 'B' : 'A';
@@ -4225,20 +4784,44 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
 
   let s: GameState = { ...state, pass: null };
   const active = s.players.filter(p => p.id !== pass.fromId && !isPlayerInRecovery(p));
-  const near = active.filter(p => p.role !== 'GK' && dist(p) <= C.AERIAL_RADIUS);
+  // Stage 10: at a contact in flight only its contestants; a landing nobody met in flight is nobody's.
+  const inContest = (p: GamePlayer) => (contact ? contact.contestantIds.includes(p.id) : !fm && dist(p) <= C.AERIAL_RADIUS);
+  const near = active.filter(p => p.role !== 'GK' && inContest(p));
   const attackers = near.filter(p => p.team === passerTeam);
   const defenders = near.filter(p => p.team === defTeam);
+  const passerSide = s.players.find(p => p.team === passerTeam);
+  const attackGoalX = (passerSide?.attackDir ?? 1) === 1 ? PITCH_LENGTH : 0;
+  const contactZ = contact?.z ?? 0;
+  const inAir = contactZ > FM_AERIAL.AIR_Z_YD;
+  /** Stage 10: the contact event (who went for it, who won); with no contact (`winner` null) nobody met it. */
+  const reportContact = (winner: GamePlayer | null, goers: GamePlayer[]) => {
+    if (!fm) return;
+    gameBus.emit('aerialContact', {
+      kind, corner: pass.fromSetPiece === true && pass.setPieceVariant === 'box', passerTeam,
+      toucherId: winner?.id ?? null, toucherTeam: winner?.team ?? null, keeper: winner?.role === 'GK',
+      x: point.x, y: point.y, z: contactZ, air: winner !== null && inAir, contested: goers.length > 1,
+      flightS: contact?.flightS ?? 0,
+      contestants: goers.map(p => ({ id: p.id, team: p.team, line: headerLine(p.role), won: p.id === winner?.id })),
+    });
+    if (winner) {
+      debugLog('aerial', `${winner.name} meets the ${kind.replace('_', ' ')} at ${(contactZ / 1.0936).toFixed(1)} m${goers.length > 1 ? ` against ${goers.length - 1}` : ''}`, {
+        playerId: winner.id, data: { z: Math.round((contactZ / 1.0936) * 10) / 10, x: Math.round(point.x), y: Math.round(point.y) },
+      });
+    }
+  };
 
   // ── Keeper ────────────────────────────────────────────────────────────────
   const gk = active.find(p => p.team === defTeam && p.role === 'GK');
-  if (gk) {
+  // Stage 10: the keeper comes into it only when he reaches the ball in flight (a contestant).
+  if (gk && (!fm || (contact !== undefined && contact.contestantIds.includes(gk.id)))) {
     const gkGoalX = gk.attackDir === 1 ? 0 : PITCH_LENGTH;
     const dGk = dist(gk);
     const nearestOther = active.filter(p => p.id !== gk.id).reduce((m, p) => Math.min(m, dist(p)), Infinity);
     const inSmall = isInSmallBox(point.x, point.y, gkGoalX);
     // A defender near the ball and not beaten (goal-side or level) plays it instead (`defenderCovers`).
     const covered = defenderCovers(gk, point, active);
-    const comesNear = keeperComesFor(dGk, inSmall, dGk < nearestOther) && !covered;
+    // Stage 10: a keeper at the ball in flight goes for it with his hands.
+    const comesNear = fm || (keeperComesFor(dGk, inSmall, dGk < nearestOther) && !covered);
     // Beyond the small box, anywhere in the box: harder to catch, a miss drops loose (`Keeper.ts`).
     const wide = !comesNear && !inSmall && !covered && keeperComesWide(dGk, isWideClaimZone(point.x, point.y, gkGoalX), nearestOther);
     if (comesNear || wide) {
@@ -4252,6 +4835,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
       const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim) * (deep ? wideClaimFactor(depth) : 1);
       logWeather(s, 'gkClaim', `${gk.name}'s claim chance ${(chance * 100).toFixed(0)}%`, gk.id);
       const claimed = rng() < chance;
+      reportContact(gk, [gk, ...near]);
       gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance, x: point.x, y: point.y });
       debugLog('aerial', `${gk.name} comes for it — ${claimed ? 'claims' : 'punches'} (${(chance * 100).toFixed(0)}%)`, { playerId: gk.id, data: { chance } });
       if (claimed) {
@@ -4294,10 +4878,14 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
     }
     // A set-piece delivery: the defenders are set, goal-side of their man (`set-pieces-play.md`).
     const setPieceCross = pass.setPieceVariant === 'box' && kind === 'cross';
-    const { winnerId, probA } = resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_MULT : 1);
+    // Stage 10: FM's duel at the contact (jumping, standing still, goal-side) replaces the set defender's x 7.
+    const { winnerId, probA } = contact
+      ? resolveFmAerialDuel(a, d, attackGoalX, rng)
+      : resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_MULT : 1);
     winner = winnerId === a.id ? a : d;
     const loser = winner.id === a.id ? d : a;
     contested = true;
+    reportContact(winner, [a, d]);
     gameBus.emit('aerialDuel', {
       winnerId: winner.id, loserId: loser.id, x: point.x, y: point.y,
       probWinner: winner.id === a.id ? probA : 1 - probA,
@@ -4325,22 +4913,36 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
     }
     winner = s.players.find(p => p.id === winner!.id)!;
   } else if (near.length > 0) {
-    winner = near.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+    winner = contact ? (near.find(p => p.id === contact.toucherId) ?? near.reduce((a, b) => (dist(b) < dist(a) ? b : a)))
+      : near.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+    // An offside attacker meeting it alone (stage 10: met in flight) is flagged like a challenger.
+    if (contact && winner.team === passerTeam && (pass.aerialOffsideIds ?? []).includes(winner.id)) {
+      resolved(winner.id, false, 'offside');
+      return done(aerialOffsideFreeKick(s, winner, { x: winner.x, y: winner.y }, pass.offsideLineX));
+    }
+    reportContact(winner, [winner]);
   }
 
   // ── Nobody reached it: the ball drops and runs on ─────────────────────────
   if (!winner) {
+    reportContact(null, []);
     const len = pass.distance > 0.001 ? pass.distance : 1;
     const dirX = passer ? (point.x - passer.x) / len : 0;
     const dirY = passer ? (point.y - passer.y) / len : 0;
     const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
+    // Stage 10: the physical ball lands and bounces on at its own pace.
+    const phys = fm && s.ball && s.ball.phase === 'pass' ? s.ball : null;
+    if (phys) {
+      point.x = Math.max(0.5, Math.min(PITCH_LENGTH - 0.5, phys.x));
+      point.y = Math.max(0.5, Math.min(PITCH_WIDTH - 0.5, phys.y));
+    }
     debugLog('aerial', `High ball lands untouched at (${point.x.toFixed(1)}, ${point.y.toFixed(1)})`, { playerId: pass.fromId });
     logWeather(s, 'looseSpeed', 'Loose ball off the high ball', pass.fromId);
     logWeather(s, 'looseDecel', 'Loose ball off the high ball', pass.fromId);
     return done({
       ...s,
       looseBall: {
-        x: point.x, y: point.y, vx: dirX * v, vy: dirY * v,
+        x: point.x, y: point.y, vx: phys ? phys.vx : dirX * v, vy: phys ? phys.vy : dirY * v,
         startTime: s.matchTime,
         fromPasserId: pass.fromId,
         fromTeamLastTouch: passerTeam,
@@ -4405,7 +5007,8 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
     s = { ...s, players: s.players.map(p => (p.id === winner!.id ? { ...p, x: point.x, y: point.y, targetPosition: { ...point } } : p)) };
     const w = s.players.find(p => p.id === winner!.id)!;
     const angle = computeOpenAngle(point.x, point.y, goalX);
-    if (Math.abs(goalX - point.x) <= C.HEADER_RANGE && angle >= C.HEADER_MIN_ANGLE) {
+    // Stage 10: a header needs the ball in the air (met above 1.2 m); lower, he plays it on the ground.
+    if (Math.abs(goalX - point.x) <= C.HEADER_RANGE && angle >= C.HEADER_MIN_ANGLE && (!contact || inAir)) {
       resolved(w.id, true, 'header');
       return done(startHeader({ ...s, ballHolderId: w.id, lastPasserId: pass.fromId }, w.id,
         pass.setPieceVariant === 'box' && kind === 'cross' ? SET_PIECE_CONFIG.SET_PIECE_HEADER_PRESSURE_MULT : 1));
@@ -4842,6 +5445,25 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     });
     if (changed) s = { ...s, players };
   }
+  // ── Mind off the ball and in defence (stage 16, `DefensiveMind.ts`) ──────
+  // Every outfield player without the ball rolls decisions, anticipation, concentration and aggression per window; the
+  // defensive and off-ball evaluators read the rolls as modifiers on their intent scores.
+  if (DECISION_FLAGS.DEFENSIVE_MIND && isLivePhase(s.matchPhase)) {
+    let changed = false;
+    const players = s.players.map(p => {
+      if (p.role === 'GK' || p.id === holder.id) return p.mind ? (changed = true, { ...p, mind: undefined }) : p;
+      const mind = refreshMindRolls(p, s.matchTime, clockScaleOf(s));
+      if (mind === p.mind) return p;
+      changed = true;
+      if (mind.lapse && !p.mind?.lapse) {
+        const kind = p.team === attackingTeam ? 'offball' : 'defence';
+        gameBus.emit('mindLapse', { playerId: p.id, team: p.team, kind });
+        debugLog('mind', `${p.name} loses concentration (${kind})`, { playerId: p.id, data: { conc: mind.conc, energy: Math.round(p.energy) } });
+      }
+      return { ...p, mind };
+    });
+    if (changed) s = { ...s, players };
+  }
   const lineFor = (p: GamePlayer): number | null => (DECISION_FLAGS.OFFSIDE_RUNS && p.team === attackingTeam && p.lineRead
     ? perceivedLine(p.lineRead, p.attackDir, s.matchTime)
     : offsideLine);
@@ -5133,6 +5755,9 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     const movedPlayers = s.players.map(player => {
       if (player.id === s.ballHolderId && !looseKeeper(s, player)) return player;
 
+      // Stage 7: the keeper and the planned blockers of a physical shot are moved by the shot itself (`tickPhysicalShot`).
+      if (s.shot?.physics && player.team !== teamOfId(s, s.shot.shooterId)
+        && (player.role === 'GK' || s.shot.physics.blocks.some(r => r.id === player.id))) return player;
       // GK override: sprint to the ball's path (an advanced keeper does not run back to the line)
       if (s.shot !== null && player.role === 'GK') {
         const shooter = s.players.find(p => p.id === s.shot!.shooterId);
@@ -5342,6 +5967,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
 
   // ── Shot in flight ─────────────────────────────────────────────────────────
+  if (s.shot?.physics) return tickPhysicalShot(s, dt);
   if (s.shot) {
     let flying = s.shot;
     const newT = flying.t + dt * SHOT_SPEED;
@@ -5372,7 +5998,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       }
       // A save ends where the ball met the keeper, so the pitch effects draw there and not on the goal line behind him.
       const endAt = savedByKeeper ? shotInterceptPoint(defendingGK!, flying) : { x: flying.toX, y: flying.toY };
-      gameBus.emit('shotResolved', { player: shooter.id, xg: flying.xg, goalChance, isGoal, inPosts, fromX: flying.fromX, fromY: flying.fromY, toX: endAt.x, toY: endAt.y });
+      gameBus.emit('shotResolved', { player: shooter.id, xg: flying.xg, danger: goalChance, isGoal, inPosts, fromX: flying.fromX, fromY: flying.fromY, toX: endAt.x, toY: endAt.y });
 
       if (inPosts && isGoal) {
         const newScore = { ...s.score, [shooter.team]: s.score[shooter.team] + 1 };
@@ -5619,8 +6245,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
 
     // High balls fire immediately too (`aerial.md`).
     if (holderDecision?.type === 'cross') {
+      // Stage 10: an open-play cross goes to a point of FM's target zones, drawn at the kick, with no named receiver.
+      const zone = fmAerialOn() && !s.setPiece ? drawCrossZone(holder, matchRandom) : null;
+      if (zone) debugLog('aerial', `${holder.name} aims his cross at the ${zone.kind.replace('_', ' ')} zone`, { playerId: holder.id, data: { x: Math.round(zone.x), y: Math.round(zone.y) } });
       return {
-        state: startAerialBall(s, 'cross', { x: holderDecision.toX, y: holderDecision.toY }, holderDecision.intendedRunnerId),
+        state: startAerialBall(s, 'cross', zone ?? { x: holderDecision.toX, y: holderDecision.toY }, zone ? null : holderDecision.intendedRunnerId),
         passCompleted: false, tackled: false, goalScored: null,
       };
     }
@@ -5955,6 +6584,15 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
 
   const newT = physArrived ? 1 : activePass.t + dt * distanceSpeed;
+  // Stage 10 (`aerial.md`): a high ball is met where it first comes within a player's reach along its flight.
+  if (aerialPass && fmAerialOn() && s.ball && s.ball.phase === 'pass' && s.ball.free && s.ball.profile === 'air') {
+    // The passing side's keeper never comes for his own team's ball.
+    const pTeam = passerTeamOf(s, activePass);
+    const catchers = aerialCatchers(s.players.filter(p => !(p.role === 'GK' && p.team === pTeam)), activePass.fromId, isPlayerInRecovery);
+    const found = findAerialContact(s.ball, ballEnv(s.weather), dt, s.ball.elapsed, catchers);
+    if (found.hit) return resolveAerialContact(s, found.hit, catchers);
+    if (newT >= 1) return resolveAerialLanding({ ...s, ball: { ...s.ball, ...found.ball } });
+  }
   if (newT >= 1 && aerialPass) {
     return resolveAerialLanding(s);
   }

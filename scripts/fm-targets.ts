@@ -14,7 +14,7 @@ import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
   BALL_GROUPS, BAND_LABELS, FM_FOULS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
-  FLIGHT_LABELS, FM_FLIGHT_S, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
+  FLIGHT_LABELS, FM_FLIGHT_S, FM_GOAL_BY_DIST, FM_SHOT_DIST_SHARE, SHOT_M_LABELS, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
   emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
@@ -73,6 +73,7 @@ for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShot
   console.log(`  fouls won by third own / mid / final ${f1(p3("foulsWonOwnThird"))} / ${f1(p3("foulsWonMidThird"))} / ${f1(p3("foulsWonFinalThird"))}% (FM ${FM_FOULS.thirds.join(" / ")}%)`);
   console.log(`  on the ball carrying / receiving / holding ${f1(p3("foulsWonCarrying"))} / ${f1(p3("foulsWonReceiving"))} / ${f1(p3("foulsWonHolding"))}% (FM ${FM_FOULS.carry} / ${FM_FOULS.reception} / ${FM_FOULS.hold}%)`);
   console.log(`  contact fouls ${f2(g("contactFouls") / n)} per match · line misreads ${f1(g("lineMisreads") / n)} per match`);
+  console.log(`  mind (stage 16): lapses defending ${f1(g("mindLapsesDefence") / n)} · off the ball ${f1(g("mindLapsesOffBall") / n)} · intents shifted ${f1(g("mindDefenseShifts") / n)} · marks dropped ${f1(g("mindMarkDrops") / n)} per match`);
   const fmS = (x: number) => (x / FM_FOULS.matchSeconds).toFixed(4);
   console.log(`  per live s: fouls ${perS(g("fouls")).toFixed(4)} (FM ${fmS(FM_FOULS.foulsPerMatch)}) · offsides ${perS(g("offsides")).toFixed(4)} (FM ${fmS(FM_FOULS.offsidesPerMatch)}) · yellows ${perS(g("yellowCards")).toFixed(4)} (FM ${fmS(FM_FOULS.yellowsPerMatch)})`);
 }
@@ -125,6 +126,22 @@ console.log("\n── Interception (stage 5; R7 loss split, R9 interceptions) �
   console.log(`  interceptions ${f1(ints)} / match (FM 59) · ${f2((60 * ints) / Math.max(1, liveS))} per live min (FM ~${f2((60 * 59) / (978 / 0.21))}, FM live time from 978 passes at 0.21 / s)`);
 }
 
+console.log("\n── Crosses and aerial play (stage 10; R8 §5–6, R9 §3–4) ──");
+{
+  const w = (k: string) => world[k] ?? 0;
+  const ac = w("airCrosses");
+  const sh = (k: string) => f1((100 * w(k)) / Math.max(1, ac));
+  console.log(`  crosses ${f1(w("crosses") / n)} / match (FM 64), completed ${f1((100 * w("crossesCompleted")) / Math.max(1, w("crosses")))}% (FM 19)`);
+  if (ac > 0) {
+    console.log(`  open-play crosses by first contact (n ${ac}): met in the air ${sh("airCrossMetAir")}% (FM 82) · lower ${sh("airCrossMetLow")}% · not met ${sh("airCrossUnmet")}%`);
+    console.log(`  first contact: defence ${sh("airCrossDef")}% (FM clears 47) · keeper ${sh("airCrossKeeper")}% (FM 19) · attack ${sh("airCrossOwn")}% · contact height ${f2(w("airCrossZSum") / Math.max(1, ac - w("airCrossUnmet")) / 1.0936)} m (FM median 1.8)`);
+  }
+  const won = w("headWonDef") + w("headWonMid") + w("headWonFwd");
+  const pctOf = (a: string, b: string) => f1((100 * w(a)) / Math.max(1, w(b)));
+  console.log(`  headers won ${f1(won / n)} / match (FM 27) · defenders win ${pctOf("headWonDef", "headAttDef")}% (FM 90–100) · midfielders ${pctOf("headWonMid", "headAttMid")}% · forwards ${pctOf("headWonFwd", "headAttFwd")}% (FM wide / attacking 10–30)`);
+  console.log(`  aerial duels ${f1(w("aerialDuels") / n / 2)} / match · high balls (peak > 1.2 m) ${f1(w("highBalls") / n)} (FM ~150 lofted) · long balls ${f1(w("longBalls") / n)} (FM ~90), kept ${f1((100 * w("longBallsCompleted")) / Math.max(1, w("longBalls")))}% (FM 56)`);
+}
+
 console.log("\n── Holder decisions ──");
 const mix = (r: Record<string, number>) => { const t = HOLDER_CATS.reduce((a, k) => a + r[k]!, 0) || 1; return HOLDER_CATS.map(k => `${k} ${f1((100 * r[k]!) / t)}`).join(" · "); };
 const fmMix = (r: Partial<Record<string, number>>) => Object.entries(r).map(([k, v]) => `${k} ${v}`).join(" · ");
@@ -171,6 +188,27 @@ for (const l of LINES) {
 console.log("  FM step DEF 4.4 · MID 6 · FWD 7 yd (target − position: in 9.8/7.7/9.8, out 5.5/7.7/10.9); hold default DEF 19 · MID 10 · FWD 12 s, short ~5 s");
 console.log("\n── Shots (distance to the goal mouth, yd) ──");
 console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) / Math.max(1, fm.shots))}%`).join(" · ") + "   FM: none beyond ~33 yd");
+// Stage 7 (`shot-and-save.md`): the shot by its trajectory — where shots end, the keeper, the techniques.
+{
+  const c = counts;
+  const sh = Math.max(1, c.shots);
+  const onT = Math.max(1, c.shotsOnTarget);
+  console.log("\n── The shot by its trajectory (stage 7; R9 §1–2, R8 §2.1) ──");
+  console.log(`  of shots: goal ${f1((100 * c.goals) / sh)}% (FM 7) · on target ${f1((100 * c.shotsOnTarget) / sh)}% (FM 35) · blocked ${f1((100 * c.shotsBlocked) / sh)}% (FM 38) · off target ${f1((100 * (c.shotsOffTarget ?? 0)) / sh)}% (FM ~27) · woodwork ${f1((100 * (c.shotsWoodwork ?? 0)) / sh)}% · deflected on ${f1((100 * (c.shotsDeflected ?? 0)) / sh)}%`);
+  console.log(`  saved ${f1((100 * (c.shotsSaved ?? 0)) / onT)}% of on target (FM 80) · keeper saves ${f2((c.saves ?? 0) / n)} per match: good ${f1((100 * (c.savesGood ?? 0)) / Math.max(1, c.saves ?? 0))}% · difficult ${f1((100 * (c.savesDifficult ?? 0)) / Math.max(1, c.saves ?? 0))}%`);
+  const tech = ["Power", "Placed", "Lob", "Chip", "Volley", "HeaderLaunch", "FreeKick"] as const;
+  const launched = Math.max(1, c.shotLaunchN ?? 0);
+  console.log("  technique " + tech.map(k => `${k === "HeaderLaunch" ? "header" : k.toLowerCase()} ${f1((100 * ((c as unknown as Record<string, number>)[`shot${k}`] ?? 0)) / launched)}%`).join(" · ") + ` · launch ${f1((c.shotSpeedSum ?? 0) / launched)} m/s`);
+  const ends = fm.shotEnds;
+  console.log("  by distance (m): " + SHOT_M_LABELS.map((l, i) => {
+    const row = ends[i]!; const t = row.reduce((a, b) => a + b, 0);
+    return `${l} n ${t} goal ${t ? f1((100 * row[0]!) / t) : "—"}% (FM ${FM_GOAL_BY_DIST[i]}) blk ${t ? f1((100 * row[2]!) / t) : "—"}%`;
+  }).join(" · "));
+  // Stage 9 (`holder-choice.md` → "Stage 9"): where the shots come from.
+  const endT = ends.reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0) || 1;
+  console.log("  shot share by distance (m): " + SHOT_M_LABELS.map((l, i) => `${l} ${f1((100 * ends[i]!.reduce((a, b) => a + b, 0)) / endT)}% (FM ${FM_SHOT_DIST_SHARE[i]})`).join(" · "));
+  console.log(`  struck from outside the box ${f1((100 * (c.shotsOutsideBox ?? 0)) / launched)}% (FM 46 R9 · 27 R8) · mean distance ${f1((c.shotDistSumM ?? 0) / launched)} m (FM median 14.9) · low vz ≤ 3 m/s ${f1((100 * (c.shotsLowLaunch ?? 0)) / launched)}% (FM 28)`);
+}
 console.log("\n── World / match ──");
 console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && !k.startsWith("holder") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
 // Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.

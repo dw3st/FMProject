@@ -42,6 +42,7 @@ const COLS: Col[] = [
   { label: "RC",   titleKey: "stats.headers.RC",    value: (s) => s.redCards },
   { label: "OFF",  titleKey: "stats.headers.OFF",   value: (s) => s.offsides },
   { label: "MR",   titleKey: "stats.headers.MR",    value: (s) => s.lineMisreads },
+  { label: "LP",   titleKey: "stats.headers.LP",    value: (s) => s.mindLapsesDefence + s.mindLapsesOffBall },
   { label: "FW",   titleKey: "stats.headers.FW",    value: (s) => s.foulsWonOwnThird + s.foulsWonMidThird + s.foulsWonFinalThird },
   { label: "PEN",  titleKey: "stats.headers.PEN",   value: (s) => s.penaltyGoals },
   { label: "CR",   titleKey: "stats.headers.CR",    value: (s) => s.crosses },

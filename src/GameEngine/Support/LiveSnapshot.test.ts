@@ -55,6 +55,19 @@ function result(s: GameState) {
   };
 }
 
+/** Path and values of the first field that differs, or null. */
+function firstDiff(a: unknown, b: unknown, path = ""): string | null {
+  if (a === null || b === null || typeof a !== "object" || typeof b !== "object") {
+    return JSON.stringify(a) === JSON.stringify(b) ? null : `${path}: ${JSON.stringify(a)?.slice(0, 80)} vs ${JSON.stringify(b)?.slice(0, 80)}`;
+  }
+  const ra = a as Record<string, unknown>, rb = b as Record<string, unknown>;
+  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
+    const d = firstDiff(ra[k], rb[k], `${path}.${k}`);
+    if (d) return d;
+  }
+  return null;
+}
+
 describe("mid-match snapshot (stage 19)", () => {
   test("a restored snapshot plays the rest of the match exactly as the match it was taken from", () => {
     const straight = result(run(fresh(9191)));
@@ -65,6 +78,22 @@ describe("mid-match snapshot (stage 19)", () => {
     run(s, 400);
     s = restoreLiveSnapshot(structuredClone(snap));
     expect(result(run(s))).toEqual(straight);
+  }, 120_000);
+
+  test("restored after another future, the snapshot matches tick by tick (state and counters)", () => {
+    // The behavioural half of the memory guard (`engineMemoryGuard.test.ts`): any engine memory left out of the
+    // snapshot shows up as the first tick where the two runs part, with the field that differs.
+    let s = run(fresh(9191), 700);
+    const snap = structuredClone(captureLiveSnapshot(s));
+    const ref: unknown[] = [];
+    for (let i = 0; i < 300; i++) { s = tickState(s, SIM_STEP).state; ref.push(structuredClone(captureLiveSnapshot(s))); }
+    run(s, 400);
+    let r = restoreLiveSnapshot(structuredClone(snap));
+    for (let i = 0; i < 300; i++) {
+      r = tickState(r, SIM_STEP).state;
+      const d = firstDiff(ref[i], structuredClone(captureLiveSnapshot(r)));
+      if (d) throw new Error(`tick ${i}: ${d}`);
+    }
   }, 120_000);
 
   test("the same order at the same minute gives the same match (invalidation)", () => {

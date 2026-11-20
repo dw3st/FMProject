@@ -20,7 +20,7 @@ import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, testPhysicalShot, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import { counterStyle, pickMarkTarget, pickMarkerSlot } from '@/Domain/study/study';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
@@ -473,6 +473,70 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'shot-blocked',
+    name:        'Shot — blocked on its line',
+    description: 'Stage 7 (`shot-and-save.md`): a power shot from 17 yd with a centre-back 3 yd in front of the shooter on the line to goal. No block dice: the defender reacts after 0.15 s and lunges at the path; if the ball passes within his reach (body + leg by tackling, up to 2.2 yd high) he touches it, then controls, deflects it on toward goal or it rebounds loose. Debug "shot" shows the launch (technique, speed, aim, error) and the planned blockers.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   97, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  100, 37.3, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  106, 33, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-long-range',
+    name:        'Shot — from 28 yd',
+    description: 'Stage 7: a midfielder strikes from 28 yd with nobody in front of him. The ball flies by its 3D physics (launch error with the FM shot base 105); the keeper reacts by reflexes, dives by diving and stops it by handling, holding, parrying wide or spilling it in front. Watch the "keeper" debug line for the save grade.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CM',   87, 40, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  100, 33, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  104, 30, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-lob',
+    name:        'Shot — lob over an advanced keeper',
+    description: 'Stage 7: the keeper is 13 yd off his line and the striker 27 yd out lifts it over him (a lob, `cobertura`): the flight is solved to clear the hands of the keeper where he stands and drop under the bar. He backpedals; whether he reaches it is his reaction, dive speed and hands against the ball.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   88, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   95, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  102, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'lob');
+    },
+  },
+
+  {
+    id:          'long-shot-block',
+    name:        'Long shot through a defender (stage 9)',
+    description: 'Stage 9 (`holder-choice.md` → "Stage 9"): a midfielder 25 m out, central, a centre-back 6 yd in front of him on the line to goal and the striker marked. Nothing is forced: FM\'s shot gate offers the shot (within 30 m, × 0.667 outside the box) valued from his own geometry, so the defender in the way does not stop him shooting; the block, if any, is physical in flight. Decision Scores → Shoot shows the gate line (factor, distance, clean xG); the debug "shot" line lists the planned blockers.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CAM',  88, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  103, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   94, 37.5, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  104, 41, DEFENDER),
+        makePlayer('Mensah',   'B', 'CDM',  85, 31, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'keeper-shot-over',
     name:        'Keeper — shot over an advanced keeper',
     description: 'The keeper is 10 yd off his line when the striker shoots from 20 yd. He goes to the path of the ball, not back to the line: a save stops the ball where he is, and a shot he does not reach goes in (`Keeper.ts` → `ballMeetsKeeper`).',
@@ -894,6 +958,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-cross-byline',
+    name:        'Aerial — FM cross from the byline (stage 10)',
+    description: 'LW 9 yds from the byline, wide, with the ST and CAM arriving against two set CBs and the keeper (`aerial.md` → "Stage 10"). Toggle "Aerial": the seven FM target zones, the ring sized by the share of crosses aimed there (six-yard box 64 %, penalty-spot band 28 %, edge 8 %); the target is drawn from them at the kick. In flight the ball is met where it first comes within a player’s reach (gold marker: met in the air above 1.2 m, white: lower, red: nobody met it), with the contest ring. Watch the "aerial" debug log for the zone, the contact height and the duel.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW', 106, 6,  WINGER),     // crosser at the byline zone
+        makePlayer('Santos',   'A', 'ST', 103, 38, STRIKER),    // attacks the six-yard box
+        makePlayer('Rossi',    'A', 'CAM', 99, 44, MIDFIELDER), // arrives at the penalty-spot band
+        makePlayer('Silva',    'B', 'CB', 109, 35, DEFENDER),   // set, goal-side
+        makePlayer('Okeke',    'B', 'CB', 108, 41, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'switch-play-wide',
     name:        'Switch Play — Wide Hold',
     description: 'LW holds wide on the near touchline with the near side congested and the far flank open. Override intent to "switch_play" and toggle "Switch" to see the far-flank carry lane + far-side receivers.',
@@ -1059,6 +1140,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const low = (p: GamePlayer): GamePlayer => p.team !== 'A' ? p
         : { ...p, mental: { decisions: 0.15, composure: 0.15, flair: 0.2, anticipation: 0.15, consistency: 0.1, mood: -0.5 } };
       return { ...tired, players: tired.players.map(low), benchA: tired.benchA.map(low) };
+    },
+  },
+
+  {
+    id:          'mind-lapse',
+    name:        '11v11 — Distracted defence (concentration lapses)',
+    description: 'Team B defends at 45 energy with concentration 0.05, anticipation 0.1, consistency 0.1 and a bad mood; Team A plays sharp (stage 16, `DefensiveMind.ts`). Below the form window and tired, the side concentration rolls lapse often: the defender drops his mark (track_mark → hold_shape) and holds back the press for the window. Debug log `mind`; the Mind block of a selected player shows his rolls; StatsPanel column LP counts the lapses.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = applyFatigue(base, 'B', 45, FITNESS.LOAD_HIGH);
+      const mind = (p: GamePlayer): GamePlayer => {
+        if (p.team === 'A') return { ...p, mental: { decisions: 0.7, composure: 0.7, flair: 0.6, anticipation: 0.7, consistency: 0.8, mood: 0.4, concentration: 0.75, aggression: 0.5 } };
+        return { ...p, mental: { decisions: 0.15, composure: 0.2, flair: 0.2, anticipation: 0.1, consistency: 0.1, mood: -0.5, concentration: 0.05, aggression: 0.5 } };
+      };
+      return { ...tired, players: tired.players.map(mind), benchA: tired.benchA.map(mind), benchB: tired.benchB.map(mind) };
     },
   },
 

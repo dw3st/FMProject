@@ -41,8 +41,11 @@ describe("holder moves", () => {
     ["move-chip", "chip", "CHIP"], ["move-round-keeper", "round_keeper", "ROUND_KEEPER"],
   ] as const) {
     test(`${id}: ${move}, gone with ${flag} off`, () => {
-      expect(firstMove(id)).toBe(move);
-      expect(firstMove(id, { [flag]: false })).not.toBe(move);
+      // Stage 9's kick multiplier (`LONG_SHOTS`, uncalibrated until stage 21) lets the plain shot beat the keeper moves;
+      // the moves themselves are checked with the stage-8 shot value.
+      const base = { LONG_SHOTS: false };
+      expect(firstMove(id, base)).toBe(move);
+      expect(firstMove(id, { ...base, [flag]: false })).not.toBe(move);
     });
   }
 });

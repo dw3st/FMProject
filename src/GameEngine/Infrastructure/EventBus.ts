@@ -64,7 +64,25 @@ export interface GameEvents {
   /** `fromX/fromY` = shot point (the spot for a penalty), `goalX` = attacked goal line, `minute` = `matchMinute` (data only, awards). */
   goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; fromX: number; fromY: number; goalX: number; minute: number };
   /** Emitted when a shot resolves (goal or save/miss), with full probability breakdown. */
-  shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean; fromX: number; fromY: number; toX: number; toY: number };
+  /**
+   * `danger` 0..1: how close it was to going in (stage 7: 1 for a goal, 1 − the stop chance for a save, near misses by
+   * how wide; the old dice path: its goal chance). `outcome` (stage 7): what the ball did.
+   */
+  shotResolved: {
+    player: number; xg: number; danger: number; isGoal: boolean; inPosts: boolean; fromX: number; fromY: number; toX: number; toY: number;
+    outcome?: 'goal' | 'saved' | 'wide' | 'over' | 'woodwork';
+  };
+  /** Stage 7 (`shot-and-save.md`): a shot struck — technique, launch speed, aim, error drawn, planned blockers. */
+  shotLaunched: {
+    player: number; team: TeamId; technique: import('@/GameEngine/types').ShotTechnique; speedMs: number; vzMs: number;
+    aimY: number; aimZ: number; errDeg: number; distance: number; onTarget: boolean; blockers: number;
+    /** Stage 9: distance (m) from the strike point to the goal centre, and struck from outside the box. */
+    fromM?: number; outsideBox?: boolean;
+  };
+  /** Stage 7: a defender in the way sent the shot on (it keeps flying). */
+  shotDeflected: { player: number; blockerId: number };
+  /** Stage 7: the shot hit the post or the bar. */
+  shotWoodwork: { player: number; team: TeamId; part: 'post' | 'bar' };
 
   // ── Pass events ──────────────────────────────────────────────────────────
   /** Emitted when the holder starts a pass. */
@@ -133,6 +151,24 @@ export interface GameEvents {
   };
   /** Two players contested a high ball in the air (best contestant of each team). */
   aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number; kind: 'cross' | 'long_ball' | 'clearance' };
+  /**
+   * Stage 10 (`aerial.md` → "Stage 10"): the first contact with a high ball along its flight, at height `z` (yd),
+   * `air` above FM's 1.2 m; `toucherId` null when nobody met it before it landed. `contestants`: who went for it (the
+   * best of each team, or the toucher alone) and who won — the header counts by position.
+   */
+  aerialContact: {
+    kind: 'cross' | 'long_ball' | 'clearance';
+    corner: boolean;
+    passerTeam: TeamId;
+    toucherId: number | null;
+    toucherTeam: TeamId | null;
+    keeper: boolean;
+    x: number; y: number; z: number;
+    air: boolean;
+    contested: boolean;
+    flightS: number;
+    contestants: Array<{ id: number; team: TeamId; line: 'GK' | 'DEF' | 'MID' | 'FWD'; won: boolean }>;
+  };
   /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
   /** `x`/`y`: where the ball drops (the drawing has the keeper reach it). */
   gkClaim: { keeperId: number; claimed: boolean; chance: number; x?: number; y?: number };
@@ -148,7 +184,7 @@ export interface GameEvents {
    */
   playerMoved: { moves: Array<[number, number]>; sprints: number[] };
   /** What a save did (12.10): held, spilled loose in front of goal, or parried behind for a corner. */
-  keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry" };
+  keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry"; grade?: "routine" | "good" | "difficult" };
   /** A rehearsed routine was called for a corner / crossed free kick (`set-pieces-play.md`). */
   setPieceRoutine: { team: 'A' | 'B'; takerId: number; kind: 'corner' | 'free_kick'; target: string; attackers: number };
   /** A header at goal (also emitted as a `shot`). */
@@ -204,6 +240,10 @@ export interface GameEvents {
   };
   /** Stage 13 (`OffsideRuns.ts`): an attacker starts a spell of reading the offside line wrongly (past it) or a lapse. */
   lineMisread: { playerId: number; team: TeamId; err: number; lapse: boolean };
+  /** Stage 16 (`DefensiveMind.ts`): a new mind window is a concentration lapse (defending or off the ball). */
+  mindLapse: { playerId: number; team: TeamId; kind: 'defence' | 'offball' };
+  /** Stage 16: the mind changed a defender's intent (lapse = dropped his mark / held back; else noise or aggression). */
+  mindDefenseShift: { playerId: number; team: TeamId; from: string; to: string; lapse: boolean };
   /** Stage 13: a contact foul on (or, rarely, by) the ball holder, without a tackle. Emitted after `foul`. */
   contactFoul: { offenderId: number; fouledId: number; team: TeamId; context: import('@/GameEngine/Domain/Fouls').FoulContextKind };
   /** A card was shown. A second yellow emits the yellow and then a red with `secondYellow: true`. */
@@ -223,8 +263,8 @@ export interface GameEvents {
     playerId: number;
     playerName: string;
     kind: 'corner' | 'free_kick';
-    chosen: 'near_post' | 'penalty_spot' | 'far_post' | 'short';
-    options: Array<{ kind: 'near_post' | 'penalty_spot' | 'far_post' | 'short'; x: number; y: number; raw: number; attackers: number; defenders: number }>;
+    chosen: import('@/GameEngine/Domain/Aerial').CrossTargetKind | 'short';
+    options: Array<{ kind: import('@/GameEngine/Domain/Aerial').CrossTargetKind | 'short'; x: number; y: number; raw: number; attackers: number; defenders: number }>;
   };
   /** A penalty was awarded to `team` (the fouled side). */
   penaltyAwarded: { team: TeamId; takerId: number; offenderId: number; minute: number };
@@ -260,7 +300,8 @@ export interface GameEvents {
    */
   holderDecision:    DecisionTelemetryEvent;
   /** One of the holder's extra moves (`HolderMoves.ts`): started, and for shield / chip / round the outcome. */
-  holderMove: { playerId: number; team: TeamId; move: 'shield' | 'cut_inside' | 'lay_off' | 'chip' | 'round_keeper'; phase: 'start' | 'success' | 'fail' };
+  /** `counted`: a physical chip's goal (stage 7) — its attempt was already counted at the strike. */
+  holderMove: { playerId: number; team: TeamId; move: 'shield' | 'cut_inside' | 'lay_off' | 'chip' | 'round_keeper'; phase: 'start' | 'success' | 'fail'; counted?: true };
   holderMind:        HolderMindEvent;
   /** Stage 4 (`movement.md`): the ball ran loose off a body or a bad touch (`playerId` = who touched it last). */
   ballRunsLoose: { playerId: number; team: TeamId; cause: LooseBallCause; x: number; y: number; vx: number; vy: number };
@@ -310,6 +351,8 @@ export interface GameEvents {
         score:       number;
         /** Stage 6 (`xg.md`): the FM xG model of the shot (with `FM_XG`). */
         fm?: { model: string; features: Record<string, number>; availableM: number; coveredM: number; inTriangle: number };
+        /** Stage 9: the FM shot gate (factor null = beyond 30 m) and the clean xG the value reads. */
+        gate?: { factor: number | null; cleanXg: number; distM: number };
       };
       pass: {
         toId:               number | null;
@@ -451,7 +494,7 @@ export interface GameEvents {
     playerId:   number;
     playerName: string;
     targets: Array<{
-      kind:      'near_post' | 'penalty_spot' | 'far_post';
+      kind:      import('@/GameEngine/Domain/Aerial').CrossTargetKind;
       x:         number;
       y:         number;
       attackers: number;
@@ -460,6 +503,8 @@ export interface GameEvents {
       gkClaim:   boolean;
       raw:       number;
       score:     number;
+      /** Stage 10: FM's share of crosses aimed at this zone (the target is drawn by it). */
+      weight?:   number;
     }>;
   };
 

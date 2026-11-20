@@ -24,7 +24,7 @@ export interface DecisionFlags {
   SECOND_PRESSER: boolean;
   /** Positioning target lags the shape anchor by a discipline τ (§4). */
   DISCIPLINE_LAG: boolean;
-  /** Consistency caps stacked bonuses (§7 phase 5). */
+  /** Consistency caps the stacked attribute modifiers of the day (§7 phase 5; stage 16, `Domain/ConsistencyCap.ts`). */
   CONSISTENCY_CAP: boolean;
   /** Holder moves (phase 3, `Domain/HolderMoves.ts`): shield / turn with the back to goal. */
   SHIELD: boolean;
@@ -96,6 +96,20 @@ export interface DecisionFlags {
   ACTION_HOLD: boolean;
   /** Stage 15: runners on the last defender's shoulder go on the pass (or early, a mistimed run). */
   SHOULDER_RUNS: boolean;
+  /** Stage 7 (`shot-and-save.md` → "Stage 7"): the shot is a physical launch (aim, FM's error with base 105) and the
+   *  goal, save, block or miss come from the ball against the keeper and the defenders, no goal dice (needs `BALL_3D`). */
+  SHOT_PHYSICS: boolean;
+  /** Stage 9 (`holder-choice.md` → "Stage 9"): FM's shot gate — a shot candidate within 30 m of the goal centre, × 0.75
+   *  in the box and × 0.667 outside; valued from the shooter's own geometry (the blockers are physical, stage 7), so a
+   *  shot is offered with people in front; the chip only over a keeper really off his line. */
+  LONG_SHOTS: boolean;
+  /** Stage 16 (`decisions.md` → "Stage 16"): the mental rolls off the ball and in defence — concentration (marking
+   *  lapses), aggression (press, step in), anticipation (reads the mark's run), decisions (noise on the intent scores). */
+  DEFENSIVE_MIND: boolean;
+  /** Stage 10 (`aerial.md` → "Stage 10"): FM's crosses (from the byline, drawn into FM's target zones) and aerial play
+   *  (the first contact along the 3D flight, contested at the contact; the jump, standing still and being goal-side
+   *  win it); high balls nobody meets drop loose. */
+  FM_AERIAL: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -105,7 +119,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   ANTICIPATION_PRESS: true,
   SECOND_PRESSER: true,
   DISCIPLINE_LAG: false,
-  CONSISTENCY_CAP: false,
+  CONSISTENCY_CAP: true,
   SHIELD: true,
   CUT_INSIDE: true,
   LAY_OFF: true,
@@ -137,6 +151,10 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   PASS_SHADOW: true,
   ACTION_HOLD: true,
   SHOULDER_RUNS: true,
+  SHOT_PHYSICS: true,
+  LONG_SHOTS: true,
+  DEFENSIVE_MIND: true,
+  FM_AERIAL: true,
 };
 
 /**

@@ -74,6 +74,7 @@ import { interceptReachOf } from "@/GameEngine/Domain/PhysicalInterception";
 import { DECISION_FLAGS } from "@/GameEngine/Configs/DecisionConfig";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
+import { FM_AERIAL } from "@/GameEngine/Configs/FmAerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
 import { ballFlightPath } from "@/GraficsEngine/ballFlightPath";
 import { passErrorOverlay } from "@/GraficsEngine/passErrorOverlay";
@@ -102,7 +103,7 @@ import { followAt, smoothDamp, smoothPlayers, SMOOTH_ASSISTANT_S, type Follow } 
 import { assistantForLineX, assistantTarget, OFFICIALS, refereeTarget, stepToward, type AssistantSide, type YdPos } from "@/GraficsEngine/officials";
 import { reviewRunStep, runStep, VAR_AREA, varMonitorSpot, varStandSpot, varZone } from "@/GraficsEngine/varArea";
 import { coachGesture, coachSlots, GESTURE_DURATION, type CoachGestureKind } from "@/GraficsEngine/coaches";
-import { addAnim, animOffset, isLongShot, liveAnims, STYLE, type PlayerAnim } from "@/GraficsEngine/playerAnims";
+import { addAnim, animOffset, contactJumpLift, isLongShot, liveAnims, STYLE, type PlayerAnim } from "@/GraficsEngine/playerAnims";
 import { drawCoachArms, makeCoach, makeOfficial, setFlagRaised, showCard, type CoachSprite } from "@/GraficsEngine/touchlineRender";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { lightLook, type StadiumLight } from "@/Domain/matchday/stadiumLight";
@@ -1756,6 +1757,11 @@ export function PixiPitch({
         lastCrossTargets = e.targets;
         lastCrossHolder  = e.playerId;
       });
+      // Stage 10 (`aerial.md`): the last contact with a high ball in flight (point, height, air or not), shown 1.5 s.
+      let lastAerialContact: { x: number; y: number; z: number; air: boolean; met: boolean; at: number } | null = null;
+      const unsubAerialContact = gameBus.on('aerialContact', (e) => {
+        lastAerialContact = { x: e.x, y: e.y, z: e.z, air: e.air, met: e.toucherId !== null, at: stateRef.current.matchTime };
+      });
 
       // ── Player graphics ──
       // Each marker is a container: team-colour disc, the player's face (once loaded) and a
@@ -2650,13 +2656,31 @@ export function PixiPitch({
         if (at === undefined || effectNow - at > STYLE.FIRST_TIME_S || !framesShown()) return;
         anims = addAnim(anims, { playerId: e.player, kind: "flick", dir: { x: 1, y: 0 }, side: 1 }, effectNow);
       });
+      // Stage 10 (`aerial.md`): a contact in the air — everyone who went for it jumps as high as the ball was met; the
+      // one who met it alone heads it.
+      let contactJumpAt = -1;
+      const unsubAnimContact = gameBus.on("aerialContact", (e) => {
+        if (!framesShown() || !e.air) return;
+        const lift = contactJumpLift(e.z);
+        for (const c of e.contestants) {
+          if (c.line === "GK") continue;
+          const p = playerPos(c.id);
+          if (!p) continue;
+          anims = addAnim(anims, { playerId: p.id, kind: "jump", dir: { x: e.x - p.x, y: e.y - p.y }, side: 1, lift }, effectNow);
+        }
+        contactJumpAt = effectNow;
+        if (e.contestants.length === 1 && e.toucherId !== null && !e.keeper) act(e.toucherId, "header");
+      });
       // A contested high ball: both go up together; the loser sometimes ends on the ground.
       const unsubAnimAerial = gameBus.on("aerialDuel", (e) => {
         if (!framesShown()) return;
         const w = playerPos(e.winnerId), l = playerPos(e.loserId);
         if (!w || !l) return;
-        anims = addAnim(anims, { playerId: w.id, kind: "jump", dir: { x: e.x - w.x, y: e.y - w.y }, side: 1 }, effectNow);
-        anims = addAnim(anims, { playerId: l.id, kind: "jump", dir: { x: e.x - l.x, y: e.y - l.y }, side: 1 }, effectNow);
+        // Stage 10: the contact already drew the jump at its height.
+        if (contactJumpAt !== effectNow) {
+          anims = addAnim(anims, { playerId: w.id, kind: "jump", dir: { x: e.x - w.x, y: e.y - w.y }, side: 1 }, effectNow);
+          anims = addAnim(anims, { playerId: l.id, kind: "jump", dir: { x: e.x - l.x, y: e.y - l.y }, side: 1 }, effectNow);
+        }
         act(w.id, "header");
         const falls = seedFrom(`duel:${e.winnerId}:${e.loserId}:${Math.round(e.x * 10)}`) % 4 === 0;
         act(l.id, falls ? "fall" : "header");
@@ -4975,9 +4999,11 @@ export function PixiPitch({
             for (const t of lastCrossTargets) {
               const { px: tx, py: ty } = toPixel(t.x, t.y);
               const sc = Math.max(0, Math.min(1, t.score));
+              // Stage 10: FM's zones, the ring sized by the share of crosses aimed there (the target is drawn by it).
+              const zoneR = t.weight !== undefined ? 1.2 + 10 * t.weight : AERIAL_CONFIG.TARGET_ZONE_RADIUS;
               throughBallGfx
-                .circle(tx, ty, AERIAL_CONFIG.TARGET_ZONE_RADIUS * m.scale)
-                .stroke({ width: 1, color: 0x2dd4bf, alpha: 0.35 });
+                .circle(tx, ty, zoneR * m.scale)
+                .stroke({ width: t.weight !== undefined ? 2 : 1, color: 0x2dd4bf, alpha: t.weight !== undefined ? 0.3 + t.weight * 2 : 0.35 });
               throughBallGfx.circle(tx, ty, 5).fill({ color: t.gkClaim ? 0xf87171 : 0x2dd4bf, alpha: 0.25 + sc * 0.7 });
               if (t === best && t.score > 0) {
                 throughBallGfx.circle(tx, ty, 9).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
@@ -5022,6 +5048,17 @@ export function PixiPitch({
                 if (o === best) throughBallGfx.circle(ox, oy, 10).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
               }
             }
+          }
+
+          // ── Aerial (stage 10): the last contact in flight — gold in the air (above 1.2 m), white low, red unmet ──
+          if (ovl.aerial && lastAerialContact && stateRef.current.matchTime - lastAerialContact.at < 1.5) {
+            const c = lastAerialContact;
+            const { px: cx, py: cy } = toPixel(c.x, c.y);
+            const lift = m.scale * BALL.LIFT_PX_PER_YD;
+            const color = !c.met ? 0xf87171 : c.air ? 0xfacc15 : 0xffffff;
+            throughBallGfx.moveTo(cx, cy).lineTo(cx, cy - c.z * lift).stroke({ width: 1.5, color, alpha: 0.9 });
+            throughBallGfx.circle(cx, cy - c.z * lift, 6).stroke({ width: 2.5, color, alpha: 0.95 });
+            throughBallGfx.circle(cx, cy, FM_AERIAL.CONTEST_YD * m.scale).stroke({ width: 1, color, alpha: 0.5 });
           }
 
           // ── Aerial: landing point + duel radius during a cross / long ball / clearance ──
@@ -5942,6 +5979,7 @@ export function PixiPitch({
         unsubTactics();
         unsubTbScores();
         unsubCross();
+        unsubAerialContact();
         unsubShotFx();
         unsubCornerFx();
         unsubGoalFx();
@@ -5959,6 +5997,7 @@ export function PixiPitch({
         unsubAnimReceived();
         unsubAnimFirstTime();
         unsubAnimAerial();
+        unsubAnimContact();
         unsubAnimSave();
         unsubAnimClaim();
         unsubAnimPenalty();

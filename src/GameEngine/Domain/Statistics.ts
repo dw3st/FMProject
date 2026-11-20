@@ -102,6 +102,12 @@ export interface PlayerStats {
   contactFouls:             number;
   /** Stage 13 (`OffsideRuns.ts`): reads of the offside line that left him past it, or a lapse. */
   lineMisreads:             number;
+  /** Stage 16 (`DefensiveMind.ts`): concentration lapses (a mind window rolled as a lapse) defending / off the ball. */
+  mindLapsesDefence:        number;
+  mindLapsesOffBall:        number;
+  /** Stage 16: defensive intents the mind changed, and those of them that dropped a mark or held back the press. */
+  mindDefenseShifts:        number;
+  mindMarkDrops:            number;
   // ── Aerial (`.claude/rules/game-engine/aerial.md`) ─────────────────────────
   /** Crosses played. */
   crosses:                  number;
@@ -315,6 +321,15 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
    */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
+  /**
+   * Stage 10 (`aerial.md` -> "Stage 10"), by the crossing team: open-play crosses resolved by the contact model, first
+   * met in the air (above 1.2 m) / below it / not met before landing, first contact by the attack / defence / keeper,
+   * summed contact height (yd). By the player's team: headers (contacts above 1.2 m) won / contested per line.
+   */
+  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
+  headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -362,6 +377,10 @@ function emptyStats(): PlayerStats {
     foulsWonHolding: 0,
     contactFouls: 0,
     lineMisreads: 0,
+    mindLapsesDefence: 0,
+    mindLapsesOffBall: 0,
+    mindDefenseShifts: 0,
+    mindMarkDrops: 0,
     crosses:                  0,
     crossesCompleted:         0,
     aerialDuels:              0,
@@ -429,6 +448,9 @@ type TeamFlags = {
   condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
   keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
+  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
+  headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -450,6 +472,9 @@ const emptyTeamFlags = (): TeamFlags => ({
   aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
   condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
+  shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0, shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0,
+  airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0,
+  headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -665,6 +690,12 @@ gameBus.on('foul', e => {
 });
 gameBus.on('contactFoul', e => { get(e.offenderId).contactFouls++; notify(); });
 gameBus.on('lineMisread', e => { get(e.playerId).lineMisreads++; });
+gameBus.on('mindLapse', e => { const s = get(e.playerId); if (e.kind === 'defence') s.mindLapsesDefence++; else s.mindLapsesOffBall++; });
+gameBus.on('mindDefenseShift', e => {
+  const s = get(e.playerId);
+  s.mindDefenseShifts++;
+  if (e.lapse && (e.from === 'track_mark' || e.from === 'press_holder' || e.from === 'step_into_carry_lane')) s.mindMarkDrops++;
+});
 gameBus.on('card', e => {
   const s = get(e.playerId);
   if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
@@ -805,7 +836,8 @@ gameBus.on('holderMove', e => {
   } else if (e.move === 'shield') {
     if (e.phase === 'success') f.moveShieldHeld++;
   } else if (e.move === 'chip') {
-    f.moveChip++; if (e.phase === 'success') f.moveChipGoals++;
+    if (!e.counted) f.moveChip++;
+    if (e.phase === 'success') f.moveChipGoals++;
   } else if (e.move === 'round_keeper') {
     f.moveRound++; if (e.phase === 'success') f.moveRoundWon++;
   }
@@ -851,6 +883,30 @@ gameBus.on('passLaunched', e => {
 });
 
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
+// ── Stage 10: the contact in the air (`aerial.md` -> "Stage 10") ──────────────────────
+gameBus.on('aerialContact', e => {
+  if (e.kind === 'cross' && !e.corner) {
+    const f = teamFlags[e.passerTeam];
+    f.airCrosses++;
+    if (e.toucherId === null) f.airCrossUnmet++;
+    else {
+      if (e.air) f.airCrossMetAir++; else f.airCrossMetLow++;
+      f.airCrossZSum += e.z;
+      if (e.keeper) f.airCrossKeeper++;
+      else if (e.toucherTeam === e.passerTeam) f.airCrossOwn++;
+      else f.airCrossDef++;
+    }
+  }
+  if (!e.air) return;
+  for (const c of e.contestants) {
+    if (c.line === 'GK') continue;
+    const f = teamFlags[c.team];
+    if (c.line === 'DEF') { f.headAttDef++; if (c.won) f.headWonDef++; }
+    else if (c.line === 'MID') { f.headAttMid++; if (c.won) f.headWonMid++; }
+    else { f.headAttFwd++; if (c.won) f.headWonFwd++; }
+  }
+});
+
 // ── Stage 5: physical interception (`interception.md`) ───────────────────────────
 gameBus.on('interceptionTouch', e => {
   const f = teamFlags[e.team];
@@ -859,6 +915,35 @@ gameBus.on('interceptionTouch', e => {
   else if (e.outcome === 'clear') f.cutClears++;
   else if (e.outcome === 'deflect') f.cutDeflects++;
   else f.cutMisses++;
+});
+// ── Stage 7: the shot by its trajectory (`shot-and-save.md`) ─────────────────────
+const SHOT_TECHNIQUE_FIELD: Record<import('@/GameEngine/types').ShotTechnique, keyof TeamFlags> = {
+  power: 'shotPower', placed: 'shotPlaced', lob: 'shotLob', chip: 'shotChip', volley: 'shotVolley', header: 'shotHeaderLaunch', free_kick: 'shotFreeKick',
+};
+gameBus.on('shotLaunched', e => {
+  const f = teamFlags[e.team];
+  f[SHOT_TECHNIQUE_FIELD[e.technique]]++;
+  f.shotSpeedSum += e.speedMs; f.shotLaunchN++;
+  // Stage 9: where the shots are struck from (FM: 46% from outside the box) and how low they leave (FM 28% vz ≤ 3 m/s).
+  f.shotDistSumM += e.fromM ?? 0;
+  if (e.outsideBox) f.shotsOutsideBox++;
+  if (e.vzMs <= 3) f.shotsLowLaunch++;
+});
+gameBus.on('shotResolved', e => {
+  const t = playerTeam.get(e.player);
+  if (!t) return;
+  const outcome = e.outcome ?? (e.isGoal ? 'goal' : e.inPosts ? 'saved' : 'wide');
+  if (outcome === 'saved') teamFlags[t].shotsSaved++;
+  else if (outcome === 'wide' || outcome === 'over' || outcome === 'woodwork') teamFlags[t].shotsOffTarget++;
+  if (outcome === 'woodwork') teamFlags[t].shotsWoodwork++;
+});
+gameBus.on('shotDeflected', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].shotsDeflected++; });
+gameBus.on('keeperSave', e => {
+  const t = playerTeam.get(e.keeperId);
+  if (!t) return;
+  teamFlags[t].saves++;
+  if (e.grade === 'good') teamFlags[t].savesGood++;
+  else if (e.grade === 'difficult') teamFlags[t].savesDifficult++;
 });
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
@@ -1041,6 +1126,10 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.foulsWonHolding += stats.foulsWonHolding;
     result.contactFouls += stats.contactFouls;
     result.lineMisreads += stats.lineMisreads;
+    result.mindLapsesDefence += stats.mindLapsesDefence;
+    result.mindLapsesOffBall += stats.mindLapsesOffBall;
+    result.mindDefenseShifts += stats.mindDefenseShifts;
+    result.mindMarkDrops += stats.mindMarkDrops;
     result.crosses                  += stats.crosses;
     result.crossesCompleted         += stats.crossesCompleted;
     result.aerialDuels              += stats.aerialDuels;
@@ -1101,6 +1190,14 @@ export interface StatsSnapshot {
     buckets: Record<TeamId, Record<Family, Array<Array<[string, number]>>>>;
     players: Array<[number, Record<Family, Array<[string, number]>>]>;
   };
+  /** Cross-event memory of the counters (stage 19: a snapshot taken between two events goes on counting the same). */
+  carry?: {
+    lastHolder: { playerId: number; pressure: number } | null;
+    markedNow: number[];
+    lastChoiceHolder: Record<TeamId, number | null>;
+    lastDecision: Array<[number, DecisionTelemetryEvent]>;
+    lastMind: Array<[number, HolderMindEvent]>;
+  };
 }
 
 /** Everything accumulated so far, as plain data (no Maps). */
@@ -1119,6 +1216,13 @@ export function exportStatsState(): StatsSnapshot {
       },
       players: [...playerMix].map(([id, pm]) => [id, Object.fromEntries(FAMILIES.map((f) => [f, [...pm[f]]])) as Record<Family, Array<[string, number]>>]),
     },
+    carry: {
+      lastHolder: lastHolder ? { ...lastHolder } : null,
+      markedNow: [...markedNow],
+      lastChoiceHolder: { ...lastChoiceHolder },
+      lastDecision: structuredClone([...lastDecision]),
+      lastMind: structuredClone([...lastMind]),
+    },
   };
 }
 
@@ -1134,6 +1238,12 @@ export function importStatsState(snap: StatsSnapshot): void {
   if (snap.highlights) importHighlightState(snap.highlights);
   bucketMix = { A: emptyFamilyBuckets(), B: emptyFamilyBuckets() };
   playerMix.clear();
+  const c = snap.carry;
+  lastHolder = c?.lastHolder ? { ...c.lastHolder } : null;
+  markedNow = new Set(c?.markedNow ?? []);
+  lastChoiceHolder.A = c?.lastChoiceHolder.A ?? null; lastChoiceHolder.B = c?.lastChoiceHolder.B ?? null;
+  lastDecision.clear(); for (const [id, e] of c?.lastDecision ?? []) lastDecision.set(id, e);
+  lastMind.clear(); for (const [id, e] of c?.lastMind ?? []) lastMind.set(id, e);
   if (snap.decisionMix) {
     for (const team of ['A', 'B'] as const) for (const f of FAMILIES) {
       snap.decisionMix.buckets[team][f].forEach((cell, i) => { if (bucketMix[team][f][i]) bucketMix[team][f][i] = new Map(cell); });

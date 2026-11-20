@@ -21,6 +21,11 @@ export function ballFlightPath(state: GameState, passSpeed = 0.85): PathPoint[] 
     const left = Math.max(1, (1 - state.pass.t) / passRate(state.pass, passSpeed));
     return predictPath(b, left, STEP, env).map(({ x, y, z }) => ({ x, y, z }));
   }
+  // A physical shot (stage 7): free physics from where it is, to the line.
+  if (b.phase === "shot" && b.free && state.shot?.physics) {
+    const ph = state.shot.physics;
+    return predictPath(b, Math.max(0.3, ph.T - ph.elapsed + 0.2), STEP, env).map(({ x, y, z }) => ({ x, y, z }));
+  }
   const left = b.phase === "shot" && state.shot ? (1 - state.shot.t) / SHOT_SPEED
     : b.phase === "pass" && state.pass ? (1 - state.pass.t) / passRate(state.pass, passSpeed) : 0;
   const to = b.phase === "shot" && state.shot ? { x: state.shot.toX, y: state.shot.toY }
