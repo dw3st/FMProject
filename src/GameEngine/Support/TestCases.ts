@@ -20,7 +20,7 @@ import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, testPhysicalShot, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, testPhysicalShot, testOutOfPlay, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import { counterStyle, pickMarkTarget, pickMarkerSlot } from '@/Domain/study/study';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
@@ -1593,13 +1593,37 @@ export const TEST_SCENARIOS: TestScenario[] = [
   {
     id:          'corner-attack',
     name:        '11v11 — Corner (box layout)',
-    description: 'Team A corner from the left flag: the two best aerial defenders, the centre-forward and the next best headers go up, a midfielder waits on the edge of the box, a short option by the flag; Team B marks every attacker goal-side, a man on the near post, its fastest forward left up. Turn on the "Set pieces" overlay to see the delivery options (near post / penalty spot / far post / short) and the "setPiece" / "aerial" debug log.',
+    description: 'Team A corner from the left flag: the two best aerial defenders, the centre-forward and the next best headers go up, a midfielder waits on the edge of the box, a short option by the flag; Team B marks every attacker goal-side, a man on the near post, its fastest forward left up. Stage 12 (FM): the delivery target is drawn at the award — six-yard line centre 58 %, a post 26 %, short 15 % — and ten defenders (keeper included) wait in the box. Turn on the "Set pieces" overlay to see the targets (the decided one in gold) and the "setPiece" / "aerial" debug log.',
     createState() {
       const f433 = formation433Json as Formation;
       const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
       const a = base.players.find(p => p.team === 'A')!;
       const goalX = a.attackDir === 1 ? PITCH_LENGTH : 0;
       return awardCorner({ ...base, setPiece: null }, 'A', { x: goalX, y: 0 }, a.id, 'clearance', 'other').state;
+    },
+  },
+
+  {
+    id:          'fm-throw-in',
+    name:        '11v11 — Throw-in (FM, short)',
+    description: 'Stage 12: Team A throw-in on the left touchline in midfield. No layout: three teammates come to the short options (back along the line, forward, infield) and the rest stays where play stopped; the throw goes within 20 m, backward 40 % of the time (FM). The "Set pieces" overlay draws the options and the range; the TI column counts it.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      return testOutOfPlay(base, 'throw_in', 'A', PITCH_LENGTH / 2 + 5, -1);
+    },
+  },
+
+  {
+    id:          'fm-goal-kick',
+    name:        '11v11 — Goal kick (FM, short or long)',
+    description: 'Stage 12: dead-ball goal kick for Team A. The plan is drawn at the award (FM: 62 % short to a centre-back split to the box corner, 38 % long past half-way); the centre-backs stand at the box corners and the opponents wait outside the box. The "Set pieces" overlay draws the plan in gold. Reload for another draw.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const a = base.players.find(p => p.team === 'A')!;
+      const ownGoalX = a.attackDir === 1 ? 0 : PITCH_LENGTH;
+      return testOutOfPlay(base, 'goal_kick', 'A', ownGoalX === 0 ? -1 : PITCH_LENGTH + 1, 40);
     },
   },
 

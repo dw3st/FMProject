@@ -76,7 +76,8 @@ import { FM_AERIAL } from "@/GameEngine/Configs/FmAerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
 import { ballFlightPath } from "@/GraficsEngine/ballFlightPath";
 import { passErrorOverlay } from "@/GraficsEngine/passErrorOverlay";
-import { evaluateBoxSetPiece } from "@/GameEngine/Domain/SetPieces";
+import { evaluateBoxSetPiece, fmCornerPoint, goalKickLongPoint, goalKickShortSpot, throwInOptionSpots } from "@/GameEngine/Domain/SetPieces";
+import { FM_SET_PIECES, SP_YD_PER_M } from "@/GameEngine/Configs/FmSetPieceConfig";
 import { SET_PIECE_CONFIG } from "@/GameEngine/Configs/SetPieceConfig";
 import { getTeamBuildUp } from "@/GameEngine/Configs/AttackConfig";
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, PENALTY_AREA_DEPTH, PENALTY_AREA_Y_MIN, PENALTY_AREA_Y_MAX } from "@/GameEngine/Domain/pitch";
@@ -4975,6 +4976,30 @@ export function PixiPitch({
                   throughBallGfx.moveTo(qx, qy).lineTo(wx, wy).stroke({ width: 4, color: 0xbef264, alpha: 0.6 });
                 }
               }
+            } else if (sp.variant === 'box' && sp.fmCorner) {
+              // Stage 12: FM's corner targets — six-yard line centre (58 %), the two posts (13 % each), short (15 %); the
+              // decided one in gold.
+              for (const t of ['six_centre', 'near_post', 'far_post'] as const) {
+                const q = fmCornerPoint(t, ballHolder, ballHolder.attackDir);
+                const { px: ox, py: oy } = toPixel(q.x, q.y);
+                throughBallGfx.circle(ox, oy, t === 'six_centre' ? 7 : 5).fill({ color: 0xbef264, alpha: t === 'six_centre' ? 0.75 : 0.4 });
+                if (sp.fmCorner === t) throughBallGfx.circle(ox, oy, 11).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
+              }
+              if (sp.fmCorner === 'short') throughBallGfx.circle(bx, by, 14).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
+            } else if (sp.type === 'throw_in') {
+              // Stage 12: the short options and FM's throw range (20 m).
+              throughBallGfx.circle(bx, by, FM_SET_PIECES.THROW_RANGE_M * SP_YD_PER_M * m.scale).stroke({ width: 1, color: 0xbef264, alpha: 0.35 });
+              for (const q of throwInOptionSpots(ballHolder, ballHolder.attackDir)) {
+                const { px: ox, py: oy } = toPixel(q.x, q.y);
+                throughBallGfx.circle(ox, oy, 5).fill({ color: 0xbef264, alpha: 0.6 });
+              }
+            } else if (sp.type === 'goal_kick' && sp.goalKick) {
+              // Stage 12: the goal kick's plan — the short spot or the long landing point, gold.
+              const ownGoalX = ballHolder.attackDir === 1 ? 0 : PITCH_LENGTH;
+              const q = sp.goalKick.kind === 'short' ? goalKickShortSpot(ownGoalX, sp.goalKick.side) : goalKickLongPoint(ownGoalX, sp.goalKick.side);
+              const { px: ox, py: oy } = toPixel(q.x, q.y);
+              throughBallGfx.moveTo(bx, by).lineTo(ox, oy).stroke({ width: 1.5, color: 0xffcc00, alpha: 0.7 });
+              throughBallGfx.circle(ox, oy, 9).stroke({ width: 2, color: 0xffcc00, alpha: 0.95 });
             } else if (sp.variant === 'box') {
               const kind = sp.type === 'corner' ? 'corner' : 'free_kick';
               const options = evaluateBoxSetPiece(ballHolder, stateRef.current.players, getTeamBuildUp(ballHolder.team), kind);

@@ -262,3 +262,36 @@ Pedido do usuário. `TacticsSave.setPieceTakers.routines { corners?, freeKicks? 
 - `/test`: cenário `corner-routine`. `/lab`: `Variant.setPieceRoutine` (alvo e atacantes), rótulo `· sp alvo/n`, `avgSetPieceRoutines` e a linha "Set-piece routines" no `PairDetail`.
 - Testes: `SetPieces.engine.test.ts` ("rehearsed routines"), `src/Domain/tactics/setPieceTakers.test.ts`.
 - Limitações: a jogada não escolhe quem sobe (os melhores no alto, como sempre) nem movimentos combinados; a defesa adversária não reage à jogada; sem medição de equilíbrio entre os alvos (o mundo não muda: a IA não usa).
+
+## Stage 12: FM's set pieces (engine rebuild)
+
+Flag `FM_SET_PIECES` (`DECISION_FLAGS`, on by default); numbers in `Configs/FmSetPieceConfig.ts` (`FM_SET_PIECES`, env
+`FM_SET_PIECES_OVERRIDES`), read from FM (R6, R8 §4, R9), not calibrated (stage 21); pure rules at the end of
+`Domain/SetPieces.ts`. Off = the set pieces above (Etapa 14).
+
+- **Corner:** the decided target is drawn at the award (`drawFmCornerTarget`, `SetPiece.fmCorner`): the centre of the
+  six-yard line 3.5 m out 59 % (FM 58 + the 1 % left), 5 m to the near / far post 13 % each, short 15 %
+  (`fmCornerPoint`). A rehearsed routine with a named target still wins; `auto` follows the draw. The defence leaves
+  nobody on the edge player or the short option: ten (keeper included) in the box. The delivery is the stage-10 contact
+  in flight (the ×7 set defender is only the flag-off path).
+- **Crossed free kick:** cross or short by the old option scoring; an automatic cross is aimed at stage 10's zones
+  (`delivery: 'zone'`, `drawCrossZone` at the kick).
+- **Launch error:** every set-piece delivery and restart pass has FM's set-piece base 90 against the pass's 95, no
+  pressure (before: no error at all on restart passes). The direct free kick keeps stage 7's base 85.
+- **Throw-in:** no layout teleport — the three nearest outfield teammates come to short options (9 m back and 4 m in,
+  9 m forward and 3 m in, 10 m infield; a layout, not FM numbers), the rest stays where play stopped, opponents keep 2 m
+  (`throwInPositions`). The throw goes to a teammate within 20 m (FM's p90), backward 40 % (`throwInPool`, one draw).
+- **Goal kick (dead ball only, not the keeper's ball in hand):** a plan drawn at the award (`SetPiece.goalKick`,
+  `drawGoalKickPlan`): short 62 % to the centre-back split to (12.5 m, 2.5 m off the line) on a side, long 38 % to
+  64.5 m from the own line, 8 m off centre (`goalKickShortSpot` / `goalKickLongPoint`). The centre-backs stand on the
+  short spots; the opponents wait outside the box (`outsideBox`).
+- **Direct free kick:** shot from up to 29 m from the goal centre (was 30 yd); the wall's distance for the dip is the
+  distance along the shot (was x only).
+- **Event** `setPieceTaken { team, takerId, kind, delivery, distance, backward?, attInBox?, defInBox? }`. Statistics
+  (team): `spCorners`, `spCornerShort/Six/Post`, `spCornerAttBox/DefBox` (summed), `spCornersFromShot` (corner won off
+  a save or a deflected shot), `spThrowIns`, `spThrowBack`, `spThrowDistM`, `spGoalKicks`, `spGoalKicksLong`,
+  `spGoalKickDistM`, `spFreeKicks`, `spFkShots`. `/lab` `PairDetail` rows; `fm-targets.ts` section "Set pieces" (with
+  throw-ins and goal kicks kept).
+- **/test:** `corner-attack` (FM target, overlay "Set pieces" draws the three points, the decided one gold),
+  `direct-free-kick`, new `fm-throw-in` (options and the 20 m range) and `fm-goal-kick` (the plan in gold).
+- Tests: `Domain/SetPiecesFm.test.ts`. Measured: `fm-numbers.md` → "Etapa 12".

@@ -409,6 +409,8 @@ export interface TeamRawStats {
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
   /** Stage 10 (`aerial.md`): open-play crosses by first contact (air / low / unmet; attack / defence / keeper), summed contact height (yd); headers won / contested by line. */
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number; headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number; boxHighBalls: number; boxHighKeeper: number; boxHighDef: number; boxHighAtt: number; keeperClaims: number; keeperPunches: number;
+  /** Stage 12: how the set pieces were taken (`Statistics.ts` sp*). */
+  spCorners: number; spCornerShort: number; spCornerSix: number; spCornerPost: number; spCornerAttBox: number; spCornerDefBox: number; spCornersFromShot: number; spThrowIns: number; spThrowBack: number; spThrowDistM: number; spGoalKicks: number; spGoalKicksLong: number; spGoalKickDistM: number; spFreeKicks: number; spFkShots: number;
   holderHolds: number;
   holderTurns: number;
   /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
@@ -687,6 +689,8 @@ export interface PerMatchView {
   /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
    *  headers won per match and the win % of defenders / midfielders / forwards. */
   avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number; avgBoxHighBalls: number; boxHighKeeperPct: number; boxHighDefPct: number; boxHighAttPct: number; keeperClaimPct: number;
+  /** Stage 12: corners (short / six-yard centre / post %, players in the box, off a shot %), throw-ins (backward %, length m), goal kicks (long %, length m), direct free-kick shots. */
+  avgSpCorners: number; spCornerShortPct: number; spCornerSixPct: number; spCornerPostPct: number; spCornerAttBox: number; spCornerDefBox: number; spCornerFromShotPct: number; avgSpThrowIns: number; spThrowBackPct: number; spThrowDistM: number; avgSpGoalKicks: number; spGoalKickLongPct: number; spGoalKickDistM: number; avgSpFkShots: number;
   avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
@@ -916,6 +920,8 @@ export interface VariantSummary {
   /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
    *  headers won per match and the win % of defenders / midfielders / forwards. */
   avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number; avgBoxHighBalls: number; boxHighKeeperPct: number; boxHighDefPct: number; boxHighAttPct: number; keeperClaimPct: number;
+  /** Stage 12: corners (short / six-yard centre / post %, players in the box, off a shot %), throw-ins (backward %, length m), goal kicks (long %, length m), direct free-kick shots. */
+  avgSpCorners: number; spCornerShortPct: number; spCornerSixPct: number; spCornerPostPct: number; spCornerAttBox: number; spCornerDefBox: number; spCornerFromShotPct: number; avgSpThrowIns: number; spThrowBackPct: number; spThrowDistM: number; avgSpGoalKicks: number; spGoalKickLongPct: number; spGoalKickDistM: number; avgSpFkShots: number;
   avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;

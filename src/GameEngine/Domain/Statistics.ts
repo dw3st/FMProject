@@ -336,6 +336,14 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    * nobody met), and its keeper's claims and punches.
    */
   boxHighBalls: number; boxHighKeeper: number; boxHighDef: number; boxHighAtt: number; keeperClaims: number; keeperPunches: number;
+  /**
+   * Stage 12 (`set-pieces-play.md` → "Stage 12"), by the taking team: corners taken (short / to the six-yard line
+   * centre / to a post; players of each side in the box at the kick, summed), corners won off a shot (saved or
+   * deflected), throw-ins (backward, length m summed), dead-ball goal kicks (long ≥ 35 m, length m summed), free kicks
+   * taken (shot directly).
+   */
+  spCorners: number; spCornerShort: number; spCornerSix: number; spCornerPost: number; spCornerAttBox: number; spCornerDefBox: number; spCornersFromShot: number;
+  spThrowIns: number; spThrowBack: number; spThrowDistM: number; spGoalKicks: number; spGoalKicksLong: number; spGoalKickDistM: number; spFreeKicks: number; spFkShots: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -458,6 +466,14 @@ type TeamFlags = {
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
   headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
   boxHighBalls: number; boxHighKeeper: number; boxHighDef: number; boxHighAtt: number; keeperClaims: number; keeperPunches: number;
+  /**
+   * Stage 12 (`set-pieces-play.md` → "Stage 12"), by the taking team: corners taken (short / to the six-yard line
+   * centre / to a post; players of each side in the box at the kick, summed), corners won off a shot (saved or
+   * deflected), throw-ins (backward, length m summed), dead-ball goal kicks (long ≥ 35 m, length m summed), free kicks
+   * taken (shot directly).
+   */
+  spCorners: number; spCornerShort: number; spCornerSix: number; spCornerPost: number; spCornerAttBox: number; spCornerDefBox: number; spCornersFromShot: number;
+  spThrowIns: number; spThrowBack: number; spThrowDistM: number; spGoalKicks: number; spGoalKicksLong: number; spGoalKickDistM: number; spFreeKicks: number; spFkShots: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -483,6 +499,8 @@ const emptyTeamFlags = (): TeamFlags => ({
   airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0,
   headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
   boxHighBalls: 0, boxHighKeeper: 0, boxHighDef: 0, boxHighAtt: 0, keeperClaims: 0, keeperPunches: 0,
+  spCorners: 0, spCornerShort: 0, spCornerSix: 0, spCornerPost: 0, spCornerAttBox: 0, spCornerDefBox: 0, spCornersFromShot: 0,
+  spThrowIns: 0, spThrowBack: 0, spThrowDistM: 0, spGoalKicks: 0, spGoalKicksLong: 0, spGoalKickDistM: 0, spFreeKicks: 0, spFkShots: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -782,6 +800,25 @@ gameBus.on('keeperSave', e => {
 
 // ── Set-piece stats ───────────────────────────────────────────────────────────
 gameBus.on('cornerAwarded',   e => { get(e.takerId).corners++; notify(); });
+// Stage 12: how the set pieces are taken (team level).
+gameBus.on('cornerAwarded', e => { if (e.source === 'save' || e.source === 'deflection') teamFlags[e.team].spCornersFromShot++; });
+gameBus.on('setPieceTaken', e => {
+  const f = teamFlags[e.team];
+  const m = e.distance / 1.0936;
+  if (e.kind === 'corner') {
+    f.spCorners++;
+    if (e.delivery === 'short') f.spCornerShort++;
+    else if (e.delivery === 'six_centre') f.spCornerSix++;
+    else if (e.delivery === 'near_post' || e.delivery === 'far_post') f.spCornerPost++;
+    f.spCornerAttBox += e.attInBox ?? 0; f.spCornerDefBox += e.defInBox ?? 0;
+  } else if (e.kind === 'throw_in') {
+    f.spThrowIns++; if (e.backward) f.spThrowBack++; f.spThrowDistM += m;
+  } else if (e.kind === 'goal_kick') {
+    f.spGoalKicks++; if (m >= 35) f.spGoalKicksLong++; f.spGoalKickDistM += m;
+  } else {
+    f.spFreeKicks++; if (e.delivery === 'shot') f.spFkShots++;
+  }
+});
 gameBus.on('setPieceRoutine', e => { get(e.takerId).setPieceRoutines++; notify(); });
 gameBus.on('throwInAwarded',  e => { get(e.takerId).throwIns++; notify(); });
 gameBus.on('freeKickAwarded', e => { get(e.takerId).freeKicks++; notify(); });

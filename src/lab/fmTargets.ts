@@ -102,6 +102,8 @@ export interface FmTargetTotals {
   keeperLat: { num: number; den: number };
   keeperPass: { n: number; long: number; shortN: number; shortKept: number; longN: number; longKept: number; dist: number[] };
   goalKick: { n: number; long: number };
+  /** Stage 12: throw-ins and dead-ball goal kicks (short / long) whose receiver was a teammate. */
+  restartKept: { throwN: number; throwKept: number; gkShortN: number; gkShortKept: number; gkLongN: number; gkLongKept: number };
 }
 
 /** Stage 11: the keeper's position bands (m, report 8 §2.2) and FM's median off the line with the opponent on the ball. */
@@ -177,7 +179,7 @@ export function emptyFmTargets(): FmTargetTotals {
     lossEarly: 0, lossLate: 0,
     shotEnds: SHOT_M_LABELS.map(() => SHOT_END.map(() => 0)),
     keeperOff: { opp: KEEPER_BANDS.map(() => []), own: KEEPER_BANDS.map(() => []) }, keeperLat: { num: 0, den: 0 },
-    keeperPass: { n: 0, long: 0, shortN: 0, shortKept: 0, longN: 0, longKept: 0, dist: [] }, goalKick: { n: 0, long: 0 },
+    keeperPass: { n: 0, long: 0, shortN: 0, shortKept: 0, longN: 0, longKept: 0, dist: [] }, goalKick: { n: 0, long: 0 }, restartKept: { throwN: 0, throwKept: 0, gkShortN: 0, gkShortKept: 0, gkLongN: 0, gkLongKept: 0 },
   };
 }
 
@@ -220,6 +222,7 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
     a.n += b.n; a.long += b.long; a.shortN += b.shortN; a.shortKept += b.shortKept; a.longN += b.longN; a.longKept += b.longKept; a.dist.push(...b.dist);
   }
   if (src.goalKick) { dst.goalKick.n += src.goalKick.n; dst.goalKick.long += src.goalKick.long; }
+  if (src.restartKept) for (const k of Object.keys(dst.restartKept) as (keyof FmTargetTotals['restartKept'])[]) dst.restartKept[k] += src.restartKept[k] ?? 0;
 }
 
 const ballGroupOf = (kind: string): BallGroup | null =>
@@ -265,7 +268,7 @@ const pushRun = (acc: FmTargetTotals, r: HoldRun, end: number) => {
   (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(end - r.since);
 };
 
-interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean; t0: number; vzM: number | null; gk: boolean; restart: string | null }
+interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean; t0: number; vzM: number | null; gk: boolean; restart: string | null; deadBall?: boolean }
 interface Stint { id: number; t0: number; decisions: number }
 interface HoldRun { type: string; since: number; line: Line }
 
@@ -300,6 +303,11 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
     if (k === 2) {
       const expected = 0.43 + 0.05 * (pending.dist / YD) + FM_TICK_S;
       if (realT - pending.t0 <= expected) acc.lossEarly++; else acc.lossLate++;
+    }
+    if (pending.restart === "throw_in") { acc.restartKept.throwN++; if (k !== 2) acc.restartKept.throwKept++; }
+    if (pending.restart === "goal_kick" && pending.gk && pending.deadBall) {
+      const rk = acc.restartKept;
+      if (pending.dist / YD >= 35) { rk.gkLongN++; if (k !== 2) rk.gkLongKept++; } else { rk.gkShortN++; if (k !== 2) rk.gkShortKept++; }
     }
     if (pending.gk) {
       // Stage 11: the keeper's distribution (R8 §2.3).
@@ -355,7 +363,7 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
         const src = (prev ?? s).players.find(p => p.id === s.pass!.fromId) ?? s.players.find(p => p.id === s.pass!.fromId)!;
         const opps = (prev ?? s).players.filter(p => p.team !== src.team);
         const lofted = s.pass.kind === "cross" || s.pass.kind === "long_ball" || !!s.pass.lofted;
-        pending = { kind: s.pass.lofted ? 'lofted' : s.pass.kind, team: src.team, from: src.id, intended: s.pass.toId ?? s.pass.intendedRunnerId, dist: s.pass.distance, lofted, pressure: holderPressure(src.x, src.y, opps), held: false, t0: realT, vzM: ph ? ph.vz / YD : null, gk: src.role === "GK", restart: prev?.setPiece?.type ?? s.setPiece?.type ?? null };
+        pending = { kind: s.pass.lofted ? 'lofted' : s.pass.kind, team: src.team, from: src.id, intended: s.pass.toId ?? s.pass.intendedRunnerId, dist: s.pass.distance, lofted, pressure: holderPressure(src.x, src.y, opps), held: false, t0: realT, vzM: ph ? ph.vz / YD : null, gk: src.role === "GK", restart: prev?.setPiece?.type ?? s.setPiece?.type ?? null, deadBall: !!(prev?.setPiece ?? s.setPiece)?.position };
       }
     }
     if (pending && held && s.ballHolderId !== pending.from) resolvePass(s, s.ballHolderId);

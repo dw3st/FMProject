@@ -10,6 +10,11 @@ import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor
 import { aerialCatchers, contestantsOf, drawCrossZone, findAerialContact, headerLine, meetPoint, type AerialCatcher, type AerialContactHit } from '@/GameEngine/Domain/AerialContact';
 import { FM_AERIAL } from '@/GameEngine/Configs/FmAerialConfig';
 import { RESTART_DEAD_S, SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
+import { FM_SET_PIECES, SP_YD_PER_M } from '@/GameEngine/Configs/FmSetPieceConfig';
+import {
+  drawFmCornerTarget, drawGoalKickPlan, goalKickBackSpots, inBoxCount, outsideBox, throwInPool, throwInPositions,
+} from '@/GameEngine/Domain/SetPieces';
+import type { SetPieceDelivery } from '@/GameEngine/types';
 import {
   attackingBoxPositions, pickRoutine, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick, keepDistanceFromBall,
   pickSetPieceTaker, wallBlockChance, wallSize, wallSpots, type SetPieceDuty,
@@ -1361,6 +1366,39 @@ function setPieceGoalOf(state: GameState, team: TeamId): SetPieceGoalKind | unde
   return ph && ph.team === team && state.matchTime <= ph.until ? ph.kind : undefined;
 }
 
+/** Stage 12 (`set-pieces-play.md` → "Stage 12"): FM's set pieces on. */
+function fmSetPiecesOn(): boolean {
+  return DECISION_FLAGS.FM_SET_PIECES;
+}
+
+/** Stage 12: a set-piece delivery's launch-error factor relative to a pass (FM's base 90 against 95). */
+function setPieceErrorScale(): number {
+  return FM_SET_PIECES.BASE_SET_PIECE_PASS / FM_SET_PIECES.BASE_PASS;
+}
+
+/**
+ * Stage 12: `setPieceTaken` for the restart `holder` is taking now toward `target` (nothing for a kick-off, a penalty
+ * or a keeper's ball in hand — a goal kick only from a dead ball, with its `position`).
+ */
+function emitSetPieceTaken(s: GameState, holder: GamePlayer, delivery: SetPieceDelivery, target: { x: number; y: number }): void {
+  const sp = s.setPiece;
+  if (!sp || sp.takerId !== holder.id) return;
+  const kind = sp.type === 'corner' ? 'corner' : sp.type === 'throw_in' ? 'throw_in'
+    : sp.type === 'goal_kick' ? (sp.position ? 'goal_kick' : null)
+    : sp.type === 'free_kick' || sp.type === 'offside_fk' ? 'free_kick' : null;
+  if (!kind) return;
+  const distance = Math.hypot(target.x - holder.x, target.y - holder.y);
+  const goalX = holder.attackDir === 1 ? PITCH_LENGTH : 0;
+  gameBus.emit('setPieceTaken', {
+    team: holder.team, takerId: holder.id, kind, delivery, distance,
+    ...(kind === 'throw_in' ? { backward: (target.x - holder.x) * holder.attackDir < 0 } : {}),
+    ...(kind === 'corner' ? {
+      attInBox: inBoxCount(s.players.filter(p => p.team === holder.team), goalX),
+      defInBox: inBoxCount(s.players.filter(p => p.team !== holder.team), goalX),
+    } : {}),
+  });
+}
+
 /** The routine `team` plays at this corner / crossed free kick (one of the manager's, drawn), announced when there is one. */
 function drawRoutine(state: GameState, team: TeamId, kind: 'corner' | 'free_kick', takerId: number): SetPieceRoutine | undefined {
   const routine = pickRoutine(state.setPieceTakers?.[team]?.routines?.[kind === 'corner' ? 'corners' : 'freeKicks'], matchRandom);
@@ -1385,7 +1423,7 @@ function applyBoxSetPiece(
 ): GamePlayer[] {
   const att = attackingBoxPositions(players.filter(p => p.team === taker.team), taker.id, ball, taker.attackDir, kind, rng, routine?.attackers);
   const goalX = taker.attackDir === 1 ? PITCH_LENGTH : 0;
-  const def = defendingBoxPositions(players.filter(p => p.team !== taker.team), att, ball, goalX, kind);
+  const def = defendingBoxPositions(players.filter(p => p.team !== taker.team), att, ball, goalX, kind, fmSetPiecesOn());
   return players.map(p => {
     const pos = att.positions.get(p.id) ?? def.positions.get(p.id);
     return pos ? { ...p, x: pos.x, y: pos.y, targetPosition: { ...pos } } : p;
@@ -1450,6 +1488,7 @@ export function startDirectFreeKick(state: GameState, rng: () => number = matchR
   const base = fmBase ?? directFreeKickXG(distToGoalCentre(pos, goalX), computeOpenAngle(pos.x, pos.y, goalX));
   const xg = fmBase ?? base * (1 - pBlock);
   // Stage 7: the free kick dips over the wall by its flight; the wall blocks it only if the ball goes into it.
+  if (fmSetPiecesOn()) emitSetPieceTaken(state, taker, 'shot', { x: goalX, y: PITCH_WIDTH / 2 });
   if (DECISION_FLAGS.SHOT_PHYSICS && DECISION_FLAGS.BALL_3D) {
     const shot = physicalShot(state, taker, { technique: 'free_kick', skill: Math.min(1, taker.runtimeStats.withBall.shootAccuracy / 0.95), setPiece: true }, { xg: base, freeKick: true });
     if (shot) {
@@ -1544,7 +1583,10 @@ function awardFoulRestart(
     const dangerous = distToLine <= FOUL_CONFIG.DANGEROUS_FREE_KICK_DIST;
     // `set-pieces-play.md` §2: direct shot over a wall when close and central; crossed into the box
     // (or short) within FK_CROSS_RANGE; elsewhere a quick free kick by the nearest player.
-    const direct = isDirectFreeKick(pos, awarded[0]!.attackDir);
+    // Stage 12: FM shoots direct free kicks from up to 29 m.
+    const direct = fmSetPiecesOn()
+      ? isDirectFreeKick(pos, awarded[0]!.attackDir, FM_SET_PIECES.DIRECT_FK_RANGE_M * SP_YD_PER_M)
+      : isDirectFreeKick(pos, awarded[0]!.attackDir);
     const box = !direct && distToLine <= SET_PIECE_CONFIG.FK_CROSS_RANGE;
     const taker = direct || box ? (setPieceTakerOf(state, fouledTeam, 'freeKicks') ?? nearestPlayerTo(pool, pos)) : nearestPlayerTo(pool, pos);
     let wallIds: number[] | undefined;
@@ -2599,7 +2641,9 @@ function physicalShot(state: GameState, shooter: GamePlayer, strike: PhysicalStr
     base = dipLaunch(from, { d: along, z: SHOT_PHYSICS.HAND_MAX_Z + SHOT_PHYSICS.LOB_CLEAR_YD }, aim3);
   } else if (technique === 'free_kick') {
     const wall = (state.setPiece?.wallIds ?? []).map(id => state.players.find(p => p.id === id)).filter((p): p is GamePlayer => !!p);
-    const along = wall.length > 0 ? Math.min(...wall.map(w => Math.abs(w.x - shooter.x))) : SET_PIECE_CONFIG.WALL_DISTANCE;
+    // Stage 12: the wall's distance from the ball along the shot (it stands on the ball → goal line), not along x only.
+    const along = wall.length === 0 ? SET_PIECE_CONFIG.WALL_DISTANCE
+      : Math.min(...wall.map(w => (fmSetPiecesOn() ? Math.hypot(w.x - shooter.x, w.y - shooter.y) : Math.abs(w.x - shooter.x))));
     base = dipLaunch(from, { d: along, z: SHOT_PHYSICS.BLOCK_MAX_Z + 0.25 }, aim3);
   }
   const speedMs0 = shotSpeedMs(technique === 'free_kick' || technique === 'lob' || technique === 'chip' ? 'placed' : technique, strike.skill);
@@ -3127,7 +3171,10 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
   if (sp && sp.takerId === holder.id) {
     const dist = (p: GamePlayer) => Math.hypot(p.x - holder.x, p.y - holder.y);
     const nearest = (pool: GamePlayer[]) => pool.reduce((a, b) => (dist(b) < dist(a) ? b : a));
-    if (sp.type === 'throw_in') {
+    if (sp.type === 'throw_in' && fmSetPiecesOn()) {
+      // Stage 12: FM's short throw — within 20 m, backward 40 % of the time.
+      teammates = throwInPool(holder, teammates, matchRandom()).pool;
+    } else if (sp.type === 'throw_in') {
       const inRange = teammates.filter(p => p.role !== 'GK' && dist(p) <= SET_PIECE_CONFIG.THROW_IN_RANGE);
       teammates = inRange.length > 0 ? inRange : [nearest(teammates)];
     } else if (sp.variant === 'box') {
@@ -3177,7 +3224,10 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
   if (passPhysicsOn() && distance > 0.5) {
     // Stage 4 (`pass-physics.md`): FM's launch (speed and loft by distance), the passer's error on the vector; the
     // ball arrives where the physics takes it. Set pieces are exempt from the error (as in 4b).
-    const factor = state.setPiece ? 0 : passErrorFactor(holder.runtimeStats.withBall.passingSkill, distance, holderPressure(holder.x, holder.y, opponents));
+    // Stage 12: a restart pass has FM's set-piece error (base 90, no pressure).
+    const factor = state.setPiece
+      ? (fmSetPiecesOn() ? passErrorFactor(holder.runtimeStats.withBall.passingSkill, distance, 0) * setPieceErrorScale() : 0)
+      : passErrorFactor(holder.runtimeStats.withBall.passingSkill, distance, holderPressure(holder.x, holder.y, opponents));
     const z0 = state.setPiece?.type === 'throw_in' ? BALL_PHYSICS.HEAD_Z : BALL_PHYSICS.FOOT_Z;
     physics = buildGroundLaunch({ x: holder.x, y: holder.y }, { x: to.x, y: to.y }, z0, ballEnv(state.weather), factor,
       launchNormals(matchRandom), vz => passTypeOf('regular', vz)).launch;
@@ -3195,6 +3245,7 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
     }
   }
 
+  if (fmSetPiecesOn()) emitSetPieceTaken(state, holder, state.setPiece?.type === 'corner' || state.setPiece?.variant === 'box' || state.setPiece?.type === 'goal_kick' ? 'short' : 'pass', to);
   gameBus.emit('passAttempted', { player: holder.id, toId: to.id, distance: distance });
   // Switch-of-play: the chosen lane earned a far-flank descriptor bonus. Detected
   // from the descriptor-derived flag on PassLaneInfo, never by naming the intent.
@@ -3799,8 +3850,27 @@ function resolveOOBSetPiece(
   const oLay  = resolveFormationSetPieces(opFmt);
 
   let players = s.players;
-  if (aLay) players = applySetPieceToTeam(players, awardedTeam,  oobLayoutFor(kind, 'attack', aLay));
-  if (oLay) players = applySetPieceToTeam(players, oppositeTeam, oobLayoutFor(kind, 'defend', oLay));
+  const fm = fmSetPiecesOn();
+  let goalKick: SetPiece['goalKick'];
+  if (fm && kind === 'throw_in') {
+    // Stage 12: no layout — the short options come to the thrower, the rest stays where play stopped.
+    const moved = throwInPositions(players, taker.id, position);
+    players = players.map(p => { const m = moved.get(p.id); return m ? { ...p, x: m.x, y: m.y, targetPosition: { ...m } } : p; });
+  } else {
+    if (aLay) players = applySetPieceToTeam(players, awardedTeam,  oobLayoutFor(kind, 'attack', aLay));
+    if (oLay) players = applySetPieceToTeam(players, oppositeTeam, oobLayoutFor(kind, 'defend', oLay));
+  }
+  if (fm && kind === 'goal_kick') {
+    // Stage 12: the centre-backs split to the box corners for the short kick; the opponents wait outside the box.
+    goalKick = drawGoalKickPlan(matchRandom);
+    const ownGoalX = taker.attackDir === 1 ? 0 : PITCH_LENGTH;
+    const spots = goalKickBackSpots(players, awardedTeam, ownGoalX);
+    players = players.map(p => {
+      const m = spots.get(p.id) ?? (p.team === oppositeTeam ? outsideBox(p, ownGoalX) : null);
+      return m && (m.x !== p.x || m.y !== p.y) ? { ...p, x: m.x, y: m.y, targetPosition: { ...m } } : p;
+    });
+    debugLog('setPiece', `Goal kick for team ${awardedTeam}: ${goalKick.kind}`, { playerId: taker.id, data: { ...goalKick } });
+  }
 
   // Move the taker on top of the actual ball position so they're holding it.
   players = players.map(p =>
@@ -3829,10 +3899,17 @@ function resolveOOBSetPiece(
         takerId:   taker.id,
         countdown: restartFreeze(s, oobCountdownFor(kind)),
         position,
+        ...(goalKick ? { goalKick } : {}),
       },
     }, prevHolderId),
     passCompleted: false, tackled: false, goalScored: null,
   };
+}
+
+/** /test and tests (stage 12): the ball out of play at (exitX, exitY) — a throw-in or a dead-ball goal kick for `awardedTeam`. */
+export function testOutOfPlay(s: GameState, kind: 'throw_in' | 'goal_kick', awardedTeam: TeamId, exitX: number, exitY: number): GameState {
+  const other = s.players.find(p => p.team !== awardedTeam);
+  return resolveOOBSetPiece({ ...s, setPiece: null, pass: null, shot: null, looseBall: null }, kind, awardedTeam, exitX, exitY, other?.id ?? s.ballHolderId, 'clearance').state;
 }
 
 /**
@@ -3853,6 +3930,8 @@ export function awardCorner(
     ?? pickOOBTaker('corner', awardedTeam, position, s0.players);
   const routine = drawRoutine(s0, awardedTeam, 'corner', taker.id);
   const players = applyBoxSetPiece(s0.players, taker, position, 'corner', matchRandom, routine);
+  // Stage 12: FM's decided target (six-yard line centre / posts / short), drawn now.
+  const fmCorner = fmSetPiecesOn() ? drawFmCornerTarget(matchRandom) : undefined;
   // A through ball out for a corner to the other team was lost; one out for the passer's own team was not.
   const passer = s0.players.find(p => p.id === fromPasserId);
   if (source === 'through' && passer && passer.team !== awardedTeam) {
@@ -3871,7 +3950,7 @@ export function awardCorner(
     possessionTime: 0,
     lastPasserId:   null,
     tackleCooldown: TACKLE_COOLDOWN,
-    setPiece: { type: 'corner', takerId: taker.id, countdown, position, variant: 'box', ...(routine ? { routine } : {}) },
+    setPiece: { type: 'corner', takerId: taker.id, countdown, position, variant: 'box', ...(routine ? { routine } : {}), ...(fmCorner ? { fmCorner } : {}) },
   }, prevHolderId);
   return { state: openSetPiecePhase(st, awardedTeam, 'corner', countdown), passCompleted: false, tackled: false, goalScored: null };
 }
@@ -4613,7 +4692,7 @@ export function startAerialBall(
       : lofted ? loftVzYd(d0) : vzForPeak(z0, PASS_PHYSICS.PEAK_LONG_M * YD_PER_M_PASS);
     const opps = state.players.filter(p => p.team !== holder.team);
     const pressure = state.setPiece ? 0 : holderPressure(holder.x, holder.y, opps);
-    const factor = passErrorFactor(holder.runtimeStats.withBall.passingSkill, d0, pressure);
+    const factor = passErrorFactor(holder.runtimeStats.withBall.passingSkill, d0, pressure) * (state.setPiece && fmSetPiecesOn() ? setPieceErrorScale() : 1);
     const wErr = weatherEffectOf(state.weather).aerialError;
     logWeather(state, 'aerialError', `${holder.name}'s ${kind === 'cross' ? 'cross' : 'long ball'} lands less precisely`, holder.id);
     const b = buildAerialLaunch({ x: holder.x, y: holder.y }, target, z0, vz, ballEnv(state.weather), factor,
@@ -6265,7 +6344,9 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     // High balls fire immediately too (`aerial.md`).
     if (holderDecision?.type === 'cross') {
       // Stage 10: an open-play cross goes to a point of FM's target zones, drawn at the kick, with no named receiver.
-      const zone = fmAerialOn() && !s.setPiece ? drawCrossZone(holder, matchRandom) : null;
+      // Stage 12: an automatic crossed free kick is aimed at the same zones.
+      const zone = fmAerialOn() && (!s.setPiece || holderDecision.delivery === 'zone') ? drawCrossZone(holder, matchRandom) : null;
+      if (s.setPiece && fmSetPiecesOn()) emitSetPieceTaken(s, holder, holderDecision.delivery ?? 'zone', zone ?? { x: holderDecision.toX, y: holderDecision.toY });
       if (zone) debugLog('aerial', `${holder.name} aims his cross at the ${zone.kind.replace('_', ' ')} zone`, { playerId: holder.id, data: { x: Math.round(zone.x), y: Math.round(zone.y) } });
       return {
         state: startAerialBall(s, 'cross', zone ?? { x: holderDecision.toX, y: holderDecision.toY }, zone ? null : holderDecision.intendedRunnerId),
@@ -6273,6 +6354,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       };
     }
     if (holderDecision?.type === 'long_ball') {
+      if (s.setPiece && fmSetPiecesOn()) emitSetPieceTaken(s, holder, 'long', { x: holderDecision.toX, y: holderDecision.toY });
       return {
         state: startAerialBall(s, 'long_ball', { x: holderDecision.toX, y: holderDecision.toY }, holderDecision.targetId),
         passCompleted: false, tackled: false, goalScored: null,

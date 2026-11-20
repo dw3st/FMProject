@@ -113,6 +113,11 @@ export interface DecisionFlags {
    *  up as the ball goes away (2.7 / 6 / 10.5 m), no 1-v-1 rush and no sweeper; he comes for a high ball only when he
    *  gets to it first, within his claim depth. Off = the active keeper of 7.7 (arc, rush, sweeper). */
   FM_KEEPER: boolean;
+  /** Stage 12 (`set-pieces-play.md` → "Stage 12"): FM's set pieces — corners to the six-yard line centre / posts /
+   *  short by FM's shares with ten defenders in the box, short throw-ins (40 % backward) from short options, goal kicks
+   *  short to the centre-back off the box or long past half-way, the set-piece launch error (base 90), direct free
+   *  kicks from up to 29 m. Off = the set pieces of Etapa 14. */
+  FM_SET_PIECES: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -159,6 +164,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
   FM_KEEPER: true,
+  FM_SET_PIECES: true,
 };
 
 /**

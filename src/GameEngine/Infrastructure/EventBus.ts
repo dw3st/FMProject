@@ -262,6 +262,14 @@ export interface GameEvents {
    */
   cornerAwarded: { team: TeamId; takerId: number; source: CornerSource };
   throwInAwarded: { team: TeamId; takerId: number };
+  /**
+   * Stage 12 (`set-pieces-play.md` → "Stage 12"): a set piece is taken — how (`delivery`), how far (yd), a throw-in
+   * backward, and at a corner the players of each side in the box at the kick (keepers included).
+   */
+  setPieceTaken: {
+    team: TeamId; takerId: number; kind: 'corner' | 'free_kick' | 'throw_in' | 'goal_kick'; delivery: import('@/GameEngine/types').SetPieceDelivery;
+    distance: number; backward?: boolean; attInBox?: number; defInBox?: number;
+  };
   /** A direct free kick at goal: `xg` after the wall, `wallSize` men, `blocked` = it struck the wall. */
   directFreeKick: { player: number; xg: number; wallSize: number; blocked: boolean };
   /** Delivery chosen by a corner / crossed free-kick taker (/test set-piece overlay; debug only). */
