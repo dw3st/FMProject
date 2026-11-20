@@ -19,6 +19,7 @@ const args = process.argv.slice(2);
 const arg = (f: string, d: string) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] ?? d : d; };
 const parts = arg("--parts", "variants,press,random,marking,base").split(",") as InstrPlanPart[];
 const variantsArg = arg("--variants", "");
+const teamKeysArg = arg("--team-keys", "");
 const matches = Number(arg("--matches", "400"));
 const mirrorMatches = Number(arg("--mirror", "200"));
 const baseMatches = Number(arg("--base", "400"));
@@ -147,6 +148,7 @@ if (sumArg) {
 const tasks = buildInstrTasks({
   league, parts, matches, mirrorMatches, baseMatches,
   ...(variantsArg ? { variants: variantsArg.split(",") as RoleVariantId[] } : {}),
+  ...(teamKeysArg ? { teamKeys: teamKeysArg.split(",") } : {}),
 }, Math.floor(Math.random() * 1000) * 2);
 console.error(`${tasks.length} tasks of up to 25 matches (${league}) on ${workers} workers`);
 const start = performance.now();

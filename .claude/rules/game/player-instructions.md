@@ -290,3 +290,11 @@ Report de tester (laterais com "Fica" subiam demais). Medido: com a instrução 
 ## Marcação individual da IA (12.3)
 
 A IA passa a usar a marcação individual num caso só: contra um clube humano que ela leu no nível alto, um meia central (a vaga CDM/CM de maior desarme; sem meia central, o zagueiro) marca o melhor atacante do técnico. É o mesmo `manMarks` (`TeamTactics.manMarks` na simulada, `LiveSideInput.marks` + `study` ao vivo). Variantes de função e pressão individual continuam só do jogador. Ver `.claude/rules/game/study.md`.
+
+## Duty, role out of possession, player levels (stage 20 of the engine rebuild)
+
+`SlotInstruction` also takes `duty` (attack: attacking anchor +3 yd and ×1.15 runs; defend: −3 yd, ×0.85 runs, ×1.15
+holds), `oop` (fb_press, fb_stay, cb_step, cb_cover, dm_screen, cm_press, w_track, w_stay, st_press, st_rest: multipliers
+on the slot's defensive intent weights and a defending-anchor shift, only on the roles that accept them) and the player's
+`shooting` / `dribbling` / `crossing` / `positioning` (−2..+2, absent = the team's level). Parsed by
+`parseSlotInstructions`; kept by `effectiveInstruction` when they fit the slot. Chips in `SlotInstructionChips`.

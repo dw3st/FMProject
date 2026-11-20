@@ -248,3 +248,48 @@ Vantagem média contra os outros quatro depois (Premier / Championship): Equilib
 ## A IA contra um plano repetido (12.3)
 
 A IA só sai do Equilibrado contra um clube humano que ela estudou: o estilo vem de `STUDY.COUNTER` (tabela tirada da matriz de estilos acima e conferida por `scripts/study-measure.ts`). O estilo do plano passa pelas mesmas `applyTeamTacticsConfig` / `applyTeamAttackConfig`, sem peso novo. Ver `.claude/rules/game/study.md`.
+
+## Stage 20: team instructions in five levels (engine rebuild 4c)
+
+Decided 2026-11-19: every instruction has five levels (−2..+2), all on the Formation screen and all working; the style
+is a template that fills them. Pure model `src/Domain/tactics/teamInstructions.ts`, engine store and constants
+`src/GameEngine/Configs/InstructionConfig.ts` (`INSTR`, env `INSTRUCTION_OVERRIDES`), flag
+`DECISION_FLAGS.TEAM_INSTRUCTIONS` (off = the axes only, every extra effect reads 0, the AI keeps its style).
+
+- **Saved:** `TacticsSave.teamInstructions` (`{ inPossession, transition, outOfPossession }`, only what differs from the
+  style's template) and `TacticsSave.mentality` (−2..+2, the saved mentality; the live three-step mentality of the match
+  is separate). `PUT /tactics` parses them (`parseTeamInstructions`; null clears; 400 on an unknown key or a level out of
+  range). Picking a style clears the instructions (its template again); an old `axesOverride` is read as levels.
+- **Groups:** in possession: passing (shorter .. more direct), tempo, width, passing target (to feet .. into space), focus
+  of play (left / centre / mixed / right / wings), flanks (underlap .. overlap), crossing (early .. byline), dribbling,
+  shooting, freedom (disciplined .. expressive), keeper distribution; transition: on losing the ball (regroup ..
+  counter-press), on winning it (hold shape .. counter); out of possession: line of engagement, defensive line, pressing
+  intensity, offside trap, tackling, crosses (invite .. stop), defensive width.
+- **Axis instructions** (passing, width, line, engagement, pressing, tackling, defensive width) give the old axes:
+  ≤ −1 / 0 / ≥ +1 → the axis's three values (`axesOfLevels`), so every style's template plays exactly as before (paired
+  test `TeamInstructions.engine.test.ts`); ±2 adds a small step beyond (`INSTR.*_EXTRA`). `pressing_style` is split:
+  engagement = the press range and the calm press by third, intensity = the intent table and marking, tackling =
+  `TACKLE_AGGRESSION`, the reach (+0.15 yd per level) and a chance to pass up a tackle (stay on feet).
+- **The others** act by `level − template` (× the group's familiarity, + half the saved mentality on line, engagement,
+  tempo and on-win), clamped ±2.5, as small multipliers: the holder's candidate category multiplier
+  (`holderInstructionMult` in `fmHolderChoice`: shots ×1.25^(d/2), dribbles, holds and carries by tempo, through balls
+  vs passes to feet, long balls, crosses early or at the byline, the focus band ×1.08, the keeper's long balls), the
+  attacking blend and off-ball pull (freedom), the full-backs' anchor (overlap +3 yd / underlap 3.5 yd in) and runs, the
+  back line's defending anchor (trap +1.5 yd per level), the defensive intents on a wide holder in the last 35 yd
+  (crosses), and the transition windows.
+- **Transitions:** a clock (who has the ball, for how long; `setPossessionClock` in the tick loop) gives a "just lost"
+  window (5 s) and a "just won" one (6 s). In them on-loss moves press / step / hold of the defensive intents, on-win the
+  runs and holds of the off-ball intents and the holder's forward options; above the template they free `press_now` /
+  `counter_attack` for every style with a seeded chance of 0.2 per level per possession (`IntentDetection.ts`).
+- **AI:** `TeamTactics.ai` (`aiTactics`, the live opponent): `aiInstructions` re-picks the levels by the score
+  (leading from 75': regroup, hold shape, slower, mentality −1; trailing from 70': counter-press, counter, quicker, shoot
+  more, mentality +1, from 80' more direct), once per situation (`aiSituationKey`), in the tick loop. The axes stay as
+  applied; the changes act through their steps from the template.
+- **Engine memory:** the store, the transition clock and the AI state are registered (`InstructionConfig.TEAM`,
+  `.clock`, `.AI`); the derived defence config is a cache keyed on the store's version. A live tactic or mentality
+  order emits `tacticsChanged` (the highlights forecast is dropped, `live-modes.md`).
+- **Statistics:** `counterPressRegains` (won back within 5 s of losing it, `possessionWon`) and `transitionShots`
+  (within 10 s of winning it): `/test` Stats panel, `/lab` PairDetail.
+- **/test:** "Team instr" panel for both sides; scenarios `team-instructions-transition`, `oop-roles-duties`.
+  **/lab:** the panel in each variant (label `· ti N · ment ±N`); `instruction-matrix.ts --parts team [--team-keys a,b]`
+  measures each instruction at −2 and +2 against the balanced template.

@@ -167,3 +167,9 @@ defensive override, it's actually two intents.
 | `src/GameEngine/Domain/PassLanes.ts` | reads `applyPassIntent` |
 | `src/GameEngine/Domain/CarryLaneEval.ts` | reads `applyCarryIntent` |
 | `src/GameEngine/Domain/OffBallMovement.ts` | reads `applyOffBallIntent` |
+
+## Stage 20: the transition instructions free the counter's intents
+
+With the team instructions (`tactical-config.md` → "Stage 20"), on losing the ball above the template frees
+`press_now` and on winning it frees `counter_attack` for every style, in their window and with a seeded chance of 0.2 per
+level per possession; the counter_attack style below its template fires them less. The style's template = no change.

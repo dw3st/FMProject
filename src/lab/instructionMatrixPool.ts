@@ -3,17 +3,20 @@
  * workers (`instructionMatrixWorker.ts`). Shared by `scripts/instruction-matrix.ts` and the lab's
  * `/matrix` "Instructions" mode. Each worker has its own engine stores.
  */
+import { INSTRUCTION_KEYS } from "@/Domain/tactics/teamInstructions";
 import { ROLE_VARIANT_IDS } from "@/GameEngine/Configs/RoleVariantConfig";
 import { addInstrPair, naturalFormation, RANDOM_FORMATIONS, type InstrPairRaw, type InstrSetSpec, type InstrTask } from "@/lab/instructionMatrix";
 import type { RoleVariantId } from "@/types/tacticsTypes";
 
-export type InstrPlanPart = "variants" | "press" | "random" | "marking" | "base";
+export type InstrPlanPart = "variants" | "press" | "random" | "marking" | "base" | "team";
 
 export interface InstrPlan {
   league: string;
   parts: InstrPlanPart[];
   /** Variants to measure (default: all). */
   variants?: RoleVariantId[];
+  /** Team instructions to measure in the "team" part (default: all, plus the mentality). */
+  teamKeys?: string[];
   /** Matches per edge pair (X instructed vs Y default). */
   matches: number;
   /** Matches per mirror pair (both sides instructed); 0 = none. */
@@ -56,6 +59,17 @@ export function buildInstrTasks(plan: InstrPlan, offsetBase = 0): InstrTask[] {
     for (const by of ["mid", "cb"] as const) {
       for (const markers of [1, 2] as const) {
         out.push(...chunks(league, `mark_${by}_${markers}`, "4-3-3", "edge", { type: "mark", markers, by }, plan.matches, offsetBase));
+      }
+    }
+  }
+  if (plan.parts.includes("team")) {
+    // Stage 20: each team instruction (and the mentality) at -2 and +2 against the balanced template, 4-3-3.
+    for (const key of [...INSTRUCTION_KEYS, "mentality" as const]) {
+      if (plan.teamKeys && !plan.teamKeys.includes(key)) continue;
+      for (const level of [-2, 2] as const) {
+        const k = `ti_${key}_${level > 0 ? "+" : ""}${level}`;
+        out.push(...chunks(league, k, "4-3-3", "edge", { type: "team", key, level }, plan.matches, offsetBase));
+        if (plan.mirrorMatches > 0) out.push(...chunks(league, k, "4-3-3", "mirror", { type: "team", key, level }, plan.mirrorMatches, offsetBase));
       }
     }
   }

@@ -156,3 +156,9 @@ justa). Volume do mundo: os dois lados IA sobem igual (execução × 1,014 em ve
 ## A IA estuda o técnico (12.3)
 
 Contra um clube humano que repete o plano, a IA deixa o Equilibrado e joga o estilo da tabela `STUDY.COUNTER` com a familiaridade da regra dela (`aiFamiliarity(estilo do plano)`: 85 no estilo que joga). IA × IA continua no Equilibrado. Ver `.claude/rules/game/study.md`.
+
+## Familiarity of the instructions (stage 20 of the engine rebuild)
+
+Three more keys, `instr_in_possession`, `instr_transition`, `instr_out_of_possession`: how much of an instruction's step
+from the style's template the team plays (scale 0.5 + 0.5 × f/100; absent record = full, the lab and `/test`). The AI
+knows them at `AI_OWN_STYLE`; a human starts at `INITIAL` and trains them as a style focus.

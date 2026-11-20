@@ -206,3 +206,13 @@ Report de tester. A última escalação de cada formação (`lastLineupKey`, `sr
 ## Táticas da conta (12.18)
 
 Report do usuário. A tabela `account_tactics` (SQLite, por usuário, até `MAX_ACCOUNT_TACTICS` 30) guarda o código de uma escalação salva (`exportPreset`: formação, instruções, estilo, eixos e nome, sem jogadores). Rotas (`accountRoutes.ts`): `GET /api/account/tactics`, `POST { name, code }` (201; 400 `invalidTactic` para código que `importPreset` não aceita, nome vazio; 409 `full`; 413), `DELETE /api/account/tactics/:id` (404 de outro usuário). Tela (`AccountTacticsLibrary`, no topo de "Escalações salvas"): o botão de nuvem de cada escalação guarda na conta; cada tática da lista tem Usar (põe na primeira vaga livre pelo mesmo caminho da importação) e Tirar, com confirmação.
+
+## Team instructions, duty and role out of possession (stage 20 of the engine rebuild)
+
+`TacticsSave.teamInstructions` and `TacticsSave.mentality` (five levels each) replace the four axes on the Formation
+screen (`Tactics/TeamInstructionsPanel.tsx`): the mentality, then three cards (with the ball, transition, without the
+ball); "Voltar ao modelo" goes back to the style's template. The pitch has a "with / without the ball" switch (the
+defending slots). Per slot (`SlotInstruction`): `duty` (defend / support / attack), `oop` (ten roles out of possession,
+`OOP_ROLES` in `RoleVariantConfig.ts`) and the player's own `shooting`, `dribbling`, `crossing`, `positioning` on the
+same scales. The live Tactics tab shows the same panel for the match only. Engine side:
+`game-engine/tactical-config.md` → "Stage 20".

@@ -5633,7 +5633,7 @@
       "saveFailed": "Não foi possível salvar as instruções.",
       "markingFailed": "Não foi possível salvar a marcação."
     },
-    "dutyLabel": "Função",
+    "dutyLabel": "Tarefa",
     "duty": {
       "defend": "Defender",
       "support": "Apoiar",

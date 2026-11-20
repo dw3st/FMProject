@@ -15,7 +15,8 @@ import { mainRoleOf } from '@/GameEngine/Domain/roleEngineData';
 import { Player } from '@/Domain/Player';
 import { mulberry32, seedFrom } from '@/Domain/rng';
 import type { Formation, GameState, PlayerRole, TeamId } from '@/GameEngine/types';
-import type { PressLevel, RoleVariantId, SlotInstruction } from '@/types/tacticsTypes';
+import type { InstructionLevel, PressLevel, RoleVariantId, SlotInstruction, TeamInstructions as TeamInstructionsSave } from '@/types/tacticsTypes';
+import { GROUP_OF, type InstructionKey } from '@/Domain/tactics/teamInstructions';
 import type { Squad } from '@/types/playerTypes';
 import { emptySideAgg, type InstrPairRaw, type SideAgg, type SlotAgg } from '@/lab/instructionMatrixSummary';
 
@@ -27,7 +28,9 @@ export type InstrSetSpec =
   | { type: 'variant'; variant: RoleVariantId }
   | { type: 'press'; level: PressLevel }
   | { type: 'random' }
-  | { type: 'mark'; markers: 1 | 2; by?: 'mid' | 'cb' };
+  | { type: 'mark'; markers: 1 | 2; by?: 'mid' | 'cb' }
+  /** Stage 20: one team instruction (or the mentality, key 'mentality') at a level, the rest at the template. */
+  | { type: 'team'; key: InstructionKey | 'mentality'; level: InstructionLevel };
 
 export interface InstrTask {
   league: string;
@@ -129,7 +132,7 @@ export function playInstructionMatch(
 
   const instrX = kind === 'base' ? { list: [], slots: [] } : instructionsFor(spec, formation, rng);
   const instrY = kind === 'mirror' ? instructionsFor(spec, formation, rng) : { list: [], slots: [] };
-  const sideInstr: Record<TeamId, TeamInstructions> = { A: {}, B: {} };
+  const sideInstr: Record<TeamId, TeamInstructions & { instructions?: TeamInstructionsSave; mentality?: InstructionLevel }> = { A: {}, B: {} };
   sideInstr[teamX] = { slotInstructions: instrX.list };
   sideInstr[teamY] = { slotInstructions: instrY.list };
 
@@ -144,6 +147,17 @@ export function playInstructionMatch(
     // Y's marked targets vs X's same (unmarked) slots in the same matches.
     slotsX = targets;
     slotsY = targets;
+  }
+  if (spec.type === 'team' && kind !== 'base') {
+    const set = (side: TeamId) => {
+      if (spec.key === 'mentality') sideInstr[side] = { ...sideInstr[side], mentality: spec.level };
+      else sideInstr[side] = { ...sideInstr[side], instructions: { [GROUP_OF[spec.key]]: { [spec.key]: spec.level } } as TeamInstructionsSave };
+    };
+    set(teamX);
+    if (kind === 'mirror') set(teamY);
+    // Tracked: every outfield slot (the team-wide effect).
+    slotsX = formation.attacking.flatMap((sl, i) => (sl.role === 'GK' ? [] : [i]));
+    slotsY = slotsX;
   }
   if (spec.type === 'none' || kind === 'base') { slotsX = []; slotsY = []; }
 
