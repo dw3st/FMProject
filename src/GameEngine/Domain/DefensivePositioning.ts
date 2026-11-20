@@ -1263,13 +1263,23 @@ function selectDefensiveIntent(ctx: DefensiveIntentContext, possessionTime: numb
     }
   }
   // Stage 20 (4c-2): stopping crosses goes out to the wide man in the final 35 yd; inviting them holds the box.
-  const cr = instrDelta(ctx.player.team, 'crosses');
+  const cr = -instrDelta(ctx.player.team, 'crosses'); // stop = the negative levels
   if (cr !== 0 && ctx.ballHolder) {
     const h = ctx.ballHolder;
     const ownGoalX = ctx.player.attackDir === 1 ? 0 : PITCH_LENGTH;
     if (Math.abs(h.x - ownGoalX) < INSTR.CROSSES_ZONE_YD && Math.abs(h.y - PITCH_WIDTH / 2) > INSTR.CROSSES_WIDE_YD) {
       scores.press_holder *= Math.max(0, 1 + INSTR.CROSSES_PRESS * cr);
       scores.hold_shape *= Math.max(0, 1 - INSTR.CROSSES_HOLD * cr);
+    }
+  }
+  // Stage 20: the pressing trap closes on the holder in the zone it pushes him into (wide outside, central inside).
+  const tr = instrDelta(ctx.player.team, 'trap');
+  if (tr !== 0 && ctx.ballHolder) {
+    const off = Math.abs(ctx.ballHolder.y - PITCH_WIDTH / 2);
+    if (tr > 0 ? off > INSTR.TRAP_WIDE_YD : off < INSTR.TRAP_CENTRE_YD) {
+      const k = 1 + INSTR.TRAP_STEP * Math.abs(tr);
+      scores.step_into_carry_lane *= k;
+      scores.press_holder *= k;
     }
   }
   // The mind (stage 16, `DefensiveMind.ts`): noise, aggression and a concentration lapse modify the scores.

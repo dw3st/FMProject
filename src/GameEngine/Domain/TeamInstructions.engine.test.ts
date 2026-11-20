@@ -117,8 +117,8 @@ describe("4c-4: the holder's instructions", () => {
   });
 });
 
-describe("4c-5: anchors (overlap, underlap, trap)", () => {
-  test("full-back anchors move with the flank instruction, the back line with the trap", async () => {
+describe("4c-5: anchors (overlap, underlap, pressing trap)", () => {
+  test("full-back anchors move with the flank instruction, the block with the pressing trap", async () => {
     const { applyTeamAttackConfig } = await import("@/GameEngine/Configs/AttackConfig");
     const { slotBasePosition } = await import("@/GameEngine/FormationSlots");
     const { formationForSimId } = await import("@/Domain/matchFormations");
@@ -130,7 +130,8 @@ describe("4c-5: anchors (overlap, underlap, trap)", () => {
     const baseDef = slotBasePosition(lb, f, "defending");
     applyTeamAttackConfig("A", "balanced", "balanced", undefined, undefined, { inPossession: { flanks: 2 }, outOfPossession: { trap: 2 } });
     expect(slotBasePosition(lb, f, "attacking").x).toBeCloseTo(base.x + 6);
-    expect(slotBasePosition(lb, f, "defending").x).toBeCloseTo(baseDef.x + 3);
+    const def = slotBasePosition(lb, f, "defending");
+    expect(Math.abs(def.y - 37)).toBeCloseTo(Math.abs(baseDef.y - 37) - 3);
     applyTeamAttackConfig("A", "balanced", "balanced", undefined, undefined, { inPossession: { flanks: -2 } });
     const under = slotBasePosition(lb, f, "attacking");
     expect(under.x).toBeCloseTo(base.x);

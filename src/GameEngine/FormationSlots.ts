@@ -60,12 +60,11 @@ export function slotBasePosition(
 }
 
 const FULL_BACKS = new Set(['LB', 'RB', 'LWB', 'RWB']);
-const BACK_LINE = new Set(['CB', 'LB', 'RB', 'LWB', 'RWB']);
 
 /**
  * Stage 20 (4c-5/6): the team instructions that move a slot's anchor. With the ball, overlap pushes the full-backs up,
- * underlap tucks them in, and a slot's duty (defend / attack) pulls it back or pushes it up; without it, the offside
- * trap steps the back line up (drop off: back). Nothing at the template.
+ * underlap tucks them in, and a slot's duty (defend / attack) pulls it back or pushes it up; without it, the pressing
+ * trap shifts the block toward the centre (force outside) or the touchlines (force inside). Nothing at the template.
  */
 function applyInstructionAnchor(
   pos: { x: number; y: number },
@@ -81,9 +80,10 @@ function applyInstructionAnchor(
     const duty = p.instruction?.duty;
     if (duty === 'attack') dx += INSTR.DUTY_DX;
     else if (duty === 'defend') dx -= INSTR.DUTY_DX;
-  } else if (p.role && BACK_LINE.has(p.role)) {
+  } else if (p.role && p.role !== 'GK') {
+    // The pressing trap: forcing outside closes the centre (the block shifts in), forcing inside opens it.
     const tr = instrDelta(p.team, 'trap');
-    if (tr !== 0) dx += INSTR.TRAP_SHIFT_YD * tr;
+    if (tr !== 0) dyIn += INSTR.TRAP_SHIFT_YD * tr;
   }
   if (dx === 0 && dyIn === 0) return pos;
   return applyAnchorOffset(pos, { dx, dyIn }, p.attackDir);
