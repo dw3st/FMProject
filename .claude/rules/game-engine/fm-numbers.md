@@ -580,3 +580,43 @@ Mundo público (`MATCH_WORKERS=2 SEATS=<n> STEPS=3 bun scripts/public-world-meas
 
 Um jogo de assento em 90' custa ~16 s de motor; com 2 workers o passo de 40 assentos fica perto de 2 minutos. Mais
 workers baixam o tempo na proporção (o limite é a memória: ~120 MB por worker).
+## Etapa 17: notas e momento (só registro)
+`bun scripts/rating-distribution.ts 24 premier_league --seed 9100` (titulares, formações da IA, 90'), antes de juntar
+as etapas 10, 11 e 19. "Hoje" = a main com o relógio antigo e os pesos antigos (300 jogos). `--fm-scale` afina cada
+contagem até o volume do FM (R9) antes de dar a nota: é o ponto de desenho dos pesos `FM_RATING`. Nada calibrado.
+| Titulares (média ± dp) | GK | DEF | MID | FWD | FWD ≥ 8 |
+|---|---|---|---|---|---|
+| Hoje (main, pesos antigos) | 6,06 ± 0,20 | 6,18 ± 0,54 | 6,25 ± 0,47 | 6,65 ± 0,93 | 10,2% |
+| 90', pesos antigos | 5,99 ± 0,94 | 8,52 ± 1,46 | 9,16 ± 1,14 | 8,36 ± 1,70 | 63% |
+| 90', ganchos do FM (`FM_RATINGS`) | 5,48 ± 0,75 | 6,93 ± 1,23 | 7,30 ± 1,36 | 7,23 ± 1,79 | 32% |
+| 90', ganchos do FM no volume do FM | 6,11 ± 0,30 | 6,23 ± 0,50 | 6,51 ± 0,67 | 6,41 ± 0,96 | 5,6% |
+- O volume de 90' ainda não calibrado (gols ×4,8, desarmes ganhos ×6, faltas ×3,7, bloqueios ×0,26 do FM por jogo)
+  puxa as notas para cima; no volume do FM a forma volta à de hoje. Desenvolvimento, moral, prêmios e estrelas leem a
+  nota: a recalibração é da etapa 21.
+- Momento: 2152 pontos por jogo (os dois times), 861 de chutes; o time com mais fica com 56% deles.
+## Etapa 12: bolas paradas do FM (antes / depois)
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (mesmas sementes). Antes =
+`DECISION_OVERRIDES='{"FM_SET_PIECES":false}'` (as bolas paradas da Etapa 14), depois = `FM_SET_PIECES` ligada
+(`set-pieces-play.md` → "Stage 12"). Nada calibrado. As linhas "como foi cobrada" só existem com a flag (o evento
+`setPieceTaken` é novo).
+| Por partida, os dois times | Antes | Depois | FM |
+| Escanteios | 9,8 | 10,2 | 12,5 |
+| … de um chute (defendido ou desviado) | — | 76% | 65% |
+| … curto / centro da linha da pequena área / traves | — | 12 / 57 / 31% | 15 / 58 / 26% |
+| … na área na cobrança: ataque / defesa (goleiro incl.) | — | 5,0 / 9,7 | 5 / 10 |
+| Laterais | 33,6 | 34,3 | 23 |
+| … para trás / comprimento médio / mantidos | — / — / 77,6% | 42% / 9,6 m / 96,4% | 40% / mediana 9,4 m / 95% |
+| Tiros de meta de bola morta (longos) | — | 20,5 (38,6%) | 15,4 (38%) |
+| … comprimento médio / curtos mantidos / longos mantidos | — | 30,8 m / 99% / 33% | curto 15, longo 60 m / 100% / — |
+| Tiros de meta + bola na mão do goleiro (longos, coletor antigo) | 25,2 (4%) | 25,8 (32%) | — |
+| Faltas cobradas / chutes de falta direta | — | 84,4 / 0,25 | 16,2 / 0,8 |
+| Impedimentos | 5,0 | 4,4 | 8 |
+| Gols / chutes | 11,9 / 51,2 | 13,2 / 54,3 | 1,5 / 21,5 |
+- Escanteio, lateral e tiro de meta batem com o FM nas proporções (alvo, direção, comprimento, mantidos). O volume
+  (laterais 34 contra 23, tiros de meta 20 contra 15, escanteios 10 contra 12,5) é do jogo corrido (calibração, 21).
+- O lateral mantido sobe de 78 para 96% por três coisas: as opções curtas perto do batedor (antes o layout fixo podia
+  deixar o time longe da bola), o erro de lançamento da bola parada (base 90) e a lei do impedimento (não há impedimento
+  em lateral, tiro de meta e escanteio; uma primeira rodada sem essa regra marcava 11,2 impedimentos e 76% mantidos).
+- Os chutes de falta direta continuam raros (0,25): as faltas do motor (84 por jogo, 4,4 × o FM) quase nunca caem
+  centrais a até 29 m. Fica para a calibração das faltas (21).
+- Custo: ~10–14 s por partida (o PC estava com outras simulações).

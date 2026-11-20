@@ -8,6 +8,8 @@
  * Output : { type: 'progress' | 'result' } via postMessage
  */
 
+import { lineOfRole } from '@/lab/ratingDistribution';
+import { getMainRole } from '@/Domain/roles';
 import { personalityOf } from "@/Domain/personality/personality";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { withNewcomers } from "@/Domain/settling/settling";
@@ -107,6 +109,25 @@ function buildSquad(spec: SquadSpec, label: string): Squad {
   };
 }
 
+/** Stage 17: adds the ratings of `team`'s players on the pitch at full time to the line totals. */
+function addRatingLines(t: TeamRawStats, r: { players: { id: number; team: string; role: string }[]; playerRatings: Record<number, number> }, team: 'A' | 'B'): void {
+  for (const p of r.players) {
+    if (p.team !== team) continue;
+    const v = r.playerRatings[p.id];
+    if (v === undefined) continue;
+    const line = lineOfRole(getMainRole(p.role));
+    if (line === 'GK') { t.ratingGkSum += v; t.ratingGkN++; }
+    else {
+      if (line === 'DEF') { t.ratingDefSum += v; t.ratingDefN++; }
+      else if (line === 'MID') { t.ratingMidSum += v; t.ratingMidN++; }
+      else { t.ratingFwdSum += v; t.ratingFwdN++; }
+      t.ratingOutSum += v; t.ratingOutSqSum += v * v; t.ratingOutN++;
+    }
+    if (v >= 8) t.rating8Count++;
+    t.ratingAllN++;
+  }
+}
+
 function emptyTeamRaw(): TeamRawStats {
   return {
     wins: 0, goals: 0, shots: 0, shotsOnTarget: 0, xg: 0, assists: 0,
@@ -122,7 +143,8 @@ function emptyTeamRaw(): TeamRawStats {
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperComeOuts: 0, keeperCollects: 0, keeperFeetWins: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
     holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0, holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0, holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
     shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
-    airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0, headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0, boxHighBalls: 0, boxHighKeeper: 0, boxHighDef: 0, boxHighAtt: 0, keeperClaims: 0, keeperPunches: 0,
+    momentumPoints: 0, momentumShotPoints: 0, ratingGkSum: 0, ratingGkN: 0, ratingDefSum: 0, ratingDefN: 0, ratingMidSum: 0, ratingMidN: 0, ratingFwdSum: 0, ratingFwdN: 0, ratingOutSqSum: 0, ratingOutSum: 0, ratingOutN: 0, rating8Count: 0, ratingAllN: 0,
+    airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0, headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0, boxHighBalls: 0, boxHighKeeper: 0, boxHighDef: 0, boxHighAtt: 0, keeperClaims: 0, keeperPunches: 0, spCorners: 0, spCornerShort: 0, spCornerSix: 0, spCornerPost: 0, spCornerAttBox: 0, spCornerDefBox: 0, spCornersFromShot: 0, spThrowIns: 0, spThrowBack: 0, spThrowDistM: 0, spGoalKicks: 0, spGoalKicksLong: 0, spGoalKickDistM: 0, spFreeKicks: 0, spFkShots: 0,
     shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
@@ -286,6 +308,21 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.saves += src.saves;
   dst.savesGood += src.savesGood;
   dst.savesDifficult += src.savesDifficult;
+  dst.momentumPoints += src.momentumPoints;
+  dst.momentumShotPoints += src.momentumShotPoints;
+  dst.ratingGkSum += src.ratingGkSum;
+  dst.ratingGkN += src.ratingGkN;
+  dst.ratingDefSum += src.ratingDefSum;
+  dst.ratingDefN += src.ratingDefN;
+  dst.ratingMidSum += src.ratingMidSum;
+  dst.ratingMidN += src.ratingMidN;
+  dst.ratingFwdSum += src.ratingFwdSum;
+  dst.ratingFwdN += src.ratingFwdN;
+  dst.ratingOutSqSum += src.ratingOutSqSum;
+  dst.ratingOutSum += src.ratingOutSum;
+  dst.ratingOutN += src.ratingOutN;
+  dst.rating8Count += src.rating8Count;
+  dst.ratingAllN += src.ratingAllN;
   dst.shotPower += src.shotPower;
   dst.shotPlaced += src.shotPlaced;
   dst.shotLob += src.shotLob;
@@ -317,6 +354,21 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.boxHighAtt += src.boxHighAtt;
   dst.keeperClaims += src.keeperClaims;
   dst.keeperPunches += src.keeperPunches;
+  dst.spCorners += src.spCorners;
+  dst.spCornerShort += src.spCornerShort;
+  dst.spCornerSix += src.spCornerSix;
+  dst.spCornerPost += src.spCornerPost;
+  dst.spCornerAttBox += src.spCornerAttBox;
+  dst.spCornerDefBox += src.spCornerDefBox;
+  dst.spCornersFromShot += src.spCornersFromShot;
+  dst.spThrowIns += src.spThrowIns;
+  dst.spThrowBack += src.spThrowBack;
+  dst.spThrowDistM += src.spThrowDistM;
+  dst.spGoalKicks += src.spGoalKicks;
+  dst.spGoalKicksLong += src.spGoalKicksLong;
+  dst.spGoalKickDistM += src.spGoalKickDistM;
+  dst.spFreeKicks += src.spFreeKicks;
+  dst.spFkShots += src.spFkShots;
   dst.headWonDef += src.headWonDef;
   dst.headWonMid += src.headWonMid;
   dst.headWonFwd += src.headWonFwd;
@@ -716,6 +768,10 @@ function runOneMatch(
   teamA.saves += sA.saves ?? 0; teamB.saves += sB.saves ?? 0;
   teamA.savesGood += sA.savesGood ?? 0; teamB.savesGood += sB.savesGood ?? 0;
   teamA.savesDifficult += sA.savesDifficult ?? 0; teamB.savesDifficult += sB.savesDifficult ?? 0;
+  teamA.momentumPoints += sA.momentumPoints ?? 0; teamB.momentumPoints += sB.momentumPoints ?? 0;
+  teamA.momentumShotPoints += sA.momentumShotPoints ?? 0; teamB.momentumShotPoints += sB.momentumShotPoints ?? 0;
+  // Stage 17: ratings of the players on the pitch at full time, by line (`ratingDistribution.ts`).
+  addRatingLines(teamA, r, 'A'); addRatingLines(teamB, r, 'B');
   teamA.shotPower += sA.shotPower ?? 0; teamB.shotPower += sB.shotPower ?? 0;
   teamA.shotPlaced += sA.shotPlaced ?? 0; teamB.shotPlaced += sB.shotPlaced ?? 0;
   teamA.shotLob += sA.shotLob ?? 0; teamB.shotLob += sB.shotLob ?? 0;
@@ -747,6 +803,21 @@ function runOneMatch(
   teamA.boxHighAtt += sA.boxHighAtt ?? 0; teamB.boxHighAtt += sB.boxHighAtt ?? 0;
   teamA.keeperClaims += sA.keeperClaims ?? 0; teamB.keeperClaims += sB.keeperClaims ?? 0;
   teamA.keeperPunches += sA.keeperPunches ?? 0; teamB.keeperPunches += sB.keeperPunches ?? 0;
+  teamA.spCorners += sA.spCorners ?? 0; teamB.spCorners += sB.spCorners ?? 0;
+  teamA.spCornerShort += sA.spCornerShort ?? 0; teamB.spCornerShort += sB.spCornerShort ?? 0;
+  teamA.spCornerSix += sA.spCornerSix ?? 0; teamB.spCornerSix += sB.spCornerSix ?? 0;
+  teamA.spCornerPost += sA.spCornerPost ?? 0; teamB.spCornerPost += sB.spCornerPost ?? 0;
+  teamA.spCornerAttBox += sA.spCornerAttBox ?? 0; teamB.spCornerAttBox += sB.spCornerAttBox ?? 0;
+  teamA.spCornerDefBox += sA.spCornerDefBox ?? 0; teamB.spCornerDefBox += sB.spCornerDefBox ?? 0;
+  teamA.spCornersFromShot += sA.spCornersFromShot ?? 0; teamB.spCornersFromShot += sB.spCornersFromShot ?? 0;
+  teamA.spThrowIns += sA.spThrowIns ?? 0; teamB.spThrowIns += sB.spThrowIns ?? 0;
+  teamA.spThrowBack += sA.spThrowBack ?? 0; teamB.spThrowBack += sB.spThrowBack ?? 0;
+  teamA.spThrowDistM += sA.spThrowDistM ?? 0; teamB.spThrowDistM += sB.spThrowDistM ?? 0;
+  teamA.spGoalKicks += sA.spGoalKicks ?? 0; teamB.spGoalKicks += sB.spGoalKicks ?? 0;
+  teamA.spGoalKicksLong += sA.spGoalKicksLong ?? 0; teamB.spGoalKicksLong += sB.spGoalKicksLong ?? 0;
+  teamA.spGoalKickDistM += sA.spGoalKickDistM ?? 0; teamB.spGoalKickDistM += sB.spGoalKickDistM ?? 0;
+  teamA.spFreeKicks += sA.spFreeKicks ?? 0; teamB.spFreeKicks += sB.spFreeKicks ?? 0;
+  teamA.spFkShots += sA.spFkShots ?? 0; teamB.spFkShots += sB.spFkShots ?? 0;
   teamA.headWonDef += sA.headWonDef ?? 0; teamB.headWonDef += sB.headWonDef ?? 0;
   teamA.headWonMid += sA.headWonMid ?? 0; teamB.headWonMid += sB.headWonMid ?? 0;
   teamA.headWonFwd += sA.headWonFwd ?? 0; teamB.headWonFwd += sB.headWonFwd ?? 0;

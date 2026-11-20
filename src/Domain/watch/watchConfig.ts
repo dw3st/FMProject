@@ -22,5 +22,5 @@ export const WATCH_EVENTS: ReadonlySet<string> = new Set([
   "offsideCalled", "injury", "playerSubstituted", "positionsSwapped", "varCheck", "varReview", "halfTime", "extraTimeStart",
   "penaltyKick", "shootoutEnd", "matchStart", "matchEnd", "kickOff", "shot", "shotResolved", "header",
   // The players' sprite poses (art phase 2): passes and tackles.
-  "managerCard", "passAttempted", "passCompleted", "crossStarted", "longBallStarted", "throughBallStarted", "tackle", "gkClaim", "holderMove",
+  "managerCard", "passAttempted", "passCompleted", "crossStarted", "longBallStarted", "throughBallStarted", "tackle", "gkClaim", "holderMove", "momentumPoints",
 ]);

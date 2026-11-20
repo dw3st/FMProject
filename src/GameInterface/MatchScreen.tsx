@@ -85,6 +85,8 @@ import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { MatchEventBanner, type MatchBannerItem } from "@/GameInterface/MatchEventBanner";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/GameInterface/MatchSummaryPanel";
+import { MomentumBar } from "@/GameInterface/Momentum/MomentumBar";
+import { useMomentum } from "@/GameInterface/Momentum/useMomentum";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 import { useCurrentUser } from "@/GameInterface/AuthGate";
 import { ReportModal } from "@/GameInterface/Components/ReportModal";
@@ -777,7 +779,7 @@ export function MatchScreen() {
           else if (state.matchPhase === "extraTimeBreak") setMatchOverlay("extraTime");
           showNotice(t("match.resumed"), "info");
         } else {
-          initRatings(state.players.map(p => p.id));
+          initRatings(state.players.map(p => ({ id: p.id, team: p.team })));
           initStats(state.players.map(p => ({ id: p.id, team: p.team })));
         }
         setRatings(getAllRatings());
@@ -2026,6 +2028,8 @@ export function MatchScreen() {
     const shown = displaySides(isAwayView(matchFixture, crestIds?.a));
     return { left: of(shown.left), right: of(shown.right) };
   }, [touchline, faceRoster, matchKitColors, mySide, matchFixture, crestIds]);
+  // Stage 17: FM's momentum bar (statistics and presentation only).
+  const momentum = useMomentum();
 
   if (loadError) {
     return (
@@ -2677,6 +2681,7 @@ export function MatchScreen() {
           feed={feed}
           extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} open={heatmapOpen} onToggle={toggleHeatmap} />}
           referee={touchline?.referee ?? null}
+          momentum={<MomentumBar bar={awayView ? -momentum.bar : momentum.bar} colorLeft={shownKits.A} colorRight={shownKits.B} nameLeft={shownTeams.A?.name} nameRight={shownTeams.B?.name} />}
         />
           </div>
         </div>

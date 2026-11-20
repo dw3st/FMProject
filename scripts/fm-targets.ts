@@ -225,6 +225,19 @@ console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) 
   console.log(`  keeper open-play passes ${f1(kp.n / n)} per match (FM 47) · long (35 m+) ${f1((100 * kp.long) / Math.max(1, kp.n))}% (FM 40) · median ${med(kp.dist)} m (FM 21) · kept short ${f1((100 * kp.shortKept) / Math.max(1, kp.shortN))}% (FM 100) · long ${f1((100 * kp.longKept) / Math.max(1, kp.longN))}% (FM 33)`);
   console.log(`  goal kicks ${f1(fm.goalKick.n / n)} per match (FM 15.4) · long ${f1((100 * fm.goalKick.long) / Math.max(1, fm.goalKick.n))}% (FM 38)`);
 }
+// Stage 12 (`set-pieces-play.md` → "Stage 12"): how the set pieces are taken.
+{
+  console.log("\n── Set pieces (stage 12; R8 §4, R9) ──");
+  const w = (k: string) => world[k] ?? 0;
+  const pc = (a: number, b: number) => f1((100 * a) / Math.max(1, b));
+  const c = w("spCorners");
+  console.log(`  corners taken ${f2(c / n)} per match (FM 12.5) · off a shot ${pc(w("spCornersFromShot"), c)}% (FM 65) · short ${pc(w("spCornerShort"), c)}% (FM 15) · six-yard centre ${pc(w("spCornerSix"), c)}% (FM 58) · posts ${pc(w("spCornerPost"), c)}% (FM 26) · in the box: attack ${f1(w("spCornerAttBox") / Math.max(1, c))} (FM 5) / defence ${f1(w("spCornerDefBox") / Math.max(1, c))} (FM 10, keeper incl.)`);
+  const t = w("spThrowIns"); const rk = fm.restartKept;
+  console.log(`  throw-ins ${f2(t / n)} per match (FM 23) · backward ${pc(w("spThrowBack"), t)}% (FM 40) · mean length ${f1(w("spThrowDistM") / Math.max(1, t))} m (FM median 9.4) · kept ${pc(rk.throwKept, rk.throwN)}% (FM 95)`);
+  const g = w("spGoalKicks");
+  console.log(`  dead-ball goal kicks ${f2(g / n)} per match (FM 15.4) · long ${pc(w("spGoalKicksLong"), g)}% (FM 38) · mean length ${f1(w("spGoalKickDistM") / Math.max(1, g))} m (FM short 15 / long 60) · kept short ${pc(rk.gkShortKept, rk.gkShortN)}% (FM 100) · long ${pc(rk.gkLongKept, rk.gkLongN)}%`);
+  console.log(`  free kicks taken ${f2(w("spFreeKicks") / n)} per match (FM 16.2) · shot directly ${f2(w("spFkShots") / n)} (FM 0.8)`);
+}
 console.log("\n── World / match ──");
 console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && !k.startsWith("holder") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
 // Ball crowding (`ball-cluster.ts`'s measure): 3+ outfield defenders within 8 yd of the ball, share of defending ticks.

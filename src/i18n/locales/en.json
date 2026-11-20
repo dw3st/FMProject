@@ -1330,9 +1330,11 @@
       "CK": "Corners",
       "DFK": "Direct Free Kicks (goals)",
       "SPG": "Set-Piece Goals",
-      "NAME": "Name"
+      "NAME": "Name",
+      "RT": "Match rating (FM hooks; tooltip: what made it)"
     },
-    "subbedOff": "Substituted off at {{minute}}'"
+    "subbedOff": "Substituted off at {{minute}}'",
+    "momentumPoints": "Momentum points (FM table): {{a}} – {{b}}"
   },
   "match": {
     "mode": { "label": "Match", "full": "Whole", "highlights": "Highlights", "hint": "Whole: the 90 minutes sped up. Highlights: the key moments at normal speed, the rest skipped." },
@@ -1556,6 +1558,13 @@
       "attacking": "Attack",
       "balanced": "Bal.",
       "defensive": "Defend"
+    },
+    "momentum": {
+      "title": "Momentum",
+      "even": "Even",
+      "left": "Left side",
+      "right": "Right side",
+      "onTop": "{{team}} on top"
     }
   },
   "broadcast": {

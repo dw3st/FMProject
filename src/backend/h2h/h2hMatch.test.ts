@@ -208,8 +208,8 @@ describe("stage 22: 90 minutes, mode A pace, frames, mode B", () => {
       let sent = false;
       for (let i = 0; i < 50_000 && !m.done; i++) {
         out.push(...m.tick(200));
-        // The first tick past the 10th minute of play, wherever the jumps landed.
-        if (order && !sent && m.state.matchPhase === "firstHalf" && m.state.matchTime >= 600) {
+        // The first tick past the 10th minute of play, wherever the jumps landed (a jump can carry it into the second half).
+        if (order && !sent && ((m.state.matchPhase === "firstHalf" && m.state.matchTime >= 600) || m.state.matchPhase === "secondHalf")) {
           sent = true;
           out.push(...m.command("B", { kind: "mentality", mentality: "attacking" }));
         }
