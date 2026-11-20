@@ -14,6 +14,8 @@
  * Only whitelisted files are served (the font list below, the flag directory listing); the URL
  * carries a version segment, so the responses are `immutable`.
  */
+import { FORECAST_WORKER_ROUTE } from "@/Domain/match/forecastWorkerUrl";
+import { serveForecastWorker } from "@/backend/forecastWorkerAsset";
 import enLocale from "@/i18n/locales/en.json";
 import ptLocale from "@/i18n/locales/pt-BR.json";
 import { existsSync, readdirSync } from "node:fs";
@@ -363,6 +365,8 @@ const LOCALES: Record<string, unknown> = { "en.json": enLocale, "pt-BR.json": pt
 const localeBodies = new Map<string, string>();
 
 export const staticAssetRoutes = {
+  // The highlights Worker of the live match (stage 19): the engine bundled for the browser on the first request.
+  [FORECAST_WORKER_ROUTE]: () => serveForecastWorker(),
   // The web manifest (10.6): what makes the game installable as an app. Short cache: it may change with a release.
   [MANIFEST_PATH]: () => new Response(JSON.stringify(appManifest()), {
     headers: { "Content-Type": "application/manifest+json; charset=utf-8", "Cache-Control": "public, max-age=3600", "X-Content-Type-Options": "nosniff" },

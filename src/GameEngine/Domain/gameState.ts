@@ -30,6 +30,7 @@ import { assignMarkTargets, resetDefensiveIntentCache, stayHomeTarget } from '@/
 import { resetOffBallIntentCache } from '@/GameEngine/Domain/OffBallMovement';
 import { advanceActionClock, resetActionHold } from '@/GameEngine/Domain/ActionHold';
 import { assignZoneCover, passShadowPoint, pressStateOf, setShapeFormations, setZoneCover, zonesOf, type ShapeZone } from '@/GameEngine/Domain/TeamShape';
+import { registerEngineMemory } from '@/GameEngine/Support/EngineMemory';
 import { resetShoulderRuns, shoulderRunGoing } from '@/GameEngine/Domain/ShoulderRuns';
 import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
@@ -3939,6 +3940,15 @@ function noteShadowPress(presser: GamePlayer, holder: GamePlayer, receiverId: nu
 
 /** Zone covers of the last tick per side (`zoneCover` is emitted once per spell). */
 const _lastCover: Partial<Record<TeamId, Map<number, number>>> = {};
+// Stage 19 (`live-modes.md`): the shape clock and the zone covers travel with a mid-match snapshot.
+registerEngineMemory('gameState.shape', {
+  export: () => ({ t: _lastShapeMatchTime, phase: _lastShapePhase, cover: { A: _lastCover.A ? [..._lastCover.A] : null, B: _lastCover.B ? [..._lastCover.B] : null } }),
+  import: (v) => {
+    const m = v as { t: number; phase: string; cover: Record<TeamId, Array<[number, number]> | null> };
+    _lastShapeMatchTime = m.t; _lastShapePhase = m.phase;
+    _lastCover.A = m.cover.A ? new Map(m.cover.A) : undefined; _lastCover.B = m.cover.B ? new Map(m.cover.B) : undefined;
+  },
+});
 
 /**
  * Stage 15 (`team-shape.md`): the defending side's out-of-possession zones (its shape anchors) and who covers a

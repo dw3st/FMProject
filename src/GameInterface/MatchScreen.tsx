@@ -140,6 +140,7 @@ import {
   createPossessionHeatmap, exportPossessionHeatmap, importPossessionHeatmap, samplePossessionHeatmap,
   type PossessionHeatmap as HeatmapAcc,
 } from "@/Domain/match/possessionHeatmap";
+import { accumulatePossession } from "@/Domain/match/possession";
 import { PossessionHeatmap, readHeatmapOpen, writeHeatmapOpen } from "@/GameInterface/Components/PossessionHeatmap";
 import { applyLiveTactics, withLiveAxis, withLiveStyle, type LiveTactics } from "@/Domain/tactics/liveTactics";
 import type { TacticalAxes } from "@/types/tacticsTypes";
@@ -187,21 +188,6 @@ function assertSavedMyClubTactics(t: TacticsSave): void {
       throw new Error(`my club: tactics.lineup[${i}] is not a valid player id`);
     }
   }
-}
-
-/** Possession: game-seconds with the ball per team, only while the ball is in play (read on every emission). */
-function accumulatePossession(
-  acc: { A: number; B: number; lastTime: number; lastPhase: string },
-  gs: GameState,
-): void {
-  const phase = gs.matchPhase ?? "";
-  const dtGame = phase === acc.lastPhase ? gs.matchTime - acc.lastTime : 0;
-  if (dtGame > 0 && isLivePhase(gs.matchPhase) && gs.ballHolderId != null) {
-    const holder = gs.players.find((p) => p.id === gs.ballHolderId);
-    if (holder) acc[holder.team] += dtGame;
-  }
-  acc.lastTime = gs.matchTime;
-  acc.lastPhase = phase;
 }
 
 export function MatchScreen() {

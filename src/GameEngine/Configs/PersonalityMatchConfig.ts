@@ -10,6 +10,7 @@
 import type { TeamId } from '@/GameEngine/types';
 import { temperamentT, temperamentTOf } from '@/Domain/personality/personality';
 import type { RosterPlayer } from '@/types/playerTypes';
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 const TEAM_TEMPERAMENT_OVERRIDE: Record<TeamId, number | undefined> = { A: undefined, B: undefined };
 
@@ -21,3 +22,6 @@ export function setTeamTemperamentOverride(team: TeamId, temperament: number | u
 export function matchTemperamentOf(team: TeamId, rp: RosterPlayer): number {
   return temperamentTOf(TEAM_TEMPERAMENT_OVERRIDE[team]) ?? temperamentT(rp);
 }
+
+// Stage 19 (`live-modes.md`): the per-team configs travel with a mid-match snapshot.
+registerEngineMemory('PersonalityMatchConfig.TEAM_TEMPERAMENT_OVERRIDE', recordPart(TEAM_TEMPERAMENT_OVERRIDE as unknown as Record<string, unknown>));

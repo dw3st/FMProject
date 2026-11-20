@@ -5,6 +5,7 @@
  */
 import { TEAM_SHAPE as S } from '@/GameEngine/Configs/ShapeConfig';
 import type { TeamId } from '@/GameEngine/types';
+import { registerEngineMemory, mapPart } from '@/GameEngine/Support/EngineMemory';
 
 let _clock = 0;
 /** Seconds of play since the match began (live phases only). */
@@ -40,3 +41,7 @@ export function heldFor(playerId: number): number {
   const l = _locks.get(playerId);
   return l ? _clock - l.since : 0;
 }
+
+// Stage 19 (`live-modes.md`): the clock and the locks travel with a mid-match snapshot.
+registerEngineMemory('actionHold.clock', { export: () => _clock, import: (v) => { _clock = v as number; } });
+registerEngineMemory('actionHold.locks', mapPart(_locks));

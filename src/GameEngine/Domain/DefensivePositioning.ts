@@ -46,6 +46,7 @@ import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
 import { backLineTarget, fmShapePoint, fromOwnGoal, zoneCoverOf } from '@/GameEngine/Domain/TeamShape';
 import { blendLineX, firstPresserOf, anticipationLookahead, predictedPoint } from '@/GameEngine/Domain/Movement';
 import type { PressingStyle } from '@/types/tacticsTypes';
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 const PITCH_CENTER_Y = 37;
 
@@ -1528,3 +1529,6 @@ export function computeDefensivePosition(
     y: Math.max(minY, Math.min(maxY, rawY)),
   };
 }
+
+// Stage 19 (`live-modes.md`): the intent hysteresis travels with a mid-match snapshot.
+registerEngineMemory('defensiveIntent', recordPart(_intentCache as Record<string, unknown>));

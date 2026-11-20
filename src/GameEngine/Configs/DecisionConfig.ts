@@ -8,6 +8,7 @@
  * Overrides: `DECISION_OVERRIDES='{"HOLDER":true}'` (env, read once at load, scripts and workers) and
  * `simulateMatch(..., { decisions: { HOLDER: true } })` (per match; reset to the base flags when absent).
  */
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 /** Behaviour switches of the decision layer (phases 3–5). Phase 3 turns `HOLDER` on; the others stay off. */
 export interface DecisionFlags {
@@ -339,3 +340,6 @@ export const DECISION_FLAGS: DecisionFlags = { ...BASE_FLAGS };
 export function setDecisionFlags(partial?: Partial<DecisionFlags>): void {
   Object.assign(DECISION_FLAGS, BASE_FLAGS, partial ?? {});
 }
+
+// Stage 19 (`live-modes.md`): the flags (the `/test` toggles) travel with a mid-match snapshot.
+registerEngineMemory('decisionFlags', recordPart(DECISION_FLAGS as unknown as Record<string, unknown>));
