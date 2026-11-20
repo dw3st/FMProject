@@ -35,6 +35,7 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   mind:         "text-pink-300",
   condition:    "text-emerald-300",
   movement:     "text-teal-300",
+  rating:       "text-yellow-300",
 };
 
 type ActionScoreKey = 'shoot' | 'pass' | 'carry' | 'dribble' | 'throughBall' | 'cross' | 'longBall';

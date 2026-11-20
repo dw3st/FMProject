@@ -34,7 +34,8 @@ export type DebugCategory =
   | 'condition'     // stage 14: AI substitutions with their reason, condition samples (`Condition.ts`)
   | 'mind'          // stage 16: off-ball / defending mind — concentration lapses, aggression and noise shifts (`DefensiveMind.ts`)
   | 'keeper'        // active keeper: sweeps, 1v1 rushes, wide high-ball claims (`Keeper.ts`)
-  | 'movement';     // stage 4: rolling ball, deflections, shot blocks, back line, stand-off, short support (`movement.md`)
+  | 'movement'      // stage 4: rolling ball, deflections, shot blocks, back line, stand-off, short support (`movement.md`)
+  | 'rating';       // stage 17: the rarer FM rating hooks — goal adders, decisive goal, chance created / xA, mistake to goal, big saves
 
 export interface DebugEntry {
   id:        number;

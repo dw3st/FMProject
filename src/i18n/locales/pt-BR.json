@@ -1330,9 +1330,11 @@
       "CK": "Escanteios",
       "DFK": "Faltas Diretas (gols)",
       "SPG": "Gols de Bola Parada",
-      "NAME": "Nome"
+      "NAME": "Nome",
+      "RT": "Nota da partida (ganchos do FM; dica: de onde veio)"
     },
-    "subbedOff": "Substituído aos {{minute}}'"
+    "subbedOff": "Substituído aos {{minute}}'",
+    "momentumPoints": "Pontos de momento (tabela do FM): {{a}} – {{b}}"
   },
   "match": {
     "effects": {
@@ -1545,6 +1547,13 @@
       "attacking": "Ataque",
       "balanced": "Equil.",
       "defensive": "Defesa"
+    },
+    "momentum": {
+      "title": "Momento",
+      "even": "Equilibrado",
+      "left": "Time da esquerda",
+      "right": "Time da direita",
+      "onTop": "{{team}} por cima"
     }
   },
   "broadcast": {

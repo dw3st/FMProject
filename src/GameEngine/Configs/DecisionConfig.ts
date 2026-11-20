@@ -105,6 +105,10 @@ export interface DecisionFlags {
    *  (the first contact along the 3D flight, contested at the contact; the jump, standing still and being goal-side
    *  win it); high balls nobody meets drop loose. */
   FM_AERIAL: boolean;
+  /** Stage 17 (`player-scores.md` → "Stage 17"): the rating from FM's hooks (goal quality, decisive goal, xG
+   *  shortfall, chances created, xA, blocks, clearances, mistakes leading to goals, saves by difficulty), computed from
+   *  per-player tallies with weights sized for the 90-minute event volume. Off = the legacy event weights. */
+  FM_RATINGS: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -149,6 +153,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   SHOT_PHYSICS: true,
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
+  FM_RATINGS: true,
 };
 
 /**

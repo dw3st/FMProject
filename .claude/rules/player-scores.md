@@ -179,3 +179,44 @@ It adds **context bonuses**, like:
 • goal when losing
 • assist creating big chance
 • interception stopping shot
+---
+
+# Stage 17 (engine rebuild): ratings from FM's hooks (`DECISION_FLAGS.FM_RATINGS`)
+
+- Every hook only bumps a per-player tally (`RatingTally`, `Domain/RatingModel.ts`); the rating is
+  `ratingFromTally` = `FM_RATING.BASELINE` (5.85) + the parts (`ratingParts`), clamped 0..10 once. The weights
+  (`FM_RATING`, `PlayerRatingConfig.ts`) are sized for FM's 90-minute volume (R9: ~978 passes, 17 tackles won, 59
+  interceptions, 27 headers won, 21.5 shots, 1.5 goals per match); the legacy model (`RATING_WEIGHTS`, clamped per
+  event) is always kept beside it (`getAllLegacyRatings`) and used with the flag off.
+- Hooks: goals, good / great goal adders (shot xG < 0.15 / < 0.06, never a penalty), decisive goal (from 80', levels or
+  gives the lead), assists, shots and on target, xG shortfall (non-penalty xG − goals beyond 0.3), chances created (a
+  `shot` with `passerId`) and open-play xA, passes completed / incomplete (through balls included), dribbles, crosses
+  completed, tackles won / lost, interceptions (a physical `interceptionTouch` counts once), blocks (`shotBlocked`,
+  blocked crosses), clearances (cleared touches, headed clearances), mistakes leading to goals, loose balls won, aerial
+  duels won / lost, saves and good / difficult saves (`keeperSave.grade`), fouls, cards, penalties conceded.
+- **Mistake leading to a goal:** the last player of a side who lost the ball (pass intercepted or missed, tackled,
+  dribble lost, through ball lost) when the opponent scores before his side has the ball again and within
+  `MISTAKE_PASS_WINDOW` (4) opponent completed passes. `initRatings` takes `{ id, team }` (or learns sides from
+  `simStep`).
+- The `shot` event carries `passerId` (`state.lastPasserId`), `setPiece` (set-piece phase on: no xA) and `penalty`.
+- VAR: a goal ruled out undoes every hook it added (scorer, adders, assist, mistake).
+- Resume: `exportRatings` / `importRatings` stay plain numbers (the wire, the reload snapshot); an import keeps the
+  tallies and a residual so later hooks move the number from the imported one. `exportRatingState` /
+  `importRatingState` carry the tallies (`HighlightSkip`).
+- `/test`: RT column of the Stats panel (tooltip = the parts), scenario `rating-chance-created`, debug category
+  `rating`. `/lab`: mean rating by line, outfield sd and % ≥ 8 (`PairDetail`). Measurement:
+  `bun scripts/rating-distribution.ts [matches] [league] --out f.json` and `--eval f.json --fm-scale [--weights …]`.
+- Not recalibrated here (stage 21): development (DP from the match rating), morale, awards and stars all read the new
+  numbers; on today's uncalibrated 90' volume (6–7 goals and ~4× FM's tackles per match) the ratings run high.
+
+# Momentum (stage 17)
+
+- FM's table (`MomentumConfig.ts`): points per touch, completed pass and shot outcome (goal, woodwork, saved, blocked,
+  missed) by sixth of the attacking half and left / central / right third, from the attacker's view. Statistics and
+  presentation only: nothing in the engine reads it.
+- `Domain/Momentum.ts`: from `simStep` (positions, holder changes) and the shot events it emits `momentumPoints`;
+  `Statistics.ts` sums `momentumPoints` / `momentumShotPoints` per team; the bar (`momentumBar`) is the difference of the
+  points per match minute with a 4-minute half-life over 15 minutes (`MOMENTUM`; FM's decay was not found). A browser
+  that only replays the server's events (two-manager match, watch) gets the forwarded `momentumPoints`.
+- Screens: `MomentumBar` in the match summary panel (slot `momentum`) and in the `/test` Stats panel (with the
+  per-minute strip and the points). `/lab`: momentum points per match.

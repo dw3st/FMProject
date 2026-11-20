@@ -408,6 +408,8 @@ export interface TeamRawStats {
   /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
   /** Stage 10 (`aerial.md`): open-play crosses by first contact (air / low / unmet; attack / defence / keeper), summed contact height (yd); headers won / contested by line. */
+  /** Stage 17 (`player-scores.md`): FM momentum points (all, from shots); ratings of the players on the pitch at full time by line (sum, n), outfield sum / sum of squares / n, ratings ≥ 8, all rated. */
+  momentumPoints: number; momentumShotPoints: number; ratingGkSum: number; ratingGkN: number; ratingDefSum: number; ratingDefN: number; ratingMidSum: number; ratingMidN: number; ratingFwdSum: number; ratingFwdN: number; ratingOutSqSum: number; ratingOutSum: number; ratingOutN: number; rating8Count: number; ratingAllN: number;
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number; headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
   holderHolds: number;
   holderTurns: number;
@@ -683,6 +685,8 @@ export interface PerMatchView {
   /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   /** Stage 7: shot outcomes and techniques per match, saves by the keeper, launch speed (m/s) and the share of its shots on target the keeper saved. */
+  /** Stage 17: momentum points per match, mean rating by line (players on at full time), outfield rating sd, % rated ≥ 8. */
+  avgMomentumPoints: number; avgMomentumShotPoints: number; avgRatingGk: number; avgRatingDef: number; avgRatingMid: number; avgRatingFwd: number; ratingSdOutfield: number; rating8Pct: number;
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number;
   /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
    *  headers won per match and the win % of defenders / midfielders / forwards. */
@@ -912,6 +916,8 @@ export interface VariantSummary {
   /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   /** Stage 7: shot outcomes and techniques per match, saves by the keeper, launch speed (m/s) and the share of its shots on target the keeper saved. */
+  /** Stage 17: momentum points per match, mean rating by line (players on at full time), outfield rating sd, % rated ≥ 8. */
+  avgMomentumPoints: number; avgMomentumShotPoints: number; avgRatingGk: number; avgRatingDef: number; avgRatingMid: number; avgRatingFwd: number; ratingSdOutfield: number; rating8Pct: number;
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number;
   /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
    *  headers won per match and the win % of defenders / midfielders / forwards. */

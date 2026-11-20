@@ -190,9 +190,13 @@ export interface GameEvents {
 
   // ── Shot event ───────────────────────────────────────────────────────────
   /** Emitted the moment a player takes a shot. */
-  shot: { player: number; xg: number };
+  /** Stage 17 (ratings): `passerId` = the teammate whose pass led to it (a chance created), `setPiece` when it came
+   *  from a set piece (no open-play xA), `penalty` for an in-match penalty (no npxG). */
+  shot: { player: number; xg: number; passerId?: number; setPiece?: true; penalty?: true };
   /** Stage 4 (`movement.md`): an open-play shot blocked on its line (also counted as a shot). */
   shotBlocked: { player: number; blockerId: number };
+  /** Stage 17 (`player-scores.md` → "Momentum"): FM's momentum points a side earned (presentation and statistics only). */
+  momentumPoints: { team: TeamId; kind: import('@/GameEngine/Configs/MomentumConfig').MomentumEvent; points: number; minute: number };
 
   // ── Defensive events ─────────────────────────────────────────────────────
   /** Emitted on every tackle attempt (success or failure). */
