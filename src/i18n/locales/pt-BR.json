@@ -1535,10 +1535,19 @@
     "subbedOff": "Substituído aos {{minute}}'"
   },
   "match": {
-    "mode": { "label": "Partida", "full": "Inteira", "highlights": "Só os lances", "hint": "Inteira: os 90 minutos acelerados. Só os lances: os lances em velocidade normal, o resto pulado." },
+    "mode": {
+      "label": "Partida",
+      "full": "Inteira",
+      "highlights": "Só os lances",
+      "hint": "Inteira: os 90 minutos acelerados. Só os lances: os lances em velocidade normal, o resto pulado."
+    },
     "highlights": {
       "levelLabel": "Lances",
-      "level": { "main": "Principais", "extended": "Estendidos", "full": "Completos" },
+      "level": {
+        "main": "Principais",
+        "extended": "Estendidos",
+        "full": "Completos"
+      },
       "next": "Próximo lance",
       "waiting": "Simulando os próximos lances",
       "skipped": "{{from}}' a {{to}}'",
@@ -5620,6 +5629,57 @@
     "errors": {
       "saveFailed": "Não foi possível salvar as instruções.",
       "markingFailed": "Não foi possível salvar a marcação."
+    },
+    "dutyLabel": "Função",
+    "duty": {
+      "defend": "Defender",
+      "support": "Apoiar",
+      "attack": "Atacar"
+    },
+    "oopLabel": "Sem a bola",
+    "oopDefaultDesc": "Defende como a posição pede.",
+    "teamLevel": "Da equipe",
+    "oop": {
+      "fb_press": {
+        "name": "Sai no ponta",
+        "desc": "Vai pressionar o ponta adversário mais cedo."
+      },
+      "fb_stay": {
+        "name": "Segura a linha",
+        "desc": "Fica na linha de defesa e espera."
+      },
+      "cb_step": {
+        "name": "Sai para o corte",
+        "desc": "Sai da linha para cortar o passe e a condução."
+      },
+      "cb_cover": {
+        "name": "Faz a sobra",
+        "desc": "Fica atrás dos outros zagueiros, na cobertura."
+      },
+      "dm_screen": {
+        "name": "Protege a defesa",
+        "desc": "Fica na frente dos zagueiros e marca quem entra."
+      },
+      "cm_press": {
+        "name": "Pressiona",
+        "desc": "Sobe para pressionar quem tem a bola."
+      },
+      "w_track": {
+        "name": "Acompanha o lateral",
+        "desc": "Volta com o lateral adversário."
+      },
+      "w_stay": {
+        "name": "Fica na frente",
+        "desc": "Fica adiantado para o contra-ataque."
+      },
+      "st_press": {
+        "name": "Pressiona a saída",
+        "desc": "Pressiona os zagueiros e o goleiro."
+      },
+      "st_rest": {
+        "name": "Espera a bola",
+        "desc": "Pressiona pouco e guarda fôlego."
+      }
     }
   },
   "personality": {

@@ -13,7 +13,7 @@
 
 import type { PlayerRole } from '@/GameEngine/types';
 import { roleEngine, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
-import type { PressLevel, RoleVariantId, SlotInstruction } from '@/types/tacticsTypes';
+import type { OopRoleId, PressLevel, RoleVariantId, SlotInstruction } from '@/types/tacticsTypes';
 
 /** Anchor shift in yards: `dx` > 0 = toward the opponent's goal, `dyIn` > 0 = toward y 37. */
 export interface AnchorOffset {
@@ -215,8 +215,53 @@ export function effectiveInstruction(
   if (!instr || role === 'GK') return undefined;
   const variant = instr.variant && variantFitsRole(instr.variant, role) ? instr.variant : undefined;
   const press = instr.press && instr.press !== 'normal' ? instr.press : undefined;
-  if (!variant && !press) return undefined;
-  return { ...(variant ? { variant } : {}), ...(press ? { press } : {}) };
+  // Stage 20 (4c-6): duty, the role out of possession (when it fits the slot) and the player's own levels.
+  const duty = instr.duty && instr.duty !== 'support' ? instr.duty : undefined;
+  const oop = instr.oop && oopFitsRole(instr.oop, role) ? instr.oop : undefined;
+  const levels: Partial<Pick<SlotInstruction, PlayerLevelKey>> = {};
+  for (const k of PLAYER_LEVEL_KEYS) if (instr[k] !== undefined) levels[k] = instr[k];
+  if (!variant && !press && !duty && !oop && Object.keys(levels).length === 0) return undefined;
+  return {
+    ...(variant ? { variant } : {}), ...(press ? { press } : {}), ...(duty ? { duty } : {}), ...(oop ? { oop } : {}), ...levels,
+  };
+}
+
+/** The player instructions a slot can carry (stage 20; five levels like the team's). */
+export const PLAYER_LEVEL_KEYS = ['shooting', 'dribbling', 'crossing', 'positioning'] as const;
+export type PlayerLevelKey = typeof PLAYER_LEVEL_KEYS[number];
+
+/**
+ * Roles out of possession (stage 20, 4c-6): what a slot does without the ball, on top of its role — multipliers on its
+ * defensive intent weights and a shift of its defending anchor (yards along the attacking direction).
+ */
+export const OOP_ROLES: Record<OopRoleId, {
+  roles: readonly string[];
+  weights: Partial<Record<'hold_shape' | 'track_mark' | 'press_holder' | 'step_into_carry_lane', number>>;
+  defendDx?: number;
+}> = {
+  fb_press:  { roles: ['LB', 'RB', 'LWB', 'RWB'], weights: { press_holder: 1.3, step_into_carry_lane: 1.15 } },
+  fb_stay:   { roles: ['LB', 'RB', 'LWB', 'RWB'], weights: { hold_shape: 1.25, press_holder: 0.7 } },
+  cb_step:   { roles: ['CB'], weights: { step_into_carry_lane: 1.3, press_holder: 1.15 } },
+  cb_cover:  { roles: ['CB'], weights: { hold_shape: 1.2, press_holder: 0.75 }, defendDx: -2 },
+  dm_screen: { roles: ['CDM', 'CM'], weights: { hold_shape: 1.25, track_mark: 1.1, press_holder: 0.8 } },
+  cm_press:  { roles: ['CDM', 'CM', 'CAM'], weights: { press_holder: 1.3 } },
+  w_track:   { roles: ['LW', 'RW', 'LM', 'RM'], weights: { track_mark: 1.3 }, defendDx: -4 },
+  w_stay:    { roles: ['LW', 'RW', 'LM', 'RM'], weights: { hold_shape: 0.8, track_mark: 0.7 }, defendDx: 6 },
+  st_press:  { roles: ['ST', 'CAM'], weights: { press_holder: 1.35 } },
+  st_rest:   { roles: ['ST'], weights: { press_holder: 0.6, hold_shape: 1.1 } },
+};
+
+export function isOopRoleId(v: unknown): v is OopRoleId {
+  return typeof v === 'string' && Object.hasOwn(OOP_ROLES, v);
+}
+
+export function oopFitsRole(id: OopRoleId, role: string): boolean {
+  return OOP_ROLES[id]?.roles.includes(role) ?? false;
+}
+
+/** The out-of-possession roles a slot's role accepts. */
+export function oopRolesForRole(role: string): OopRoleId[] {
+  return (Object.keys(OOP_ROLES) as OopRoleId[]).filter((id) => oopFitsRole(id, role));
 }
 
 /**
@@ -229,10 +274,13 @@ export function resolveSlotTuning(
 ): RoleEngineTuning {
   const base = roleEngine(role);
   const eff = effectiveInstruction(role, instr);
-  if (!eff) return base;
+  if (!eff || (!eff.variant && !eff.press && !eff.oop)) return base;
   const v = eff.variant ? ROLE_VARIANTS[eff.variant].engine : {};
   const pm = PRESS_LEVEL_MULT[eff.press ?? 'normal'];
   const def = { ...base.defensiveIntentWeights, ...v.defensiveIntentWeights };
+  if (eff.oop) {
+    for (const [k, m] of Object.entries(OOP_ROLES[eff.oop].weights) as [keyof typeof def, number][]) def[k] = def[k] * m;
+  }
   return {
     ...base,
     ...(v.carryBias        !== undefined ? { carryBias:        v.carryBias }        : {}),
@@ -254,9 +302,11 @@ export function instructionAnchor(
   instr: SlotInstruction | null | undefined,
   phase: 'attacking' | 'defending',
 ): AnchorOffset | undefined {
-  if (!instr?.variant) return undefined;
-  const a = ROLE_VARIANTS[instr.variant]?.anchor;
-  return phase === 'attacking' ? a?.attack : a?.defend;
+  const a = instr?.variant ? ROLE_VARIANTS[instr.variant]?.anchor : undefined;
+  const off = phase === 'attacking' ? a?.attack : a?.defend;
+  const oopDx = phase === 'defending' && instr?.oop ? OOP_ROLES[instr.oop]?.defendDx ?? 0 : 0;
+  if (!oopDx) return off;
+  return { dx: (off?.dx ?? 0) + oopDx, dyIn: off?.dyIn ?? 0 };
 }
 
 const CENTRE_Y = 37;

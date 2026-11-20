@@ -1535,10 +1535,19 @@
     "subbedOff": "Substituted off at {{minute}}'"
   },
   "match": {
-    "mode": { "label": "Match", "full": "Whole", "highlights": "Highlights", "hint": "Whole: the 90 minutes sped up. Highlights: the key moments at normal speed, the rest skipped." },
+    "mode": {
+      "label": "Match",
+      "full": "Whole",
+      "highlights": "Highlights",
+      "hint": "Whole: the 90 minutes sped up. Highlights: the key moments at normal speed, the rest skipped."
+    },
     "highlights": {
       "levelLabel": "Highlights",
-      "level": { "main": "Key", "extended": "Extended", "full": "Full" },
+      "level": {
+        "main": "Key",
+        "extended": "Extended",
+        "full": "Full"
+      },
       "next": "Next highlight",
       "waiting": "Simulating the next highlights",
       "skipped": "{{from}}' to {{to}}'",
@@ -5623,6 +5632,57 @@
     "errors": {
       "saveFailed": "Could not save the instructions.",
       "markingFailed": "Could not save the marking."
+    },
+    "dutyLabel": "Duty",
+    "duty": {
+      "defend": "Defend",
+      "support": "Support",
+      "attack": "Attack"
+    },
+    "oopLabel": "Without the ball",
+    "oopDefaultDesc": "Defends as the position asks.",
+    "teamLevel": "Team's",
+    "oop": {
+      "fb_press": {
+        "name": "Engage the winger",
+        "desc": "Goes out to press the opposing winger earlier."
+      },
+      "fb_stay": {
+        "name": "Hold the line",
+        "desc": "Stays in the back line and waits."
+      },
+      "cb_step": {
+        "name": "Step out",
+        "desc": "Leaves the line to cut out the pass and the run."
+      },
+      "cb_cover": {
+        "name": "Cover",
+        "desc": "Sits behind the other centre-backs."
+      },
+      "dm_screen": {
+        "name": "Screen the defence",
+        "desc": "Sits in front of the centre-backs and picks up runners."
+      },
+      "cm_press": {
+        "name": "Press",
+        "desc": "Steps up to press the man on the ball."
+      },
+      "w_track": {
+        "name": "Track back",
+        "desc": "Follows the opposing full-back back."
+      },
+      "w_stay": {
+        "name": "Stay forward",
+        "desc": "Stays up for the counter."
+      },
+      "st_press": {
+        "name": "Press the build-up",
+        "desc": "Presses the centre-backs and the keeper."
+      },
+      "st_rest": {
+        "name": "Wait for the ball",
+        "desc": "Presses little and saves energy."
+      }
     }
   },
   "personality": {

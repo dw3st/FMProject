@@ -1,6 +1,12 @@
 import type { Formation } from "@/GameEngine/types";
-import type { MatchMark, PressLevel, SlotInstruction } from "@/types/tacticsTypes";
-import { effectiveInstruction, isRoleVariantId, variantFitsRole } from "@/GameEngine/Configs/RoleVariantConfig";
+import type { Duty, MatchMark, PressLevel, SlotInstruction } from "@/types/tacticsTypes";
+import {
+  PLAYER_LEVEL_KEYS, effectiveInstruction, isOopRoleId, isRoleVariantId, oopFitsRole, variantFitsRole,
+} from "@/GameEngine/Configs/RoleVariantConfig";
+import { isLevel } from "@/Domain/tactics/teamInstructions";
+
+const DUTIES: readonly Duty[] = ["defend", "support", "attack"];
+const SLOT_KEYS = new Set(["variant", "press", "duty", "oop", ...PLAYER_LEVEL_KEYS]);
 
 const PRESS_LEVELS: readonly PressLevel[] = ["less", "normal", "more"];
 
@@ -27,7 +33,7 @@ export function parseSlotInstructions(
     if (typeof entry !== "object" || Array.isArray(entry)) return { ok: false, error: "invalid slot instruction" };
     const src = entry as Record<string, unknown>;
     for (const key of Object.keys(src)) {
-      if (key !== "variant" && key !== "press") return { ok: false, error: "invalid slot instruction" };
+      if (!SLOT_KEYS.has(key)) return { ok: false, error: "invalid slot instruction" };
     }
     const role = formation.attacking[i]!.role;
     const instr: SlotInstruction = {};
@@ -43,7 +49,25 @@ export function parseSlotInstructions(
       if (role === "GK" && src.press !== "normal") return { ok: false, error: "goalkeeper takes no pressing" };
       if (src.press !== "normal") instr.press = src.press as PressLevel;
     }
-    out.push(instr.variant || instr.press ? instr : null);
+    // Stage 20 (4c-6): duty, the role out of possession, the player's own levels.
+    if (src.duty !== undefined && src.duty !== null) {
+      if (!DUTIES.includes(src.duty as Duty)) return { ok: false, error: "invalid duty" };
+      if (role === "GK" && src.duty !== "support") return { ok: false, error: "goalkeeper takes no duty" };
+      if (src.duty !== "support") instr.duty = src.duty as Duty;
+    }
+    if (src.oop !== undefined && src.oop !== null && src.oop !== "") {
+      if (!isOopRoleId(src.oop)) return { ok: false, error: "unknown out-of-possession role" };
+      if (!oopFitsRole(src.oop, role)) return { ok: false, error: "out-of-possession role does not fit the slot" };
+      instr.oop = src.oop;
+    }
+    for (const k of PLAYER_LEVEL_KEYS) {
+      const v = src[k];
+      if (v === undefined || v === null) continue;
+      if (!isLevel(v)) return { ok: false, error: "invalid instruction level" };
+      if (role === "GK") return { ok: false, error: "goalkeeper takes no player instruction" };
+      instr[k] = v;
+    }
+    out.push(Object.keys(instr).length > 0 ? instr : null);
   }
   while (out.length > 0 && out[out.length - 1] === null) out.pop();
   return { ok: true, value: out };

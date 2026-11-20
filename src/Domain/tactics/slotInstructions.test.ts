@@ -60,3 +60,27 @@ describe("parseMatchMarks", () => {
     expect(parseMatchMarks([{ slot: 99, targetId: "a" }], F433, opp, gks).ok).toBe(false);
   });
 });
+
+describe("stage 20: duty, out-of-possession role, player levels", () => {
+  test("parsed, fitted to the role, refused when they do not fit", async () => {
+    const { formationForSimId } = await import("@/Domain/matchFormations");
+    const f = formationForSimId("4-3-3");
+    const lb = f.attacking.findIndex((s) => s.role === "LB");
+    const list: unknown[] = []; list[lb] = { duty: "attack", oop: "fb_press", shooting: -1, crossing: 2 };
+    const r = parseSlotInstructions(list, f);
+    expect(r.ok && r.value[lb]).toEqual({ duty: "attack", oop: "fb_press", shooting: -1, crossing: 2 });
+    const bad: unknown[] = []; bad[lb] = { oop: "st_press" };
+    expect(parseSlotInstructions(bad, f).ok).toBe(false);
+    const lvl: unknown[] = []; lvl[lb] = { dribbling: 3 };
+    expect(parseSlotInstructions(lvl, f).ok).toBe(false);
+    const sup: unknown[] = []; sup[lb] = { duty: "support" };
+    expect(parseSlotInstructions(sup, f)).toEqual({ ok: true, value: [] });
+  });
+  test("the role out of possession scales the defensive weights", async () => {
+    const { resolveSlotTuning } = await import("@/GameEngine/Configs/RoleVariantConfig");
+    const base = resolveSlotTuning("LB", null);
+    const press = resolveSlotTuning("LB", { oop: "fb_press" });
+    expect(press.defensiveIntentWeights.press_holder).toBeCloseTo(base.defensiveIntentWeights.press_holder * 1.3);
+    expect(resolveSlotTuning("LB", { duty: "attack" })).toBe(base);
+  });
+});
