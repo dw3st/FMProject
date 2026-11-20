@@ -1,3 +1,4 @@
+import { heldAction, noteAction } from '@/GameEngine/Domain/ActionHold';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
 import type { GamePlayer, PlayerRole, TeamIntent } from '@/GameEngine/types';
@@ -203,12 +204,23 @@ function selectOffBallIntent(ctx: OffBallContext): {
   if (DECISION_FLAGS.SHORT_STEPS && prev !== undefined && prev !== best && finalScores[best] < finalScores[prev] + FM_NUMBERS.INTENT_HYSTERESIS) {
     best = prev;
   }
+  // Short actions held by time (stage 15, `team-shape.md`; FM ~5 s): an offer or a run is kept while it lasts; only
+  // coming short to a pressed holder breaks it.
+  if (DECISION_FLAGS.ACTION_HOLD) {
+    const poss = ctx.ballHolder.team;
+    const held = heldAction(ctx.player.id, poss) as OffBallIntent | undefined;
+    // Only an off-ball intent (a defensive one kept under the same id belongs to the other phase).
+    if (held && held in finalScores && held !== best && !ctx.comeShort) best = held;
+    noteAction(ctx.player.id, best, best !== 'hold_space', poss);
+  }
   _offBallIntent.set(ctx.player.id, best);
   return { intent: best, scores: finalScores };
 }
 
 /** The off-ball intent each player holds (stage 4b hysteresis); reset with the match. */
 const _offBallIntent = new Map<number, OffBallIntent>();
+/** The off-ball intent a player holds (telemetry, `/test`, the shoulder runs); undefined = none yet. */
+export function offBallIntentOf(playerId: number): OffBallIntent | undefined { return _offBallIntent.get(playerId); }
 export function resetOffBallIntentCache(): void { _offBallIntent.clear(); lastSupport = ''; }
 
 // ── Stage 2: Candidate generation ─────────────────────────────────────────────

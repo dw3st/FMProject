@@ -496,3 +496,9 @@ The slide ended inside the posts on the goal line, and the shot from there had x
 | shots / match | 6.00 | 5.91 (−1.5%) | 4.36 | 4.49 (+3.0%) |
 
 Without the finishing compensation: 1.99 goals / 5.66 shots (premier_league 200).
+
+## FM holder chooser (stage 8)
+
+With `FM_HOLDER` every carry lane is a candidate (risk (1 − clearance)², vetoed when the lane runs into an opponent), plus
+a 5.5-yd sprint step on an open lane, a byline run for a wide holder outside the box, a turn, a spin past a tight
+marker and a hold; the holder re-decides when the step ends or a challenge comes in. `holder-choice.md`.

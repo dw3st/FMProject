@@ -92,7 +92,15 @@ export interface GameEvents {
   /** Stage 4b (`fm-numbers.md`): the launch error missed the receiver; the ball runs loose. */
   passMissed:     { player: number; toId: number; distance: number };
   /** Stage 4b: the holder holds the ball or turns (a carry step of that kind starts). */
-  holderStep:     { playerId: number; team: TeamId; step: 'hold' | 'turn' };
+  holderStep:     { playerId: number; team: TeamId; step: 'hold' | 'turn' | 'sprint' | 'byline' | 'spin' | 'flag' };
+  /** Stage 8 (`holder-choice.md`): one FM holder decision — the chosen category (0 pass, 1 kick, 2 turn, 3 hold,
+   *  4 carry) and kind, how many candidates were offered, vetoed (risk 100) and compressed, and a decisions lapse. */
+  holderChoice:   { playerId: number; team: TeamId; cat: 0 | 1 | 2 | 3 | 4; kind: string; candidates: number; vetoed: number; compressed: number; lapse: boolean };
+  /** Stage 8, debug only: every candidate of the decision (value, multiplier, risk, raw and final score, veto). */
+  holderCandidates: {
+    playerId: number; playerName: string; lapse: boolean; chosen: number;
+    candidates: { cat: 0 | 1 | 2 | 3 | 4; kind: string; label: string; value: number; mult: number; risk: number; raw: number; score: number; vetoed: boolean; compressed: boolean }[];
+  };
   /**
    * Emitted at kick time when the chosen pass earned a positive far-flank
    * (switch-of-play) bonus. Derived generically from the active intent's
@@ -413,6 +421,14 @@ export interface GameEvents {
    * ball (#145, `Domain/BallCluster.ts`). Feeds the ball-cluster statistics.
    */
   ballCluster: { defendingTeam: TeamId; defendersNear: number; attackersNear: number };
+  /** Stage 15 (`team-shape.md`): a forward presses in the pass shadow of the holder (once per holder–presser pair). */
+  shadowPress: { playerId: number; team: TeamId; holderId: number; receiverId: number };
+  /** Stage 15: a holder of the shape covers a teammate's vacated zone (once per spell). */
+  zoneCover: { playerId: number; team: TeamId; zoneOwnerId: number };
+  /** Stage 15: the defending side's pressing state this tick (the predicted ball in FM's 3×3 grid), and the tick's seconds. */
+  pressState: { team: TeamId; state: number; seconds: number };
+  /** Stage 15: a runner goes on the last defender's shoulder (early = before any pass, a mistimed run). */
+  shoulderRun: { playerId: number; team: TeamId; early: boolean };
 
   /**
    * Emitted every tick for the ball holder when debug mode is on — top-N

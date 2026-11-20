@@ -302,6 +302,11 @@ export interface TeamRawStats {
   foulsWonCarrying: number;
   contactFouls: number;
   lineMisreads: number;
+  /** Stage 15 (`team-shape.md`): pass-shadow presses, zone covers, shoulder runs (early ones). */
+  shadowPresses: number;
+  zoneCovers: number;
+  shoulderRuns: number;
+  shoulderRunsEarly: number;
   // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
   crosses: number;
   crossesCompleted: number;
@@ -399,6 +404,20 @@ export interface TeamRawStats {
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
   holderHolds: number;
   holderTurns: number;
+  /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
+  holderChoices: number;
+  holderChoiceCarry: number;
+  holderChoicePass: number;
+  holderChoiceTurn: number;
+  holderChoiceHold: number;
+  holderChoiceKick: number;
+  holderStints: number;
+  holderCandidatesSum: number;
+  holderVetoedSum: number;
+  holderSprints: number;
+  holderBylines: number;
+  holderSpins: number;
+  holderFlagHolds: number;
   // Set pieces (`.claude/rules/game-engine/set-pieces-play.md`), summed across games.
   corners: number;
   throwIns: number;
@@ -570,6 +589,11 @@ export interface PerMatchView {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 15 (`team-shape.md`) per match. */
+  avgShadowPresses: number;
+  avgZoneCovers: number;
+  avgShoulderRuns: number;
+  avgShoulderRunsEarly: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;
@@ -651,6 +675,11 @@ export interface PerMatchView {
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;
@@ -782,6 +811,11 @@ export interface VariantSummary {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 15 (`team-shape.md`) per match. */
+  avgShadowPresses: number;
+  avgZoneCovers: number;
+  avgShoulderRuns: number;
+  avgShoulderRunsEarly: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;
@@ -862,6 +896,11 @@ export interface VariantSummary {
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
+  /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
+   *  candidates per decision, vetoed share, and per match the sprints, byline runs, spins and corner-flag holds. */
+  holderCarryPct: number; holderPassPct: number; holderTurnPct: number; holderHoldPct: number; holderKickPct: number;
+  holderDecisionsPerStint: number; holderCandidatesPerDecision: number; holderVetoedPct: number;
+  avgHolderSprints: number; avgHolderBylines: number; avgHolderSpins: number; avgHolderFlagHolds: number;
   /** Set pieces per match (`set-pieces-play.md`); setPieceGoalPct = set-piece goals / goals. */
   avgCorners: number;
   avgThrowIns: number;

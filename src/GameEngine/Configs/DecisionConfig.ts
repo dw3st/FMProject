@@ -82,6 +82,19 @@ export interface DecisionFlags {
   /** Stage 14 (`fitness.md` → "FM condition"): FM's condition curve (kick-off 99, drain fading toward a floor, +2 at
    *  half time, keepers barely tire) and FM's AI substitutions (from 55', at 55–75 %, 3–4 a match). */
   FM_CONDITION: boolean;
+  /** Stage 8 (`holder-choice.md`): the FM holder chooser — every candidate with a risk byte (veto, compression), hard
+   *  argmax with noise only on a lapse; hold, turn, spin, sprint, byline run and corner-flag hold as real actions. */
+  FM_HOLDER: boolean;
+  /** Stage 15 (`team-shape.md`): the block at FM's line, span and width in and out of possession, sliding with the ball. */
+  FM_SHAPE: boolean;
+  /** Stage 15: out of possession a holder covers a vacated zone by FM's position scores (home, neighbours, far). */
+  OOP_ZONES: boolean;
+  /** Stage 15: a forward presses in the pass shadow (midpoint of holder and receiver); pressing states 0–8. */
+  PASS_SHADOW: boolean;
+  /** Stage 15: short off-ball and defensive actions are held ~5 s of play (FM), not re-chosen every second. */
+  ACTION_HOLD: boolean;
+  /** Stage 15: runners on the last defender's shoulder go on the pass (or early, a mistimed run). */
+  SHOULDER_RUNS: boolean;
   /** Stage 7 (`shot-and-save.md` → "Stage 7"): the shot is a physical launch (aim, FM's error with base 105) and the
    *  goal, save, block or miss come from the ball against the keeper and the defenders, no goal dice (needs `BALL_3D`). */
   SHOT_PHYSICS: boolean;
@@ -120,6 +133,12 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   OFFSIDE_RUNS: true,
   FM_FOULS: true,
   FM_CONDITION: true,
+  FM_HOLDER: true,
+  FM_SHAPE: true,
+  OOP_ZONES: true,
+  PASS_SHADOW: true,
+  ACTION_HOLD: true,
+  SHOULDER_RUNS: true,
   SHOT_PHYSICS: true,
 };
 

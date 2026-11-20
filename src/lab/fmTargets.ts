@@ -3,6 +3,7 @@
  * tick of a match (`simulateMatch(..., { onTick })`), state-based so it needs no listener on the engine. Pure apart from
  * the accumulator it fills. Distances in yards; FM's metre bands converted (1 m = 1.0936 yd).
  */
+import { offBallIntentOf } from "@/GameEngine/Domain/OffBallMovement";
 import type { GameState, GamePlayer, TeamId } from "@/GameEngine/types";
 import type { PlayerDecision } from "@/GameEngine/Domain/DecisionTree";
 import { holderPressure } from "@/GameEngine/Domain/Pressure";
@@ -200,7 +201,7 @@ const ballGroupOf = (kind: string): BallGroup | null =>
 /** FM category of a holder decision. */
 export function holderCategory(d: PlayerDecision): HolderCat {
   switch (d.type) {
-    case "carry": return d.move === "shield" || d.step === "hold" ? "hold" : d.step === "turn" ? "turn" : "carry";
+    case "carry": return d.move === "shield" || d.step === "hold" || d.step === "flag" ? "hold" : d.step === "turn" || d.step === "spin" ? "turn" : "carry";
     case "dribble": return "carry";
     case "shoot": return "kick";
     default: return "pass";
@@ -218,9 +219,24 @@ const fromOwnGoal = (p: GamePlayer) => (p.attackDir === 1 ? p.x : PITCH_LENGTH -
 const thirdOf = (p: GamePlayer) => Math.min(2, Math.floor(fromOwnGoal(p) / (PITCH_LENGTH / 3)));
 const bandOfYd = (d: number) => { const m = d / YD; let i = 0; while (i < FM_BANDS_M.length && m >= FM_BANDS_M[i]!) i++; return i; };
 const pressureBand = (p: number) => (p <= 0 ? 0 : p < 15 ? 1 : p < 30 ? 2 : p < 50 ? 3 : 4);
-/** FM's default "take up position" (0x58): holding the shape, marking, supporting; the rest are short actions. */
-const isDefaultIntent = (t: string) => t === "hold_shape" || t === "idle" || t === "track_mark" || t === "support_run";
-const runKey = (t: string) => (isDefaultIntent(t) ? "default" : t);
+/**
+ * FM's default "take up position" (0x58) against its short actions (0x53 shape / marking, 0x5c support, 0x5a runs…,
+ * report 7): holding the shape or the space is the default; marking, stepping into a lane, offering, a run, making
+ * space, pressing are short (stage 15: an off-ball `support_run` is classed by its intent).
+ */
+const runKey = (p: GamePlayer, t: string) => {
+  if (t === "hold_shape" || t === "idle") return "default";
+  if (t === "support_run") { const i = offBallIntentOf(p.id); return i === "hold_space" || i === undefined ? "default" : i; }
+  // Pressing, tackling and chasing a loose ball are FM's pressing managers and ball events, not off-ball actions:
+  // they end a run but are not counted themselves.
+  if (t === "press" || t === "tackle" || t === "chase_loose_ball") return "other";
+  return t;
+};
+/** Record a finished run (the "other" kinds are not off-ball actions). */
+const pushRun = (acc: FmTargetTotals, r: HoldRun, end: number) => {
+  if (r.type === "other") return;
+  (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(end - r.since);
+};
 
 interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean; t0: number; vzM: number | null }
 interface Stint { id: number; t0: number; decisions: number }
@@ -338,9 +354,9 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
       const d = s.decisions[p.id];
       if (!d) continue;
       const r = runs.get(p.id);
-      const key = runKey(d.type);
+      const key = runKey(p, d.type);
       if (!r || r.type !== key) {
-        if (r) (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(realT - r.since);
+        if (r) pushRun(acc, r, realT);
         runs.set(p.id, { type: key, since: realT, line: lineOf(p) });
       }
     }
@@ -389,7 +405,7 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
       for (const k of last.players.filter(p => p.role === "GK")) { acc.keeperEnd.sum += k.energy; acc.keeperEnd.n++; }
     }
     acc.matches++;
-    for (const r of runs.values()) (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(realT - r.since);
+    for (const r of runs.values()) pushRun(acc, r, realT);
     runs.clear();
   };
   void PITCH_WIDTH;
