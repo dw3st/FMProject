@@ -54,6 +54,10 @@ export const INSTR = {
   /** Overlap (d > 0) / underlap (d < 0) of the full-backs: the attacking anchor + OVERLAP_DX · d yd ahead, or
    *  UNDERLAP_IN · |d| yd inside; their make_run × (1 + FLANK_RUN · |d|). Half the role variants' offsets. */
   OVERLAP_DX: 3,
+  /** A slot's duty: attack pushes the attacking anchor up, defend pulls it back (yards). */
+  DUTY_DX: 3,
+  /** A slot's duty on the off-ball run (attack ×(1 + DUTY_RUN) runs, defend ×(1 − DUTY_RUN) runs and more holds). */
+  DUTY_RUN: 0.15,
   UNDERLAP_IN: 3.5,
   FLANK_RUN: 0.08,
   /** Width beyond wide / narrow (±2): attacking width + WIDTH_EXTRA · extra (0.6 is the formation as drawn). */

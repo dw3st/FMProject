@@ -205,6 +205,15 @@ function selectOffBallIntent(ctx: OffBallContext): {
     }
   }
   // Stage 20 (4c-4): an expressive player leaves his zone more, a disciplined one holds it.
+  // Stage 20 (4c-5): overlapping full-backs make more runs, underlapping ones fewer (they tuck in).
+  if (ctx.player.role === 'LB' || ctx.player.role === 'RB' || ctx.player.role === 'LWB' || ctx.player.role === 'RWB') {
+    const fl = instrDelta(ctx.player.team, 'flanks');
+    if (fl !== 0) finalScores.make_run *= Math.max(0, 1 + INSTR.FLANK_RUN * fl);
+  }
+  // A slot's duty: attack runs more, defend holds more.
+  const duty = ctx.player.instruction?.duty;
+  if (duty === 'attack') finalScores.make_run *= 1 + INSTR.DUTY_RUN;
+  else if (duty === 'defend') { finalScores.make_run *= 1 - INSTR.DUTY_RUN; finalScores.hold_space *= 1 + INSTR.DUTY_RUN; }
   const fr = playerDelta(ctx.player, 'freedom');
   if (fr !== 0) finalScores.hold_space *= Math.max(0, 1 - INSTR.FREEDOM_HOLD * fr);
   // The mind (stage 16, `DefensiveMind.ts`): noise, anticipation and flair on the run, a concentration lapse.
