@@ -67,11 +67,14 @@ export const MOVEMENT = {
   /** Outliers clamped to ±LINE_CLAMP_M metres of the median before the mean. */
   LINE_CLAMP_M: 6,
   /** Target x of a back-liner = OWN × his own target + LINE × the line + BALL × the ball-relative depth. */
-  LINE_OWN_W: 0.5,
-  LINE_LINE_W: 0.25,
-  LINE_BALL_W: 0.25,
-  /** 1 = a zonal back-liner tracking a mark also holds the line; 0 (default) = only those holding shape (with markers in it the line cost 45% of the shots, `movement.md`). */
-  LINE_TRACK_MARK: 0,
+  // Stage 21 (`fm-numbers.md` → "Etapa 21"): own 0.5 → 0.2, line and ball 0.25 → 0.4, and markers hold the line too
+  // (LINE_TRACK_MARK 0 → 1): with zonal markers free to follow their man the out-of-possession line sat at 37 yd (FM 24)
+  // whatever the shape target; now ~29.
+  LINE_OWN_W: 0.2,
+  LINE_LINE_W: 0.4,
+  LINE_BALL_W: 0.4,
+  /** 1 = a zonal back-liner tracking a mark also holds the line; 0 = only those holding shape. */
+  LINE_TRACK_MARK: 1,
   /** The line moves when the wanted rate (gap / LINE_REACTION_S) passes LINE_MOVE_MPH, and holds again below
    *  LINE_HOLD_MPH (hysteresis; FM's 10 and 3 mph). */
   LINE_REACTION_S: 1,
@@ -111,6 +114,12 @@ export const MOVEMENT = {
   ANTICIPATION_INTERCEPT: 0.3,
   /** Mean anticipation of the world (0..1): the neutral point of the interception gain. */
   ANTICIPATION_MEAN: 0.29,
+
+  // ── Recovery run (stage 21, `team-shape.md`) ───────────────────────────────
+  /** Out of possession, a player more than this far up the pitch from his target (yd) runs back faster... */
+  RECOVER_GAP_YD: 8,
+  /** ...at this × his speed (1 = off; stage 21: 1.6, the kinematic law caps it near 9 yd/s). */
+  RECOVER_SPEED_MULT: 1.6,
 };
 
 try {

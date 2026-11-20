@@ -6,6 +6,8 @@
  * Every tunable number of the set-piece system lives here. Calibrated with
  * `bun scripts/setpiece-calibrate.ts` (see set-pieces-play.md for the measured table).
  */
+import { applyEnvOverrides } from '@/GameEngine/Support/EnvOverrides';
+
 export const SET_PIECE_CONFIG = {
   // ── Direct free kick ───────────────────────────────────────────────────────
   /** A free kick within this distance of the goal centre (yards) and a central angle is shot directly. */
@@ -101,12 +103,12 @@ export const SET_PIECE_CONFIG = {
 
   // ── Corner sources ─────────────────────────────────────────────────────────
   /** An off-target shot was deflected behind by a defender (needs one within SHOT_DEFLECT_RADIUS of the shooter). */
-  OFF_TARGET_CORNER_CHANCE: 0.8,
+  OFF_TARGET_CORNER_CHANCE: 0.6, // stage 21: 0.8 → 0.6
   SHOT_DEFLECT_RADIUS: 6,
   /** A blocked cross goes behind for a corner. */
   CROSS_BLOCK_CORNER_CHANCE: 0.5,
   /** A cross headed clear inside the box goes behind for a corner. */
-  CROSS_CLEAR_CORNER_CHANCE: 0.75,
+  CROSS_CLEAR_CORNER_CHANCE: 0.45, // stage 21: 0.75 → 0.45, corners ~20 → ~16.5 (FM 12.5)
   /**
    * The same chance when the cleared cross was itself a corner or a crossed free kick, as a share of the chance above
    * (tester report, 10.7: five or more corners in a row were common, each cleared corner giving the next one).
@@ -150,3 +152,5 @@ export const RESTART_DEAD_S = {
   OOB_CORNER: 36,
   OFFSIDE_FK: 36,
 } as const;
+
+applyEnvOverrides(SET_PIECE_CONFIG, 'SET_PIECE_OVERRIDES');

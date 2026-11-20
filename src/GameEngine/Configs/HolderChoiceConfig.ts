@@ -35,11 +35,11 @@ export const HOLDER_CHOICE = {
   /** A pass whose lane score is at or below this is vetoed (an opponent owns the line); an offside receiver too. */
   PASS_VETO_LANE: 0.05,
   /** A through-ball cell with a race score at or below this is vetoed (the defender gets there first). */
-  TB_VETO_RACE: 0.15,
+  TB_VETO_RACE: 0.6, // stage 21: 0.15 → 0.6
   /** A carry lane with a clearance at or below this is vetoed (he runs into an opponent). */
   CARRY_VETO_CLEARANCE: 0.05,
   /** Through-ball cells and cross targets offered (the best ones). */
-  TB_CANDIDATES: 3,
+  TB_CANDIDATES: 1, // stage 21: 3 → 1 (the best cell only)
 
   // ── New actions ──
   /** Sprint: a carry step of SPRINT_STEP_YD (FM type 0x2c, 5 m at ~6 m/s), only with SPRINT_CLEAR_YD of open lane. */

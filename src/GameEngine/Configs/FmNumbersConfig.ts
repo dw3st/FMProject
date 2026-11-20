@@ -42,15 +42,15 @@ export const FM_NUMBERS = {
   /** Estimated keep rate of a lofted pass for the chooser (FM: ~31% to the receiver, ~45% kept by the team). */
   LOFT_KEEP: 0.4,
   /** Through ball: the cell score × (1 − TB_RISK · (1 − race score)) — a race we may lose is worth less. */
-  TB_RISK: 0.4,
+  TB_RISK: 1, // stage 21: 0.4 → 1, with TB_MIN_RACE 0.85 and TB_LANE_RISK 0.9: through balls 95 → ~80 (FM 11.7)
   /** ...and × this for a ball into space longer than LOFT_YD (FM: almost every pass beyond ~27 m is lofted and contested). */
   TB_LONG_MULT: 0.85,
   /** ...and 0 below this race score (0.5 = level race): a ball into space the defender reaches first is not played. */
-  TB_MIN_RACE: 0.5,
+  TB_MIN_RACE: 0.85,
   /** ...and × (1 − TB_LANE_RISK × lane risk): a ball past a defender's interception corridor is mostly lost in flight. */
-  TB_LANE_RISK: 0.15,
+  TB_LANE_RISK: 0.9,
   /** Cross score × this (the passes it competes with already carry their risk; most crosses are lost). */
-  CROSS_RISK_MULT: 1, // stage 21: 0.85 → 1 (crosses)
+  CROSS_RISK_MULT: 0.8, // stage 21: 0.85 → 0.8 (a deeper line leaves the flanks open: crosses flooded to 100+)
 
   // ── 2. Decision timing (FM: ~0.65 decisions per second, a carry is a 2 m step) ──
   /** A carry is a step this long (yd); the holder re-decides when it is done. */

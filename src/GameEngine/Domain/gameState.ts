@@ -4574,6 +4574,11 @@ function updateBackLine(s: GameState, defendingTeam: TeamId, shapeBallPos: { x: 
 
 /** Last shadow press (holder:presser) announced: `shadowPress` once per pair. */
 let _lastShadow = '';
+// Stage 21: it gates the `shadowPress` stat, so it travels with a mid-match snapshot.
+registerEngineMemory('gameState.lastShadow', {
+  export: () => _lastShadow,
+  import: (v) => { _lastShadow = typeof v === 'string' ? v : ''; },
+});
 let _lastShapeMatchTime = 0;
 let _lastShapePhase = '';
 function noteShadowPress(presser: GamePlayer, holder: GamePlayer, receiverId: number): void {
@@ -6093,9 +6098,14 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
           ? player.runtimeStats.withoutBall.acceleration * CARRY_ACCEL_SPEED_BOOST
           : 0;
       const recoveryMult = recoverySpeedMult(player);
-      const step = Math.min((baseSpeed + accelBurst) * recoveryMult * dt, dist);
+      // Recovery run (stage 21, `team-shape.md`): out of possession, a player further up the pitch than his target by
+      // more than RECOVER_GAP_YD runs back at RECOVER_SPEED_MULT × his speed, as FM's defenders drop into the block.
+      const recovering = phase === 'defending' && !isPressing && player.role !== 'GK'
+        && (player.x - target.x) * player.attackDir > MOVEMENT.RECOVER_GAP_YD;
+      const vTop = (baseSpeed + accelBurst) * recoveryMult * (recovering ? MOVEMENT.RECOVER_SPEED_MULT : 1);
+      const step = Math.min(vTop * dt, dist);
       const legacy = { x: player.x + (dx / dist) * step, y: player.y + (dy / dist) * step };
-      return { ...moveToward(player, s, dt, target, (baseSpeed + accelBurst) * recoveryMult, legacy, moveLog), targetPosition: stepTarget };
+      return { ...moveToward(player, s, dt, target, vTop, legacy, moveLog), targetPosition: stepTarget };
     });
 
     s = { ...s, players: movedPlayers };

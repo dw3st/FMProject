@@ -113,6 +113,11 @@ const _backLineX: Partial<Record<TeamId, number | null>> = {};
 
 /** Last (holder, defender) stand-off announced: `pressStandOff` once per pair. */
 let _lastStandOff = '';
+// Stage 21: it gates the `pressStandOff` stat, so it travels with a mid-match snapshot.
+registerEngineMemory('DefensivePositioning.lastStandOff', {
+  export: () => _lastStandOff,
+  import: (v) => { _lastStandOff = typeof v === 'string' ? v : ''; },
+});
 
 /** Set by the tick loop once per tick for each side (`gameState.ts`). */
 export function setBackLineX(team: TeamId, x: number | null): void {

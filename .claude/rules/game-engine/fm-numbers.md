@@ -777,3 +777,108 @@ Fora dos ±5 p.p. em todos, mas só o contra-ataque passa com folga do ruído: o
 reforma; reequilibrar exige ~300 jogos por par e fica para a rodada dedicada à forma sem a bola, que mexe no mesmo bloco.
 Formações (`formation-matrix.ts`) e instruções (`instruction-matrix.ts --parts team`) não foram medidas nesta etapa: cada
 uma pede de 1 200 a 4 000 jogos para separar ±5 p.p. do ruído.
+
+Depois da rodada da forma, com 30 jogos por par (erro ~±15 p.p. por par, ~±8 na média de quatro):
+
+| Estilo | Vantagem média | Gols / chutes do espelho |
+|---|---|---|
+| Pressão alta | +43,3 | 3,9 / 38,2 |
+| Jogo direto | +31,7 | 5,9 / 57,2 |
+| Equilibrado | +15,0 | 4,2 / 39,6 |
+| Posse | −31,7 | 1,8 / 18,8 |
+| Contra-ataque | −58,3 | 7,8 / 70,6 |
+
+A forma nova não mexeu no contra-ataque: ele perde de todos (−40 a −67 por par) e o espelho tem 71 chutes. O bloco baixo
+com linha funda (alvo 16 jd) e sem pressão deixa o adversário chutar livre, e o jogo direto dos dois lados devolve a bola
+logo. A posse é o outro lado: 19 chutes no espelho, perde de quem pressiona (−67). O reequilíbrio pede mexer no que cada
+estilo faz (os eixos de `STYLE_TO_AXES` e os modelos de `teamInstructions.ts`), fora da calibração de volume.
+
+### Rodada da forma sem a bola
+
+Pedido do coordenador depois da tabela acima: a linha sem a bola (38 jd, FM 24) e o cerco da bola. Mesma medida
+(Premier, 12 partidas, seed 9000); "linha" = linha de trás sem a bola (jd), "cerco" = % dos ticks com 3+ defensores a
+8 jd da bola.
+
+**O que segurava a linha.** Uma sonda por jogador (zagueiros do time sem a bola) mostrou o alvo de cada um perto do da
+forma (~30 jd), mas a posição ~10 jd acima: em 37–48% dos ticks ele estava a mais de 5 jd do alvo, 70% disso nos 4 s
+depois de uma perda de bola (264 trocas de posse por jogo). E 40% dos zagueiros estavam marcando (`track_mark`), fora da
+linha (`LINE_TRACK_MARK` 0): eles seguiam o atacante, e o atacante ficava preso pelo impedimento da própria linha deles.
+Baixar o alvo da forma (`OUT_BACK_YD` 24 → 14) baixava a linha medida só 1,4 jd.
+
+| Rodada | Gols | Chutes | Escanteios | Cruzam. | Desarmes | Interc. | Faltas | Acerto | Linha | Cerco | Bolas em prof. |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 17 (antes) | 4,5 | 41,5 | 20,7 | 55 | 35,7 | 96 | 23,8 | 76,9% | 38,0 | 15,3% | 96 |
+| s1: corrida de volta 1,6× (`RECOVER_SPEED_MULT`) | 3,8 | 34,0 | 18,3 | 55 | 43,0 | 106 | 22,7 | 76,6% | 36,8 | 15,9% | 94 |
+| s3: + alvo da forma 14 jd | 3,0 | 27,1 | 14,9 | 45 | 40,6 | 115 | 24,4 | 84,9% | 35,4 | 12,9% | 79 |
+| s4: + bolas em profundidade só com corrida ganha | 3,9 | 33,9 | 17,6 | 54 | 42,8 | 107 | 27,3 | 79,6% | 37,1 | 17,7% | 56 |
+| s5: + compromisso no desarme 0,08, corte mais lento | 4,6 | 37,4 | 19,5 | 59 | 19,7 | 82 | 20,9 | 77,7% | 36,2 | 18,6% | 95 |
+| s7a: quem marca também segura a linha (`LINE_TRACK_MARK` 1) | 4,3 | 28,5 | 22,7 | 86 | 31,5 | 93 | 20,8 | 74,1% | 33,6 | 15,6% | 89 |
+| s7c: + pesos da linha 0 / 0,5 / 0,5, alvo 20 | 5,9 | 37,9 | 36,7 | 118 | 22,5 | 79 | 17,9 | 73,0% | 28,7 | 12,3% | 90 |
+| s8c: + cruzamento a 25 jd e risco 0,75, bloco 22 jd | 3,7 | 35,0 | 18,8 | 45 | 31,1 | 107 | 19,4 | 78,6% | 29,0 | 11,3% | 113 |
+| s9a: + bolas em profundidade só com corrida ganha, risco do cruzamento 0,85 | 3,8 | 37,6 | 24,6 | 67 | 31,8 | 101 | 20,5 | 78,7% | 29,0 | 12,4% | 82 |
+| **s10b (fica)**: + risco 0,8, escanteio de corte 0,45 e de chute para fora 0,6 | 3,7 | 35,9 | 16,5 | 54 | 32,8 | 108 | 22,3 | 79,5% | 28,9 | 12,8% | 84 |
+
+Ficou (`MovementConfig`, `ShapeConfig`, `FmNumbersConfig`, `HolderChoiceConfig`, `FmAerialConfig`, `SetPieceConfig`, com
+comentário): corrida de volta 1,6× para quem está 8+ jd acima do alvo sem a bola (`RECOVER_*`, mecanismo novo em
+`gameState.ts`; a lei cinemática segura em ~9 jd/s); quem marca também segura a linha, com pesos próprio 0,2, linha 0,4,
+bola 0,4; alvo da linha 20 jd e bloco 22 jd; cruzamento só a 25 jd da linha de fundo, risco 0,8; bola em profundidade só
+para a melhor célula (`TB_CANDIDATES` 1), com corrida ≥ 0,85 e risco cheio; escanteio de corte 0,45 e de chute para fora
+0,6. A linha de defesa com a bola não mudou (51, FM 58). Testado e descartado: o zagueiro que subiu numa bola parada
+voltar direto ao lugar com a bola (`RETURN_GAP_YD`, sem efeito medido) e corte mais lento (só troca interceptações por
+desarmes).
+
+A medida "Headers won" do painel passou a contar só as disputas no alto (`headWon*`, as mesmas do "headers won" da
+seção aérea); antes lia `aerialDuelsWon`, que conta também as divididas no chão (113 por jogo).
+
+### Tabela final depois da forma (Premier 24 partidas, Championship 12), nosso / FM / dentro?
+
+Substitui a tabela final acima. Faixa provisória: volume ±10%, proporções ±5 p.p.
+
+| Medida | Premier | Championship | FM | Dentro? |
+|---|---|---|---|---|
+| Gols | 3,6 | 4,5 | 1,5 (R9) · 3,8 (R8) | não pelo R9; sim pelo R8 (PL) |
+| Chutes | 37,3 | 39,8 | 21,5 (R9) · 36 (R8) | não pelo R9; sim pelo R8 (PL) |
+| No alvo % | 38,4 | 36,4 | 35 | sim |
+| Bloqueados % | 31,5 | 34,1 | 38 | não (−6,5) / sim |
+| De fora da área % | 39,1 | 42,3 | 46 (R9) · 27 (R8) | não (−7) / sim pelo R9 |
+| Conversão % | 9,7 | 11,3 | 7 (R9) · 11 (R8) | sim pelo R8 |
+| Defendidos % dos no alvo | 89,8 | 82,8 | 80 | não (+10) / sim |
+| xG por chute | 0,25 | 0,23 | 0,15 | não |
+| Escanteios | 17,2 | 15,6 | 12,5 | não (+38 / +25%) |
+| Laterais | 24,8 | 26,9 | 23 | sim / não (+17%) |
+| Tiros de meta (bola morta) | 9,2 | 8,3 | 15,4 | não |
+| Passes (todos) | 1 042 | 973 | 978 | sim (+6,5%) / sim |
+| Acerto dos passes % | 79,9 | 79,6 | 86 | não (−6) |
+| Acerto 13–18 / 18–22 / 22–27 m | 72,8 / 68,5 / 70,1 | 75,2 / 72,0 / 69,2 | 85 / 87 / 79 | não |
+| Cruzamentos | 54,1 | 46,3 | 64 | não (−15 / −28%) |
+| Acerto dos cruzamentos % | 18,9 | 18,9 | 19 | sim |
+| Cabeceios ganhos no alto | 31,0 | 29,3 | 27 | não (+15%) / sim (+8,5%) |
+| Desarmes ganhos | 34,5 | 25,3 | 17 | não |
+| Interceptações | 106 | 99 | 59 | não |
+| Dribles | 14,8 | 29,3 | 20 | não |
+| Faltas | 22,4 | 24,6 | 19 | não (+18 / +29%) |
+| Amarelos por falta | 0,18 | 0,18 | 0,16 | sim |
+| Impedimentos | 2,0 | 2,4 | 8 | não (a linha mais funda) |
+| Pênaltis | 0,75 | 0,83 | 0,2 | não |
+| Bolas em profundidade (certas) | 86 (55) | 93 (61) | 11,7 (8,5) | não |
+| Portador: conduz / passa / gira / segura | 40 / 42 / 9,5 / 7 | 43 / 41,5 / 8 / 6,7 | 44 / 34 / 12 / 9 | conduz sim; passa não; gira e segura no limite |
+| Decisões por s vivo | 0,92 | 0,87 | 0,65 | não |
+| Linha de trás com / sem a bola (jd) | 51,3 / 28,8 | 51,5 / 28,7 | 58 / 24 | não (−7 / +5) |
+| Adversários a 10 m do portador no meio | 2,07 | 1,98 | 1,8 | não / sim |
+| Bola com 3+ defensores a 8 jd | 12,6% | 10,2% | (main ~5,5%) | não |
+| Condição 15' / 45' / 90' | 89 / 75 / 68 | 88 / 74,5 / 67,6 | 87 / 77,5 / 73,5 | 15' sim; 45' sim; 90' não (−5,5) |
+| Trocas da IA por time / minuto | 3,6 / 59 | 3,8 / 60 | 3–4 / ~55 | sim |
+
+### O que ficou fora depois da forma, e por quê
+
+- **Linha sem a bola (29, FM 24):** o resto é o atraso depois de cada perda de bola (264 trocas de posse por jogo; o
+  zagueiro leva ~4 s para voltar 20+ jd e a lei cinemática segura a corrida em ~9 jd/s). Menos trocas de posse
+  aproximariam; elas vêm sobretudo das bolas em profundidade (86 por jogo, FM 11,7, com 31 perdidas) e das
+  interceptações.
+- **Bolas em profundidade (×7):** os vetos e o risco cheio levaram de 95 a ~80 (sozinhos, a 56); com a linha mais funda
+  sobra mais espaço atrás dela e as bolas voltam. Não investigado mais: fica para a rodada das decisões do portador.
+- **Chutes e gols:** perto do R8 (36 chutes, 3,8 gols) e longe do R9 (21,5 e 1,5). Os dois relatórios do FM
+  discordam; o usuário decide qual vale.
+- **Impedimentos (2, FM 8):** a linha mais funda deixa os atacantes em condição; caiu junto com a linha.
+- **Tiros de meta (9, FM 15):** menos chutes para fora e mais escanteios de corte.
+- **Desarmes e interceptações (×2):** seguem o cerco (13%, FM ~5,5%).

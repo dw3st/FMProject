@@ -25,7 +25,7 @@ export type FmCrossZoneKind = (typeof FM_CROSS_ZONES)[number]['kind'];
 const BASE = {
   // ── Cross origin (R8: median 5.5 m from the byline, |x| 23 m, 66 % from the byline zone) ──
   /** A cross is played from at most this far from the goal line (yd); the near-line penalty of the old model is off. */
-  CROSS_MAX_DIST_TO_LINE_YD: 35, // stage 21: 25 → 35, crosses 20 → ~58 a match (FM 64)
+  CROSS_MAX_DIST_TO_LINE_YD: 25, // stage 21: tried 35 (crosses 20 → 58); with the deeper line 25 is enough (~55)
   /** Inside the box a cut-back cross from within this of the byline (wide of the six-yard box). */
   CROSS_BYLINE_DIST_YD: 6,
   /** The drawn target lands uniformly within this of the zone's centre (the passer's error comes on top). */

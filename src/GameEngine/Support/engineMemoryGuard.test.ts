@@ -45,8 +45,6 @@ const ALLOW: Record<string, string> = {
   "Domain/DecisionTelemetry.ts:last": "written and read inside one decision",
   "Domain/HolderMind.ts:lastMind": "written and read inside one decision",
   "Domain/DefensivePositioning.ts:_backLineX": "set by every tick before it is read",
-  "Domain/DefensivePositioning.ts:_lastStandOff": "debug log dedupe",
-  "Domain/gameState.ts:_lastShadow": "debug log dedupe",
   "Domain/TeamShape.ts:_templates": "cache derived from the formation object",
   "Domain/TeamShape.ts:_formation": "set by every tick before it is read",
   "Domain/TeamShape.ts:_cover": "set by every tick before it is read",

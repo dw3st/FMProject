@@ -508,7 +508,7 @@ export const FM_MATCH_TARGETS: readonly FmMatchTarget[] = [
   { key: "passCompletionPct",  label: "Pass completion %",     fm: 86, pct: true, confidence: "H", source: "R9" },
   { key: "crosses",            label: "Crosses",               fm: 64,   confidence: "M", source: "R9" },
   { key: "crossCompletionPct", label: "Cross completion %",    fm: 19, pct: true, confidence: "M", source: "R9" },
-  { key: "aerialDuelsWon",     label: "Headers won",           fm: 27,   confidence: "M", source: "R9" },
+  { key: "aerialDuelsWon",     label: "Headers won (in air)",  fm: 27,   confidence: "M", source: "R9" },
   { key: "tacklesWon",         label: "Tackles won",           fm: 17,   confidence: "M", source: "R9" },
   { key: "interceptions",      label: "Interceptions",         fm: 59,   confidence: "M", source: "R9" },
   { key: "dribbles",           label: "Dribbles",              fm: 20,   confidence: "L", source: "R9" },
@@ -563,6 +563,8 @@ export interface FmMatchCounts {
   passesAttempted: number; passesCompleted: number; throughBallsAttempted: number; throughBallsCompleted: number;
   crosses: number; crossesCompleted: number; longBalls: number; longBallsCompleted: number;
   aerialDuelsWon: number; tackles: number; interceptions: number; dribblesWon: number;
+  /** Stage 21: headers won in the air by line (the "Headers won" row; `aerialDuelsWon` also counts duels on the ground). */
+  headWonDef?: number; headWonMid?: number; headWonFwd?: number;
   fouls: number; yellowCards: number; redCards: number; offsides: number; penaltiesAwarded: number;
   /** Stage 13: fouls suffered by third (fouled team's view) and by what he was doing; contact fouls; line misreads. */
   foulsWonOwnThird?: number; foulsWonMidThird?: number; foulsWonFinalThird?: number;
@@ -590,7 +592,7 @@ export const FM_COUNT_KEYS = [
   "aerialDuelsWon", "tackles", "interceptions", "dribblesWon",
   "fouls", "yellowCards", "redCards", "offsides", "penaltiesAwarded",
   "foulsWonOwnThird", "foulsWonMidThird", "foulsWonFinalThird", "foulsWonCarrying", "foulsWonReceiving", "foulsWonHolding",
-  "contactFouls", "lineMisreads",
+  "contactFouls", "lineMisreads", "headWonDef", "headWonMid", "headWonFwd",
   "shotsSaved", "shotsOffTarget", "shotsWoodwork", "shotsDeflected", "saves", "savesGood", "savesDifficult",
   "shotPower", "shotPlaced", "shotLob", "shotChip", "shotVolley", "shotHeaderLaunch", "shotFreeKick", "shotSpeedSum", "shotLaunchN",
   "shotDistSumM", "shotsOutsideBox", "shotsLowLaunch", "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
@@ -627,7 +629,8 @@ export function fmMatchValues(c: FmMatchCounts): Record<FmMatchKey, number | nul
     corners: c.corners, throwIns: c.throwIns,
     passesAttempted: all, passCompletionPct: pc(done, all),
     crosses: c.crosses, crossCompletionPct: pc(c.crossesCompleted, c.crosses),
-    aerialDuelsWon: c.aerialDuelsWon, tacklesWon: c.tackles, interceptions: c.interceptions, dribbles: c.dribblesWon,
+    aerialDuelsWon: c.headWonDef === undefined ? c.aerialDuelsWon : (c.headWonDef ?? 0) + (c.headWonMid ?? 0) + (c.headWonFwd ?? 0),
+    tacklesWon: c.tackles, interceptions: c.interceptions, dribbles: c.dribblesWon,
     fouls: c.fouls, yellowCards: c.yellowCards, yellowsPerFoul: ratio(c.yellowCards, c.fouls), redCards: c.redCards,
     offsides: c.offsides, penalties: c.penaltiesAwarded,
   };

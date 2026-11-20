@@ -16,7 +16,7 @@ export const TEAM_SHAPE = {
   /** Back line (mean of the four deepest outfield anchors), yd from the team's own goal line, with the ball on the
    *  halfway line (FM's mean ball: holder decisions split 28 / 43 / 29% over the thirds). */
   IN_BACK_YD: 58,
-  OUT_BACK_YD: 24,
+  OUT_BACK_YD: 20, // stage 21: 24 → 20 (the line lags its target in the transitions: measured ~29, FM 24)
   /** ...moves this many yd per yd of ball depth from halfway (the block slides with the ball, FM: ~30 m between the
    *  phases at the same length). */
   IN_BALL_SLOPE: 0.5,
@@ -30,7 +30,7 @@ export const TEAM_SHAPE = {
   LINE_TACTIC_YD: 20,
   /** Back four → front two, the whole shape scaled to this span (yd). */
   IN_SPAN_YD: 29,
-  OUT_SPAN_YD: 26,
+  OUT_SPAN_YD: 22, // stage 21: 26 → 22 (the midfield drops with the deeper line)
   /** Outfield anchors spread to this width (yd), × the width tactic on top. */
   IN_WIDTH_YD: 40,
   OUT_WIDTH_YD: 37,

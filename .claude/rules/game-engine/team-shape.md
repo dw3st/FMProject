@@ -67,3 +67,11 @@ point, a green ring on a shoulder run, a bar for the held short action); scenari
 - The default positioning is still held ~3–5 s (FM 10–20): what ends it is the change of possession (a possession
   lasts ~12 s) and loose balls, not the decision.
 - Volume moved (not calibrated): goals 6.8 → 9.3, shots 26 → 38 per match on the physical clock.
+
+## Stage 21: the line that holds
+
+`OUT_BACK_YD` 24 → 20 and `OUT_SPAN_YD` 26 → 22; markers hold the back line too (`MOVEMENT.LINE_TRACK_MARK` 1, weights
+own 0.2 / line 0.4 / ball 0.4); a player out of possession more than `RECOVER_GAP_YD` (8) yd up the pitch from his
+target runs back at `RECOVER_SPEED_MULT` (1.6) × his speed (`gameState.ts`, movement). Measured out-of-possession line
+38 → 29 yd (FM 24), ball crowd 16 → 13% of the ticks. The line lags its target after each turnover (~264 a match):
+that lag, not the target, is the remaining gap. See `fm-numbers.md` → "Etapa 21" → "Rodada da forma sem a bola".

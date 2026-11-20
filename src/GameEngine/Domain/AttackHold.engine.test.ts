@@ -71,6 +71,9 @@ describe("the whistle waits for an attack near the goal", () => {
     expect(tickState(at, 0.2).state.matchPhase).toBe("firstHalf");
     expect(tickState({ ...at, matchTime: end + 50 }, 0.2).state.matchPhase).toBe("halfTime");
     // In midfield the whistle goes at once.
-    expect(tickState({ ...holderAt("A", 60), matchTime: end - 0.5 }, 0.2).state.matchPhase).toBe("halfTime");
+    // Each built state draws its own stoppage time, so the midfield state is timed against its own period end (stage 21:
+    // the draw order moved and the first state's end no longer matched the second's).
+    const mid = holderAt("A", 60);
+    expect(tickState({ ...mid, matchTime: 2700 + mid.extraTimeFirst - 0.1 }, 0.2).state.matchPhase).toBe("halfTime");
   });
 });
