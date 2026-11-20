@@ -227,3 +227,39 @@ lay-off 3.0, chip 1.5, round 1.3) and the M4 effect to +5.8 pp with the anticipa
 ## FM numbers (stage 4b)
 
 With `ACTION_CADENCE` the holder decides per action (2.2 yd carry steps, hold, turn), interrupted by a closing opponent or near goal; `SHOT_LIMIT` removes shots beyond 33 yd. Flags and numbers in `fm-numbers.md`.
+
+## Stage 16: the mind off the ball and in defence (`DEFENSIVE_MIND`, `CONSISTENCY_CAP`, on by default)
+
+Engine rebuild stage 16: FM's per-update mental rolls for everyone who does not hold the ball, and the consistency cap.
+Code: `Domain/DefensiveMind.ts` (rules), `Domain/ConsistencyCap.ts`, constants `Configs/DefensiveMindConfig.ts`
+(`DEFENSIVE_MIND`, env `DEFENSIVE_MIND_OVERRIDES`). Not calibrated: the values are the design's starting points.
+
+- **Profile**: concentration and aggression join `PlayerMental` per match (`matchMentalOf` → `deriveMind`):
+  concentration = 0.45·anticipation + 0.35·decisions + 0.2·pressing/10 + 0.05·professionalism; aggression =
+  0.5·tackling/10 + 0.3·strength/10 + 0.15·temperament. A side's mental override sets both to its level. Like every mental
+  attribute, read only with `HOLDER` on.
+- **Window** (`refreshMindRolls`, the tick loop right after the offside-line reads): every outfield non-holder, every
+  0.8 s of play, rolls decisions, anticipation, concentration (U·(a+2), the holder's mood shapes and form window) and
+  aggression (U·(a+5); its mood from U·(150 − a) against mood × 50, so a hot head is more often in an extreme one), plus
+  four z. Below the form window a concentration roll ÷ fatigue (the holder's `fatigueLapseMult`) under 2 is a **lapse**.
+  Always the same number of draws. `GamePlayer.mind`, cleared for the holder and the keeper.
+- **Defence** (`applyDefensiveMind`, inside `selectDefensiveIntent` before the argmax and the 4b hysteresis): every
+  intent × (1 + σ·z), σ = 0.01 + 0.08·(1 − test), test = (decisions + anticipation on the world scale)/2 × (0.4 + 0.6·luck);
+  press_holder and step_into_carry_lane × (1 + 0.15·k), k = clamp((aggression roll − 22)/22, −1, 1); a lapse drops the
+  mark (track_mark → hold_shape) and halves press / step. The track_mark target reads the mark
+  `anticipationLookahead × luck × 0.6` s ahead (`mindMarkView`; a lapse reads where he is).
+- **Off the ball** (`applyOffBallMind`, after the team-intent multipliers): × (1 + σ·z), σ = 0.015 + 0.10·(1 − test);
+  make_run × (1 + 0.08·k_anticipation) × (1 + 0.06·(2·flair − 1)); a lapse leaves him in his zone (hold_space takes the
+  best score, the others × 0.5). The offside-line reads (stage 13) already carry anticipation there: not duplicated.
+- **Consistency cap** (`capStatModifiers`, at the lineup build for starters and bench): on the 100 scale each
+  attribute's modifier of the day (pre-match buffs, familiarity, morale, settling) above c = 5 + 5·consistency becomes
+  (m + 2c + 1)/3; below −20, −(41 − m)/3.
+- Captain blend: not done (optional, FM blends with an organiser's attribute by his influence; we have no leadership).
+
+Surfaces: events `mindLapse` (kind defence / offball), `mindDefenseShift` (the mind changed a defender's argmax), debug
+`mind` (lapses, strong aggression shifts). `Statistics` `mindLapsesDefence`, `mindLapsesOffBall`, `mindDefenseShifts`,
+`mindMarkDrops` (shift by a lapse away from a mark / press / step); `StatsPanel` column LP; `/lab` `TeamRawStats` →
+`avgMindLapses`, `avgMindMarkDrops`, `avgMindDefenseShifts` → `PairDetail` rows "Mind lapses", "Marks dropped", "Mind
+intent shifts"; `fmTargets` counts and the `fm-targets.ts` line "mind (stage 16)". `/test`: scenario `mind-lapse`, Mind
+block of the selected player in the Decision Scores panel. Tests `DefensiveMind.test.ts`, `DefensiveMind.engine.test.ts`.
+Measurements: `fm-numbers.md` → "Etapa 16".

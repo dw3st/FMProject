@@ -14,6 +14,7 @@ import { mentalShiftOf, personalityOf } from '@/Domain/personality/personality';
 import { moraleFactor } from '@/Domain/morale/morale';
 import { formOf, moodOf } from '@/GameEngine/Domain/HolderMind';
 import { matchMoraleOf } from '@/GameEngine/Configs/MoraleConfig';
+import { deriveMind } from '@/GameEngine/Domain/DefensiveMind';
 
 const TEAM_MENTAL_OVERRIDE: Record<TeamId, number | undefined> = { A: undefined, B: undefined };
 
@@ -32,8 +33,11 @@ export function matchMentalOf(team: TeamId, rp: RosterPlayer): PlayerMental {
   const lvl = TEAM_MENTAL_OVERRIDE[team];
   const v = lvl === undefined ? base : { decisions: lvl / 10, composure: lvl / 10, flair: lvl / 10, anticipation: lvl / 10 };
   const shift = mentalShiftOf(personalityOf(rp));
+  // Concentration and aggression (stage 16): derived from the roster; an override sets them to the side's level too.
+  const mind = lvl === undefined ? deriveMind(v, rp.stats, shift) : { concentration: lvl / 10, aggression: lvl / 10 };
   return {
     ...v,
+    ...mind,
     consistency: consistencyOf(rp.age, shift),
     mood: moodOf(moraleFactor(matchMoraleOf(team, rp.morale)), formOf(rp.seasonLog?.recentRatings)),
   };

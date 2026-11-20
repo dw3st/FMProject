@@ -151,6 +151,24 @@ export interface GameEvents {
   };
   /** Two players contested a high ball in the air (best contestant of each team). */
   aerialDuel: { winnerId: number; loserId: number; x: number; y: number; probWinner: number; kind: 'cross' | 'long_ball' | 'clearance' };
+  /**
+   * Stage 10 (`aerial.md` → "Stage 10"): the first contact with a high ball along its flight, at height `z` (yd),
+   * `air` above FM's 1.2 m; `toucherId` null when nobody met it before it landed. `contestants`: who went for it (the
+   * best of each team, or the toucher alone) and who won — the header counts by position.
+   */
+  aerialContact: {
+    kind: 'cross' | 'long_ball' | 'clearance';
+    corner: boolean;
+    passerTeam: TeamId;
+    toucherId: number | null;
+    toucherTeam: TeamId | null;
+    keeper: boolean;
+    x: number; y: number; z: number;
+    air: boolean;
+    contested: boolean;
+    flightS: number;
+    contestants: Array<{ id: number; team: TeamId; line: 'GK' | 'DEF' | 'MID' | 'FWD'; won: boolean }>;
+  };
   /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
   /** `x`/`y`: where the ball drops (the drawing has the keeper reach it). */
   gkClaim: { keeperId: number; claimed: boolean; chance: number; x?: number; y?: number };
@@ -222,6 +240,10 @@ export interface GameEvents {
   };
   /** Stage 13 (`OffsideRuns.ts`): an attacker starts a spell of reading the offside line wrongly (past it) or a lapse. */
   lineMisread: { playerId: number; team: TeamId; err: number; lapse: boolean };
+  /** Stage 16 (`DefensiveMind.ts`): a new mind window is a concentration lapse (defending or off the ball). */
+  mindLapse: { playerId: number; team: TeamId; kind: 'defence' | 'offball' };
+  /** Stage 16: the mind changed a defender's intent (lapse = dropped his mark / held back; else noise or aggression). */
+  mindDefenseShift: { playerId: number; team: TeamId; from: string; to: string; lapse: boolean };
   /** Stage 13: a contact foul on (or, rarely, by) the ball holder, without a tackle. Emitted after `foul`. */
   contactFoul: { offenderId: number; fouledId: number; team: TeamId; context: import('@/GameEngine/Domain/Fouls').FoulContextKind };
   /** A card was shown. A second yellow emits the yellow and then a red with `secondYellow: true`. */
@@ -241,8 +263,8 @@ export interface GameEvents {
     playerId: number;
     playerName: string;
     kind: 'corner' | 'free_kick';
-    chosen: 'near_post' | 'penalty_spot' | 'far_post' | 'short';
-    options: Array<{ kind: 'near_post' | 'penalty_spot' | 'far_post' | 'short'; x: number; y: number; raw: number; attackers: number; defenders: number }>;
+    chosen: import('@/GameEngine/Domain/Aerial').CrossTargetKind | 'short';
+    options: Array<{ kind: import('@/GameEngine/Domain/Aerial').CrossTargetKind | 'short'; x: number; y: number; raw: number; attackers: number; defenders: number }>;
   };
   /** A penalty was awarded to `team` (the fouled side). */
   penaltyAwarded: { team: TeamId; takerId: number; offenderId: number; minute: number };
@@ -472,7 +494,7 @@ export interface GameEvents {
     playerId:   number;
     playerName: string;
     targets: Array<{
-      kind:      'near_post' | 'penalty_spot' | 'far_post';
+      kind:      import('@/GameEngine/Domain/Aerial').CrossTargetKind;
       x:         number;
       y:         number;
       attackers: number;
@@ -481,6 +503,8 @@ export interface GameEvents {
       gkClaim:   boolean;
       raw:       number;
       score:     number;
+      /** Stage 10: FM's share of crosses aimed at this zone (the target is drawn by it). */
+      weight?:   number;
     }>;
   };
 

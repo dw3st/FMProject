@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { spyMatchRandom } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState } from "@/GameEngine/Domain/gameState";
 import { setTeamMoraleOverride } from "@/GameEngine/Configs/MoraleConfig";
+import { setDecisionFlags } from "@/GameEngine/Configs/DecisionConfig";
 import { mulberry32 } from "@/Domain/rng";
 import formation433Json from "@/Data/formations/4-3-3.json";
 import type { Formation } from "@/GameEngine/types";
@@ -29,7 +30,12 @@ function build(home: RosterPlayer[], away: RosterPlayer[]) {
   }
 }
 
+// The consistency cap (stage 16) compresses the day's modifiers, morale included: off here, so the test checks the
+// morale factor itself (the cap has its own tests in `DefensiveMind.test.ts`).
+beforeEach(() => { setDecisionFlags({ CONSISTENCY_CAP: false }); });
+
 afterEach(() => {
+  setDecisionFlags();
   setTeamMoraleOverride("A", undefined);
   setTeamMoraleOverride("B", undefined);
 });

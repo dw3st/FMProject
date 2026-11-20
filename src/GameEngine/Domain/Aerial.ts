@@ -14,10 +14,15 @@ import type { GamePlayer } from '@/GameEngine/types';
 import { AERIAL_CONFIG as A } from '@/GameEngine/Configs/AerialConfig';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+import { FM_AERIAL } from '@/GameEngine/Configs/FmAerialConfig';
+import type { FmCrossZoneKind } from '@/GameEngine/Configs/FmAerialConfig';
+import { fmCrossZones } from '@/GameEngine/Domain/AerialContact';
 
 const CENTRE_Y = PITCH_WIDTH / 2;
 
-export type CrossTargetKind = 'near_post' | 'penalty_spot' | 'far_post';
+/** The old three targets, or FM's zones with stage 10 (`FM_AERIAL`). */
+export type CrossTargetKind = 'near_post' | 'penalty_spot' | 'far_post' | FmCrossZoneKind;
 
 export interface CrossTarget {
   kind: CrossTargetKind;
@@ -34,6 +39,8 @@ export interface CrossTarget {
   raw: number;
   /** Attacker most likely to attack the ball (closest in the zone). */
   bestAttackerId: number | null;
+  /** Stage 10: FM's share of crosses aimed at this zone (absent with the old three targets). */
+  weight?: number;
 }
 
 export interface LongBallTarget {
@@ -100,11 +107,13 @@ export function isCrossPosition(p: GamePlayer): boolean {
   if (p.role === 'GK') return false;
   const goalX = attackGoalX(p);
   const distToLine = (goalX - p.x) * p.attackDir;
-  if (distToLine < 0 || distToLine > A.CROSS_MAX_DIST_TO_LINE) return false;
+  // Stage 10: FM crosses from near the byline (median 5.5 m, `FmAerialConfig.ts`).
+  const fm = DECISION_FLAGS.FM_AERIAL;
+  if (distToLine < 0 || distToLine > (fm ? FM_AERIAL.CROSS_MAX_DIST_TO_LINE_YD : A.CROSS_MAX_DIST_TO_LINE)) return false;
   const width = Math.abs(p.y - CENTRE_Y);
   if (width < A.CROSS_MIN_WIDTH) return false;
   if (!isInGoalScoreArea(p.x, p.y, goalX)) return true;
-  return distToLine <= A.CROSS_BYLINE_DIST && width > (GOAL_Y_MAX - GOAL_Y_MIN) / 2 + A.SMALL_BOX_WIDE;
+  return distToLine <= (fm ? FM_AERIAL.CROSS_BYLINE_DIST_YD : A.CROSS_BYLINE_DIST) && width > (GOAL_Y_MAX - GOAL_Y_MIN) / 2 + A.SMALL_BOX_WIDE;
 }
 
 /** The three cross targets for a holder: near post (his side), penalty spot, far post. */
@@ -162,11 +171,14 @@ export function evaluateCrossTargets(holder: GamePlayer, allPlayers: GamePlayer[
   // Close to the line the carrier has better options (cut inside, shoot, cut back, win a penalty):
   // a cross from there only wins when those options are poor.
   const distToLine = (goalX - holder.x) * holder.attackDir;
-  const depthMult = distToLine < A.CROSS_DEEP_DIST ? A.CROSS_NEAR_LINE_MULT : 1;
+  // Stage 10: FM crosses from the byline; the old near-line penalty is off.
+  const fm = DECISION_FLAGS.FM_AERIAL;
+  const depthMult = !fm && distToLine < A.CROSS_DEEP_DIST ? A.CROSS_NEAR_LINE_MULT : 1;
   const R = A.TARGET_ZONE_RADIUS;
   const RA = A.ATTACKER_REACH_RADIUS;
 
-  const out: CrossTarget[] = crossTargetPoints(holder).map(t => {
+  const points: Array<{ kind: CrossTargetKind; x: number; y: number; weight?: number }> = fm ? fmCrossZones(holder) : crossTargetPoints(holder);
+  const out: CrossTarget[] = points.map(t => {
     let att = 0;
     let def = 0;
     let heading = 0;

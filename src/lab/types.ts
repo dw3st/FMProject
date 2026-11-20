@@ -307,6 +307,11 @@ export interface TeamRawStats {
   zoneCovers: number;
   shoulderRuns: number;
   shoulderRunsEarly: number;
+  /** Stage 16 (`DefensiveMind.ts`): concentration lapses defending / off the ball, mind-changed defensive intents, dropped marks. */
+  mindLapsesDefence: number;
+  mindLapsesOffBall: number;
+  mindDefenseShifts: number;
+  mindMarkDrops: number;
   // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
   crosses: number;
   crossesCompleted: number;
@@ -402,6 +407,8 @@ export interface TeamRawStats {
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
   /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number; shotDistSumM: number; shotsOutsideBox: number; shotsLowLaunch: number;
+  /** Stage 10 (`aerial.md`): open-play crosses by first contact (air / low / unmet; attack / defence / keeper), summed contact height (yd); headers won / contested by line. */
+  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number; headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
   holderHolds: number;
   holderTurns: number;
   /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
@@ -594,6 +601,10 @@ export interface PerMatchView {
   avgZoneCovers: number;
   avgShoulderRuns: number;
   avgShoulderRunsEarly: number;
+  /** Stage 16: per match. */
+  avgMindLapses: number;
+  avgMindMarkDrops: number;
+  avgMindDefenseShifts: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;
@@ -673,6 +684,10 @@ export interface PerMatchView {
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   /** Stage 7: shot outcomes and techniques per match, saves by the keeper, launch speed (m/s) and the share of its shots on target the keeper saved. */
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number; avgShotDistM: number; shotsOutsideBoxPct: number; shotsLowLaunchPct: number;
+  /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
+   *  headers won per match and the win % of defenders / midfielders / forwards. */
+  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number;
+  avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
@@ -816,6 +831,10 @@ export interface VariantSummary {
   avgZoneCovers: number;
   avgShoulderRuns: number;
   avgShoulderRunsEarly: number;
+  /** Stage 16: per match. */
+  avgMindLapses: number;
+  avgMindMarkDrops: number;
+  avgMindDefenseShifts: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;
@@ -894,6 +913,10 @@ export interface VariantSummary {
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
   /** Stage 7: shot outcomes and techniques per match, saves by the keeper, launch speed (m/s) and the share of its shots on target the keeper saved. */
   avgShotsOffTarget: number; avgShotsWoodwork: number; avgShotsDeflected: number; avgShotsSaved: number; avgSaves: number; avgSavesGood: number; avgSavesDifficult: number; avgShotPower: number; avgShotPlaced: number; avgShotLob: number; avgShotChip: number; avgShotVolley: number; avgShotHeaderLaunch: number; avgShotFreeKick: number; shotLaunchMps: number; savePct: number; avgShotDistM: number; shotsOutsideBoxPct: number; shotsLowLaunchPct: number;
+  /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
+   *  headers won per match and the win % of defenders / midfielders / forwards. */
+  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number;
+  avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,

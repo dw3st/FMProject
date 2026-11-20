@@ -7,6 +7,7 @@ import { scorePassQuality, scorePassToReceiverBreakdown, passCfgFor, type PassCf
 import { engineOf, type RoleEngineTuning } from '@/GameEngine/Domain/roleEngineData';
 import { blockShiftX, attackingAnchor } from '@/GameEngine/Domain/AttackingPositioning';
 import { applyOffBallIntent } from '@/GameEngine/Configs/IntentConfig';
+import { applyOffBallMind } from '@/GameEngine/Domain/DefensiveMind';
 import {
   OFF_BALL_CONFIG,
   INTENT_BUILD_UP,
@@ -193,6 +194,8 @@ function selectOffBallIntent(ctx: OffBallContext): {
 
   // ── Team intent multipliers (counter_attack, etc.) ────────────────────────
   const finalScores = applyOffBallIntent(scores, ctx.intent);
+  // The mind (stage 16, `DefensiveMind.ts`): noise, anticipation and flair on the run, a concentration lapse.
+  if (DECISION_FLAGS.DEFENSIVE_MIND) applyOffBallMind(ctx.player, finalScores);
 
   let best: OffBallIntent = 'offer_support';
   let bestScore = -Infinity;

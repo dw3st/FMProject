@@ -35,6 +35,14 @@ const STEPOVER_YDS = 0.45;
 const FLICK_SCALE = 0.14;
 /** Both players go up for a high ball. */
 const JUMP_LIFT_YDS = 1.2;
+/**
+ * Stage 10 (`aerial.md`): the jump drawn for a contact in the air at `z` yards — a hop for a ball at head height, up to
+ * `MAX` for one at the top of his reach (the drawn lift is a few times the real jump, as the other animations).
+ */
+export const CONTACT_JUMP = { HEAD_YD: 1.9, MIN: 0.5, PER_YD: 2.2, MAX: 1.8 } as const;
+export function contactJumpLift(z: number): number {
+  return Math.max(CONTACT_JUMP.MIN, Math.min(CONTACT_JUMP.MAX, CONTACT_JUMP.MIN + (z - CONTACT_JUMP.HEAD_YD) * CONTACT_JUMP.PER_YD));
+}
 const SAVE = { DIVE_YDS: 1.5, ROTATION: (70 * Math.PI) / 180 } as const;
 /** Goal celebration (#129): two hops and one full turn. */
 const CELEBRATE = { HOP_YDS: 1.2, SCALE: 0.15 } as const;
@@ -50,6 +58,8 @@ export interface PlayerAnim {
   side: 1 | -1;
   /** `claim`: yards to the ball. */
   reach?: number;
+  /** `jump` (stage 10): how high he goes, yards (the height of the contact decides it); default `JUMP_LIFT_YDS`. */
+  lift?: number;
 }
 
 export interface AnimOffset {
@@ -66,7 +76,7 @@ const REST: AnimOffset = { dx: 0, dy: 0, liftYds: 0, scale: 1, rotation: 0 };
 /** Adds an animation; a new one for the same player replaces the old. */
 export function addAnim(
   list: readonly PlayerAnim[],
-  a: { playerId: number; kind: PlayerAnimKind; dir: { x: number; y: number }; side: 1 | -1 },
+  a: { playerId: number; kind: PlayerAnimKind; dir: { x: number; y: number }; side: 1 | -1; lift?: number },
   now: number,
 ): PlayerAnim[] {
   const len = Math.hypot(a.dir.x, a.dir.y) || 1;
@@ -74,6 +84,7 @@ export function addAnim(
     playerId: a.playerId, kind: a.kind, startedAt: now, duration: ANIM_DURATION[a.kind],
     dir: { x: a.dir.x / len, y: a.dir.y / len }, side: a.side,
     ...(a.kind === "claim" ? { reach: Math.min(CLAIM.MAX_YDS, Math.hypot(a.dir.x, a.dir.y)) } : {}),
+    ...(a.lift !== undefined ? { lift: a.lift } : {}),
   };
   return [...list.filter((x) => x.playerId !== a.playerId), anim];
 }
@@ -98,7 +109,7 @@ export function animOffset(a: PlayerAnim, now: number): AnimOffset {
     case "header":
       return { dx: a.dir.x * HEADER_LUNGE_YDS * bump, dy: a.dir.y * HEADER_LUNGE_YDS * bump, liftYds: HEADER_LIFT_YDS * bump, scale: 1, rotation: 0 };
     case "jump":
-      return { dx: a.dir.x * 0.3 * bump, dy: a.dir.y * 0.3 * bump, liftYds: JUMP_LIFT_YDS * bump, scale: 1 + 0.08 * bump, rotation: 0 };
+      return { dx: a.dir.x * 0.3 * bump, dy: a.dir.y * 0.3 * bump, liftYds: (a.lift ?? JUMP_LIFT_YDS) * bump, scale: 1 + 0.08 * bump, rotation: 0 };
     case "stepover": {
       // Two feints across the run (dir is the run): left, right, then on.
       const s = Math.sin(4 * Math.PI * p) * STEPOVER_YDS * bump;

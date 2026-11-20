@@ -14,6 +14,7 @@
 import type { GamePlayer } from '@/GameEngine/types';
 import { tackleAngleModifier } from '@/GameEngine/Domain/PositionalAwareness';
 import { aerialDuelScore, headingOf } from '@/GameEngine/Domain/Aerial';
+import { fmAerialDuelScore } from '@/GameEngine/Domain/AerialContact';
 import { keeperPositionDeviation, smotherBase } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
@@ -408,6 +409,24 @@ export function resolveAerialDuel(
 ): AerialDuelResult {
   const sA = aerialDuelScore(a, point) + AERIAL_CONFIG.DUEL_BASE;
   const sB = (aerialDuelScore(b, point) + AERIAL_CONFIG.DUEL_BASE) * bMult;
+  const probA = sA / (sA + sB);
+  return { winnerId: rng() < probA ? a.id : b.id, probA };
+}
+
+/**
+ * Stage 10 (`aerial.md` → "Stage 10"): FM's duel at a contact in the air between attacker `a` and defender `b`. The
+ * contestant nearer the goal under attack (`goalX`) is goal-side; scores from `fmAerialDuelScore`. `bMult` as above.
+ */
+export function resolveFmAerialDuel(
+  a: GamePlayer,
+  b: GamePlayer,
+  goalX: number,
+  rng: () => number = matchRandom,
+  bMult = 1,
+): AerialDuelResult {
+  const aGoalSide = Math.abs(goalX - a.x) < Math.abs(goalX - b.x);
+  const sA = fmAerialDuelScore(a, aGoalSide);
+  const sB = fmAerialDuelScore(b, !aGoalSide) * bMult;
   const probA = sA / (sA + sB);
   return { winnerId: rng() < probA ? a.id : b.id, probA };
 }

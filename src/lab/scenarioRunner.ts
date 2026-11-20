@@ -217,6 +217,9 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgZoneCovers: r2(t.zoneCovers / matches),
     avgShoulderRuns: r2(t.shoulderRuns / matches),
     avgShoulderRunsEarly: r2(t.shoulderRunsEarly / matches),
+    avgMindLapses: r2((t.mindLapsesDefence + t.mindLapsesOffBall) / matches),
+    avgMindMarkDrops: r2(t.mindMarkDrops / matches),
+    avgMindDefenseShifts: r2(t.mindDefenseShifts / matches),
     avgCrosses: r2(t.crosses / matches),
     crossCompletionPct: pct(t.crossesCompleted, t.crosses),
     avgAerialDuelsWon: r2(t.aerialDuelsWon / matches),
@@ -305,6 +308,16 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     shotsOutsideBoxPct: pct(t.shotsOutsideBox, t.shotLaunchN),
     shotsLowLaunchPct: pct(t.shotsLowLaunch, t.shotLaunchN),
     savePct: pct(t.shotsSaved, t.shotsOnTarget),
+    avgAirCrosses: r2(t.airCrosses / matches),
+    airCrossMetAirPct: r2((100 * t.airCrossMetAir) / Math.max(1, t.airCrosses)),
+    airCrossUnmetPct: r2((100 * t.airCrossUnmet) / Math.max(1, t.airCrosses)),
+    airCrossDefPct: r2((100 * t.airCrossDef) / Math.max(1, t.airCrosses)),
+    airCrossKeeperPct: r2((100 * t.airCrossKeeper) / Math.max(1, t.airCrosses)),
+    airCrossContactM: r2(t.airCrossZSum / Math.max(1, t.airCrosses - t.airCrossUnmet) / 1.0936),
+    avgHeadersWonFm: r2((t.headWonDef + t.headWonMid + t.headWonFwd) / matches),
+    headWinDefPct: r2((100 * t.headWonDef) / Math.max(1, t.headAttDef)),
+    headWinMidPct: r2((100 * t.headWonMid) / Math.max(1, t.headAttMid)),
+    headWinFwdPct: r2((100 * t.headWonFwd) / Math.max(1, t.headAttFwd)),
     avgHolderHolds: r2(t.holderHolds / matches),
     avgHolderTurns: r2(t.holderTurns / matches),
     holderCarryPct: pct(t.holderChoiceCarry, t.holderChoices),
@@ -355,10 +368,10 @@ function emptyTotals(): VariantTotals {
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0, aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0, condition45Sum: 0, condition90Sum: 0, keeperConditionSum: 0,
-    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0, foulsWonOwnThird: 0, foulsWonMidThird: 0, foulsWonFinalThird: 0, foulsWonCarrying: 0, contactFouls: 0, lineMisreads: 0, shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0,
+    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0, foulsWonOwnThird: 0, foulsWonMidThird: 0, foulsWonFinalThird: 0, foulsWonCarrying: 0, contactFouls: 0, lineMisreads: 0, shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0, mindLapsesDefence: 0, mindLapsesOffBall: 0, mindDefenseShifts: 0, mindMarkDrops: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
     holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0, holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0, holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
-    shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0, shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0,
+    shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0, shotDistSumM: 0, shotsOutsideBox: 0, shotsLowLaunch: 0, airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0, headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
@@ -436,6 +449,10 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.zoneCovers += src.zoneCovers;
   dst.shoulderRuns += src.shoulderRuns;
   dst.shoulderRunsEarly += src.shoulderRunsEarly;
+  dst.mindLapsesDefence += src.mindLapsesDefence;
+  dst.mindLapsesOffBall += src.mindLapsesOffBall;
+  dst.mindDefenseShifts += src.mindDefenseShifts;
+  dst.mindMarkDrops += src.mindMarkDrops;
   dst.crosses               += src.crosses;
   dst.crossesCompleted      += src.crossesCompleted;
   dst.aerialDuels           += src.aerialDuels;
@@ -537,6 +554,20 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.cutDeflects += src.cutDeflects;
   dst.cutMisses += src.cutMisses;
   dst.cutSpeedSum += src.cutSpeedSum;
+  dst.airCrosses += src.airCrosses;
+  dst.airCrossMetAir += src.airCrossMetAir;
+  dst.airCrossMetLow += src.airCrossMetLow;
+  dst.airCrossUnmet += src.airCrossUnmet;
+  dst.airCrossOwn += src.airCrossOwn;
+  dst.airCrossDef += src.airCrossDef;
+  dst.airCrossKeeper += src.airCrossKeeper;
+  dst.airCrossZSum += src.airCrossZSum;
+  dst.headWonDef += src.headWonDef;
+  dst.headWonMid += src.headWonMid;
+  dst.headWonFwd += src.headWonFwd;
+  dst.headAttDef += src.headAttDef;
+  dst.headAttMid += src.headAttMid;
+  dst.headAttFwd += src.headAttFwd;
   dst.holderHolds += src.holderHolds;
   dst.holderTurns += src.holderTurns;
   dst.holderChoices += src.holderChoices;
@@ -643,6 +674,9 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgZoneCovers: r2(totals.zoneCovers / games),
     avgShoulderRuns: r2(totals.shoulderRuns / games),
     avgShoulderRunsEarly: r2(totals.shoulderRunsEarly / games),
+    avgMindLapses: r2((totals.mindLapsesDefence + totals.mindLapsesOffBall) / games),
+    avgMindMarkDrops: r2(totals.mindMarkDrops / games),
+    avgMindDefenseShifts: r2(totals.mindDefenseShifts / games),
     avgCrosses: r2(totals.crosses / games),
     crossCompletionPct: pct(totals.crossesCompleted, totals.crosses),
     avgAerialDuelsWon: r2(totals.aerialDuelsWon / games),
@@ -730,6 +764,16 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     shotsOutsideBoxPct: pct(totals.shotsOutsideBox, totals.shotLaunchN),
     shotsLowLaunchPct: pct(totals.shotsLowLaunch, totals.shotLaunchN),
     savePct: pct(totals.shotsSaved, totals.shotsOnTarget),
+    avgAirCrosses: r2(totals.airCrosses / games),
+    airCrossMetAirPct: r2((100 * totals.airCrossMetAir) / Math.max(1, totals.airCrosses)),
+    airCrossUnmetPct: r2((100 * totals.airCrossUnmet) / Math.max(1, totals.airCrosses)),
+    airCrossDefPct: r2((100 * totals.airCrossDef) / Math.max(1, totals.airCrosses)),
+    airCrossKeeperPct: r2((100 * totals.airCrossKeeper) / Math.max(1, totals.airCrosses)),
+    airCrossContactM: r2(totals.airCrossZSum / Math.max(1, totals.airCrosses - totals.airCrossUnmet) / 1.0936),
+    avgHeadersWonFm: r2((totals.headWonDef + totals.headWonMid + totals.headWonFwd) / games),
+    headWinDefPct: r2((100 * totals.headWonDef) / Math.max(1, totals.headAttDef)),
+    headWinMidPct: r2((100 * totals.headWonMid) / Math.max(1, totals.headAttMid)),
+    headWinFwdPct: r2((100 * totals.headWonFwd) / Math.max(1, totals.headAttFwd)),
     avgHolderHolds: r2(totals.holderHolds / games),
     avgHolderTurns: r2(totals.holderTurns / games),
     holderCarryPct: pct(totals.holderChoiceCarry, totals.holderChoices),

@@ -958,6 +958,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-cross-byline',
+    name:        'Aerial — FM cross from the byline (stage 10)',
+    description: 'LW 9 yds from the byline, wide, with the ST and CAM arriving against two set CBs and the keeper (`aerial.md` → "Stage 10"). Toggle "Aerial": the seven FM target zones, the ring sized by the share of crosses aimed there (six-yard box 64 %, penalty-spot band 28 %, edge 8 %); the target is drawn from them at the kick. In flight the ball is met where it first comes within a player’s reach (gold marker: met in the air above 1.2 m, white: lower, red: nobody met it), with the contest ring. Watch the "aerial" debug log for the zone, the contact height and the duel.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW', 106, 6,  WINGER),     // crosser at the byline zone
+        makePlayer('Santos',   'A', 'ST', 103, 38, STRIKER),    // attacks the six-yard box
+        makePlayer('Rossi',    'A', 'CAM', 99, 44, MIDFIELDER), // arrives at the penalty-spot band
+        makePlayer('Silva',    'B', 'CB', 109, 35, DEFENDER),   // set, goal-side
+        makePlayer('Okeke',    'B', 'CB', 108, 41, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'switch-play-wide',
     name:        'Switch Play — Wide Hold',
     description: 'LW holds wide on the near touchline with the near side congested and the far flank open. Override intent to "switch_play" and toggle "Switch" to see the far-flank carry lane + far-side receivers.',
@@ -1123,6 +1140,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const low = (p: GamePlayer): GamePlayer => p.team !== 'A' ? p
         : { ...p, mental: { decisions: 0.15, composure: 0.15, flair: 0.2, anticipation: 0.15, consistency: 0.1, mood: -0.5 } };
       return { ...tired, players: tired.players.map(low), benchA: tired.benchA.map(low) };
+    },
+  },
+
+  {
+    id:          'mind-lapse',
+    name:        '11v11 — Distracted defence (concentration lapses)',
+    description: 'Team B defends at 45 energy with concentration 0.05, anticipation 0.1, consistency 0.1 and a bad mood; Team A plays sharp (stage 16, `DefensiveMind.ts`). Below the form window and tired, the side concentration rolls lapse often: the defender drops his mark (track_mark → hold_shape) and holds back the press for the window. Debug log `mind`; the Mind block of a selected player shows his rolls; StatsPanel column LP counts the lapses.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = applyFatigue(base, 'B', 45, FITNESS.LOAD_HIGH);
+      const mind = (p: GamePlayer): GamePlayer => {
+        if (p.team === 'A') return { ...p, mental: { decisions: 0.7, composure: 0.7, flair: 0.6, anticipation: 0.7, consistency: 0.8, mood: 0.4, concentration: 0.75, aggression: 0.5 } };
+        return { ...p, mental: { decisions: 0.15, composure: 0.2, flair: 0.2, anticipation: 0.1, consistency: 0.1, mood: -0.5, concentration: 0.05, aggression: 0.5 } };
+      };
+      return { ...tired, players: tired.players.map(mind), benchA: tired.benchA.map(mind), benchB: tired.benchB.map(mind) };
     },
   },
 

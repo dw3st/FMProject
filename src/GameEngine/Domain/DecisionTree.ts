@@ -1003,7 +1003,24 @@ function fmHolderChoice(
   }
   // ── crosses ──
   const maxAerialYd = M.SIMPLE_MAX_AERIAL_M / 0.9144;
-  for (const t of a.targets) {
+  if (DECISION_FLAGS.FM_AERIAL && !gate && a.targets.length > 0) {
+    // Stage 10 (`aerial.md`): the target is drawn from FM's zones at the kick, so the cross is one candidate worth the
+    // expected value over the zones (FM's shares).
+    let wsum = 0, val = 0, risk = 0;
+    for (const t of a.targets) {
+      if (simple && Math.hypot(t.x - player.x, t.y - player.y) > maxAerialYd) continue;
+      const w = t.weight ?? 0;
+      const cr = crossAction(t);
+      const tot = t.attackers + t.defenders;
+      wsum += w; val += w * cr.score; risk += w * (cr.score > 0 ? softRisk(tot > 0 ? t.defenders / tot : 1) : 100);
+    }
+    const best = a.targets[0]!;
+    if (wsum > 0 && val > 0) {
+      add(0, 'cross', 'FM zones', val / wsum, Math.min(100, risk / wsum),
+        { type: 'cross', toX: best.x, toY: best.y, intendedRunnerId: best.bestAttackerId });
+    }
+  }
+  for (const t of DECISION_FLAGS.FM_AERIAL && !gate ? [] : a.targets) {
     if (gate && !gate(t.x, t.y, t.bestAttackerId ?? null, AERIAL_CONFIG.HEADER_XG_MULT)) continue;
     if (simple && Math.hypot(t.x - player.x, t.y - player.y) > maxAerialYd) continue;
     const cr = crossAction(t);
@@ -1268,6 +1285,7 @@ function decideBallHolder(
           kind: t.kind, x: t.x, y: t.y, attackers: t.attackers, defenders: t.defenders,
           heading: t.heading, gkClaim: t.gkClaim, raw: t.raw,
           score: t.raw > 0 ? compress(t.raw, AERIAL_CONFIG.CROSS_STRONG_RAW) : 0,
+          ...(t.weight !== undefined ? { weight: t.weight } : {}),
         })),
       });
     }

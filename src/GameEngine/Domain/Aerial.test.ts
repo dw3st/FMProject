@@ -1,4 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { setDecisionFlags } from "@/GameEngine/Configs/DecisionConfig";
+
+// The Etapa 13 model: stage 10 (FM_AERIAL) is tested in AerialContact*.test.ts.
+beforeAll(() => setDecisionFlags({ FM_AERIAL: false }));
+afterAll(() => setDecisionFlags());
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";
 import { createMatchState } from "@/GameEngine/Domain/gameState";

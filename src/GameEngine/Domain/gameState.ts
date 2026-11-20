@@ -7,6 +7,8 @@ import { isAerialKind } from '@/GameEngine/types';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { LONG_SHOT_DISTANCE, weatherEffectOf, type WeatherEffect } from '@/GameEngine/Configs/WeatherConfig';
 import { aerialAbility, aerialDuelScore, headingOf, isInSmallBox, keeperComesFor } from '@/GameEngine/Domain/Aerial';
+import { aerialCatchers, contestantsOf, drawCrossZone, findAerialContact, headerLine, meetPoint, type AerialCatcher, type AerialContactHit } from '@/GameEngine/Domain/AerialContact';
+import { FM_AERIAL } from '@/GameEngine/Configs/FmAerialConfig';
 import { RESTART_DEAD_S, SET_PIECE_CONFIG } from '@/GameEngine/Configs/SetPieceConfig';
 import {
   attackingBoxPositions, pickRoutine, defendingBoxPositions, directFreeKickXG, distToGoalCentre, isDirectFreeKick, keepDistanceFromBall,
@@ -69,7 +71,7 @@ import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { distToGoalCentreM, inBoxLane } from '@/GameEngine/Domain/ShotGate';
 import { shotXg, XG_PENALTY } from '@/GameEngine/Domain/ShotXg';
 import type { FmXgResult } from '@/GameEngine/Domain/FmXg';
-import type { RosterPlayer } from '@/types/playerTypes';
+import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
 import { computeBuffedStats } from '@/Domain/PlayerBuffs';
@@ -85,7 +87,7 @@ import {
   MAX_INTERCEPTION_CORRIDOR, playerInterceptionCorridor,
   computeShotAim, computeXG, computeOpenAngle, computeWeightedPressure,
   resolveShot, resolveTackle, resolveInterception, resolveDribble, resolveLooseBallDuel,
-  resolveAerialDuel, gkClaimChance, resolveChip, resolveRoundKeeper,
+  resolveAerialDuel, resolveFmAerialDuel, gkClaimChance, resolveChip, resolveRoundKeeper,
   resolveHeavyTouch, resolveDeflection, resolveShotBlock, reboundSpeed, scatterDirection, gaussianDraw,
 } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { HOLDER_MOVES, DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
@@ -120,6 +122,8 @@ import { withMoraleExecution } from '@/Domain/morale/morale';
 import { settlingMult, withSettlingExecution } from '@/Domain/settling/settling';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { refreshLineRead, perceivedLine } from '@/GameEngine/Domain/OffsideRuns';
+import { refreshMindRolls } from '@/GameEngine/Domain/DefensiveMind';
+import { capStatModifiers } from '@/GameEngine/Domain/ConsistencyCap';
 import { OFFSIDE_RUNS } from '@/GameEngine/Configs/OffsideRunsConfig';
 import { KINEMATICS_CONFIG } from '@/GameEngine/Configs/KinematicsConfig';
 import { etaTo as kinEta, stepAlong, stepToward, type KinStep } from '@/GameEngine/Domain/Kinematics';
@@ -304,6 +308,11 @@ function toValidPlayerRole(pos: string): PlayerRole {
   return POSITION_TO_ROLE[pos] ?? 'CM';
 }
 
+/** The day's attributes with the consistency cap on their modifiers (stage 16, `ConsistencyCap.ts`); flag off = as is. */
+function consistencyCapped(rp: RosterPlayer, buffed: PlayerStatsRecord, consistency: number): PlayerStatsRecord {
+  return DECISION_FLAGS.CONSISTENCY_CAP ? capStatModifiers(rp.stats, buffed, consistency) : buffed;
+}
+
 function buildGamePlayerForSlot(
   rp: RosterPlayer,
   slotDef: { role: PlayerRole; yRange?: number },
@@ -315,13 +324,14 @@ function buildGamePlayerForSlot(
   const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
   // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes, and the
   // player's morale his own (`.claude/rules/game/morale.md`; 65 / absent = unchanged).
-  const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+  const mental = matchMentalOf(team, rp);
+  const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
     rp.stats,
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
+  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
   const yRange   = slotDef.yRange ?? roleEng.yRange;
@@ -378,7 +388,7 @@ function buildGamePlayerForSlot(
     morale:           matchMoraleOf(team, rp.morale),
     ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
     temperament:      matchTemperamentOf(team, rp),
-    mental:           matchMentalOf(team, rp),
+    mental,
     foot:             rp.preferredFoot,
   };
 }
@@ -410,13 +420,14 @@ function buildTeam(
     const naturalRole = toValidPlayerRole(rp.positions?.[0] ?? 'CM');
     const roleEng = roleEngine(naturalRole);
     const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-    const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+    const mental = matchMentalOf(team, rp);
+    const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
       rp.stats,
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
+    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
     const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
@@ -455,7 +466,7 @@ function buildTeam(
       morale:           matchMoraleOf(team, rp.morale),
       ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
       temperament:      matchTemperamentOf(team, rp),
-      mental:           matchMentalOf(team, rp),
+      mental,
       foot:             rp.preferredFoot,
     });
   }
@@ -4152,6 +4163,11 @@ function passPhysicsOn(): boolean {
   return DECISION_FLAGS.PASS_PHYSICS && DECISION_FLAGS.BALL_3D;
 }
 
+/** Stage 10 (`aerial.md` -> "Stage 10"): FM's crosses and the contact in the air (needs the physical pass). */
+function fmAerialOn(): boolean {
+  return DECISION_FLAGS.FM_AERIAL && passPhysicsOn();
+}
+
 /** Three standard normals for a launch error (direction, speed, height). */
 function launchNormals(rng: () => number): [number, number, number] {
   const [a, b] = gaussianPair(rng);
@@ -4371,7 +4387,9 @@ function clearanceBall(
     lastPasserId: null,
   }, prevHolderId);
   if (st.pass) emitPassLaunched(player, st.pass);
-  return commitLooseBallChasers(st, player.id, toXp, toY, player.team, {
+  // Stage 10: the second ball is attacked where it comes down through head height.
+  const meet = fmAerialOn() && physics ? meetPoint(physics, FM_AERIAL.MEET_Z_YD, BALL_PHYSICS.GRAVITY) : null;
+  return commitLooseBallChasers(st, player.id, meet?.x ?? toXp, meet?.y ?? toY, player.team, {
     maxPerTeam: AERIAL_CONFIG.MAX_CHASERS_PER_TEAM,
     etaHorizon: AERIAL_CONFIG.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
@@ -4634,7 +4652,9 @@ export function startAerialBall(
   emitPassLaunched(holder, pass);
   // A set-piece delivery into the box: everyone who went up attacks it (`set-pieces-play.md`).
   const boxDelivery = kind === 'cross' && state.setPiece?.variant === 'box';
-  return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, toX, toY, holder.team, {
+  // Stage 10: the chasers attack the spot where the ball comes down through head height, to meet it in the air.
+  const meet = fmAerialOn() && physics ? meetPoint(physics, FM_AERIAL.MEET_Z_YD, BALL_PHYSICS.GRAVITY) : null;
+  return commitLooseBallChasers({ ...state, pass, setPiece: null }, holder.id, meet?.x ?? toX, meet?.y ?? toY, holder.team, {
     // A lofted pass to feet (stage 4b) is the receiver against his marker, not a crowd under the ball.
     maxPerTeam: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASERS : lofted ? FM_NUMBERS.LOFT_CHASERS : C.MAX_CHASERS_PER_TEAM,
     etaHorizon: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASE_ETA_HORIZON : C.CHASE_ETA_HORIZON,
@@ -4713,11 +4733,35 @@ function startHeader(state: GameState, headerId: number, pressureMult = 1): Game
  * goal, else he controls it. Defending winner in his box or under challenge → clearance (behind for
  * a corner sometimes); uncontested elsewhere → he controls it. Nobody there → loose ball.
  */
-export function resolveAerialLanding(state: GameState, rng: () => number = matchRandom): TickResult {
+/** The contact found in flight (stage 10), handed to `resolveAerialLanding`. */
+export interface AerialContactAt {
+  point: { x: number; y: number };
+  z: number;
+  toucherId: number;
+  contestantIds: number[];
+  flightS: number;
+}
+
+/**
+ * Stage 10 (`aerial.md` -> "Stage 10"): the high ball met `hit` along its flight. The ball stops there (its height is the
+ * contact's); the contestants are the toucher and whoever reaches the same ball within `CONTEST_YD`; the rest is the
+ * landing resolution at the contact point.
+ */
+export function resolveAerialContact(s: GameState, hit: AerialContactHit, catchers: readonly AerialCatcher[], rng: () => number = matchRandom): TickResult {
+  const ball = s.ball!;
+  const st: GameState = { ...s, ball: { ...ball, ...hit.ball, elapsed: ball.elapsed + hit.at, metZ: hit.z } };
+  const contestants = contestantsOf(hit, catchers);
+  return resolveAerialLanding(st, rng, {
+    point: hit.point, z: hit.z, toucherId: hit.id, contestantIds: contestants.map(c => c.id), flightS: ball.elapsed + hit.at,
+  });
+}
+
+export function resolveAerialLanding(state: GameState, rng: () => number = matchRandom, contact?: AerialContactAt): TickResult {
   const C = AERIAL_CONFIG;
   const pass = state.pass!;
   const kind = pass.kind as 'cross' | 'long_ball' | 'clearance';
-  const point = { x: pass.toX, y: pass.toY };
+  const fm = fmAerialOn();
+  const point = contact ? { ...contact.point } : { x: pass.toX, y: pass.toY };
   const passer = state.players.find(p => p.id === pass.fromId);
   const passerTeam: TeamId = passer?.team ?? state.players.find(p => p.id === state.ballHolderId)?.team ?? 'A';
   const defTeam: TeamId = passerTeam === 'A' ? 'B' : 'A';
@@ -4730,20 +4774,44 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
 
   let s: GameState = { ...state, pass: null };
   const active = s.players.filter(p => p.id !== pass.fromId && !isPlayerInRecovery(p));
-  const near = active.filter(p => p.role !== 'GK' && dist(p) <= C.AERIAL_RADIUS);
+  // Stage 10: at a contact in flight only its contestants; a landing nobody met in flight is nobody's.
+  const inContest = (p: GamePlayer) => (contact ? contact.contestantIds.includes(p.id) : !fm && dist(p) <= C.AERIAL_RADIUS);
+  const near = active.filter(p => p.role !== 'GK' && inContest(p));
   const attackers = near.filter(p => p.team === passerTeam);
   const defenders = near.filter(p => p.team === defTeam);
+  const passerSide = s.players.find(p => p.team === passerTeam);
+  const attackGoalX = (passerSide?.attackDir ?? 1) === 1 ? PITCH_LENGTH : 0;
+  const contactZ = contact?.z ?? 0;
+  const inAir = contactZ > FM_AERIAL.AIR_Z_YD;
+  /** Stage 10: the contact event (who went for it, who won); with no contact (`winner` null) nobody met it. */
+  const reportContact = (winner: GamePlayer | null, goers: GamePlayer[]) => {
+    if (!fm) return;
+    gameBus.emit('aerialContact', {
+      kind, corner: pass.fromSetPiece === true && pass.setPieceVariant === 'box', passerTeam,
+      toucherId: winner?.id ?? null, toucherTeam: winner?.team ?? null, keeper: winner?.role === 'GK',
+      x: point.x, y: point.y, z: contactZ, air: winner !== null && inAir, contested: goers.length > 1,
+      flightS: contact?.flightS ?? 0,
+      contestants: goers.map(p => ({ id: p.id, team: p.team, line: headerLine(p.role), won: p.id === winner?.id })),
+    });
+    if (winner) {
+      debugLog('aerial', `${winner.name} meets the ${kind.replace('_', ' ')} at ${(contactZ / 1.0936).toFixed(1)} m${goers.length > 1 ? ` against ${goers.length - 1}` : ''}`, {
+        playerId: winner.id, data: { z: Math.round((contactZ / 1.0936) * 10) / 10, x: Math.round(point.x), y: Math.round(point.y) },
+      });
+    }
+  };
 
   // ── Keeper ────────────────────────────────────────────────────────────────
   const gk = active.find(p => p.team === defTeam && p.role === 'GK');
-  if (gk) {
+  // Stage 10: the keeper comes into it only when he reaches the ball in flight (a contestant).
+  if (gk && (!fm || (contact !== undefined && contact.contestantIds.includes(gk.id)))) {
     const gkGoalX = gk.attackDir === 1 ? 0 : PITCH_LENGTH;
     const dGk = dist(gk);
     const nearestOther = active.filter(p => p.id !== gk.id).reduce((m, p) => Math.min(m, dist(p)), Infinity);
     const inSmall = isInSmallBox(point.x, point.y, gkGoalX);
     // A defender near the ball and not beaten (goal-side or level) plays it instead (`defenderCovers`).
     const covered = defenderCovers(gk, point, active);
-    const comesNear = keeperComesFor(dGk, inSmall, dGk < nearestOther) && !covered;
+    // Stage 10: a keeper at the ball in flight goes for it with his hands.
+    const comesNear = fm || (keeperComesFor(dGk, inSmall, dGk < nearestOther) && !covered);
     // Beyond the small box, anywhere in the box: harder to catch, a miss drops loose (`Keeper.ts`).
     const wide = !comesNear && !inSmall && !covered && keeperComesWide(dGk, isWideClaimZone(point.x, point.y, gkGoalX), nearestOther);
     if (comesNear || wide) {
@@ -4757,6 +4825,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
       const chance = gkClaimChance(gk, attackers.length, weatherEffectOf(s.weather).gkClaim) * (deep ? wideClaimFactor(depth) : 1);
       logWeather(s, 'gkClaim', `${gk.name}'s claim chance ${(chance * 100).toFixed(0)}%`, gk.id);
       const claimed = rng() < chance;
+      reportContact(gk, [gk, ...near]);
       gameBus.emit('gkClaim', { keeperId: gk.id, claimed, chance, x: point.x, y: point.y });
       debugLog('aerial', `${gk.name} comes for it — ${claimed ? 'claims' : 'punches'} (${(chance * 100).toFixed(0)}%)`, { playerId: gk.id, data: { chance } });
       if (claimed) {
@@ -4799,10 +4868,14 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
     }
     // A set-piece delivery: the defenders are set, goal-side of their man (`set-pieces-play.md`).
     const setPieceCross = pass.setPieceVariant === 'box' && kind === 'cross';
-    const { winnerId, probA } = resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_MULT : 1);
+    // Stage 10: FM's duel at the contact (jumping, standing still, goal-side) replaces the set defender's x 7.
+    const { winnerId, probA } = contact
+      ? resolveFmAerialDuel(a, d, attackGoalX, rng)
+      : resolveAerialDuel(a, d, point, rng, setPieceCross ? SET_PIECE_CONFIG.SET_PIECE_DEFENDER_DUEL_MULT : 1);
     winner = winnerId === a.id ? a : d;
     const loser = winner.id === a.id ? d : a;
     contested = true;
+    reportContact(winner, [a, d]);
     gameBus.emit('aerialDuel', {
       winnerId: winner.id, loserId: loser.id, x: point.x, y: point.y,
       probWinner: winner.id === a.id ? probA : 1 - probA,
@@ -4830,22 +4903,36 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
     }
     winner = s.players.find(p => p.id === winner!.id)!;
   } else if (near.length > 0) {
-    winner = near.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+    winner = contact ? (near.find(p => p.id === contact.toucherId) ?? near.reduce((a, b) => (dist(b) < dist(a) ? b : a)))
+      : near.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+    // An offside attacker meeting it alone (stage 10: met in flight) is flagged like a challenger.
+    if (contact && winner.team === passerTeam && (pass.aerialOffsideIds ?? []).includes(winner.id)) {
+      resolved(winner.id, false, 'offside');
+      return done(aerialOffsideFreeKick(s, winner, { x: winner.x, y: winner.y }, pass.offsideLineX));
+    }
+    reportContact(winner, [winner]);
   }
 
   // ── Nobody reached it: the ball drops and runs on ─────────────────────────
   if (!winner) {
+    reportContact(null, []);
     const len = pass.distance > 0.001 ? pass.distance : 1;
     const dirX = passer ? (point.x - passer.x) / len : 0;
     const dirY = passer ? (point.y - passer.y) / len : 0;
     const v = THROUGH_BALL_CONFIG.LOOSE_BALL_INITIAL_SPEED * weatherEffectOf(s.weather).looseSpeed;
+    // Stage 10: the physical ball lands and bounces on at its own pace.
+    const phys = fm && s.ball && s.ball.phase === 'pass' ? s.ball : null;
+    if (phys) {
+      point.x = Math.max(0.5, Math.min(PITCH_LENGTH - 0.5, phys.x));
+      point.y = Math.max(0.5, Math.min(PITCH_WIDTH - 0.5, phys.y));
+    }
     debugLog('aerial', `High ball lands untouched at (${point.x.toFixed(1)}, ${point.y.toFixed(1)})`, { playerId: pass.fromId });
     logWeather(s, 'looseSpeed', 'Loose ball off the high ball', pass.fromId);
     logWeather(s, 'looseDecel', 'Loose ball off the high ball', pass.fromId);
     return done({
       ...s,
       looseBall: {
-        x: point.x, y: point.y, vx: dirX * v, vy: dirY * v,
+        x: point.x, y: point.y, vx: phys ? phys.vx : dirX * v, vy: phys ? phys.vy : dirY * v,
         startTime: s.matchTime,
         fromPasserId: pass.fromId,
         fromTeamLastTouch: passerTeam,
@@ -4910,7 +4997,8 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
     s = { ...s, players: s.players.map(p => (p.id === winner!.id ? { ...p, x: point.x, y: point.y, targetPosition: { ...point } } : p)) };
     const w = s.players.find(p => p.id === winner!.id)!;
     const angle = computeOpenAngle(point.x, point.y, goalX);
-    if (Math.abs(goalX - point.x) <= C.HEADER_RANGE && angle >= C.HEADER_MIN_ANGLE) {
+    // Stage 10: a header needs the ball in the air (met above 1.2 m); lower, he plays it on the ground.
+    if (Math.abs(goalX - point.x) <= C.HEADER_RANGE && angle >= C.HEADER_MIN_ANGLE && (!contact || inAir)) {
       resolved(w.id, true, 'header');
       return done(startHeader({ ...s, ballHolderId: w.id, lastPasserId: pass.fromId }, w.id,
         pass.setPieceVariant === 'box' && kind === 'cross' ? SET_PIECE_CONFIG.SET_PIECE_HEADER_PRESSURE_MULT : 1));
@@ -5344,6 +5432,25 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         debugLog('offside', `${p.name} misreads the line by ${read.err.toFixed(1)} yd${read.lapse ? ' (lapse)' : ''}`, { playerId: p.id, data: { lineX: read.lineX, err: read.err } });
       }
       return { ...p, lineRead: read };
+    });
+    if (changed) s = { ...s, players };
+  }
+  // ── Mind off the ball and in defence (stage 16, `DefensiveMind.ts`) ──────
+  // Every outfield player without the ball rolls decisions, anticipation, concentration and aggression per window; the
+  // defensive and off-ball evaluators read the rolls as modifiers on their intent scores.
+  if (DECISION_FLAGS.DEFENSIVE_MIND && isLivePhase(s.matchPhase)) {
+    let changed = false;
+    const players = s.players.map(p => {
+      if (p.role === 'GK' || p.id === holder.id) return p.mind ? (changed = true, { ...p, mind: undefined }) : p;
+      const mind = refreshMindRolls(p, s.matchTime, clockScaleOf(s));
+      if (mind === p.mind) return p;
+      changed = true;
+      if (mind.lapse && !p.mind?.lapse) {
+        const kind = p.team === attackingTeam ? 'offball' : 'defence';
+        gameBus.emit('mindLapse', { playerId: p.id, team: p.team, kind });
+        debugLog('mind', `${p.name} loses concentration (${kind})`, { playerId: p.id, data: { conc: mind.conc, energy: Math.round(p.energy) } });
+      }
+      return { ...p, mind };
     });
     if (changed) s = { ...s, players };
   }
@@ -6128,8 +6235,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
 
     // High balls fire immediately too (`aerial.md`).
     if (holderDecision?.type === 'cross') {
+      // Stage 10: an open-play cross goes to a point of FM's target zones, drawn at the kick, with no named receiver.
+      const zone = fmAerialOn() && !s.setPiece ? drawCrossZone(holder, matchRandom) : null;
+      if (zone) debugLog('aerial', `${holder.name} aims his cross at the ${zone.kind.replace('_', ' ')} zone`, { playerId: holder.id, data: { x: Math.round(zone.x), y: Math.round(zone.y) } });
       return {
-        state: startAerialBall(s, 'cross', { x: holderDecision.toX, y: holderDecision.toY }, holderDecision.intendedRunnerId),
+        state: startAerialBall(s, 'cross', zone ?? { x: holderDecision.toX, y: holderDecision.toY }, zone ? null : holderDecision.intendedRunnerId),
         passCompleted: false, tackled: false, goalScored: null,
       };
     }
@@ -6464,6 +6574,15 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
 
   const newT = physArrived ? 1 : activePass.t + dt * distanceSpeed;
+  // Stage 10 (`aerial.md`): a high ball is met where it first comes within a player's reach along its flight.
+  if (aerialPass && fmAerialOn() && s.ball && s.ball.phase === 'pass' && s.ball.free && s.ball.profile === 'air') {
+    // The passing side's keeper never comes for his own team's ball.
+    const pTeam = passerTeamOf(s, activePass);
+    const catchers = aerialCatchers(s.players.filter(p => !(p.role === 'GK' && p.team === pTeam)), activePass.fromId, isPlayerInRecovery);
+    const found = findAerialContact(s.ball, ballEnv(s.weather), dt, s.ball.elapsed, catchers);
+    if (found.hit) return resolveAerialContact(s, found.hit, catchers);
+    if (newT >= 1) return resolveAerialLanding({ ...s, ball: { ...s.ball, ...found.ball } });
+  }
   if (newT >= 1 && aerialPass) {
     return resolveAerialLanding(s);
   }

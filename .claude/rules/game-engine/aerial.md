@@ -198,3 +198,34 @@ vira `MatchEvent.goals` (cabeçada, bola parada, distância, fora da área). Só
 
 Além da pequena área, o goleiro sai em bola alta que cai a até 10 jardas quando é o primeiro (`keeperComesWide`), com
 chance de agarrar menor e, errando, bola solta em 30% das vezes. Ver `.claude/rules/game-engine/keeper.md`.
+
+## Stage 10: o cruzamento e o contato no ar do FM (reforma do motor)
+
+Flag `FM_AERIAL` (`DECISION_FLAGS`, ligada por padrão); constantes em `Configs/FmAerialConfig.ts` (`FM_AERIAL`,
+`FM_CROSS_ZONES`, env `FM_AERIAL_OVERRIDES`); lógica pura em `Domain/AerialContact.ts`; o sorteio do duelo em
+`resolveFmAerialDuel` (`ActionOutcomes.ts`). Nada calibrado (etapa 21). Com a flag desligada, o modelo das seções acima.
+
+- **Origem:** posição de cruzar até 25 jardas da linha de fundo (antes 50), dentro da área só a até 6 da linha; a
+  penalidade de perto da linha (× 0,7) sai. O "ir à linha de fundo" é o candidato de condução da etapa 8.
+- **Alvo:** as sete zonas do FM (`fmCrossZones`: pequena área perto / longe / centro 64%, faixa do pênalti 28%,
+  entrada da área 8%). O portador vê um candidato "cross" com o valor e o risco médios pelas parcelas; ao cruzar,
+  `drawCrossZone` sorteia a zona (3 sorteios, `matchRandom`) e um ponto a até 1,5 jarda do centro dela; o erro do
+  passe vem por cima. Bola parada não usa as zonas.
+- **Contato no ar:** a bola 3D livre do passe alto (cruzamento, lançamento, corte) é avançada em passos de 0,02 s
+  (`findAerialContact`); o primeiro jogador a até 0,9 jarda do corpo (goleiro 1,5, só na própria área, nunca o do time
+  que passou) com a bola abaixo do alcance dele (cabeça 1,83 m + salto 0,6 m × `jump`; goleiro mãos 2,3 m + 0,5 m)
+  faz o contato ali, no ar (nada nos primeiros 0,25 s). Disputam quem está a até 3 m e alcança a altura
+  (`contestantsOf`). Ninguém: a bola cai e segue solta com a velocidade física. Quem corre para a bola alta mira o
+  ponto onde ela desce por 1,8 m (`meetPoint`), não o da queda.
+- **Duelo:** `fmAerialDuelScore` = cabeceio 0,30 + salto 0,40 + força 0,15 + parado 0,15 (velocidade 0 → 1, 6 jd/s
+  → 0) + 0,20 para quem está do lado do gol + 0,10. Sem o × 7 da bola parada. Cabeçada ao gol só acima de 1,2 m
+  (`AIR_Z_YD`); ela vai à resolução de chute atual (etapa 7 troca).
+- **Eventos e números:** `aerialContact` (toucher, altura, no ar, disputado, disputantes por linha);
+  `Statistics.ts` `airCrosses`, `airCrossMetAir/MetLow/Unmet/Own/Def/Keeper`, `airCrossZSum`, `headWon*` / `headAtt*`
+  por linha; `/lab` (`avgAirCrosses`, `airCrossMetAirPct`, `airCrossKeeperPct`, `airCrossContactM`, `headWin*Pct`,
+  `PairDetail`); `fm-targets.ts` seção "Crosses and aerial play". `BallState.metZ` dá a altura do contato ao
+  `ballFlight`.
+- **/test:** cenário `fm-cross-byline`; overlay Aerial com as zonas (anel pela parcela) e o marcador do contato
+  (dourado no ar, branco baixo, vermelho sem contato). 2D: quem disputa salta até a altura do contato
+  (`contactJumpLift`, `playerAnims.ts`).
+- Medido (Premier, 12 jogos semeados): `fm-numbers.md` → "Etapa 10".

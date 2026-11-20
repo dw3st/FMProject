@@ -73,6 +73,7 @@ for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShot
   console.log(`  fouls won by third own / mid / final ${f1(p3("foulsWonOwnThird"))} / ${f1(p3("foulsWonMidThird"))} / ${f1(p3("foulsWonFinalThird"))}% (FM ${FM_FOULS.thirds.join(" / ")}%)`);
   console.log(`  on the ball carrying / receiving / holding ${f1(p3("foulsWonCarrying"))} / ${f1(p3("foulsWonReceiving"))} / ${f1(p3("foulsWonHolding"))}% (FM ${FM_FOULS.carry} / ${FM_FOULS.reception} / ${FM_FOULS.hold}%)`);
   console.log(`  contact fouls ${f2(g("contactFouls") / n)} per match · line misreads ${f1(g("lineMisreads") / n)} per match`);
+  console.log(`  mind (stage 16): lapses defending ${f1(g("mindLapsesDefence") / n)} · off the ball ${f1(g("mindLapsesOffBall") / n)} · intents shifted ${f1(g("mindDefenseShifts") / n)} · marks dropped ${f1(g("mindMarkDrops") / n)} per match`);
   const fmS = (x: number) => (x / FM_FOULS.matchSeconds).toFixed(4);
   console.log(`  per live s: fouls ${perS(g("fouls")).toFixed(4)} (FM ${fmS(FM_FOULS.foulsPerMatch)}) · offsides ${perS(g("offsides")).toFixed(4)} (FM ${fmS(FM_FOULS.offsidesPerMatch)}) · yellows ${perS(g("yellowCards")).toFixed(4)} (FM ${fmS(FM_FOULS.yellowsPerMatch)})`);
 }
@@ -123,6 +124,22 @@ console.log("\n── Interception (stage 5; R7 loss split, R9 interceptions) �
   const ints = (world.interceptions ?? 0) / n;
   const liveS = fm.realSeconds / n;
   console.log(`  interceptions ${f1(ints)} / match (FM 59) · ${f2((60 * ints) / Math.max(1, liveS))} per live min (FM ~${f2((60 * 59) / (978 / 0.21))}, FM live time from 978 passes at 0.21 / s)`);
+}
+
+console.log("\n── Crosses and aerial play (stage 10; R8 §5–6, R9 §3–4) ──");
+{
+  const w = (k: string) => world[k] ?? 0;
+  const ac = w("airCrosses");
+  const sh = (k: string) => f1((100 * w(k)) / Math.max(1, ac));
+  console.log(`  crosses ${f1(w("crosses") / n)} / match (FM 64), completed ${f1((100 * w("crossesCompleted")) / Math.max(1, w("crosses")))}% (FM 19)`);
+  if (ac > 0) {
+    console.log(`  open-play crosses by first contact (n ${ac}): met in the air ${sh("airCrossMetAir")}% (FM 82) · lower ${sh("airCrossMetLow")}% · not met ${sh("airCrossUnmet")}%`);
+    console.log(`  first contact: defence ${sh("airCrossDef")}% (FM clears 47) · keeper ${sh("airCrossKeeper")}% (FM 19) · attack ${sh("airCrossOwn")}% · contact height ${f2(w("airCrossZSum") / Math.max(1, ac - w("airCrossUnmet")) / 1.0936)} m (FM median 1.8)`);
+  }
+  const won = w("headWonDef") + w("headWonMid") + w("headWonFwd");
+  const pctOf = (a: string, b: string) => f1((100 * w(a)) / Math.max(1, w(b)));
+  console.log(`  headers won ${f1(won / n)} / match (FM 27) · defenders win ${pctOf("headWonDef", "headAttDef")}% (FM 90–100) · midfielders ${pctOf("headWonMid", "headAttMid")}% · forwards ${pctOf("headWonFwd", "headAttFwd")}% (FM wide / attacking 10–30)`);
+  console.log(`  aerial duels ${f1(w("aerialDuels") / n / 2)} / match · high balls (peak > 1.2 m) ${f1(w("highBalls") / n)} (FM ~150 lofted) · long balls ${f1(w("longBalls") / n)} (FM ~90), kept ${f1((100 * w("longBallsCompleted")) / Math.max(1, w("longBalls")))}% (FM 56)`);
 }
 
 console.log("\n── Holder decisions ──");
