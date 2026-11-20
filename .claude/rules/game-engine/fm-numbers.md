@@ -554,3 +554,34 @@ ligada (`aerial.md` → "Stage 10"). Nada calibrado.
   (46% de fora da área): é a etapa 9 (portão e chute de longe) e a calibração (21), não o goleiro.
 - Reposição: com menos bolas recolhidas o goleiro passa menos (4,9 por jogo, FM 47); o goleiro como portador é o
   escolhedor antigo (a etapa 8 o deixa de fora). Fica para a calibração.
+
+## Etapa 12: bolas paradas do FM (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (mesmas sementes). Antes =
+`DECISION_OVERRIDES='{"FM_SET_PIECES":false}'` (as bolas paradas da Etapa 14), depois = `FM_SET_PIECES` ligada
+(`set-pieces-play.md` → "Stage 12"). Nada calibrado. As linhas "como foi cobrada" só existem com a flag (o evento
+`setPieceTaken` é novo).
+
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Escanteios | 9,8 | 10,2 | 12,5 |
+| … de um chute (defendido ou desviado) | — | 76% | 65% |
+| … curto / centro da linha da pequena área / traves | — | 12 / 57 / 31% | 15 / 58 / 26% |
+| … na área na cobrança: ataque / defesa (goleiro incl.) | — | 5,0 / 9,7 | 5 / 10 |
+| Laterais | 33,6 | 34,3 | 23 |
+| … para trás / comprimento médio / mantidos | — / — / 77,6% | 42% / 9,6 m / 96,4% | 40% / mediana 9,4 m / 95% |
+| Tiros de meta de bola morta (longos) | — | 20,5 (38,6%) | 15,4 (38%) |
+| … comprimento médio / curtos mantidos / longos mantidos | — | 30,8 m / 99% / 33% | curto 15, longo 60 m / 100% / — |
+| Tiros de meta + bola na mão do goleiro (longos, coletor antigo) | 25,2 (4%) | 25,8 (32%) | — |
+| Faltas cobradas / chutes de falta direta | — | 84,4 / 0,25 | 16,2 / 0,8 |
+| Impedimentos | 5,0 | 4,4 | 8 |
+| Gols / chutes | 11,9 / 51,2 | 13,2 / 54,3 | 1,5 / 21,5 |
+
+- Escanteio, lateral e tiro de meta batem com o FM nas proporções (alvo, direção, comprimento, mantidos). O volume
+  (laterais 34 contra 23, tiros de meta 20 contra 15, escanteios 10 contra 12,5) é do jogo corrido (calibração, 21).
+- O lateral mantido sobe de 78 para 96% por três coisas: as opções curtas perto do batedor (antes o layout fixo podia
+  deixar o time longe da bola), o erro de lançamento da bola parada (base 90) e a lei do impedimento (não há impedimento
+  em lateral, tiro de meta e escanteio; uma primeira rodada sem essa regra marcava 11,2 impedimentos e 76% mantidos).
+- Os chutes de falta direta continuam raros (0,25): as faltas do motor (84 por jogo, 4,4 × o FM) quase nunca caem
+  centrais a até 29 m. Fica para a calibração das faltas (21).
+- Custo: ~10–14 s por partida (o PC estava com outras simulações).

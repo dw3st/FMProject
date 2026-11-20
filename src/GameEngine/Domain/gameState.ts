@@ -1371,6 +1371,12 @@ function fmSetPiecesOn(): boolean {
   return DECISION_FLAGS.FM_SET_PIECES;
 }
 
+/** Stage 12: a throw-in, a dead-ball goal kick or a corner being taken — no offside from it (the law). */
+function noOffsideRestart(s: GameState): boolean {
+  const t = s.setPiece?.type;
+  return fmSetPiecesOn() && (t === 'throw_in' || t === 'corner' || (t === 'goal_kick' && !!s.setPiece?.position));
+}
+
 /** Stage 12: a set-piece delivery's launch-error factor relative to a pass (FM's base 90 against 95). */
 function setPieceErrorScale(): number {
   return FM_SET_PIECES.BASE_SET_PIECE_PASS / FM_SET_PIECES.BASE_PASS;
@@ -3207,7 +3213,8 @@ function startPass(state: GameState, forcedTargetId?: number): GameState {
   const to     = state.players.find(p => p.id === chosen.toId)!;
 
   // Snapshot offside position at the moment the pass is played (not at arrival)
-  const receiverOffside = checkReceiverOffside(holder, to, state.players);
+  // Stage 12: no offside from a throw-in, a goal kick or a corner (the law).
+  const receiverOffside = noOffsideRestart(state) ? false : checkReceiverOffside(holder, to, state.players);
 
   const distance = Math.sqrt((to.x - holder.x) ** 2 + (to.y - holder.y) ** 2);
 
@@ -4749,7 +4756,7 @@ export function startAerialBall(
     distance,
     receiverOffside: false,
     intendedRunnerId: intendedId,
-    aerialOffsideIds: offsideIdsAt(holder, state.players),
+    aerialOffsideIds: noOffsideRestart(state) ? [] : offsideIdsAt(holder, state.players),
     offsideLineX: offsideLineAt(holder, state.players),
     ...(lofted ? { lofted: true } : {}),
     ...(physics ? { physics } : {}),
