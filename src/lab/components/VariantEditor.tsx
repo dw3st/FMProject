@@ -1,3 +1,5 @@
+import { TeamInstructionsPanel } from "@/GameInterface/Tactics/TeamInstructionsPanel";
+import type { InstructionLevel } from "@/types/tacticsTypes";
 import { useState } from "react";
 import { TACTICAL_STYLE_OPTIONS, MENTALITY_OPTIONS, DEFAULT_MENTALITY, axesFor } from "@/types/tacticsTypes";
 import type { TacticalStyle, Mentality, TacticalAxes } from "@/types/tacticsTypes";
@@ -31,7 +33,7 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
     const next = { ...variant, ...p };
     // If formation, tactic or mentality changed (not label), and the current label is
     // still the auto-generated one, keep it in sync.
-    if (('formation' in p || 'tacticalStyle' in p || 'mentality' in p || 'axesOverride' in p || 'customFormation' in p || 'slotInstructions' in p || 'manMarks' in p) && !('label' in p)) {
+    if (('formation' in p || 'tacticalStyle' in p || 'mentality' in p || 'axesOverride' in p || 'customFormation' in p || 'slotInstructions' in p || 'manMarks' in p || 'teamInstructions' in p || 'mentalityLevel' in p) && !('label' in p)) {
       if (variant.label === variantAutoLabel(variant)) {
         next.label = variantAutoLabel(next);
       }
@@ -128,6 +130,20 @@ export function VariantEditor({ variant, formations, onChange, onRemove }: Props
           ))}
         </select>
       </div>
+
+      <details className="text-xs">
+        <summary className="cursor-pointer text-white/60">Team instructions (stage 20)</summary>
+        <div className="mt-2">
+          <TeamInstructionsPanel
+            compact
+            style={variant.tacticalStyle}
+            axesOverride={variant.axesOverride}
+            value={{ teamInstructions: variant.teamInstructions, mentality: variant.mentalityLevel as InstructionLevel | undefined }}
+            onChange={(v) => patch({ teamInstructions: v.teamInstructions, mentalityLevel: v.mentality || undefined, axesOverride: undefined })}
+            onReset={() => patch({ teamInstructions: undefined, mentalityLevel: undefined })}
+          />
+        </div>
+      </details>
 
       <div className="grid grid-cols-2 gap-2 text-xs">
         {AXIS_OPTIONS.map((a) => (

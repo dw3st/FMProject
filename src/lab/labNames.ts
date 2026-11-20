@@ -50,7 +50,11 @@ export function variantAutoLabel(v: Variant): string {
   const withQ = v.refereeQuality === undefined ? withRef : `${withRef} · refq ${v.refereeQuality}${v.var ? " · VAR" : ""}`;
   const instr = (v.slotInstructions ?? []).filter((i) => i && (i.variant || (i.press && i.press !== "normal"))).length;
   const withInstr = instr > 0 ? `${withQ} · instr ${instr}` : withQ;
-  const withMark = v.manMarks && v.manMarks.length > 0 ? `${withInstr} · mark` : withInstr;
+  const withMark0 = v.manMarks && v.manMarks.length > 0 ? `${withInstr} · mark` : withInstr;
+  // Stage 20: how many team instructions differ from the template, and the mentality level.
+  const tiCount = Object.values(v.teamInstructions ?? {}).reduce((n, g) => n + Object.keys(g ?? {}).length, 0);
+  const withTi = tiCount > 0 ? `${withMark0} · ti ${tiCount}` : withMark0;
+  const withMark = v.mentalityLevel ? `${withTi} · ment ${v.mentalityLevel > 0 ? "+" : ""}${v.mentalityLevel}` : withTi;
   return v.kinematics === "off" ? `${withMark} · kin off` : withMark;
 }
 

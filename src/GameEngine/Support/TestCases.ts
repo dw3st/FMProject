@@ -170,6 +170,8 @@ export interface TestScenario {
   createState(): GameState;
   /** Tactical style each team's selector takes when the scenario is picked (absent = whatever is selected). */
   styles?: { A?: import('@/types/tacticsTypes').TacticalStyle; B?: import('@/types/tacticsTypes').TacticalStyle };
+  /** Team instructions and mentality level each side plays (stage 20); applied by `/test` like `styles`. */
+  instructions?: Partial<Record<TeamId, { teamInstructions?: import('@/types/tacticsTypes').TeamInstructions; mentality?: import('@/types/tacticsTypes').InstructionLevel }>>;
 }
 
 // ── Scenarios ─────────────────────────────────────────────────────────────────
@@ -1354,6 +1356,39 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const f433 = formation433Json as Formation;
       const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
       const list = f433.attacking.map(s => (s.role === 'ST' ? { variant: 'st_target' as const } : null));
+      return applyTeamInstructions(base, 'A', list);
+    },
+  },
+
+  {
+    id:          'team-instructions-transition',
+    name:        '11v11 — Counter-press vs regroup (team instructions)',
+    description: 'Stage 20: Team A counter-presses and counters at once (on loss / on win +2, engagement +1, overlap +2, shoot more +2); Team B regroups and holds its shape (-2 / -2, drop off the trap -2). Both on the balanced template otherwise. Watch the first seconds after each turnover; the Stats panel counts counter-press regains and transition shots, the debug log shows the AI-instruction changes.',
+    instructions: {
+      A: { teamInstructions: { inPossession: { flanks: 2, shooting: 2 }, transition: { onLoss: 2, onWin: 2 }, outOfPossession: { engagement: 1 } } },
+      B: { teamInstructions: { transition: { onLoss: -2, onWin: -2 }, outOfPossession: { trap: -2 } } },
+    },
+    createState() {
+      const f433 = formation433Json as Formation;
+      return createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+    },
+  },
+
+  {
+    id:          'oop-roles-duties',
+    name:        '11v11 — Duties and roles without the ball',
+    description: 'Stage 20: Team A full-backs on Attack duty with "Engage the winger", the striker on "Press the build-up", the wingers on "Track back" and the first CM on Defend duty. Select a player for his resolved tuning in the Decision panel; the Instructions overlay tags the slots.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      let cm = false;
+      const list = f433.attacking.map(s => {
+        if (s.role === 'LB' || s.role === 'RB') return { duty: 'attack' as const, oop: 'fb_press' as const };
+        if (s.role === 'ST') return { oop: 'st_press' as const };
+        if (s.role === 'LW' || s.role === 'RW') return { oop: 'w_track' as const };
+        if (s.role === 'CM' && !cm) { cm = true; return { duty: 'defend' as const }; }
+        return null;
+      });
       return applyTeamInstructions(base, 'A', list);
     },
   },

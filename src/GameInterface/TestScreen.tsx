@@ -57,6 +57,7 @@ const staffOfTestSquad = (s: { label: string; players: Squad["players"] }) =>
   staffEffectsOf({ id: s.label, name: s.label, colors: ["#000000", "#ffffff"], money: 0, players: s.players });
 import { teamLineup } from "@/GameEngine/Domain/TeamLineup";
 import { getRuntimeLineup, normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
+import { TeamInstructionsPanel, type InstructionsValue } from '@/GameInterface/Tactics/TeamInstructionsPanel';
 import { gameBus, type GameEvents } from "@/GameEngine/Infrastructure/EventBus";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
 import { applyTeamTacticsConfig, getDefenseConfig } from "@/GameEngine/Configs/DefenseConfig";
@@ -494,6 +495,10 @@ export function TestScreen() {
   });
   // Style familiarity per team (`src/Domain/familiarity`): 50 = neutral, applied to the team's own style.
   const [famA, setFamA] = useState<number>(50);
+  // Team instructions and mentality level per team (stage 20, `tactical-config.md` → "Stage 20").
+  const [instrA, setInstrA] = useState<InstructionsValue>({});
+  const [instrB, setInstrB] = useState<InstructionsValue>({});
+  const [showTeamInstr, setShowTeamInstr] = useState(false);
   const [famB, setFamB] = useState<number>(50);
   // Morale of each whole side (`.claude/rules/game/morale.md`; 65 = neutral), applied at build time.
   // `undefined` = "Roster": every player at his own stored morale (the per-player path of a real match).
@@ -783,8 +788,8 @@ export function TestScreen() {
 
   // Tactics (incl. style familiarity) are applied BEFORE the match state is built: familiarity
   // also scales the team's attributes at build time (`FamiliarityConfig.ts` → execution).
-  useEffect(() => { const f = { [tacticsA]: famA }; applyTeamTacticsConfig('A', tacticsA, mentalityA, axesA, f); applyTeamAttackConfig('A', tacticsA, mentalityA, axesA, f); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA, axesA, famA]);
-  useEffect(() => { const f = { [tacticsB]: famB }; applyTeamTacticsConfig('B', tacticsB, mentalityB, axesB, f); applyTeamAttackConfig('B', tacticsB, mentalityB, axesB, f); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB, axesB, famB]);
+  useEffect(() => { const f = { [tacticsA]: famA }; applyTeamTacticsConfig('A', tacticsA, mentalityA, axesA, f, instrA.teamInstructions, instrA.mentality); applyTeamAttackConfig('A', tacticsA, mentalityA, axesA, f, instrA.teamInstructions, instrA.mentality); gameBus.emit('tacticsChanged', { team: 'A' }); }, [tacticsA, mentalityA, axesA, famA, instrA]);
+  useEffect(() => { const f = { [tacticsB]: famB }; applyTeamTacticsConfig('B', tacticsB, mentalityB, axesB, f, instrB.teamInstructions, instrB.mentality); applyTeamAttackConfig('B', tacticsB, mentalityB, axesB, f, instrB.teamInstructions, instrB.mentality); gameBus.emit('tacticsChanged', { team: 'B' }); }, [tacticsB, mentalityB, axesB, famB, instrB]);
 
   useEffect(() => {
     if (!formObjA || !formObjB) return;
@@ -829,6 +834,9 @@ export function TestScreen() {
     // A scenario may come with its own styles (e.g. `studied-plan`: the plan's counter style on team B).
     if (scenario.styles?.A) setTacticsA(scenario.styles.A);
     if (scenario.styles?.B) setTacticsB(scenario.styles.B);
+    // Stage 20: a scenario's team instructions (none = the style's template).
+    setInstrA(scenario.instructions?.A ?? {});
+    setInstrB(scenario.instructions?.B ?? {});
   }, [scenario, resetKey]);
 
   // A familiarity change rebuilds the scenario state (familiarity scales attributes at build time),
@@ -1688,6 +1696,10 @@ export function TestScreen() {
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-semibold text-sm">
           <Icon name={paused ? 'play' : 'pause'} size={14} />{paused ? 'Play' : 'Pause'}
         </button>
+        <button onClick={() => setShowTeamInstr(v => !v)} title="Stage 20: team instructions of both sides"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-semibold text-sm">
+          Team instr
+        </button>
         {mode === '11v11' && liveGameState && (
           <button onClick={() => { setPaused(true); setShowSubs(true); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-semibold text-sm">
@@ -2236,6 +2248,21 @@ export function TestScreen() {
         </div>
       )}
 
+      {showTeamInstr && (
+        <div className="fixed inset-x-4 top-16 bottom-16 z-40 overflow-y-auto rounded-md border border-border bg-card p-4 flex flex-col gap-6">
+          <div className="flex justify-end">
+            <button onClick={() => setShowTeamInstr(false)} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0">Close</button>
+          </div>
+          <div>
+            <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">Team A</p>
+            <TeamInstructionsPanel compact style={tacticsA} axesOverride={axesA} value={instrA} onChange={setInstrA} onReset={() => setInstrA({})} />
+          </div>
+          <div>
+            <p className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0 mb-2">Team B</p>
+            <TeamInstructionsPanel compact style={tacticsB} axesOverride={axesB} value={instrB} onChange={setInstrB} onReset={() => setInstrB({})} />
+          </div>
+        </div>
+      )}
       {showSubs && liveGameState && (
         <SubstitutionPanel
           gameState={liveGameState}

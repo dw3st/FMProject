@@ -201,6 +201,14 @@ function FitnessSummary({ teamA, teamB }: { teamA: TeamStats; teamB: TeamStats }
           <span className="text-foreground font-bold tabular-nums">{teamA.studyPlans} – {teamB.studyPlans}</span>
         </span>
       )}
+      <span title="Balls won back within 5 s of losing them (stage 20)">
+        {t("stats.counterPressRegains", { defaultValue: "Counter-press regains" })}:{" "}
+        <span className="text-foreground font-bold tabular-nums">{teamA.counterPressRegains ?? 0} – {teamB.counterPressRegains ?? 0}</span>
+      </span>
+      <span title="Shots within 10 s of winning the ball (stage 20)">
+        {t("stats.transitionShots", { defaultValue: "Transition shots" })}:{" "}
+        <span className="text-foreground font-bold tabular-nums">{teamA.transitionShots ?? 0} – {teamB.transitionShots ?? 0}</span>
+      </span>
     </div>
   );
 }
