@@ -310,3 +310,9 @@ Sem semente (`bun scripts/ai-formation-goals.ts --engine 800 --modes ai --quick 
 The zonal back-liners holding shape also blend toward one robust-mean back line with hold / step-up / drop states; a second
 defender pressing a holder already pressed stands off 5 yd covering the inside route; anticipation moves the press start to
 the holder's predicted point. Rules, constants and numbers: `movement.md`.
+
+## Stage 16: the defender's mind
+
+With `DEFENSIVE_MIND` the intent scores are modified by the defender's mind window before the argmax (noise, aggression
+on press / step, a concentration lapse dropping the mark), and the track_mark target reads the mark's run ahead by
+anticipation (`Domain/DefensiveMind.ts`, `decisions.md` → "Stage 16").

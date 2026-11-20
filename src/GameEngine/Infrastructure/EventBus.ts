@@ -196,6 +196,10 @@ export interface GameEvents {
   };
   /** Stage 13 (`OffsideRuns.ts`): an attacker starts a spell of reading the offside line wrongly (past it) or a lapse. */
   lineMisread: { playerId: number; team: TeamId; err: number; lapse: boolean };
+  /** Stage 16 (`DefensiveMind.ts`): a new mind window is a concentration lapse (defending or off the ball). */
+  mindLapse: { playerId: number; team: TeamId; kind: 'defence' | 'offball' };
+  /** Stage 16: the mind changed a defender's intent (lapse = dropped his mark / held back; else noise or aggression). */
+  mindDefenseShift: { playerId: number; team: TeamId; from: string; to: string; lapse: boolean };
   /** Stage 13: a contact foul on (or, rarely, by) the ball holder, without a tackle. Emitted after `foul`. */
   contactFoul: { offenderId: number; fouledId: number; team: TeamId; context: import('@/GameEngine/Domain/Fouls').FoulContextKind };
   /** A card was shown. A second yellow emits the yellow and then a red with `secondYellow: true`. */

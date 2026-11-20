@@ -302,6 +302,11 @@ export interface TeamRawStats {
   foulsWonCarrying: number;
   contactFouls: number;
   lineMisreads: number;
+  /** Stage 16 (`DefensiveMind.ts`): concentration lapses defending / off the ball, mind-changed defensive intents, dropped marks. */
+  mindLapsesDefence: number;
+  mindLapsesOffBall: number;
+  mindDefenseShifts: number;
+  mindMarkDrops: number;
   // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
   crosses: number;
   crossesCompleted: number;
@@ -568,6 +573,10 @@ export interface PerMatchView {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 16: per match. */
+  avgMindLapses: number;
+  avgMindMarkDrops: number;
+  avgMindDefenseShifts: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;
@@ -778,6 +787,10 @@ export interface VariantSummary {
   foulsOnCarrierPct: number;
   avgContactFouls: number;
   avgLineMisreads: number;
+  /** Stage 16: per match. */
+  avgMindLapses: number;
+  avgMindMarkDrops: number;
+  avgMindDefenseShifts: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
   crossCompletionPct: number;

@@ -488,6 +488,8 @@ export interface GamePlayer {
   decisionNoise?: HolderMindState;
   /** His last read of the offside line (stage 13, `Domain/OffsideRuns.ts`). Absent = reads the true line every tick. */
   lineRead?: LineRead;
+  /** Off-ball / defending mind rolls (stage 16). Absent = no mental noise off the ball. */
+  mind?: MindRolls;
 }
 
 /** An attacker's read of the offside line (`Domain/OffsideRuns.ts`). */
@@ -517,6 +519,26 @@ export interface PlayerMental {
   consistency: number;
   /** −1..1: half morale, half recent form, fixed at kickoff. */
   mood: number;
+  /** 0..1, derived per match (stage 16, `Domain/DefensiveMind.ts`): concentration (marking lapses) and aggression (press,
+   *  step in). Absent = derived from the four attributes above (`mindAttributes`). */
+  concentration?: number;
+  aggression?: number;
+}
+
+/** A player's off-ball / defending mind window (stage 16, `Domain/DefensiveMind.ts`): rolls on FM's 100 scale. */
+export interface MindRolls {
+  /** matchTime of the next window. */
+  nextAt: number;
+  dec: number;
+  antic: number;
+  conc: number;
+  aggr: number;
+  /** The concentration roll is a lapse this window (he loses his man / his zone). */
+  lapse: boolean;
+  /** Relative noise σ on the intent scores this window. */
+  sigma: number;
+  /** One draw per intent slot (defence: hold, mark, press, step; off-ball: support, hold, run). */
+  z: number[];
 }
 
 /** One holder-mind window (`Domain/HolderMind.ts`). Rolls on FM's 100 scale; `z` / `lapseMul` per action slot. */

@@ -95,3 +95,9 @@ The best cell becomes `support_run { dx, dy }` (unit direction to it). If the be
 
 With debug on, every evaluation emits `offBallScores` (intent scores, chosen intent, best cell
 score, decision); `/test` shows it in the decision panel and the MCP `score_off_ball` re-runs it.
+
+## Stage 16: the off-ball mind
+
+With `DEFENSIVE_MIND` the three intent scores (after the team-intent multipliers) get the player's mind window: noise,
+anticipation and flair on make_run, a concentration lapse leaving him in his zone (`Domain/DefensiveMind.ts`,
+`decisions.md` → "Stage 16").

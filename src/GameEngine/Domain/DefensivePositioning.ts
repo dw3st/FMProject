@@ -24,7 +24,8 @@ import { slotBasePosition } from '@/GameEngine/FormationSlots';
 import { getDefenseConfig, getDefenseTacticKeys, MAN_MARK_CONFIG } from '@/GameEngine/Configs/DefenseConfig';
 import type { DefenseConfigValues } from '@/GameEngine/Configs/DefenseConfig';
 import { engineOf, mainRoleOf } from '@/GameEngine/Domain/roleEngineData';
-import { isDebugEnabled } from '@/GameEngine/Support/DebugLog';
+import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
+import { applyDefensiveMind, mindMarkView, type DefensiveMindEffect } from '@/GameEngine/Domain/DefensiveMind';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import {
   INTENT_PRESSING_STYLE,
@@ -1220,6 +1221,9 @@ function selectDefensiveIntent(ctx: DefensiveIntentContext, possessionTime: numb
     press_holder:         pressHolderScore,
     step_into_carry_lane: stepIntoCarryLaneScore,
   };
+  // The mind (stage 16, `DefensiveMind.ts`): noise, aggression and a concentration lapse modify the scores.
+  const mind = DECISION_FLAGS.DEFENSIVE_MIND ? applyDefensiveMind(ctx.player, scores) : null;
+  if (mind && mind.before !== mind.after) emitMindShift(ctx.player, mind);
 
   // Tie-breaking priority: press_holder > step_into_carry_lane > track_mark > hold_shape
   let best: DefensiveIntent = 'hold_shape';
@@ -1242,6 +1246,16 @@ function selectDefensiveIntent(ctx: DefensiveIntentContext, possessionTime: numb
     best = prev;
   }
   return { intent: best, scores, carryLaneBonus };
+}
+
+/** Stage 16: the mind changed a defender's intent (event for the statistics, `mind` debug line). */
+function emitMindShift(player: GamePlayer, e: DefensiveMindEffect): void {
+  gameBus.emit('mindDefenseShift', { playerId: player.id, team: player.team, from: e.before, to: e.after, lapse: e.lapse });
+  if (e.lapse || Math.abs(e.aggrK) >= 0.6) {
+    debugLog('mind', `${player.name} ${e.before} → ${e.after}${e.lapse ? ' (lapse)' : e.aggrK > 0 ? ' (aggressive)' : ' (timid)'}`, {
+      playerId: player.id, data: { aggrK: Number(e.aggrK.toFixed(2)) },
+    });
+  }
 }
 
 // ── Defensive decision — mirrors evaluateOffBall() pattern ────────────────────
@@ -1430,7 +1444,8 @@ export function computeDefensivePosition(
   let rawY = shapeAnchor.y;
 
   if (intent === 'track_mark' && ballHolder && markTarget) {
-    const result = computeTrackMarkTarget(shapeAnchor, player, ballHolder, markTarget, cfg);
+    const result = computeTrackMarkTarget(shapeAnchor, player, ballHolder,
+      DECISION_FLAGS.DEFENSIVE_MIND ? mindMarkView(player, markTarget) : markTarget, cfg);
     rawX = result.x;
     rawY = result.y;
   }

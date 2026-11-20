@@ -37,7 +37,8 @@ describe("mistimed runs (stage 13)", () => {
       let ticks = 0, past = 0, misreads = 0;
       const un = gameBus.on("lineMisread", () => { misreads++; });
       simulateMatch(home, away, f, f, undefined, undefined, {
-        seed: 4242, decisions: { OFFSIDE_RUNS: on },
+        // The stage-16 mind and consistency cap move the shape too: off here, so the test sees the line reads alone.
+        seed: 4242, decisions: { OFFSIDE_RUNS: on, DEFENSIVE_MIND: false, CONSISTENCY_CAP: false },
         onTick: (s: GameState) => {
           const h = s.players.find(p => p.id === s.ballHolderId);
           if (!h || s.pass || s.matchPhase !== "firstHalf") return;

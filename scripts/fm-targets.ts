@@ -73,6 +73,7 @@ for (const r of fmTargetRows({ ...perMatchCounts(counts, n), longShots: longShot
   console.log(`  fouls won by third own / mid / final ${f1(p3("foulsWonOwnThird"))} / ${f1(p3("foulsWonMidThird"))} / ${f1(p3("foulsWonFinalThird"))}% (FM ${FM_FOULS.thirds.join(" / ")}%)`);
   console.log(`  on the ball carrying / receiving / holding ${f1(p3("foulsWonCarrying"))} / ${f1(p3("foulsWonReceiving"))} / ${f1(p3("foulsWonHolding"))}% (FM ${FM_FOULS.carry} / ${FM_FOULS.reception} / ${FM_FOULS.hold}%)`);
   console.log(`  contact fouls ${f2(g("contactFouls") / n)} per match · line misreads ${f1(g("lineMisreads") / n)} per match`);
+  console.log(`  mind (stage 16): lapses defending ${f1(g("mindLapsesDefence") / n)} · off the ball ${f1(g("mindLapsesOffBall") / n)} · intents shifted ${f1(g("mindDefenseShifts") / n)} · marks dropped ${f1(g("mindMarkDrops") / n)} per match`);
   const fmS = (x: number) => (x / FM_FOULS.matchSeconds).toFixed(4);
   console.log(`  per live s: fouls ${perS(g("fouls")).toFixed(4)} (FM ${fmS(FM_FOULS.foulsPerMatch)}) · offsides ${perS(g("offsides")).toFixed(4)} (FM ${fmS(FM_FOULS.offsidesPerMatch)}) · yellows ${perS(g("yellowCards")).toFixed(4)} (FM ${fmS(FM_FOULS.yellowsPerMatch)})`);
 }

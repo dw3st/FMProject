@@ -102,6 +102,12 @@ export interface PlayerStats {
   contactFouls:             number;
   /** Stage 13 (`OffsideRuns.ts`): reads of the offside line that left him past it, or a lapse. */
   lineMisreads:             number;
+  /** Stage 16 (`DefensiveMind.ts`): concentration lapses (a mind window rolled as a lapse) defending / off the ball. */
+  mindLapsesDefence:        number;
+  mindLapsesOffBall:        number;
+  /** Stage 16: defensive intents the mind changed, and those of them that dropped a mark or held back the press. */
+  mindDefenseShifts:        number;
+  mindMarkDrops:            number;
   // ── Aerial (`.claude/rules/game-engine/aerial.md`) ─────────────────────────
   /** Crosses played. */
   crosses:                  number;
@@ -342,6 +348,10 @@ function emptyStats(): PlayerStats {
     foulsWonHolding: 0,
     contactFouls: 0,
     lineMisreads: 0,
+    mindLapsesDefence: 0,
+    mindLapsesOffBall: 0,
+    mindDefenseShifts: 0,
+    mindMarkDrops: 0,
     crosses:                  0,
     crossesCompleted:         0,
     aerialDuels:              0,
@@ -627,6 +637,12 @@ gameBus.on('foul', e => {
 });
 gameBus.on('contactFoul', e => { get(e.offenderId).contactFouls++; notify(); });
 gameBus.on('lineMisread', e => { get(e.playerId).lineMisreads++; });
+gameBus.on('mindLapse', e => { const s = get(e.playerId); if (e.kind === 'defence') s.mindLapsesDefence++; else s.mindLapsesOffBall++; });
+gameBus.on('mindDefenseShift', e => {
+  const s = get(e.playerId);
+  s.mindDefenseShifts++;
+  if (e.lapse && (e.from === 'track_mark' || e.from === 'press_holder' || e.from === 'step_into_carry_lane')) s.mindMarkDrops++;
+});
 gameBus.on('card', e => {
   const s = get(e.playerId);
   if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
@@ -978,6 +994,10 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.foulsWonHolding += stats.foulsWonHolding;
     result.contactFouls += stats.contactFouls;
     result.lineMisreads += stats.lineMisreads;
+    result.mindLapsesDefence += stats.mindLapsesDefence;
+    result.mindLapsesOffBall += stats.mindLapsesOffBall;
+    result.mindDefenseShifts += stats.mindDefenseShifts;
+    result.mindMarkDrops += stats.mindMarkDrops;
     result.crosses                  += stats.crosses;
     result.crossesCompleted         += stats.crossesCompleted;
     result.aerialDuels              += stats.aerialDuels;

@@ -32,6 +32,7 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   var:          "text-orange-300",
   weather:      "text-sky-300",
   keeper:       "text-lime-300",
+  mind:         "text-pink-300",
   condition:    "text-emerald-300",
   movement:     "text-teal-300",
 };
@@ -209,6 +210,7 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
 
           {/* ── Resolved slot tuning of the selected player (player instructions) ── */}
           {selectedPlayer && <TuningBlock player={selectedPlayer} />}
+          {selectedPlayer?.mind && <MindBlock player={selectedPlayer} />}
 
           {/* ── Last decision telemetry event of the selected player (or the holder) — `decisions.md` ── */}
           <DecisionTelemetryBlock playerId={selectedPlayerId ?? ballHolderId ?? null} />
@@ -630,6 +632,27 @@ function HolderMindBlock({ playerId }: { playerId: number | null }) {
           <span className="text-right">{(ev.perceived[k] ?? 0).toFixed(3)}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Stage 16: the selected player's off-ball / defending mind window (`DefensiveMind.ts`). */
+function MindBlock({ player }: { player: import('@/GameEngine/types').GamePlayer }) {
+  const r = player.mind!;
+  const m = player.mental;
+  const f0 = (n: number) => n.toFixed(0);
+  return (
+    <div className="space-y-0.5 pb-1.5 border-b border-white/5">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-bold tracking-widest uppercase text-pink-300/80">Mind · off ball</span>
+        <span className={`text-[9px] ${r.lapse ? 'text-destructive' : 'text-pink-300'}`}>{r.lapse ? 'LAPSE' : `σ ${r.sigma.toFixed(3)}`}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-2 text-[9px] tabular-nums text-muted-foreground/70">
+        <span>dec {f0(r.dec)}</span>
+        <span>antic {f0(r.antic)}</span>
+        <span>conc {f0(r.conc)}{m?.concentration !== undefined ? ` / ${f0(m.concentration * 100)}` : ''}</span>
+        <span>aggr {f0(r.aggr)}{m?.aggression !== undefined ? ` / ${f0(m.aggression * 100)}` : ''}</span>
+      </div>
     </div>
   );
 }

@@ -1011,6 +1011,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'mind-lapse',
+    name:        '11v11 — Distracted defence (concentration lapses)',
+    description: 'Team B defends at 45 energy with concentration 0.05, anticipation 0.1, consistency 0.1 and a bad mood; Team A plays sharp (stage 16, `DefensiveMind.ts`). Below the form window and tired, the side concentration rolls lapse often: the defender drops his mark (track_mark → hold_shape) and holds back the press for the window. Debug log `mind`; the Mind block of a selected player shows his rolls; StatsPanel column LP counts the lapses.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = applyFatigue(base, 'B', 45, FITNESS.LOAD_HIGH);
+      const mind = (p: GamePlayer): GamePlayer => {
+        if (p.team === 'A') return { ...p, mental: { decisions: 0.7, composure: 0.7, flair: 0.6, anticipation: 0.7, consistency: 0.8, mood: 0.4, concentration: 0.75, aggression: 0.5 } };
+        return { ...p, mental: { decisions: 0.15, composure: 0.2, flair: 0.2, anticipation: 0.1, consistency: 0.1, mood: -0.5, concentration: 0.05, aggression: 0.5 } };
+      };
+      return { ...tired, players: tired.players.map(mind), benchA: tired.benchA.map(mind), benchB: tired.benchB.map(mind) };
+    },
+  },
+
+  {
     id:          'move-shield',
     name:        'Holder move — shield with the back to goal',
     description: 'Striker at 80 yd facing his own goal (moving back), two defenders tight on him and his midfielder far. He shields (slow edging away, a tackle on him succeeds less and fouls more) and turns when a lane opens (`HolderMoves.ts`). Decision log: "shield".',

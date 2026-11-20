@@ -1313,6 +1313,7 @@
       "RC": "Red Cards",
       "OFF": "Offsides",
       "MR": "Offside line misreads",
+      "LP": "Concentration lapses (defending and off the ball)",
       "FW": "Fouls won",
       "PEN": "Penalty Goals",
       "CR": "Crosses",

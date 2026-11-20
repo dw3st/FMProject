@@ -477,6 +477,8 @@ export interface FmMatchCounts {
   foulsWonOwnThird?: number; foulsWonMidThird?: number; foulsWonFinalThird?: number;
   foulsWonCarrying?: number; foulsWonReceiving?: number; foulsWonHolding?: number;
   contactFouls?: number; lineMisreads?: number;
+  /** Stage 16: concentration lapses (defending, off the ball), mind-changed defensive intents and dropped marks. */
+  mindLapsesDefence?: number; mindLapsesOffBall?: number; mindDefenseShifts?: number; mindMarkDrops?: number;
   /** Shots from 18+ yd of the goal mouth, when a collector counted them (`longShotsOf`); else absent. */
   longShots?: number;
   /** Median xG per shot, when a collector kept the histogram (`xgMedianOf`); else absent. */
@@ -491,6 +493,7 @@ export const FM_COUNT_KEYS = [
   "fouls", "yellowCards", "redCards", "offsides", "penaltiesAwarded",
   "foulsWonOwnThird", "foulsWonMidThird", "foulsWonFinalThird", "foulsWonCarrying", "foulsWonReceiving", "foulsWonHolding",
   "contactFouls", "lineMisreads",
+  "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
 /** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */

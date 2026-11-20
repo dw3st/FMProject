@@ -58,7 +58,7 @@ import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
 import { shotXg, XG_PENALTY } from '@/GameEngine/Domain/ShotXg';
 import type { FmXgResult } from '@/GameEngine/Domain/FmXg';
-import type { RosterPlayer } from '@/types/playerTypes';
+import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
 import { emptySeasonLog } from '@/types/playerTypes';
 import { Player } from '@/Domain/Player';
 import { computeBuffedStats } from '@/Domain/PlayerBuffs';
@@ -108,6 +108,8 @@ import { withMoraleExecution } from '@/Domain/morale/morale';
 import { settlingMult, withSettlingExecution } from '@/Domain/settling/settling';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
 import { refreshLineRead, perceivedLine } from '@/GameEngine/Domain/OffsideRuns';
+import { refreshMindRolls } from '@/GameEngine/Domain/DefensiveMind';
+import { capStatModifiers } from '@/GameEngine/Domain/ConsistencyCap';
 import { OFFSIDE_RUNS } from '@/GameEngine/Configs/OffsideRunsConfig';
 import { KINEMATICS_CONFIG } from '@/GameEngine/Configs/KinematicsConfig';
 import { etaTo as kinEta, stepAlong, stepToward, type KinStep } from '@/GameEngine/Domain/Kinematics';
@@ -292,6 +294,11 @@ function toValidPlayerRole(pos: string): PlayerRole {
   return POSITION_TO_ROLE[pos] ?? 'CM';
 }
 
+/** The day's attributes with the consistency cap on their modifiers (stage 16, `ConsistencyCap.ts`); flag off = as is. */
+function consistencyCapped(rp: RosterPlayer, buffed: PlayerStatsRecord, consistency: number): PlayerStatsRecord {
+  return DECISION_FLAGS.CONSISTENCY_CAP ? capStatModifiers(rp.stats, buffed, consistency) : buffed;
+}
+
 function buildGamePlayerForSlot(
   rp: RosterPlayer,
   slotDef: { role: PlayerRole; yRange?: number },
@@ -303,13 +310,14 @@ function buildGamePlayerForSlot(
   const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
   // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes, and the
   // player's morale his own (`.claude/rules/game/morale.md`; 65 / absent = unchanged).
-  const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+  const mental = matchMentalOf(team, rp);
+  const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
     rp.stats,
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
+  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
   const yRange   = slotDef.yRange ?? roleEng.yRange;
@@ -366,7 +374,7 @@ function buildGamePlayerForSlot(
     morale:           matchMoraleOf(team, rp.morale),
     ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
     temperament:      matchTemperamentOf(team, rp),
-    mental:           matchMentalOf(team, rp),
+    mental,
     foot:             rp.preferredFoot,
   };
 }
@@ -398,13 +406,14 @@ function buildTeam(
     const naturalRole = toValidPlayerRole(rp.positions?.[0] ?? 'CM');
     const roleEng = roleEngine(naturalRole);
     const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
-    const buffed = withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+    const mental = matchMentalOf(team, rp);
+    const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
       rp.stats,
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
+    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
     const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
@@ -443,7 +452,7 @@ function buildTeam(
       morale:           matchMoraleOf(team, rp.morale),
       ...(rp.settling ? { settlingMult: settlingMult(rp) } : {}),
       temperament:      matchTemperamentOf(team, rp),
-      mental:           matchMentalOf(team, rp),
+      mental,
       foot:             rp.preferredFoot,
     });
   }
@@ -4744,6 +4753,25 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         debugLog('offside', `${p.name} misreads the line by ${read.err.toFixed(1)} yd${read.lapse ? ' (lapse)' : ''}`, { playerId: p.id, data: { lineX: read.lineX, err: read.err } });
       }
       return { ...p, lineRead: read };
+    });
+    if (changed) s = { ...s, players };
+  }
+  // ── Mind off the ball and in defence (stage 16, `DefensiveMind.ts`) ──────
+  // Every outfield player without the ball rolls decisions, anticipation, concentration and aggression per window; the
+  // defensive and off-ball evaluators read the rolls as modifiers on their intent scores.
+  if (DECISION_FLAGS.DEFENSIVE_MIND && isLivePhase(s.matchPhase)) {
+    let changed = false;
+    const players = s.players.map(p => {
+      if (p.role === 'GK' || p.id === holder.id) return p.mind ? (changed = true, { ...p, mind: undefined }) : p;
+      const mind = refreshMindRolls(p, s.matchTime, clockScaleOf(s));
+      if (mind === p.mind) return p;
+      changed = true;
+      if (mind.lapse && !p.mind?.lapse) {
+        const kind = p.team === attackingTeam ? 'offball' : 'defence';
+        gameBus.emit('mindLapse', { playerId: p.id, team: p.team, kind });
+        debugLog('mind', `${p.name} loses concentration (${kind})`, { playerId: p.id, data: { conc: mind.conc, energy: Math.round(p.energy) } });
+      }
+      return { ...p, mind };
     });
     if (changed) s = { ...s, players };
   }

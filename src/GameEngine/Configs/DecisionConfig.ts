@@ -23,7 +23,7 @@ export interface DecisionFlags {
   SECOND_PRESSER: boolean;
   /** Positioning target lags the shape anchor by a discipline τ (§4). */
   DISCIPLINE_LAG: boolean;
-  /** Consistency caps stacked bonuses (§7 phase 5). */
+  /** Consistency caps the stacked attribute modifiers of the day (§7 phase 5; stage 16, `Domain/ConsistencyCap.ts`). */
   CONSISTENCY_CAP: boolean;
   /** Holder moves (phase 3, `Domain/HolderMoves.ts`): shield / turn with the back to goal. */
   SHIELD: boolean;
@@ -82,6 +82,9 @@ export interface DecisionFlags {
   /** Stage 14 (`fitness.md` → "FM condition"): FM's condition curve (kick-off 99, drain fading toward a floor, +2 at
    *  half time, keepers barely tire) and FM's AI substitutions (from 55', at 55–75 %, 3–4 a match). */
   FM_CONDITION: boolean;
+  /** Stage 16 (`decisions.md` → "Stage 16"): the mental rolls off the ball and in defence — concentration (marking
+   *  lapses), aggression (press, step in), anticipation (reads the mark's run), decisions (noise on the intent scores). */
+  DEFENSIVE_MIND: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -91,7 +94,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   ANTICIPATION_PRESS: true,
   SECOND_PRESSER: true,
   DISCIPLINE_LAG: false,
-  CONSISTENCY_CAP: false,
+  CONSISTENCY_CAP: true,
   SHIELD: true,
   CUT_INSIDE: true,
   LAY_OFF: true,
@@ -117,6 +120,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   OFFSIDE_RUNS: true,
   FM_FOULS: true,
   FM_CONDITION: true,
+  DEFENSIVE_MIND: true,
 };
 
 /**
