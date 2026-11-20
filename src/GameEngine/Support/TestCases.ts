@@ -20,7 +20,7 @@ import { THROUGH_BALL_CONFIG } from '@/GameEngine/Configs/ThroughBallConfig';
 import { EMPTY_DECISION_MEMORY } from '@/GameEngine/Domain/DecisionTree';
 import rolesJson from '@/Data/roles.json';
 
-import { applyTeamInstructions, awardCorner, createMatchState, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
+import { applyTeamInstructions, awardCorner, createMatchState, testPhysicalShot, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import { counterStyle, pickMarkTarget, pickMarkerSlot } from '@/Domain/study/study';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
@@ -469,6 +469,53 @@ export const TEST_SCENARIOS: TestScenario[] = [
         makePlayer('Silva',    'B', 'CB',   86, 39, DEFENDER),
         makePlayer('Kowalski', 'B', 'GK',  113, 37, GOALKEEPER),
       ], 1);
+    },
+  },
+
+  {
+    id:          'shot-blocked',
+    name:        'Shot — blocked on its line',
+    description: 'Stage 7 (`shot-and-save.md`): a power shot from 17 yd with a centre-back 3 yd in front of the shooter on the line to goal. No block dice: the defender reacts after 0.15 s and lunges at the path; if the ball passes within his reach (body + leg by tackling, up to 2.2 yd high) he touches it, then controls, deflects it on toward goal or it rebounds loose. Debug "shot" shows the launch (technique, speed, aim, error) and the planned blockers.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   97, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  100, 37.3, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  106, 33, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-long-range',
+    name:        'Shot — from 28 yd',
+    description: 'Stage 7: a midfielder strikes from 28 yd with nobody in front of him. The ball flies by its 3D physics (launch error with the FM shot base 105); the keeper reacts by reflexes, dives by diving and stops it by handling, holding, parrying wide or spilling it in front. Watch the "keeper" debug line for the save grade.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Garcia',   'A', 'CM',   87, 40, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  100, 33, STRIKER),
+        makePlayer('Silva',    'B', 'CB',  104, 30, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'power');
+    },
+  },
+
+  {
+    id:          'shot-lob',
+    name:        'Shot — lob over an advanced keeper',
+    description: 'Stage 7: the keeper is 13 yd off his line and the striker 27 yd out lifts it over him (a lob, `cobertura`): the flight is solved to clear the hands of the keeper where he stands and drop under the bar. He backpedals; whether he reaches it is his reaction, dive speed and hands against the ball.',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Santos',   'A', 'ST',   88, 37, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   95, 44, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  102, 37, GOALKEEPER),
+      ], 1);
+      return testPhysicalShot(st, 1, 'lob');
     },
   },
 
@@ -1080,6 +1127,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'mind-lapse',
+    name:        '11v11 — Distracted defence (concentration lapses)',
+    description: 'Team B defends at 45 energy with concentration 0.05, anticipation 0.1, consistency 0.1 and a bad mood; Team A plays sharp (stage 16, `DefensiveMind.ts`). Below the form window and tired, the side concentration rolls lapse often: the defender drops his mark (track_mark → hold_shape) and holds back the press for the window. Debug log `mind`; the Mind block of a selected player shows his rolls; StatsPanel column LP counts the lapses.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = applyFatigue(base, 'B', 45, FITNESS.LOAD_HIGH);
+      const mind = (p: GamePlayer): GamePlayer => {
+        if (p.team === 'A') return { ...p, mental: { decisions: 0.7, composure: 0.7, flair: 0.6, anticipation: 0.7, consistency: 0.8, mood: 0.4, concentration: 0.75, aggression: 0.5 } };
+        return { ...p, mental: { decisions: 0.15, composure: 0.2, flair: 0.2, anticipation: 0.1, consistency: 0.1, mood: -0.5, concentration: 0.05, aggression: 0.5 } };
+      };
+      return { ...tired, players: tired.players.map(mind), benchA: tired.benchA.map(mind), benchB: tired.benchB.map(mind) };
+    },
+  },
+
+  {
     id:          'move-shield',
     name:        'Holder move — shield with the back to goal',
     description: 'Striker at 80 yd facing his own goal (moving back), two defenders tight on him and his midfielder far. He shields (slow edging away, a tackle on him succeeds less and fouls more) and turns when a lane opens (`HolderMoves.ts`). Decision log: "shield".',
@@ -1357,6 +1420,57 @@ export const TEST_SCENARIOS: TestScenario[] = [
         }),
       };
       return placed;
+    },
+  },
+
+  {
+    id:          'fm-shape-shadow',
+    name:        '11v11 — FM block and pass shadow (stage 15)',
+    description: "Team B CB has the ball deep in his own half with a CM and the full-backs as options; Team A sits in FM's out-of-possession block (back line ~24 yd from its goal, span 26, width 37) and its ST presses on the lane between the holder and the nearest receiver instead of the holder (`TeamShape.ts`). Turn on the Shape overlay: the two teams' back-line targets, the forward's shadow point, zone covers (yellow squares) and the held-action bars.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cb = base.players.find(p => p.team === 'B' && p.role === 'CB');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cb || !st) return base;
+      const own = cb.attackDir === 1 ? 0 : PITCH_LENGTH;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cb.id,
+        players: base.players.map(p =>
+          p.id === cb.id ? { ...p, x: own + cb.attackDir * 18, y: 30 } :
+          p.id === st.id ? { ...p, x: own + cb.attackDir * 34, y: 34 } : p),
+      };
+    },
+  },
+
+  {
+    id:          'shoulder-run',
+    name:        '11v11 — Run on the shoulder (stage 15)',
+    description: "Team A CM has the ball free on the halfway line; the Team A ST stands on the last defender's shoulder, making a run. He goes when the CM plays forward (a good reader at once, a poor one later) or now and then early: going early, a pass to him is offside (`ShoulderRuns.ts`). Watch the \"offside\" debug log (\"goes on the shoulder\"), the green ring of the Shape overlay and the OFF column.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cm = base.players.find(p => p.team === 'A' && p.role === 'CM');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cm || !st) return base;
+      const dir = cm.attackDir;
+      const mid = PITCH_LENGTH / 2;
+      const lineX = mid + dir * 24;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cm.id,
+        players: base.players.map(p => {
+          if (p.id === cm.id) return { ...p, x: mid, y: 37 };
+          if (p.id === st.id) return { ...p, x: lineX - dir * 1.5, y: 36 };
+          if (p.team === 'B' && (p.role === 'CB' || p.role === 'LB' || p.role === 'RB')) return { ...p, x: lineX, y: p.y };
+          return p;
+        }),
+      };
     },
   },
 

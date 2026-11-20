@@ -102,6 +102,12 @@ export interface PlayerStats {
   contactFouls:             number;
   /** Stage 13 (`OffsideRuns.ts`): reads of the offside line that left him past it, or a lapse. */
   lineMisreads:             number;
+  /** Stage 16 (`DefensiveMind.ts`): concentration lapses (a mind window rolled as a lapse) defending / off the ball. */
+  mindLapsesDefence:        number;
+  mindLapsesOffBall:        number;
+  /** Stage 16: defensive intents the mind changed, and those of them that dropped a mark or held back the press. */
+  mindDefenseShifts:        number;
+  mindMarkDrops:            number;
   // ── Aerial (`.claude/rules/game-engine/aerial.md`) ─────────────────────────
   /** Crosses played. */
   crosses:                  number;
@@ -208,6 +214,16 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
   ballNearTicks: number;
   ballNearSum: number;
   ballCrowdTicks: number;
+  /** Stage 15 (`team-shape.md`): forward pressing in the pass shadow (per holder–presser pair), zone covers out of
+   *  possession, runs on the shoulder (and those started early, before any pass). */
+  shadowPresses: number;
+  zoneCovers: number;
+  shoulderRuns: number;
+  shoulderRunsEarly: number;
+  /** Seconds this team defended with the pressing state in our third (0–2), the middle (3–5), their third (6–8). */
+  pressStateOwnS: number;
+  pressStateMidS: number;
+  pressStateFinalS: number;
   /** VAR checks whose final decision went against this team. Match total = A + B. */
   varReviews: number;
   /** Of those, overturned calls (the original call favoured this team). */
@@ -305,6 +321,8 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
    */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 7 (`shot-and-save.md`): this team's shots off target / woodwork / deflected on / saved, saves by its keeper (good, difficult), techniques, launch speed summed (m/s). */
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
   /**
    * Stage 10 (`aerial.md` -> "Stage 10"), by the crossing team: open-play crosses resolved by the contact model, first
    * met in the air (above 1.2 m) / below it / not met before landing, first contact by the attack / defence / keeper,
@@ -359,6 +377,10 @@ function emptyStats(): PlayerStats {
     foulsWonHolding: 0,
     contactFouls: 0,
     lineMisreads: 0,
+    mindLapsesDefence: 0,
+    mindLapsesOffBall: 0,
+    mindDefenseShifts: 0,
+    mindMarkDrops: 0,
     crosses:                  0,
     crossesCompleted:         0,
     aerialDuels:              0,
@@ -404,6 +426,8 @@ type TeamFlags = {
   extraTimePlayed: number; shootoutsWon: number; fatigueSubstitutions: number; injuries: number; injuryStoppages: number;
   refereeErrors: number; varReviews: number; varOverturned: number;
   ballNearTicks: number; ballNearSum: number; ballCrowdTicks: number;
+  shadowPresses: number; zoneCovers: number; shoulderRuns: number; shoulderRunsEarly: number;
+  pressStateOwnS: number; pressStateMidS: number; pressStateFinalS: number;
   studyPlans: number;
   holderNearTies: number; offBallNearTies: number; defenseNearTies: number;
   holderPressureSum: number; shotPressureSum: number; shotPressureCount: number;
@@ -424,12 +448,14 @@ type TeamFlags = {
   condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
   keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
   headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
   ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, studyPlans: 0,
+  shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0, pressStateOwnS: 0, pressStateMidS: 0, pressStateFinalS: 0,
   holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0,
   holderPressureSum: 0, shotPressureSum: 0, shotPressureCount: 0,
   holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0,
@@ -446,6 +472,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
   condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
+  shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
   airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0,
   headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
 });
@@ -643,6 +670,15 @@ gameBus.on('ballCluster', e => {
   if (e.defendersNear >= BALL_CLUSTER_CONFIG.CROWD_COUNT) f.ballCrowdTicks++;
 });
 
+// ── Team shape, pass shadow, shoulder runs (stage 15, `team-shape.md`) ──────────
+gameBus.on('shadowPress', e => { teamFlags[e.team].shadowPresses++; });
+gameBus.on('zoneCover', e => { teamFlags[e.team].zoneCovers++; });
+gameBus.on('shoulderRun', e => { const f = teamFlags[e.team]; f.shoulderRuns++; if (e.early) f.shoulderRunsEarly++; });
+gameBus.on('pressState', e => {
+  const f = teamFlags[e.team];
+  if (e.state < 3) f.pressStateOwnS += e.seconds; else if (e.state < 6) f.pressStateMidS += e.seconds; else f.pressStateFinalS += e.seconds;
+});
+
 // ── Discipline stats ──────────────────────────────────────────────────────────
 gameBus.on('foul', e => {
   get(e.offenderId).fouls++;
@@ -654,6 +690,12 @@ gameBus.on('foul', e => {
 });
 gameBus.on('contactFoul', e => { get(e.offenderId).contactFouls++; notify(); });
 gameBus.on('lineMisread', e => { get(e.playerId).lineMisreads++; });
+gameBus.on('mindLapse', e => { const s = get(e.playerId); if (e.kind === 'defence') s.mindLapsesDefence++; else s.mindLapsesOffBall++; });
+gameBus.on('mindDefenseShift', e => {
+  const s = get(e.playerId);
+  s.mindDefenseShifts++;
+  if (e.lapse && (e.from === 'track_mark' || e.from === 'press_holder' || e.from === 'step_into_carry_lane')) s.mindMarkDrops++;
+});
 gameBus.on('card', e => {
   const s = get(e.playerId);
   if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
@@ -794,7 +836,8 @@ gameBus.on('holderMove', e => {
   } else if (e.move === 'shield') {
     if (e.phase === 'success') f.moveShieldHeld++;
   } else if (e.move === 'chip') {
-    f.moveChip++; if (e.phase === 'success') f.moveChipGoals++;
+    if (!e.counted) f.moveChip++;
+    if (e.phase === 'success') f.moveChipGoals++;
   } else if (e.move === 'round_keeper') {
     f.moveRound++; if (e.phase === 'success') f.moveRoundWon++;
   }
@@ -872,6 +915,31 @@ gameBus.on('interceptionTouch', e => {
   else if (e.outcome === 'clear') f.cutClears++;
   else if (e.outcome === 'deflect') f.cutDeflects++;
   else f.cutMisses++;
+});
+// ── Stage 7: the shot by its trajectory (`shot-and-save.md`) ─────────────────────
+const SHOT_TECHNIQUE_FIELD: Record<import('@/GameEngine/types').ShotTechnique, keyof TeamFlags> = {
+  power: 'shotPower', placed: 'shotPlaced', lob: 'shotLob', chip: 'shotChip', volley: 'shotVolley', header: 'shotHeaderLaunch', free_kick: 'shotFreeKick',
+};
+gameBus.on('shotLaunched', e => {
+  const f = teamFlags[e.team];
+  f[SHOT_TECHNIQUE_FIELD[e.technique]]++;
+  f.shotSpeedSum += e.speedMs; f.shotLaunchN++;
+});
+gameBus.on('shotResolved', e => {
+  const t = playerTeam.get(e.player);
+  if (!t) return;
+  const outcome = e.outcome ?? (e.isGoal ? 'goal' : e.inPosts ? 'saved' : 'wide');
+  if (outcome === 'saved') teamFlags[t].shotsSaved++;
+  else if (outcome === 'wide' || outcome === 'over' || outcome === 'woodwork') teamFlags[t].shotsOffTarget++;
+  if (outcome === 'woodwork') teamFlags[t].shotsWoodwork++;
+});
+gameBus.on('shotDeflected', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].shotsDeflected++; });
+gameBus.on('keeperSave', e => {
+  const t = playerTeam.get(e.keeperId);
+  if (!t) return;
+  teamFlags[t].saves++;
+  if (e.grade === 'good') teamFlags[t].savesGood++;
+  else if (e.grade === 'difficult') teamFlags[t].savesDifficult++;
 });
 gameBus.on('passMissed', e => { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesMissed++; });
 gameBus.on('longBallStarted', e => { if (e.lofted) { const t = playerTeam.get(e.player); if (t) teamFlags[t].passesLofted++; } });
@@ -1054,6 +1122,10 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.foulsWonHolding += stats.foulsWonHolding;
     result.contactFouls += stats.contactFouls;
     result.lineMisreads += stats.lineMisreads;
+    result.mindLapsesDefence += stats.mindLapsesDefence;
+    result.mindLapsesOffBall += stats.mindLapsesOffBall;
+    result.mindDefenseShifts += stats.mindDefenseShifts;
+    result.mindMarkDrops += stats.mindMarkDrops;
     result.crosses                  += stats.crosses;
     result.crossesCompleted         += stats.crossesCompleted;
     result.aerialDuels              += stats.aerialDuels;

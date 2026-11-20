@@ -1844,6 +1844,7 @@ export function TestScreen() {
               { key: 'passError'             as const, label: 'Pass error',    color: 'text-cyan-300'    },
               { key: 'setPieces'             as const, label: 'Set pieces',    color: 'text-lime-300'    },
               { key: 'instructions'          as const, label: 'Instructions',  color: 'text-sky-300'     },
+              { key: 'shape'                 as const, label: 'Shape',         color: 'text-fuchsia-300' },
             ] as const
           ).map(({ key, label, color }) => (
             <button

@@ -2,13 +2,13 @@
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
 import { aiMatchFormation, autoLineupForFormationWithFitness } from "@/Domain/advanceDay/matchSimulationLineups";
 import { loadLeagueAt88, pairAt } from "@/../scripts/ai-formation-goals-shared";
-import { FM_COUNT_KEYS, addShotXg, emptyFmTargets, fmCountsOf, fmTargetCollector, type FmMatchCounts, type FmTargetTotals } from "@/lab/fmTargets";
+import { FM_COUNT_KEYS, addShotEnd, addShotXg, emptyFmTargets, fmCountsOf, fmTargetCollector, type FmMatchCounts, type FmTargetTotals } from "@/lab/fmTargets";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 
 interface Input { league: string; matches: number; offset: number; seed: number }
 export interface FmWorkerOut { fm: FmTargetTotals; world: Record<string, number>; counts: FmMatchCounts; ms: number }
 
-const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions", "crosses", "throughBallsAttempted", "throughBallsCompleted", "throughBallsLostInFlight", "throughBallsLostInRace", "throughBallsLostInDuel", "ballNearTicks", "ballCrowdTicks", "highlightsMain", "highlightsExtended", "highlightsFull", "highlightSecondsMain", "highlightSecondsExtended", "highlightSecondsFull", "aiSubstitutions", "tacticalSubstitutions", "aiSubMinuteSum", "aiSubConditionSum", "cutTouches", "cutControls", "cutClears", "cutDeflects", "cutMisses", "cutSpeedSum", "holderChoices", "holderStints", "holderCandidatesSum", "holderVetoedSum", "holderLapseChoices", "holderSprints", "holderBylines", "holderSpins", "holderFlagHolds", "crossesCompleted", "longBalls", "longBallsCompleted", "passHigh", "highBalls", "aerialDuels", "airCrosses", "airCrossMetAir", "airCrossMetLow", "airCrossUnmet", "airCrossOwn", "airCrossDef", "airCrossKeeper", "airCrossZSum", "headWonDef", "headWonMid", "headWonFwd", "headAttDef", "headAttMid", "headAttFwd"] as const;
+const WORLD_KEYS = ["goals", "shots", "xg", "passesAttempted", "passesCompleted", "tackles", "fouls", "interceptions", "crosses", "throughBallsAttempted", "throughBallsCompleted", "throughBallsLostInFlight", "throughBallsLostInRace", "throughBallsLostInDuel", "ballNearTicks", "ballCrowdTicks", "highlightsMain", "highlightsExtended", "highlightsFull", "highlightSecondsMain", "highlightSecondsExtended", "highlightSecondsFull", "aiSubstitutions", "tacticalSubstitutions", "aiSubMinuteSum", "aiSubConditionSum", "cutTouches", "cutControls", "cutClears", "cutDeflects", "cutMisses", "cutSpeedSum", "holderChoices", "holderStints", "holderCandidatesSum", "holderVetoedSum", "holderLapseChoices", "holderSprints", "holderBylines", "holderSpins", "holderFlagHolds", "shadowPresses", "zoneCovers", "shoulderRuns", "shoulderRunsEarly", "pressStateOwnS", "pressStateMidS", "pressStateFinalS", "crossesCompleted", "longBalls", "longBallsCompleted", "passHigh", "highBalls", "aerialDuels", "airCrosses", "airCrossMetAir", "airCrossMetLow", "airCrossUnmet", "airCrossOwn", "airCrossDef", "airCrossKeeper", "airCrossZSum", "headWonDef", "headWonMid", "headWonFwd", "headAttDef", "headAttMid", "headAttFwd"] as const;
 
 self.onmessage = (e: MessageEvent<Input>) => {
   const { league, matches, offset, seed } = e.data;
@@ -16,6 +16,17 @@ self.onmessage = (e: MessageEvent<Input>) => {
   const fm = emptyFmTargets();
   // Stage 6 (`xg.md`): every shot's xG (open play, headers, free kicks, penalties) for the median.
   gameBus.on("shot", ev => addShotXg(fm, ev.xg));
+  // Stage 7 (`shot-and-save.md`): where each physical shot ended, by its distance.
+  const shotDist = new Map<number, number>();
+  gameBus.on("shotLaunched", ev => { shotDist.set(ev.player, ev.distance); });
+  const end = (player: number, e: "goal" | "saved" | "blocked" | "off") => {
+    const d = shotDist.get(player);
+    if (d === undefined) return;
+    shotDist.delete(player);
+    addShotEnd(fm, d, e);
+  };
+  gameBus.on("shotBlocked", ev => end(ev.player, "blocked"));
+  gameBus.on("shotResolved", ev => end(ev.player, ev.isGoal ? "goal" : ev.outcome === "saved" ? "saved" : "off"));
   const world: Record<string, number> = Object.fromEntries(WORLD_KEYS.map(k => [k, 0]));
   const counts = Object.fromEntries(FM_COUNT_KEYS.map(k => [k, 0])) as unknown as FmMatchCounts;
   let ms = 0;

@@ -23,7 +23,7 @@ export interface DecisionFlags {
   SECOND_PRESSER: boolean;
   /** Positioning target lags the shape anchor by a discipline τ (§4). */
   DISCIPLINE_LAG: boolean;
-  /** Consistency caps stacked bonuses (§7 phase 5). */
+  /** Consistency caps the stacked attribute modifiers of the day (§7 phase 5; stage 16, `Domain/ConsistencyCap.ts`). */
   CONSISTENCY_CAP: boolean;
   /** Holder moves (phase 3, `Domain/HolderMoves.ts`): shield / turn with the back to goal. */
   SHIELD: boolean;
@@ -85,6 +85,22 @@ export interface DecisionFlags {
   /** Stage 8 (`holder-choice.md`): the FM holder chooser — every candidate with a risk byte (veto, compression), hard
    *  argmax with noise only on a lapse; hold, turn, spin, sprint, byline run and corner-flag hold as real actions. */
   FM_HOLDER: boolean;
+  /** Stage 15 (`team-shape.md`): the block at FM's line, span and width in and out of possession, sliding with the ball. */
+  FM_SHAPE: boolean;
+  /** Stage 15: out of possession a holder covers a vacated zone by FM's position scores (home, neighbours, far). */
+  OOP_ZONES: boolean;
+  /** Stage 15: a forward presses in the pass shadow (midpoint of holder and receiver); pressing states 0–8. */
+  PASS_SHADOW: boolean;
+  /** Stage 15: short off-ball and defensive actions are held ~5 s of play (FM), not re-chosen every second. */
+  ACTION_HOLD: boolean;
+  /** Stage 15: runners on the last defender's shoulder go on the pass (or early, a mistimed run). */
+  SHOULDER_RUNS: boolean;
+  /** Stage 7 (`shot-and-save.md` → "Stage 7"): the shot is a physical launch (aim, FM's error with base 105) and the
+   *  goal, save, block or miss come from the ball against the keeper and the defenders, no goal dice (needs `BALL_3D`). */
+  SHOT_PHYSICS: boolean;
+  /** Stage 16 (`decisions.md` → "Stage 16"): the mental rolls off the ball and in defence — concentration (marking
+   *  lapses), aggression (press, step in), anticipation (reads the mark's run), decisions (noise on the intent scores). */
+  DEFENSIVE_MIND: boolean;
   /** Stage 10 (`aerial.md` → "Stage 10"): FM's crosses (from the byline, drawn into FM's target zones) and aerial play
    *  (the first contact along the 3D flight, contested at the contact; the jump, standing still and being goal-side
    *  win it); high balls nobody meets drop loose. */
@@ -98,7 +114,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   ANTICIPATION_PRESS: true,
   SECOND_PRESSER: true,
   DISCIPLINE_LAG: false,
-  CONSISTENCY_CAP: false,
+  CONSISTENCY_CAP: true,
   SHIELD: true,
   CUT_INSIDE: true,
   LAY_OFF: true,
@@ -125,6 +141,13 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   FM_FOULS: true,
   FM_CONDITION: true,
   FM_HOLDER: true,
+  FM_SHAPE: true,
+  OOP_ZONES: true,
+  PASS_SHADOW: true,
+  ACTION_HOLD: true,
+  SHOULDER_RUNS: true,
+  SHOT_PHYSICS: true,
+  DEFENSIVE_MIND: true,
   FM_AERIAL: true,
 };
 

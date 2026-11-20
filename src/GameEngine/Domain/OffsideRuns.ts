@@ -18,6 +18,11 @@ function mentalOf(p: GamePlayer) {
 
 const worldScale = (v: number) => clamp(v / HOLDER_MIND.MENTAL_TOP, 0, 1);
 
+/** His anticipation on the world scale (0..1; the neutral mind without `HOLDER`). */
+export function anticipationOf(p: GamePlayer): number {
+  return worldScale(mentalOf(p).anticipation);
+}
+
 /** Seconds of play between two reads of the line. */
 export function readInterval(p: GamePlayer): number {
   return R.READ_BASE_S + R.READ_SPAN_S * (1 - worldScale(mentalOf(p).anticipation));

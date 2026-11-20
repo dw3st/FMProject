@@ -74,8 +74,9 @@ function endHeight(prev: GameState, b: BallState, dt: number, passSpeed: number,
   if (b.phase !== 'pass' && b.phase !== 'shot') return { z: b.z, vz: b.vz };
   // Stage 10: a high ball met in flight ended at the contact (the core left the ball there).
   if (b.metZ !== undefined) return { z: b.metZ, vz: b.vz };
-  // A physical ground pass was moved by the core up to where it ended (`advancePassBall`).
-  if (b.free && b.profile === 'ground') return { z: b.z, vz: b.vz };
+  // A physical ground pass was moved by the core up to where it ended (`advancePassBall`); so is a physical shot
+  // (stage 7, `tickPhysicalShot`).
+  if (b.free && (b.profile === 'ground' || b.phase === 'shot')) return { z: b.z, vz: b.vz };
   const total = flightLeft(prev, b, passSpeed);
   const left = Math.min(dt, Math.max(0, total));
   if (b.profile === 'air' && b.arriveZ !== undefined && left >= total - 1e-6) {
@@ -160,6 +161,16 @@ export function shotArriveZ(shot: ShotState): number {
 }
 
 function launchShot(next: GameState, prevBall: BallState, shot: ShotState): BallState {
+  if (shot.physics) {
+    // Stage 7: the strike the shooter gave it, error included; the core moves it (`tickPhysicalShot`).
+    const ph = shot.physics;
+    return {
+      x: shot.fromX, y: shot.fromY, z: ph.z0, vx: ph.vx, vy: ph.vy, vz: ph.vz,
+      phase: 'shot', key: shotKey(shot), kind: shot.header ? 'header' : 'shot', team: teamOf(next, shot.shooterId),
+      peak: Math.max(ph.z0, ph.vz > 0 ? ph.z0 + (ph.vz * ph.vz) / (2 * BALL_PHYSICS.GRAVITY) : ph.z0),
+      air: 0, elapsed: 0, bounces: 0, profile: 'air', distance: Math.hypot(shot.toX - shot.fromX, shot.toY - shot.fromY), free: true,
+    };
+  }
   const z0 = launchZ(prevBall, !!shot.header);
   const zT = shotArriveZ(shot);
   const T = Math.max(0.05, (1 - shot.t) / SHOT_SPEED);
@@ -212,6 +223,8 @@ export function syncBall(prev: GameState, next: GameState, dt: number, passSpeed
   const end = () => endPhase(b0, endHeight(prev, b0, dt, passSpeed, env).z);
   if (next.shot) {
     const key = shotKey(next.shot);
+    // A physical shot (stage 7) was moved by the core this tick.
+    if (b0.phase === 'shot' && b0.key === key && prev.shot && b0.free) return { ...b0, ended: undefined };
     if (b0.phase === 'shot' && b0.key === key && prev.shot) {
       const Trem = (1 - prev.shot.t) / SHOT_SPEED;
       return stepFlight(b0, { x: next.shot.toX, y: next.shot.toY }, Trem, dt, env);

@@ -64,7 +64,23 @@ export interface GameEvents {
   /** `fromX/fromY` = shot point (the spot for a penalty), `goalX` = attacked goal line, `minute` = `matchMinute` (data only, awards). */
   goalScored: { team: TeamId; score: { A: number; B: number }; scorerId: number; assistId?: number; header?: boolean; setPiece?: SetPieceGoalKind; fromX: number; fromY: number; goalX: number; minute: number };
   /** Emitted when a shot resolves (goal or save/miss), with full probability breakdown. */
-  shotResolved: { player: number; xg: number; goalChance: number; isGoal: boolean; inPosts: boolean; fromX: number; fromY: number; toX: number; toY: number };
+  /**
+   * `danger` 0..1: how close it was to going in (stage 7: 1 for a goal, 1 − the stop chance for a save, near misses by
+   * how wide; the old dice path: its goal chance). `outcome` (stage 7): what the ball did.
+   */
+  shotResolved: {
+    player: number; xg: number; danger: number; isGoal: boolean; inPosts: boolean; fromX: number; fromY: number; toX: number; toY: number;
+    outcome?: 'goal' | 'saved' | 'wide' | 'over' | 'woodwork';
+  };
+  /** Stage 7 (`shot-and-save.md`): a shot struck — technique, launch speed, aim, error drawn, planned blockers. */
+  shotLaunched: {
+    player: number; team: TeamId; technique: import('@/GameEngine/types').ShotTechnique; speedMs: number; vzMs: number;
+    aimY: number; aimZ: number; errDeg: number; distance: number; onTarget: boolean; blockers: number;
+  };
+  /** Stage 7: a defender in the way sent the shot on (it keeps flying). */
+  shotDeflected: { player: number; blockerId: number };
+  /** Stage 7: the shot hit the post or the bar. */
+  shotWoodwork: { player: number; team: TeamId; part: 'post' | 'bar' };
 
   // ── Pass events ──────────────────────────────────────────────────────────
   /** Emitted when the holder starts a pass. */
@@ -166,7 +182,7 @@ export interface GameEvents {
    */
   playerMoved: { moves: Array<[number, number]>; sprints: number[] };
   /** What a save did (12.10): held, spilled loose in front of goal, or parried behind for a corner. */
-  keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry" };
+  keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry"; grade?: "routine" | "good" | "difficult" };
   /** A rehearsed routine was called for a corner / crossed free kick (`set-pieces-play.md`). */
   setPieceRoutine: { team: 'A' | 'B'; takerId: number; kind: 'corner' | 'free_kick'; target: string; attackers: number };
   /** A header at goal (also emitted as a `shot`). */
@@ -222,6 +238,10 @@ export interface GameEvents {
   };
   /** Stage 13 (`OffsideRuns.ts`): an attacker starts a spell of reading the offside line wrongly (past it) or a lapse. */
   lineMisread: { playerId: number; team: TeamId; err: number; lapse: boolean };
+  /** Stage 16 (`DefensiveMind.ts`): a new mind window is a concentration lapse (defending or off the ball). */
+  mindLapse: { playerId: number; team: TeamId; kind: 'defence' | 'offball' };
+  /** Stage 16: the mind changed a defender's intent (lapse = dropped his mark / held back; else noise or aggression). */
+  mindDefenseShift: { playerId: number; team: TeamId; from: string; to: string; lapse: boolean };
   /** Stage 13: a contact foul on (or, rarely, by) the ball holder, without a tackle. Emitted after `foul`. */
   contactFoul: { offenderId: number; fouledId: number; team: TeamId; context: import('@/GameEngine/Domain/Fouls').FoulContextKind };
   /** A card was shown. A second yellow emits the yellow and then a red with `secondYellow: true`. */
@@ -278,7 +298,8 @@ export interface GameEvents {
    */
   holderDecision:    DecisionTelemetryEvent;
   /** One of the holder's extra moves (`HolderMoves.ts`): started, and for shield / chip / round the outcome. */
-  holderMove: { playerId: number; team: TeamId; move: 'shield' | 'cut_inside' | 'lay_off' | 'chip' | 'round_keeper'; phase: 'start' | 'success' | 'fail' };
+  /** `counted`: a physical chip's goal (stage 7) — its attempt was already counted at the strike. */
+  holderMove: { playerId: number; team: TeamId; move: 'shield' | 'cut_inside' | 'lay_off' | 'chip' | 'round_keeper'; phase: 'start' | 'success' | 'fail'; counted?: true };
   holderMind:        HolderMindEvent;
   /** Stage 4 (`movement.md`): the ball ran loose off a body or a bad touch (`playerId` = who touched it last). */
   ballRunsLoose: { playerId: number; team: TeamId; cause: LooseBallCause; x: number; y: number; vx: number; vy: number };
@@ -422,6 +443,14 @@ export interface GameEvents {
    * ball (#145, `Domain/BallCluster.ts`). Feeds the ball-cluster statistics.
    */
   ballCluster: { defendingTeam: TeamId; defendersNear: number; attackersNear: number };
+  /** Stage 15 (`team-shape.md`): a forward presses in the pass shadow of the holder (once per holder–presser pair). */
+  shadowPress: { playerId: number; team: TeamId; holderId: number; receiverId: number };
+  /** Stage 15: a holder of the shape covers a teammate's vacated zone (once per spell). */
+  zoneCover: { playerId: number; team: TeamId; zoneOwnerId: number };
+  /** Stage 15: the defending side's pressing state this tick (the predicted ball in FM's 3×3 grid), and the tick's seconds. */
+  pressState: { team: TeamId; state: number; seconds: number };
+  /** Stage 15: a runner goes on the last defender's shoulder (early = before any pass, a mistimed run). */
+  shoulderRun: { playerId: number; team: TeamId; early: boolean };
 
   /**
    * Emitted every tick for the ball holder when debug mode is on — top-N
