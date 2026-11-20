@@ -395,6 +395,8 @@ export interface TeamRawStats {
   passLaunchN: number;
   /** Stage 5 (`interception.md`): touches on a physical pass by this team defending, by outcome; ball speed summed (m/s). */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /** Stage 10 (`aerial.md`): open-play crosses by first contact (air / low / unmet; attack / defence / keeper), summed contact height (yd); headers won / contested by line. */
+  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number; headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
   holderHolds: number;
   holderTurns: number;
   /** Stage 8 (`holder-choice.md`): FM holder decisions by category, stints, candidates and vetoes, new actions. */
@@ -659,6 +661,10 @@ export interface PerMatchView {
   passLaunchMps: number;
   /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
+  /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
+   *  headers won per match and the win % of defenders / midfielders / forwards. */
+  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number;
+  avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,
@@ -873,6 +879,10 @@ export interface VariantSummary {
   passLaunchMps: number;
   /** Stage 5: touches on a physical pass per match (cuts = controlled + cleared + deflected), ball speed at the touch (m/s). */
   avgCutTouches: number; avgCutControls: number; avgCutClears: number; avgCutDeflects: number; avgCutMisses: number; cutSpeedMps: number;
+  /** Stage 10: crosses resolved by the contact model per match, % met in the air / not met / first contact by the defence / keeper, median-ish contact height (m),
+   *  headers won per match and the win % of defenders / midfielders / forwards. */
+  avgAirCrosses: number; airCrossMetAirPct: number; airCrossUnmetPct: number; airCrossDefPct: number; airCrossKeeperPct: number; airCrossContactM: number;
+  avgHeadersWonFm: number; headWinDefPct: number; headWinMidPct: number; headWinFwdPct: number;
   avgHolderHolds: number;
   avgHolderTurns: number;
   /** Stage 8 (`holder-choice.md`): holder decision mix (% of the decisions), decisions per possession stint,

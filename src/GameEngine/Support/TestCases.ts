@@ -894,6 +894,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'fm-cross-byline',
+    name:        'Aerial — FM cross from the byline (stage 10)',
+    description: 'LW 9 yds from the byline, wide, with the ST and CAM arriving against two set CBs and the keeper (`aerial.md` → "Stage 10"). Toggle "Aerial": the seven FM target zones, the ring sized by the share of crosses aimed there (six-yard box 64 %, penalty-spot band 28 %, edge 8 %); the target is drawn from them at the kick. In flight the ball is met where it first comes within a player’s reach (gold marker: met in the air above 1.2 m, white: lower, red: nobody met it), with the contest ring. Watch the "aerial" debug log for the zone, the contact height and the duel.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Chen',     'A', 'LW', 106, 6,  WINGER),     // crosser at the byline zone
+        makePlayer('Santos',   'A', 'ST', 103, 38, STRIKER),    // attacks the six-yard box
+        makePlayer('Rossi',    'A', 'CAM', 99, 44, MIDFIELDER), // arrives at the penalty-spot band
+        makePlayer('Silva',    'B', 'CB', 109, 35, DEFENDER),   // set, goal-side
+        makePlayer('Okeke',    'B', 'CB', 108, 41, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK', 113, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'switch-play-wide',
     name:        'Switch Play — Wide Hold',
     description: 'LW holds wide on the near touchline with the near side congested and the far flank open. Override intent to "switch_play" and toggle "Switch" to see the far-flank carry lane + far-side receivers.',

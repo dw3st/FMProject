@@ -38,7 +38,7 @@ for measuring: `MEET` (the receiver goes to meet the ball) and `ARRIVAL_LANE` (t
   once it covers its distance, at its speed. A loose ball moving faster than 2 yd/s is picked up within 1 yd of the
   segment it travelled that tick.
 - **High balls:** the landing point is where the physics lands it (not the old Gaussian). The aerial duel at the
-  landing point and everything after it are unchanged (contact in the air is stage 10).
+  landing point and everything after it are unchanged (contact in the air: stage 10, `aerial.md` → "Stage 10").
 - **Interception:** physical since stage 5 (`interception.md` → "Stage 5"): defenders who reach a point of the path in
   time run there and touch the ball (no dice for the touch to happen); with `PHYSICAL_INTERCEPTION` off, the old dice,
   skipped while the ball is above an outfield player's reach.

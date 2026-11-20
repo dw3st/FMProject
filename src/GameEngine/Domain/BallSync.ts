@@ -72,6 +72,8 @@ export function ballOf(s: GameState): BallState {
 /** Height of a flight where it ended inside this step (it arrived, or something met it on the way). */
 function endHeight(prev: GameState, b: BallState, dt: number, passSpeed: number, env: BallEnv): { z: number; vz: number } {
   if (b.phase !== 'pass' && b.phase !== 'shot') return { z: b.z, vz: b.vz };
+  // Stage 10: a high ball met in flight ended at the contact (the core left the ball there).
+  if (b.metZ !== undefined) return { z: b.metZ, vz: b.vz };
   // A physical ground pass was moved by the core up to where it ended (`advancePassBall`).
   if (b.free && b.profile === 'ground') return { z: b.z, vz: b.vz };
   const total = flightLeft(prev, b, passSpeed);

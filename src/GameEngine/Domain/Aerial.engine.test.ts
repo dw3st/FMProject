@@ -1,5 +1,10 @@
 import { DECISION_FLAGS } from "@/GameEngine/Configs/DecisionConfig";
-import { describe, expect, test, afterEach } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test, afterEach } from "bun:test";
+import { setDecisionFlags } from "@/GameEngine/Configs/DecisionConfig";
+
+// The Etapa 13 model: stage 10 (FM_AERIAL) is tested in AerialContact*.test.ts.
+beforeAll(() => setDecisionFlags({ FM_AERIAL: false }));
+afterAll(() => setDecisionFlags());
 import { spyMatchRandom, type MatchRandomSpy } from '@/GameEngine/Support/spyMatchRandom';
 import { readFileSync } from "fs";
 import { fileURLToPath } from "node:url";

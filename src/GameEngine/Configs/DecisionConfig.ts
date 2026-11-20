@@ -85,6 +85,10 @@ export interface DecisionFlags {
   /** Stage 8 (`holder-choice.md`): the FM holder chooser — every candidate with a risk byte (veto, compression), hard
    *  argmax with noise only on a lapse; hold, turn, spin, sprint, byline run and corner-flag hold as real actions. */
   FM_HOLDER: boolean;
+  /** Stage 10 (`aerial.md` → "Stage 10"): FM's crosses (from the byline, drawn into FM's target zones) and aerial play
+   *  (the first contact along the 3D flight, contested at the contact; the jump, standing still and being goal-side
+   *  win it); high balls nobody meets drop loose. */
+  FM_AERIAL: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -121,6 +125,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   FM_FOULS: true,
   FM_CONDITION: true,
   FM_HOLDER: true,
+  FM_AERIAL: true,
 };
 
 /**

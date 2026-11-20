@@ -305,6 +305,13 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    * (controlled, cleared, deflected, ran past him), and the summed ball speed (m/s) at the touches.
    */
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  /**
+   * Stage 10 (`aerial.md` -> "Stage 10"), by the crossing team: open-play crosses resolved by the contact model, first
+   * met in the air (above 1.2 m) / below it / not met before landing, first contact by the attack / defence / keeper,
+   * summed contact height (yd). By the player's team: headers (contacts above 1.2 m) won / contested per line.
+   */
+  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
+  headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -417,6 +424,8 @@ type TeamFlags = {
   condition15: number; condition30: number; condition45: number; condition60: number; condition75: number; condition90: number;
   keeperCondition: number;
   cutTouches: number; cutControls: number; cutClears: number; cutDeflects: number; cutMisses: number; cutSpeedSum: number;
+  airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
+  headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -437,6 +446,8 @@ const emptyTeamFlags = (): TeamFlags => ({
   aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0,
   condition15: 0, condition30: 0, condition45: 0, condition60: 0, condition75: 0, condition90: 0, keeperCondition: 0,
   cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0,
+  airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0,
+  headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -829,6 +840,30 @@ gameBus.on('passLaunched', e => {
 });
 
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
+// ── Stage 10: the contact in the air (`aerial.md` -> "Stage 10") ──────────────────────
+gameBus.on('aerialContact', e => {
+  if (e.kind === 'cross' && !e.corner) {
+    const f = teamFlags[e.passerTeam];
+    f.airCrosses++;
+    if (e.toucherId === null) f.airCrossUnmet++;
+    else {
+      if (e.air) f.airCrossMetAir++; else f.airCrossMetLow++;
+      f.airCrossZSum += e.z;
+      if (e.keeper) f.airCrossKeeper++;
+      else if (e.toucherTeam === e.passerTeam) f.airCrossOwn++;
+      else f.airCrossDef++;
+    }
+  }
+  if (!e.air) return;
+  for (const c of e.contestants) {
+    if (c.line === 'GK') continue;
+    const f = teamFlags[c.team];
+    if (c.line === 'DEF') { f.headAttDef++; if (c.won) f.headWonDef++; }
+    else if (c.line === 'MID') { f.headAttMid++; if (c.won) f.headWonMid++; }
+    else { f.headAttFwd++; if (c.won) f.headWonFwd++; }
+  }
+});
+
 // ── Stage 5: physical interception (`interception.md`) ───────────────────────────
 gameBus.on('interceptionTouch', e => {
   const f = teamFlags[e.team];

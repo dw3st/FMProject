@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { addAnim, animOffset, liveAnims, ANIM_DURATION, isLongShot } from "@/GraficsEngine/playerAnims";
+import { addAnim, animOffset, liveAnims, ANIM_DURATION, isLongShot, contactJumpLift, CONTACT_JUMP } from "@/GraficsEngine/playerAnims";
 
 const REST = { dx: 0, dy: 0, liftYds: 0, scale: 1, rotation: 0 };
 
@@ -61,5 +61,15 @@ describe("player animations", () => {
     expect(animOffset(a!, a!.duration).liftYds).toBe(0);
     expect(animOffset(a!, a!.duration / 4).liftYds).toBeGreaterThan(1);
     expect(animOffset(a!, a!.duration * 0.999).rotation).toBeCloseTo(2 * Math.PI, 2);
+  });
+});
+
+describe("contact jump (stage 10)", () => {
+  test("a ball met higher is a higher jump, within the bounds", () => {
+    expect(contactJumpLift(1.0)).toBe(CONTACT_JUMP.MIN);
+    expect(contactJumpLift(2.4)).toBeGreaterThan(contactJumpLift(2.0));
+    expect(contactJumpLift(9)).toBe(CONTACT_JUMP.MAX);
+    const a = addAnim([], { playerId: 1, kind: "jump", dir: { x: 1, y: 0 }, side: 1, lift: 1.5 }, 0)[0]!;
+    expect(animOffset(a, a.duration / 2).liftYds).toBeCloseTo(1.5, 6);
   });
 });

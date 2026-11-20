@@ -31,7 +31,7 @@ gives exactly the counts of the commit before (same seeds).
   throw-in, goal line → goal kick / corner; the existing `ballOutOfPlay`).
 - **Reach:** a loose ball above a player's reach (outfield 2.4 yd ≈ 2.2 m, keeper 3.0 yd ≈ 2.75 m) can't be collected
   (`ballWithinReach`); he plays it when it drops under his head or after the bounce. The aerial duel at the landing
-  point is unchanged (contact in the air is stage 10).
+  point is unchanged (contact in the air: stage 10, `aerial.md` → "Stage 10").
 - **Held:** at the holder's feet, z 0.
 - No draws from the match generator anywhere in the ball.
 
@@ -61,7 +61,7 @@ draw the illustrative arcs: their frames carry no height (stage 22).
 - Flight times are still the engine's (passes 28 yd/s, high balls 30 yd/s, shots 0.5 s), so the heights follow from
   them, not from FM's launch speeds (stage 4): see the measurement in `fm-numbers.md`.
 - No air drag, spin or wind on the flight; the wind still acts through `aerialError`.
-- A high ball lands on the grass at its target (contact height 0): the duel in the air is stage 10.
+- A high ball lands on the grass at its target (contact height 0): the duel in the air is stage 10 (`aerial.md` → "Stage 10": met in flight at the first player in reach).
 
 ## Stage 4: the physical pass
 

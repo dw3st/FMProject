@@ -389,3 +389,29 @@ IA, equilibrado). Antes = `DECISION_OVERRIDES='{"FM_HOLDER":false}'` (a escolha 
   segurar quase nunca vence um passe ou uma condução. Fica para a calibração (etapa 21).
 - Os passes dentro de risco alto agora são comprimidos e as bolas em profundidade, oferecidas célula a célula com risco,
   caem pela metade; os desarmes sobem (conduções mais curtas perto do adversário).
+
+## Etapa 10: cruzamento e contato no ar (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1` (mesmas sementes), antes = `FM_AERIAL` desligada, depois =
+ligada (`aerial.md` → "Stage 10"). Nada calibrado.
+
+| Medida | Antes | Depois | FM |
+|---|---|---|---|
+| Cruzamentos por jogo | 56,8 | 24,7 | 64 |
+| Cruzamentos certos | 14,7% | 29,4% | 19% |
+| Cruzamento de jogo corrido tocado no ar (> 1,2 m) | — (a bola cai) | 38,9% | 82% |
+| Primeiro contato: defesa / goleiro / ataque | — | 27,8 / 48,1 / 18,5% (sem contato 5,6%) | 47 / 19 / — |
+| Altura média do contato no cruzamento | 0 (queda) | 1,14 m (mediana do `ballFlight` 0,77) | 1,8 m |
+| Altura do contato, lançamento / escanteio (mediana) | 0 / 0 | 0,39 / 0,34 m | 1,4 / 2,2 m |
+| Cabeceios ganhos por jogo | 96,2 (disputas somadas) | 11,4 (no ar) | 27 |
+| Vitória no alto: zagueiros / meias / atacantes | — | 50,4 / 46,5 / 47,4% | 90–100 / — / 10–30 |
+| Bolas altas (pico > 1,2 m) | 238 | 203 | ~150 |
+| Lançamentos (certos) | 42,3 (54,8%) | 43,2 (56,9%) | ~90 (56%) |
+| Chutes / gols | 28,2 / 7,8 | 22,7 / 7,7 | 21,5 / 1,5 |
+| Escanteios | 23,5 | 13,1 | 12,5 |
+
+- O contato no ar acontece, mas baixo: os jogadores chegam quando a bola já desce, e o goleiro (2,3 m de mãos e 1,5
+  de alcance) leva metade dos cruzamentos. O duelo ainda não dá a vantagem do FM ao zagueiro parado do lado do gol.
+- Os cruzamentos caem pela metade: a posição de cruzar ficou mais perto da linha (25 jardas) e o candidato único com o
+  valor médio das zonas perde para a condução mais vezes. Os escanteios caem junto (menos cortes perto da linha).
+- Fica para a calibração (21) e para as etapas 11 (goleiro), 12 (bola parada) e 7 (a cabeçada como técnica de chute).

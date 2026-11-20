@@ -746,6 +746,8 @@ export interface BallState {
   distance: number;
   /** A physical pass (stage 4, `pass-physics.md`): launched with its own vector, then free physics (no guidance). */
   free?: boolean;
+  /** Stage 10 (`aerial.md`): a high ball met in flight this tick, at this height (yd): the flight ends there. */
+  metZ?: number;
   /** The phase that ended this tick (set on the tick it ended): its kind, peak and the height it ended at (yd). */
   ended?: { kind: BallFlightKind; phase: BallPhase; peak: number; z: number };
 }
