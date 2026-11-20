@@ -501,3 +501,36 @@ ligada (`aerial.md` → "Stage 10"). Nada calibrado.
 - Os cruzamentos caem pela metade: a posição de cruzar ficou mais perto da linha (25 jardas) e o candidato único com o
   valor médio das zonas perde para a condução mais vezes. Os escanteios caem junto (menos cortes perto da linha).
 - Fica para a calibração (21) e para as etapas 11 (goleiro), 12 (bola parada) e 7 (a cabeçada como técnica de chute).
+
+## Etapa 11: goleiro do FM (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (mesmas sementes). Antes =
+`DECISION_OVERRIDES='{"FM_KEEPER":false}'` (o goleiro ativo da 7.7), depois = `FM_KEEPER` ligada (`keeper.md` →
+"Stage 11"). Nada calibrado.
+
+| Medida | Antes | Depois | FM |
+|---|---|---|---|
+| Fora da linha, adversário com a bola, bola a 0–35 / 35–52,5 / 52,5–70 / 70+ m (mediana, m) | 1,9 / 3,9 / 5,4 / 5,5 | 0,3 / 3,2 / 5,8 / 10,1 | 0 / 2,7 / 6,0 / 10,5 |
+| Fora da linha, o time dele com a bola, mesmas faixas | 5,5 / 8,5 / 11,4 / 14,6 | 2,5 / 5,1 / 9,9 / 17,0 | — / 4,8 / 11 / 15–22 |
+| Lateral: parte do deslocamento da bola (a até 35 m) | 0,09 | 0,18 | 0,14–0,18 |
+| Bolas altas na área: goleiro / defesa / ataque | 25,6 / 40,7 / 31,6% (23,8 por jogo) | 15,9 / 45,6 / 35,5% (31,4) | 28 / 42 / 31% |
+| Cruzamento de jogo corrido, primeiro contato do goleiro | 71,8% (n 71) | 41,5% (n 135) | 19% |
+| Pegadas / socos por jogo | 2,1 / 4,0 | 2,7 / 2,3 | — |
+| Saídas / bolas soltas recolhidas / ganhas nos pés | 2,9 / 1,8 / 0,3 | 5,6 / 0,9 / 0,3 | ~0 fora da área |
+| Passes de jogo corrido do goleiro (longos 35 m+, mediana) | 14,1 (4,7%, 13,6 m) | 4,9 (16,9%, 21,4 m) | 47 (40%, 21 m) |
+| Mantidos curtos / longos | 93 / 75% | 94 / 90% | 100 / 33% |
+| Tiros de meta (longos) | 14,8 (25%) | 11,5 (20%) | 15,4 (38%) |
+| Defendidos % dos no alvo | 61,0% | 20,9% | 80% |
+| Chutes a 0–6 / 6–12 / 12–18 jd | 2 / 30 / 49% | 42 / 50 / 4% | mediana 14,9 m |
+| Cavadinha % dos chutes | 49,7% | 0,4% | — |
+| Gols / chutes / xG | 8,5 / 28,9 / 11,4 | 12,8 / 26,1 / 13,9 | 1,5 / 21,5 / 3,3 |
+| Goleiros no fim (condição) | — | 97,2 | 96,5 |
+
+- A posição bate com o FM em todas as faixas, e o goleiro sai menos nas bolas altas (cruzamentos 72 → 42%, na área
+  26 → 16%: agora abaixo dos 28% do FM; ele só sai quando chega antes de todos e dentro da profundidade de pegada).
+- O maior efeito é no chute: sem a saída no 1 contra 1, o portador conduz até a pequena área (42% dos chutes a menos
+  de 6 jardas, eram 2%) e quase não há mais cavadinha. Com o goleiro na linha, a defesa pela trajetória (etapa 7)
+  alcança pouco desses chutes de perto: defesas 61 → 21% dos no alvo, gols 8,5 → 12,8. O FM chuta de mais longe
+  (46% de fora da área): é a etapa 9 (portão e chute de longe) e a calibração (21), não o goleiro.
+- Reposição: com menos bolas recolhidas o goleiro passa menos (4,9 por jogo, FM 47); o goleiro como portador é o
+  escolhedor antigo (a etapa 8 o deixa de fora). Fica para a calibração.

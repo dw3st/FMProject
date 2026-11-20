@@ -1,6 +1,6 @@
 import { SURROUND_ART } from "@/Domain/art/surroundArt";
 import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
-import { GOAL_CENTRE_Y, keeperGoalX } from '@/GameEngine/Domain/Keeper';
+import { GOAL_CENTRE_Y, fmClaimDepth, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { shirtName } from "@/Domain/shirtName";
 import { useEffect, useRef, type MutableRefObject } from "react";
@@ -425,7 +425,7 @@ export interface DebugOverlays {
   setPieces:             boolean;
   /** Player instructions: the role-variant tag under each player, man-marking pairs (dashed line + ring on the target). */
   instructions:          boolean;
-  /** Active keeper (`Keeper.ts`): sweeper zone, wide high-ball zone, 1v1 rush range and his current target. */
+  /** Keeper (`Keeper.ts`): with `FM_KEEPER` his claim depth and the 35 m on-the-line radius, else the 7.7 sweeper zone, wide high-ball zone and 1v1 rush range; his current target. */
   keeper:                boolean;
   /** Player kinematics (`kinematics.md`): velocity vectors (0.6 s ahead) and a ring on a player losing speed to a sharp turn. */
   kinematics:            boolean;
@@ -2686,7 +2686,7 @@ export function PixiPitch({
         }),
         // A high ball brought down: on the chest.
         gameBus.on("aerialResolved", (e) => { if (e.outcome === "control" && topDownMoves()) act(e.winnerId, "chest"); }),
-        gameBus.on("keeperSmother", (e) => { if (topDownMoves()) act(e.keeperId, "smother"); }),
+        gameBus.on("keeperFeet", (e) => { if (e.won && topDownMoves()) act(e.keeperId, "smother"); }),
         // The holder's moves (`HolderMoves.ts`, stage 4 `movement.md`): an existing pose for each. Shielding he stands over
         // the ball (receive), cutting inside he turns (roulette), the lay-off is a first-time pass, the chip a lofted
         // strike (volley), rounding the keeper a step-over.
@@ -2740,6 +2740,17 @@ export function PixiPitch({
           // A shot straight at him is pushed over the bar; anything wider is a dive.
           if (topDownMoves() && Math.abs(e.toY - gk.y) < 1.2) act(gk.id, "tipOver");
           else act(gk.id, "dive", e.toY >= gk.y ? 1 : -1);
+        }),
+        // Stage 11: what the physical save did, at the point the hands met the ball (it follows the dive above).
+        gameBus.on("keeperSave", (e) => {
+          if (e.y === undefined) return;
+          const gk = playerPos(e.keeperId);
+          if (!gk) return;
+          const lateral = Math.abs(e.y - gk.y);
+          const side: 1 | -1 = e.y >= gk.y ? 1 : -1;
+          if (e.kind === "hold") act(gk.id, lateral < 1.2 ? (topDownMoves() && (e.z ?? 0) < 0.5 ? "collect" : "catch") : "dive", side);
+          else if (e.kind === "parry" && topDownMoves() && (e.z ?? 0) > 2) act(gk.id, "tipOver");
+          else act(gk.id, "dive", side);
         }),
       ];
 
@@ -5063,10 +5074,16 @@ export function PixiPitch({
                 ];
                 passLinesGfx.poly(pts.flatMap(q => [q.px, q.py])).stroke({ width: 1, color, alpha });
               };
-              rect(0, KEEPER_CONFIG.SWEEP_RANGE, KEEPER_CONFIG.SWEEP_HALF_WIDTH, 0xbef264, 0.35);
-              rect(6, PENALTY_AREA_DEPTH, (PENALTY_AREA_Y_MAX - PENALTY_AREA_Y_MIN) / 2, 0x5eead4, 0.5);
               const c = toPixel(goalX, GOAL_CENTRE_Y);
-              passLinesGfx.circle(c.px, c.py, KEEPER_CONFIG.RUSH_RANGE * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.25 });
+              if (DECISION_FLAGS.FM_KEEPER) {
+                // Stage 11: the claim depth he comes for high balls to (teal) and the 35 m he stays on his line inside (yellow).
+                rect(0, fmClaimDepth(gk), (PENALTY_AREA_Y_MAX - PENALTY_AREA_Y_MIN) / 2, 0x5eead4, 0.6);
+                passLinesGfx.circle(c.px, c.py, 35 * 1.0936 * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.3 });
+              } else {
+                rect(0, KEEPER_CONFIG.SWEEP_RANGE, KEEPER_CONFIG.SWEEP_HALF_WIDTH, 0xbef264, 0.35);
+                rect(6, PENALTY_AREA_DEPTH, (PENALTY_AREA_Y_MAX - PENALTY_AREA_Y_MIN) / 2, 0x5eead4, 0.5);
+                passLinesGfx.circle(c.px, c.py, KEEPER_CONFIG.RUSH_RANGE * m.scale).stroke({ width: 1, color: 0xfacc15, alpha: 0.25 });
+              }
               const { px: gx, py: gy } = toPixel(gk.x, gk.y);
               const { px: tx, py: ty } = toPixel(gk.targetPosition.x, gk.targetPosition.y);
               passLinesGfx.moveTo(gx, gy).lineTo(tx, ty).stroke({ width: 2, color: 0xbef264, alpha: 0.9 });

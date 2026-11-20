@@ -38,7 +38,7 @@ import {
 import { getPressingStyleOverride } from '@/GameEngine/Configs/IntentConfig';
 import { sampleCellSumExcluding, type CrowdGrid, type GridMatrix } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/Domain/pitch';
-import { keeperDefendingTarget } from '@/GameEngine/Domain/Keeper';
+import { fmKeeperTarget, keeperDefendingTarget } from '@/GameEngine/Domain/Keeper';
 import { COHESION, COHESION_LINE_ROLES } from '@/GameEngine/Configs/CohesionConfig';
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { MOVEMENT } from '@/GameEngine/Configs/MovementConfig';
@@ -1441,6 +1441,8 @@ export function computeDefensivePosition(
 
   // GK: the arc, or a rush at a holder through on goal — replaces the outfield pipeline (`Keeper.ts`)
   if (player.role === 'GK') {
+    // Stage 11: FM's keeper holds his line facing the play (no arc, no rush).
+    if (DECISION_FLAGS.FM_KEEPER) return fmKeeperTarget(player, ballPos, false);
     const holder = allPlayers.find(p => p.id === ballHolderId && p.team !== player.team) ?? null;
     const t = keeperDefendingTarget(player, ballPos, holder, allPlayers);
     return { x: t.x, y: t.y };

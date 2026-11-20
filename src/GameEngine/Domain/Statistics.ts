@@ -125,12 +125,12 @@ export interface PlayerStats {
   longBalls:                number;
   /** Long balls whose first contact was won by the passing team. */
   longBallsCompleted:       number;
-  /** Keeper came off his line: sweeper chase, 1v1 rush, wide high ball (`Keeper.ts`). */
-  keeperSorties:            number;
-  /** Loose balls won by the keeper outside his box. */
-  keeperSweeps:             number;
+  /** Keeper left his position for the ball: a high ball or a loose ball in his box (`keeperComeOut`, `Keeper.ts`). */
+  keeperComeOuts:            number;
+  /** Loose balls won by the keeper (`keeperCollect`). */
+  keeperCollects:             number;
   /** Balls won by the keeper at a holder's feet. */
-  keeperSmothers:           number;
+  keeperFeetWins:           number;
   /** Saves held (12.10). */
   keeperHolds:              number;
   /** Saves spilled loose in front of goal (12.10). */
@@ -330,6 +330,12 @@ export interface TeamStats extends PlayerStats, HighlightTeamStats {
    */
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
   headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
+  /**
+   * Stage 11 (`keeper.md` → "Stage 11"), by the defending team: high balls (crosses, long balls, corners, clearances)
+   * met or landing inside its penalty area and who took them first (its keeper / its defence / the attack; the rest
+   * nobody met), and its keeper's claims and punches.
+   */
+  boxHighBalls: number; boxHighKeeper: number; boxHighDef: number; boxHighAtt: number; keeperClaims: number; keeperPunches: number;
 }
 
 /** Zeroed player stats — shared with UI tables that need a placeholder row. */
@@ -389,9 +395,9 @@ function emptyStats(): PlayerStats {
     headerGoals:              0,
     longBalls:                0,
     longBallsCompleted:       0,
-    keeperSorties:            0,
-    keeperSweeps:             0,
-    keeperSmothers:           0,
+    keeperComeOuts:            0,
+    keeperCollects:             0,
+    keeperFeetWins:           0,
     distanceCovered:          0,
     sprints:                  0,
     keeperHolds:              0,
@@ -451,6 +457,7 @@ type TeamFlags = {
   shotsOffTarget: number; shotsWoodwork: number; shotsDeflected: number; shotsSaved: number; saves: number; savesGood: number; savesDifficult: number; shotPower: number; shotPlaced: number; shotLob: number; shotChip: number; shotVolley: number; shotHeaderLaunch: number; shotFreeKick: number; shotSpeedSum: number; shotLaunchN: number;
   airCrosses: number; airCrossMetAir: number; airCrossMetLow: number; airCrossUnmet: number; airCrossOwn: number; airCrossDef: number; airCrossKeeper: number; airCrossZSum: number;
   headWonDef: number; headWonMid: number; headWonFwd: number; headAttDef: number; headAttMid: number; headAttFwd: number;
+  boxHighBalls: number; boxHighKeeper: number; boxHighDef: number; boxHighAtt: number; keeperClaims: number; keeperPunches: number;
 };
 const emptyTeamFlags = (): TeamFlags => ({
   extraTimePlayed: 0, shootoutsWon: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
@@ -475,6 +482,7 @@ const emptyTeamFlags = (): TeamFlags => ({
   shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
   airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0,
   headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
+  boxHighBalls: 0, boxHighKeeper: 0, boxHighDef: 0, boxHighAtt: 0, keeperClaims: 0, keeperPunches: 0,
 });
 const teamFlags: Record<TeamId, TeamFlags> = { A: emptyTeamFlags(), B: emptyTeamFlags() };
 
@@ -754,9 +762,11 @@ gameBus.on('aerialDuel', e => {
 gameBus.on('header', e => { get(e.player).headers++; notify(); });
 
 // ── Active keeper stats ───────────────────────────────────────────────────────
-gameBus.on('keeperSortie',  e => { get(e.keeperId).keeperSorties++; notify(); });
-gameBus.on('keeperSweep',   e => { get(e.keeperId).keeperSweeps++; notify(); });
-gameBus.on('keeperSmother', e => { get(e.keeperId).keeperSmothers++; notify(); });
+gameBus.on('keeperComeOut', e => { get(e.keeperId).keeperComeOuts++; notify(); });
+gameBus.on('keeperCollect', e => { get(e.keeperId).keeperCollects++; notify(); });
+gameBus.on('keeperFeet',    e => { if (e.won) { get(e.keeperId).keeperFeetWins++; notify(); } });
+// Stage 11: the keeper's claims and punches of high balls, by his team.
+gameBus.on('gkClaim', e => { const t = playerTeam.get(e.keeperId); if (t) { if (e.claimed) teamFlags[t].keeperClaims++; else teamFlags[t].keeperPunches++; } });
 
 // ── Kinematics: distance covered and sprints (`kinematics.md`). No notify: it fires every step; the next counted
 // event (or the end of the match) refreshes the live panel.
@@ -885,6 +895,14 @@ gameBus.on('passLaunched', e => {
 // ── Stage 4b: FM numbers (`fm-numbers.md`) ────────────────────────────────────────
 // ── Stage 10: the contact in the air (`aerial.md` -> "Stage 10") ──────────────────────
 gameBus.on('aerialContact', e => {
+  // Stage 11: high balls into a box, credited to the defending team.
+  if (e.inBox) {
+    const f = teamFlags[e.passerTeam === 'A' ? 'B' : 'A'];
+    f.boxHighBalls++;
+    if (e.keeper) f.boxHighKeeper++;
+    else if (e.toucherTeam !== null && e.toucherTeam !== e.passerTeam) f.boxHighDef++;
+    else if (e.toucherTeam === e.passerTeam) f.boxHighAtt++;
+  }
   if (e.kind === 'cross' && !e.corner) {
     const f = teamFlags[e.passerTeam];
     f.airCrosses++;
@@ -1134,9 +1152,9 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.headerGoals              += stats.headerGoals;
     result.longBalls                += stats.longBalls;
     result.longBallsCompleted       += stats.longBallsCompleted;
-    result.keeperSorties            += stats.keeperSorties;
-    result.keeperSweeps             += stats.keeperSweeps;
-    result.keeperSmothers           += stats.keeperSmothers;
+    result.keeperComeOuts            += stats.keeperComeOuts;
+    result.keeperCollects             += stats.keeperCollects;
+    result.keeperFeetWins           += stats.keeperFeetWins;
     result.distanceCovered          += stats.distanceCovered;
     result.sprints                  += stats.sprints;
     result.keeperHolds              += stats.keeperHolds;

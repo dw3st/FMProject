@@ -226,9 +226,9 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     avgHeaderGoals: r2(t.headerGoals / matches),
     avgLongBalls: r2(t.longBalls / matches),
     avgLongBallsCompleted: r2(t.longBallsCompleted / matches),
-    avgKeeperSorties: r2(t.keeperSorties / matches),
-    avgKeeperSweeps: r2(t.keeperSweeps / matches),
-    avgKeeperSmothers: r2(t.keeperSmothers / matches),
+    avgKeeperComeOuts: r2(t.keeperComeOuts / matches),
+    avgKeeperCollects: r2(t.keeperCollects / matches),
+    avgKeeperFeetWins: r2(t.keeperFeetWins / matches),
     avgKeeperHolds: r2(t.keeperHolds / matches),
     avgKeeperSpills: r2(t.keeperSpills / matches),
     avgDistanceCovered: r2(t.distanceCovered / matches),
@@ -311,6 +311,11 @@ function perMatchView(t: TeamRawStats, matches: number): PerMatchView {
     airCrossDefPct: r2((100 * t.airCrossDef) / Math.max(1, t.airCrosses)),
     airCrossKeeperPct: r2((100 * t.airCrossKeeper) / Math.max(1, t.airCrosses)),
     airCrossContactM: r2(t.airCrossZSum / Math.max(1, t.airCrosses - t.airCrossUnmet) / 1.0936),
+    avgBoxHighBalls: r2(t.boxHighBalls / matches),
+    boxHighKeeperPct: r2((100 * t.boxHighKeeper) / Math.max(1, t.boxHighBalls)),
+    boxHighDefPct: r2((100 * t.boxHighDef) / Math.max(1, t.boxHighBalls)),
+    boxHighAttPct: r2((100 * t.boxHighAtt) / Math.max(1, t.boxHighBalls)),
+    keeperClaimPct: r2((100 * t.keeperClaims) / Math.max(1, t.keeperClaims + t.keeperPunches)),
     avgHeadersWonFm: r2((t.headWonDef + t.headWonMid + t.headWonFwd) / matches),
     headWinDefPct: r2((100 * t.headWonDef) / Math.max(1, t.headAttDef)),
     headWinMidPct: r2((100 * t.headWonMid) / Math.max(1, t.headAttMid)),
@@ -366,10 +371,10 @@ function emptyTotals(): VariantTotals {
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
     newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0, aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0, condition45Sum: 0, condition90Sum: 0, keeperConditionSum: 0,
     fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0, foulsWonOwnThird: 0, foulsWonMidThird: 0, foulsWonFinalThird: 0, foulsWonCarrying: 0, contactFouls: 0, lineMisreads: 0, shadowPresses: 0, zoneCovers: 0, shoulderRuns: 0, shoulderRunsEarly: 0, mindLapsesDefence: 0, mindLapsesOffBall: 0, mindDefenseShifts: 0, mindMarkDrops: 0,
-    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
+    crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperComeOuts: 0, keeperCollects: 0, keeperFeetWins: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
     holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0, holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0, holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
     shotsOffTarget: 0, shotsWoodwork: 0, shotsDeflected: 0, shotsSaved: 0, saves: 0, savesGood: 0, savesDifficult: 0, shotPower: 0, shotPlaced: 0, shotLob: 0, shotChip: 0, shotVolley: 0, shotHeaderLaunch: 0, shotFreeKick: 0, shotSpeedSum: 0, shotLaunchN: 0,
-    airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0, headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0,
+    airCrosses: 0, airCrossMetAir: 0, airCrossMetLow: 0, airCrossUnmet: 0, airCrossOwn: 0, airCrossDef: 0, airCrossKeeper: 0, airCrossZSum: 0, headWonDef: 0, headWonMid: 0, headWonFwd: 0, headAttDef: 0, headAttMid: 0, headAttFwd: 0, boxHighBalls: 0, boxHighKeeper: 0, boxHighDef: 0, boxHighAtt: 0, keeperClaims: 0, keeperPunches: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
     goalsConceded: 0, shotsConceded: 0, xgConceded: 0, assistsConceded: 0,
@@ -458,9 +463,9 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.headerGoals           += src.headerGoals;
   dst.longBalls             += src.longBalls;
   dst.longBallsCompleted    += src.longBallsCompleted;
-  dst.keeperSorties         += src.keeperSorties;
-  dst.keeperSweeps          += src.keeperSweeps;
-  dst.keeperSmothers        += src.keeperSmothers;
+  dst.keeperComeOuts         += src.keeperComeOuts;
+  dst.keeperCollects          += src.keeperCollects;
+  dst.keeperFeetWins        += src.keeperFeetWins;
   dst.keeperHolds           += src.keeperHolds;
   dst.keeperSpills          += src.keeperSpills;
   dst.distanceCovered       += src.distanceCovered;
@@ -557,6 +562,12 @@ function addInto(dst: VariantTotals, src: TeamRawStats, opp: TeamRawStats, draws
   dst.airCrossDef += src.airCrossDef;
   dst.airCrossKeeper += src.airCrossKeeper;
   dst.airCrossZSum += src.airCrossZSum;
+  dst.boxHighBalls += src.boxHighBalls;
+  dst.boxHighKeeper += src.boxHighKeeper;
+  dst.boxHighDef += src.boxHighDef;
+  dst.boxHighAtt += src.boxHighAtt;
+  dst.keeperClaims += src.keeperClaims;
+  dst.keeperPunches += src.keeperPunches;
   dst.headWonDef += src.headWonDef;
   dst.headWonMid += src.headWonMid;
   dst.headWonFwd += src.headWonFwd;
@@ -677,9 +688,9 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     avgAerialDuelsWon: r2(totals.aerialDuelsWon / games),
     avgHeaderGoals: r2(totals.headerGoals / games),
     avgLongBalls: r2(totals.longBalls / games),
-    avgKeeperSorties: r2(totals.keeperSorties / games),
-    avgKeeperSweeps: r2(totals.keeperSweeps / games),
-    avgKeeperSmothers: r2(totals.keeperSmothers / games),
+    avgKeeperComeOuts: r2(totals.keeperComeOuts / games),
+    avgKeeperCollects: r2(totals.keeperCollects / games),
+    avgKeeperFeetWins: r2(totals.keeperFeetWins / games),
     avgKeeperHolds: r2(totals.keeperHolds / games),
     avgKeeperSpills: r2(totals.keeperSpills / games),
     avgDistanceCovered: r2(totals.distanceCovered / games),
@@ -762,6 +773,11 @@ function summarise(variantId: string, label: string, totals: VariantTotals): Var
     airCrossDefPct: r2((100 * totals.airCrossDef) / Math.max(1, totals.airCrosses)),
     airCrossKeeperPct: r2((100 * totals.airCrossKeeper) / Math.max(1, totals.airCrosses)),
     airCrossContactM: r2(totals.airCrossZSum / Math.max(1, totals.airCrosses - totals.airCrossUnmet) / 1.0936),
+    avgBoxHighBalls: r2(totals.boxHighBalls / games),
+    boxHighKeeperPct: r2((100 * totals.boxHighKeeper) / Math.max(1, totals.boxHighBalls)),
+    boxHighDefPct: r2((100 * totals.boxHighDef) / Math.max(1, totals.boxHighBalls)),
+    boxHighAttPct: r2((100 * totals.boxHighAtt) / Math.max(1, totals.boxHighBalls)),
+    keeperClaimPct: r2((100 * totals.keeperClaims) / Math.max(1, totals.keeperClaims + totals.keeperPunches)),
     avgHeadersWonFm: r2((totals.headWonDef + totals.headWonMid + totals.headWonFwd) / games),
     headWinDefPct: r2((100 * totals.headWonDef) / Math.max(1, totals.headAttDef)),
     headWinMidPct: r2((100 * totals.headWonMid) / Math.max(1, totals.headAttMid)),

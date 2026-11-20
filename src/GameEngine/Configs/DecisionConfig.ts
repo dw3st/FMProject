@@ -105,6 +105,10 @@ export interface DecisionFlags {
    *  (the first contact along the 3D flight, contested at the contact; the jump, standing still and being goal-side
    *  win it); high balls nobody meets drop loose. */
   FM_AERIAL: boolean;
+  /** Stage 11 (`keeper.md` → "Stage 11"): FM's keeper — on his line with the opponent on the ball within 35 m, a step
+   *  up as the ball goes away (2.7 / 6 / 10.5 m), no 1-v-1 rush and no sweeper; he comes for a high ball only when he
+   *  gets to it first, within his claim depth. Off = the active keeper of 7.7 (arc, rush, sweeper). */
+  FM_KEEPER: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -149,6 +153,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   SHOT_PHYSICS: true,
   DEFENSIVE_MIND: true,
   FM_AERIAL: true,
+  FM_KEEPER: true,
 };
 
 /**

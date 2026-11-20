@@ -15,8 +15,9 @@ import type { GamePlayer } from '@/GameEngine/types';
 import { tackleAngleModifier } from '@/GameEngine/Domain/PositionalAwareness';
 import { aerialDuelScore, headingOf } from '@/GameEngine/Domain/Aerial';
 import { fmAerialDuelScore } from '@/GameEngine/Domain/AerialContact';
-import { keeperPositionDeviation, smotherBase } from '@/GameEngine/Domain/Keeper';
+import { fmKeeperDeviation, keeperPositionDeviation, smotherBase } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { LONG_SHOT_DISTANCE } from '@/GameEngine/Configs/WeatherConfig';
 import {
@@ -231,7 +232,7 @@ export function computeGKPositionQuality(
   gk: GamePlayer,
   ballPos: { x: number; y: number },
 ): number {
-  const deviation = keeperPositionDeviation(gk, ballPos);
+  const deviation = DECISION_FLAGS.FM_KEEPER ? fmKeeperDeviation(gk, ballPos) : keeperPositionDeviation(gk, ballPos);
   return Math.max(0, 1 - deviation / GK_MAX_POSITION_DEVIATION);
 }
 
