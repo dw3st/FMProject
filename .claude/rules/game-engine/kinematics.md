@@ -102,3 +102,9 @@ jitter. GIFs kept outside the repository (user's desktop,
 - Race estimates ignore turning and braking; the through-ball cells see the velocity of the tick they are scored.
 - The heading changes at once (the speed pays for it); no curved runs.
 - `FOUL_MULT` is a global lever, not a model of why the tackles from behind come.
+
+## Stage 21
+
+`CARRY_ACCEL_SCALE` 3 → 1 (FM's law; the ×3 was a provisional crutch) and `FOUL_MULT` 0.9 → 1. With FM's carry
+acceleration the outfield condition fell faster: `CONDITION.DRAIN_SCALE` 2.0 → 1.6 (`game/fitness.md`).
+`KINEMATICS_OVERRIDES` (env JSON) changes the constants for scripts.

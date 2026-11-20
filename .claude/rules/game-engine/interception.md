@@ -300,3 +300,9 @@ Nothing tuned for volume.
 - Through balls reach the runner 40% of the time (57% before).
 - High balls (cross, long ball, clearance) are still contested only where they land (contact in the air is stage 10).
 - A tackle on reception is unchanged; the late losses are fewer than FM's (30% against 44%).
+
+## Stage 21 calibration
+
+`INTERCEPT.REACH_BODY_YD` 1.3 → 0.7 and `REACTION_S` 0.25 → 0.45: interceptions 115 → ~93 a match (FM 59; the rest is
+the ball crowding, `fm-numbers.md` → "Etapa 21"). The physical-interception tests keep the stage-5 values (their
+scenarios were drawn with them).

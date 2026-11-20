@@ -77,3 +77,8 @@ same lances; an order of either one re-forecasts from the order's state and the 
 tática"); "next lance" needs every manager in charge of his side (a side on the assistant does not hold it). The mode
 is chosen in the match room: mode B only when both ask for it, at the more complete of the two levels
 (`matchPlayMode`, `matchHighlightLevel`). Details: `.claude/rules/game/multiplayer.md` → "Parte 7" → "90 minutos".
+
+## Stage 21: `OffBallMovement.lastSupport` registered
+
+The last (holder, supporter) pair of the "support comes short" event was allow-listed as a debug dedupe, but it gates
+the `supportShort` team stat: a restored snapshot counted one more. It is now an engine-memory part.

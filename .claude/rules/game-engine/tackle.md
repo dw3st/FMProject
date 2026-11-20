@@ -284,3 +284,11 @@ export function resolveTackle(tackler: GamePlayer, holder: GamePlayer, pressingL
 
 O desarme de um goleiro usa `smotherBase` (posicionamento e reflexo) e faz falta pela metade. Ver
 `.claude/rules/game-engine/keeper.md`.
+
+## Commitment (stage 21)
+
+With 90 minutes of physics the closest defender inside 2 yd attacked every tick (258 attempts a match, 41% won; FM ~20,
+85%). `Configs/TackleConfig.ts`: a defender (not the keeper) goes in with chance `COMMIT_BASE × chance^COMMIT_POW`
+(0.2 × chance³) per tick, `chance` = the success chance he would have (`tackleChanceOf`, the pure part of
+`resolveTackle`, the same angle, strength, pressing load and shield). Not going in costs nothing (no cooldown). Measured:
+~51 attempts and 37 won a match (FM 17 won). `TACKLE_OVERRIDES` (env JSON) changes the constants for scripts. See `fm-numbers.md` → "Etapa 21" for the rounds and the final table.

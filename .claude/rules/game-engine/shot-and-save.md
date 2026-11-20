@@ -386,3 +386,11 @@ Config `Configs/ShotPhysicsConfig.ts` (`SHOT_PHYSICS`, `SHOT_PHYSICS_OVERRIDES`)
 
 The decision to shoot (the gate of 30 m, × 0.75 / × 0.667, the clean-geometry value, the kick multiplier, the chip only
 over a keeper 8+ yd off his line) is in `holder-choice.md` → "Stage 9"; the flight, blocks and keeper above are unchanged.
+
+## Stage 21 calibration
+
+Keeper (`ShotPhysicsConfig.ts`): reaction 0.3 → 0.2 s, dive 4 → 7 yd/s, hands 0.9 → 1.5 yd, stop 0.9 → 0.98, edge
+0.5 → 0.3, speed 0.02 → 0.01; `BASE_SHOT` 105 → 98. Saved 46% → ~87% of the shots on target (FM 80%), on target 41%
+(FM 35%). Shot value (`ShotGateConfig.ts`): `VALUE_POW` 0.5 → 1.5, `XG_REF` 0.25 → 0.28 (very sensitive), `KICK_MULT`
+1/0.36 → 1.6: shots from beyond 25 m 63% → 19%, outside the box 34% (FM 46% R9, 27% R8). Shot volume stays ×1.5–1.9 FM's.
+See `fm-numbers.md` → "Etapa 21" for the rounds and the final table.

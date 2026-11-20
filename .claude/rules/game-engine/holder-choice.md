@@ -94,3 +94,9 @@ mouth, value = the role-compressed FM xG).
 - Tests that read the stage-8 shot value now set `LONG_SHOTS: false` (`OneOnOne.test.ts` second case, the chip and
   round-the-keeper rows of `HolderMoves.test.ts`): with the kick multiplier the plain shot wins those scenarios.
 - Not calibrated (stage 21): shots per match more than double; numbers in `fm-numbers.md` → "Etapa 9".
+
+## Stage 21 category multipliers
+
+`CAT_MULT` (pass, kick, turn, hold, carry) [1, 1, 2, 1.14, 1] → [1, 1, 2.3, 1.4, 0.95]: holder mix carry 38 / pass 42 /
+turn 10 / hold 9 / kick 0.8 (FM 44 / 34 / 12 / 9 / 1). Knife-edged: carry 0.92 drops carries to 33% and dribbles to a
+third. `HolderMoves.test.ts` keeps the stage-8 multipliers (a shield beats the lay-off at 1.4).

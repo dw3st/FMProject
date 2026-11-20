@@ -437,3 +437,8 @@ and `matchStartEnergy` stay as they were until the refit of stage 21.
   `aiSubConditionSum`; `/lab` `PairDetail` rows (AI subs, minute, condition, condition 45'/90', keeper end); `/test`
   Energy panel (per player at 0/15/…/90', median next to FM's, every change with its reason), scenario
   `fm-condition-subs`; `fm-targets.ts` prints the AI changes. Pitch stamina bar: green ≥ 80, amber ≥ 70.
+
+## Dreno da etapa 21
+
+`CONDITION.DRAIN_SCALE` 2,0 → 1,6: com a aceleração do FM na condução (etapa 21) a mediana aos 90' caiu a 66 (FM 73,5).
+`CONDITION_OVERRIDES` (JSON no ambiente) troca as constantes nos scripts. Ver `game-engine/fm-numbers.md` → "Etapa 21".

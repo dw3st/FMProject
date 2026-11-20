@@ -194,3 +194,9 @@ Ver `.claude/rules/game/achievements.md`.
 - `/test`: cenário `contact-foul-carrier`, colunas FW (faltas sofridas) e o log "foul" com contexto e terço. `/lab`:
   "Contact fouls", "Fouls won own / mid / final 3rd%", "Fouls on carrier%".
 - Sem calibrar (etapa 21). Números: `fm-numbers.md` → "Stage 13".
+
+## Stage 21 bases
+
+Tackle 0.75 → 0.2, dribble 0.55 → 0.1, loose-ball duel 0.4 → 0.12, aerial 0.06 → 0.03, FM contact rate 0.25 → 0.06,
+`KINEMATICS_CONFIG.FOUL_MULT` 0.9 → 1: fouls 88 → ~25 a match (FM 19), yellows per foul 0.15 (FM 0.16). Every duel kind
+was ~4× FM's rate per minute. `FOUL_OVERRIDES` (env JSON) changes `FOUL_CONFIG` for scripts. See `fm-numbers.md` → "Etapa 21" for the rounds and the final table.

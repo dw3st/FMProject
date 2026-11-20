@@ -655,3 +655,125 @@ contagem até o volume do FM (R9) antes de dar a nota: é o ponto de desenho dos
 - Os chutes de falta direta continuam raros (0,25): as faltas do motor (84 por jogo, 4,4 × o FM) quase nunca caem
   centrais a até 29 m. Fica para a calibração das faltas (21).
 - Custo: ~10–14 s por partida (o PC estava com outras simulações).
+
+## Etapa 21: calibração única (parte 1, o motor)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` em cada rodada (as mesmas 12 partidas semeadas,
+formações da IA, equilibrado, 90 min). Cada rodada experimentou até três variantes em paralelo pelas variáveis de
+ambiente (`*_OVERRIDES`; a 21 acrescentou `KINEMATICS_OVERRIDES`, `FOUL_OVERRIDES`, `TACKLE_OVERRIDES`,
+`CONDITION_OVERRIDES` via `Support/EnvOverrides.ts`). Com 12 partidas o ruído é de ~±0,7 gol e ~±2 chutes por jogo.
+
+### Rodadas (por partida, os dois times)
+
+| Rodada | Gols | Chutes | De longe | No alvo | Defendidos | Faltas | Desarmes | Interc. | Cruzam. | Passes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| antes (a branch) | 13,2 | 54,3 | 78% | 40% | 46% | 88 | 102 | 84 | 19 | 836 |
+| 1: aceleração com a bola do FM (`CARRY_ACCEL_SCALE` 3 → 1, `FOUL_MULT` 1) | 7,3 | 31,8 | 76% | 34% | 44% | 102 | 115 | 98 | 16 | 871 |
+| 2: + compromisso no desarme, goleiro mais forte, valor do chute pow 1,5 | 7,2 | 51,3 | 62% | 32% | 68% | 75 | 30 | 183 | 27 | 944 |
+| 3: + bases das faltas, corte (alcance 1,0), cruzamento a 35 jd, `KICK_MULT` 1,6 | 6,8 | 51,3 | 45% | 36% | 79% | 42 | 32 | 138 | 49 | 930 |
+| 6: + mistura do portador (`CAT_MULT` girar 2,3, segurar 1,4) | 5,3 | 41,1 | 47% | 35% | 79% | 36 | 54 | 109 | 48 | 835 |
+| 10: + corte (alcance 0,7, reação 0,45) | 5,8 | 43,3 | 45% | 37% | 80% | 34 | 46 | 75 | 51 | 778 |
+| 13: + `XG_REF` 0,28, `BASE_SHOT` 98, reação do goleiro 0,2 | 4,8 | 38,3 | 31% | 36% | 82% | 36 | 48 | 87 | 52 | 814 |
+| 15: + desarme 0,2 / contato 0,06, compromisso 0,2, condução 0,95 | 4,8 | 39,6 | 35% | 42% | 89% | 26 | 36 | 94 | 58 | 909 |
+
+O que cada alavanca fez (as que ficaram e as descartadas):
+
+- **Desarme com compromisso** (`Configs/TackleConfig.ts`, `tackleChanceOf`): o defensor a 2 jd só entra no desarme com
+  chance `COMMIT_BASE × chance^COMMIT_POW` (0,2 × chance³) por tick; antes entrava sempre (258 tentativas por jogo,
+  41% ganhas; FM ~20, 85%). Ficou em 51 tentativas; o FM ganha 85% e nós ~45%: a chance do próprio desarme
+  (`resolveTackle`) não mudou. As faltas caíram mais pelas bases (desarme 0,75 → 0,2, drible 0,55 → 0,1, bola dividida
+  0,4 → 0,12, aérea 0,06 → 0,03, contato 0,25 → 0,06): com 90 minutos de física cada tipo de duelo dava ~4× a taxa do FM.
+- **Goleiro** (reação, mergulho, mãos, defesa): de 46% para 80–89% dos chutes no alvo; gols por distância perto dos do
+  R8 (0–8 m 17%, 8–12 16%, 12–16 8%, 16–20 16% contra 21 / 11 / 12 / 13).
+- **Valor do chute** (`SHOT_GATE`): com pow 0,5 o chute de 25–30 m valia metade de um na área (63% dos chutes de lá).
+  `XG_REF` é muito sensível (0,25: 45% de fora da área; 0,32: 16%; 0,4: 5%; 0,6: todos os chutes a menos de 12 m), e
+  `KICK_MULT` tira primeiro os chutes de longe. `VALUE_FLOOR` alto e um piso de valor mínimo (`MIN_VALUE`, testado e
+  retirado) não mudaram a parte de longe: os chutes de 25+ m saem com valor limpo alto (só o goleiro na frente).
+- **Mistura do portador** (`CAT_MULT`): o argmax é de fio de navalha. Segurar 1,14 → 2,2 levou o segurar a 45%;
+  condução 0,92 → 33% de conduções e um terço dos dribles; 0,85 → 18% de conduções e 1 240 passes; 0,35 → passes 2 057.
+  Ficou girar 2,3, segurar 1,4, condução 0,95.
+- **Descartados:** forma sem a bola (`OUT_BACK_YD` 18, pesos da linha `LINE_OWN_W` 0,8, `LINE_MAX_MPH` 14): a linha
+  medida não sai de ~38 jd (FM 24); o passo de condução maior (`CARRY_STEP_YD` 3,2 / 4,4) acerta as decisões por
+  segundo (0,72 / 0,65) sem mexer nos chutes.
+
+### Tabela final (Premier 24 partidas; Championship 12), nosso / FM / dentro?
+
+Faixa provisória: volume ±10% do FM, proporções ±5 p.p. (a confirmar com o usuário).
+
+| Medida | Premier | Championship | FM | Dentro? |
+|---|---|---|---|---|
+| Gols | 4,7 | 3,2 | 1,5 (R9; R8 3,8) | não |
+| Chutes | 41,2 | 32,2 | 21,5 (R9; R8 36) | não |
+| No alvo % | 41,3 | 38,3 | 35 | não (+6) / sim |
+| Bloqueados % | 29,7 | 26,2 | 38 | não |
+| De fora da área % | 33,7 | 36,0 | 46 (R9) · 27 (R8) | não (R9) / sim (R8) |
+| Conversão % | 11,4 | 9,8 | 7 (R9) · 11 (R8) | sim (+4,4 / +2,8) |
+| Defendidos % dos no alvo | 87,0 | 89,2 | 80 | não (+7) |
+| Para fora % | 21,5 | 29,0 | 27 | não / sim |
+| xG | 10,8 | 7,9 | 3,3 | não |
+| xG por chute (média) | 0,26 | 0,24 | 0,15 | não |
+| Escanteios | 19,8 | 15,3 | 12,5 | não |
+| Laterais | 24,5 | 25,9 | 23 | sim / não (+13%) |
+| Tiros de meta (bola morta) | 13,4 | 14,4 | 15,4 | não (−13%) / sim |
+| Passes (todos) | 912 | 910 | 978 | sim (−7%) |
+| Acerto dos passes % | 77,7 | 76,4 | 86 | não (−8) |
+| Cruzamentos | 56,0 | 48,3 | 64 | não (−12 / −25%) |
+| Acerto dos cruzamentos % | 17,0 | 17,1 | 19 | sim |
+| Cabeceios ganhos no alto | 26,4 | 27,8 | 27 | sim |
+| Disputas aéreas ganhas (todas, `aerialDuelsWon`) | 113 | 103 | 27 | não (conta disputas no chão) |
+| Desarmes ganhos | 37,3 | 29,5 | 17 | não |
+| Interceptações | 93 | 107 | 59 | não |
+| Dribles | 12,5 | 36,3 | 20 | não |
+| Faltas | 25,5 | 28,6 | 19 | não (+34 / +50%) |
+| Amarelos / por falta | 3,8 / 0,15 | 4,8 / 0,17 | 3 / 0,16 | não / sim |
+| Vermelhos | 0,08 | 0,25 | 0 | sim / não |
+| Impedimentos | 6,4 | 6,8 | 8 | não (−20 / −15%) |
+| Pênaltis | 0,54 | 0,08 | 0,2 | não |
+| Faltas cobradas / chutes de falta direta | 30,6 / 0,25 | 34,8 / 0,33 | 16,2 / 0,8 | não |
+| Portador conduz / passa / gira / segura / chuta | 37,7 / 42,3 / 10,3 / 8,9 / 0,8 | 37,9 / 41,9 / 9,9 / 9,6 / 0,7 | 44 / 34 / 12 / 9 / 1 | conduz e passa não; os outros sim |
+| Decisões por s vivo | 0,83 | 0,83 | 0,65 | não |
+| Linha de trás com / sem a bola (jd) | 51,4 / 38,1 | 51,7 / 38,1 | 58 / 24 | não |
+| Bola com 3+ defensores a 8 jd | 15,9% | 13,5% | (main ~5,5%) | não |
+| Condição 15' / 45' / 90' (dreno 1,6, rodada 17) | 89 / 76 / 69,5 | — | 87 / 77,5 / 73,5 | 15' e 45' sim; 90' não (−4) |
+| Trocas da IA por time / minuto | 3,9 / 61 | — | 3–4 / ~55 | sim |
+
+O dreno da condição ficou em `DRAIN_SCALE` 1,6 (era 2,0): com a aceleração do FM os jogadores correm mais e, com 2,0,
+a mediana aos 90' era 66 (rodada 17, 12 partidas, mesmo resto: 89 / 82 / 76 / 74 / 72 / 69,5 aos 15'–90'; gols 4,5,
+chutes 41,5, faltas 23,8).
+
+### O que ficou fora e por quê
+
+- **Volume de chutes e gols (×1,5–1,9 e ×2–3):** a forma por distância e a conversão por distância já ficam perto do
+  FM; o excesso é de ataques que chegam à zona de chute. A causa mais provável é a linha sem a bola (38 jd, FM 24): o
+  time que ataca fica comprimido (linha da frente a 69 jd, FM 87, preso pelo impedimento da linha alta do outro), e a
+  bola fica cercada no meio (3+ defensores em 16% dos ticks). Mexer no alvo da forma (`OUT_BACK_YD`) e nos pesos da
+  linha não moveu a linha medida: ela vem de quem marca e de quem volta depois da perda. Fica para uma rodada dedicada
+  à forma sem a bola (o volume deve cair junto).
+- **Desarmes ganhos e interceptações (×2,2 e ×1,6):** consequência do mesmo cerco da bola; o FM ganha 85% dos desarmes,
+  nós ~45%.
+- **Acerto dos passes de 13–27 m (66–76% contra 79–87%):** os passes curtos são cortados no cerco.
+- **Escanteios (×1,6):** vêm de chutes bloqueados e defendidos (mais chutes).
+- **Disputas aéreas "todas":** o painel lê `aerialDuelsWon`, que inclui as disputas de bola no chão do modelo antigo; os
+  cabeceios no alto (o número do FM) batem.
+- **Equilíbrio entre estilos, formações e instruções:** ver abaixo; a medição de ±5 p.p. pede ~300 jogos por par e
+  não coube nesta etapa.
+- Bandeiras da 4b não removidas: todas continuam ligadas; tirá-las é limpeza de código sem efeito de jogo.
+
+### Equilíbrio entre estilos (amostra)
+
+`bun scripts/style-matrix.ts premier_league 12 --part 0/2` e `1/2`, somados (12 jogos por par, erro ~±24 p.p. por par,
+~±12 na média de quatro), com os valores da rodada 15:
+
+| Estilo | Vantagem média contra os outros | Gols / chutes do espelho |
+|---|---|---|
+| Equilibrado | +37,5 | 4,8 / 39,8 |
+| Jogo direto | +25,0 | 6,8 / 55,9 |
+| Pressão alta | +18,8 | 4,2 / 39,4 |
+| Posse | −20,8 | 4,7 / 36,7 |
+| Contra-ataque | −60,4 | 7,4 / 54,3 |
+
+Fora dos ±5 p.p. em todos, mas só o contra-ataque passa com folga do ruído: o bloco baixo com linha funda concede muito
+(o espelho tem 54 chutes, o equilibrado 40). As medidas da 8.8.33 (`tactical-config.md`) são do motor de antes da
+reforma; reequilibrar exige ~300 jogos por par e fica para a rodada dedicada à forma sem a bola, que mexe no mesmo bloco.
+Formações (`formation-matrix.ts`) e instruções (`instruction-matrix.ts --parts team`) não foram medidas nesta etapa: cada
+uma pede de 1 200 a 4 000 jogos para separar ±5 p.p. do ruído.
