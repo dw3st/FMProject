@@ -264,6 +264,12 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
                           <span className="ml-2">press {b.pressure.toFixed(2)}</span>
                           <span className="ml-2">thr {b.threshold.toFixed(2)}</span>
                         </div>
+                        {/* Stage 9: FM's shot gate (30 m, × 0.75 in the box, × 0.667 outside) and the clean xG the value reads. */}
+                        {b.gate && (
+                          <div className="text-[9px] tabular-nums text-muted-foreground/70">
+                            gate {b.gate.factor === null ? "closed" : `×${b.gate.factor.toFixed(2)}`} · {b.gate.distM.toFixed(1)} m · clean xG {b.gate.cleanXg.toFixed(3)}
+                          </div>
+                        )}
                         {/* Stage 6 (`xg.md`): the FM xG model and its seven features. */}
                         {b.fm && (
                           <div className="text-[9px] tabular-nums text-muted-foreground/70">

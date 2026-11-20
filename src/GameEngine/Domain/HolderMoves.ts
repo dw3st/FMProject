@@ -11,6 +11,8 @@ import { PITCH_LENGTH, PITCH_WIDTH, GOAL_Y_MIN, GOAL_Y_MAX } from '@/GameEngine/
 import { computeOpenAngle } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { DEFAULT_MENTAL, fmScale } from '@/GameEngine/Domain/HolderMind';
 import { clamp } from '@/Domain/math';
+import { SHOT_GATE } from '@/GameEngine/Configs/ShotGateConfig';
+import { shotCandidateValue, shotGateFactor } from '@/GameEngine/Domain/ShotGate';
 
 export type HolderMove = 'shield' | 'cut_inside' | 'lay_off' | 'chip' | 'round_keeper';
 export const HOLDER_MOVE_LIST: readonly HolderMove[] = ['shield', 'cut_inside', 'lay_off', 'chip', 'round_keeper'];
@@ -151,6 +153,9 @@ export function chipMove(p: GamePlayer, keeper: GamePlayer | null, threshold: nu
   const goalX = goalXOf(p);
   const depth = Math.abs(keeper.x - goalX);
   const dist = Math.hypot(goalX - p.x, CY - p.y);
+  // Stage 9: FM's keeper stays on his line, so a chip only goes over one really off it, and only within the shot gate.
+  const fmGate = DECISION_FLAGS.LONG_SHOTS ? shotGateFactor(p.x, p.y, p.attackDir) : 1;
+  if (fmGate === null || (DECISION_FLAGS.LONG_SHOTS && depth < SHOT_GATE.CHIP_KEEPER_OFF_YD)) return null;
   if (depth < M.CHIP_MIN_DEPTH_YD || dist < M.CHIP_MIN_YD || dist > M.CHIP_MAX_YD) return null;
   if (Math.abs(p.x - goalX) <= depth + M.CHIP_MIN_GAP_YD) return null; // he is not beyond the keeper
   // The keeper must stand in front of him (roughly on the line to goal).
@@ -165,6 +170,8 @@ export function chipMove(p: GamePlayer, keeper: GamePlayer | null, threshold: nu
   const angle = clamp(computeOpenAngle(p.x, p.y, goalX) / (Math.PI / 4), 0.2, 1);
   const chance = M.CHIP_XG * clamp((depth - M.CHIP_MIN_DEPTH_YD + 2) / M.CHIP_DEPTH_SPAN_YD, 0, 1) * angle * (0.4 + 0.6 * skill);
   if (chance <= 0) return null;
+  // Stage 9: valued like any shot candidate (the gate factor on the chance), not boosted above the other kicks.
+  if (DECISION_FLAGS.LONG_SHOTS) return { score: shotCandidateValue(chance, SHOT_GATE.XG_REF, fmGate), chance };
   return { score: compress(chance / threshold, strongRaw) * M.CHIP_WEIGHT, chance };
 }
 

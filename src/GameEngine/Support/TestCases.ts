@@ -520,6 +520,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'long-shot-block',
+    name:        'Long shot through a defender (stage 9)',
+    description: 'Stage 9 (`holder-choice.md` → "Stage 9"): a midfielder 25 m out, central, a centre-back 6 yd in front of him on the line to goal and the striker marked. Nothing is forced: FM\'s shot gate offers the shot (within 30 m, × 0.667 outside the box) valued from his own geometry, so the defender in the way does not stop him shooting; the block, if any, is physical in flight. Decision Scores → Shoot shows the gate line (factor, distance, clean xG); the debug "shot" line lists the planned blockers.',
+    createState() {
+      _nextId = 1;
+      return buildState([
+        makePlayer('Garcia',   'A', 'CAM',  88, 37, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',  103, 40, STRIKER),
+        makePlayer('Silva',    'B', 'CB',   94, 37.5, DEFENDER),
+        makePlayer('Okafor',   'B', 'CB',  104, 41, DEFENDER),
+        makePlayer('Mensah',   'B', 'CDM',  85, 31, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  114, 37, GOALKEEPER),
+      ], 1);
+    },
+  },
+
+  {
     id:          'keeper-shot-over',
     name:        'Keeper — shot over an advanced keeper',
     description: 'The keeper is 10 yd off his line when the striker shoots from 20 yd. He goes to the path of the ball, not back to the line: a save stops the ball where he is, and a shot he does not reach goes in (`Keeper.ts` → `ballMeetsKeeper`).',

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { TEST_SCENARIOS } from '@/GameEngine/Support/TestCases';
 import { decide } from '@/GameEngine/Domain/DecisionTree';
 import type { GamePlayer } from '@/GameEngine/types';
+import { setDecisionFlags } from '@/GameEngine/Configs/DecisionConfig';
 
 const scenario = TEST_SCENARIOS.find(s => s.id === 'one-on-one-pass')!;
 
@@ -24,8 +25,12 @@ describe('one-on-one with the keeper (#156)', () => {
   });
 
   test('a teammate clearly better placed (closer, much higher xG) can still be found', () => {
-    // Holder at a tight angle near the byline, a teammate unmarked in front of goal.
-    const d = holderDecision(ps => {
+    // Holder at a tight angle near the byline, a teammate unmarked in front of goal. This checks the one-on-one gate
+    // lets the pass through; stage 9's kick multiplier (`LONG_SHOTS`, uncalibrated until stage 21) makes the shot
+    // win here, so the shot value of stage 8 is used.
+    setDecisionFlags({ LONG_SHOTS: false });
+    let d: ReturnType<typeof holderDecision>;
+    try { d = holderDecision(ps => {
       ps[0]!.x = 107; ps[0]!.y = 52;
       // Stage 8 (`holder-choice.md`): the FM chooser vetoes a pass to an offside receiver, so the teammate stands level
       // with the ball (onside), still closer to goal than the holder.
@@ -33,7 +38,7 @@ describe('one-on-one with the keeper (#156)', () => {
       ps[2]!.x = 104; ps[2]!.y = 53;
       ps[3]!.x = 100; ps[3]!.y = 50;
       ps[4]!.x = 113.5; ps[4]!.y = 40;
-    });
+    }); } finally { setDecisionFlags(); }
     expect(d.type).toBe('pass');
     if (d.type === 'pass') expect(d.targetId).toBe(2);
   });

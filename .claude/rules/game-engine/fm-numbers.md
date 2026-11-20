@@ -445,3 +445,33 @@ cinco flags desligadas × ligadas:
   jardas fora com o atacante a 16–38 jardas).
 - Menos escanteios: o desvio de um chute para fora só vira escanteio quando alguém tocou de fato.
 - Custo: ~14,5 s por partida, igual a antes.
+
+## Etapa 9: ataques que terminam fora da área (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000`. Antes = `DECISION_OVERRIDES='{"LONG_SHOTS":false}'`
+(o chute da 4b com o limite de 33 jd e o valor pelo xG com os bloqueadores). Regras em `holder-choice.md` → "Stage 9".
+Nada calibrado.
+
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Chutes / gols / xG | 31,8 / 9,2 / 11,0 | 51,5 / 12,8 / 8,1 | 21,5 / 1,5 / 3,3 |
+| Chutar % das decisões do portador (todas / último terço) | 0,5 / 2,9 | 1,1 / 6,6 | 1 / 4 |
+| De fora da área (18+ jd da boca do gol) | 14,4% | 52,3% | 46% (R9) |
+| Batidos de fora da área (pelo ponto do chute) | 15,0% | 36,9% | 46% (R9) · 27% (R8) |
+| Chutes por distância 0–8 / 8–12 / 12–16 / 16–20 / 20–25 / 25+ m | 4 / 25 / 35 / 29 / 6 / 0% | 1 / 12 / 20 / 33 / 20 / 15% | 13 / 20 / 23 / 21 / 18 / 4% (R8) |
+| Distância média do chute | 14,3 m | 18,8 m | mediana 14,9 m (R8) |
+| Bloqueados % | 4,2% | 8,9% | 38% |
+| Técnica: força / colocado / cobertura / cavadinha / cabeça / falta | 13 / 16 / 0 / 53 / 14 / 5% | 80 / 9 / 1 / 1 / 9 / 1% | 72% sobem (vz > 3 m/s) |
+| Saem baixos (vz ≤ 3 m/s) | 18,3% | 32,0% | 28% |
+| xG por chute (média / mediana) | 0,35 / 0,26 | 0,16 / 0,10 | 0,15 / 0,03 |
+| Gol % 20–25 m / 25+ m | 19 / 0% | 18 / 24% | 3 / 0% |
+| Escanteios | — | 17,6 | 12,5 |
+
+- A forma chega perto do FM: metade dos chutes de longe, o chute na mesma parte das decisões (1,1% contra 1%) e a
+  cavadinha deixa de ser metade dos chutes (o goleiro de hoje fica a 3–6 jd da linha; ela só vale com 8+).
+- O volume de chutes mais que dobra contra o FM e eles ficam longe demais: poucos de 0–8 m e 15% além de 25 m (FM 4%).
+  O valor do chute ainda segue o xG limpo (ponto, ângulo, corpo), não a função do FM (não lida); o peso do chute é
+  a razão do FM (× 2,78 de uma condução).
+- Os bloqueios sobem pouco (8,9% contra 38%): os defensores ainda não ficam na linha do chute; é da forma (15) e do
+  bloqueio físico (7). Os chutes de longe entram demais (24% além de 25 m): é o goleiro (etapa 11).
+- Custo: ~11,6 s por partida (antes ~14,4).

@@ -66,6 +66,7 @@ import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 import { ballMeetsKeeper, defenderCovers, saveOutcomeChances, shotStoppingSkill, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
+import { distToGoalCentreM, inBoxLane } from '@/GameEngine/Domain/ShotGate';
 import { shotXg, XG_PENALTY } from '@/GameEngine/Domain/ShotXg';
 import type { FmXgResult } from '@/GameEngine/Domain/FmXg';
 import type { RosterPlayer } from '@/types/playerTypes';
@@ -2613,6 +2614,7 @@ function physicalShot(state: GameState, shooter: GamePlayer, strike: PhysicalStr
   gameBus.emit('shotLaunched', {
     player: shooter.id, team: shooter.team, technique, speedMs, vzMs: v.vz * M_PER_YD_SHOT,
     aimY: aim.y, aimZ: aim.z, errDeg: v.errDeg, distance: dist, onTarget, blockers: blocks.length,
+    fromM: distToGoalCentreM(shooter.x, shooter.y, shooter.attackDir), outsideBox: !inBoxLane(shooter.x, shooter.y, shooter.attackDir),
   });
   if (isDebugEnabled()) {
     debugLog('shot', `${shooter.name} ${technique} shot: ${speedMs.toFixed(1)} m/s, aim y ${aim.y.toFixed(1)} z ${(aim.z * M_PER_YD_SHOT).toFixed(2)} m, error ${v.errDeg.toFixed(1)}° (factor ${factor.toFixed(2)}), ${onTarget ? 'on target' : 'off target'}${cross ? ` (crosses y ${cross.y.toFixed(1)} z ${(cross.z * M_PER_YD_SHOT).toFixed(2)} m)` : ''}, ${blocks.length} blocker(s)`, {
