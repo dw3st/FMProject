@@ -32,6 +32,7 @@ const CATEGORY_CLASS: Record<DebugEntry["category"], string> = {
   var:          "text-orange-300",
   weather:      "text-sky-300",
   keeper:       "text-lime-300",
+  condition:    "text-emerald-300",
   movement:     "text-teal-300",
 };
 

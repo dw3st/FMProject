@@ -845,6 +845,38 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'pass-intercepted',
+    name:        'Interception — a defender cuts the pass',
+    description: 'A 22-yd pass to feet with a midfielder 4 yd off the line halfway (stage 5, `interception.md`): no interception dice. He works out the point of the path of the ball he reaches before it (reaction 0.25 s, then his sprint to within his reach) and runs there; when the ball passes within his reach he touches it, and his first touch, how far from his body he meets it and the speed of the ball decide control, deflection or the ball running past him. Toggle "Intercept" for the reach rings and his run to the point (green: spare time, amber: just in time). Debug log "interception".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CM',   40, 37, MIDFIELDER),
+        makePlayer('Lopes',    'A', 'CM',   62, 37, MIDFIELDER),
+        makePlayer('Nunes',    'B', 'CM',   51, 41, MIDFIELDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'regular') };
+    },
+  },
+
+  {
+    id:          'pass-intercept-clear',
+    name:        'Interception — cut and cleared near his own goal',
+    description: 'A through ball across the edge of the box with a centre-back running across it (stage 5): he reaches the path in time; near his own goal a touch he does not control is a clearance (hooked away as a high ball), upfield it would be a deflection. Toggle "Intercept".',
+    createState() {
+      _nextId = 1;
+      const st = buildState([
+        makePlayer('Mendes',   'A', 'CAM',  78, 20, MIDFIELDER),
+        makePlayer('Santos',   'A', 'ST',   88, 44, STRIKER),
+        makePlayer('Okafor',   'B', 'CB',   96, 36, DEFENDER),
+        makePlayer('Kowalski', 'B', 'GK',  112, 37, GOALKEEPER),
+      ], 1);
+      return { ...st, pass: physicalPass(st, 1, 2, 'through', [0, 0, 0], 0, { x: 98, y: 44 }) };
+    },
+  },
+
+  {
     id:          'cross-to-box',
     name:        'Aerial — Cross to the Box',
     description: 'LW wide on the left, ~26 yds from the byline, with the ST and CAM arriving in the box against two CBs and the keeper (`.claude/rules/game-engine/aerial.md`). The holder should choose CROSS; toggle "Aerial" to see the three scored targets (near post / penalty spot / far post), then the landing point, the AERIAL_RADIUS ring and the chasers during the flight. Watch the "aerial" debug log for the duel, keeper claim/punch, header or clearance.',
@@ -962,6 +994,29 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const f433 = formation433Json as Formation;
       const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
       return applyFatigue(base, 'A', 60, FITNESS.LOAD_HIGH);
+    },
+  },
+
+  {
+    id:          'fm-condition-subs',
+    name:        "11v11 — FM condition and AI changes (54')",
+    description: "Stage 14 (`fitness.md` → FM condition): second half at 54', every outfield player between 62 and 84 condition, both sides managed by the AI rule. From 55' the AI changes the players below 75 % (most tired first, at most 2 a check, 3–4 a match, a tactical one from 70' if fewer than 3). Open the Energy panel: the condition per player at 0/15/30/45/60/75/90', the outfield median next to FM's, and every change with its reason; the condition debug line logs each AI change.",
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tired = (p: GamePlayer, i: number): GamePlayer => {
+        if (p.role === 'GK') return { ...p, energy: 97, fatigueBaselineEnergy: 97, runtimeStats: getRuntimeLineup(p.baseStats, { energy: 97 }) };
+        const energy = 62 + ((i * 7) % 23);
+        return { ...p, energy, fatigueBaselineEnergy: energy, runtimeStats: getRuntimeLineup(p.baseStats, { energy }) };
+      };
+      return {
+        ...base,
+        matchPhase: 'secondHalf',
+        matchTime: 9 * 60 - 5,
+        presentationCountdown: 0,
+        autoSubs: { A: true },
+        players: base.players.map(tired),
+      };
     },
   },
 
@@ -1256,6 +1311,59 @@ export const TEST_SCENARIOS: TestScenario[] = [
       let i = 0;
       const fouled = maybeFoul(placed, placed.players.find(p => p.id === cb.id)!, placed.players.find(p => p.id === st.id)!, 'tackle', false, () => rolls[i++] ?? 0.5);
       return fouled ?? placed;
+    },
+  },
+
+  {
+    id:          'offside-mistimed-run',
+    name:        '11v11 — Mistimed run (offside, stage 13)',
+    description: 'Team A CM has the ball on the halfway line; the Team A ST has misread the offside line (a lapse: he believes it is 3 yd deeper than it is, `OffsideRuns.ts`) and runs past it. A pass to him is flagged offside. Watch the "offside" debug log (misreads, the call), the OFF column and the line-misread count.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const cm = base.players.find(p => p.team === 'A' && p.role === 'CM');
+      const st = base.players.find(p => p.team === 'A' && p.role === 'ST');
+      if (!cm || !st) return base;
+      const dir = cm.attackDir;
+      const mid = PITCH_LENGTH / 2;
+      const lineX = mid + dir * 22;
+      const placed: GameState = {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: cm.id,
+        players: base.players.map(p => {
+          if (p.id === cm.id) return { ...p, x: mid, y: 37 };
+          if (p.id === st.id) return { ...p, x: lineX - dir * 0.5, y: 34, lineRead: { lineX, err: 3, nextAt: 1e9, lapse: true } };
+          if (p.team === 'B' && (p.role === 'CB' || p.role === 'LB' || p.role === 'RB')) return { ...p, x: lineX, y: p.y };
+          return p;
+        }),
+      };
+      return placed;
+    },
+  },
+
+  {
+    id:          'contact-foul-carrier',
+    name:        '11v11 — Contact foul on a carrier (stage 13)',
+    description: 'Team A RW carries down the right with a Team B LB 1.2 yd off his shoulder. Contact moments (`FOUL_CONFIG.FM.CONTACT_RATE` per second) are foul checks of kind "contact" on the carrier (`fouls.md` → "FM fouls"). Watch the "foul" debug log (context carry, third) and the FL column.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const rw = base.players.find(p => p.team === 'A' && p.role === 'RW');
+      const lb = base.players.find(p => p.team === 'B' && p.role === 'LB');
+      if (!rw || !lb) return base;
+      const dir = rw.attackDir;
+      const x = PITCH_LENGTH / 2 + dir * 15;
+      return {
+        ...base,
+        setPiece: null,
+        matchPhase: 'firstHalf',
+        ballHolderId: rw.id,
+        players: base.players.map(p =>
+          p.id === rw.id ? { ...p, x, y: 64 } :
+          p.id === lb.id ? { ...p, x: x - dir * 0.9, y: 63.2 } : p),
+      };
     },
   },
 

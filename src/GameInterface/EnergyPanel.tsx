@@ -9,7 +9,8 @@ import { temperamentFoulMult, temperamentYellowMult } from "@/Domain/personality
 import { isNeutralWeather, weatherEffectOf } from "@/GameEngine/Configs/WeatherConfig";
 import { MORALE } from "@/Domain/morale/moraleConfig";
 import { defensiveHole, outfieldNearBall } from "@/GameEngine/Domain/BallCluster";
-import { getBallPos } from "@/GameEngine/Domain/gameState";
+import { getBallPos, matchMinute } from "@/GameEngine/Domain/gameState";
+import { outfieldMedianCondition } from "@/GameEngine/Domain/Condition";
 
 /**
  * `/test` debug panel — live per-player energy and drain-per-game-minute, computed from the
@@ -22,6 +23,11 @@ import { getBallPos } from "@/GameEngine/Domain/gameState";
  */
 
 const SMOOTHING = 0.85;
+
+/** Stage 14: checkpoints of the per-player condition curve (FM's report 9 table). */
+const CURVE_MINUTES = [0, 15, 30, 45, 60, 75, 90] as const;
+/** FM's outfield median at the checkpoints (R9 §6; 0' = 98–100). */
+const FM_CURVE: Record<number, number> = { 0: 99, 15: 87, 30: 86.5, 45: 77.5, 60: 72.5, 75: 75, 90: 73.5 };
 
 interface Props {
   gameState: GameState | null;
@@ -47,6 +53,9 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
   const prevRef = useRef<Map<number, { energy: number; matchTime: number }>>(new Map());
   const smoothedDrainRef = useRef<Map<number, number>>(new Map());
   const lastMatchTimeRef = useRef(0);
+  /** Stage 14: condition per player (roster id) and the outfield median per team at the checkpoints of `CURVE_MINUTES`. */
+  const curveRef = useRef<Map<string, Map<number, number>>>(new Map());
+  const medianRef = useRef<Record<"A" | "B", Map<number, number>>>({ A: new Map(), B: new Map() });
 
   const players = gameState?.players ?? [];
   const matchTime = gameState?.matchTime ?? 0;
@@ -56,6 +65,27 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
   if (matchTime < lastMatchTimeRef.current - 0.01) {
     prevRef.current.clear();
     smoothedDrainRef.current.clear();
+    curveRef.current.clear();
+    medianRef.current = { A: new Map(), B: new Map() };
+  }
+  if (gameState) {
+    const live = gameState.matchPhase !== "preMatch" && gameState.matchPhase !== "matchEnd";
+    const minute = gameState.matchPhase === "preMatch" ? 0 : matchMinute(gameState);
+    const mark = [...CURVE_MINUTES].reverse().find((m) => minute >= m);
+    if (mark !== undefined && (live || mark === 0 || gameState.matchPhase === "matchEnd")) {
+      for (const p of gameState.players) {
+        const key = p.rosterId ?? String(p.id);
+        const row = curveRef.current.get(key) ?? new Map<number, number>();
+        if (!row.has(mark)) row.set(mark, p.energy);
+        curveRef.current.set(key, row);
+      }
+      for (const team of ["A", "B"] as const) {
+        if (!medianRef.current[team].has(mark)) {
+          const m = outfieldMedianCondition(gameState.players.filter((p) => p.team === team));
+          if (!Number.isNaN(m)) medianRef.current[team].set(mark, m);
+        }
+      }
+    }
   }
   lastMatchTimeRef.current = matchTime;
 
@@ -116,10 +146,12 @@ export function EnergyPanel({ gameState, teamColorA, teamColorB, staffA, staffB,
           )}
         </h3>
         <BallClusterLine gameState={gameState} />
+        <ConditionCurveLine medians={medianRef.current} />
+        <AiSubsLine gameState={gameState} />
       </div>
       <div className="flex gap-4 p-2">
-        <EnergyTeamTable accentColor={teamColorA} players={teamA} drain={drainByPlayer} side="left" staff={staffA} style={styleA} />
-        <EnergyTeamTable accentColor={teamColorB} players={teamB} drain={drainByPlayer} side="right" staff={staffB} style={styleB} />
+        <EnergyTeamTable accentColor={teamColorA} players={teamA} drain={drainByPlayer} side="left" staff={staffA} style={styleA} curve={curveRef.current} />
+        <EnergyTeamTable accentColor={teamColorB} players={teamB} drain={drainByPlayer} side="right" staff={staffB} style={styleB} curve={curveRef.current} />
       </div>
     </div>
   );
@@ -138,7 +170,9 @@ function EnergyTeamTable({
   side,
   staff,
   style,
+  curve,
 }: {
+  curve: Map<string, Map<number, number>>;
   accentColor: string;
   players: GamePlayer[];
   drain: Map<number, number>;
@@ -181,11 +215,12 @@ function EnergyTeamTable({
           </div>
         );
       })()}
-      <div className="grid grid-cols-[40px_1fr_60px_90px] gap-1 px-3 py-1.5 text-[10px] font-bold uppercase text-muted-foreground border-b border-border/50">
+      <div className="grid grid-cols-[40px_1fr_60px_90px_150px] gap-1 px-3 py-1.5 text-[10px] font-bold uppercase text-muted-foreground border-b border-border/50">
         <div />
         <div className={side === "right" ? "text-right" : ""}>Name</div>
         <div className="text-right">Energy</div>
         <div className="text-right">Drain/min</div>
+        <div className="text-right">{CURVE_MINUTES.join(" · ")}'</div>
       </div>
       <div className="text-xs">
         {players.map((p) => {
@@ -193,7 +228,7 @@ function EnergyTeamTable({
           return (
             <div
               key={p.id}
-              className="grid grid-cols-[40px_1fr_60px_90px] gap-1 px-3 py-1 border-b border-border/20 hover:bg-secondary/20"
+              className="grid grid-cols-[40px_1fr_60px_90px_150px] gap-1 px-3 py-1 border-b border-border/20 hover:bg-secondary/20"
             >
               <div className={`flex items-center gap-1.5 ${side === "right" ? "flex-row-reverse" : ""}`}>
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentColor }} />
@@ -207,6 +242,9 @@ function EnergyTeamTable({
               </div>
               <div className="text-right text-muted-foreground tabular-nums">
                 {rate > 0.05 ? `-${rate.toFixed(1)}/min` : rate < -0.05 ? `+${(-rate).toFixed(1)}/min` : "—"}
+              </div>
+              <div className="text-right text-muted-foreground tabular-nums text-[10px]">
+                {CURVE_MINUTES.map((m) => { const v = curve.get(p.rosterId ?? String(p.id))?.get(m); return v === undefined ? "–" : Math.round(v); }).join(" · ")}
               </div>
             </div>
           );
@@ -234,6 +272,30 @@ function BallClusterLine({ gameState }: { gameState: GameState }) {
   return (
     <div className="text-[10px] text-muted-foreground tabular-nums mt-1">
       Near ball (8 yd): {side("A")} · {side("B")} · {def} hole {hole.maxGap.toFixed(0)} yd, {hole.openCells}/{hole.cells} open cells
+    </div>
+  );
+}
+
+/** Stage 14: each side's outfield median condition at the checkpoints, next to FM's (report 9 §6). */
+function ConditionCurveLine({ medians }: { medians: Record<"A" | "B", Map<number, number>> }) {
+  const row = (team: "A" | "B") => CURVE_MINUTES.map((m) => {
+    const v = medians[team].get(m);
+    return `${m}' ${v === undefined ? "–" : v.toFixed(0)}`;
+  }).join(" ");
+  return (
+    <div className="text-[10px] text-muted-foreground tabular-nums mt-1">
+      Condition median: A {row("A")} · B {row("B")} · FM {CURVE_MINUTES.map((m) => `${m}' ${FM_CURVE[m]}`).join(" ")}
+    </div>
+  );
+}
+
+/** Stage 14: every substitution of the match with its reason (AI fatigue / tactical, injury, manager). */
+function AiSubsLine({ gameState }: { gameState: GameState }) {
+  if (gameState.substitutions.length === 0) return null;
+  return (
+    <div className="text-[10px] text-muted-foreground tabular-nums mt-1">
+      Subs: {gameState.substitutions.map((sub) =>
+        `${sub.team} ${sub.matchMinute}' ${sub.playerInName} for ${sub.playerOutName} (${Math.round(sub.playerOutEnergy)}%, ${sub.reason ?? "manager"}${sub.why ? `: ${sub.why}` : ""})`).join(" · ")}
     </div>
   );
 }

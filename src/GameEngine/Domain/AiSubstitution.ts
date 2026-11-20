@@ -8,6 +8,11 @@
 
 import type { GamePlayer, GameState, PendingSub, TeamId } from '@/GameEngine/types';
 import { factorFromAptitudes } from '@/Domain/positions/positionAptitude';
+import { CONDITION } from '@/GameEngine/Configs/ConditionConfig';
+import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
+
+/** Subs a team starts with (`createMatchState`). */
+const SUBS_PER_MATCH = 5;
 
 /** Game-seconds between AI sub evaluations (~5 game-minutes). */
 const AI_SUB_CHECK_INTERVAL = 300;
@@ -26,7 +31,9 @@ const CRITICAL_ENERGY_THRESHOLD = 25;
 export function evaluateAiSubstitutions(
   state: GameState,
   team: TeamId,
+  minute?: number,
 ): PendingSub[] {
+  if (DECISION_FLAGS.FM_CONDITION && minute !== undefined) return evaluateFmSubstitutions(state, team, minute);
   // Only sub during second half or extra time
   if (state.matchPhase !== 'secondHalf' && state.matchPhase !== 'extraTimeFirst' && state.matchPhase !== 'extraTimeSecond') return [];
 
@@ -66,6 +73,49 @@ export function evaluateAiSubstitutions(
     usedBenchIds.add(best.id);
   }
 
+  return subs;
+}
+
+/**
+ * FM's AI changes (stage 14, `ConditionConfig.ts` → `AI_SUBS`): from minute 55 the players below 75 % condition, most
+ * tired first, when the bench player is fresher by `BENCH_MARGIN`; from minute 70 a side with fewer than `MIN_CHANGES`
+ * changes freshens its most tired outfield player anyway (`tactical`). At most `MAX_CHANGES` planned changes a match
+ * (the rest stays for injuries) and `PER_CHECK` per check. Changes already queued count.
+ */
+function evaluateFmSubstitutions(state: GameState, team: TeamId, minute: number): PendingSub[] {
+  const cfg = CONDITION.AI_SUBS;
+  const live = state.matchPhase === 'secondHalf' || state.matchPhase === 'extraTimeFirst' || state.matchPhase === 'extraTimeSecond';
+  if (!live || minute < cfg.FROM_MINUTE) return [];
+  const subsRemaining = team === 'A' ? state.subsRemainingA : state.subsRemainingB;
+  const queued = team === 'A' ? state.pendingSubsA : state.pendingSubsB;
+  const made = SUBS_PER_MATCH - subsRemaining + queued.length;
+  const room = Math.min(subsRemaining - queued.length, cfg.MAX_CHANGES - made, cfg.PER_CHECK);
+  if (room <= 0) return [];
+  const queuedOut = new Set(queued.map(q => q.outId));
+  const queuedIn = new Set(queued.map(q => q.inId));
+  const bench = (team === 'A' ? state.benchA : state.benchB).filter(p => !queuedIn.has(p.id));
+  if (bench.length === 0) return [];
+  const onPitch = state.players
+    .filter(p => p.team === team && p.role !== 'GK' && !queuedOut.has(p.id))
+    .sort((a, b) => a.energy - b.energy);
+
+  const used = new Set<number>();
+  const subs: PendingSub[] = [];
+  const pick = (tired: GamePlayer, reason: 'fatigue' | 'tactical', why: string): boolean => {
+    const best = findBestBenchForRole(bench.filter(p => !used.has(p.id)), tired.role);
+    if (!best || best.energy < tired.energy + cfg.BENCH_MARGIN) return false;
+    subs.push({ outId: tired.id, inId: best.id, reason, why });
+    used.add(best.id);
+    return true;
+  };
+  for (const tired of onPitch) {
+    if (subs.length >= room || tired.energy >= cfg.CONDITION) break;
+    pick(tired, 'fatigue', `condition ${Math.round(tired.energy)} < ${cfg.CONDITION} at ${minute}'`);
+  }
+  if (subs.length === 0 && minute >= cfg.TACTICAL_FROM && made < cfg.MIN_CHANGES) {
+    const tired = onPitch.find(p => !subs.some(q => q.outId === p.id));
+    if (tired) pick(tired, 'tactical', `${made} of ${cfg.MIN_CHANGES} changes by ${minute}', most tired at ${Math.round(tired.energy)}`);
+  }
   return subs;
 }
 

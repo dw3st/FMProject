@@ -274,6 +274,92 @@ lances. Os níveis se contêm (`highlights.md`); segundos = tempo de exibição 
   FM ficam mais perto do nosso nível estendido (chutes, defesas, escanteios, faltas perigosas, cartões).
 - Custo: o `simStep` por passo e o rastreador ficaram dentro do ruído do tempo por partida (PC carregado).
 
+## Etapa 13: impedimento, faltas e cartões (antes / depois)
+
+Premier League, 60 partidas com semente (`fm-targets.ts 60 --chunks 1`, formações da IA, equilibrado). Antes =
+`DECISION_OVERRIDES='{"OFFSIDE_RUNS":false,"FM_FOULS":false}'` (idêntico ao motor anterior, conferido); depois = as
+duas flags (`offside.md` → "Mistimed runs", `fouls.md` → "Faltas do FM"). Nada calibrado. A partida ainda tem ~319 s de
+jogo com física (etapa 2 em paralelo), então vai também a taxa por segundo de jogo contra os 93 min do FM (5580 s).
+
+| Medida (por partida, os dois times) | FM | antes | depois |
+|---|---|---|---|
+| Impedimentos | 8 | 1,4 | 1,2 |
+| … por segundo de jogo | 0,0014 | 0,0045 | 0,0037 |
+| … por passe | 0,008 | 0,015 | 0,014 |
+| Faltas | 19 | 9,2 | 8,8 |
+| … por segundo de jogo | 0,0034 | 0,029 | 0,028 |
+| … por passe | 0,019 | 0,10 | 0,10 |
+| Faltas sofridas por terço (próprio / meio / último) | 21 / 43 / 36% | 24 / 32 / 44% | 21 / 35 / 44% |
+| Falta em quem conduz / logo depois de receber / segurando | 44 / 17 / 9% | 70 / 2 / 13% | 71 / 1 / 13% |
+| Faltas de contato (sem desarme) | — | 0 | 0,35 |
+| Amarelos / por falta | 3 / 0,16 | 2,1 / 0,23 | 1,8 / 0,20 |
+| Vermelhos | 0 | 0,10 | 0,03 |
+| Pênaltis | 0,2 | 0,45 | 0,33 |
+| Leituras erradas da linha perto dela | — | 0 | 38 |
+| Gols / chutes / passes | 1,5 / 21,5 / 978 | 1,3 / 4,8 / 92 | 1,2 / 3,8 / 86 |
+
+- O atacante não fica mais preso na linha (com a flag, 12,6% dos ticks com algum atacante além dela contra 9%, sonda
+  de 3 partidas), mas o volume de impedimentos não sobe: quem está além da linha costuma estar atrás dos zagueiros, com
+  o passe fechado, e o FM tira os impedimentos sobretudo de corridas feitas no ombro do último zagueiro na hora do
+  passe (movimento sem bola, etapa 15). Por segundo e por passe já passamos do FM; o que falta por partida é a duração
+  da física.
+- Só a leitura da linha, sem projeção (primeira versão), custava ataque: chutes 4,8 → 3,9, gols 1,3 → 1,0 (o atacante
+  ficava no ponto antigo com a linha recuando). Com a projeção pela antecipação: chutes 4,2, gols 1,2, impedimentos 1,1
+  (60 partidas cada; o ruído entre rodadas com outra sequência de sorteios é de ~±0,4 chute).
+- Faltas: o contato no portador quase não dispara (0,35 por partida): quem chega a 2 jd decide desarmar, e o contato
+  só sobra para quem está perto marcando ou depois de um desarme. A distribuição por terço e por contexto quase não
+  muda (já vinha dos desarmes e dribles); falta em quem conduz fica acima do FM (o FM conta a última ação, nós o que
+  ele fazia na hora). O cartão do FM baixa o amarelo por falta de 0,23 para 0,20 (0,16 no FM): nossa mistura tem mais
+  faltas por trás e parando ataques do que a suposta.
+
+
+## Etapa 14: condição física e substituições (só registro)
+
+`fm-targets.ts 12 premier_league --chunks 1` (semente 9000, 90 min); antes = `DECISION_OVERRIDES='{"FM_CONDITION":false}'`.
+A curva é o comportamento da etapa (escala do FM); o volume não foi calibrado.
+
+| Medida | FM | antes | etapa 14 |
+|---|---|---|---|
+| Condição (mediana dos jogadores de linha) 15' / 30' / 45' | 87 / 86,5 / 77,5 | 83,2 / 77,5 / 72,6 | 91,0 / 83,9 / 78,4 |
+| 60' / 75' / 90' | 72,5 / 75 / 73,5 | 73,6 / 68,1 / 62,2 | 75,4 / 73,6 / 71,3 |
+| Goleiros no fim | 96,5 | 66,8 | 97,2 |
+| Trocas da IA por time | 3–4 | 0,1 | 3,6 |
+| Minuto médio da troca | a partir de ~55 (média ~68) | 85 | 61,9 |
+| Condição de quem sai | 55–75 (uma a 86) | 31,6 | 72,2 |
+| Gols / chutes / passes | 1,5 / 21,5 / 978 | 8,0 / 33,2 / 787 | 8,9 / 33,4 / 816 |
+| Faltas / desarmes ganhos | 19 / 17 | 58,6 / 45,5 | 62,1 / 49,3 |
+
+Em 3 partidas, quem jogou os 90' termina entre 66,6 e 74 (mediana 69,5; FM tem mínimo 60): o piso de 60 e o
+espalhamento pequeno do fôlego deixam a ponta de baixo mais alta que a do FM. As trocas saem cedo (quase todos passam
+de 75 % antes de 60') e em pares; o FM espalha de 54' a 89'. A largada a 99 (antes 88) deixa todo mundo menos cansado
+no jogo: mais passes, desarmes e faltas (fica para a calibração da etapa 21).
+
+## Etapa 5: interceptação física (antes / depois)
+
+`bun scripts/fm-targets.ts 12 premier_league --chunks 1 --seed 9000` (90 minutos de física, formações da IA,
+equilibrado). Antes = `DECISION_OVERRIDES='{"PHYSICAL_INTERCEPTION":false}'`, idêntico ao branch antes da etapa (mesmos
+números com as mesmas sementes). Regras em `interception.md` → "Stage 5". Nada calibrado.
+
+| Por partida, os dois times | Antes | Depois | FM |
+|---|---|---|---|
+| Interceptações (domínio + afastar + desvio) | 29,3 | 129,8 (domínio + afastar 72) | 59 |
+| … por minuto de jogo vivo | 0,31 | 1,37 | ~0,76 (978 passes a 0,21/s) |
+| Toques de defensor no passe em voo: domínio / afastou / desviou / passou | — | 38 / 9,5 / 38 / 15% (152) | — |
+| Perdas depois de um passe: no voo / depois | 56 / 44% (107) | 70 / 30% (159) | 56 / 44% |
+| Passe comum ao receptor 0–5 / 5–9 / 9–13 / 13–18 / 18–22 / 22–27 m | 97 / 97 / 98 / 96 / 94 / 97% | 94 / 92 / 90 / 90 / 87 / 80% | (todos) 94 / 92 / 90 / 85 / 87 / 79% |
+| Todos os passes ao receptor (adversário) | 81,0% (13,7%) | 76,3% (17,4%) | 82% (13,5%) |
+| No chão / alto | 89,3 / 21,3% | 81,7 / 22,6% | 92 / 31% |
+| Bola em profundidade ao corredor | 57,4% | 40,4% | — |
+| Passes (todos os tipos) / acerto oficial | 787 / 81,3% | 921 / 75,7% | 978 / 86% |
+| Desarmes ganhos | 45,5 | 68,3 | 17 |
+| Gols / chutes / xG | 8,0 / 33,2 / 10,8 | 6,8 / 27,4 / 7,6 | 1,5 / 21,5 / 3,3 |
+
+- O passe curto ao pé agora erra como no FM por faixa (antes quase nunca era cortado: o dado do corredor só pegava quem
+  estava na linha). Os cortes passam do dobro do FM; a forma defensiva (etapa 15) e a escolha do portador (etapa 8)
+  ainda deixam mais passes por dentro dos defensores.
+- Mais desarmes: os desvios viram bola solta disputada.
+- Custo: ~14 s por partida contra ~13 s antes (o caminho previsto da bola a cada tick do passe em voo).
+
 ## Etapa 8: escolha do portador do FM (antes / depois)
 
 Premier League, 16 partidas com semente (`fm-targets.ts 16 --chunks 1 --seed 9000`, 90 minutos de física, formações da

@@ -117,10 +117,10 @@ function emptyTeamRaw(): TeamRawStats {
     throughBallsLostInDuel: 0, looseBallsWon: 0,
     switchPlays: 0,
     extraTimeMatches: 0, shootoutsWon: 0, penaltiesTaken: 0, penaltiesScored: 0,
-    newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0,
-    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0,
+    newcomers: 0, avgEndEnergySum: 0, fatigueSubstitutions: 0, injuries: 0, injuryStoppages: 0, ballNearTicks: 0, ballNearSum: 0, ballCrowdTicks: 0, outOfPosition: 0, morale: 0, temperament: 0, managerDiscipline: 0, pitchCondition: 0, turfInjuryMult: 0, weatherActive: 0, preparedAgainst: 0, refereeStrictness: 0, refereeErrors: 0, varReviews: 0, varOverturned: 0, aiSubstitutions: 0, tacticalSubstitutions: 0, aiSubMinuteSum: 0, aiSubConditionSum: 0, condition45Sum: 0, condition90Sum: 0, keeperConditionSum: 0,
+    fouls: 0, yellowCards: 0, redCards: 0, penaltiesAwarded: 0, penaltyGoals: 0, offsides: 0, foulsWonOwnThird: 0, foulsWonMidThird: 0, foulsWonFinalThird: 0, foulsWonCarrying: 0, contactFouls: 0, lineMisreads: 0,
     crosses: 0, crossesCompleted: 0, aerialDuels: 0, aerialDuelsWon: 0, headerGoals: 0, longBalls: 0, longBallsCompleted: 0, keeperSorties: 0, keeperSweeps: 0, keeperSmothers: 0, keeperHolds: 0, keeperSpills: 0, distanceCovered: 0, sprints: 0,
-    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0, holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0,
+    holderDecisions: 0, offBallDecisions: 0, defenseDecisions: 0, holderNearTies: 0, offBallNearTies: 0, defenseNearTies: 0, holderEntropySum: 0, offBallEntropySum: 0, defenseEntropySum: 0, holderPressureSum: 0, holderMindDecisions: 0, holderOffArgmax: 0, holderWindows: 0, holderLapses: 0, holderReleases: 0, holderHighPressure: 0, holderReleasesHigh: 0, moveShield: 0, moveShieldHeld: 0, moveCutInside: 0, moveLayOff: 0, moveChip: 0, moveChipGoals: 0, moveRound: 0, moveRoundWon: 0, ballsOutOfPlay: 0, deflections: 0, shotsBlocked: 0, heavyTouches: 0, lineStepUps: 0, lineDrops: 0, pressStandOffs: 0, supportShort: 0, anticipationReads: 0, passesMissed: 0, passesLofted: 0, holderHolds: 0, holderTurns: 0, highBalls: 0, ballAirSeconds: 0, crossPeakSum: 0, crossPeakN: 0, cornerPeakSum: 0, cornerPeakN: 0, longPeakSum: 0, longPeakN: 0, passGround: 0, passDriven: 0, passChip: 0, passHigh: 0, passThroughLow: 0, passThroughHigh: 0, passHeader: 0, passLaunchSpeedSum: 0, passLaunchN: 0, cutTouches: 0, cutControls: 0, cutClears: 0, cutDeflects: 0, cutMisses: 0, cutSpeedSum: 0, chances: 0, clearChances: 0, highlightsMain: 0, highlightsExtended: 0, highlightsFull: 0, highlightSecondsMain: 0, highlightSecondsExtended: 0, highlightSecondsFull: 0, highlightLiveSeconds: 0, holderChoices: 0, holderChoiceCarry: 0, holderChoicePass: 0, holderChoiceTurn: 0, holderChoiceHold: 0, holderChoiceKick: 0, holderStints: 0, holderCandidatesSum: 0, holderVetoedSum: 0, holderSprints: 0, holderBylines: 0, holderSpins: 0, holderFlagHolds: 0,
     corners: 0, throwIns: 0, setPieceRoutines: 0, freeKicks: 0, directFreeKickShots: 0, directFreeKickGoals: 0, setPieceGoals: 0,
     markedTargetShots: 0, markedTargetGoals: 0, manMarkedMinutes: 0, slotStats: [],
   };
@@ -154,6 +154,13 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.penaltiesScored             += src.penaltiesScored;
   dst.avgEndEnergySum             += src.avgEndEnergySum;
   dst.fatigueSubstitutions        += src.fatigueSubstitutions;
+  dst.aiSubstitutions += src.aiSubstitutions;
+  dst.tacticalSubstitutions += src.tacticalSubstitutions;
+  dst.aiSubMinuteSum += src.aiSubMinuteSum;
+  dst.aiSubConditionSum += src.aiSubConditionSum;
+  dst.condition45Sum += src.condition45Sum;
+  dst.condition90Sum += src.condition90Sum;
+  dst.keeperConditionSum += src.keeperConditionSum;
   dst.injuries                    += src.injuries;
   dst.injuryStoppages             += src.injuryStoppages;
   dst.ballNearTicks               += src.ballNearTicks;
@@ -178,6 +185,12 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.penaltiesAwarded            += src.penaltiesAwarded;
   dst.penaltyGoals                += src.penaltyGoals;
   dst.offsides                    += src.offsides;
+  dst.foulsWonOwnThird += src.foulsWonOwnThird;
+  dst.foulsWonMidThird += src.foulsWonMidThird;
+  dst.foulsWonFinalThird += src.foulsWonFinalThird;
+  dst.foulsWonCarrying += src.foulsWonCarrying;
+  dst.contactFouls += src.contactFouls;
+  dst.lineMisreads += src.lineMisreads;
   dst.crosses                     += src.crosses;
   dst.crossesCompleted            += src.crossesCompleted;
   dst.aerialDuels                 += src.aerialDuels;
@@ -254,6 +267,12 @@ function addTeamRaw(dst: TeamRawStats, src: TeamRawStats): void {
   dst.passHeader += src.passHeader;
   dst.passLaunchSpeedSum += src.passLaunchSpeedSum;
   dst.passLaunchN += src.passLaunchN;
+  dst.cutTouches += src.cutTouches;
+  dst.cutControls += src.cutControls;
+  dst.cutClears += src.cutClears;
+  dst.cutDeflects += src.cutDeflects;
+  dst.cutMisses += src.cutMisses;
+  dst.cutSpeedSum += src.cutSpeedSum;
   dst.holderHolds += src.holderHolds;
   dst.holderTurns += src.holderTurns;
   dst.holderChoices += src.holderChoices;
@@ -525,6 +544,12 @@ function runOneMatch(
   teamA.penaltiesScored  += sA.penaltiesScored;  teamB.penaltiesScored  += sB.penaltiesScored;
   teamA.avgEndEnergySum      += sA.avgEndEnergy;         teamB.avgEndEnergySum      += sB.avgEndEnergy;
   teamA.fatigueSubstitutions += sA.fatigueSubstitutions; teamB.fatigueSubstitutions += sB.fatigueSubstitutions;
+  // Stage 14: the AI's changes and the condition curve (`Statistics.ts` → `conditionSample`).
+  for (const [t, st] of [[teamA, sA], [teamB, sB]] as const) {
+    t.aiSubstitutions += st.aiSubstitutions; t.tacticalSubstitutions += st.tacticalSubstitutions;
+    t.aiSubMinuteSum += st.aiSubMinuteSum; t.aiSubConditionSum += st.aiSubConditionSum;
+    t.condition45Sum += st.condition45; t.condition90Sum += st.condition90; t.keeperConditionSum += st.keeperCondition;
+  }
   teamA.injuries += sA.injuries; teamB.injuries += sB.injuries;
   teamA.injuryStoppages += sA.injuryStoppages; teamB.injuryStoppages += sB.injuryStoppages;
   teamA.ballNearTicks += sA.ballNearTicks; teamB.ballNearTicks += sB.ballNearTicks;
@@ -542,6 +567,12 @@ function runOneMatch(
   teamA.penaltiesAwarded += sA.penaltiesAwarded; teamB.penaltiesAwarded += sB.penaltiesAwarded;
   teamA.penaltyGoals     += sA.penaltyGoals;     teamB.penaltyGoals     += sB.penaltyGoals;
   teamA.offsides         += sA.offsides;         teamB.offsides         += sB.offsides;
+  teamA.foulsWonOwnThird += sA.foulsWonOwnThird; teamB.foulsWonOwnThird += sB.foulsWonOwnThird;
+  teamA.foulsWonMidThird += sA.foulsWonMidThird; teamB.foulsWonMidThird += sB.foulsWonMidThird;
+  teamA.foulsWonFinalThird += sA.foulsWonFinalThird; teamB.foulsWonFinalThird += sB.foulsWonFinalThird;
+  teamA.foulsWonCarrying += sA.foulsWonCarrying; teamB.foulsWonCarrying += sB.foulsWonCarrying;
+  teamA.contactFouls += sA.contactFouls; teamB.contactFouls += sB.contactFouls;
+  teamA.lineMisreads += sA.lineMisreads; teamB.lineMisreads += sB.lineMisreads;
   teamA.crosses            += sA.crosses;            teamB.crosses            += sB.crosses;
   teamA.crossesCompleted   += sA.crossesCompleted;   teamB.crossesCompleted   += sB.crossesCompleted;
   teamA.aerialDuels        += sA.aerialDuels;        teamB.aerialDuels        += sB.aerialDuels;
@@ -619,6 +650,12 @@ function runOneMatch(
   teamA.passHeader += sA.passHeader ?? 0; teamB.passHeader += sB.passHeader ?? 0;
   teamA.passLaunchSpeedSum += sA.passLaunchSpeedSum ?? 0; teamB.passLaunchSpeedSum += sB.passLaunchSpeedSum ?? 0;
   teamA.passLaunchN += sA.passLaunchN ?? 0; teamB.passLaunchN += sB.passLaunchN ?? 0;
+  teamA.cutTouches += sA.cutTouches ?? 0; teamB.cutTouches += sB.cutTouches ?? 0;
+  teamA.cutControls += sA.cutControls ?? 0; teamB.cutControls += sB.cutControls ?? 0;
+  teamA.cutClears += sA.cutClears ?? 0; teamB.cutClears += sB.cutClears ?? 0;
+  teamA.cutDeflects += sA.cutDeflects ?? 0; teamB.cutDeflects += sB.cutDeflects ?? 0;
+  teamA.cutMisses += sA.cutMisses ?? 0; teamB.cutMisses += sB.cutMisses ?? 0;
+  teamA.cutSpeedSum += sA.cutSpeedSum ?? 0; teamB.cutSpeedSum += sB.cutSpeedSum ?? 0;
   teamA.holderHolds += sA.holderHolds ?? 0; teamB.holderHolds += sB.holderHolds ?? 0;
   teamA.holderTurns += sA.holderTurns ?? 0; teamB.holderTurns += sB.holderTurns ?? 0;
   teamA.holderChoices += sA.holderChoices ?? 0; teamB.holderChoices += sB.holderChoices ?? 0;

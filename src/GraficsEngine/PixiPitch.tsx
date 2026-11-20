@@ -68,6 +68,8 @@ import { heldBallId, remoteDrawnBall, remotePositions, withFramePositions, type 
 import { normalizeGameState } from "@/GameEngine/Domain/RuntimeLineup";
 import { getPassLanes } from "@/GameEngine/Domain/PassLanes";
 import { playerInterceptionCorridor, computeXG, computeOpenAngle, computeWeightedPressure } from "@/GameEngine/Infrastructure/ActionOutcomes";
+import { interceptReachOf } from "@/GameEngine/Domain/PhysicalInterception";
+import { DECISION_FLAGS } from "@/GameEngine/Configs/DecisionConfig";
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
@@ -5099,9 +5101,21 @@ export function PixiPitch({
           }
 
           if (ovl.interceptionCorridors && ballHolder) {
+            // Stage 5 (`interception.md`): with the physical interception, each defender's reach across the ball and,
+            // while a physical pass flies, the defenders running to the point of its path they reach in time (green:
+            // spare time, amber: just in time) — the reachable zones. Without it, the old corridors.
+            const physCut = DECISION_FLAGS.PHYSICAL_INTERCEPTION && DECISION_FLAGS.PASS_PHYSICS && DECISION_FLAGS.BALL_3D;
+            for (const run of physCut ? stateRef.current.interceptRuns ?? [] : []) {
+              const pl = stateRef.current.players.find(q => q.id === run.playerId);
+              if (!pl) continue;
+              const a = toPixel(pl.x, pl.y), b = toPixel(run.x, run.y);
+              const col = run.margin > 0.3 ? 0x4ade80 : 0xfbbf24;
+              passLinesGfx.moveTo(a.px, a.py).lineTo(b.px, b.py).stroke({ width: 2, color: col, alpha: 0.9 });
+              passLinesGfx.circle(b.px, b.py, 4).fill({ color: col, alpha: 0.9 });
+            }
             for (const player of stateRef.current.players) {
               if (player.team === ballHolder.team) continue;
-              const corridorYds = playerInterceptionCorridor(player);
+              const corridorYds = physCut ? interceptReachOf(player.runtimeStats.withoutBall.tackling ?? 0.5) : playerInterceptionCorridor(player);
               const corridorPx  = corridorYds * m.scale;
               const { px: ppx, py: ppy } = toPixel(player.x, player.y);
               passLinesGfx

@@ -129,3 +129,13 @@ export function matchStartEnergy(fitness: number): number {
   const raw = FITNESS.FITNESS_REF + FITNESS.START_COMPRESSION * (fitness - FITNESS.FITNESS_REF);
   return Math.min(100, Math.max(0, raw));
 }
+
+/**
+ * The full engine's kick-off condition on FM's scale (engine rebuild stage 14, `fitness.md` → "FM condition"):
+ * `matchStartEnergy(fitness)` + `FITNESS.CONDITION_OFFSET`, so a normal matchday (fitness `FITNESS_REF` 88) kicks off
+ * at 99 like FM's 98–100 and a tired squad nearer FM's 83–88 minimum. The compression and the relative gap are the
+ * ones of `matchStartEnergy`; the quickSim and the lineup selector keep `matchStartEnergy` (refit at stage 21).
+ */
+export function matchStartCondition(fitness: number): number {
+  return Math.min(100, Math.max(0, matchStartEnergy(fitness) + FITNESS.CONDITION_OFFSET));
+}

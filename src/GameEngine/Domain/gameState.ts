@@ -1,6 +1,6 @@
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
-import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome } from '@/GameEngine/types';
+import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun } from '@/GameEngine/types';
 import type { SlotInstruction } from '@/types/tacticsTypes';
 import { effectiveInstruction, resolveSlotTuning, ROLE_VARIANTS } from '@/GameEngine/Configs/RoleVariantConfig';
 import { isAerialKind } from '@/GameEngine/types';
@@ -44,7 +44,9 @@ import { advanceLooseBall, advancePassBall, ballEnv, ballWithinReach, passKey, s
 import { buildAerialLaunch, buildGroundLaunch, loftVzYd, passTypeOf, vzForPeak, weightedSpeed } from '@/GameEngine/Domain/PassPhysics';
 import { PASS_PHYSICS, YD_PER_M_PASS } from '@/GameEngine/Configs/PassPhysicsConfig';
 import { BALL_PHYSICS } from '@/GameEngine/Configs/BallPhysicsConfig';
-import { reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { predictPath, reachHeight } from '@/GameEngine/Domain/Ball3D';
+import { interceptPoint, interceptReachOf, resolveTouch, touchChances, type PathPoint } from '@/GameEngine/Domain/PhysicalInterception';
+import { INTERCEPT } from '@/GameEngine/Configs/InterceptConfig';
 import {
   THROUGH_BALL_CONFIG,
   CHASE_LOOSE_BALL_WEIGHT_ATTACK,
@@ -90,7 +92,7 @@ import { computeDefensiveShapeAnchor, setBackLineX } from '@/GameEngine/Domain/D
 import type { LooseBallCause, BackLineState } from '@/GameEngine/types';
 import { chipMove, chipTargetY, roundKeeperSkill } from '@/GameEngine/Domain/HolderMoves';
 import { getInterceptionPerpDist, tackleAngleModifier, type RelativePosition } from '@/GameEngine/Domain/PositionalAwareness';
-import { foulChance, cardRoll, isClearChance, type FoulKind } from '@/GameEngine/Domain/Fouls';
+import { foulChance, cardRoll, isClearChance, isPromisingAttack, foulThird, type FoulKind, type FoulContextKind } from '@/GameEngine/Domain/Fouls';
 import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
 import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { getDefenseConfig } from '@/GameEngine/Configs/DefenseConfig';
@@ -106,6 +108,8 @@ import type { VarApply, VarReviewState } from '@/GameEngine/types';
 import { withMoraleExecution } from '@/Domain/morale/morale';
 import { settlingMult, withSettlingExecution } from '@/Domain/settling/settling';
 import { computeOffsideLine } from '@/GameEngine/Domain/Offside';
+import { refreshLineRead, perceivedLine } from '@/GameEngine/Domain/OffsideRuns';
+import { OFFSIDE_RUNS } from '@/GameEngine/Configs/OffsideRunsConfig';
 import { KINEMATICS_CONFIG } from '@/GameEngine/Configs/KinematicsConfig';
 import { etaTo as kinEta, stepAlong, stepToward, type KinStep } from '@/GameEngine/Domain/Kinematics';
 import { enumerateCandidateCells } from '@/GameEngine/Domain/ThroughBallCells';
@@ -121,7 +125,8 @@ import {
   type InjuryFactors, type InjurySeverity,
 } from '@/Domain/injury/injury';
 import { detectTeamIntent } from '@/GameEngine/Domain/IntentDetection';
-import { drainMultiplier as loadDrainMultiplier, matchStartEnergy } from '@/Domain/fitness/fitness';
+import { drainMultiplier as loadDrainMultiplier, matchStartCondition, matchStartEnergy } from '@/Domain/fitness/fitness';
+import { conditionDrainMult, halfTimeCondition, outfieldMedianCondition } from '@/GameEngine/Domain/Condition';
 import { matchRandom, loadMatchRng, matchRngState, newMatchSeed } from '@/GameEngine/Infrastructure/MatchRng';
 
 // ── Offside config ────────────────────────────────────────────────────────────
@@ -147,6 +152,11 @@ const PRESS_INTERCEPT_MAX_LOOKAHEAD = 14;
 export const LEGACY_CLOCK_SCALE = 18;
 
 /** Game-seconds the match clock advances per physical second of simulation (1 = real time, the default). */
+/** Kick-off condition from the persisted fitness: FM's scale under `FM_CONDITION` (stage 14), else `matchStartEnergy`. */
+function startConditionOf(fitness: number): number {
+  return DECISION_FLAGS.FM_CONDITION ? matchStartCondition(fitness) : matchStartEnergy(fitness);
+}
+
 export function clockScaleOf(state: Pick<GameState, 'clockScale'>): number {
   return state.clockScale ?? 1;
 }
@@ -324,7 +334,7 @@ function buildGamePlayerForSlot(
   // only. `TestCases.ts` scenarios that want a genuinely fresh 100-energy match (most of them —
   // this default is for engine tuning, not fitness testing) give their roster an explicit
   // `seasonLog.fitness: 100` for that reason.
-  const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
+  const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
   return {
     id:               engineId,
     rosterId:         rp.id,
@@ -398,7 +408,7 @@ function buildTeam(
     ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp));
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
-    const energy = matchStartEnergy(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
+    const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
     // Bench players have placeholder positions — overwritten when they sub in
     const dummyPos = { x: 0, y: 0 };
     const dummyBounds = { minX: 0, maxX: PITCH_LENGTH, minY: 0, maxY: PITCH_WIDTH };
@@ -540,7 +550,8 @@ export function performSubstitution(
   team: TeamId,
   outPlayerId: number,
   inPlayerId: number,
-  reason?: 'fatigue' | 'injury',
+  reason?: import('../types').SubstitutionReason,
+  why?: string,
 ): GameState {
   const bench = team === 'A' ? state.benchA : state.benchB;
   const outPlayer = state.players.find(p => p.id === outPlayerId && p.team === team);
@@ -592,9 +603,14 @@ export function performSubstitution(
     playerInName:      inPlayer.name,
     playerInRosterId:  inPlayer.rosterId,
     matchMinute: minute,
+    ...(reason ? { reason } : {}),
+    ...(why ? { why } : {}),
   };
 
-  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason });
+  gameBus.emit('playerSubstituted', { outId: outPlayerId, inId: inPlayerId, team, outEnergy: outPlayer.energy, reason, minute });
+  if (reason === 'fatigue' || reason === 'tactical') {
+    debugLog('condition', `AI sub ${team}: ${inPlayer.name} for ${outPlayer.name} (${reason}${why ? `, ${why}` : ''})`, { playerId: outPlayerId, data: { minute, outEnergy: Math.round(outPlayer.energy), inEnergy: Math.round(inPlayer.energy) } });
+  }
 
   // Transfer ball if outgoing player held it
   let ballHolderId = state.ballHolderId;
@@ -648,7 +664,7 @@ function flushPendingSubs(state: GameState, team: TeamId): GameState {
   for (const req of pending) {
     const subsLeft = team === 'A' ? s.subsRemainingA : s.subsRemainingB;
     if (subsLeft <= 0) break;
-    s = performSubstitution(s, team, req.outId, req.inId, req.reason);
+    s = performSubstitution(s, team, req.outId, req.inId, req.reason, req.why);
   }
 
   return s;
@@ -1553,6 +1569,48 @@ export function maybeFoul(
 }
 
 /**
+ * Stage 13 (`FOUL_CONFIG.FM`): an opponent within `CONTACT_RANGE` of the holder (out of recovery, not a set-piece
+ * taker) leans on him. Contact moments come at `CONTACT_RATE` per second of play (× what the holder is doing); each
+ * is a foul check of kind `contact`, the holder himself the offender `HOLDER_OFFENDER_SHARE` of the time. Returns the
+ * restart state on a foul, null otherwise. No dice when nobody is that close.
+ */
+function contactFoul(s: GameState, holder: GamePlayer, dt: number): GameState | null {
+  if (!isLivePhase(s.matchPhase) || s.setPiece || s.shot || s.looseBall || s.varReview) return null;
+  if (holder.role === 'GK') return null;
+  const F = FOUL_CONFIG.FM;
+  let near: GamePlayer | null = null;
+  let best = F.CONTACT_RANGE * F.CONTACT_RANGE;
+  for (const p of s.players) {
+    if (p.team === holder.team || p.role === 'GK' || isPlayerInRecovery(p)) continue;
+    const d = distSq(p, holder);
+    if (d <= best) { best = d; near = p; }
+  }
+  if (!near) return null;
+  const dec = s.decisions[holder.id];
+  const ctx: 'carry' | 'reception' | 'hold' = holder.justReceivedTicks > 0 ? 'reception'
+    : (dec?.type === 'dribble' || (dec?.type === 'carry' && dec.move !== 'shield' && !dec.step)) ? 'carry' : 'hold';
+  const rate = F.CONTACT_RATE * F.CONTEXT_MULT[ctx];
+  if (matchRandom() >= 1 - Math.exp(-rate * dt)) return null;
+  const holderFouls = matchRandom() < F.HOLDER_OFFENDER_SHARE;
+  const [offender, fouled] = holderFouls ? [holder, near] : [near, holder];
+  const fc = foulCheck(s, offender, fouled, 'contact', false);
+  if (!fc.foul) return null;
+  gameBus.emit('contactFoul', { offenderId: offender.id, fouledId: fouled.id, team: offender.team, context: holderFouls ? 'off_ball' : ctx });
+  return { ...fc.foul, tackleCooldown: TACKLE_COOLDOWN };
+}
+
+/** What the fouled player was doing when fouled (stage 13; FM's "last action before the foul"). */
+function foulContextOf(state: GameState, offender: GamePlayer, fouled: GamePlayer, kind: FoulKind): FoulContextKind {
+  if (kind === 'duel') return 'loose';
+  if (kind === 'aerial') return 'aerial';
+  if (fouled.id !== state.ballHolderId || offender.id === state.ballHolderId) return 'off_ball';
+  if (fouled.justReceivedTicks > 0) return 'reception';
+  const dec = state.decisions[fouled.id];
+  if (kind === 'dribble' || dec?.type === 'dribble' || (dec?.type === 'carry' && dec.move !== 'shield' && !dec.step)) return 'carry';
+  return 'hold';
+}
+
+/**
  * `maybeFoul` with the state of a challenge that was not whistled: `foul` = the restart state (a foul, or a
  * phantom penalty), else `null` and `state` carries what changed anyway (a missed penalty is logged as a referee
  * error, `var.md`). Without a referee `state` is the input object itself.
@@ -1570,7 +1628,7 @@ export function foulCheck(
   // Tackle: real approach angle. Dribble: head-on when the defender won it, from behind when he was
   // beaten and chases back (a cynical stop). Loose-ball duel: shoulder to shoulder.
   const angle: RelativePosition =
-    kind === 'tackle'  ? angleFromModifier(tackleAngleModifier(offender, fouled)) :
+    kind === 'tackle' || kind === 'contact' ? angleFromModifier(tackleAngleModifier(offender, fouled)) :
     kind === 'dribble' ? (tackleWon ? 'front' : 'behind') :
                          'side';
   const onYellow = yellowsOf(state, offender.id) > 0;
@@ -1591,6 +1649,8 @@ export function foulCheck(
   });
   const minute = matchMinute(state);
   const spot = { x: fouled.x, y: fouled.y };
+  const third = foulThird(spot.x, fouled.attackDir);
+  const context = foulContextOf(state, offender, fouled, kind);
   if (rng() >= chance) {
     // Not a foul — but a challenge in the box can still be whistled as a penalty (`var.md` §2).
     if (!inOwnBox || !refereeErrs(state, 'phantom_penalty', rng)) return { foul: null, state };
@@ -1612,10 +1672,10 @@ export function foulCheck(
   state = errState;
   gameBus.emit('foul', {
     offenderId: offender.id, fouledId: fouled.id, team: offender.team, kind,
-    x: spot.x, y: spot.y, inBox: inOwnBox, minute,
+    x: spot.x, y: spot.y, inBox: inOwnBox, minute, third, context,
   });
-  debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
-    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament), refMult: refereeFoulMult(strictness), discMult: attributeReduce(discipline) },
+  debugLog('foul', `Foul by ${offender.name} on ${fouled.name} (${kind}, ${angle}, ${context}, third ${third}${inOwnBox ? ', IN THE BOX' : ''}) — chance ${(chance * 100).toFixed(0)}%`, {
+    playerId: offender.id, data: { fouledId: fouled.id, kind, angle, context, third, chance, x: spot.x, y: spot.y, tempMult: temperamentFoulMult(temperament), refMult: refereeFoulMult(strictness), discMult: attributeReduce(discipline) },
   });
 
   let s: GameState = {
@@ -1623,7 +1683,9 @@ export function foulCheck(
     players: state.players.map(p => (p.id === offender.id ? { ...p, recoveryTime: DUEL_TACKLE_FAILED_RECOVERY } : p)),
   };
   const opponents = s.players.filter(p => p.team === offender.team && p.id !== offender.id);
-  let { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness, discipline }, rng);
+  const fm = DECISION_FLAGS.FM_FOULS;
+  const promising = fm && isPromisingAttack(fouled, offender, context === 'carry' || context === 'reception' || context === 'hold');
+  let { card } = cardRoll({ angle, clearChance: isClearChance(fouled, opponents), onYellow, temperament, strictness, discipline, fm, promising }, rng);
   // Wrong card (`var.md` §2): a yellow shown as a straight red, a straight red shown as a yellow.
   if (card === 'yellow' && !onYellow && refereeErrs(s, 'wrong_red', rng)) {
     const corrected = varFixes(s, 'wrong_red', rng);
@@ -1656,7 +1718,7 @@ function phantomPenalty(
   let s = recordRefereeError(state, 'phantom_penalty', offender.team, offender.id, corrected, minute);
   gameBus.emit('foul', {
     offenderId: offender.id, fouledId: fouled.id, team: offender.team, kind,
-    x: spot.x, y: spot.y, inBox: true, minute,
+    x: spot.x, y: spot.y, inBox: true, minute, third: foulThird(spot.x, fouled.attackDir), context: foulContextOf(state, offender, fouled, kind),
   });
   s = {
     ...s,
@@ -2272,8 +2334,8 @@ function switchSides(
 ): GameState {
   state = clearAllChasers(state);
   const switched: GamePlayer[] = state.players.map(p => {
-    const recoveryRate = (0.30 + (p.stamina / 10) * 0.30) * recoveryScale; // 30% at stamina 0 → 60% at stamina 10
-    const recoveredEnergy = Math.min(p.startEnergy, p.energy + (p.startEnergy - p.energy) * recoveryRate);
+    // FM: +2 at the break (stage 14, `Condition.ts`); flag off: 30–60% of the gap to the kick-off value.
+    const recoveredEnergy = halfTimeCondition(p, recoveryScale);
     const energyChanged = recoveredEnergy !== p.energy;
     return {
       ...p,
@@ -3595,6 +3657,124 @@ function passerTeamOf(s: GameState, p: PassState): TeamId | undefined {
   return s.players.find(q => q.id === p.fromId)?.team;
 }
 
+// ── Stage 5: physical interception (`interception.md` → "Stage 5") ────────────
+
+/** Stage 5: physical passes are cut by defenders reaching their path (needs the physical pass). */
+function physicalInterceptionOn(): boolean {
+  return DECISION_FLAGS.PHYSICAL_INTERCEPTION && passPhysicsOn();
+}
+
+/** How far across the ball a defender gets a foot to it (yd): his body + a leg put in by his tackling. */
+function interceptReach(p: GamePlayer): number {
+  return interceptReachOf(p.runtimeStats.withoutBall.tackling ?? 0.5);
+}
+
+const ownGoalXOf = (p: GamePlayer) => (p.attackDir === 1 ? 0 : PITCH_LENGTH);
+
+/** The predicted path of the ball of a physical pass from now (times from now), until it stops or leaves the pitch. */
+function physicalPassPath(s: GameState): PathPoint[] {
+  const b = s.ball!;
+  const pts = predictPath({ x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz }, INTERCEPT.PLAN_HORIZON_S, INTERCEPT.PLAN_STEP_S, ballEnv(s.weather));
+  const out: PathPoint[] = [];
+  for (let i = 1; i < pts.length; i++) {
+    const q = pts[i]!;
+    if (q.x < 0 || q.x > PITCH_LENGTH || q.y < 0 || q.y > PITCH_WIDTH) break;
+    out.push({ x: q.x, y: q.y, z: q.z, t: i * INTERCEPT.PLAN_STEP_S });
+    if (q.z <= 1e-6 && Math.hypot(q.vx, q.vy) < PASS_PHYSICS.STOP_SPEED_YD) break;
+  }
+  return out;
+}
+
+/**
+ * The defenders of a physical pass's flight who reach a point of its path in time (before the receiver or the runner
+ * takes it): the earliest INTERCEPT.MAX_RUNNERS run there. A keeper only inside his own box.
+ */
+function planInterceptRuns(s: GameState, pass: PassState): InterceptRun[] {
+  const passerTeam = passerTeamOf(s, pass);
+  if (!passerTeam || !s.ball) return [];
+  const path = physicalPassPath(s);
+  if (path.length === 0) return [];
+  const mateId = pass.kind === 'through' ? pass.intendedRunnerId : pass.toId;
+  const mate = mateId !== null ? s.players.find(p => p.id === mateId) : undefined;
+  let cutoff = Infinity;
+  if (mate) {
+    const reach = pass.kind === 'through' ? PASS_PHYSICS.MOVING_TOUCH_YD : receiveReach(mate);
+    const m = interceptPoint(path, { x: mate.x, y: mate.y, speed: chaseSprintSpeed(mate), reach, reaction: 0, maxZ: reachHeight(mate.role === 'GK') });
+    if (m) cutoff = m.t;
+  }
+  const beaten = new Set(pass.beaten ?? []);
+  const runs: InterceptRun[] = [];
+  for (const p of s.players) {
+    if (p.team === passerTeam || beaten.has(p.id) || isPlayerInRecovery(p)) continue;
+    const dec = p.decisionMemory?.decision;
+    const running = dec?.type === 'chase_loose_ball' && !!dec.intercept;
+    const antMult = DECISION_FLAGS.ANTICIPATION_PRESS ? anticipationInterceptMult(p) : 1;
+    const plan = interceptPoint(path, {
+      x: p.x, y: p.y, speed: chaseSprintSpeed(p), reach: interceptReach(p),
+      reaction: running ? 0 : INTERCEPT.REACTION_S / antMult, maxZ: reachHeight(p.role === 'GK'),
+    }, cutoff);
+    if (!plan) continue;
+    if (p.role === 'GK' && !isInGoalScoreArea(plan.x, plan.y, ownGoalXOf(p))) continue;
+    runs.push({ playerId: p.id, team: p.team, x: plan.x, y: plan.y, z: plan.z, t: plan.t, margin: plan.margin });
+  }
+  runs.sort((a, b) => a.t - b.t || b.margin - a.margin);
+  return runs.slice(0, INTERCEPT.MAX_RUNNERS);
+}
+
+/**
+ * A defender touched a physical pass on its way (no dice for the touch to happen, only for what it does): he controls
+ * it, clears it, deflects it, or it runs past him.
+ */
+function resolveInterceptTouch(s: GameState, pass: PassState, d: GamePlayer): TickResult {
+  const b = s.ball!;
+  const speedYd = Math.hypot(b.vx, b.vy);
+  const reach = interceptReach(d);
+  // How far from his body the ball passes: its closest approach on its line, not where it entered his reach.
+  const across = speedYd > 1e-3 ? Math.abs(((d.x - b.x) * b.vy - (d.y - b.y) * b.vx) / speedYd) : Math.hypot(b.x - d.x, b.y - d.y);
+  const offset = Math.min(1, across / Math.max(0.1, reach));
+  const keeperHands = d.role === 'GK' && isInGoalScoreArea(b.x, b.y, ownGoalXOf(d));
+  const fromOwnGoal = Math.abs(b.x - ownGoalXOf(d));
+  const chances = touchChances({
+    touch: d.runtimeStats.withBall.firstTouch, offset, speedMs: speedYd / YD_PER_M_PASS, z: b.z, keeperHands, fromOwnGoal,
+  });
+  const outcome = resolveTouch(chances, matchRandom);
+  const kind: 'regular' | 'through' = pass.kind === 'through' ? 'through' : 'regular';
+  s = { ...s, players: applyStaminaCost(s.players, d.id, 'interception') };
+  const dNow = s.players.find(p => p.id === d.id) ?? d;
+  gameBus.emit('interceptionTouch', {
+    player: d.id, team: d.team, passerId: pass.fromId, kind, outcome,
+    speedMs: speedYd / YD_PER_M_PASS, zM: b.z / YD_PER_M_PASS, offset, control: chances.control, flight: b.elapsed,
+  });
+  gameBus.emit('interception', { player: d.id, success: outcome !== 'miss', chance: chances.control });
+  if (isDebugEnabled()) {
+    const verb = outcome === 'control' ? 'cuts out' : outcome === 'clear' ? 'clears' : outcome === 'deflect' ? 'deflects' : 'misses';
+    debugLog('interception', `${d.name} ${verb} the pass (${(speedYd / YD_PER_M_PASS).toFixed(1)} m/s, ${(b.z / YD_PER_M_PASS).toFixed(1)} m, offset ${offset.toFixed(2)}, control ${(chances.control * 100).toFixed(0)}%)`, { playerId: d.id });
+  }
+  if (outcome === 'miss') {
+    // The ball runs past him: he can't touch it again; it flies on.
+    const ph = pass.physics!;
+    const next: PassState = { ...pass, beaten: [...(pass.beaten ?? []), d.id], t: Math.min(0.99, b.elapsed / Math.max(0.05, ph.T)) };
+    return { state: { ...s, pass: next }, passCompleted: false, tackled: false, goalScored: null };
+  }
+  if (kind === 'through') gameBus.emit('throughBallLostInFlight', { player: pass.fromId, interceptorId: d.id });
+  else gameBus.emit('passFailed', { player: pass.fromId, toId: pass.toId ?? pass.fromId });
+  if (outcome === 'deflect') {
+    const dir = scatterDirection(b.vx, b.vy, INTERCEPT.DEFLECT_MAX_DEG);
+    const v = speedYd * INTERCEPT.DEFLECT_KEEP;
+    return { state: runLoose(s, dNow, b.x, b.y, dir.x * v, dir.y * v, 'deflection', true), passCompleted: false, tackled: true, goalScored: null };
+  }
+  if (outcome === 'clear') {
+    const dist = INTERCEPT.CLEAR_MIN_YD + matchRandom() * INTERCEPT.CLEAR_SPAN_YD;
+    return { state: clearanceBall({ ...s, pass: null }, dNow, { x: b.x, y: b.y }, dist, matchRandom), passCompleted: false, tackled: true, goalScored: null };
+  }
+  const prevHolderId = s.ballHolderId;
+  const players = s.players.map(p => (p.id === d.id ? { ...p, x: b.x, y: b.y } : p));
+  return {
+    state: onPossessionTransfer({ ...s, players, pass: null, ballHolderId: d.id, possessionTime: 0, lastPasserId: null }, prevHolderId),
+    passCompleted: false, tackled: true, goalScored: null,
+  };
+}
+
 /** Report a physical launch (`Statistics.ts` per type, `/lab`, `fmTargets.ts`). */
 function emitPassLaunched(holder: GamePlayer, p: PassState): void {
   const ph = p.physics;
@@ -4490,13 +4670,13 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   const inSubsWindow = s.matchPhase === 'secondHalf' || s.matchPhase === 'extraTimeFirst' || s.matchPhase === 'extraTimeSecond';
   if (inSubsWindow && shouldCheckAiSubs(s.matchTime, dt * clockScaleOf(s))) {
     // Team B is always AI in live matches; `aiTeams` can override for headless sim
-    const subsB = evaluateAiSubstitutions(s, 'B');
+    const subsB = evaluateAiSubstitutions(s, 'B', matchMinute(s));
     if (subsB.length > 0) {
       s = { ...s, pendingSubsB: [...s.pendingSubsB, ...subsB] };
     }
     // The human side's assistant (manager banned or sent off, `var.md` §4) makes the changes by the same rule.
     if (s.autoSubs?.A) {
-      const subsA = evaluateAiSubstitutions(s, 'A');
+      const subsA = evaluateAiSubstitutions(s, 'A', matchMinute(s));
       if (subsA.length > 0) s = { ...s, pendingSubsA: [...s.pendingSubsA, ...subsA] };
     }
   }
@@ -4565,6 +4745,32 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   }
   s = { ...s, throughBallCellsCache: nextTbCache };
 
+  // ── Offside line reads (stage 13, `OffsideRuns.ts`) ──────────────────────
+  // An attacker reads the line every few tenths of a second with an error; his own movement and off-ball choices use
+  // that read (`lineFor`), so a stepping-up line or a misread leaves him past it. The call itself uses the true line.
+  if (DECISION_FLAGS.OFFSIDE_RUNS && isLivePhase(s.matchPhase)) {
+    let changed = false;
+    const players = s.players.map(p => {
+      if (p.team !== attackingTeam || p.role === 'GK') return p.lineRead ? (changed = true, { ...p, lineRead: undefined }) : p;
+      const read = refreshLineRead(p, offsideLine, s.matchTime, clockScaleOf(s));
+      if (read === p.lineRead) return p;
+      changed = true;
+      // Counted once per misjudged spell: a misread read after a good one (or his first read).
+      const bad = (r: typeof read) => !!r && (r.err > ATTACK_CONFIG.OFFSIDE_MARGIN || r.lapse);
+      // Only near the line, where a misread can be offside (within MISREAD_NEAR_YD of it).
+      if (read && offsideLine !== null && bad(read) && !bad(p.lineRead)
+        && Math.abs(p.x - offsideLine) <= OFFSIDE_RUNS.MISREAD_NEAR_YD) {
+        gameBus.emit('lineMisread', { playerId: p.id, team: p.team, err: read.err, lapse: read.lapse });
+        debugLog('offside', `${p.name} misreads the line by ${read.err.toFixed(1)} yd${read.lapse ? ' (lapse)' : ''}`, { playerId: p.id, data: { lineX: read.lineX, err: read.err } });
+      }
+      return { ...p, lineRead: read };
+    });
+    if (changed) s = { ...s, players };
+  }
+  const lineFor = (p: GamePlayer): number | null => (DECISION_FLAGS.OFFSIDE_RUNS && p.team === attackingTeam && p.lineRead
+    ? perceivedLine(p.lineRead, p.attackDir, s.matchTime)
+    : offsideLine);
+
   // ── Compute decisions with short-term memory ───────────────────────────
   // Each player has a DecisionPath (BALL_HOLDER | TEAM_WITH_BALL | TEAM_WITHOUT_BALL).
   // When the path is unchanged and commitTicks > 0, the previous decision is reused.
@@ -4591,7 +4797,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   if (!chaseTarget && THROUGH_BALL_CONFIG.RACE_LOSS_RECOVERY > 0) {
     const losers = s.players.filter(p => {
       const d = p.decisionMemory?.decision;
-      return p.team !== holder.team && d?.type === 'chase_loose_ball' && !d.meet;
+      return p.team !== holder.team && d?.type === 'chase_loose_ball' && !d.meet && !d.intercept;
     });
     if (losers.length > 0) {
       const ids = new Set(losers.map(p => p.id));
@@ -4617,6 +4823,10 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     return { x: b.x + ux * a, y: b.y + uy * a };
   };
 
+  // Stage 5 (`interception.md`): the defenders who reach a point of a physical pass's path in time run to it.
+  const interceptRuns = s.pass && physicalInterceptionOn() && isPhysicalGroundPass(s, s.pass) ? planInterceptRuns(s, s.pass) : [];
+  const runOf = new Map(interceptRuns.map(r => [r.playerId, r]));
+
   // Decision telemetry (`decisions.md`): only while somebody listens. The situation (the ball's third and channel, the
   // holder's pressure) is computed once per tick; no dice, nothing here feeds back into a decision.
   const telemetry = gameBus.has('holderDecision') || gameBus.has('offBallDecision') || gameBus.has('defensiveDecision');
@@ -4637,6 +4847,14 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         : 'TEAM_WITHOUT_BALL';
 
     const mem = p.decisionMemory ?? EMPTY_DECISION_MEMORY;
+
+    const run = runOf.get(p.id);
+    if (run && !isBallHolder) {
+      const cut: PlayerDecision = { type: 'chase_loose_ball', toX: run.x, toY: run.y, intercept: true };
+      newDecisions[p.id] = cut;
+      updatedMemory[p.id] = { path: currentPath, decision: cut, commitTicks: COMMIT_TICKS.chase_loose_ball };
+      continue;
+    }
 
     // ── Pin chasers during through-ball flight + loose-ball wait ──────────
     // Override anything else: if this player was committed to chase, refresh
@@ -4709,7 +4927,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
 
     // Fresh decision — only the holder uses tbCachedCells (no-op for everyone else)
     const fresh = decide(
-      p, holder, isBallHolder, inFlight, s.players, offsideLine, s.possessionTime,
+      p, holder, isBallHolder, inFlight, s.players, lineFor(p), s.possessionTime,
       s.setPiece, crowdGrid, s.teamIntent,
       isBallHolder ? tbCachedCells : null,
       s.matchTime,
@@ -4770,6 +4988,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   });
 
   s = { ...s, decisions: newDecisions, players: playersWithMemory };
+  if (interceptRuns.length > 0) s = { ...s, interceptRuns };
+  else if (s.interceptRuns) s = { ...s, interceptRuns: undefined };
 
   if (shouldDrainStamina(s)) {
     const weatherDrain = weatherEffectOf(s.weather).drain;
@@ -4781,7 +5001,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const dec = newDecisions[pl.id];
         const action = resolveStaminaAction(pl, s.ballHolderId, holder.team, dec);
         const energy = consumeEnergy(
-          pl.energy, pl.stamina, action, dt * clockScaleOf(s), (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain,
+          pl.energy, pl.stamina, action, dt * clockScaleOf(s),
+          (pl.drainMultiplier ?? 1) * tacticDrainMult(pl.team, action) * weatherDrain * conditionDrainMult(pl),
         );
         if (energy === pl.energy) return p;
         // Continuous fatigue (spec §1 "Na partida"): recompute runtimeStats once the energy has
@@ -4794,6 +5015,17 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         return { ...pl, energy, runtimeStats, fatigueBaselineEnergy };
       }),
     };
+  }
+
+  // Condition by minute (stage 14, `Condition.ts`): one sample per team at every new match minute of live play.
+  if (isLivePhase(s.matchPhase) && (matchMinute(s) !== matchMinute(state) || s.matchPhase !== state.matchPhase)) {
+    const minute = matchMinute(s);
+    for (const team of ['A', 'B'] as const) {
+      const mine = s.players.filter(p => p.team === team);
+      if (mine.length === 0) continue;
+      const keeper = mine.find(p => p.role === 'GK');
+      gameBus.emit('conditionSample', { minute, team, median: outfieldMedianCondition(mine), keeper: keeper ? keeper.energy : null });
+    }
   }
 
   // Man-marking time (player instructions): the marked targets, for the marked-target statistics.
@@ -4919,10 +5151,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         let tx = pushedBaseX + (rawX - pushedBaseX) * pull;
         const ty = base.y + (rawY - base.y) * pull;
 
-        // Clamp to stay onside
-        if (offsideLine !== null) {
+        // Clamp to stay onside — on his read of the line (stage 13), not the true one.
+        const ownLine = lineFor(player);
+        if (ownLine !== null) {
           const fwd   = player.attackDir;
-          const safeX = offsideLine - fwd * ATTACK_CONFIG.OFFSIDE_MARGIN;
+          const safeX = ownLine - fwd * ATTACK_CONFIG.OFFSIDE_MARGIN;
           if ((tx - safeX) * fwd > 0) {
             tx = safeX;
           }
@@ -4945,7 +5178,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
       } else {
         const committedMarkId = decision?.type === 'track_mark' ? decision.markTargetId : undefined;
         const markTargetId = committedMarkId ?? markAssignments.get(player.id);
-        target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, offsideLine, markTargetId, s.possessionTime, shapeBallPos);
+        target = computeTargetPosition(player, phase, ballPos, s.players, formation, s.ballHolderId, decision?.type, lineFor(player), markTargetId, s.possessionTime, shapeBallPos);
       }
 
       // Man-marker with his team on the ball: he stays home on his man (`stayHomeTarget`).
@@ -5273,6 +5506,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         }
       }
     }
+    // ── Contact foul (stage 13, `fouls.md` → "FM fouls"): no tackle this tick, somebody leaning on the holder ──
+    if (DECISION_FLAGS.FM_FOULS) {
+      const contact = contactFoul(s, s.players.find(p => p.id === s.ballHolderId)!, dt);
+      if (contact) return { state: contact, passCompleted: false, tackled: false, goalScored: null };
+    }
   }
 
   // ── 3. Execute holder decision (carry / shoot / pass) ────────────────────
@@ -5489,7 +5727,9 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
   // scaled by how close they are to the passing lane (perpDist) and pass speed.
   // For through balls the "target" is the landing position, not a player.
   // High balls (cross / long ball) fly over everyone — contested only where they land.
-  if (s.tackleCooldown === 0 && !aerialPass && !overHeads) {
+  // Stage 5: a physical ground pass has no interception dice — defenders touch the ball on its path (below).
+  const physCut = physGround && physicalInterceptionOn();
+  if (s.tackleCooldown === 0 && !aerialPass && !overHeads && !physCut) {
     const ballPos      = getBallPos(s);
     const targetPos    = activePass.kind === 'through' || activePass.toId === null || activePass.miss
       ? { x: activePass.toX, y: activePass.toY }
@@ -5565,7 +5805,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
     const catchers: PassCatcher[] = [];
     if (receiver) {
       catchers.push({ id: receiver.id, x: receiver.x, y: receiver.y, reach: receiveReach(receiver), keeper: receiver.role === 'GK' });
-    } else if (through) {
+    }
+    if (through) {
       // Into space: the first player whose reach the ball passes through ends the flight (it runs loose to him).
       for (const p of s.players) {
         if (p.id === activePass.fromId || isPlayerInRecovery(p)) continue;
@@ -5575,9 +5816,22 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         catchers.push({ id: p.id, x: p.x, y: p.y, reach: PASS_PHYSICS.MOVING_TOUCH_YD, keeper: p.role === 'GK' });
       }
     }
+    if (physCut) {
+      // Stage 5 (`interception.md`): every defender the ball passes within reach of touches it.
+      const passerTeam = passerTeamOf(s, activePass);
+      const beaten = new Set(activePass.beaten ?? []);
+      for (const p of s.players) {
+        if (p.team === passerTeam || beaten.has(p.id) || isPlayerInRecovery(p)) continue;
+        catchers.push({ id: p.id, x: p.x, y: p.y, reach: interceptReach(p), keeper: p.role === 'GK' });
+      }
+    }
     const st = advancePassBall(s, dt, catchers);
     s = { ...s, ball: st.ball };
     physContact = st.contactId;
+    const toucher = physCut && st.contactId !== null ? s.players.find(p => p.id === st.contactId) : undefined;
+    if (toucher && toucher.team !== passerTeamOf(s, activePass)) {
+      return resolveInterceptTouch(s, activePass, toucher);
+    }
     const b = st.ball;
     if (through) {
       const h = Math.hypot(ph.vx, ph.vy) || 1;

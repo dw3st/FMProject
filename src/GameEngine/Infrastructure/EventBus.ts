@@ -165,6 +165,15 @@ export interface GameEvents {
   tackle: { player: number; targetId: number; success: boolean; chance: number };
   /** Emitted on every interception attempt (success or failure). */
   interception: { player: number; success: boolean; chance: number };
+  /**
+   * Stage 5 (`interception.md`): a defender touched a physical pass on its way (no dice for the touch to happen): what
+   * the touch did, the ball's speed (m/s) and height (m), how far from his body (0 feet .. 1 edge of reach) and the
+   * chance he had to control it.
+   */
+  interceptionTouch: {
+    player: number; team: TeamId; passerId: number; kind: 'regular' | 'through';
+    outcome: 'control' | 'clear' | 'deflect' | 'miss'; speedMs: number; zM: number; offset: number; control: number; flight: number;
+  };
   /** Emitted on every dribble attempt (success = attacker beats defender). */
   dribble: { player: number; targetId: number; success: boolean; chance: number };
 
@@ -188,7 +197,15 @@ export interface GameEvents {
     /** Inside the offender's penalty area — the restart is a penalty. */
     inBox:      boolean;
     minute:     number;
+    /** Third of the foul from the fouled team's view (0 own, 1 middle, 2 final; stage 13). */
+    third?:     0 | 1 | 2;
+    /** What the fouled player was doing (stage 13). */
+    context?:   import('@/GameEngine/Domain/Fouls').FoulContextKind;
   };
+  /** Stage 13 (`OffsideRuns.ts`): an attacker starts a spell of reading the offside line wrongly (past it) or a lapse. */
+  lineMisread: { playerId: number; team: TeamId; err: number; lapse: boolean };
+  /** Stage 13: a contact foul on (or, rarely, by) the ball holder, without a tackle. Emitted after `foul`. */
+  contactFoul: { offenderId: number; fouledId: number; team: TeamId; context: import('@/GameEngine/Domain/Fouls').FoulContextKind };
   /** A card was shown. A second yellow emits the yellow and then a red with `secondYellow: true`. */
   card: { playerId: number; playerName: string; team: TeamId; card: 'yellow' | 'red'; secondYellow: boolean; minute: number };
   /** A free kick was awarded to `team` (the fouled side). `dangerous` = taken with the freeKick_* layouts. */
@@ -502,7 +519,12 @@ export interface GameEvents {
    * from `evaluateAiSubstitutions` (AiSubstitution.ts); absent for a manual/tactical substitution
    * (e.g. the user's own sub in MatchScreen) — Statistics counts only the former as a fatigue sub.
    */
-  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: 'fatigue' | 'injury' };
+  /**
+   * Stage 14 (`fitness.md` → "FM condition"): once per match minute of live play per team, the outfield median
+   * condition and the keeper's (null without one). `Statistics.ts` keeps it by minute for `/lab`.
+   */
+  conditionSample: { minute: number; team: TeamId; median: number; keeper: number | null };
+  playerSubstituted: { outId: number; inId: number; team: TeamId; outEnergy: number; reason?: import('@/GameEngine/types').SubstitutionReason; minute?: number };
 
   /** Two starters of `team` swapped slots mid-match (`swapPlayerPositions`, #115) — no substitution used. */
   positionsSwapped: { team: TeamId; aId: number; bId: number };

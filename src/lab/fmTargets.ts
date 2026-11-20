@@ -79,7 +79,19 @@ export interface FmTargetTotals {
   launchVz: number[][];
   flight: number[][];
   landingErr: Record<LandingGroup, number[]>;
+  /**
+   * Stage 5 (`interception.md`): passes whose next holder was an opponent, split like report 7 by the time from the
+   * kick: early (within FM's expected flight 0.43 + 0.05·d s + one FM tick, read as an in-flight interception) or late
+   * (a loose ball, or lost after reception).
+   */
+  lossEarly: number;
+  lossLate: number;
 }
+
+/** R7: share of the possession losses after a pass that happen in flight (early) against later (%). */
+export const FM_LOSS_SPLIT = { early: 56, late: 44 } as const;
+/** One FM decision tick (s): ticks ≈ 1.8 + 0.21·d against t ≈ 0.43 + 0.05·d s gives ~0.24 s. */
+const FM_TICK_S = 0.24;
 
 /** FM's launch-vz bands (m/s, report 7) and the share to the intended receiver in each. */
 export const VZ_LABELS = ["≤1", "1–3", "3–6", "6–10", ">10"] as const;
@@ -127,6 +139,7 @@ export function emptyFmTargets(): FmTargetTotals {
     ballPeak: { cross: [], corner: [], long: [] }, ballContact: { cross: [], corner: [], long: [] }, ballAirSeconds: 0,
     passVz: VZ_LABELS.map(o3), launchSpeed: LAUNCH_LABELS.map(() => []), launchVz: LAUNCH_LABELS.map(() => []),
     flight: FLIGHT_LABELS.map(() => []), landingErr: { cross: [], corner: [], long: [], lofted: [] },
+    lossEarly: 0, lossLate: 0,
   };
 }
 
@@ -160,6 +173,7 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
   src.launchVz?.forEach((v, i) => dst.launchVz[i]!.push(...v));
   src.flight?.forEach((v, i) => dst.flight[i]!.push(...v));
   for (const g of LANDING_GROUPS) dst.landingErr[g].push(...(src.landingErr?.[g] ?? []));
+  dst.lossEarly += src.lossEarly ?? 0; dst.lossLate += src.lossLate ?? 0;
 }
 
 const ballGroupOf = (kind: string): BallGroup | null =>
@@ -222,6 +236,10 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
     bump(acc.passPressure[pressureBand(pending.pressure)]!);
     bump(acc.passKind[pending.kind] ??= o3());
     if (pending.kind === 'regular') bump(acc.passBandRegular[bandOfYd(pending.dist)]!);
+    if (k === 2) {
+      const expected = 0.43 + 0.05 * (pending.dist / YD) + FM_TICK_S;
+      if (realT - pending.t0 <= expected) acc.lossEarly++; else acc.lossLate++;
+    }
     if (pending.vzM !== null) {
       bump(acc.passVz[vzBand(pending.vzM)]!);
       if (k === 0) acc.flight[flightBand(pending.dist / YD)]!.push(realT - pending.t0);
@@ -433,6 +451,18 @@ export const FM_NEAR_HOLDER = [0.85, 1.8, 3.1] as const;
 /** R7: shape in / out of possession (yd): back line, length, width, back→mid, mid→front, front line. */
 export const FM_SHAPE = [[58, 39, 40, 19, 10, 87], [24, 35, 37, 14, 12.5, 50]] as const;
 
+/**
+ * Stage 13 (R8 §3, R9 §5): where the fouls are (fouled team's view: own / middle / final third, %), what the fouled
+ * player was doing (carry ≥ 44%, his team's pass 17%, turn or hold 9%), and FM's per-second rates over a 93-minute
+ * match (5580 s of play, the comparison while our match still has ~5 min of physics).
+ */
+export const FM_FOULS = {
+  thirds: [21, 43, 36] as const,
+  carry: 44, reception: 17, hold: 9,
+  matchSeconds: 5580,
+  foulsPerMatch: 19, offsidesPerMatch: 8, yellowsPerMatch: 3,
+} as const;
+
 /** Match counts the targets are computed from: the two teams' `Statistics.ts` totals summed. */
 export interface FmMatchCounts {
   goals: number; shots: number; shotsOnTarget: number; shotsBlocked: number; xg: number;
@@ -443,6 +473,10 @@ export interface FmMatchCounts {
   crosses: number; crossesCompleted: number; longBalls: number; longBallsCompleted: number;
   aerialDuelsWon: number; tackles: number; interceptions: number; dribblesWon: number;
   fouls: number; yellowCards: number; redCards: number; offsides: number; penaltiesAwarded: number;
+  /** Stage 13: fouls suffered by third (fouled team's view) and by what he was doing; contact fouls; line misreads. */
+  foulsWonOwnThird?: number; foulsWonMidThird?: number; foulsWonFinalThird?: number;
+  foulsWonCarrying?: number; foulsWonReceiving?: number; foulsWonHolding?: number;
+  contactFouls?: number; lineMisreads?: number;
   /** Shots from 18+ yd of the goal mouth, when a collector counted them (`longShotsOf`); else absent. */
   longShots?: number;
   /** Median xG per shot, when a collector kept the histogram (`xgMedianOf`); else absent. */
@@ -455,6 +489,8 @@ export const FM_COUNT_KEYS = [
   "crosses", "crossesCompleted", "longBalls", "longBallsCompleted",
   "aerialDuelsWon", "tackles", "interceptions", "dribblesWon",
   "fouls", "yellowCards", "redCards", "offsides", "penaltiesAwarded",
+  "foulsWonOwnThird", "foulsWonMidThird", "foulsWonFinalThird", "foulsWonCarrying", "foulsWonReceiving", "foulsWonHolding",
+  "contactFouls", "lineMisreads",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
 /** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */
