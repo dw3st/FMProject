@@ -96,3 +96,23 @@ describe("4c-3: the transition clock", () => {
     expect(plain.teamStats.A.counterPressRegains + plain.teamStats.B.counterPressRegains).toBeGreaterThan(0);
   }, 120_000);
 });
+
+describe("4c-4: the holder's instructions", () => {
+  test("shoot more often, dribble less, tempo, keeper distribution move the category multiplier", async () => {
+    const { applyTeamAttackConfig } = await import("@/GameEngine/Configs/AttackConfig");
+    const { holderInstructionMult } = await import("@/GameEngine/Configs/InstructionConfig");
+    const p = { team: "A", role: "ST", attackDir: 1, instruction: undefined } as never;
+    const gk = { team: "A", role: "GK", attackDir: 1 } as never;
+    const c = (cat: number, kind: string) => ({ cat, kind, targetY: null, toEnd: 30, backward: false });
+    applyTeamAttackConfig("A", "balanced");
+    expect(holderInstructionMult(p, c(1, "shot"))).toBe(1);
+    applyTeamAttackConfig("A", "balanced", "balanced", undefined, undefined, {
+      inPossession: { shooting: 2, dribbling: -2, tempo: 2, gkDistribution: 2 },
+    });
+    expect(holderInstructionMult(p, c(1, "shot"))).toBeCloseTo(1.25);
+    expect(holderInstructionMult(p, c(4, "dribble"))).toBeCloseTo(0.85);
+    expect(holderInstructionMult(p, c(3, "hold"))).toBeCloseTo(0.9);
+    expect(holderInstructionMult(gk, c(0, "long_ball"))).toBeCloseTo(1.4);
+    applyTeamAttackConfig("A", "balanced");
+  });
+});

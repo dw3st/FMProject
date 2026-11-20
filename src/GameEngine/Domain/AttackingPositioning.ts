@@ -12,6 +12,7 @@
  * No side effects. No gameState imports (avoids circular deps).
  */
 
+import { INSTR, playerDelta } from '@/GameEngine/Configs/InstructionConfig';
 import { DECISION_FLAGS } from '@/GameEngine/Configs/DecisionConfig';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { getMainRole } from '@/Domain/roles';
@@ -140,8 +141,10 @@ export function computeAttackingPosition(
   rawY += pushY * ATTACK_CONFIG.SPACING_WEIGHT;
 
   // ── Positional freedom — blend anchor with dynamic target ────────────────
-  rawX = anchorX + (rawX - anchorX) * ATTACK_CONFIG.POSITIONAL_FREEDOM;
-  rawY = anchorY + (rawY - anchorY) * ATTACK_CONFIG.POSITIONAL_FREEDOM;
+  // Stage 20 (4c-4): be more expressive / more disciplined (team or the slot's positioning) moves the blend.
+  const freedom = Math.max(0, Math.min(1, ATTACK_CONFIG.POSITIONAL_FREEDOM * (1 + INSTR.FREEDOM * playerDelta(player, 'freedom'))));
+  rawX = anchorX + (rawX - anchorX) * freedom;
+  rawY = anchorY + (rawY - anchorY) * freedom;
 
   // ── Possession push-up — sustained possession drives the defensive line up ─
   // Linear ramp: 50% effect at 5 s, full effect at 10 s.

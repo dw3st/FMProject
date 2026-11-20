@@ -19,7 +19,7 @@ import type { TacticalStyle, BuildUpStyle, TeamWidth, Mentality, TacticalAxes } 
 import { shiftAxesByMentality, DEFAULT_MENTALITY } from '@/types/tacticsTypes';
 import type { TeamInstructions } from '@/types/tacticsTypes';
 import { axesOfLevels, resolveInstructions } from '@/Domain/tactics/teamInstructions';
-import { setTeamInstructions } from '@/GameEngine/Configs/InstructionConfig';
+import { INSTR, instrExtra, setTeamInstructions } from '@/GameEngine/Configs/InstructionConfig';
 import { instructionFamiliarity } from '@/Domain/familiarity/familiarity';
 import { PASS_CONFIG } from '@/GameEngine/Configs/PassConfig';
 import { CARRY_CONFIG } from '@/GameEngine/Configs/CarryConfig';
@@ -280,8 +280,10 @@ const TEAM_ATTACK_WIDTH: Record<TeamId, number> = {
  */
 export function getTeamAttackWidth(team: TeamId): number {
   // FM moves the weights gently (stage 4b): ×0.9 / ×1 / ×1.1 instead of ×0.75 / ×1 / ×1.2.
-  if (DECISION_FLAGS.TACTIC_DAMP) return FM_NUMBERS.WIDTH_ATTACK_DAMPED[TEAM_WIDTH[team]];
-  return TEAM_ATTACK_WIDTH[team];
+  // Stage 20 (4c-4): the width instruction at ±2 spreads a step beyond its axis value.
+  const extra = INSTR.WIDTH_EXTRA * instrExtra(team, 'width');
+  if (DECISION_FLAGS.TACTIC_DAMP) return FM_NUMBERS.WIDTH_ATTACK_DAMPED[TEAM_WIDTH[team]] + extra;
+  return TEAM_ATTACK_WIDTH[team] + extra;
 }
 
 // ── Per-team tactic name storage (for off-ball intent selection) ──────────────

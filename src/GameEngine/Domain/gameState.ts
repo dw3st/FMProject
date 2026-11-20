@@ -1,4 +1,4 @@
-import { setPossessionClock, resetInstructionState } from '@/GameEngine/Configs/InstructionConfig';
+import { INSTR, playerDelta, setPossessionClock, resetInstructionState } from '@/GameEngine/Configs/InstructionConfig';
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
 import type { GamePlayer, GameState, Formation, MovementBounds, PlayerRole, TeamId, TeamIntent, MatchPhase, KnockoutDecider, InjuryRecord, CardRecord, SetPiece, PassState, LooseBallSource, SetPieceGoalKind, SetPieceRoutine, ManMarkPair, InjuryVacancy, PenaltyOutcome, InterceptRun, ShotState, ShotPhysicsState, ShotBlockRun, ShotTechnique } from '@/GameEngine/types';
@@ -5893,7 +5893,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const pushUpT    = Math.min(1, s.possessionTime / POSSESSION_PUSH_UP.BASE_SECONDS);
         const pushUpBias = PUSH_UP_ROLE_BIAS[player.role] ?? 0;
         const pushedBaseX = DECISION_FLAGS.FM_SHAPE && TEAM_SHAPE.APPLY_IN ? base.x : base.x + player.attackDir * pushUpT * POSSESSION_PUSH_UP.MAX_YARDS * pushUpBias;
-        const pull = 1 - OFF_BALL_CONFIG.FORMATION_PULL;
+        const pull = 1 - OFF_BALL_CONFIG.FORMATION_PULL * Math.max(0, 1 - INSTR.FREEDOM * playerDelta(player, 'freedom'));
         let tx = pushedBaseX + (rawX - pushedBaseX) * pull;
         const ty = base.y + (rawY - base.y) * pull;
 

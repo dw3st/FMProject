@@ -1,4 +1,4 @@
-import { INSTR, instrDelta, transitionOf } from '@/GameEngine/Configs/InstructionConfig';
+import { INSTR, instrDelta, playerDelta, transitionOf } from '@/GameEngine/Configs/InstructionConfig';
 import { heldAction, noteAction } from '@/GameEngine/Domain/ActionHold';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { captureDecision, decisionCaptureOn } from '@/GameEngine/Domain/DecisionTelemetry';
@@ -204,6 +204,9 @@ function selectOffBallIntent(ctx: OffBallContext): {
       finalScores.hold_space *= Math.max(0, 1 - INSTR.WIN_STAY * w);
     }
   }
+  // Stage 20 (4c-4): an expressive player leaves his zone more, a disciplined one holds it.
+  const fr = playerDelta(ctx.player, 'freedom');
+  if (fr !== 0) finalScores.hold_space *= Math.max(0, 1 - INSTR.FREEDOM_HOLD * fr);
   // The mind (stage 16, `DefensiveMind.ts`): noise, anticipation and flair on the run, a concentration lapse.
   if (DECISION_FLAGS.DEFENSIVE_MIND) applyOffBallMind(ctx.player, finalScores);
 

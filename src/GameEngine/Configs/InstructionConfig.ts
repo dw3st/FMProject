@@ -340,6 +340,11 @@ export function holderInstructionMult(player: GamePlayer, c: HolderCandidateInfo
     if (kind === 'through_ball') m *= 1 + INSTR.SPACE_TB * space;
     else if (kind === 'pass' || kind === 'pass_lofted') m *= 1 - INSTR.SPACE_FEET * space;
   }
+  // Goalkeeper distribution: kick it long / roll it out.
+  if (player.role === 'GK' && (kind === 'long_ball' || kind === 'pass_lofted')) {
+    const g = instrDelta(team, 'gkDistribution');
+    if (g !== 0) m *= Math.max(0, 1 + INSTR.GK_LONG * g);
+  }
   const passEx = instrExtra(team, 'passing');
   if (passEx !== 0 && (kind === 'long_ball' || kind === 'pass_lofted')) m *= 1 + INSTR.PASS_EXTRA * passEx;
   const cross = playerDelta(player, 'crossing');

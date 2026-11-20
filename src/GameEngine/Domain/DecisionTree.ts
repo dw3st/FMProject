@@ -64,7 +64,7 @@ import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
 import { pickCandidate, qualityOf, riskOf, scoreCandidates, type HolderCandidate, type HolderCategory } from '@/GameEngine/Domain/HolderChoice';
 import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
-import { INSTR, instrDelta } from '@/GameEngine/Configs/InstructionConfig';
+import { INSTR, holderInstructionMult, instrDelta } from '@/GameEngine/Configs/InstructionConfig';
 import { getMainRole } from '@/Domain/roles';
 import { backToGoal, chipMove, cutInsideMove, layOffMove, roundKeeperMove, shieldMove, type HolderMove } from '@/GameEngine/Domain/HolderMoves';
 
@@ -915,6 +915,18 @@ export interface HolderSituation { lead: number; minute: number }
  * holder's mind gates (release, simple-minded, long-shot range, facing away, flair) shape the values first. Returns
  * the decision; hands the window to `setHolderMind` and emits the candidate list.
  */
+/** Where a holder candidate sends the ball (stage 20, the instructions' focus and back-pass tests); null = in place. */
+function instructionTarget(d: PlayerDecision, all: GamePlayer[], p: GamePlayer): { x: number; y: number } | null {
+  const any = d as { type: string; targetId?: number; toX?: number; toY?: number; dx?: number; dy?: number };
+  if (any.targetId !== undefined) {
+    const r = all.find(q => q.id === any.targetId);
+    return r ? { x: r.x, y: r.y } : null;
+  }
+  if (typeof any.toX === 'number' && typeof any.toY === 'number') return { x: any.toX, y: any.toY };
+  if (any.type === 'carry' && typeof any.dx === 'number' && typeof any.dy === 'number') return { x: p.x + any.dx * 8, y: p.y + any.dy * 8 };
+  return null;
+}
+
 function fmHolderChoice(
   player: GamePlayer,
   allPlayers: GamePlayer[],
@@ -965,7 +977,15 @@ function fmHolderChoice(
     // A carry with no direction (two players on the same spot) is not an option.
     if (decision.type === 'carry' && !(Number.isFinite(decision.dx) && Number.isFinite(decision.dy))) return;
     // FM's category multiplier (relative to a carry); the corner-flag hold is a type of its own, copied as it is.
-    const mult = kind === 'flag' ? 1 : cat === 1 && DECISION_FLAGS.LONG_SHOTS ? SHOT_GATE.KICK_MULT : H.CAT_MULT[cat] ?? 1;
+    let mult = kind === 'flag' ? 1 : cat === 1 && DECISION_FLAGS.LONG_SHOTS ? SHOT_GATE.KICK_MULT : H.CAT_MULT[cat] ?? 1;
+    // Stage 20 (4c-4/5): the team and player instructions move the category multiplier (1 at the template).
+    if (DECISION_FLAGS.TEAM_INSTRUCTIONS && kind !== 'flag') {
+      const tgt = instructionTarget(decision, allPlayers, player);
+      mult *= holderInstructionMult(player, {
+        cat, kind, targetY: tgt?.y ?? null, toEnd: Math.abs(goalX - player.x),
+        backward: tgt !== null && cat === 0 && (tgt.x - player.x) * player.attackDir <= 0,
+      });
+    }
     cands.push({ cat, kind, label, value: Math.max(0, Math.min(1, value)), mult, risk, quality: qualityOf(value), decision });
   };
 
