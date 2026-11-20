@@ -1319,11 +1319,11 @@
       "CR": "Crosses",
       "AD": "Aerial Duels Won",
       "HG": "Header Goals",
-      "KS": "Keeper sorties",
+      "KS": "Keeper come-outs",
       "DST": "Distance covered (yards)",
       "SPR": "Sprints (85% of top speed for 1 s)",
-      "KW": "Keeper sweeps",
-      "KM": "Keeper smothers",
+      "KW": "Keeper collects",
+      "KM": "Keeper wins at the feet",
       "LB": "Long Balls",
       "TI": "Throw-ins",
       "SOT": "Shots on Target",
@@ -1337,6 +1337,17 @@
     "momentumPoints": "Momentum points (FM table): {{a}} – {{b}}"
   },
   "match": {
+    "mode": { "label": "Match", "full": "Whole", "highlights": "Highlights", "hint": "Whole: the 90 minutes sped up. Highlights: the key moments at normal speed, the rest skipped." },
+    "highlights": {
+      "levelLabel": "Highlights",
+      "level": { "main": "Key", "extended": "Extended", "full": "Full" },
+      "next": "Next highlight",
+      "waiting": "Simulating the next highlights",
+      "skipped": "{{from}}' to {{to}}'",
+      "timeline": "Match highlights",
+      "count_one": "{{count}} highlight",
+      "count_other": "{{count}} highlights"
+    },
     "effects": {
       "save": "SAVE",
       "wide": "WIDE",

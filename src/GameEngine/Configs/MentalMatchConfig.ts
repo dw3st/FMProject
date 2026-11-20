@@ -14,6 +14,7 @@ import { mentalShiftOf, personalityOf } from '@/Domain/personality/personality';
 import { moraleFactor } from '@/Domain/morale/morale';
 import { formOf, moodOf } from '@/GameEngine/Domain/HolderMind';
 import { matchMoraleOf } from '@/GameEngine/Configs/MoraleConfig';
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 import { deriveMind } from '@/GameEngine/Domain/DefensiveMind';
 
 const TEAM_MENTAL_OVERRIDE: Record<TeamId, number | undefined> = { A: undefined, B: undefined };
@@ -42,3 +43,6 @@ export function matchMentalOf(team: TeamId, rp: RosterPlayer): PlayerMental {
     mood: moodOf(moraleFactor(matchMoraleOf(team, rp.morale)), formOf(rp.seasonLog?.recentRatings)),
   };
 }
+
+// Stage 19 (`live-modes.md`): the per-team configs travel with a mid-match snapshot.
+registerEngineMemory('MentalMatchConfig.TEAM_MENTAL_OVERRIDE', recordPart(TEAM_MENTAL_OVERRIDE as unknown as Record<string, unknown>));

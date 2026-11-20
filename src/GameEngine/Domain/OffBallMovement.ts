@@ -33,6 +33,7 @@ import {
   type CrowdGrid,
   type GridMatrix,
 } from '@/GameEngine/Infrastructure/CrowdGrid';
+import { registerEngineMemory, mapPart } from '@/GameEngine/Support/EngineMemory';
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -566,3 +567,6 @@ export function evaluateOffBall(
   }
   return { type: 'support_run', dx: dirX, dy: dirY };
 }
+
+// Stage 19 (`live-modes.md`): the intent hysteresis travels with a mid-match snapshot.
+registerEngineMemory('offBallIntent', mapPart(_offBallIntent));

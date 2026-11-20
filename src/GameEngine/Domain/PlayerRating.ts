@@ -308,6 +308,8 @@ export interface RatingState {
   tallies: Array<[number, RatingTally]>;
   residual: Array<[number, number]>;
   teams: Array<[number, TeamId]>;
+  /** Cross-event trackers (a snapshot taken mid-match goes on scoring the same); absent in older snapshots. */
+  carry?: { lastShot: Array<[number, number]>; mistake: Record<TeamId, { playerId: number; passes: number } | null>; goals: GoalRecord[]; lastTouch: number | null };
 }
 
 export function exportRatingState(): RatingState {
@@ -316,6 +318,7 @@ export function exportRatingState(): RatingState {
     tallies: [...tallies].map(([id, t]) => [id, { ...t }]),
     residual: [...residual],
     teams: [...teamOf],
+    carry: { lastShot: [...lastShot], mistake: structuredClone(mistake), goals: structuredClone(goals), lastTouch },
   };
 }
 
@@ -325,6 +328,9 @@ export function importRatingState(st: RatingState): void {
   for (const [id, t] of st.tallies) tallies.set(id, { ...t });
   for (const [id, r] of st.residual) residual.set(id, r);
   for (const [id, t] of st.teams) teamOf.set(id, t);
-  mistake.A = null; mistake.B = null; lastTouch = null;
+  lastShot.clear(); goals.length = 0;
+  mistake.A = st.carry?.mistake.A ?? null; mistake.B = st.carry?.mistake.B ?? null; lastTouch = st.carry?.lastTouch ?? null;
+  for (const [id, x] of st.carry?.lastShot ?? []) lastShot.set(id, x);
+  goals.push(...structuredClone(st.carry?.goals ?? []));
   notify();
 }

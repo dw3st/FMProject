@@ -608,7 +608,8 @@ clock of before (45 game minutes in 150 s of physics); `withClockScale(state, sc
 |---|---|
 | `simulateMatch` (day advance, worker pool, `/lab`, scripts, tests) | 1 (`options.clockScale` only for comparison runs) |
 | `/test` | 1; chip **Clock ×18** for comparison; chip **90' match** (mode A: periods end, speeds up to 32×) |
-| Live match, broadcast, match between two managers (`buildLiveMatchState`) | 18, provisional until stage 19 (5 real minutes at 1×, unchanged) |
+| Solo live match (`MatchScreen`, stage 19) | 1; mode A runs the pitch at speed × 13, mode B plays only the highlights (`game-engine/live-modes.md`) |
+| Broadcast, match between two managers (`buildLiveMatchState` default) | 18, provisional until stage 22 |
 
 Presentation pauses (`presentationCountdown` of the kick-off show, half time, the extra-time break, the shootout,
 and a VAR check) are real seconds: `PixiPitch` feeds them the real elapsed time, never × the match speed.

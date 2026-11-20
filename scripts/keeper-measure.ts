@@ -35,8 +35,8 @@ for (let i = 0; i < n; i++) {
   const g = r.score.A + r.score.B;
   goals += g; sq += g * g;
   for (const t of [r.teamStats.A, r.teamStats.B]) {
-    shots += t.shots ?? 0; sorties += t.keeperSorties ?? 0; sweeps += t.keeperSweeps ?? 0;
-    smothers += t.keeperSmothers ?? 0; pens += t.penaltiesAwarded ?? 0;
+    shots += t.shots ?? 0; sorties += t.keeperComeOuts ?? 0; sweeps += t.keeperCollects ?? 0;
+    smothers += t.keeperFeetWins ?? 0; pens += t.penaltiesAwarded ?? 0;
     corners += t.corners ?? 0; holds += t.keeperHolds ?? 0; spills += t.keeperSpills ?? 0;
   }
 }

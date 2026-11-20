@@ -100,10 +100,17 @@ export function getMomentumTimeline(): number[] {
   return perMinute.map((_, m) => momentumBar(perMinute, m));
 }
 
-export interface MomentumState { perMinute: MomentumMinutes; minute: number; totals: { A: number; B: number } }
+export interface MomentumState {
+  perMinute: MomentumMinutes; minute: number; totals: { A: number; B: number };
+  /** Positions of the last step, the holder and the live flag (a mid-match snapshot goes on the same); optional. */
+  pos?: Array<[number, { x: number; y: number; team: TeamId; dir: 1 | -1 }]>; prevHolder?: number | null; live?: boolean;
+}
 export function exportMomentumState(): MomentumState {
-  return { perMinute: perMinute.map(p => ({ ...p })), minute, totals: { ...totals } };
+  return { perMinute: perMinute.map(p => ({ ...p })), minute, totals: { ...totals }, pos: [...pos].map(([id, p]) => [id, { ...p }]), prevHolder, live };
 }
 export function importMomentumState(st: MomentumState): void {
   perMinute = st.perMinute.map(p => ({ ...p })); minute = st.minute; totals.A = st.totals.A; totals.B = st.totals.B;
+  pos.clear();
+  for (const [id, p] of st.pos ?? []) pos.set(id, { ...p });
+  prevHolder = st.prevHolder ?? null; live = st.live ?? false;
 }

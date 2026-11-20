@@ -24,6 +24,7 @@ import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import type { FamiliarityLevels } from '@/types/familiarityTypes';
 import { familiarityFactor } from '@/Domain/familiarity/familiarity';
 import { STYLE_FAMILIARITY_EFFECTS, LONG_BALL_EFFECT, applyMult, setTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 // ── Possession push-up — drives the defensive line forward during sustained possession ──
 
@@ -348,3 +349,12 @@ export function applyTeamAttackConfig(
   TEAM_TACTICAL_STYLE[team]  = style;
   TEAM_MENTALITY[team]       = mentality;
 }
+
+// Stage 19 (`live-modes.md`): the per-team configs travel with a mid-match snapshot.
+registerEngineMemory('AttackConfig.TEAM_PASS_WEIGHTS', recordPart(TEAM_PASS_WEIGHTS as unknown as Record<string, unknown>));
+registerEngineMemory('AttackConfig.TEAM_CARRY_WEIGHTS', recordPart(TEAM_CARRY_WEIGHTS as unknown as Record<string, unknown>));
+registerEngineMemory('AttackConfig.TEAM_MENTALITY', recordPart(TEAM_MENTALITY as unknown as Record<string, unknown>));
+registerEngineMemory('AttackConfig.TEAM_ATTACK_WIDTH', recordPart(TEAM_ATTACK_WIDTH as unknown as Record<string, unknown>));
+registerEngineMemory('AttackConfig.TEAM_BUILD_UP', recordPart(TEAM_BUILD_UP as unknown as Record<string, unknown>));
+registerEngineMemory('AttackConfig.TEAM_WIDTH', recordPart(TEAM_WIDTH as unknown as Record<string, unknown>));
+registerEngineMemory('AttackConfig.TEAM_TACTICAL_STYLE', recordPart(TEAM_TACTICAL_STYLE as unknown as Record<string, unknown>));

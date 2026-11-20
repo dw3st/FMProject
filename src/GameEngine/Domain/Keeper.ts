@@ -5,6 +5,7 @@
  */
 import type { GamePlayer, ShotState } from '@/GameEngine/types';
 import { KEEPER_CONFIG as K } from '@/GameEngine/Configs/KeeperConfig';
+import { FM_KEEPER, FM_KEEPER_DEFEND_KNOTS_M, FM_KEEPER_OWN_KNOTS_M } from '@/GameEngine/Configs/FmKeeperConfig';
 import { GOAL_Y_MAX, GOAL_Y_MIN, PITCH_LENGTH, PITCH_WIDTH, isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
 
 /** Minimum yards off the goal line (always slightly advanced). */
@@ -240,4 +241,79 @@ export function keeperReachesShot(gk: Pos, fromX: number, fromY: number, goalX: 
   const mid = { x: goalX, y: (GOAL_Y_MIN + GOAL_Y_MAX) / 2 };
   const p = closestOnSegment(gk, { x: fromX, y: fromY }, mid);
   return Math.hypot(p.x - gk.x, p.y - gk.y) <= K.SHOT_REACH + (GOAL_Y_MAX - GOAL_Y_MIN) / 2;
+}
+
+// ── Stage 11: FM's keeper (`keeper.md` → "Stage 11", flag `FM_KEEPER`) ─────────────────────────────────────────────
+
+const M_PER_YD = 1 / 1.0936;
+
+/** Piecewise-linear lookup on (x, y) knots, flat before the first and past the last. */
+function knotValue(knots: ReadonlyArray<readonly [number, number]>, x: number): number {
+  const first = knots[0]!;
+  if (x <= first[0]) return first[1];
+  for (let i = 1; i < knots.length; i++) {
+    const [x1, y1] = knots[i]!;
+    const [x0, y0] = knots[i - 1]!;
+    if (x <= x1) return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+  }
+  return knots[knots.length - 1]![1];
+}
+
+/** FM: metres off his line by the ball's distance (m) from the centre of his goal line; `own` = his team has the ball. */
+export function fmKeeperOffLineM(ballDistM: number, own: boolean): number {
+  return knotValue(own ? FM_KEEPER_OWN_KNOTS_M : FM_KEEPER_DEFEND_KNOTS_M, ballDistM);
+}
+
+/**
+ * FM's keeper position: on the line facing the play with the opponent on the ball within 35 m, a step up as the ball
+ * goes away; sideways a small share of the ball's offset. No rush at a holder, no arc toward the ball. Pitch-clamped
+ * only (his own team's ball far away takes him past his role bounds, as in FM).
+ */
+export function fmKeeperTarget(gk: KeeperLike, ball: Pos, own: boolean): Pos {
+  const goalX = keeperGoalX(gk);
+  const ballDistM = distToKeeperGoal(gk, ball) * M_PER_YD;
+  const off = Math.max(FM_KEEPER.MIN_OFF_LINE_YD, fmKeeperOffLineM(ballDistM, own) / M_PER_YD);
+  return {
+    x: clamp(goalX + gk.attackDir * off, 0, PITCH_LENGTH),
+    y: clamp(GOAL_CENTRE_Y + (ball.y - GOAL_CENTRE_Y) * FM_KEEPER.LATERAL_FOLLOW, 0, PITCH_WIDTH),
+  };
+}
+
+/** FM: how far (yd) the keeper is from his FM position for a shot from `ball` (the shot-quality input of the dice path). */
+export function fmKeeperDeviation(gk: Pick<GamePlayer, 'x' | 'y' | 'attackDir'>, ball: Pos): number {
+  const t = fmKeeperTarget(gk, ball, false);
+  return Math.hypot(gk.x - t.x, gk.y - t.y);
+}
+
+/** Command of the box, 0..1: mean of positioning and jumping. */
+export function keeperCommand(gk: Pick<GamePlayer, 'runtimeStats'>): number {
+  const w = gk.runtimeStats.withoutBall;
+  return (w.gkPositioning + (w.jump ?? 0.5)) / 2;
+}
+
+/** FM: the deepest a keeper comes for a high ball (yd off his line): BASE + SKILL × command, capped at FM's 16 m. */
+export function fmClaimDepth(gk: Pick<GamePlayer, 'runtimeStats'>): number {
+  return Math.min(FM_KEEPER.CLAIM_DEPTH_MAX_YD, FM_KEEPER.CLAIM_DEPTH_BASE_YD + FM_KEEPER.CLAIM_DEPTH_SKILL_YD * keeperCommand(gk));
+}
+
+/**
+ * FM: the keeper comes for a high ball meeting at (x, y) when it is in his box, within his claim depth, and he gets
+ * there first (his race time beats every outfield player's by the margin) and in time (at most the ball's flight to
+ * the point plus a slack; `flightS` unknown = no time check). Otherwise he holds his line and only meets it if it comes
+ * through his reach.
+ */
+export function fmKeeperComesForHigh(
+  gk: Pick<GamePlayer, 'attackDir' | 'runtimeStats'>,
+  x: number,
+  y: number,
+  keeperEta: number,
+  bestOutfieldEta: number,
+  flightS?: number,
+): boolean {
+  const goalX = keeperGoalX(gk);
+  if (!isInGoalScoreArea(x, y, goalX)) return false;
+  if (depthFrom(goalX, x) > fmClaimDepth(gk)) return false;
+  if (keeperEta + FM_KEEPER.CLAIM_FIRST_MARGIN_S > bestOutfieldEta) return false;
+  if (flightS !== undefined && keeperEta > flightS + FM_KEEPER.CLAIM_TIME_SLACK_S) return false;
+  return true;
 }

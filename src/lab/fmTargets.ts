@@ -92,11 +92,29 @@ export interface FmTargetTotals {
    * the distance from where it was struck to the aimed point (`SHOT_M_LABELS`, metres, report 8 §2.1's bands).
    */
   shotEnds: number[][];
+  /**
+   * Stage 11 (`keeper.md` → "Stage 11"): the keeper's metres off his line, sampled each live second with the ball held
+   * (no set piece), by the ball's distance from his goal-line centre (`KEEPER_BANDS_M`) and who has it; his sideways
+   * follow within 35 m (Σ ball offset × keeper offset, Σ ball offset², yd); his open-play passes (all, long ≥ 35 m,
+   * kept short / long, distances m) and goal kicks (all, long).
+   */
+  keeperOff: { opp: number[][]; own: number[][] };
+  keeperLat: { num: number; den: number };
+  keeperPass: { n: number; long: number; shortN: number; shortKept: number; longN: number; longKept: number; dist: number[] };
+  goalKick: { n: number; long: number };
 }
+
+/** Stage 11: the keeper's position bands (m, report 8 §2.2) and FM's median off the line with the opponent on the ball. */
+export const KEEPER_BANDS = ["0–35", "35–52.5", "52.5–70", "70+"] as const;
+export const FM_KEEPER_OFF_OPP = [0, 2.7, 6.0, 10.5] as const;
+export const FM_KEEPER_OFF_OWN = [null, 4.8, 11, 15] as const;
+const keeperBand = (dM: number) => (dM < 35 ? 0 : dM < 52.5 ? 1 : dM < 70 ? 2 : 3);
 
 /** Stage 7: shot distance bands (m, report 8 §2.1) and FM's goal share of the shots in each (%). */
 export const SHOT_M_LABELS = ["0–8", "8–12", "12–16", "16–20", "20–25", "25+"] as const;
 export const FM_GOAL_BY_DIST = [21, 11, 12, 13, 3, 0] as const;
+/** Share of shots by distance band (R8 §2.1, n 180: 24 / 36 / 42 / 38 / 32 / 8). */
+export const FM_SHOT_DIST_SHARE = [13, 20, 23, 21, 18, 4] as const;
 export const SHOT_END = ["goal", "saved", "blocked", "off"] as const;
 export type ShotEnd = (typeof SHOT_END)[number];
 const shotMBand = (dM: number) => (dM < 8 ? 0 : dM < 12 ? 1 : dM < 16 ? 2 : dM < 20 ? 3 : dM < 25 ? 4 : 5);
@@ -158,6 +176,8 @@ export function emptyFmTargets(): FmTargetTotals {
     flight: FLIGHT_LABELS.map(() => []), landingErr: { cross: [], corner: [], long: [], lofted: [] },
     lossEarly: 0, lossLate: 0,
     shotEnds: SHOT_M_LABELS.map(() => SHOT_END.map(() => 0)),
+    keeperOff: { opp: KEEPER_BANDS.map(() => []), own: KEEPER_BANDS.map(() => []) }, keeperLat: { num: 0, den: 0 },
+    keeperPass: { n: 0, long: 0, shortN: 0, shortKept: 0, longN: 0, longKept: 0, dist: [] }, goalKick: { n: 0, long: 0 },
   };
 }
 
@@ -193,6 +213,13 @@ export function mergeFmTargets(dst: FmTargetTotals, src: FmTargetTotals): void {
   src.flight?.forEach((v, i) => dst.flight[i]!.push(...v));
   for (const g of LANDING_GROUPS) dst.landingErr[g].push(...(src.landingErr?.[g] ?? []));
   dst.lossEarly += src.lossEarly ?? 0; dst.lossLate += src.lossLate ?? 0;
+  if (src.keeperOff) for (const side of ["opp", "own"] as const) src.keeperOff[side].forEach((v, i) => dst.keeperOff[side][i]!.push(...v));
+  if (src.keeperLat) { dst.keeperLat.num += src.keeperLat.num; dst.keeperLat.den += src.keeperLat.den; }
+  if (src.keeperPass) {
+    const a = dst.keeperPass, b = src.keeperPass;
+    a.n += b.n; a.long += b.long; a.shortN += b.shortN; a.shortKept += b.shortKept; a.longN += b.longN; a.longKept += b.longKept; a.dist.push(...b.dist);
+  }
+  if (src.goalKick) { dst.goalKick.n += src.goalKick.n; dst.goalKick.long += src.goalKick.long; }
 }
 
 const ballGroupOf = (kind: string): BallGroup | null =>
@@ -238,7 +265,7 @@ const pushRun = (acc: FmTargetTotals, r: HoldRun, end: number) => {
   (r.type === "default" ? acc.holdDefault : acc.holdShort)[r.line].push(end - r.since);
 };
 
-interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean; t0: number; vzM: number | null }
+interface PendingPass { kind: string; team: TeamId; from: number; intended: number | null; dist: number; lofted: boolean; pressure: number; held: boolean; t0: number; vzM: number | null; gk: boolean; restart: string | null }
 interface Stint { id: number; t0: number; decisions: number }
 interface HoldRun { type: string; since: number; line: Line }
 
@@ -273,6 +300,16 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
     if (k === 2) {
       const expected = 0.43 + 0.05 * (pending.dist / YD) + FM_TICK_S;
       if (realT - pending.t0 <= expected) acc.lossEarly++; else acc.lossLate++;
+    }
+    if (pending.gk) {
+      // Stage 11: the keeper's distribution (R8 §2.3).
+      const long = pending.dist / YD >= 35;
+      if (pending.restart === "goal_kick") { acc.goalKick.n++; if (long) acc.goalKick.long++; }
+      else if (pending.restart === null) {
+        const kp = acc.keeperPass;
+        kp.n++; kp.dist.push(pending.dist / YD);
+        if (long) { kp.long++; kp.longN++; if (k !== 2) kp.longKept++; } else { kp.shortN++; if (k !== 2) kp.shortKept++; }
+      }
     }
     if (pending.vzM !== null) {
       bump(acc.passVz[vzBand(pending.vzM)]!);
@@ -318,7 +355,7 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
         const src = (prev ?? s).players.find(p => p.id === s.pass!.fromId) ?? s.players.find(p => p.id === s.pass!.fromId)!;
         const opps = (prev ?? s).players.filter(p => p.team !== src.team);
         const lofted = s.pass.kind === "cross" || s.pass.kind === "long_ball" || !!s.pass.lofted;
-        pending = { kind: s.pass.lofted ? 'lofted' : s.pass.kind, team: src.team, from: src.id, intended: s.pass.toId ?? s.pass.intendedRunnerId, dist: s.pass.distance, lofted, pressure: holderPressure(src.x, src.y, opps), held: false, t0: realT, vzM: ph ? ph.vz / YD : null };
+        pending = { kind: s.pass.lofted ? 'lofted' : s.pass.kind, team: src.team, from: src.id, intended: s.pass.toId ?? s.pass.intendedRunnerId, dist: s.pass.distance, lofted, pressure: holderPressure(src.x, src.y, opps), held: false, t0: realT, vzM: ph ? ph.vz / YD : null, gk: src.role === "GK", restart: prev?.setPiece?.type ?? s.setPiece?.type ?? null };
       }
     }
     if (pending && held && s.ballHolderId !== pending.from) resolvePass(s, s.ballHolderId);
@@ -375,6 +412,16 @@ export function fmTargetCollector(acc: FmTargetTotals, dt = 0.2) {
         }
         acc.pressers[Math.min(2, pr)]!++;
         const nt = acc.nearByThird[thirdOf(h)]!; nt.n++; nt.sum += near;
+        // Stage 11: each keeper's distance off his line by the ball's distance and who has it.
+        for (const gk of s.players) {
+          if (gk.role !== "GK" || gk.id === h.id) continue;
+          const goalX = gk.attackDir === 1 ? 0 : PITCH_LENGTH;
+          const cy = (GOAL_Y_MIN + GOAL_Y_MAX) / 2;
+          const dM = Math.hypot(h.x - goalX, h.y - cy) / YD;
+          const band = keeperBand(dM);
+          acc.keeperOff[gk.team === h.team ? "own" : "opp"][band]!.push(Math.abs(gk.x - goalX) / YD);
+          if (gk.team !== h.team && band === 0) { acc.keeperLat.num += (h.y - cy) * (gk.y - cy); acc.keeperLat.den += (h.y - cy) ** 2; }
+        }
       }
       const possTeam: TeamId | null = s.setPiece || s.looseBall ? null : h ? h.team : null;
       if (possTeam) {
@@ -524,6 +571,8 @@ export interface FmMatchCounts {
   saves?: number; savesGood?: number; savesDifficult?: number;
   shotPower?: number; shotPlaced?: number; shotLob?: number; shotChip?: number; shotVolley?: number; shotHeaderLaunch?: number; shotFreeKick?: number;
   shotSpeedSum?: number; shotLaunchN?: number;
+  /** Stage 9: strike distance sum (m), shots from outside the box, low launches (vz ≤ 3 m/s). */
+  shotDistSumM?: number; shotsOutsideBox?: number; shotsLowLaunch?: number;
 }
 
 export const FM_COUNT_KEYS = [
@@ -536,7 +585,7 @@ export const FM_COUNT_KEYS = [
   "contactFouls", "lineMisreads",
   "shotsSaved", "shotsOffTarget", "shotsWoodwork", "shotsDeflected", "saves", "savesGood", "savesDifficult",
   "shotPower", "shotPlaced", "shotLob", "shotChip", "shotVolley", "shotHeaderLaunch", "shotFreeKick", "shotSpeedSum", "shotLaunchN",
-  "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
+  "shotDistSumM", "shotsOutsideBox", "shotsLowLaunch", "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
 /** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */

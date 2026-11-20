@@ -32,6 +32,7 @@ import { assignMarkTargets, resetDefensiveIntentCache, stayHomeTarget } from '@/
 import { resetOffBallIntentCache } from '@/GameEngine/Domain/OffBallMovement';
 import { advanceActionClock, resetActionHold } from '@/GameEngine/Domain/ActionHold';
 import { assignZoneCover, passShadowPoint, pressStateOf, setShapeFormations, setZoneCover, zonesOf, type ShapeZone } from '@/GameEngine/Domain/TeamShape';
+import { registerEngineMemory } from '@/GameEngine/Support/EngineMemory';
 import { resetShoulderRuns, shoulderRunGoing } from '@/GameEngine/Domain/ShoulderRuns';
 import { TEAM_SHAPE } from '@/GameEngine/Configs/ShapeConfig';
 import { teamLineup } from '@/GameEngine/Domain/TeamLineup';
@@ -65,9 +66,10 @@ import {
   CHASE_LOOSE_BALL_WEIGHT_DEFEND,
 } from '@/GameEngine/Configs/ThroughBallConfig';
 import { isInGoalScoreArea } from '@/GameEngine/Domain/pitch';
-import { ballMeetsKeeper, defenderCovers, saveOutcomeChances, shotStoppingSkill, depthFrom, keeperReachesShot, isWideClaimZone, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
+import { ballMeetsKeeper, defenderCovers, saveOutcomeChances, shotStoppingSkill, depthFrom, keeperReachesShot, isWideClaimZone, fmKeeperComesForHigh, keeperComesWide, keeperTakesLoose, shotInterceptPoint, sweeperChases, wideClaimFactor } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
 import { debugLog, isDebugEnabled } from '@/GameEngine/Support/DebugLog';
+import { distToGoalCentreM, inBoxLane } from '@/GameEngine/Domain/ShotGate';
 import { shotXg, XG_PENALTY } from '@/GameEngine/Domain/ShotXg';
 import type { FmXgResult } from '@/GameEngine/Domain/FmXg';
 import type { PlayerStatsRecord, RosterPlayer } from '@/types/playerTypes';
@@ -2624,6 +2626,7 @@ function physicalShot(state: GameState, shooter: GamePlayer, strike: PhysicalStr
   gameBus.emit('shotLaunched', {
     player: shooter.id, team: shooter.team, technique, speedMs, vzMs: v.vz * M_PER_YD_SHOT,
     aimY: aim.y, aimZ: aim.z, errDeg: v.errDeg, distance: dist, onTarget, blockers: blocks.length,
+    fromM: distToGoalCentreM(shooter.x, shooter.y, shooter.attackDir), outsideBox: !inBoxLane(shooter.x, shooter.y, shooter.attackDir),
   });
   if (isDebugEnabled()) {
     debugLog('shot', `${shooter.name} ${technique} shot: ${speedMs.toFixed(1)} m/s, aim y ${aim.y.toFixed(1)} z ${(aim.z * M_PER_YD_SHOT).toFixed(2)} m, error ${v.errDeg.toFixed(1)}° (factor ${factor.toFixed(2)}), ${onTarget ? 'on target' : 'off target'}${cross ? ` (crosses y ${cross.y.toFixed(1)} z ${(cross.z * M_PER_YD_SHOT).toFixed(2)} m)` : ''}, ${blocks.length} blocker(s)`, {
@@ -2950,7 +2953,7 @@ function keeperShotTouch(
     player: shooter.id, xg: shot.xg, danger: 1 - sc.stop, isGoal: false, inPosts: wasOnTarget,
     fromX: shot.fromX, fromY: shot.fromY, toX: b.x, toY: b.y, outcome: 'saved',
   });
-  gameBus.emit('keeperSave', { keeperId: gk.id, kind, grade: sc.grade });
+  gameBus.emit('keeperSave', { keeperId: gk.id, kind, grade: sc.grade, x: b.x, y: b.y, z: b.z });
   debugLog('keeper', `${gk.name} ${kind === 'hold' ? 'holds' : kind === 'spill' ? 'spills' : 'parries'} the shot — ${sc.grade} save (stop ${(sc.stop * 100).toFixed(0)}%, offset ${offset.toFixed(2)}, ${speedMs.toFixed(1)} m/s)`, {
     playerId: gk.id, data: { ...odds, stop: sc.stop, offset, speedMs, grade: sc.grade },
   });
@@ -3253,7 +3256,7 @@ function keeperClaimsLooseBall(s: GameState, lb: NonNullable<GameState['looseBal
     const bestOther = s.players.reduce((m, p) => (p.id === gk.id || isPlayerInRecovery(p) ? m : Math.min(m, etaTo(p))), Infinity);
     if (!keeperTakesLoose(inBox, gkEta, bestOther)) continue;
     if (gk.decisionMemory?.decision?.type === 'chase_loose_ball') return s;
-    gameBus.emit('keeperSortie', { keeperId: gk.id, kind: 'sweep' });
+    gameBus.emit('keeperComeOut', { keeperId: gk.id, kind: 'loose', depth: depthFrom(gk.attackDir === 1 ? 0 : PITCH_LENGTH, lb.x) });
     debugLog('keeper', `${gk.name} comes for the loose ball in his box`, { playerId: gk.id });
     const chase: PlayerDecision = { type: 'chase_loose_ball', toX: lb.x, toY: lb.y };
     const path: DecisionPath = gk.team === lb.fromTeamLastTouch ? 'TEAM_WITH_BALL' : 'TEAM_WITHOUT_BALL';
@@ -3429,6 +3432,8 @@ function commitLooseBallChasers(
     keeperSmallBoxOnly?: boolean;
     /** Every outfielder may chase (set-piece delivery: the centre-backs who went up attack it too). */
     ignoreRoleWeights?: boolean;
+    /** Stage 11: the ball's flight time (s) to the point, for the keeper's claim decision. */
+    flightS?: number;
   } = {},
 ): GameState {
   const maxPerTeam = opts.maxPerTeam ?? THROUGH_BALL_CONFIG.MAX_CHASERS_PER_TEAM;
@@ -3446,6 +3451,15 @@ function commitLooseBallChasers(
     .filter(p => p.team === passerTeam && p.id !== passerId && p.role !== 'GK' && !isPlayerInRecovery(p))
     .reduce((m, p) => Math.min(m, etaOf(p)), Infinity);
   const sweepers = new Set<number>();
+  // Stage 11 (`keeper.md` → "Stage 11"): FM's keeper comes for a high ball only when he gets there first (both teams'
+  // outfield players), within his claim depth; no sweeper chase outside his box.
+  const fmKeeper = DECISION_FLAGS.FM_KEEPER;
+  const bestOutfieldEta = fmKeeper && opts.keeperSmallBoxOnly
+    ? state.players
+      .filter(p => p.id !== passerId && p.role !== 'GK' && !isPlayerInRecovery(p))
+      .reduce((m, p) => Math.min(m, etaOf(p)), Infinity)
+    : Infinity;
+  const highComers = new Set<number>();
   const collect = (team: TeamId, isAttacking: boolean): Cand[] => {
     const out: Cand[] = [];
     for (const p of state.players) {
@@ -3461,11 +3475,19 @@ function commitLooseBallChasers(
         // High balls: his small box, or the wide claim zone up to the penalty spot. Ground balls: his box, or
         // further up as a sweeper when he wins the race to it (`Keeper.ts`).
         const covered = !isAttacking && defenderCovers(p, { x: toX, y: toY }, state.players);
-        let inReach = opts.keeperSmallBoxOnly
+        if (fmKeeper) {
+          const comes = isAttacking ? false
+            : opts.keeperSmallBoxOnly
+              ? fmKeeperComesForHigh(p, toX, toY, etaOf(p), bestOutfieldEta, opts.flightS)
+              : isInGoalScoreArea(toX, toY, ownGoalX) && !covered;
+          if (comes && opts.keeperSmallBoxOnly) highComers.add(p.id);
+          weight = comes ? 1.0 : 0;
+        }
+        let inReach = fmKeeper ? weight > 0 : opts.keeperSmallBoxOnly
           ? isInSmallBox(toX, toY, ownGoalX) || (!isAttacking && !covered && keeperComesWide(
               Math.hypot(p.x - toX, p.y - toY), isWideClaimZone(toX, toY, ownGoalX), nearestOutfieldTo(state.players, p.id, toX, toY)))
           : isInGoalScoreArea(toX, toY, ownGoalX) && !covered;
-        if (!inReach && !covered && !opts.keeperSmallBoxOnly && !isAttacking && sweeperChases(p, toX, toY, etaOf(p), bestAttackerEta)) {
+        if (!fmKeeper && !inReach && !covered && !opts.keeperSmallBoxOnly && !isAttacking && sweeperChases(p, toX, toY, etaOf(p), bestAttackerEta)) {
           inReach = true;
           sweepers.add(p.id);
         }
@@ -3501,11 +3523,18 @@ function commitLooseBallChasers(
     }
   }
   for (const c of chasers) {
-    if (!sweepers.has(c.id)) continue;
-    const already = state.players.find(p => p.id === c.id)?.decisionMemory?.decision?.type === 'chase_loose_ball';
-    if (!already) {
-      gameBus.emit('keeperSortie', { keeperId: c.id, kind: 'sweep' });
-      debugLog('keeper', `Keeper ${c.id} sweeps out to (${toX.toFixed(0)}, ${toY.toFixed(0)})`, { playerId: c.id });
+    if (!sweepers.has(c.id) && !highComers.has(c.id)) continue;
+    const gk = state.players.find(p => p.id === c.id);
+    const already = gk?.decisionMemory?.decision?.type === 'chase_loose_ball';
+    if (!already && gk) {
+      const depth = depthFrom(gk.attackDir === 1 ? 0 : PITCH_LENGTH, toX);
+      if (highComers.has(c.id)) {
+        gameBus.emit('keeperComeOut', { keeperId: c.id, kind: 'high', depth });
+        debugLog('keeper', `${gk.name} comes for the high ball ${depth.toFixed(1)} yds out (first to it)`, { playerId: c.id, data: { depth } });
+      } else {
+        gameBus.emit('keeperComeOut', { keeperId: c.id, kind: 'sweep', depth });
+        debugLog('keeper', `Keeper ${c.id} sweeps out to (${toX.toFixed(0)}, ${toY.toFixed(0)})`, { playerId: c.id });
+      }
     }
   }
   // Anyone still chasing an earlier ball (chained clearances / punches) who is not re-selected
@@ -4121,10 +4150,11 @@ function handleLooseBall(s: GameState, dt: number): TickResult {
   debugLog(isTB ? 'throughBall' : 'aerial', `Loose ball won by defender ${winner.name}`, {
     playerId: winner.id, data: { fromId: lb.fromPasserId },
   });
-  // Sweeper keeper: a loose ball won outside his box is played with his feet (`Keeper.ts`).
-  if (winner.role === 'GK' && !isInGoalScoreArea(lb.x, lb.y, winner.attackDir === 1 ? 0 : PITCH_LENGTH)) {
-    gameBus.emit('keeperSweep', { keeperId: winner.id });
-    debugLog('keeper', `${winner.name} sweeps the ball up outside his box`, { playerId: winner.id });
+  // The keeper collects a loose ball; outside his box he plays it with his feet (`Keeper.ts`).
+  if (winner.role === 'GK') {
+    const inBox = isInGoalScoreArea(lb.x, lb.y, winner.attackDir === 1 ? 0 : PITCH_LENGTH);
+    gameBus.emit('keeperCollect', { keeperId: winner.id, inBox });
+    if (!inBox) debugLog('keeper', `${winner.name} sweeps the ball up outside his box`, { playerId: winner.id });
   }
   const prevHolderId = s.ballHolderId;
   return finishLooseBall({
@@ -4397,6 +4427,7 @@ function clearanceBall(
     maxPerTeam: AERIAL_CONFIG.MAX_CHASERS_PER_TEAM,
     etaHorizon: AERIAL_CONFIG.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
+    ...(meet ? { flightS: meet.t } : {}),
   });
 }
 
@@ -4466,6 +4497,15 @@ function noteShadowPress(presser: GamePlayer, holder: GamePlayer, receiverId: nu
 
 /** Zone covers of the last tick per side (`zoneCover` is emitted once per spell). */
 const _lastCover: Partial<Record<TeamId, Map<number, number>>> = {};
+// Stage 19 (`live-modes.md`): the shape clock and the zone covers travel with a mid-match snapshot.
+registerEngineMemory('gameState.shape', {
+  export: () => ({ t: _lastShapeMatchTime, phase: _lastShapePhase, cover: { A: _lastCover.A ? [..._lastCover.A] : null, B: _lastCover.B ? [..._lastCover.B] : null } }),
+  import: (v) => {
+    const m = v as { t: number; phase: string; cover: Record<TeamId, Array<[number, number]> | null> };
+    _lastShapeMatchTime = m.t; _lastShapePhase = m.phase;
+    _lastCover.A = m.cover.A ? new Map(m.cover.A) : undefined; _lastCover.B = m.cover.B ? new Map(m.cover.B) : undefined;
+  },
+});
 
 /**
  * Stage 15 (`team-shape.md`): the defending side's out-of-possession zones (its shape anchors) and who covers a
@@ -4664,6 +4704,7 @@ export function startAerialBall(
     etaHorizon: boxDelivery ? SET_PIECE_CONFIG.SET_PIECE_CHASE_ETA_HORIZON : C.CHASE_ETA_HORIZON,
     keeperSmallBoxOnly: true,
     ignoreRoleWeights: boxDelivery,
+    ...(meet ? { flightS: meet.t } : {}),
   });
 }
 
@@ -4794,7 +4835,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
       kind, corner: pass.fromSetPiece === true && pass.setPieceVariant === 'box', passerTeam,
       toucherId: winner?.id ?? null, toucherTeam: winner?.team ?? null, keeper: winner?.role === 'GK',
       x: point.x, y: point.y, z: contactZ, air: winner !== null && inAir, contested: goers.length > 1,
-      flightS: contact?.flightS ?? 0,
+      flightS: contact?.flightS ?? 0, inBox: isInGoalScoreArea(point.x, point.y, attackGoalX),
       contestants: goers.map(p => ({ id: p.id, team: p.team, line: headerLine(p.role), won: p.id === winner?.id })),
     });
     if (winner) {
@@ -4821,7 +4862,7 @@ export function resolveAerialLanding(state: GameState, rng: () => number = match
     if (comesNear || wide) {
       const depth = depthFrom(gkGoalX, point.x);
       if (wide) {
-        gameBus.emit('keeperSortie', { keeperId: gk.id, kind: 'high' });
+        gameBus.emit('keeperComeOut', { keeperId: gk.id, kind: 'high', depth });
         debugLog('keeper', `${gk.name} comes off his line for a high ball ${depth.toFixed(0)} yds out`, { playerId: gk.id });
       }
       // Beyond the small box a catch gets harder with the depth, whichever rule brought him out.
@@ -6158,8 +6199,8 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
         const shielding = holderDec?.type === 'carry' && holderDec.move === 'shield';
         const { success, chance } = resolveTackle(tacklerNow, updatedHolder, pressingLoad, shielding ? HOLDER_MOVES.SHIELD_TACKLE_RESIST : 0);
         if (shielding) gameBus.emit('holderMove', { playerId: updatedHolder.id, team: updatedHolder.team, move: 'shield', phase: success ? 'fail' : 'success' });
-        if (tacklerNow.role === 'GK') {
-          gameBus.emit('keeperSortie', { keeperId: tacklerNow.id, kind: 'rush' });
+        if (tacklerNow.role === 'GK' && !DECISION_FLAGS.FM_KEEPER) {
+          gameBus.emit('keeperComeOut', { keeperId: tacklerNow.id, kind: 'rush', depth: depthFrom(tacklerNow.attackDir === 1 ? 0 : PITCH_LENGTH, tacklerNow.x) });
           debugLog('keeper', `${tacklerNow.name} rushes out at ${updatedHolder.name} (${(chance * 100).toFixed(0)}%)`, { playerId: tacklerNow.id });
         }
         // Foul check (`.claude/rules/game-engine/fouls.md`): a foul overturns the challenge — the
@@ -6172,7 +6213,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
           s = rollContactInjuries(fouled, [tackler.id, updatedHolder.id], matchMinute(fouled));
           return { state: s, passCompleted: false, tackled: false, goalScored: null };
         }
-        if (success && tacklerNow.role === 'GK') gameBus.emit('keeperSmother', { keeperId: tacklerNow.id });
+        if (tacklerNow.role === 'GK') gameBus.emit('keeperFeet', { keeperId: tacklerNow.id, won: success });
         if (success) {
           // Won near the byline, wide of the posts: the ball goes behind for a corner sometimes.
           const hGoalX = updatedHolder.attackDir === 1 ? PITCH_LENGTH : 0;

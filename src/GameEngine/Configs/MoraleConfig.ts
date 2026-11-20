@@ -7,6 +7,7 @@
  * clears) the override from its options, so nothing leaks from a previous match.
  */
 import type { TeamId } from '@/GameEngine/types';
+import { registerEngineMemory, recordPart } from '@/GameEngine/Support/EngineMemory';
 
 const TEAM_MORALE_OVERRIDE: Record<TeamId, number | undefined> = { A: undefined, B: undefined };
 
@@ -18,3 +19,6 @@ export function setTeamMoraleOverride(team: TeamId, morale: number | undefined):
 export function matchMoraleOf(team: TeamId, playerMorale: number | undefined): number | undefined {
   return TEAM_MORALE_OVERRIDE[team] ?? playerMorale;
 }
+
+// Stage 19 (`live-modes.md`): the per-team configs travel with a mid-match snapshot.
+registerEngineMemory('MoraleConfig.TEAM_MORALE_OVERRIDE', recordPart(TEAM_MORALE_OVERRIDE as unknown as Record<string, unknown>));

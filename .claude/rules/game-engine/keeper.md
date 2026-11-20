@@ -118,3 +118,42 @@ With `SHOT_PHYSICS` the keeper's save is no dice on the xG: he reacts by reflexe
 3D ball and stops it within his hands by handling, the offset and the speed; then holds, parries or spills. During a
 physical shot the shot moves him (`tickPhysicalShot`), not the formation. His behaviour outside the shot is stage 11.
 See `shot-and-save.md` → "Stage 7".
+
+## Stage 11: FM's keeper (engine rebuild)
+
+Flag `FM_KEEPER` (`DECISION_FLAGS`, on by default); constants in `Configs/FmKeeperConfig.ts` (`FM_KEEPER`, knots
+`FM_KEEPER_DEFEND_KNOTS_M` / `FM_KEEPER_OWN_KNOTS_M`, env `FM_KEEPER_OVERRIDES`); pure rules in `Keeper.ts`
+(`fmKeeperOffLineM`, `fmKeeperTarget`, `fmClaimDepth`, `fmKeeperComesForHigh`, `fmKeeperDeviation`). Every number is read
+from FM (R8 §2, R9 §2), nothing calibrated (stage 21). Off = the active keeper of 7.7 above (arc, rush, sweeper, wide
+claims), the same play as before.
+
+- **Position** (`fmKeeperTarget`, both phases): metres off the line by the ball's distance from the centre of his goal
+  line, linear between knots. Opponent on the ball: 0 within 35 m, 2.7 / 6.0 / 10.5 m at the centres of the 35–52.5 /
+  52.5–70 / 70+ m bands. His own team: 0.5 within 20 m, 3.8 / 4.8 / 11 / 18.5 m at 30 / 43.75 / 61.25 / 85 m. Sideways
+  0.18 of the ball's offset from the centre. At least 0.3 yd off the line, pitch-clamped only (not the role bounds).
+- **No 1-v-1 rush, no sweeper.** He never runs at a holder through on goal, and he never chases a ground ball outside
+  his box. A loose ball in his box he gets to first is still his (`keeperComeOut` `loose`). A holder who runs into him
+  (2 yd) meets the challenge at the feet (`keeperFeet`, the 7.7 smother chance). The shot itself is stage 7's save by
+  the ball's path.
+- **High balls** (`fmKeeperComesForHigh`, in `commitLooseBallChasers`): he comes for one only when its meeting point
+  (stage 10's `meetPoint`, 1.8 m) is in his box, at most `3 + 8 × command` yd off his line (command = mean of
+  positioning and jumping; capped at FM's 16 m), he gets there before every outfield player of both teams, and in time
+  (his race ≤ the ball's flight to the point + 0.2 s). Otherwise he holds his line and only meets the ball if it passes
+  through his reach (stage 10's contact search). At the contact the 7.7 catch / punch / flap rule.
+- **Distribution and condition:** nothing new. The keeper as holder is the stage-8 chooser; his drain is stage 14's
+  (`GK_DRAIN_SCALE` 0.07). Both are only measured here.
+- **Events:** `keeperComeOut { kind: high | loose | sweep | rush, depth }` (sweep and rush only with the flag off),
+  `keeperCollect { inBox }` (any loose ball he wins), `keeperFeet { won }` replace `keeperSortie` / `keeperSweep` /
+  `keeperSmother`. `aerialContact.inBox`, `keeperSave` has the contact point (`x`, `y`, `z`).
+- **Statistics:** player `keeperComeOuts`, `keeperCollects`, `keeperFeetWins` (were sorties / sweeps / smothers); team
+  (defending side) `boxHighBalls`, `boxHighKeeper`, `boxHighDef`, `boxHighAtt`, `keeperClaims`, `keeperPunches`. `/lab`
+  `PairDetail`: "High balls into the box" and the keeper / defence / attack shares, "Keeper claims %". `fm-targets.ts`
+  section "The keeper": off the line by band and side, sideways follow, the box high balls, claims, open-play passes
+  (long ≥ 35 m, kept) and goal kicks.
+- **2D:** the dive already goes to the real point (stage 7 moves him to the ball's path). The `keeperSave` event picks
+  the figure's move: held at his body = catch (low: collect), wide = dive, a high parry = tip over.
+- **/test:** scenarios `keeper-sweeper` (he stays), `keeper-one-on-one` (he holds his line), `keeper-attacking` (own
+  bands), `keeper-high-ball` (spot cross: past his depth), new `keeper-six-yard-cross` (he claims) and `keeper-far-ball`
+  (opponent far away); overlay "Keeper": his claim depth and the 35 m radius.
+- Tests: `Domain/KeeperFm.test.ts`; `Domain/Keeper.test.ts` runs the 7.7 rules with `FM_KEEPER` and `FM_AERIAL` off.
+- Measured: `fm-numbers.md` → "Etapa 11".

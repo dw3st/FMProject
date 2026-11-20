@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { setDecisionFlags } from '@/GameEngine/Configs/DecisionConfig';
 import { TEST_SCENARIOS } from '@/GameEngine/Support/TestCases';
 import {
   arcComeOut, attackingAdvance, defenderCovers, isOneOnOne, isWideClaimZone, keeperAttackingTarget, keeperComesWide,
@@ -8,6 +9,10 @@ import { resolveAerialLanding, startThroughBall } from '@/GameEngine/Domain/game
 import { computeGKPositionQuality } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { gameBus } from '@/GameEngine/Infrastructure/EventBus';
 import type { GameState } from '@/GameEngine/types';
+
+// The active keeper of 7.7 (arc, rush, sweeper, wide claims): stage 11's FM keeper and stage 10's contact model off.
+beforeAll(() => setDecisionFlags({ FM_KEEPER: false, FM_AERIAL: false }));
+afterAll(() => setDecisionFlags());
 
 const scenario = (id: string): GameState => TEST_SCENARIOS.find(s => s.id === id)!.createState();
 const byName = (s: GameState, name: string) => s.players.find(p => p.name === name)!;
@@ -92,7 +97,7 @@ describe('sweeper', () => {
         : p)),
     };
     const sorties: string[] = [];
-    const off = gameBus.on('keeperSortie', e => sorties.push(e.kind));
+    const off = gameBus.on('keeperComeOut', e => sorties.push(e.kind));
     const out = startThroughBall(skilled, { cellX: 95, cellY: 37, intendedRunnerId: byName(s, 'Santos').id });
     off();
     expect(out.decisions[byName(s, 'Kowalski').id]?.type).toBe('chase_loose_ball');
@@ -153,7 +158,7 @@ describe('high balls beyond the small box', () => {
       },
     };
     const sorties: string[] = [];
-    const off = gameBus.on('keeperSortie', e => sorties.push(e.kind));
+    const off = gameBus.on('keeperComeOut', e => sorties.push(e.kind));
     resolveAerialLanding(st, () => 0.99);
     off();
     expect(sorties).toEqual(['high']);

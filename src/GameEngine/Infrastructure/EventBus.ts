@@ -76,6 +76,8 @@ export interface GameEvents {
   shotLaunched: {
     player: number; team: TeamId; technique: import('@/GameEngine/types').ShotTechnique; speedMs: number; vzMs: number;
     aimY: number; aimZ: number; errDeg: number; distance: number; onTarget: boolean; blockers: number;
+    /** Stage 9: distance (m) from the strike point to the goal centre, and struck from outside the box. */
+    fromM?: number; outsideBox?: boolean;
   };
   /** Stage 7: a defender in the way sent the shot on (it keeps flying). */
   shotDeflected: { player: number; blockerId: number };
@@ -165,24 +167,30 @@ export interface GameEvents {
     air: boolean;
     contested: boolean;
     flightS: number;
+    /** Stage 11: the contact (or the landing) is inside the defending team's penalty area. */
+    inBox?: boolean;
     contestants: Array<{ id: number; team: TeamId; line: 'GK' | 'DEF' | 'MID' | 'FWD'; won: boolean }>;
   };
   /** A goalkeeper came for a high ball: `claimed` (caught) or punched. */
   /** `x`/`y`: where the ball drops (the drawing has the keeper reach it). */
   gkClaim: { keeperId: number; claimed: boolean; chance: number; x?: number; y?: number };
-  /** Active keeper (`Keeper.ts`): he comes off his line — sweeper chase, 1v1 rush, wide high ball. */
-  keeperSortie: { keeperId: number; kind: 'sweep' | 'rush' | 'high' };
-  /** A loose ball won by the keeper outside his box. */
-  keeperSweep: { keeperId: number };
-  /** A keeper's challenge won the ball at a holder's feet. */
-  keeperSmother: { keeperId: number };
+  /**
+   * The keeper leaves his position for the ball (`Keeper.ts`): `high` = he comes for a high ball (stage 11: only when he
+   * gets there first, within his claim depth), `loose` = a loose ball in his box he gets to first; `sweep` / `rush` only
+   * with `FM_KEEPER` off (the 7.7 sweeper and 1-v-1 rush). `depth` = yards off his line of the point.
+   */
+  keeperComeOut: { keeperId: number; kind: 'high' | 'loose' | 'sweep' | 'rush'; depth: number };
+  /** The keeper won a loose ball (`inBox`: inside his penalty area). */
+  keeperCollect: { keeperId: number; inBox: boolean };
+  /** A keeper's challenge at a holder's feet (the holder ran into him): `won` the ball or not. */
+  keeperFeet: { keeperId: number; won: boolean };
   /**
    * Movement of one step (`kinematics.md`): yards covered per player, and the players whose run just became a sprint
    * (≥ SPRINT_FRACTION of their top speed for SPRINT_SECONDS).
    */
   playerMoved: { moves: Array<[number, number]>; sprints: number[] };
   /** What a save did (12.10): held, spilled loose in front of goal, or parried behind for a corner. */
-  keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry"; grade?: "routine" | "good" | "difficult" };
+  keeperSave: { keeperId: number; kind: "hold" | "spill" | "parry"; grade?: "routine" | "good" | "difficult"; x?: number; y?: number; z?: number };
   /** A rehearsed routine was called for a corner / crossed free kick (`set-pieces-play.md`). */
   setPieceRoutine: { team: 'A' | 'B'; takerId: number; kind: 'corner' | 'free_kick'; target: string; attackers: number };
   /** A header at goal (also emitted as a `shot`). */
@@ -353,6 +361,8 @@ export interface GameEvents {
         score:       number;
         /** Stage 6 (`xg.md`): the FM xG model of the shot (with `FM_XG`). */
         fm?: { model: string; features: Record<string, number>; availableM: number; coveredM: number; inTriangle: number };
+        /** Stage 9: the FM shot gate (factor null = beyond 30 m) and the clean xG the value reads. */
+        gate?: { factor: number | null; cleanXg: number; distM: number };
       };
       pass: {
         toId:               number | null;

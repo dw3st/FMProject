@@ -1322,8 +1322,8 @@
       "KS": "Saídas do goleiro",
       "DST": "Distância percorrida (jardas)",
       "SPR": "Arrancadas (85% da velocidade máxima por 1 s)",
-      "KW": "Bolas afastadas pelo goleiro",
-      "KM": "Abafadas do goleiro",
+      "KW": "Bolas recolhidas pelo goleiro",
+      "KM": "Bolas ganhas nos pés pelo goleiro",
       "LB": "Lançamentos Longos",
       "TI": "Laterais",
       "SOT": "Chutes no gol",
@@ -1337,6 +1337,17 @@
     "momentumPoints": "Pontos de momento (tabela do FM): {{a}} – {{b}}"
   },
   "match": {
+    "mode": { "label": "Partida", "full": "Inteira", "highlights": "Só os lances", "hint": "Inteira: os 90 minutos acelerados. Só os lances: os lances em velocidade normal, o resto pulado." },
+    "highlights": {
+      "levelLabel": "Lances",
+      "level": { "main": "Principais", "extended": "Estendidos", "full": "Completos" },
+      "next": "Próximo lance",
+      "waiting": "Simulando os próximos lances",
+      "skipped": "{{from}}' a {{to}}'",
+      "timeline": "Lances da partida",
+      "count_one": "{{count}} lance",
+      "count_other": "{{count}} lances"
+    },
     "effects": {
       "save": "DEFESA",
       "wide": "PRA FORA",

@@ -202,7 +202,8 @@ It adds **context bonuses**, like:
 - VAR: a goal ruled out undoes every hook it added (scorer, adders, assist, mistake).
 - Resume: `exportRatings` / `importRatings` stay plain numbers (the wire, the reload snapshot); an import keeps the
   tallies and a residual so later hooks move the number from the imported one. `exportRatingState` /
-  `importRatingState` carry the tallies (`HighlightSkip`).
+  `importRatingState` carry the tallies and the cross-event trackers (last shot, mistake, goal records, last touch;
+  `HighlightSkip`, `LiveSnapshot` of the highlights mode).
 - `/test`: RT column of the Stats panel (tooltip = the parts), scenario `rating-chance-created`, debug category
   `rating`. `/lab`: mean rating by line, outfield sd and % ≥ 8 (`PairDetail`). Measurement:
   `bun scripts/rating-distribution.ts [matches] [league] --out f.json` and `--eval f.json --fm-scale [--weights …]`.
@@ -217,6 +218,8 @@ It adds **context bonuses**, like:
 - `Domain/Momentum.ts`: from `simStep` (positions, holder changes) and the shot events it emits `momentumPoints`;
   `Statistics.ts` sums `momentumPoints` / `momentumShotPoints` per team; the bar (`momentumBar`) is the difference of the
   points per match minute with a 4-minute half-life over 15 minutes (`MOMENTUM`; FM's decay was not found). A browser
-  that only replays the server's events (two-manager match, watch) gets the forwarded `momentumPoints`.
+  that only replays the server's events (two-manager match, watch) gets the forwarded `momentumPoints`. The stats
+  snapshot carries it whole (positions of the last step, holder), so a highlights-mode jump keeps it; the bar re-reads
+  once a second.
 - Screens: `MomentumBar` in the match summary panel (slot `momentum`) and in the `/test` Stats panel (with the
   per-minute strip and the points). `/lab`: momentum points per match.

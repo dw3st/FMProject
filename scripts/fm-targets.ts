@@ -14,7 +14,7 @@ import type { FmWorkerOut } from "@/../scripts/fm-targets-worker";
 import {
   BALL_GROUPS, BAND_LABELS, FM_FOULS, CONDITION_MINUTES, FM_BALL, FM_CONDITION, FM_COUNT_KEYS, FM_HOLDER_MIX, FM_KEEPER_END, FM_NEAR_HOLDER, FM_PASS_BAND,
   FM_PASS_OVERALL, FM_PASS_PRESSURE, FM_PRESSERS, FM_SHAPE, FM_TIMING, HOLDER_CATS, LINES, PRESSURE_LABELS, SHOT_LABELS,
-  FLIGHT_LABELS, FM_FLIGHT_S, FM_GOAL_BY_DIST, SHOT_M_LABELS, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS,
+  FLIGHT_LABELS, FM_FLIGHT_S, KEEPER_BANDS, FM_KEEPER_OFF_OPP, FM_KEEPER_OFF_OWN, FM_GOAL_BY_DIST, SHOT_M_LABELS, FM_LOSS_SPLIT, FM_LANDING, FM_LAUNCH, FM_PASS_VZ, LANDING_GROUPS, LAUNCH_LABELS, VZ_LABELS, FM_SHOT_DIST_SHARE,
   emptyFmTargets, fmTargetRows, longShotsOf, xgMedianOf, median, mergeFmTargets, pct, perMatchCounts, type FmMatchCounts, type Outcome3,
 } from "@/lab/fmTargets";
 
@@ -204,6 +204,26 @@ console.log("  " + SHOT_LABELS.map((l, i) => `${l} ${f1((100 * fm.shotDist[i]!) 
     const row = ends[i]!; const t = row.reduce((a, b) => a + b, 0);
     return `${l} n ${t} goal ${t ? f1((100 * row[0]!) / t) : "—"}% (FM ${FM_GOAL_BY_DIST[i]}) blk ${t ? f1((100 * row[2]!) / t) : "—"}%`;
   }).join(" · "));
+  // Stage 9 (`holder-choice.md` → "Stage 9"): where the shots come from.
+  const endT = ends.reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0) || 1;
+  console.log("  shot share by distance (m): " + SHOT_M_LABELS.map((l, i) => `${l} ${f1((100 * ends[i]!.reduce((a, b) => a + b, 0)) / endT)}% (FM ${FM_SHOT_DIST_SHARE[i]})`).join(" · "));
+  console.log(`  struck from outside the box ${f1((100 * (c.shotsOutsideBox ?? 0)) / launched)}% (FM 46 R9 · 27 R8) · mean distance ${f1((c.shotDistSumM ?? 0) / launched)} m (FM median 14.9) · low vz ≤ 3 m/s ${f1((100 * (c.shotsLowLaunch ?? 0)) / launched)}% (FM 28)`);
+}
+// Stage 11 (`keeper.md` → "Stage 11"): FM's keeper — off the line by band, sideways follow, high balls in his box, distribution.
+{
+  console.log("\n── The keeper (stage 11; R8 §2, R9 §2) ──");
+  const med = (a: number[]) => (a.length ? f1(median(a)) : "—");
+  console.log("  off the line (m, median), opponent on the ball: " + KEEPER_BANDS.map((b, i) => `${b} ${med(fm.keeperOff.opp[i]!)} (FM ${FM_KEEPER_OFF_OPP[i]})`).join(" · "));
+  console.log("  off the line (m, median), own team on the ball: " + KEEPER_BANDS.map((b, i) => `${b} ${med(fm.keeperOff.own[i]!)} (FM ${FM_KEEPER_OFF_OWN[i] ?? "—"})`).join(" · ") + "   (R8 70+ 10.8, R9 far 15–22)");
+  console.log(`  sideways follow within 35 m ${f2(fm.keeperLat.num / Math.max(1e-9, fm.keeperLat.den))} × the ball's offset (FM 0.14–0.18)`);
+  const bh = world.boxHighBalls ?? 0;
+  const bs = (k: string) => (100 * (world[k] ?? 0)) / Math.max(1, bh);
+  console.log(`  high balls met / landing in the box ${f2(bh / n)} per match: keeper ${f1(bs("boxHighKeeper"))}% (FM 28) · defence ${f1(bs("boxHighDef"))}% (FM 42) · attack ${f1(bs("boxHighAtt"))}% (FM 31) · nobody ${f1(100 - bs("boxHighKeeper") - bs("boxHighDef") - bs("boxHighAtt"))}%`);
+  const cl = world.keeperClaims ?? 0; const pu = world.keeperPunches ?? 0;
+  console.log(`  keeper claims ${f2(cl / n)} · punches ${f2(pu / n)} per match (claims ${f1((100 * cl) / Math.max(1, cl + pu))}%) · come-outs ${f2((world.keeperComeOuts ?? 0) / n)} · loose balls collected ${f2((world.keeperCollects ?? 0) / n)} · won at the feet ${f2((world.keeperFeetWins ?? 0) / n)}`);
+  const kp = fm.keeperPass;
+  console.log(`  keeper open-play passes ${f1(kp.n / n)} per match (FM 47) · long (35 m+) ${f1((100 * kp.long) / Math.max(1, kp.n))}% (FM 40) · median ${med(kp.dist)} m (FM 21) · kept short ${f1((100 * kp.shortKept) / Math.max(1, kp.shortN))}% (FM 100) · long ${f1((100 * kp.longKept) / Math.max(1, kp.longN))}% (FM 33)`);
+  console.log(`  goal kicks ${f1(fm.goalKick.n / n)} per match (FM 15.4) · long ${f1((100 * fm.goalKick.long) / Math.max(1, fm.goalKick.n))}% (FM 38)`);
 }
 console.log("\n── World / match ──");
 console.log("  " + Object.entries(world).filter(([k]) => !k.startsWith("ball") && !k.startsWith("highlight") && !k.startsWith("holder") && k !== "liveSeconds").map(([k, v]) => `${k} ${f2(v / n)}`).join(" · "));
