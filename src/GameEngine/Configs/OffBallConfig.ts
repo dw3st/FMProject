@@ -9,7 +9,7 @@ type IntentMultMap = Record<OffBallIntentKey, number>;
  * Possession tilts toward support / shape; direct tilts toward runs.
  */
 export const INTENT_BUILD_UP: Record<'possession' | 'balanced' | 'direct', IntentMultMap> = {
-  possession: { offer_support: 1.4, hold_space: 1.2, make_run: 0.6 },
+  possession: { offer_support: 1.4, hold_space: 1.2, make_run: 1.0 },
   balanced:   { offer_support: 1.0, hold_space: 1.0, make_run: 1.0 },
   direct:     { offer_support: 0.8, hold_space: 0.7, make_run: 1.5 },
 };

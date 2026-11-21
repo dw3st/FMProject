@@ -13,7 +13,7 @@
 import { applyEnvOverrides } from '@/GameEngine/Support/EnvOverrides';
 
 export const TACKLE_CONFIG = {
-  COMMIT_BASE: 0.2,
+  COMMIT_BASE: 0.07, // stage 21 R9 round: 0.2 → 0.07 (tackles won 34 → ~19, FM 17)
   COMMIT_POW: 3,
 };
 

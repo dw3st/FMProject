@@ -996,7 +996,11 @@ function fmHolderChoice(
     const r = allPlayers.find(p => p.id === l.toId);
     if (!r) continue;
     const d = Math.hypot(r.x - player.x, r.y - player.y);
-    const offside = offsideLine !== null && (player.attackDir === 1 ? r.x > offsideLine : r.x < offsideLine);
+    // Stage 21: the passer reads the line too, by eye — an error up to ± PASS_OFFSIDE_READ_YD × (1.2 − vision), so a
+    // runner a yard past it is sometimes picked (FM's offsides come from passes, not only from through balls).
+    const readErr = H.PASS_OFFSIDE_READ_YD > 0 && offsideLine !== null
+      ? (matchRandom() * 2 - 1) * H.PASS_OFFSIDE_READ_YD * (1.2 - wb.vision) : 0;
+    const offside = offsideLine !== null && (r.x - offsideLine) * player.attackDir > readErr;
     let v = compress(Math.max(0, l.quality + roleBias), PASS_STRONG_RAW);
     if (release) v *= M.RELEASE_PASS_MULT;
     if (widen > 0 && (l.progressScore ?? 1) <= M.BACK_PASS_PROGRESS) v *= 1 + widen;
@@ -1015,6 +1019,11 @@ function fmHolderChoice(
     if (tbn >= H.TB_CANDIDATES) break;
     if (gate && !gate(c.x, c.y, c.components.bestAttackerId)) continue;
     if (simple && c.components.raceMargin < M.SIMPLE_RACE_S) continue;
+    // FM plays the through ball to a runner (stage 21): the intended runner must already be running forward.
+    if (H.TB_RUNNER_MIN_FWD > 0) {
+      const runner = allPlayers.find(p => p.id === c.components.bestAttackerId);
+      if (!runner || (runner.vel?.x ?? 0) * runner.attackDir < H.TB_RUNNER_MIN_FWD) continue;
+    }
     tbn++;
     const t = throughBallAction(player, c);
     const race = c.components.raceMarginScore;
@@ -1055,8 +1064,12 @@ function fmHolderChoice(
       { type: 'long_ball', toX: a.lb.toX, toY: a.lb.toY!, targetId: a.lb.targetId! });
   }
   // ── shot and chip (category 1, kicks) ──
-  if (a.sh.score > 0 && !(minded && shotYd > range)) add(1, 'shot', `xG ${(a.sh.shootBreakdown?.xg ?? 0).toFixed(2)}`, a.sh.score + (shotYd > M.LONG_SHOT_FROM_YD ? fb : 0), 0, { type: 'shoot' });
-  for (const mv of a.moves) if (mv.type === 'shoot' && !simple) add(1, 'chip', 'chip', mv.score + fb, 0, { type: 'shoot', move: mv.move! });
+  // Stage 21: the holder decides every step (0.2 s), FM's far less often, so a holder in a shooting spot for a second
+  // had five tries at the shot where FM's has one or two. The shot is in his options on a share of the decisions
+  // (always in a one-on-one, the `gate` path).
+  const looks = gate || SHOT_GATE.LOOK_CHANCE >= 1 || matchRandom() < SHOT_GATE.LOOK_CHANCE;
+  if (looks && a.sh.score > 0 && !(minded && shotYd > range)) add(1, 'shot', `xG ${(a.sh.shootBreakdown?.xg ?? 0).toFixed(2)}`, a.sh.score + (shotYd > M.LONG_SHOT_FROM_YD ? fb : 0), 0, { type: 'shoot' });
+  for (const mv of a.moves) if (looks && mv.type === 'shoot' && !simple) add(1, 'chip', 'chip', mv.score + fb, 0, { type: 'shoot', move: mv.move! });
   // ── carries (category 4): every lane, the sprint, the byline run, the dribble, cut inside, round the keeper ──
   const carryMult = release ? M.RELEASE_CARRY_MULT : 1;
   let bestLane: CarryLaneOption | null = null;

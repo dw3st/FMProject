@@ -58,7 +58,7 @@ export const SHOT_PHYSICS = {
   /** He leaves a ball predicted to miss the frame by more than this (yd) and does not dive. */
   LEAVE_MARGIN: 0.4,
   /** Stop chance = STOP_BASE + STOP_SKILL × (handling − 0.5) − STOP_EDGE × offset² − STOP_SPEED × (speed − STOP_FREE_MS)⁺. */
-  STOP_BASE: 0.98, STOP_SKILL: 0.2, STOP_EDGE: 0.3, STOP_SPEED: 0.01, STOP_FREE_MS: 18, STOP_MIN: 0.05, STOP_MAX: 0.98,
+  STOP_BASE: 0.94, /* R9: 0.98 → 0.94 (goals: real volume) */ STOP_SKILL: 0.2, STOP_EDGE: 0.3, STOP_SPEED: 0.01, STOP_FREE_MS: 18, STOP_MIN: 0.05, STOP_MAX: 0.98,
   /** A touched ball he does not stop runs on: speed × FINGERTIP_KEEP, turned up to FINGERTIP_DEG. */
   FINGERTIP_KEEP: 0.75, FINGERTIP_DEG: 12,
   /** Save grades: difficult from this offset or speed (m/s), good from these. */
@@ -66,11 +66,11 @@ export const SHOT_PHYSICS = {
 
   // ── Blocks (stage 5's physical interception applied to the shot) ──
   /** Seconds before a defender reacts to the strike; then he lunges at LUNGE_SPEED (yd/s). */
-  BLOCK_REACTION_S: 0.15, LUNGE_SPEED: 4.5,
+  BLOCK_REACTION_S: 0.3, LUNGE_SPEED: 4.5, // R9: reaction 0.15 → 0.3 (blocked 44% → ~40%, FM 38%)
   /** Body + leg across the ball (yd): BLOCK_BODY + BLOCK_TACKLE × tackling; up to BLOCK_MAX_Z high (a jumping body). */
   BLOCK_BODY: 0.5, BLOCK_TACKLE: 0.5, BLOCK_MAX_Z: 2.2,
   /** Defenders planned to lunge at a shot (the earliest). */
-  MAX_BLOCKERS: 3,
+  MAX_BLOCKERS: 2, // R9: 3 → 2
   /** A block: controlled (CONTROL_BASE + CONTROL_TOUCH × first touch, × the speed factor), deflected on toward goal, or rebounds. */
   BLOCK_CONTROL_BASE: 0.08, BLOCK_CONTROL_TOUCH: 0.15, DEFLECT_ON: 0.25,
   /** A deflection on keeps this share of the speed, turned up to this; a rebound this share, spread around the way back. */

@@ -882,3 +882,74 @@ Substitui a tabela final acima. Faixa provisória: volume ±10%, proporções ±
 - **Impedimentos (2, FM 8):** a linha mais funda deixa os atacantes em condição; caiu junto com a linha.
 - **Tiros de meta (9, FM 15):** menos chutes para fora e mais escanteios de corte.
 - **Desarmes e interceptações (×2):** seguem o cerco (13%, FM ~5,5%).
+
+## Rodada do R9 (etapa 21, 2026-11-20)
+
+Volume: futebol real (~2,7 gols, ~25 chutes; passes ~1 000, impedimentos ~4); comportamento: relatório 9 do FM.
+
+### Mecanismos achados
+
+- **Estilos:** os níveis das instruções que não são eixo (`tempo`, `onWin`…) no modelo do estilo não fazem nada (agem
+  pela diferença ao modelo). A diferença entre estilos vem só dos eixos: tabelas de passe e condução por `build_up`
+  (`AttackConfig`), multiplicadores sem bola por `build_up` (`OffBallConfig.INTENT_BUILD_UP`) e as tabelas de pressão
+  (`DefensiveIntentConfig`). O argmax do portador é de fio de navalha: 15% da inclinação de segurança da posse (corredor
+  0,38, espaço 0,38, distância 0,19, progresso 0,12) levava o espelho da posse de 27 a 21 chutes, a bola girando no meio
+  (75% do tempo com a bola no meio, 13% no terço final). O bloco baixo × linha funda dava pressão 0,3 × 0,6 = 0,18,
+  abaixo do limiar: ninguém fechava o portador, e o contra-ataque perdia de todos (−62).
+- **Correções:** `BUILD_UP_DAMP.SHARE` 0,15 (o time joga balanceado + 15% da tabela do estilo, passe, condução e sem
+  bola); posse com corredor, espaço, distância, progresso e proximidade do balanceado e condução do balanceado (fica o
+  roteamento pelo meio, a bola em profundidade e poucas bolas longas; sem bola, corrida × 1 em vez de × 0,6); bloco baixo pressão 0,85 / passo 0,9, linha funda
+  pressão 0,85; pressão alta 1,4 → 1,25; contra-ataque com linha normal; jogo direto com largura normal.
+- **Volume:** goleiro (`STOP_BASE` 0,98 → 0,94), bloqueio (`BLOCK_REACTION_S` 0,15 → 0,3, `MAX_BLOCKERS` 3 → 2),
+  `XG_REF` 0,29, `KICK_MULT` 1,5. Desarme `COMMIT_BASE` 0,07, interceptação reação 1,35 / corpo 0,25, bola em
+  profundidade só para quem já corre a 5,5 jd/s, segurar 1,4 → 1,5 (passes −6%; 1,58 dá 1 140 passes mas 20 chutes e 11
+  dribles). O passo de condução (3,2 / 4,4) e `HOLD_S` não mudam os passes; o erro de leitura do impedimento do passador
+  (6 → 9 / 12) e o lapso do atacante não mudam os impedimentos.
+
+### Tabela final (Premier 36 partidas; Championship 12), nosso / alvo
+
+| Medida | Premier | Championship | Alvo | Dentro? |
+|---|---|---|---|---|
+| Gols | 2,4 | 2,6 | 2,5–3,0 (Champ. 2,4–2,6) | não (−0,1) / sim |
+| Chutes | 22,5 | 24,0 | 23–27 | não (−0,5) / sim |
+| No alvo % | 34,6 | 33,0 | 35 (FM) | sim |
+| Bloqueados % | 38,8 | 43,4 | 38 (FM) | sim / não (+5,4) |
+| De fora da área % | 42,5 | 47,6 | 46 (FM) | sim |
+| Defendidos % | 82,5 | 80,0 | 80 (FM) | sim |
+| Escanteios | 14,1 | 10,0 | 12,5 (FM) | não (+13%) / não (−20%) |
+| Passes | 1 228 | 1 125 | ~1 000 (real) | não (+23 / +12%) |
+| Acerto dos passes % | 85,9 | 86,7 | 86 (FM) | sim |
+| Desarmes ganhos | 19,6 | 12,8 | 17 (FM) | não (+15 / −25%) |
+| Interceptações | 67 | 55 | 59 (FM) | não (+14%) / sim |
+| Dribles | 13,9 | 32,5 | 20 (FM) | não |
+| Faltas | 23,9 | 27,3 | 19 (FM) | não |
+| Impedimentos | 2,2 | 2,5 | 3–5 (real) | não |
+| Bolas em profundidade | 17,0 | 11,8 | 11,7 (FM) | não (×1,45) / sim |
+| Condição aos 90' | 72,2 | 71,8 | 73,5 (FM) | sim |
+
+Ruído: com 36 partidas os gols variam ~±0,3 entre rodadas iguais (rodadas de configuração quase igual deram 1,9 a 3,0);
+com 12, ~±0,6.
+
+### Estilos (`bun scripts/style-matrix.ts premier_league 48`, 48 jogos por par, erro ~±6 p.p. na média)
+
+| Estilo | Vantagem média | Gols do espelho | Chutes do espelho |
+|---|---|---|---|
+| balanced | −4,2 | 2,23 | 21,8 |
+| possession | −2,1 | 1,94 | 20,9 |
+| high_press | −13,5 | 2,90 | 26,9 |
+| counter_attack | +8,3 | 2,60 | 22,3 |
+| direct_play | +11,5 | 2,54 | 26,3 |
+
+Antes da rodada: posse −51 (espelho 7 chutes), contra-ataque −41 (52 chutes), jogo direto +52.
+
+### O que ficou fora
+
+- **Gols e chutes da Premier** um pouco abaixo da faixa: dentro do ruído de uma rodada de 36 jogos.
+- **Passes (+23%):** as decisões por segundo vivo (1,0, FM 0,65) e a parte dos passes (46%, FM 34) são altas; o que
+  tira passes (segurar) tira junto chutes e dribles.
+- **Impedimentos (2,2):** nenhuma alavanca de leitura da linha mexeu; o passador quase nunca escolhe o recebedor
+  impedido, e as bolas em profundidade caíram.
+- **Dribles e faltas:** a Championship dribla 1,6× o FM e as faltas seguem +26 / +44%.
+- **Estilos:** pressão alta (−13,5) e jogo direto (+11,5) ficam a ~2 erros-padrão da faixa de ±10; posse (1,94) e
+  pressão alta (2,90) ficam fora dos ±15% do volume médio dos espelhos (2,44). Menos pressão baixa o volume da pressão
+  alta e a vantagem dela junto.

@@ -142,17 +142,17 @@ const BUILD_UP_PASS: Record<BuildUpStyle, TeamPassWeights> = {
   // All positive weights (PROGRESS + LANE + SPACE + GOAL) sum to 1.0 per style.
   // Ratios preserved; DISTANCE_PENALTY and MIN_PASS_SCORE scaled by the same factor.
   possession: {
-    // Original positives summed to 1.30; scale factor 1/1.30.
-    // Ratios: PROGRESS=GOAL=0.15, LANE=SPACE=0.50 → 3:10:10:3.
-    PROGRESS_WEIGHT:         0.12,
-    LANE_WEIGHT:             0.38,
-    RECEIVER_SPACE_WEIGHT:   0.38,
-    DISTANCE_PENALTY_WEIGHT: 0.19,
-    GOAL_PROXIMITY_WEIGHT:   0.12,
+    // Stage 21 R9: the lane / space / distance / progress weights are balanced's. The argmax is knife-edged: even 15%
+    // of the old safety tilt (lane 0.38, space 0.38, distance 0.19, progress 0.12) took a possession mirror from 27 to
+    // 21 shots, the ball circulating in midfield. The style keeps the routing through midfield, the through-ball
+    // appetite and few long balls.
+    PROGRESS_WEIGHT:         0.30,
+    LANE_WEIGHT:             0.26,
+    RECEIVER_SPACE_WEIGHT:   0.18,
+    DISTANCE_PENALTY_WEIGHT: 0.13,
+    GOAL_PROXIMITY_WEIGHT:   0.26,
     MIN_PASS_SCORE:          0.38,
-    // Patient build-up routes through midfield more. ROLE_BIAS_WEIGHT 0.14 keeps
-    // MIDs circulating; THROUGH_BALL_BONUS 0.10 + CLEARANCE 0.90 (carry) win back the
-    // shots the extra passing cost (issue #8).
+    // Patient build-up routes through midfield more (issue #8).
     RECEIVER_ROLE_WEIGHT:    0.14,
     ROLE_BIAS_WEIGHT:        0.14,
     THROUGH_BALL_BONUS:      0.10,
@@ -229,17 +229,9 @@ const BUILD_UP_CARRY: Record<BuildUpStyle, TeamCarryWeights> = {
     MIN_TOTAL_SCORE:      0.35,
   },
   balanced: { ...CARRY_WEIGHT_DEFAULTS },
-  possession: {
-    // Higher clearance weight so truly open lanes score above MIN_TOTAL_SCORE (0.55).
-    // Moderate carries (clearance ~0.60) still fail the threshold — only clearly
-    // open space qualifies. Progress is de-emphasised; possession carries sideways
-    // or slightly backward when space is genuinely there.
-    CLEARANCE_WEIGHT:     0.9,
-    PROGRESS_WEIGHT:      0.15,
-    ANGLE_WEIGHT:         0.10,
-    CROWD_PENALTY_WEIGHT: 0.45,
-    MIN_TOTAL_SCORE:      0.55,
-  },
+  // Stage 21 R9: possession carries like balanced (the safety-first table kept a possession mirror in midfield, 19
+  // shots against ~28); its identity is the passing.
+  possession: { ...CARRY_WEIGHT_DEFAULTS },
 };
 
 const TEAM_CARRY_WEIGHTS: Record<TeamId, TeamCarryWeights> = {
@@ -255,6 +247,30 @@ export function getTeamCarryConfig(team: TeamId): { [K in keyof typeof CARRY_CON
     cfg.MIN_TOTAL_SCORE += (TEAM_MENTALITY[team] === 'defensive' ? 1 : -1) * FM_NUMBERS.MENTALITY_CARRY_MIN;
   }
   return cfg;
+}
+
+/**
+ * Share of a build-up style's weights that the team plays (stage 21, R9 round): balanced + share × (style − balanced).
+ * With the full tables (share 1) a possession mirror circulated in midfield (13% of the ball in the final third, 7
+ * shots a match) and a direct mirror took ~50. `BUILD_UP_OVERRIDES='{"SHARE":0.5}'` (env) for measuring runs.
+ */
+export const BUILD_UP_DAMP = { SHARE: 0.15 };
+{
+  const raw = typeof process !== 'undefined' ? process.env?.BUILD_UP_OVERRIDES : undefined;
+  if (raw) {
+    try {
+      const o = JSON.parse(raw) as { SHARE?: number; pass?: Partial<Record<BuildUpStyle, Partial<TeamPassWeights>>> };
+      if (typeof o.SHARE === 'number') BUILD_UP_DAMP.SHARE = o.SHARE;
+      for (const k of Object.keys(o.pass ?? {}) as BuildUpStyle[]) Object.assign(BUILD_UP_PASS[k], o.pass![k]);
+    } catch { /* ignored */ }
+  }
+}
+
+function dampedBuildUp<T extends object>(style: T, balanced: T): T {
+  const out = { ...style } as Record<string, number>;
+  const b = balanced as Record<string, number>;
+  for (const k of Object.keys(out)) out[k] = b[k]! + BUILD_UP_DAMP.SHARE * (out[k]! - b[k]!);
+  return out as T;
 }
 
 const TEAM_MENTALITY: Record<TeamId, Mentality> = { A: 'balanced', B: 'balanced' };
@@ -347,8 +363,8 @@ export function applyTeamAttackConfig(
   const resolved = resolveInstructions(style, axesOverride, instructions, mentalityLevel);
   setTeamInstructions(team, resolved, instructionFamiliarity(familiarity));
   const axes = shiftAxesByMentality(axesOfLevels(resolved.levels).attack, mentality);
-  Object.assign(TEAM_PASS_WEIGHTS[team], BUILD_UP_PASS[axes.build_up]);
-  Object.assign(TEAM_CARRY_WEIGHTS[team], BUILD_UP_CARRY[axes.build_up]);
+  Object.assign(TEAM_PASS_WEIGHTS[team], dampedBuildUp(BUILD_UP_PASS[axes.build_up], BUILD_UP_PASS.balanced));
+  Object.assign(TEAM_CARRY_WEIGHTS[team], dampedBuildUp(BUILD_UP_CARRY[axes.build_up], BUILD_UP_CARRY.balanced));
   const styleFactor = familiarityFactor(familiarity?.[style]);
   const styleEffect = STYLE_FAMILIARITY_EFFECTS[style];
   applyMult(TEAM_PASS_WEIGHTS[team], styleEffect.passMult, styleFactor);

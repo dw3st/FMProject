@@ -22,7 +22,7 @@ export const HOLDER_CHOICE = {
    * hold 1.14 → 1.4 and carry 1 → 0.95 bring the holder mix to FM's (carry 37 / pass 42 / turn 10.5 / hold 9). The
    * argmax is knife-edged: carry 0.92 already drops carries to 33% and dribbles to a third, 0.85 to 18%.
    */
-  CAT_MULT: [1, 1, 2.3, 1.4, 0.95] as readonly number[],
+  CAT_MULT: [1, 1, 2.3, 1.5, 0.95] as readonly number[], // R9: hold 1.4 → 1.5 (passes 1 320 → ~1 250; 1.58 gives 1 140 but 20 shots and 11 dribbles)
   /** Kicks: f24 = min(KICK_F24_K · v², 1) (FM: min(500·v², 100) / 100). */
   KICK_F24_K: 5,
   /** Lapse noise: each score × (1 + U(−LAPSE_NOISE, +LAPSE_NOISE)) only when the decisions roll lapsed (FM ±20%). */
@@ -40,6 +40,10 @@ export const HOLDER_CHOICE = {
   CARRY_VETO_CLEARANCE: 0.05,
   /** Through-ball cells and cross targets offered (the best ones). */
   TB_CANDIDATES: 1, // stage 21: 3 → 1 (the best cell only)
+  /** A through ball only to a runner already moving toward the opponents' goal at this speed or more (yd/s; 0 = any). */
+  TB_RUNNER_MIN_FWD: 5.5, // stage 21 R9 round: through balls 86 → ~18 (FM 11.7)
+  /** The passer's read of the offside line: an error up to ± this × (1.2 − vision) yd per lane (0 = he reads it exactly). */
+  PASS_OFFSIDE_READ_YD: 6, // stage 21 R9 round: offsides ~2 → ~3
 
   // ── New actions ──
   /** Sprint: a carry step of SPRINT_STEP_YD (FM type 0x2c, 5 m at ~6 m/s), only with SPRINT_CLEAR_YD of open lane. */

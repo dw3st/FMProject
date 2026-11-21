@@ -2,12 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { applyTeamAttackConfig, getTeamCarryConfig, getTeamPassConfig } from "@/GameEngine/Configs/AttackConfig";
 import { applyTeamTacticsConfig, getDefenseConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { HIGH_PRESS_STAMINA_MULT } from "@/GameEngine/Configs/FamiliarityConfig";
-import type { TacticalStyle } from "@/types/tacticsTypes";
+import type { TacticalAxes, TacticalStyle } from "@/types/tacticsTypes";
 import type { FamiliarityLevels } from "@/types/familiarityTypes";
 
-function snapshot(style: TacticalStyle, fam?: FamiliarityLevels) {
-  applyTeamAttackConfig("A", style, "balanced", undefined, fam);
-  applyTeamTacticsConfig("A", style, "balanced", undefined, fam);
+function snapshot(style: TacticalStyle, fam?: FamiliarityLevels, axes?: Partial<TacticalAxes>) {
+  applyTeamAttackConfig("A", style, "balanced", axes, fam);
+  applyTeamTacticsConfig("A", style, "balanced", axes, fam);
   return { pass: { ...getTeamPassConfig("A") }, carry: { ...getTeamCarryConfig("A") }, def: { ...getDefenseConfig("A") } };
 }
 
@@ -52,8 +52,10 @@ describe("familiarity → tactic weights", () => {
   });
 
   test("high_line_trap only moves the line when the line is high", () => {
-    const highBase = snapshot("possession");
-    expect(snapshot("possession", { high_line_trap: 100 }).def.DEFENSIVE_LINE_HEIGHT)
+    // Stage 21 R9: no style plays a high line any more; the override gives one.
+    const high = { defensive_line: "high" } as const;
+    const highBase = snapshot("possession", undefined, high);
+    expect(snapshot("possession", { high_line_trap: 100 }, high).def.DEFENSIVE_LINE_HEIGHT)
       .toBeCloseTo(highBase.def.DEFENSIVE_LINE_HEIGHT + 0.03);
     expect(snapshot("balanced", { high_line_trap: 100 }).def.DEFENSIVE_LINE_HEIGHT)
       .toBe(snapshot("balanced").def.DEFENSIVE_LINE_HEIGHT);

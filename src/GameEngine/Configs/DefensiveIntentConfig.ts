@@ -8,13 +8,15 @@ type DefIntentKey = 'hold_shape' | 'track_mark' | 'press_holder' | 'step_into_ca
 type DefIntentMultMap = Record<DefIntentKey, number>;
 
 export const INTENT_PRESSING_STYLE: Record<PressingStyle, DefIntentMultMap> = {
-  low_block:  { hold_shape: 1.4, track_mark: 1.2, press_holder: 0.3, step_into_carry_lane: 0.6 },
+  // Stage 21 R9: press 0.3 → 0.85, step 0.6 → 0.9 (× a deep line's 0.6 it sat below the press threshold: nobody closed
+  // the holder down, every possession reached the box and the counter style lost to every other).
+  low_block:  { hold_shape: 1.4, track_mark: 1.2, press_holder: 0.85, step_into_carry_lane: 0.9 },
   mid_block:  { hold_shape: 1.0, track_mark: 1.0, press_holder: 1.0, step_into_carry_lane: 1.0 },
-  high_press: { hold_shape: 0.75, track_mark: 0.9, press_holder: 1.4, step_into_carry_lane: 1.1 },
+  high_press: { hold_shape: 0.75, track_mark: 0.9, press_holder: 1.25, step_into_carry_lane: 1.1 }, // R9: press 1.4 → 1.25 (mirror goals 3.3)
 };
 
 export const INTENT_DEFENSIVE_LINE: Record<DefensiveLine, DefIntentMultMap> = {
-  deep:   { hold_shape: 1.3, track_mark: 1.2, press_holder: 0.6, step_into_carry_lane: 1.1 },
+  deep:   { hold_shape: 1.3, track_mark: 1.2, press_holder: 0.85, step_into_carry_lane: 1.1 }, // R9: press 0.6 → 0.85
   normal: { hold_shape: 1.0, track_mark: 1.0, press_holder: 1.0, step_into_carry_lane: 1.0 },
   high:   { hold_shape: 0.7, track_mark: 0.9, press_holder: 1.4, step_into_carry_lane: 0.9 },
 };

@@ -8,10 +8,11 @@
 export const INTERCEPT = {
   // ── reaching the path ──
   /** Seconds before a defender reacts to a pass (the arrival-lane score's reaction, `PASS_PHYSICS.LANE_REACTION_S`). */
-  REACTION_S: 0.45, // stage 21: 0.25 → 0.45 and the body reach 1.3 → 0.7 yd: interceptions 115 → 75–95 (FM 59)
+  REACTION_S: 1.35, // stage 21 R9 round: 0.45 → 1.35, body 0.7 → 0.25, leg 0.6 → 0.2: interceptions 106 → ~60 (FM 59)
+  // (earlier stage 21: 0.25 → 0.45 and the body reach 1.3 → 0.7 yd: interceptions 115 → 75–95 (FM 59))
   /** Body reach across the ball (yd, the receiver's `FM_NUMBERS.REACH_SIDE_YD`) + REACH_TACKLE_YD × tackling: a leg put in. */
-  REACH_BODY_YD: 0.7,
-  REACH_TACKLE_YD: 0.6,
+  REACH_BODY_YD: 0.25,
+  REACH_TACKLE_YD: 0.2,
   /** The ball's path is predicted this far ahead (s) and sampled every PLAN_STEP_S. */
   PLAN_HORIZON_S: 3,
   PLAN_STEP_S: 0.1,

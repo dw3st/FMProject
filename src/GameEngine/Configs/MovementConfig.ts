@@ -75,6 +75,11 @@ export const MOVEMENT = {
   LINE_BALL_W: 0.4,
   /** 1 = a zonal back-liner tracking a mark also holds the line; 0 = only those holding shape. */
   LINE_TRACK_MARK: 1,
+  /** Stage 21: with the ball within this many yd of a team's own goal its defenders hold no further out than the
+   *  ball − GOALSIDE_GAP_YD (never nearer the goal than GOALSIDE_MIN_YD). 0 = off. */
+  GOALSIDE_ZONE_YD: 50, // stage 21 R9 round: clear-cut chances ~9.5 → ~6, shots 37 → ~26
+  GOALSIDE_GAP_YD: 6,
+  GOALSIDE_MIN_YD: 4,
   /** The line moves when the wanted rate (gap / LINE_REACTION_S) passes LINE_MOVE_MPH, and holds again below
    *  LINE_HOLD_MPH (hysteresis; FM's 10 and 3 mph). */
   LINE_REACTION_S: 1,

@@ -119,10 +119,10 @@ export function getTacticalStyleMeta(
  * Consumed by `applyTeamTacticsConfig` / `applyTeamAttackConfig`.
  */
 export const STYLE_TO_AXES: Record<TacticalStyle, TacticalAxes> = {
-  counter_attack: { pressing_style: "low_block",  defensive_line: "deep",   width: "narrow", build_up: "direct"     },
+  counter_attack: { pressing_style: "low_block",  defensive_line: "normal", width: "normal", build_up: "balanced"   },
   high_press:     { pressing_style: "high_press", defensive_line: "normal", width: "normal", build_up: "balanced"   },
-  possession:     { pressing_style: "mid_block",  defensive_line: "high",   width: "narrow", build_up: "possession" },
-  direct_play:    { pressing_style: "mid_block",  defensive_line: "normal", width: "wide",   build_up: "direct"     },
+  possession:     { pressing_style: "mid_block",  defensive_line: "normal", width: "normal", build_up: "possession" },
+  direct_play:    { pressing_style: "mid_block",  defensive_line: "normal", width: "normal", build_up: "direct"     },
   balanced:       { pressing_style: "mid_block",  defensive_line: "normal", width: "normal", build_up: "balanced"   },
 };
 

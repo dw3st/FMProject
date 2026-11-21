@@ -73,10 +73,10 @@ export function levelsOfAxes(axes: Partial<TacticalAxes>): Partial<InstructionLe
  */
 export const STYLE_TEMPLATES: Record<TacticalStyle, { levels: Partial<InstructionLevels>; focus: PlayFocus }> = {
   balanced:       { levels: {}, focus: "mixed" },
-  counter_attack: { levels: { tempo: 1, passTarget: 1, onWin: 2, onLoss: -1 }, focus: "mixed" },
+  counter_attack: { levels: { tempo: 1, passTarget: 1, onWin: 1, onLoss: -1 }, focus: "mixed" },
   high_press:     { levels: { tempo: 1, onLoss: 2 }, focus: "mixed" },
-  possession:     { levels: { tempo: -1, passTarget: -1, onWin: -1, freedom: 1 }, focus: "mixed" },
-  direct_play:    { levels: { tempo: 1, passTarget: 1, crossing: -1, gkDistribution: 1 }, focus: "mixed" },
+  possession:     { levels: { passTarget: -1, onWin: -1, freedom: 1 }, focus: "mixed" },
+  direct_play:    { levels: { crossing: -1, gkDistribution: 1 }, focus: "mixed" },
 };
 
 /** A style's full template: neutral, the style's axes, then its own template levels. */

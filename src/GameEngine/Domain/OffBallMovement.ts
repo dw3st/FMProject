@@ -16,6 +16,7 @@ import {
 } from '@/GameEngine/Configs/OffBallConfig';
 import {
   getTeamBuildUp,
+  BUILD_UP_DAMP,
   getTeamWidth,
   ATTACK_CONFIG,
 } from '@/GameEngine/Configs/AttackConfig';
@@ -149,7 +150,14 @@ function selectOffBallIntent(ctx: OffBallContext): {
   scores: Record<OffBallIntent, number>;
 } {
   const roleWeights     = engineOf(ctx.player).offBallIntentWeights;
-  const buildUpMult     = INTENT_BUILD_UP[ctx.buildUpTactic];
+  // Stage 21 R9: the build-up multipliers at the same share as the pass / carry weights (`BUILD_UP_DAMP`): at full
+  // strength a possession side made almost no runs (× 0.6) and a direct side ran all the time (× 1.5).
+  const rawBuildUp      = INTENT_BUILD_UP[ctx.buildUpTactic];
+  const buildUpMult     = {
+    offer_support: 1 + BUILD_UP_DAMP.SHARE * (rawBuildUp.offer_support - 1),
+    hold_space:    1 + BUILD_UP_DAMP.SHARE * (rawBuildUp.hold_space - 1),
+    make_run:      1 + BUILD_UP_DAMP.SHARE * (rawBuildUp.make_run - 1),
+  };
   const widthMult       = INTENT_WIDTH[ctx.widthTactic];
   const movementUrgency = Math.max(0, 1 - ctx.currentPassScore);
 

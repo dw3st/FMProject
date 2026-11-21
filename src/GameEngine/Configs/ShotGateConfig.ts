@@ -30,13 +30,15 @@ export const SHOT_GATE = {
    * per-role eagerness — only the shooting level (defenders "rarely", `shotLevelMult`) scales it.
    */
   /** Stage 21: 0.25 → 0.28. Very sensitive: 0.32 leaves 15% of the shots outside the box, 0.4 only 5%. */
-  XG_REF: 0.28,
+  XG_REF: 0.29, // R9: 0.28 → 0.29 (long-range share 50% → 43%, FM 46%)
   /**
    * Category multiplier of a kick relative to a carry: FM's kick multiplier is always 1.0 and a carry's median 0.36
    * (report 6), the same ratio stage 8 used for turn (× 2) and hold (× 1.14). Replaces the kick's 1 with the flag on.
    */
   /** Stage 21: 1 / 0.36 → 1.6 (the shot volume; lower values remove the long shots first: 1.3 → 16% outside the box). */
-  KICK_MULT: 1.6,
+  KICK_MULT: 1.5, // R9 round: 1.6 → 1.5
+  /** Share of the holder's decisions with the shot among his options (1 = every decision; a one-on-one always). */
+  LOOK_CHANCE: 1,
   /** The chip (holder move) only over a keeper this far off his line (yd) — FM's keeper stays on it (R8 §2.2). */
   CHIP_KEEPER_OFF_YD: 8,
 };

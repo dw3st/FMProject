@@ -1582,6 +1582,17 @@ export function computeDefensivePosition(
     }
   }
 
+  // Goal-side near the box (stage 21): with the ball within GOALSIDE_ZONE_YD of his own goal, a defender holding shape
+  // or marking (not a striker, not a man-marker) stands no further out than the ball — FM's block drops in behind it.
+  if (MOVEMENT.GOALSIDE_ZONE_YD > 0 && (intent === 'hold_shape' || intent === 'track_mark')
+    && player.manMarkTargetId === undefined && player.role !== 'ST') {
+    const ballDepth = Math.abs(ballPos.x - ownGoalX);
+    if (ballDepth < MOVEMENT.GOALSIDE_ZONE_YD) {
+      const maxDepth = Math.max(MOVEMENT.GOALSIDE_MIN_YD, ballDepth - MOVEMENT.GOALSIDE_GAP_YD);
+      if (Math.abs(rawX - ownGoalX) > maxDepth) rawX = ownGoalX + Math.sign(ballPos.x - ownGoalX || player.attackDir) * maxDepth;
+    }
+  }
+
   // Soft bounds: active engagement intents (track_mark / step_into_carry_lane)
   // clamp only to pitch — the player must be free to follow a mark or step into
   // a carry lane that exits their zone. The zone preference is already baked
