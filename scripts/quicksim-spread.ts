@@ -48,8 +48,7 @@
 import { mkdir, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { simulateMatch } from "@/GameEngine/Domain/SimulateMatch";
-import { expectedGoals, lineGroupOfRole, quickSimMatch, teamStrength, type TeamStrength } from "@/Domain/advanceDay/quickSim";
-import { RATING_WEIGHTS as W } from "@/GameEngine/Configs/PlayerRatingConfig";
+import { expectedGoals, formationGoalMult, lineGroupOfRole, quickRatingWeights, quickSimMatch, teamStrength, type TeamStrength } from "@/Domain/advanceDay/quickSim";
 import type { MatchPlayerStats } from "@/types/dayLogTypes";
 import { aiMatchFormation, aiRecordFor, autoLineupDefaultFormation, autoLineupForFormationWithFitness, slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId, DEFAULT_SIM_FORMATION_ID } from "@/Domain/matchFormations";
@@ -61,6 +60,8 @@ import { ATTACKING_MID_ROLES, DEFENSIVE_MID_ROLES, QUICK_SIM_CONFIG as C, type L
 import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import type { MatchResult } from "@/GameEngine/Domain/SimulateMatch";
 
+/** The rating weights quickSim applies (the engine's 90-minute table when FM ratings are on). */
+const W = quickRatingWeights();
 const SQUADS_DIR = fileURLToPath(new URL("../src/example_data/squads/", import.meta.url));
 const formation = formationForSimId(DEFAULT_SIM_FORMATION_ID);
 const ROLES = slotRoles(formation);
@@ -267,7 +268,7 @@ function profileOf(squad: Squad, spec?: XiSpec): XIProfile {
   // Engine sprint speed ≈ 5 + 0.45·speed + 0.15·acceleration (yds/s, attributes 0–10):
   // pressSpeed 5 + 0.4·speed, plus the through-ball sprint boosts (1.5·accel + 0.5·speed on 0–1).
   for (const line of LINES) f[`${line}.pace`] = (3 * f[`${line}.speed`]! + f[`${line}.acceleration`]!) / 4;
-  const strength = teamStrength(players, roles);
+  const strength = { ...teamStrength(players, roles), formation: spec?.formationId };
   f["S.attack"] = strength.attack;
   f["S.midfield"] = strength.midfield;
   f["S.defense"] = strength.defense;
@@ -484,6 +485,13 @@ async function analyze(cacheDir: string, holdout: Set<string>, fitnessOverride?:
     reportMulti("  ratio+level+pace", [home, lr, ll, paceEdge], ["home", "ratio", "level", "pace"], trainF, LF, holdout);
     reportMulti("  por linha+level+pace", [home, la, lm, ld, lg, ll, paceEdge], ["home", "atk", "mid", "def", "gk", "level", "pace"], trainF, LF, holdout);
     reportMulti("  ratio+level+pace+finishing FWD", [home, lr, ll, paceEdge, (s) => s.own.f["FWD.finishing"]!], ["home", "ratio", "level", "pace", "fin"], trainF, LF, holdout);
+    if (v.keys === CURRENT_KEYS) {
+      // Same fit with the current FORMATION_ATTACK / FORMATION_CONCEDE as a fixed offset (refit
+      // these constants, then `formations`, alternately until both settle).
+      const withF = sides.map((s) => ({ ...s, qsXg: formationGoalMult(s.own.strength.formation, s.opp.strength.formation) }));
+      reportMulti("  ratio+level+pace × formação (tabela atual)", [home, lr, ll, paceEdge], ["home", "ratio", "level", "pace"],
+        withF.filter((s) => !holdout.has(s.league)), byLeague(withF), holdout);
+    }
   }
 
   // 9. Shape of the pace term and other mechanism candidates, judged by leave-one-league-out:
@@ -763,6 +771,7 @@ function quickLines(sides: EvSide[], squadsOf: Map<string, Map<string, Squad>>, 
       fixtureId: "e", home: squads.get(s.homeId)!, away: squads.get(s.awayId)!,
       homeLineup: s.own.players.map((p) => p.id), awayLineup: s.opp.players.map((p) => p.id),
       homeRoles: s.own.roles, awayRoles: s.opp.roles,
+      homeFormationId: s.own.strength.formation, awayFormationId: s.opp.strength.formation,
     };
     for (let r = 0; r < k; r++) {
       const q = quickSimMatch(input, rng);
@@ -797,12 +806,23 @@ function mergeAcc(m: LeagueAcc): Record<LineGroup, LineAcc> {
   return t;
 }
 
-/** Poisson GLM: y ~ exp(offset + c + Σ β x). Returns β (c first) and log-lik. */
+/**
+ * Poisson GLM: y ~ exp(offset + c + Σ β x). Returns β (c first) and log-lik. The intercept starts
+ * at log(Σy / Σe^offset) and a Newton step that lowers the log-lik is halved: with the 90-minute
+ * engine's large counts (~50–80 passes per slot) a full first step from 0 overflowed.
+ */
 function glm(rows: { y: number; off: number; x: number[] }[]): { beta: number[]; ll: number } {
   const p = (rows[0]?.x.length ?? 0) + 1;
-  let beta = new Array(p).fill(0);
   const X = rows.map((r) => [1, ...r.x]);
-  for (let it = 0; it < 40; it++) {
+  const sumY = rows.reduce((a, r) => a + r.y, 0), sumE = rows.reduce((a, r) => a + Math.exp(r.off), 0);
+  let beta = new Array(p).fill(0);
+  beta[0] = sumY > 0 && sumE > 0 ? Math.log(sumY / sumE) : 0;
+  const llOf = (b: number[]) => rows.reduce((acc, r, i) => {
+    const eta = r.off + X[i]!.reduce((a, v, j) => a + v * b[j]!, 0);
+    return acc + r.y * eta - Math.exp(eta);
+  }, 0);
+  let ll = llOf(beta);
+  for (let it = 0; it < 60; it++) {
     const g = new Array(p).fill(0);
     const H = Array.from({ length: p }, () => new Array(p).fill(0));
     rows.forEach((r, i) => {
@@ -813,14 +833,12 @@ function glm(rows: { y: number; off: number; x: number[] }[]): { beta: number[];
       }
     });
     const step = solve(H, g);
-    beta = beta.map((v, j) => v + step[j]!);
-    if (Math.max(...step.map(Math.abs)) < 1e-10) break;
+    let t = 1, next = beta.map((v, j) => v + step[j]!), nll = llOf(next);
+    while (!(nll >= ll - 1e-9) && t > 1e-6) { t /= 2; next = beta.map((v, j) => v + t * step[j]!); nll = llOf(next); }
+    beta = next; ll = nll;
+    if (Math.max(...step.map((v) => Math.abs(v * t))) < 1e-10) break;
   }
-  let ll = 0;
-  rows.forEach((r, i) => {
-    const mu = Math.exp(r.off + X[i]!.reduce((a, v, j) => a + v * beta[j]!, 0));
-    ll += r.y * Math.log(mu || 1e-300) - mu;
-  });
+  // same log-lik convention as before (y·log μ − μ)
   return { beta, ll };
 }
 
@@ -1060,6 +1078,7 @@ async function extras(cacheDir: string, k: number) {
         fixtureId: "x", home: squads.get(m.home)!, away: squads.get(m.away)!,
         homeLineup: H.players.map((p) => p.id), awayLineup: A.players.map((p) => p.id),
         homeRoles: H.roles, awayRoles: A.roles,
+        homeFormationId: H.strength.formation, awayFormationId: A.strength.formation,
       };
       for (let r = 0; r < k; r++) {
         const rec = quickSimMatch(input, rng).recording;
@@ -1093,6 +1112,76 @@ async function extras(cacheDir: string, k: number) {
   })));
 }
 
+
+// ── formations ───────────────────────────────────────────────────────────────
+
+/**
+ * Goal volume by formation: fits FORMATION_ATTACK[own] and FORMATION_CONCEDE[opponent] on the
+ * cached engine matches, over the current goal formula without its formation terms (Poisson ML by
+ * alternating updates, each factor shrunk toward 1 with `prior` pseudo-sides), then rescales so
+ * the pooled quickSim goals equal the engine's. Prints the table and the per-league error before
+ * (formula without formation terms) and after. `--apply` writes both tables into QuickSimConfig.ts.
+ */
+async function formations(cacheDir: string, prior: number, apply: boolean) {
+  const files = (await readdir(cacheDir)).filter((f) => f.endsWith(".json")).sort();
+  type S = { league: string; goals: number; base: number; own: string; opp: string };
+  const sides: S[] = [];
+  for (const file of files) {
+    const cache = (await Bun.file(`${cacheDir}/${file}`).json()) as Cache;
+    const squads = new Map((await loadSquads(cache.league, cache.fitness ?? 75, cache.load ?? 0)).map((s) => [s.id, s]));
+    const get = profileCache(squads);
+    for (const m of cache.matches) {
+      const H = get(m.home, specOf(m, "h")), A = get(m.away, specOf(m, "a"));
+      const hf = m.hf ?? DEFAULT_SIM_FORMATION_ID, af = m.af ?? DEFAULT_SIM_FORMATION_ID;
+      const strip = (x: TeamStrength) => ({ ...x, formation: undefined });
+      sides.push({ league: cache.league, goals: m.h.goals, own: hf, opp: af, base: expectedGoals(strip(H.strength), strip(A.strength), true) });
+      sides.push({ league: cache.league, goals: m.a.goals, own: af, opp: hf, base: expectedGoals(strip(A.strength), strip(H.strength), false) });
+    }
+  }
+  const ids = [...new Set(sides.flatMap((s) => [s.own, s.opp]))].sort();
+  const att: Record<string, number> = Object.fromEntries(ids.map((i) => [i, 1]));
+  const con: Record<string, number> = Object.fromEntries(ids.map((i) => [i, 1]));
+  const meanBase = sides.reduce((a, s) => a + s.base, 0) / sides.length;
+  for (let it = 0; it < 50; it++) {
+    for (const [tab, key, other] of [[att, "own", con], [con, "opp", att]] as const) {
+      for (const id of ids) {
+        let g = 0, e = 0;
+        for (const s of sides) if (s[key] === id) { g += s.goals; e += s.base * other[key === "own" ? s.opp : s.own]!; }
+        // shrink toward 1: `prior` pseudo-sides scoring exactly the expected amount
+        tab[id] = (g + prior * meanBase) / (e + prior * meanBase);
+      }
+    }
+  }
+  const pred = (s: S) => s.base * att[s.own]! * con[s.opp]!;
+  const totG = sides.reduce((a, s) => a + s.goals, 0);
+  const k = Math.sqrt(totG / sides.reduce((a, s) => a + pred(s), 0));
+  for (const id of ids) { att[id] = +(att[id]! * k).toFixed(3); con[id] = +(con[id]! * k).toFixed(3); }
+  const count = (id: string) => sides.filter((s) => s.own === id).length;
+  console.table(Object.fromEntries(ids.map((id) => [id, { lados: count(id), ataque: att[id], sofre: con[id] }])));
+  const leagues = [...new Set(sides.map((s) => s.league))];
+  let sq0 = 0, sq1 = 0, worst0 = 0, worst1 = 0;
+  const rows: Record<string, unknown> = {};
+  for (const l of leagues) {
+    const xs = sides.filter((s) => s.league === l);
+    const g = xs.reduce((a, s) => a + s.goals, 0);
+    const e0 = 100 * (xs.reduce((a, s) => a + s.base, 0) / g - 1), e1 = 100 * (xs.reduce((a, s) => a + pred(s), 0) / g - 1);
+    sq0 += e0 * e0; sq1 += e1 * e1; worst0 = Math.max(worst0, Math.abs(e0)); worst1 = Math.max(worst1, Math.abs(e1));
+    rows[l] = { motor: +(2 * g / xs.length).toFixed(2), "sem formação": +(2 * xs.reduce((a, s) => a + s.base, 0) / xs.length).toFixed(2), "erro %": +e0.toFixed(1),
+      "com formação": +(2 * xs.reduce((a, s) => a + pred(s), 0) / xs.length).toFixed(2), "erro % ": +e1.toFixed(1) };
+  }
+  console.table(rows);
+  console.log(`rms por liga: ${Math.sqrt(sq0 / leagues.length).toFixed(1)}% → ${Math.sqrt(sq1 / leagues.length).toFixed(1)}%; pior ${worst0.toFixed(1)}% → ${worst1.toFixed(1)}%`);
+  if (apply) {
+    const path = fileURLToPath(new URL("../src/GameEngine/Configs/QuickSimConfig.ts", import.meta.url));
+    const fmt = (t: Record<string, number>) => `{ ${ids.map((id) => `"${id}": ${t[id]}`).join(", ")} }`;
+    const src = (await Bun.file(path).text())
+      .replace(/FORMATION_ATTACK: \{[^}]*\}/, `FORMATION_ATTACK: ${fmt(att)}`)
+      .replace(/FORMATION_CONCEDE: \{[^}]*\}/, `FORMATION_CONCEDE: ${fmt(con)}`);
+    await Bun.write(path, src);
+    console.log("FORMATION_ATTACK / FORMATION_CONCEDE gravados em QuickSimConfig.ts");
+  }
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -1118,6 +1207,9 @@ if (cmd === "collect") {
   const hIdx = args.indexOf("--holdout");
   const kIdx = args.indexOf("--quick");
   await events(dir, kIdx >= 0 ? Number(args[kIdx + 1]) : 5, new Set(hIdx >= 0 ? args[hIdx + 1]!.split(",") : []), args.includes("--apply"));
+} else if (cmd === "formations") {
+  const pIdx = args.indexOf("--prior");
+  await formations(args[0]!, pIdx >= 0 ? Number(args[pIdx + 1]) : 100, args.includes("--apply"));
 } else if (cmd === "extras") {
   const kIdx = args.indexOf("--quick");
   await extras(args[0]!, kIdx >= 0 ? Number(args[kIdx + 1]) : 20);

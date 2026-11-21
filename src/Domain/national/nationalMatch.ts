@@ -23,12 +23,14 @@ const DEFAULT_STAMINA = 7;
  * (tournaments at ~5.4: 2.3 → real 2.6; AFC at ~3.7: 1.6), so the factor falls with the match level:
  * scale = clamp(AT_REF − SLOPE × (level − LEVEL_REF), MIN, MAX). Fitted on `scripts/national-goals-diag.ts`
  * (`.claude/rules/game/national-teams.md` → "Volume de gols"). Mutable only for measurement scripts.
+ * Since the 90-minute engine refit (`non-player-games.md`) the club quickSim scores MORE at low level, so the
+ * factor now rises with the level (negative SLOPE, below 1 at low level): every confederation lands at ~2.5–2.8.
  */
 export const NATIONAL_MATCH = {
-  AT_REF: 1.25,
-  SLOPE: 0.2,
+  AT_REF: 1.17,
+  SLOPE: -0.26,
   LEVEL_REF: 4.9,
-  MIN: 1,
+  MIN: 0.6,
   MAX: 1.8,
 };
 

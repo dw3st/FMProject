@@ -1276,3 +1276,157 @@ para a tela (estrela, notícias), sem mudar o modo. O jogo de seleção de um t�
   3 assentos, dia de La Liga + Bundesliga (19 jogos antes, ~510 s estimado) → 37,0 s com 2 jogos em paralelo, contra
   56,6 s em série (`MATCH_WORKERS=0`).
 - Limitação: o gol da temporada só tem candidatos dos jogos dos clubes humanos (`awards.md`).
+
+## Recalibração geral (motor de 90 minutos)
+
+O motor passou a simular os 90 minutos inteiros (etapa 21 do motor). Tudo do quickSim foi refeito contra ele, pelo mesmo processo da 3.4.1.
+
+### Coleta
+
+- `bun scripts/quicksim-spread.ts collect <liga> 100 2 debug/recal90/c/<liga>.json --fitness 88 --ai` nas mesmas 26 ligas: **200 jogos por liga**, 5200 no total.
+- Custo do motor: ~14 s por jogo sozinho, ~19 s por jogo com 3 processos em paralelo (cerca de 1 h por liga). A coleta inteira levou ~9 h.
+- O motor de 90 minutos mudou o retrato: as ligas fracas marcam **mais** que as fortes (Série C 4,64 gols, Quênia 2,87, Premier 2,37, Serie A 2,07), o mando quase não existe (1,275 × 1,267 gols por lado em 5200 jogos) e a formação pesa muito no volume (lados no 4-4-1-1 marcam 0,92 e sofrem 1,08; no 3-5-2, 1,49 e 1,52).
+
+### Volume de gols
+
+Fórmula com dois termos novos:
+
+```
+xG = BASE_GOALS × ratio^STRENGTH_EXPONENT × (max(nível, LEVEL_TERM_FLOOR)/LEVEL_REF)^LEVEL_EXPONENT
+   × e^(PACE_EDGE_WEIGHT × paceEdge) × FORMATION_ATTACK[própria] × FORMATION_CONCEDE[adversária] × mando
+```
+
+- `FORMATION_ATTACK` e `FORMATION_CONCEDE` (por id de formação, ausente = 1): ajustados por `bun scripts/quicksim-spread.ts formations <dir> [--prior 100] [--apply]` (Poisson por atualizações alternadas, encolhidos para 1 com 100 lados fictícios), alternando com a seção 8 do `analyze` (que agora tem a linha "× formação (tabela atual)") até estabilizar. O avanço do dia passa o id da formação de cada lado (`homeFormationId`/`awayFormationId`). Formação livre e seleções: × 1.
+- `LEVEL_TERM_FLOOR` (2): com o expoente negativo, um XI quase vazio multiplicaria os gols por ~9. As ligas reais ficam em 2,3 ou mais.
+- O mando ficou em 1,026: o motor não mostra mando (ajuste ~1,00), mas com 5200 jogos ele cabe no ruído até ~+4%, e o teste do campo neutro precisa de mando.
+
+| Constante | Antes (8.8.31) | Depois |
+|---|---|---|
+| `BASE_GOALS` | 0,735 | 1,036 |
+| `HOME_ADVANTAGE` | 1,026 | 1,026 |
+| `STRENGTH_EXPONENT` | 0,37 | 0,292 |
+| `LEVEL_EXPONENT` | 0,3 | −0,97 |
+| `PACE_EDGE_WEIGHT` | 0,3 | 0,114 |
+| `FINISHING_WEIGHT` | 0 | 0 |
+| `DOMINANCE_SIGMA` | 0,25 | 0,12 |
+| `FORMATION_ATTACK` / `FORMATION_CONCEDE` | — | 4-4-1-1 0,73 / 0,83 · 3-4-2-1 0,83 / 0,89 · 4-3-2-1 0,93 / 0,79 · 4-4-2 0,88 / 1,05 · 4-3-3 1,08 / 1,02 · 4-2-3-1 1,08 / 0,98 · 5-2-3 1,19 / 1,04 (tabela inteira no arquivo) |
+
+`DOMINANCE_SIGMA` 0,12: com 0,25 o azarão ganhava demais dentro da liga. Nos jogos coletados, lado mais forte V/E/D motor 43,4 / 27,2 / 29,4%, quickSim 43,0 / 25,8 / 31,3% (0,25) → 43,1 / 27,4 / 29,5% (0,12); com |Δnível| > 0,4: motor 50,8 / 24,7 / 24,5, quickSim 48,3 / 25,5 / 26,2 → 50,1 / 26,4 / 23,5.
+
+| Liga | motor | quick antes | erro antes | quick depois | erro depois |
+|---|---|---|---|---|---|
+| brazil_serie_a | 3,13 | 1,83 | -41,5% | 2,76 | -12% |
+| brazil_serie_b | 3,08 | 1,56 | -49,2% | 2,99 | -3% |
+| brazil_serie_c | 4,64 | 1,46 | -68,6% | 4,91 | 5,8% |
+| bundesliga | 2,31 | 1,94 | -16,2% | 2,35 | 1,5% |
+| la_liga | 2,46 | 2,21 | -10,5% | 2,46 | -0,1% |
+| ligue_1 | 2,63 | 2 | -23,8% | 2,5 | -5,1% |
+| of_allsvenskan | 2,86 | 1,41 | -50,7% | 2,65 | -7,3% |
+| of_argentine_premier_division | 2,19 | 1,52 | -30,7% | 2,19 | 0,2% |
+| of_championship | 2,54 | 1,58 | -37,9% | 2,51 | -1,4% |
+| of_danish_superliga | 2,31 | 1,52 | -34,2% | 2,34 | 1,5% |
+| of_ekstraklasa | 2,17 | 1,39 | -35,9% | 2,2 | 1,2% |
+| of_eredivisie | 2,57 | 1,71 | -33,3% | 2,62 | 1,8% |
+| of_greek_super_league | 2,46 | 1,41 | -42,5% | 2,38 | -3,1% |
+| of_italian_serie_c_a | 2,01 | 1,09 | -45,7% | 1,97 | -2,2% |
+| of_j_league | 2,17 | 1,4 | -35,3% | 2,34 | 8,2% |
+| of_kenyan_premier_division | 2,87 | 0,98 | -65,9% | 2,65 | -7,5% |
+| of_liga_mx | 1,99 | 1,67 | -15,9% | 2,27 | 14,6% |
+| of_major_league_soccer | 2,27 | 1,54 | -32,4% | 2,46 | 8,1% |
+| of_portuguese_primeira_liga | 2,27 | 1,58 | -30,2% | 2,38 | 5,2% |
+| of_russian_second_division_b_group_2 | 2,6 | 0,94 | -63,9% | 2,46 | -5,5% |
+| of_saudi_professional_league | 2,54 | 1,84 | -27,8% | 2,66 | 4,6% |
+| of_spanish_second_division | 2,65 | 1,64 | -38,3% | 2,63 | -0,8% |
+| of_turkish_super_league | 2,67 | 1,78 | -33,2% | 2,59 | -3,2% |
+| of_uzbek_super_league | 2,24 | 1,22 | -45,7% | 2,29 | 2,4% |
+| premier_league | 2,37 | 2,12 | -10,5% | 2,35 | -1% |
+
+rms por liga 39,1% → **5,6%** (piso de ruído do motor 4,5%; excesso ≈ 3,4%). 24 de 26 ligas dentro de ±10%; fora: **Liga MX +14,6%** e **Brasileirão A −12,0%** (as duas além de 2σ, nenhum termo testado corrige). Sem a tabela de formações o melhor ajuste dava rms 8,9% e pior liga 23,6%. A finalização FWD continua sem ganho (8,9% contra 8,9%).
+
+### Eventos por vaga e notas
+
+- O motor de 90 minutos tem contagens de futebol real: ~49 passes por vaga de zagueiro, ~75 de meia, ~36 de atacante; 92,5% de acerto.
+- `events` quebrava com contagens grandes (o Newton do `glm` partia do zero e estourava). Agora o intercepto começa em log(Σy/Σe^off) e o passo que piora a verossimilhança é cortado ao meio.
+- As notas do quickSim usam a tabela do motor de 90 minutos (`quickRatingWeights`: `FM_RATING` com `DECISION_FLAGS.FM_RATINGS` ligado, senão a antiga). Com a tabela antiga um meia de 75 passes saía com nota ~9,6.
+- `RATING_LINE_BONUS` (novo, por linha): soma à nota o que o motor credita e o quickSim não simula (defesas, cortes, bloqueios, passes para chute, duelos aéreos perdidos). `RATING_SHRINK` foi para 1 em todas as linhas (a cauda ≥ 8,5 ficava curta demais).
+- `NO_ASSIST_RATE` 0,145 à mão (assist./gol motor 0,726 × quick 0,727). `PASS_COMPLETION_BASE` 0,909 e `SKILL` 0,035 do ajuste (92,5% nos dois).
+
+| Constante | Antes | Depois |
+|---|---|---|
+| `ROLE_GOAL_WEIGHT` | MID 0,099 · FWD 1,729 | MID 0,504 · FWD 0,947 |
+| `ROLE_ASSIST_WEIGHT` | GK 0,017 · DEF 0,145 · MID 0,322 · FWD 0,689 | GK 0,013 · DEF 0,123 · MID 0,416 · FWD 0,552 |
+| `NO_ASSIST_RATE` | 0,087 | 0,145 |
+| `SHOTS_PER_XG` / `SHOTS_LEVEL_EXPONENT` | 2,033 / −0,91 | 7,837 / 0,21 |
+| `PASSES_PER_MATCH` | GK 1,83 · DEF 1,88 · MID 2,29 · FWD 2,2 | GK 4,15 · DEF 48,4 · MID 75,1 · FWD 36,5 |
+| `PASS_LEVEL_EXPONENT` | −0,1 · 0,2 · 0,37 · 0,16 | −0,51 · 0,32 · 0,38 · 0,58 |
+| `TACKLES_PER_MATCH` | DEF 0,322 · MID 0,122 · FWD 0,155 | DEF 0,576 · MID 1,832 · FWD 0,212 |
+| `INTERCEPTIONS_PER_MATCH` | DEF 0,159 · MID 0,199 · FWD 0,18 | DEF 0,797 · MID 7,336 · FWD 2,319 |
+| `TACKLES_FAILED_PER_MATCH` | DEF 0,634 · MID 0,18 · FWD 1,289 | GK 0,259 · DEF 0,345 · MID 0 · FWD 0,193 |
+| `RATING_LINE_BONUS` | — | GK 0,27 · DEF −0,09 · MID −0,37 · FWD −0,14 |
+
+Nota média dos titulares (26 ligas, motor | quick): GK 6,082 | 6,072, DEF 6,424 | 6,427, MID 6,769 | 6,774, FWD 6,715 | 6,727. Notas ≥ 8,5: motor 2,81%, quick 2,02% (FWD 6,35% × 4,65%). Partilha dos gols por linha (motor | quick): DEF 0,135 | 0,117, MID 0,318 | 0,322, FWD 0,547 | 0,561. Os chutes de zagueiro (10% no motor) continuam quase ausentes no quickSim.
+
+### Disciplina, jogo aéreo, bolas paradas, lesões (`extras`)
+
+Por partida, dois times, 26 ligas, mesmos jogos e XIs:
+
+| | motor | quick antes | quick depois |
+|---|---|---|---|
+| Gols | 2,542 | 1,59 | 2,543 |
+| Faltas | 25,36 | 10,21 | 25,37 |
+| Amarelos | 4,59 | 2,17 | 4,59 |
+| Vermelhos | 0,162 | 0,066 | 0,160 |
+| Pênaltis (gols) | 0,337 (0,258) | 0,277 (0,211) | 0,332 (0,254) |
+| Impedimentos | 2,15 | 1,05 | 2,15 |
+| Cruzamentos (certos) | 44,6 (6,31) | 10,8 (1,15) | 44,6 (6,30) |
+| Disputas aéreas (soma dos dois times) | 170,8 | 17,2 | 170,6 |
+| Lançamentos (certos) | 58,4 (26,8) | 2,24 (1,00) | 58,6 (26,8) |
+| Gols de cabeça | 0,174 | 0,471 | 0,172 |
+| Escanteios | 11,39 | 4,21 | 11,37 |
+| Tiros livres | 25,0 | 9,9 | 25,0 |
+| Chutes de falta direta (gols) | 0,646 (0,055) | 0,170 (0,049) | 0,633 (0,055) |
+| Gols de bola parada (% dos gols) | 36,9% | 17,6% | 36,6% |
+| Lesões | 0,456 | 0,345 | 0,453 |
+
+("quick antes" = as constantes de disciplina, jogo aéreo, bolas paradas e lesões da 8.8.31, medidas depois do reajuste dos gols e dos eventos; a linha de gols é a da fórmula antiga.)
+
+Constantes: `FOULS_PER_SIDE` 5,09 → 12,66; `BOOKED_FOUL_MULT` 0,35 → 0,17; `YELLOW_PER_FOUL` 0,219 → 0,186; `PENALTIES_PER_SIDE` 0,137 → 0,166; `OFFSIDES_PER_SIDE` 0,6 → 1,23; `CROSSES_PER_SIDE` 5,4 → 22,3; `CROSS_COMPLETION` 0,106 → 0,141; `LONG_BALLS_PER_SIDE` 1,12 → 29,3; `LONG_BALL_COMPLETION` 0,445 → 0,457; `AERIAL_DUELS_PER_MATCH` 8,6 → 85,3; `HEADER_GOAL_SHARE` 0,194 → 0,072; `CORNERS_PER_SIDE` 2,1 → 5,69; `DIRECT_FK_SHOTS_PER_SIDE` 0,062 → 0,298; `SET_PIECE_GOAL_SHARE` 0,096 → 0,277; `DIRECT_FK_GOAL_SHARE` 0,02 → 0,0225; `INJURY.QUICKSIM_CONTACT_SCALE` 1,85 → 3,75.
+
+Custo do quickSim (Premier, 4000 jogos): 0,082 → 0,134 ms por jogo (Poisson de contagens maiores).
+
+### Seleções
+
+O quickSim de clubes agora marca mais em nível baixo, então o fator das seleções passou a subir com o nível: `NATIONAL_MATCH` AT_REF 1,25 → 1,17, SLOPE 0,2 → −0,26, MIN 1 → 0,6 (MAX 1,8). `bun scripts/national-goals-diag.ts 2028-07-20` (1630 jogos):
+
+| | fator antigo | fator novo |
+|---|---|---|
+| Total | 3,73 | 2,67 |
+| Amistosos / eliminatórias / torneios | 3,93 / 3,33 / 2,43 | 2,66 / 2,74 / 2,60 |
+| UEFA / CONMEBOL / CAF | 2,76 / 2,72 / 4,09 | 2,77 / 2,81 / 2,65 |
+| AFC / CONCACAF / OFC | 4,71 / 4,30 / 5,67 | 2,57 / 2,54 / 2,58 |
+
+O favorito vence 46% (antes da recalibração da 8.8.31, ~52%).
+
+### Entre ligas (`quicksim-crossleague.ts`, top 6 × top 6, os dois mandos)
+
+O script roda 4-3-3 dos dois lados e o fôlego dos dados (75), sem a tática da IA. Motor com poucas repetições (o jogo de 90 minutos custa ~19 s): 72 jogos por par, 288 nos dois primeiros (somando uma rodada de 3 repetições). quickSim 3600 jogos por par, já com `DOMINANCE_SIGMA` 0,12.
+
+| Par | motor: V/E/D do forte, gols | quick: V/E/D, gols | gap vitória | gap gols |
+|---|---|---|---|---|
+| premier_league × of_eredivisie (288) | 60,1 / 23,6 / 16,3, 2,92 | 49,9 / 26,0 / 24,0, 2,47 | −10,2 p.p. | −15,4% |
+| bundesliga × of_danish_superliga (288) | 65,6 / 18,8 / 15,6, 3,03 | 53,8 / 23,9 / 22,3, 2,66 | −11,8 p.p. | −12,2% |
+| la_liga × of_portuguese_primeira_liga (72) | 55,6 / 22,2 / 22,2, 2,79 | 49,3 / 25,7 / 25,0, 2,49 | −6,3 p.p. | −10,8% |
+| brazil_serie_a × of_argentine_premier_division (72) | 50,0 / 31,9 / 18,1, 2,83 | 43,1 / 25,9 / 31,0, 2,53 | −6,9 p.p. | −10,6% |
+
+**Fora da meta** (≤ 6 p.p., ≤ 15%): o quickSim dá vitória demais ao azarão entre ligas e, nesse cenário (4-3-3, fôlego 75), ~11–15% menos gols. Dentro da liga (fôlego 88, formações da IA) a vitória do mais forte bate (acima). Duas causas possíveis, não separadas: o `STRENGTH_EXPONENT` (0,29) foi ajustado em jogos da mesma liga, com diferenças de força pequenas; e o motor marca mais com 4-3-3 e fôlego 75 do que nos jogos coletados. Fica para a próxima rodada: uma coleta entre ligas com `--ai` e fôlego 88 antes de mexer na força.
+
+### Testes
+
+`quickSim.test.ts` (faixas e notas refeitas para o motor de 90 minutos: volume de 1,8 a 3,2 gols, o nível segue o sinal de `LEVEL_EXPONENT`, disciplina 25 faltas / 4,6 amarelos, notas pela tabela nova), `matches.quick.test.ts`, `quickSim.weather.test.ts`, `matches.test.ts`, `nationalMatch.test.ts` (o fator segue o sinal de `SLOPE`), `injury.test.ts`, os testes do `/lab` e quatro do avanço do dia.
+
+### Limitações
+
+- O motor de 90 minutos marca mais entre times fracos e quase não tem mando. O quickSim copia isso; se o motor mudar, a coleta tem de ser refeita.
+- A tabela de formações descreve o equilíbrio de hoje do motor; uma mudança no motor por formação invalida a tabela.
+- Liga MX +14,6% e Brasileirão A −12,0% ficam fora de ±10%.
+- Entre ligas, fora da meta (acima).

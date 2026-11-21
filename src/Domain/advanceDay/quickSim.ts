@@ -22,7 +22,8 @@ import {
   ROLE_GROUP,
   type LineGroup,
 } from "@/GameEngine/Configs/QuickSimConfig";
-import { RATING_WEIGHTS } from "@/GameEngine/Configs/PlayerRatingConfig";
+import { FM_RATING, RATING_WEIGHTS } from "@/GameEngine/Configs/PlayerRatingConfig";
+import { DECISION_FLAGS } from "@/GameEngine/Configs/DecisionConfig";
 import { contactInjuryChance, injuryRatePerMinute, rollSeverity, type InjuryFactors } from "@/Domain/injury/injury";
 import { INJURY } from "@/Domain/injury/injuryConfig";
 import { staffEffectsOf } from "@/Domain/staff/staff";
@@ -54,6 +55,8 @@ export interface TeamStrength {
   defensePace: number;
   /** Mean raw finishing (0–10) of the forward line. Not part of `teamLevel`. */
   forwardFinishing: number;
+  /** Formation id of the side (`FORMATION_ATTACK` / `FORMATION_CONCEDE`); absent = × 1. */
+  formation?: string;
 }
 
 interface QuickSimBreakdown {
@@ -76,6 +79,9 @@ export interface QuickSimInput {
    */
   homeRoles?: string[];
   awayRoles?: string[];
+  /** Formation id of each side: goal volume by formation (`FORMATION_ATTACK` / `FORMATION_CONCEDE`). Absent = × 1. */
+  homeFormationId?: string;
+  awayFormationId?: string;
   /** Knockout: a level score after 90' goes to extra time (xG × 30/90) and then penalties. */
   knockout?: boolean;
   /** Two-legged tie: first-leg goals, home/away of THIS match. Level = today's score + aggregate. */
@@ -296,6 +302,11 @@ export function teamLevel(s: TeamStrength): number {
  * the engine's through-ball races are decided by sprint speed. The forward line's finishing
  * scales conversion (the engine's shooter effect spans 0.96–1.36 of xG).
  */
+/** Goal volume by formation: × the attacker's FORMATION_ATTACK × the defender's FORMATION_CONCEDE (unknown = 1). */
+export function formationGoalMult(attacker: string | undefined, defender: string | undefined): number {
+  return (attacker ? C.FORMATION_ATTACK[attacker] ?? 1 : 1) * (defender ? C.FORMATION_CONCEDE[defender] ?? 1 : 1);
+}
+
 export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, isHome: boolean): number {
   const ratio = (attacker.attack * attacker.midfield) / (defender.defense * defender.goalkeeper);
   const matchLevel = (teamLevel(attacker) + teamLevel(defender)) / 2;
@@ -303,9 +314,10 @@ export function expectedGoals(attacker: TeamStrength, defender: TeamStrength, is
   return (
     C.BASE_GOALS *
     Math.pow(ratio, C.STRENGTH_EXPONENT) *
-    Math.pow(matchLevel / C.LEVEL_REF, C.LEVEL_EXPONENT) *
+    Math.pow(Math.max(matchLevel, C.LEVEL_TERM_FLOOR) / C.LEVEL_REF, C.LEVEL_EXPONENT) *
     Math.exp(C.PACE_EDGE_WEIGHT * paceEdge) *
     Math.exp(C.FINISHING_WEIGHT * (attacker.forwardFinishing - C.FINISHING_REF)) *
+    formationGoalMult(attacker.formation, defender.formation) *
     (isHome ? C.HOME_ADVANTAGE : 1)
   );
 }
@@ -372,8 +384,25 @@ function emptyStats(): MatchPlayerStats {
  * recording shape) — quickSim tracks it separately and passes it in explicitly.
  * Defaults to 0 so existing single-arg call sites remain valid.
  */
+/**
+ * Rating weights quickSim applies to its own events: the engine's 90-minute table (`FM_RATING`, the
+ * dense hooks sized for real-football counts) when `DECISION_FLAGS.FM_RATINGS` is on, else the legacy one.
+ * The engine's hooks quickSim doesn't simulate (key passes, dribbles, saves, clearances…) are carried by
+ * the failed-tackle rate (`TACKLES_FAILED_PER_MATCH`), fitted by `quicksim-spread.ts events`.
+ */
+export function quickRatingWeights(): Record<keyof typeof RATING_WEIGHTS, number> {
+  if (!DECISION_FLAGS.FM_RATINGS) return RATING_WEIGHTS;
+  const F = FM_RATING;
+  return {
+    BASELINE: F.BASELINE, GOAL: F.GOAL, ASSIST: F.ASSIST, SHOT: F.SHOT,
+    PASS_COMPLETED: F.PASS_COMPLETED, PASS_FAILED: F.PASS_INCOMPLETE,
+    INTERCEPTION: F.INTERCEPTION, TACKLE_WON: F.TACKLE_WON, TACKLE_FAILED: F.TACKLE_LOST,
+    AERIAL_DUEL_WON: F.AERIAL_WON, YELLOW_CARD: F.YELLOW, RED_CARD: F.RED, PENALTY_CONCEDED: F.PENALTY_CONCEDED,
+  };
+}
+
 export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0, group?: LineGroup): number {
-  const W = RATING_WEIGHTS;
+  const W = quickRatingWeights();
   const raw =
     W.BASELINE +
     s.goals * W.GOAL +
@@ -383,7 +412,8 @@ export function ratingFromStats(s: MatchPlayerStats, tacklesFailed = 0, group?: 
     s.passesFailed * W.PASS_FAILED +
     s.tackles * W.TACKLE_WON +
     tacklesFailed * W.TACKLE_FAILED +
-    s.interceptions * W.INTERCEPTION;
+    s.interceptions * W.INTERCEPTION +
+    (group ? C.RATING_LINE_BONUS[group] : 0);
   // #9: shrink toward the line's centre so the slot-carrying starter's tail matches the engine's.
   const k = group ? C.RATING_SHRINK[group] : 1;
   const c = group ? C.RATING_SHRINK_CENTER[group] : 0;
@@ -569,7 +599,7 @@ function rollDiscipline(
   refereeStrictness?: number,
   managerDiscipline?: number,
 ): { committed: number; yellow: number; red: number; oppPenalties: number; oppPenaltyGoals: number; oppOffsides: number } {
-  const W = RATING_WEIGHTS;
+  const W = quickRatingWeights();
   const out = { committed: 0, yellow: 0, red: 0, oppPenalties: 0, oppPenaltyGoals: 0, oppOffsides: 0 };
   if (xi.length === 0 || opp.length === 0) return out;
 
@@ -717,7 +747,7 @@ function rollAerial(
   const duelWeight = (x: XIPlayer) => C.AERIAL_DUEL_LINE_WEIGHT[groupOf(x)] * (0.5 + stat(x.p, "heading") / 10);
   for (let i = 0; i < won; i++) {
     const p = weightedPick(xi, duelWeight, rng);
-    if (p) ratingDelta[p.p.id] = (ratingDelta[p.p.id] ?? 0) + RATING_WEIGHTS.AERIAL_DUEL_WON;
+    if (p) ratingDelta[p.p.id] = (ratingDelta[p.p.id] ?? 0) + quickRatingWeights().AERIAL_DUEL_WON;
   }
 
   const eligible = goals.filter((g) => !g.penalty);
@@ -854,8 +884,8 @@ export function quickSimMatch(input: QuickSimInput, rng: Rng = Math.random): Qui
   const homeXI = resolveXI(input.home, input.homeLineup, input.homeRoles);
   const awayXI = resolveXI(input.away, input.awayLineup, input.awayRoles);
 
-  const home = withMorale(withFamiliarity(strengthOf(homeXI), input.homeFamiliarity), input.homeMorale);
-  const away = withMorale(withFamiliarity(strengthOf(awayXI), input.awayFamiliarity), input.awayMorale);
+  const home = { ...withMorale(withFamiliarity(strengthOf(homeXI), input.homeFamiliarity), input.homeMorale), formation: input.homeFormationId };
+  const away = { ...withMorale(withFamiliarity(strengthOf(awayXI), input.awayFamiliarity), input.awayMorale), formation: input.awayFormationId };
   const scale = input.goalScale ?? 1;
   const wx = quickWeather(input.weather);
   const xgHome = expectedGoals(home, away, !input.neutral) * scale * wx.xg;

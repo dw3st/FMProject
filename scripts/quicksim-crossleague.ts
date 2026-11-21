@@ -56,7 +56,7 @@ for (const a of top(leagueA)) for (const b of top(leagueB)) for (const [home, aw
   }
   for (let r = 0; r < QUICK; r++) {
     const { recording } = quickSimMatch(
-      { fixtureId: "x", home: home.s, away: away.s, homeLineup: lh, awayLineup: la, homeRoles: ROLES, awayRoles: ROLES },
+      { fixtureId: "x", home: home.s, away: away.s, homeLineup: lh, awayLineup: la, homeRoles: ROLES, awayRoles: ROLES, homeFormationId: FORMATION.id, awayFormationId: FORMATION.id },
       mulberry32(seed++),
     );
     strongIsHome ? add(quick, recording.score.home, recording.score.away) : add(quick, recording.score.away, recording.score.home);

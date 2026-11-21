@@ -889,6 +889,8 @@ export function buildQuickMatchEvent(
       awayLineup: sim.awayLineup,
       homeRoles: sim.homeFormation ? slotRoles(sim.homeFormation) : undefined,
       awayRoles: sim.awayFormation ? slotRoles(sim.awayFormation) : undefined,
+      homeFormationId: sim.homeFormation?.id,
+      awayFormationId: sim.awayFormation?.id,
       knockout: fixture.knockout === true,
       neutral: fixture.neutral === true,
       aggregate: fixture.aggregate,

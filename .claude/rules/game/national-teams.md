@@ -189,6 +189,8 @@ desníveis de Elo (eliminatórias da AFC, CAF, OFC), o favorito ganha um pouco m
 
 Desde a 8.8.31 `SLOPE` é 0,2 (a recalibração do quickSim mudou o peso do nível; `non-player-games.md`): ciclo 2,50 gols, CAF 2,97, AFC 2,78, CONCACAF 2,73, UEFA 2,60, OFC 2,10.
 
+Motor de 90 minutos: o quickSim de clubes passou a marcar mais em nível baixo, então o fator sobe com o nível: AT_REF 1,17, SLOPE −0,26, MIN 0,6. `national-goals-diag.ts 2028-07-20`: 2,67 gols por jogo (UEFA 2,77, CONMEBOL 2,81, CAF 2,65, AFC 2,57, CONCACAF 2,54, OFC 2,58; torneios 2,60). Ver `non-player-games.md` → "Recalibração geral (motor de 90 minutos)".
+
 ## Testes e smoke
 
 ```

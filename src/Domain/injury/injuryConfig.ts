@@ -61,7 +61,7 @@ export const INJURY = {
    * (3.4.1) against the 26-league caches of `bun scripts/quicksim-spread.ts extras` (fitness 88,
    * AI formations, 10 400 engine matches): engine 0.242, quickSim 0.250 injuries per match.
    */
-  QUICKSIM_CONTACT_SCALE: 1.85,
+  QUICKSIM_CONTACT_SCALE: 3.75,
 
   /** Heavy training session → small flat chance of a light injury. Light/normal training: 0. */
   HEAVY_TRAINING_CHANCE: 0.0125,

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   expectedGoals,
   quickSimMatch,
+  quickRatingWeights,
   ratingFromStats,
   samplePoisson,
   teamLevel,
@@ -166,9 +167,10 @@ describe("slot roles", () => {
     const stGoals = goals.get("h-p9") ?? 0;
     const others = [...goals.entries()].filter(([id]) => id !== "h-p9").map(([, g]) => g);
     expect(stGoals).toBeGreaterThan(0);
-    // Centre-backs head in set pieces (Etapa 14: HEADER_LINE_WEIGHT DEF ≈ FWD), so the margin over a
-    // defender slot is smaller than before; the ST slot still outscores every other slot clearly.
-    for (const g of others) expect(stGoals).toBeGreaterThan(g * 1.5);
+    // The 90-minute engine spreads goals over midfield (ROLE_GOAL_WEIGHT MID ≈ half of FWD) and
+    // centre-backs head in set pieces; the ST slot still clearly outscores the average slot.
+    const meanOther = others.reduce((a, b) => a + b, 0) / others.length;
+    expect(stGoals).toBeGreaterThan(meanOther * 1.3);
   });
 
   test("vagas puladas não desalinham os papéis", () => {
@@ -189,7 +191,8 @@ describe("slot roles", () => {
       stGoals += recording.playerStats["h-p9"]?.goals ?? 0;
       total += recording.score.home;
     }
-    expect(stGoals / total).toBeGreaterThan(0.4);
+    // ST weight vs five MID slots (ROLE_GOAL_WEIGHT FWD ≈ 2 × MID): ~0.27 of the side's goals.
+    expect(stGoals / total).toBeGreaterThan(0.2);
   });
 });
 
@@ -237,9 +240,9 @@ describe("quickSimMatch", () => {
     expect(Object.keys(recording.playerStats).filter((id) => id.startsWith("h-")).length).toBe(9);
   });
 
-  // Sanity band, not the calibration target (that is scripts/quicksim-calibrate.ts against the
-  // engine): uniform-attribute squads at level ~4.5 land ~1.3; real leagues at that level ~1.45–1.6.
-  test("distribuição: times iguais com média de 1,1 a 1,9 gols e mandante vencendo mais", () => {
+  // Sanity band, not the calibration target (that is scripts/quicksim-spread.ts against the
+  // engine): the 90-minute engine scores ~2.2–3.1 a match in most leagues (non-player-games.md).
+  test("distribuição: times iguais com média de 1,8 a 3,2 gols e mandante vencendo mais", () => {
     const h = makeSquad("h", 4);
     const a = makeSquad("a", 4);
     let goals = 0, homeWins = 0, awayWins = 0;
@@ -250,12 +253,14 @@ describe("quickSimMatch", () => {
       if (score.home > score.away) homeWins++;
       else if (score.away > score.home) awayWins++;
     }
-    expect(goals / N).toBeGreaterThanOrEqual(1.1);
-    expect(goals / N).toBeLessThanOrEqual(1.9);
+    expect(goals / N).toBeGreaterThanOrEqual(1.8);
+    expect(goals / N).toBeLessThanOrEqual(3.2);
     expect(homeWins).toBeGreaterThan(awayWins);
   });
 
-  test("nível absoluto: dois nível 7 marcam mais que dois nível 3", () => {
+  // The direction follows LEVEL_EXPONENT: the 90-minute engine scores MORE between weak sides
+  // (negative exponent since the 2026-11 refit; non-player-games.md).
+  test("nível absoluto: o volume segue o sinal de LEVEL_EXPONENT", () => {
     const avgGoals = (level: number) => {
       const h = makeSquad("h", level);
       const a = makeSquad("a", level);
@@ -266,7 +271,8 @@ describe("quickSimMatch", () => {
       }
       return goals / 1000;
     };
-    expect(avgGoals(7)).toBeGreaterThan(avgGoals(3));
+    if (C.LEVEL_EXPONENT < 0) expect(avgGoals(3)).toBeGreaterThan(avgGoals(7));
+    else expect(avgGoals(7)).toBeGreaterThan(avgGoals(3));
   });
 
   test("passes seguem o nível do próprio time: meio-campo fraco passa bem menos", () => {
@@ -310,8 +316,10 @@ describe("quickSimMatch", () => {
         }
       }
       const n = N * cms.length;
-      expect(tackles / n).toBeCloseTo(expected(C.TACKLES_PER_MATCH.MID, C.TACKLE_LEVEL_EXPONENT.MID), 1);
-      expect(ints / n).toBeCloseTo(expected(C.INTERCEPTIONS_PER_MATCH.MID, C.INTERCEPTION_LEVEL_EXPONENT.MID), 1);
+      // Relative tolerance: the 90-minute rates are large (~2–10 per slot).
+      const near = (got: number, want: number) => expect(Math.abs(got / want - 1)).toBeLessThan(0.03);
+      near(tackles / n, expected(C.TACKLES_PER_MATCH.MID, C.TACKLE_LEVEL_EXPONENT.MID));
+      near(ints / n, expected(C.INTERCEPTIONS_PER_MATCH.MID, C.INTERCEPTION_LEVEL_EXPONENT.MID));
     }
   });
 
@@ -385,28 +393,29 @@ describe("calibração de notas", () => {
   });
 });
 
-describe("ratingFromStats tail shrink (#9)", () => {
+describe("ratingFromStats line bonus and shrink", () => {
   const zero = { passesAttempted: 0, passesCompleted: 0, passesFailed: 0, shots: 0, goals: 0, assists: 0, interceptions: 0, tackles: 0 };
-  test("a big forward night is pulled toward the line centre, a quiet one barely moves", () => {
-    const big = { ...zero, goals: 1, shots: 2, assists: 1 };
-    expect(ratingFromStats(big, 0, "FWD")).toBeLessThan(ratingFromStats(big));
-    expect(ratingFromStats(big, 0, "FWD")).toBeGreaterThan(8);
-    expect(Math.abs(ratingFromStats(zero, 0, "FWD") - ratingFromStats(zero))).toBeLessThan(0.1);
-    expect(ratingFromStats(zero, 0, "GK")).toBe(ratingFromStats(zero));
+  test("the line bonus moves a quiet night by RATING_LINE_BONUS (shrink off since the 90-minute refit)", () => {
+    for (const g of ["GK", "DEF", "MID", "FWD"] as const) {
+      const k = C.RATING_SHRINK[g], c = C.RATING_SHRINK_CENTER[g];
+      const raw = quickRatingWeights().BASELINE + C.RATING_LINE_BONUS[g];
+      expect(ratingFromStats(zero, 0, g)).toBeCloseTo(Math.round((c + (raw - c) * k) * 10) / 10, 5);
+    }
   });
 });
 
 describe("ratingFromStats", () => {
   test("baseline 6.0 sem ações e gol sobe a nota", () => {
     const zero = { passesAttempted: 0, passesCompleted: 0, passesFailed: 0, shots: 0, goals: 0, assists: 0, interceptions: 0, tackles: 0 };
-    expect(ratingFromStats(zero)).toBe(6);
-    expect(ratingFromStats({ ...zero, goals: 1, shots: 1 })).toBeCloseTo(7.7, 5);
+    const W = quickRatingWeights();
+    expect(ratingFromStats(zero)).toBe(Math.round(W.BASELINE * 10) / 10);
+    expect(ratingFromStats({ ...zero, goals: 1, shots: 1 })).toBeCloseTo(Math.round((W.BASELINE + W.GOAL + W.SHOT) * 10) / 10, 5);
   });
 
   test("tacklesFailed é opcional (default 0) e reduz a nota via TACKLE_FAILED quando informado", () => {
     const zero = { passesAttempted: 0, passesCompleted: 0, passesFailed: 0, shots: 0, goals: 0, assists: 0, interceptions: 0, tackles: 0 };
     expect(ratingFromStats(zero, 0)).toBe(ratingFromStats(zero));
-    expect(ratingFromStats(zero, 1)).toBeCloseTo(5.8, 5);
+    expect(ratingFromStats(zero, 1)).toBeCloseTo(Math.round((quickRatingWeights().BASELINE + quickRatingWeights().TACKLE_FAILED) * 10) / 10, 5);
   });
 });
 
@@ -776,12 +785,12 @@ describe("quickSimMatch — discipline", () => {
       expect(goals(home)).toBe(r.score.home);
       expect(goals(away)).toBe(r.score.away);
     }
-    // Engine (3.4.1, 26 leagues, AI formations): 10.2 fouls, 2.29 yellows, 0.063 reds, 0.34 penalties per match.
-    expect(fouls / n).toBeGreaterThan(9);
-    expect(fouls / n).toBeLessThan(11.5);
-    expect(yellows / n).toBeGreaterThan(2);
-    expect(yellows / n).toBeLessThan(2.7);
-    expect(reds / n).toBeLessThan(0.15);
+    // 90-minute engine (26 leagues, AI formations): 25.4 fouls, 4.59 yellows, 0.16 reds, 0.34 penalties per match.
+    expect(fouls / n).toBeGreaterThan(22.5);
+    expect(fouls / n).toBeLessThan(28.5);
+    expect(yellows / n).toBeGreaterThan(3.9);
+    expect(yellows / n).toBeLessThan(5.3);
+    expect(reds / n).toBeLessThan(0.3);
     expect(pens / n).toBeGreaterThan(0.25);
     expect(pens / n).toBeLessThan(0.45);
   });
@@ -866,7 +875,8 @@ describe("quickSimMatch — aerial play", () => {
       stGoals += r.playerStats[home.players.find((p) => p.positions[0] === "ST")!.id]!.goals;
       others += r.score.home;
     }
-    expect(stGoals / others).toBeGreaterThan(0.2);
+    // HEADER_GOAL_SHARE is ~7% of the goals in the 90-minute engine; the ST still takes most of them.
+    expect(stGoals / others).toBeGreaterThan(0.15);
   });
 });
 
