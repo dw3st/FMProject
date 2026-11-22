@@ -58,7 +58,7 @@ export const SHOT_PHYSICS = {
   /** He leaves a ball predicted to miss the frame by more than this (yd) and does not dive. */
   LEAVE_MARGIN: 0.4,
   /** Stop chance = STOP_BASE + STOP_SKILL × (handling − 0.5) − STOP_EDGE × offset² − STOP_SPEED × (speed − STOP_FREE_MS)⁺. */
-  STOP_BASE: 0.94, /* R9: 0.98 → 0.94 (goals: real volume) */ STOP_SKILL: 0.2, STOP_EDGE: 0.3, STOP_SPEED: 0.01, STOP_FREE_MS: 18, STOP_MIN: 0.05, STOP_MAX: 0.98,
+  STOP_BASE: 0.88, /* 2026-11-22: 0.94 → 0.88 with XG_REF 0.26 (main six leagues 2.74 goals) */ STOP_SKILL: 0.2, STOP_EDGE: 0.3, STOP_SPEED: 0.01, STOP_FREE_MS: 18, STOP_MIN: 0.05, STOP_MAX: 0.98,
   /** A touched ball he does not stop runs on: speed × FINGERTIP_KEEP, turned up to FINGERTIP_DEG. */
   FINGERTIP_KEEP: 0.75, FINGERTIP_DEG: 12,
   /** Save grades: difficult from this offset or speed (m/s), good from these. */

@@ -30,7 +30,7 @@ export const SHOT_GATE = {
    * per-role eagerness — only the shooting level (defenders "rarely", `shotLevelMult`) scales it.
    */
   /** Stage 21: 0.25 → 0.28. Very sensitive: 0.32 leaves 15% of the shots outside the box, 0.4 only 5%. */
-  XG_REF: 0.29, // R9: 0.28 → 0.29 (long-range share 50% → 43%, FM 46%)
+  XG_REF: 0.26, // 2026-11-22: 0.29 → 0.26 (main six leagues at 2.74 goals, 25.5 shots; real 2.73)
   /**
    * Category multiplier of a kick relative to a carry: FM's kick multiplier is always 1.0 and a carry's median 0.36
    * (report 6), the same ratio stage 8 used for turn (× 2) and hold (× 1.14). Replaces the kick's 1 with the flag on.
