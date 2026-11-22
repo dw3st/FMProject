@@ -752,6 +752,7 @@ export function h2hMatchInput(home: SetupBody, away: SetupBody): LiveMatchInput 
     B: sideInput(away, date),
     date,
     knockout: fixture.knockout === true,
+    home: fixture.neutral ? null : 'A',
     // The 90 physical minutes (stage 22): the worker runs them at the mode's pace.
     clockScale: 1,
     ...(fixture.aggregate ? { aggregate: { A: fixture.aggregate.home, B: fixture.aggregate.away } } : {}),

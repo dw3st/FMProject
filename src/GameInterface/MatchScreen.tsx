@@ -748,6 +748,8 @@ export function MatchScreen() {
               },
               date: matchDate,
               knockout: data.fixture.knockout === true,
+              // The user is engine side A; the home edge goes to whichever side is the fixture's home side.
+              home: data.fixture.neutral ? null : isAwayView(data.fixture, data.mySquad.id) ? "B" : "A",
               // Stage 19: the solo live match plays the 90 physical minutes (mode A sped up, mode B the lances).
               clockScale: 1,
               ...(data.fixture.aggregate

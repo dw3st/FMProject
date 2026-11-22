@@ -13,6 +13,7 @@
 import { setTeamTemperamentOverride } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { setTeamMentalOverride } from '@/GameEngine/Configs/MentalMatchConfig';
 import { setTeamMoraleOverride } from '@/GameEngine/Configs/MoraleConfig';
+import { setHomeSide } from '@/GameEngine/Configs/HomeAdvantageConfig';
 import { setDecisionFlags } from '@/GameEngine/Configs/DecisionConfig';
 import { applyTeamTacticsConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { applyTeamAttackConfig } from '@/GameEngine/Configs/AttackConfig';
@@ -96,6 +97,8 @@ export interface SimulateMatchOptions {
   clockScale?: number;
   /** Knockout: a draw after 90' goes to extra time and penalties. */
   knockout?: boolean;
+  /** The home side (attributes × HOME_ADVANTAGE.EXECUTION). Absent / null = no home side (neutral venue, lab, tests). */
+  home?: 'A' | 'B' | null;
   /** Second leg of a two-legged tie: first-leg goals per side of THIS match. */
   aggregate?: { A: number; B: number };
   /**
@@ -290,6 +293,7 @@ export function simulateMatch(
   // Stage 20 (4c-7): an AI side changes its instructions with the score.
   setTeamAi('A', !!options.tactics?.A.ai);
   setTeamAi('B', !!options.tactics?.B.ai);
+  setHomeSide(options.home);
   setTeamMoraleOverride('A', options.morale?.A);
   setTeamMoraleOverride('B', options.morale?.B);
   setTeamTemperamentOverride('A', options.temperament?.A);

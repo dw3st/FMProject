@@ -140,7 +140,7 @@ async function collect(league: string, pairs: number, repeats: number, out: stri
     const al = ai ? autoLineupForFormationWithFitness(away, aF, AI_MATCH_DATE) : autoLineupDefaultFormation(away);
     for (let r = 0; r < repeats; r++) {
       failedTackles.clear();
-      const f = simulateMatch(home, away, hF, aF, hl, al, ai ? { tactics: { A: aiTactics, B: aiTactics } } : undefined);
+      const f = simulateMatch(home, away, hF, aF, hl, al, { home: 'A', ...(ai ? { tactics: { A: aiTactics, B: aiTactics } } : {}) });
       const lines = engineLines(f, { A: hl, B: al }, failedTackles, { A: slotRoles(hF), B: slotRoles(aF) });
       const side = (t: "A" | "B"): SideRecord => ({
         goals: f.score[t], shots: f.teamStats[t].shots, xg: +f.teamStats[t].xg.toFixed(3), lines: lines[t],

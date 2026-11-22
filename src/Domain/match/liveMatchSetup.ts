@@ -6,6 +6,7 @@
  * injury multiplier is precomputed by the caller (`staffEffectsOf(squad).injuryMult`) so the squad itself never
  * has to travel; the pitch part is applied here.
  */
+import { setHomeSide } from '@/GameEngine/Configs/HomeAdvantageConfig';
 import { applyTeamTacticsConfig } from "@/GameEngine/Configs/DefenseConfig";
 import { applyTeamAttackConfig } from "@/GameEngine/Configs/AttackConfig";
 import { setTeamAi } from "@/GameEngine/Configs/InstructionConfig";
@@ -75,6 +76,8 @@ export interface LiveMatchInput {
   /** Match date (YYYY-MM-DD): fitness of the automatic XI. */
   date: string;
   knockout: boolean;
+  /** The home engine side (attributes × HOME_ADVANTAGE.EXECUTION); null / absent = neutral venue. */
+  home?: TeamId | null;
   /** First-leg goals of each engine side (two-legged ties). */
   aggregate?: { A: number; B: number };
   pitch?: { condition: number; turf?: TurfType };
@@ -113,6 +116,7 @@ export function applyLiveSideConfigs(sides: Record<TeamId, Pick<LiveSideInput, "
  */
 export function buildLiveMatchState(input: LiveMatchInput): GameState {
   applyLiveSideConfigs(input);
+  setHomeSide(input.home);
   const lineupOf = (side: LiveSideInput) =>
     side.lineup ?? autoFillLineupWithFitness(
       getFormationSlots(side.formation as unknown as FormationShape, "attacking"), side.players, input.date,

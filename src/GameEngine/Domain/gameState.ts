@@ -118,6 +118,8 @@ import { FOUL_CONFIG } from '@/GameEngine/Configs/FoulConfig';
 import { computeCrowdGrid } from '@/GameEngine/Infrastructure/CrowdGrid';
 import { getDefenseConfig } from '@/GameEngine/Configs/DefenseConfig';
 import { withTeamExecution } from '@/GameEngine/Configs/FamiliarityConfig';
+import { withHomeExecution } from '@/GameEngine/Configs/HomeAdvantageConfig';
+import { levelledPlayer, matchLevelOf, setMatchLevel } from '@/GameEngine/Configs/MatchLevelConfig';
 import { matchMoraleOf } from '@/GameEngine/Configs/MoraleConfig';
 import { matchTemperamentOf } from '@/GameEngine/Configs/PersonalityMatchConfig';
 import { temperamentFoulMult } from '@/Domain/personality/personality';
@@ -329,17 +331,19 @@ function buildGamePlayerForSlot(
   team: TeamId,
   engineId: number,
 ): GamePlayer {
+  // Partial levelling (`MatchLevelConfig.ts`) acts on the raw attributes: the consistency cap and the mental layer read them.
+  rp = levelledPlayer(rp);
   const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
   // Style familiarity (execution, `FamiliarityConfig.ts`) scales the team's attributes, and the
   // player's morale his own (`.claude/rules/game/morale.md`; 65 / absent = unchanged).
   const mental = matchMentalOf(team, rp);
-  const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+  const buffed = consistencyCapped(rp, withHomeExecution(withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
     rp.stats,
     Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
     Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
     Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
+  ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), team), mental.consistency);
   const roleEng  = roleEngine(slotDef.role);
   const startPos = resolveBasePosition(slotIndex, attackDir, formation, 'attacking');
   const yRange   = slotDef.yRange ?? roleEng.yRange;
@@ -423,19 +427,20 @@ function buildTeam(
   // Build bench from remaining squad members in squad order
   const bench: GamePlayer[] = [];
   let benchIdOffset = idOffset + 100; // bench IDs start well above the 11 starters
-  for (const rp of players) {
-    if (used.has(rp.id)) continue;
+  for (const rp0 of players) {
+    if (used.has(rp0.id)) continue;
+    const rp = levelledPlayer(rp0);
     const naturalRole = toValidPlayerRole(rp.positions?.[0] ?? 'CM');
     const roleEng = roleEngine(naturalRole);
     const attackDir = (team === 'A' ? 1 : -1) as 1 | -1;
     const mental = matchMentalOf(team, rp);
-    const buffed = consistencyCapped(rp, withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
+    const buffed = consistencyCapped(rp, withHomeExecution(withSettlingExecution(withMoraleExecution(withTeamExecution(computeBuffedStats(
       rp.stats,
       Player.trainingToStatus(rp.seasonLog?.trainingSessions ?? 0),
       Player.moraleToStatus(rp.seasonLog?.morale ?? 70),
       Player.formToStatus(rp.seasonLog?.recentRatings ?? []),
     matchRandom,
-    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), mental.consistency);
+    ), team), matchMoraleOf(team, rp.morale)), settlingMult(rp)), team), mental.consistency);
     const baseStats = teamLineup(buffed, naturalRole);
     // See the starters' build above — same `matchStartEnergy` compression, same no-history fallback.
     const energy = startConditionOf(rp.seasonLog?.fitness ?? emptySeasonLog().fitness);
@@ -510,6 +515,8 @@ export function createMatchState(
   resetActionHold();
   resetShoulderRuns();
   _lastCover.A = undefined; _lastCover.B = undefined; _lastShadow = '';
+  // Partial levelling of the match to the reference level (`MatchLevelConfig.ts`): both sides, same factor.
+  setMatchLevel(matchLevelOf(playersA, playersB, lineupA, lineupB));
   const withMult = (r: ReturnType<typeof buildTeam>, m: number | undefined) =>
     m === undefined || m === 1
       ? r

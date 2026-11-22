@@ -553,6 +553,7 @@ function engineMatch(fixture: Fixture, homeSquad: Squad, awaySquad: Squad, sim: 
     sim.awayLineup,
     {
       knockout: fixture.knockout === true,
+      home: fixture.neutral ? null : 'A',
       ...(sim.tactics ? { tactics: sim.tactics } : {}),
       ...(sim.aiMorale ? { morale: { A: sim.aiMorale.home, B: sim.aiMorale.away } } : {}),
       ...(sim.pitchCondition !== undefined ? { pitchCondition: sim.pitchCondition } : {}),
