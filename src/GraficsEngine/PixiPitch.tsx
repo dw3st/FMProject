@@ -520,7 +520,7 @@ interface Props {
    */
   faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
   /** Texts drawn by the pitch effects; English defaults (the live match passes translations). */
-  effectLabels?: { save: string; wide: string; offside: string; woodwork?: string; cornerSave?: string; cornerDeflect?: string };
+  effectLabels?: { save: string; wide: string; offside: string; woodwork?: string; blocked?: string; greatSave?: string; cornerSave?: string; cornerDeflect?: string };
   /**
    * Draw the pitch mirrored on the x axis (#98: the user plays away, home side on the left).
    * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
@@ -659,7 +659,7 @@ export interface PitchStadium {
 export interface PitchPerf { fps: number; drawMs: number }
 const PERF_SAMPLE_FRAMES = 30;
 
-const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE", woodwork: "OFF THE WOODWORK", cornerSave: "SAVED · CORNER", cornerDeflect: "DEFLECTED · CORNER" };
+const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE", woodwork: "OFF THE WOODWORK", blocked: "BLOCKED", greatSave: "GREAT SAVE", cornerSave: "SAVED · CORNER", cornerDeflect: "DEFLECTED · CORNER" };
 
 export function PixiPitch({
   canvasWidth = 900,
@@ -2541,6 +2541,12 @@ export function PixiPitch({
       playGfx.eventMode = 'none';
       world.addChild(playGfx);
       let impacts: { x: number; y: number; at: number }[] = [];
+      // Visual of the 90-minute engine (part 2): a keeper coming off his line (for a high ball, a loose ball, to sweep or
+      // to rush a holder) gets a short pulse around him, so his decision reads before he arrives.
+      let comeOuts: { id: number; at: number }[] = [];
+      const unsubComeOut = gameBus.on("keeperComeOut", (e) => {
+        if (framesShown()) comeOuts = [...comeOuts.filter((c) => c.id !== e.keeperId).slice(-1), { id: e.keeperId, at: effectNow }];
+      });
       const unsubImpact = gameBus.on("shotResolved", (e) => {
         if (framesShown()) impacts = [...impacts.slice(-2), { x: e.toX, y: e.toY, at: effectNow }];
       });
@@ -2603,6 +2609,13 @@ export function PixiPitch({
           playGfx.moveTo(a.px, a.py).quadraticCurveTo((a.px + b.px) / 2, Math.min(a.py, b.py) - lift, b.px, b.py)
             .stroke({ width: 2, color: 0xffe678, alpha: 0.75 });
         }
+        comeOuts = comeOuts.filter((c) => effectNow - c.at < PLAY_LINES.COME_OUT_S);
+        for (const c of comeOuts) {
+          const at = positions.get(c.id) ?? st.players.find((p) => p.id === c.id);
+          if (!at) continue;
+          const k = (effectNow - c.at) / PLAY_LINES.COME_OUT_S, { px, py } = toPixel(at.x, at.y);
+          playGfx.circle(px, py, markerR * (1.2 + k * 1.6)).stroke({ width: 2, color: 0xffe678, alpha: 0.8 * (1 - k) });
+        }
         impacts = impacts.filter((i) => effectNow - i.at < 0.6);
         for (const i of impacts) {
           const k = (effectNow - i.at) / 0.6, { px, py } = toPixelNearGoal(i.x, i.y);
@@ -2620,6 +2633,20 @@ export function PixiPitch({
           e.outcome === "woodwork" ? labels.woodwork ?? DEFAULT_EFFECT_LABELS.woodwork : e.inPosts ? labels.save : labels.wide,
         );
         lastShotFx = { at: effectNow, effect: effects.length > before ? effects[effects.length - 1] : undefined };
+      });
+      // Visual of the 90-minute engine (part 2): a difficult save says so; a shot blocked by a defender shows where.
+      const unsubSaveGradeFx = gameBus.on("keeperSave", (e) => {
+        if (e.grade !== "difficult" || !lastShotFx || lastShotFx.at !== effectNow || !lastShotFx.effect) return;
+        const text = effectTexts.get(lastShotFx.effect);
+        if (text) text.text = labelsOf().greatSave ?? DEFAULT_EFFECT_LABELS.greatSave;
+      });
+      const unsubBlockFx = gameBus.on("shotBlocked", (e) => {
+        const shooter = playerPos(e.player), blocker = playerPos(e.blockerId);
+        if (!shooter || !blocker) return;
+        pushEffect(
+          { kind: "shot", fromX: shooter.x, fromY: shooter.y, toX: blocker.x, toY: blocker.y, result: "blocked" },
+          labelsOf().blocked ?? DEFAULT_EFFECT_LABELS.blocked,
+        );
       });
       const unsubCornerFx = gameBus.on("cornerAwarded", (e) => {
         const text = lastShotFx && lastShotFx.at === effectNow && lastShotFx.effect ? effectTexts.get(lastShotFx.effect) : undefined;
@@ -2803,12 +2830,31 @@ export function PixiPitch({
         // A high ball brought down: on the chest.
         gameBus.on("aerialResolved", (e) => { if (e.outcome === "control" && topDownMoves()) act(e.winnerId, "chest"); }),
         gameBus.on("keeperFeet", (e) => { if (e.won && topDownMoves()) act(e.keeperId, "smother"); }),
+        // Visual of the 90-minute engine (part 2): the strike the engine chose (it comes right after "shot", whose pose
+        // it replaces): a chip or a lob is scooped, a volley is a volley, the rest a plain strike (a header keeps its own).
+        gameBus.on("shotLaunched", (e) => {
+          if (e.technique === "header") return;
+          const kind = e.technique === "chip" || e.technique === "lob" ? "chip" : e.technique === "volley" ? "volley" : "kick";
+          act(e.player, topDownMoves() ? kind : "kick");
+        }),
+        // A shot blocked or deflected: the defender put his body in the way.
+        gameBus.on("shotBlocked", (e) => act(e.blockerId, topDownMoves() ? "chest" : "tackleStand")),
+        gameBus.on("shotDeflected", (e) => act(e.blockerId, topDownMoves() ? "chest" : "tackleStand")),
+        // The holder's steps (holder-choice.md): holding or shielding at the flag he stands over the ball, a turn or a
+        // spin is a turn; a sprint or a run to the byline show in his stride.
+        gameBus.on("holderStep", (e) => {
+          if (!topDownMoves()) return;
+          if (e.step === "hold" || e.step === "flag") act(e.playerId, "receive");
+          else if (e.step === "turn" || e.step === "spin") act(e.playerId, "roulette", e.playerId % 2 === 0 ? 1 : -1);
+        }),
+        // A won dribble leaves the beaten defender stumbling.
+        gameBus.on("dribble", (e) => { if (e.success && topDownMoves()) act(e.targetId, "stumble"); }),
         // The holder's moves (`HolderMoves.ts`, stage 4 `movement.md`): an existing pose for each. Shielding he stands over
         // the ball (receive), cutting inside he turns (roulette), the lay-off is a first-time pass, the chip a lofted
         // strike (volley), rounding the keeper a step-over.
         gameBus.on("holderMove", (e) => {
           if (!topDownMoves()) return;
-          if (e.move === "chip") { act(e.playerId, "volley"); return; }
+          if (e.move === "chip") { act(e.playerId, "chip"); return; }
           if (e.move === "round_keeper") { act(e.playerId, "stepover", e.playerId % 2 === 0 ? 1 : -1); return; }
           if (e.phase !== "start") return;
           act(e.playerId, e.move === "shield" ? "receive" : e.move === "cut_inside" ? "roulette" : "pass");
@@ -2831,6 +2877,16 @@ export function PixiPitch({
           if (e.player === throwTaker) { throwTaker = null; act(e.player, "throwGo"); return; }
           const keeper = playerPos(e.player)?.role === "GK";
           act(e.player, keeper ? (d < 32 ? "throw" : topDownMoves() ? "goalKick" : "kick") : d < 22 ? "pass" : "kick");
+        }),
+        // Visual of the 90-minute engine (part 2): the keeper's restart by the pass the engine launched (it follows
+        // passAttempted): a goal kick is kicked off the grass (a short one passed), from his hands a ground or driven
+        // ball is thrown, a higher one punted.
+        gameBus.on("passLaunched", (e) => {
+          if (playerPos(e.player)?.role !== "GK") return;
+          const goalKick = stateRef.current.setPiece?.type === "goal_kick";
+          const low = e.type === "ground" || e.type === "driven";
+          const kind = goalKick ? (low && e.distance < 32 ? "pass" : "goalKick") : low && e.distance < 40 ? "throw" : "goalKick";
+          act(e.player, kind === "goalKick" && !topDownMoves() ? "kick" : kind);
         }),
         gameBus.on("passCompleted", (e) => act(e.toId, topDownMoves() && playerPos(e.toId)?.role === "GK" ? "collect" : "receive")),
         gameBus.on("crossStarted", (e) => act(e.player, "kick")),
@@ -2865,7 +2921,8 @@ export function PixiPitch({
           if (!gk) return;
           const lateral = Math.abs(e.y - gk.y);
           const side: 1 | -1 = e.y >= gk.y ? 1 : -1;
-          if (e.kind === "hold") act(gk.id, lateral < 1.2 ? (topDownMoves() && (e.z ?? 0) < 0.5 ? "collect" : "catch") : "dive", side);
+          if (e.kind === "spill" && topDownMoves()) act(gk.id, "spill", side);
+          else if (e.kind === "hold") act(gk.id, lateral < 1.2 ? (topDownMoves() && (e.z ?? 0) < 0.5 ? "collect" : "catch") : "dive", side);
           else if (e.kind === "parry" && topDownMoves() && (e.z ?? 0) > 2) act(gk.id, "tipOver");
           else act(gk.id, "dive", side);
         }),
@@ -4838,7 +4895,7 @@ export function PixiPitch({
             const ballPx = toPixel(drawnB.x, drawnB.y);
             const withBall = attackingTeam(stateRef.current);
             const ballDist = Math.hypot(ballPx.px - px, ballPx.py - py) / m.scale;
-            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, backpedals(player.role === "GK", withBall !== null && withBall !== player.team, ballDist));
+            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, backpedals(player.role === "GK", withBall !== null && withBall !== player.team, ballDist), player.sprint ? player.sprint.secs > 0 : undefined);
             spriteMotion.set(player.id, mo);
             const action = actionOf.get(player.id) ?? null;
             const sp = stateRef.current.setPiece;
@@ -6074,6 +6131,9 @@ export function PixiPitch({
         unsubAerialContact();
         unsubShotFx();
         unsubCornerFx();
+        unsubSaveGradeFx();
+        unsubComeOut();
+        unsubBlockFx();
         unsubGoalFx();
         unsubFoulFx();
         unsubCardFx();

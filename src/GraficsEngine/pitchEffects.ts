@@ -9,7 +9,7 @@ import type { GameState } from "@/GameEngine/types";
 import { isAerialKind } from "@/GameEngine/types";
 
 export type PitchEffectData =
-  | { kind: "shot"; fromX: number; fromY: number; toX: number; toY: number; result: "save" | "wide" | "woodwork" }
+  | { kind: "shot"; fromX: number; fromY: number; toX: number; toY: number; result: "save" | "wide" | "woodwork" | "blocked" }
   | { kind: "goal"; goalX: number; goalY: number; color: number }
   | { kind: "foul"; x: number; y: number }
   | { kind: "card"; x: number; y: number; card: "yellow" | "red"; name: string }

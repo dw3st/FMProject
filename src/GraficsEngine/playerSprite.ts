@@ -93,6 +93,11 @@ export function actionChain(kind: SpriteActionKind, side: "left" | "right" = "le
     case "tipOver": return [["keeper-tip-over", 0.45], ["keeper-ready", 0.2]];
     case "collect": return [["keeper-collect", 0.35], ["keeper-hold", 0.4]];
     case "goalKick": return [["keeper-kick-wind", 0.12], ["keeper-kick", 0.16], ["keeper-kick-follow", 0.3]];
+    // Visual of the 90-minute engine (part 2): a chip is scooped under the ball (a short swing, no volley follow-through);
+    // a beaten player stumbles and gets up; a keeper who spills the ball has it in his hands, then it is gone.
+    case "chip": return [["player-kick-wind", 0.1], ["player-pass", 0.22], ["player-kick-follow", 0.26]];
+    case "stumble": return [["player-foul-fall", 0.22], ["player-tackle-stand", 0.3]];
+    case "spill": return [["keeper-catch", 0.25], ["keeper-ready", 0.35]];
   }
 }
 
@@ -100,7 +105,8 @@ export type SpriteActionKind =
   | "kick" | "pass" | "throw" | "header" | "tackle" | "tackleStand" | "fall" | "appeal" | "receive" | "injured"
   | "celebrate" | "dive" | "catch" | "punch" | "throwGo" | "kneeSlide"
   | "volley" | "bicycle" | "backheel" | "roulette" | "stepover" | "chest" | "armsUp"
-  | "smother" | "tipOver" | "collect" | "goalKick";
+  | "smother" | "tipOver" | "collect" | "goalKick"
+  | "chip" | "stumble" | "spill";
 
 /** Frames drawn with the figure's back to where he faces (he strikes a bicycle kick with his back to goal). */
 const TURNED_FRAMES: ReadonlySet<string> = new Set(["player-bicycle-jump", "player-bicycle", "player-bicycle-land"]);
@@ -167,7 +173,7 @@ export function backpedals(isKeeper: boolean, defending: boolean, distToBall: nu
  * seconds (0 while paused), `look` where an idle player faces (the ball). `backpedal` (the keeper): moving away
  * from `look` he keeps facing it instead of turning his back on the play.
  */
-export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: number, look: { x: number; y: number } | null, backpedal = false): SpriteMotion {
+export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: number, look: { x: number; y: number } | null, backpedal = false, engineSprint?: boolean): SpriteMotion {
   const S = PLAYER_SPRITE;
   const dx = pos.x - m.x, dy = pos.y - m.y;
   if (Math.hypot(dx, dy) > S.JUMP_YDS) return { ...m, x: pos.x, y: pos.y, vx: 0, vy: 0, gait: "idle" };
@@ -186,7 +192,8 @@ export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: n
   else if (look && Math.hypot(look.x - pos.x, look.y - pos.y) > 0.5) angle = turn(angle, Math.atan2(look.y - pos.y, look.x - pos.x), dt, S.TURN_MIN);
   const cycle = gait === "run" ? S.RUN_CYCLE + S.RUN_CYCLE_PER_SPEED * sp : S.WALK_CYCLE;
   const phase = gait === "idle" ? m.phase : (m.phase + (sp / cycle) * dt) % 1;
-  const sprint = gait === "run" && (m.sprint ? sp > S.SPRINT_DOWN : sp > S.SPRINT_UP);
+  // The engine's own sprint flag when it has one (`GamePlayer.sprint`); else the drawn speed with a little hysteresis.
+  const sprint = gait === "run" && (engineSprint ?? (m.sprint ? sp > S.SPRINT_DOWN : sp > S.SPRINT_UP));
   return { x: pos.x, y: pos.y, vx, vy, angle, gait, phase, ...(sprint ? { sprint } : {}) };
 }
 

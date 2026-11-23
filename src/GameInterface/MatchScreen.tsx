@@ -1924,7 +1924,7 @@ export function MatchScreen() {
 
   const effectLabels = useMemo(
     () => ({
-      save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside"), woodwork: t("match.effects.woodwork"),
+      save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside"), woodwork: t("match.effects.woodwork"), blocked: t("match.effects.blocked"), greatSave: t("match.effects.greatSave"),
       cornerSave: t("match.effects.cornerSave"), cornerDeflect: t("match.effects.cornerDeflect"),
     }),
     [t],

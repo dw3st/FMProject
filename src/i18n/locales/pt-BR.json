@@ -1564,6 +1564,8 @@
       "wide": "PRA FORA",
       "offside": "IMPEDIMENTO",
       "woodwork": "NA TRAVE",
+      "blocked": "BLOQUEADO",
+      "greatSave": "GRANDE DEFESA",
       "cornerSave": "DEFESA · ESCANTEIO",
       "cornerDeflect": "DESVIO · ESCANTEIO"
     },

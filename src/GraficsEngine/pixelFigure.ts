@@ -87,6 +87,9 @@ const ACTION_CLIPS: Record<SpriteActionKind, readonly string[]> = {
   tipOver: ["punch", "header"],
   collect: ["catch", "receive"],
   goalKick: ["kick"],
+  chip: ["pass", "kick"],
+  stumble: ["fall"],
+  spill: ["catch", "receive"],
 };
 
 /**
