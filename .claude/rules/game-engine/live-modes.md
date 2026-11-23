@@ -42,8 +42,8 @@ minutes for the 90. The goal celebration and the replay keep the label speed (`P
 
 - Preview: chips PARTIDA (Inteira / Só os lances), `fm.match.mode`; level `fm.match.highlightLevel` (default
   estendidos).
-- Match: the mode tabs, the level tabs (hidden on phone), "Próximo lance", the timeline (`HighlightStrip`: windows by
-  level, the forecast's reach, the cursor).
+- Match: the mode tabs, the level tabs (hidden on phone), "Próximo lance", the timeline (`HighlightStrip`: only the lances up to
+  the cursor, by level, and the stretch played; the forecast's future lances are never shown).
 - `/test`: chips "Lances off / main / extended / full" (forces the 90' match), "Next (B)" and a line with the lances
   known, the forecast's reach and the first answer's latency. Mode A is the "90' match" chip.
 

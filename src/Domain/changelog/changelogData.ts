@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.6",
+    date: "2026-11-23",
+    time: "23:43",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Assistindo só os lances, a barra de lances mostra só o que já aconteceu, sem adiantar os lances que ainda vão vir.", en: "Watching only the highlights, the highlights bar shows only what has already happened, never the lances still to come." },
+    ],
+  },
+  {
     version: "12.31.5",
     date: "2026-11-23",
     time: "23:38",
