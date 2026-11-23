@@ -81,6 +81,20 @@ export function pickCandidate(scored: readonly ScoredCandidate[]): number {
   return best;
 }
 
+/**
+ * A pressed holder's way out of a hold: the candidate of the highest value that is not a plain hold (a vetoed one too,
+ * as long as it has a value). −1 when there is none.
+ */
+export function trappedPick(scored: readonly ScoredCandidate[]): number {
+  let best = -1;
+  for (let i = 0; i < scored.length; i++) {
+    const c = scored[i]!;
+    if (c.kind === 'hold' || c.kind === 'flag' || !(c.value > 0)) continue;
+    if (best < 0 || c.value * c.mult > scored[best]!.value * scored[best]!.mult) best = i;
+  }
+  return best;
+}
+
 /** Risk byte from a 0..1 loss chance. */
 export function riskOf(loss: number): number {
   return Math.round(Math.max(0, Math.min(1, loss)) * 100);

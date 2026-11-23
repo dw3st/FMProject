@@ -12,9 +12,11 @@ import { applyEnvOverrides } from '@/GameEngine/Support/EnvOverrides';
 export const CONDITION = {
   /** Multiplies the legacy per-action cost under the FM curve. Stage 21: 2.0 → 1.6 (with FM's carry acceleration the
    *  players sprint more: 90' median fell to 66, FM 73.5). */
-  DRAIN_SCALE: 1.0, // stage 21 R9 round: 1.6 → 1 (condition at 90' 68 → 73.5, FM 73.5)
+  // stage 21 R9 round: 1.6 → 1 (condition at 90' 68 → 73.5, FM 73.5); 12.31.3, user report (players hardly tired):
+  // 1 → 1.3 with FLOOR 60 → 55 (Premier, 8 matches: 90' 73.0 → 67.6, the subbed player 70.8 → 65.5).
+  DRAIN_SCALE: 1.3,
   /** Condition the drain fades toward: cost × (energy − FLOOR) / (100 − FLOOR), 0 at the floor. */
-  FLOOR: 60,
+  FLOOR: 55,
   /** Keepers barely tire (FM: 94–99 at the end). */
   GK_DRAIN_SCALE: 0.07,
   /** Points recovered at half time (stamina 5); × (1 − SPAN/2 + SPAN × stamina/10). Never above the kick-off value. */

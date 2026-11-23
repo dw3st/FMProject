@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.3",
+    date: "2026-11-23",
+    time: "13:45",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Jogador cercado de adversários perto da área não fica mais parado com a bola: ele passa, conduz ou chuta.", en: "A player surrounded by opponents near the box no longer stands still with the ball: he passes, carries or shoots." },
+      { tab: "match", pt: "Os jogadores cansam mais ao longo da partida, e as trocas pesam mais no segundo tempo.", en: "Players tire more during the match, and substitutions matter more in the second half." },
+    ],
+  },
+  {
     version: "12.31.2",
     date: "2026-11-23",
     time: "12:50",

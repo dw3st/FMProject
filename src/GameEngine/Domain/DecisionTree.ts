@@ -63,7 +63,7 @@ import { AERIAL_CONFIG } from '@/GameEngine/Configs/AerialConfig';
 import { evaluateBoxSetPiece, fmCornerPoint, goalKickLongPoint, goalKickShortSpot, routineOption } from '@/GameEngine/Domain/SetPieces';
 import { FM_NUMBERS } from '@/GameEngine/Configs/FmNumbersConfig';
 import { HOLDER_CHOICE } from '@/GameEngine/Configs/HolderChoiceConfig';
-import { pickCandidate, qualityOf, riskOf, scoreCandidates, type HolderCandidate, type HolderCategory } from '@/GameEngine/Domain/HolderChoice';
+import { pickCandidate, qualityOf, trappedPick, riskOf, scoreCandidates, type HolderCandidate, type HolderCategory } from '@/GameEngine/Domain/HolderChoice';
 import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
 import { INSTR, holderInstructionMult, instrDelta } from '@/GameEngine/Configs/InstructionConfig';
 import { getMainRole } from '@/Domain/roles';
@@ -1154,6 +1154,11 @@ function fmHolderChoice(
   const noise = st.lapse ? cands.map(() => 1 + (matchRandom() * 2 - 1) * H.LAPSE_NOISE) : null;
   const scored = scoreCandidates(cands, i => (noise ? noise[i]! : 1));
   let idx = pickCandidate(scored);
+  // Ringed by opponents he plays the ball (a pass, a clearance, a dribble) rather than holding it (12.31.3).
+  if (pN >= H.HOLD_TRAPPED_PN && (idx < 0 || scored[idx]!.kind === 'hold')) {
+    const out = trappedPick(scored);
+    if (out >= 0) idx = out;
+  }
   let decision: PlayerDecision;
   if (idx < 0) {
     decision = gate ? { type: 'shoot' } : { type: 'carry', dx: away.dx, dy: away.dy, step: 'hold' };

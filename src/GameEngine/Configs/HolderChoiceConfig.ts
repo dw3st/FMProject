@@ -75,6 +75,12 @@ export const HOLDER_CHOICE = {
   HOLD_SPEED: 0.25,
   /** Hold value = HOLD_BASE + HOLD_SUPPORT × teammates arriving within HOLD_SUPPORT_YD, × (1 − pressure) under a press. */
   HOLD_BASE: 0.25,
+  /**
+   * A holder this pressed (normalised 0..1) never just holds (12.31.3, user report: a winger near the box, ringed by
+   * opponents, kept holding the ball): the best other option is played, even one the risk vetoed (a pass, a clearance,
+   * a dribble); the corner-flag hold of a side leading late is not touched.
+   */
+  HOLD_TRAPPED_PN: 0.6,
   HOLD_SUPPORT: 0.08,
   HOLD_SUPPORT_YD: 15,
   /** Corner-flag hold: leading, from FLAG_MINUTE on, within FLAG_ZONE_YD of the opponents' corner flag. */
