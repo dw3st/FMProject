@@ -22,9 +22,9 @@ export const HIGHLIGHT_LEVELS: readonly HighlightLevel[] = ['main', 'extended', 
 export type HighlightTrigger =
   | 'goal' | 'penalty' | 'red_card' | 'goal_disallowed' | 'clear_chance'
   | 'big_save' | 'shot' | 'var' | 'injury' | 'yellow_card' | 'corner' | 'free_kick'
-  | 'cross' | 'attack' | 'offside';
+  | 'cross' | 'attack' | 'offside' | 'kickoff';
 
-type PreRoll = 'spell' | 'set_piece' | 'incident';
+type PreRoll = 'spell' | 'set_piece' | 'incident' | 'period';
 
 /** Level and pre-roll of each trigger; the order of the keys is the priority (first = most important). */
 export const HIGHLIGHT_TRIGGERS: Readonly<Record<HighlightTrigger, { level: HighlightLevel; pre: PreRoll }>> = {
@@ -43,6 +43,8 @@ export const HIGHLIGHT_TRIGGERS: Readonly<Record<HighlightTrigger, { level: High
   cross:           { level: 'full',     pre: 'spell' },
   attack:          { level: 'full',     pre: 'spell' },
   offside:         { level: 'full',     pre: 'incident' },
+  // The break and the kick-off of the second half and of each extra-time half: every level shows them.
+  kickoff:         { level: 'main',     pre: 'period' },
 };
 const PRIORITY = Object.keys(HIGHLIGHT_TRIGGERS) as HighlightTrigger[];
 const levelRank = (l: HighlightLevel): number => HIGHLIGHT_LEVELS.indexOf(l);
@@ -104,6 +106,10 @@ export interface HighlightState {
   thirdSince: number | null;
   boxSince: number | null;
   firedSpell: number | null;
+  /** Clock where the current period began (the end of the one before: the break is at that clock). */
+  periodStart?: number;
+  /** The last tick was a dead phase (half time, the extra-time break). */
+  dead?: boolean;
 }
 
 export function createHighlightState(): HighlightState {
@@ -129,6 +135,7 @@ function startOf(s: HighlightState, trigger: HighlightTrigger, team: TeamId | nu
   let start: number;
   if (pre === 'set_piece') start = t - cfg.SET_PIECE_PRE_S;
   else if (pre === 'incident') start = t - cfg.INCIDENT_PRE_S;
+  else if (pre === 'period') start = s.periodStart ?? t;
   else {
     const anchor = team !== null && s.poss.team === team ? s.poss.since - cfg.SPELL_LEAD_S : t - cfg.PRE_MAX_S / 2;
     start = Math.min(t - cfg.PRE_MIN_S, Math.max(t - cfg.PRE_MAX_S, anchor));
@@ -166,7 +173,8 @@ function apply(s: HighlightState, trigger: HighlightTrigger, team: TeamId | null
     if (spellTeam) w.spellTeam = spellTeam;
   } else {
     const prev = s.closed[s.closed.length - 1];
-    if (prev && start <= prev.end + cfg.MERGE_GAP_S && levelRank(info.level) <= levelRank(prev.level)) {
+    // The kick-off lance never reopens the last lance of the half (it would lift it to the main level).
+    if (prev && trigger !== 'kickoff' && start <= prev.end + cfg.MERGE_GAP_S && levelRank(info.level) <= levelRank(prev.level)) {
       s.closed.pop();
       const re: OpenWindow = { ...prev, triggers: [...prev.triggers], lastT: s.clock, spellTeam, closeAt: null };
       upgrade(re, trigger, team);
@@ -198,8 +206,13 @@ export function highlightTick(s: HighlightState, x: HighlightSample, cfg: Highli
     s.pending = [];
     s.deadSince = null;
     s.thirdSince = s.boxSince = null;
+    s.dead = true;
     return;
   }
+  // A period after a break begins: a lance from the break (the page plays the half-time show) to the kick-off.
+  const resumed = s.dead === true && s.liveSeconds > 0;
+  if (resumed) { s.periodStart = s.clock; s.pending.unshift({ trigger: 'kickoff', team: null }); }
+  s.dead = false;
   s.clock += x.dt;
   s.liveSeconds += x.dt;
   s.minute = x.minute;

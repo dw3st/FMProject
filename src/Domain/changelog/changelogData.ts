@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.5",
+    date: "2026-11-23",
+    time: "23:38",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Assistindo só os lances, a partida mostra o intervalo e a volta para o 2º tempo (e para cada metade da prorrogação) em todos os níveis.", en: "Watching only the highlights, the match shows half time and the restart of the second half (and of each extra-time half) at every level." },
+    ],
+  },
+  {
     version: "12.31.4",
     date: "2026-11-23",
     time: "14:00",

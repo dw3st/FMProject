@@ -28,6 +28,7 @@ o FM). Só observação: nada muda no jogo, nenhum sorteio novo. Flag `DECISION_
 | `main` | gol, pênalti marcado, vermelho, gol anulado pelo VAR, chance clara (chute com xG ≥ `CLEAR_CHANCE` do `FmXg`) |
 | `extended` | chute, grande defesa (defesa depois de chute com xG ≥ 0,15), revisão do VAR, lesão, amarelo, escanteio, falta perigosa |
 | `full` | cruzamento com destino na área, ataque que fica 4 s no terço final ou 1 s na área (uma vez por posse), impedimento |
+| `main` (sempre) | `kickoff`: a volta de um intervalo (2º tempo e cada metade da prorrogação), do início do intervalo até o lance de saída; nunca se junta ao último lance do tempo anterior |
 
 - **Início:** lance de jogo corrido começa na conquista da bola pelo time (−1 s), entre 3 e 10 s antes do gatilho; bola
   parada concedida 3 s antes (a falta, o corte); cartão, lesão e VAR 4 s antes.

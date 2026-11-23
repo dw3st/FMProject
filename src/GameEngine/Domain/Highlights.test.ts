@@ -84,4 +84,20 @@ describe('highlight classifier', () => {
     expect(a[0]!.end).toBeCloseTo(4, 1);
     expect(play()).toEqual(a);
   });
+
+  test('the break and the second-half kick-off are a main lance of their own', () => {
+    const s = createHighlightState();
+    run(s, 3);
+    highlightEvent(s, 'shot', 'A');
+    run(s, 1);
+    run(s, 2, { live: false });
+    run(s, 12, { possession: 'B' });
+    const main = highlightsAtLevel(highlightsOf(s), 'main');
+    expect(main).toHaveLength(1);
+    expect(main[0]!.kind).toBe('kickoff');
+    expect(main[0]!.start).toBeCloseTo(4, 1);
+    expect(main[0]!.end).toBeGreaterThan(4.5);
+    // The shot of the first half stays an extended lance.
+    expect(highlightsOf(s).find(h => h.kind === 'shot')!.level).toBe('extended');
+  });
 });
