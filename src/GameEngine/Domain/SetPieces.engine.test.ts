@@ -303,7 +303,8 @@ describe("loose ball over the goal line", () => {
 
   test("an outfield defender on it: corner, and the through ball is not 'lost in race' to the passer's own team", () => {
     const { s } = outOver("CB");
-    randomSpy = spyMatchRandom().mockReturnValue(0);
+    // 0 would injure every player this tick (per-minute risk), and the referee now stops play for an injury.
+    randomSpy = spyMatchRandom().mockReturnValue(0.01);
     const lost: unknown[] = [];
     const unsub = gameBus.on("throughBallLostInRace", e => lost.push(e));
     const out = tickState(s, 0.2).state;
@@ -315,7 +316,7 @@ describe("loose ball over the goal line", () => {
 
   test("only the keeper on it: goal kick", () => {
     const { s } = outOver("GK");
-    randomSpy = spyMatchRandom().mockReturnValue(0);
+    randomSpy = spyMatchRandom().mockReturnValue(0.01);
     const out = tickState(s, 0.2).state;
     expect(out.setPiece?.type).toBe("goal_kick");
   });

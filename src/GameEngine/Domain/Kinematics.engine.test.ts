@@ -57,6 +57,10 @@ describe("kinematics in the engine", () => {
   test("the layer off moves at once at top speed (the engine before kinematics)", () => {
     KINEMATICS_CONFIG.ENABLED = false;
     let s = scenario("kin-sprint-stop");
+    // The scenario starts with the ball loose and nobody committed: the chasers are picked during the first tick, so
+    // that tick's step follows a fresh off-ball choice. Measure the next one, a committed chase.
+    s = tickState(s, SIM_STEP).state;
+    expect(byName(s, "Santos").decisionMemory?.decision?.type).toBe("chase_loose_ball");
     const x0 = byName(s, "Santos").x;
     s = tickState(s, SIM_STEP).state;
     const santos = byName(s, "Santos");

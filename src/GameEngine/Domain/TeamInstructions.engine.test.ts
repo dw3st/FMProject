@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { LEGACY_CLOCK_SCALE } from "@/GameEngine/Domain/gameState";
 import { simulateMatch, type TeamTactics } from "@/GameEngine/Domain/SimulateMatch";
 import type { Squad } from "@/types/playerTypes";
+import { nestInstructions, styleTemplate } from "@/Domain/tactics/teamInstructions";
 
 function loadSquad(file: string): Squad {
   const path = fileURLToPath(new URL(`../../example_data/squads/premier_league/${file}`, import.meta.url));
@@ -27,11 +28,8 @@ describe("team instructions (stage 20): the template plays as the style always d
     const plain = play({ style: "counter_attack" }, { style: "balanced" });
     const written = play({
       style: "counter_attack",
-      instructions: {
-        inPossession: { passing: 1, width: -1, tempo: 1, passTarget: 1 },
-        transition: { onWin: 2, onLoss: -1 },
-        outOfPossession: { line: -1, engagement: -1, pressing: -1, tackling: -1, defWidth: -1 },
-      },
+      // Every level of the style's template written out (it moves when a style is rebalanced).
+      instructions: nestInstructions(styleTemplate("counter_attack").levels, styleTemplate("counter_attack").focus),
     }, { style: "balanced", instructions: {}, mentality: 0 });
     expect(written).toBe(plain);
     expect(play({ style: "counter_attack" }, { style: "balanced" }, { TEAM_INSTRUCTIONS: false })).toBe(plain);
