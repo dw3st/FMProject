@@ -33,6 +33,7 @@ describe("mistimed runs (stage 13)", () => {
   test("seeded match: with OFFSIDE_RUNS attackers stand past the true line more often and misread it", () => {
     const f = formation433Json as Formation;
     const home = loadSquad("33.json"), away = loadSquad("34.json");
+    // Two full 90-minute matches: ~30 s alone, over 60 s with simulations running in parallel (timed out there).
     const run = (on: boolean) => {
       let ticks = 0, past = 0, misreads = 0;
       const un = gameBus.on("lineMisread", () => { misreads++; });
@@ -57,7 +58,7 @@ describe("mistimed runs (stage 13)", () => {
     // stages (shape, holder choice, shot) it no longer is in this one seeded match. Behaviour is retuned in stage 21
     // (`fm-numbers.md` → "Etapa 13"); the test keeps the mechanism: misreads only with the reads on.
     expect(on.share).toBeGreaterThan(0);
-  }, 60000);
+  }, 180_000);
 });
 
 describe("contact fouls (stage 13)", () => {

@@ -42,35 +42,34 @@ describe("load raises in-match energy cost", () => {
     // who were never substituted in on either side.
     // Stage 14: the AI makes 3–4 changes from 55' (FM), so the comparison is read at half time, before any change:
     // the mean outfield condition of each side when the first half ends.
+    // Stage 21 R9: the FM condition curve drains less (DRAIN_SCALE 1) and fades toward its floor, so the load gap at
+    // half time is ~3 points, of the order of the side-to-side difference between two identical teams (A vs B ~1).
+    // The control is therefore the same side without load in the same seeded match, not the other side.
     const REPLICATES = 4;
-    let highTotal = 0;
-    let freshTotal = 0;
-    let comparedPairs = 0;
-
-    for (let i = 0; i < REPLICATES; i++) {
-      let atHalf: { A: number; B: number } | null = null;
+    const halfTimeMeanA = (a: Squad, seed: number): number => {
+      let atHalf: number | null = null;
       // Compressed clock (`LEGACY_CLOCK_SCALE`) only to keep this mechanism test fast: the code paths are the same (stage 2).
-      simulateMatch(highLoad, fresh, undefined, undefined, undefined, undefined, {
-        clockScale: LEGACY_CLOCK_SCALE, seed: 700 + i,
+      simulateMatch(a, fresh, undefined, undefined, undefined, undefined, {
+        clockScale: LEGACY_CLOCK_SCALE, seed,
         onTick: s => {
-          if (atHalf || s.matchPhase !== "halfTime") return;
-          const mean = (t: "A" | "B") => {
-            const v = s.players.filter(p => p.team === t && p.role !== "GK").map(p => p.energy);
-            return v.reduce((a, b) => a + b, 0) / v.length;
-          };
-          atHalf = { A: mean("A"), B: mean("B") };
+          if (atHalf !== null || s.matchPhase !== "halfTime") return;
+          const v = s.players.filter(p => p.team === "A" && p.role !== "GK").map(p => p.energy);
+          atHalf = v.reduce((x, y) => x + y, 0) / v.length;
         },
       });
       expect(atHalf).not.toBeNull();
-      highTotal += atHalf!.A;
-      freshTotal += atHalf!.B;
-      comparedPairs++;
+      return atHalf!;
+    };
+
+    let highTotal = 0;
+    let freshTotal = 0;
+    for (let i = 0; i < REPLICATES; i++) {
+      highTotal += halfTimeMeanA(highLoad, 700 + i);
+      freshTotal += halfTimeMeanA(fresh, 700 + i);
     }
 
-    const avgHigh = highTotal / comparedPairs;
-    const avgFresh = freshTotal / comparedPairs;
-    // Measured effect is consistently several energy points; a wide margin keeps this from being
-    // flaky while still failing if the load multiplier stops being applied.
-    expect(avgHigh).toBeLessThan(avgFresh - 2);
-  }, 30_000);
+    const avgHigh = highTotal / REPLICATES;
+    const avgFresh = freshTotal / REPLICATES;
+    expect(avgHigh).toBeLessThan(avgFresh - 1.5);
+  }, 60_000);
 });
