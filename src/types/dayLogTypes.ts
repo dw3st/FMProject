@@ -286,9 +286,20 @@ export interface DayLog {
   nationalMatch?: MatchEvent;
 }
 
-/** `POST /api/advance-day/:saveId` response. */
-export interface AdvanceDayResponse extends DayLog {
+/**
+ * `POST /api/advance-day/:saveId` response: the seat's flags of the day, never the day's events (read the day log,
+ * `GET /api/saves/:saveId/days/:date`).
+ */
+export interface AdvanceDayResponse {
+  saveId: string;
+  date:   string;
   newDate: string;
+  /** The seat's manager lost his job today. */
+  sacked?: true;
+  /** Club and national-team offers that arrived today. */
+  jobOffers?: number;
+  /** The board offered a contract renewal today. */
+  renewalOffer?: true;
   /** Present (true) on the day the PLAYER's country rolled its season over. */
   seasonEnded?: true;
   /** Season year that was closed. */

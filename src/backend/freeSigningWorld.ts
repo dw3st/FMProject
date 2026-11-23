@@ -4,7 +4,7 @@ import { topIdsOf } from "@/backend/starLimitWorld";
 import { contractDemand } from "@/Domain/contracts/contracts";
 import { starterChance, type PreferenceInput } from "@/Domain/negotiation/rivals";
 import {
-  freeSigningProfileIds, freeSigningRivals, signingBonusAsk, type FreeSigningKind, type FreeSigningRival,
+  freeArrivalCtx, freeSigningProfileIds, freeSigningRivals, signingBonusAsk, type FreeSigningKind, type FreeSigningRival,
 } from "@/Domain/negotiation/freeSigning";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -19,9 +19,9 @@ export interface FreeSigningContext {
  * club (pre-contract) or last club (free agent).
  */
 export async function freeSigningContext(
-  service: SaveService, saveId: string, args: { player: RosterPlayer; kind: FreeSigningKind; from: Squad | null; date: string },
+  service: SaveService, saveId: string, args: { player: RosterPlayer; kind: FreeSigningKind; from: Squad | null; date: string; since?: string },
 ): Promise<FreeSigningContext> {
-  const { player, kind, from, date } = args;
+  const { player, kind, from, date, since } = args;
   const market = await service.getWorldMarket(saveId);
   const profiles = market?.profiles ?? {};
   const humans = await service.humanClubIds(saveId);
@@ -31,7 +31,7 @@ export async function freeSigningContext(
   const loaded = await Promise.all(ids.map((id) => service.getSquadById(saveId, id)));
   ids.forEach((id, i) => { const s = loaded[i]; if (s) squads.set(id, s); });
   const rivals = freeSigningRivals({
-    player, kind, date, fromId: from?.id ?? null, humanIds: humans, profiles, squadOf: (id) => squads.get(id),
+    player, kind, date, since, fromId: from?.id ?? null, humanIds: humans, profiles, squadOf: (id) => squads.get(id),
     top: await topIdsOf(saveId),
   });
   const prestige = await prestigeOf(service, saveId, date, rivals.map((r) => r.clubId));
@@ -43,7 +43,7 @@ export async function freeSigningContext(
         rival,
         pref: {
           wage: rival.wage,
-          demand: contractDemand(player, squad, date, { fromSquad: from, freeArrival: true }),
+          demand: contractDemand(player, squad, date, { fromSquad: from, ...freeArrivalCtx(kind, since) }),
           prestige: prestige.get(rival.clubId) ?? 0.5,
           starter: starterChance(player, squad),
         },

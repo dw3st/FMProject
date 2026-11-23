@@ -36,6 +36,7 @@ import { matchConditions, type MatchWeather } from "@/Domain/matchday/matchCondi
 import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { matchSun, matchWeatherOf } from "@/backend/stadiumData";
 import type { WeatherOfMatch } from "@/Domain/matchday/matchWeatherEffect";
+import { tablePositions } from "@/Domain/match/tablePositions";
 
 // fileURLToPath (not `.pathname`): a bare `.pathname` breaks Bun.file() on Windows ("/C:/...").
 const FORMATIONS_DIR = fileURLToPath(new URL("../Data/formations", import.meta.url));
@@ -309,9 +310,16 @@ export async function matchSetupFor(
     ? studyPlanFor(save.tacticLog, opponentSquad, oppFormation, oppLineup, mySquad, resolvedMyFormation, resolved.lineup)
     : null;
 
+  // League table position of each side, next to the crests on the scoreboard (league matches only).
+  const isLeagueMatch = !!matchFixture && (save.activeLeagues ?? []).some((l) => l.leagueSlug === matchFixture.competition);
+  const positions = isLeagueMatch && matchFixture
+    ? tablePositions(await saveService.getLeagueStandings(save.id, matchFixture.competition), [matchFixture.home, matchFixture.away])
+    : {};
+
   return { ok: true, body: {
     save,
     mySquad,
+    tablePositions: positions,
     mySquadId: myInternalId,
     fixture: matchFixture,
     matchDay: matchFixture ? { date: matchFixture.date, fixtureId: matchFixture.id } : null,

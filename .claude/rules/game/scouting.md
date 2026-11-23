@@ -135,8 +135,15 @@ os elencos (só quando algum sumiu).
 Missão `youth`: por semana 0–2 jovens de 16–17 (`generateIntake` ancorado nos elencos da liga de nível 1 do país,
 nomes do país, determinístico por `save:país:semana`), válidos 30 dias. `POST .../prospects/:id/sign`: entra em
 `squad.youth` (`400 youthFull` em 18, `409 offerClosed` vencido), contrato de base de 3 anos, compensação
-`PROSPECT_FEE[tier mediano dos clubes da liga de nível 1] × fator de salário` (LOW €50k, MEDIUM €120k, HIGH €250k,
-ELITE €400k) no extrato (`scouting`, `ref.stage = "prospect"`), inbox `prospect_signed`.
+`PROSPECT_FEE[tier mediano dos clubes da liga de nível 1] × fator de salário × qualidade` (LOW €50k, MEDIUM €120k,
+HIGH €250k, ELITE €400k) no extrato (`scouting`, `ref.stage = "prospect"`), inbox `prospect_signed`.
+
+**Qualidade (12.28.4, report de tester: todo prospecto custava o mesmo, até os fracos):** `prospectQualityMult`
+(`PROSPECT_FEE_QUALITY`): nota = média do nível real e do alto da faixa de potencial dele (o valor de verdade; a tela
+mostra a faixa do olheiro), `t = clamp((nota − 3,5) / 2,5, 0, 1)`, fator `0,15 + 1,1 × t²`. Depois o teto pela receita
+de sempre e o mínimo de €2 mil (`PROSPECT_FEE_MIN`). Gravada em cada prospecto na geração; a tela e a rota de contratar
+usam esse valor. Medido (300 semanas de missão, fator de salário 1,07): Brasil (MEDIUM) 5% €20 mil, mediana €45 mil,
+95% €84 mil, o melhor de 200 €131 mil; Inglaterra (ELITE) mediana €292 mil, 95% €458 mil, topo ~€535 mil.
 
 ## Troca de clube e desemprego
 

@@ -111,7 +111,7 @@ export function useAdvanceDay() {
       if (!res.ok) throw new Error("Failed to advance day");
       // The day moved on: a half-played match snapshot of the old day is stale (#64).
       clearMatchSnapshot();
-      const log = (await res.json()) as AdvanceDayResponse & { sacked?: boolean };
+      const log = (await res.json()) as AdvanceDayResponse;
       if (log.sacked) {
         navigate("/fired");
         return;

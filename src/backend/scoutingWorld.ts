@@ -464,7 +464,7 @@ export async function scoutingDay(
         const prospects = generateProspects({
           saveId, country, week: date, topLeagueSquads: topSquads,
           nextSeasonEnd: args.nextSeasonEnd ?? addDays(date, 365),
-          fee: prospectFee(countryTier(topSquads), wageFactorOf(own), wageRevenueBasisOf(own)),
+          fee: (player) => prospectFee(countryTier(topSquads), wageFactorOf(own), wageRevenueBasisOf(own), player),
           // A world of seats: each seat's draw is its own (ids unique in the world).
           ...(meta.mode === "multi" ? { seatId } : {}),
         });

@@ -15,7 +15,7 @@ import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
 import { useSeatOffers } from "@/GameInterface/Negotiation/seatOfferApi";
 import { loadSession } from "@/GameInterface/gameSession";
 import type { SeatOfferView } from "@/types/seatOfferTypes";
-import type { ActiveLoan, DeferredTransfer, MarketBid, PreContract, RivalBid, SellOnHeld } from "@/types/transferMarketTypes";
+import type { ActiveLoan, DeferredTransfer, MarketBid, PreContract, RivalBid, SellOnHeld, LoanRenewalOffer } from "@/types/transferMarketTypes";
 
 type Section = "seatOffers" | "out" | "in" | "sellOn" | "bids" | "rivals" | "preContracts" | "deferred";
 
@@ -45,6 +45,8 @@ interface Overview {
   /** Fee transfers agreed with the window closed, joining when it opens. */
   deferredTransfers?: DeferredTransfer[];
   lostTargets?: { playerId: string; clubName: string; fee: number; date: string }[];
+  /** Offers to renew a loan for one more season (12.29). */
+  loanRenewals?: LoanRenewalOffer[];
 }
 
 /**
@@ -95,6 +97,14 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
   if (failed) return <p className="text-sm text-destructive m-0">{t("negotiation.errors.generic")}</p>;
   if (!data) return <p className="text-sm text-muted-foreground m-0">{t("common.loading")}</p>;
   const fmtDate = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" });
+  // The return date, and a note when a renewal for one more season is on the table (12.29).
+  const renewalOf = new Set((data.loanRenewals ?? []).map((o) => o.playerId));
+  const returnsCell = (l: ActiveLoan) => (
+    <span>
+      {fmtDate(l.until)}
+      {renewalOf.has(l.playerId) && <span className="ml-2 text-sm text-chart-4">{t("negotiation.loanRenewal.offered")}</span>}
+    </span>
+  );
   const out = data.loans.filter((l) => l.fromClubId === data.clubId);
   const inn = data.loans.filter((l) => l.toClubId === data.clubId);
   const share = (l: ActiveLoan) => `${Math.round(l.wageShare * 100)}%`;
@@ -270,7 +280,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                 { key: "p", header: t("negotiation.overview.player"), sortValue: (l) => l.playerName, cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
                 { key: "c", header: t("negotiation.overview.club"), sortValue: (l) => l.toClubName, cell: (l) => l.toClubName },
                 { key: "s", header: t("negotiation.overview.theyPay"), cell: (l) => share(l), className: "tabular-nums" },
-                { key: "u", header: t("negotiation.returns"), sortValue: (l) => l.until, cell: (l) => fmtDate(l.until), className: "tabular-nums" },
+                { key: "u", header: t("negotiation.returns"), sortValue: (l) => l.until, cell: (l) => returnsCell(l), className: "tabular-nums" },
                 { key: "g", header: t("negotiation.report.games"), sortValue: (l) => l.report?.apps, cell: (l) => l.report?.apps ?? "—", className: "tabular-nums" },
                 { key: "ga", header: t("negotiation.report.goalsAssists"), cell: (l) => (l.report ? `${l.report.goals} / ${l.report.assists}` : "—"), className: "tabular-nums" },
                 { key: "r", header: t("negotiation.report.rating"), sortValue: (l) => l.report?.avgRating, cell: (l) => l.report?.avgRating?.toFixed(2) ?? "—", className: "tabular-nums" },
@@ -305,7 +315,7 @@ export function NegotiationOverview({ saveId, sections, hideEmpty }: {
                 { key: "p", header: t("negotiation.overview.player"), sortValue: (l) => l.playerName, cell: (l) => <PlayerNameLink player={{ id: l.playerId, name: l.playerName }} /> },
                 { key: "c", header: t("negotiation.overview.from"), sortValue: (l) => l.fromClubName, cell: (l) => l.fromClubName },
                 { key: "s", header: t("negotiation.overview.youPay"), cell: (l) => share(l), className: "tabular-nums" },
-                { key: "u", header: t("negotiation.returns"), sortValue: (l) => l.until, cell: (l) => fmtDate(l.until), className: "tabular-nums" },
+                { key: "u", header: t("negotiation.returns"), sortValue: (l) => l.until, cell: (l) => returnsCell(l), className: "tabular-nums" },
               ]}
             />
           ), inn.length === 0);

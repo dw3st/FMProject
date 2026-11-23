@@ -1557,6 +1557,11 @@
       "count_one": "{{count}} highlight",
       "count_other": "{{count}} highlights"
     },
+    "tablePlace_ordinal_one": "{{count}}st",
+    "tablePlace_ordinal_two": "{{count}}nd",
+    "tablePlace_ordinal_few": "{{count}}rd",
+    "tablePlace_ordinal_other": "{{count}}th",
+    "tablePlaceTitle": "{{place}} in the league table",
     "effects": {
       "save": "SAVE",
       "wide": "WIDE",
@@ -2595,6 +2600,8 @@
       "subject": {
         "bid": "{{club}} bid for {{player}}",
         "loan_bid": "{{club}} want {{player}} on loan",
+        "loan_renewal_in": "{{club}} offer to extend {{player}}'s loan",
+        "loan_renewal_out": "{{club}} want to keep {{player}} on loan",
         "loan_back": "{{player}} went back to {{club}}",
         "loan_home": "{{player}} is back from {{club}}",
         "sell_on": "Sell-on clause: {{player}}",
@@ -2613,6 +2620,8 @@
       "body": {
         "bid": "{{club}} offer {{fee}} for {{player}}.",
         "loan_bid": "{{club}} want {{player}} on loan and would pay {{share}}% of his wage.",
+        "loan_renewal_in": "{{club}} would lend {{player}} for one more season, until {{until}}. You pay {{share}}% of his wage.",
+        "loan_renewal_out": "{{club}} want to keep {{player}} on loan for one more season, until {{until}}, paying {{share}}% of his wage.",
         "loan_back": "The loan of {{player}} ended and he went back to {{club}}.",
         "loan_home": "The loan of {{player}} at {{club}} ended. He is back in your squad.",
         "sell_on": "{{player}} was sold by {{club}}. Your sell-on clause paid {{fee}}.",
@@ -4473,6 +4482,9 @@
     "signed": "Player signed.",
     "currentWage": "Current wage: {{wage}}/wk",
     "wageChange": "{{pct}}% on the current",
+    "renewalCap": "Renewal: up to +{{pct}}% on the current wage",
+    "freeWait_one": "No club for {{count}} day: {{pct}}",
+    "freeWait_other": "No club for {{count}} days: {{pct}}",
     "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
     "refusal": {
       "lowWage": "The wage is too low for this player.",
@@ -4765,6 +4777,10 @@
     }
   },
   "negotiation": {
+    "loanRenewal": {
+      "offered": "Renewal offered","closed": "This offer is closed.","renewed": "Loan renewed.","rejected": "Offer turned down: he goes back at the end of the loan.",
+      "noMoney": "Not enough money for the loan fee.","until": "New return date","fee": "Loan fee","deadline": "Answer by {{date}}.","accept": "Accept","reject": "Turn down"
+    },
     "situation": {
       "label": "Situation",
       "thinAfter": {
@@ -9191,7 +9207,11 @@
       "recycleConfirm": "Take {{item}} down to level {{level}}?",
       "confirm": "Recycle",
       "recycleDone": "Back to the stock: {{list}}.",
-      "itemLevel": "{{item}} · level {{level}}"
+      "itemLevel": "{{item}} · level {{level}}",
+      "levelDown": "Level {{from}} → {{to}}",
+      "recycleMin": "Already at level 1",
+      "recycleBusy": "Works under way",
+      "givesNothing": "Gives nothing back"
     },
     "shop": {
       "material": "Material",
@@ -9244,5 +9264,159 @@
       "workshop": "More benches and better components",
       "stand": "+{{seats}} seats"
     }
+  },
+  "clubTabs": {
+    "label": "Club sections",
+    "tab": {
+      "overview": "Overview",
+      "stadium": "Stadium",
+      "works": "Works",
+      "materials": "Materials"
+    },
+    "area": {
+      "stadium": "Stadium",
+      "training": "Training ground",
+      "academy": "Academy"
+    },
+    "overview": {
+      "stadium": "Stadium",
+      "seats": "{{seats}} seats",
+      "avg": "average crowd {{avg}}",
+      "comfort": "Comfort level {{level}}",
+      "record": "record {{n}}",
+      "seeStadium": "See stadium",
+      "short": {
+        "stadiumPitch": "Pitch",
+        "seats": "Stands",
+        "stadiumStructure": "Structure and lights"
+      }
+    },
+    "todo": {
+      "title": "To do",
+      "count_one": "{{count}} item",
+      "count_other": "{{count}} items",
+      "empty": "Nothing needs attention right now.",
+      "repair": "Repair · {{count}}",
+      "improve": "Upgrade · {{count}}",
+      "running": "Under way · {{count}}",
+      "below40": "below 40%: {{effect}}",
+      "levels": "Level {{from}} → {{to}}",
+      "missing_one": "{{count}} part missing",
+      "missing_other": "{{count}} parts missing",
+      "repairNow": "Repair",
+      "open": "Open works",
+      "readyOn": "ready on {{date}}"
+    },
+    "stadium": {
+      "stands": "Stands",
+      "expand": "Expand the {{stand}} stand",
+      "expandSummary": "+{{seats}} seats · {{weeks}} weeks · {{parts}}",
+      "underWorks": "Under works",
+      "levelOf": "Level {{level}} of {{max}}",
+      "comfortNext": "Ticket +{{now}}% · next level +{{next}}%",
+      "changeGrass": "Change the grass",
+      "repairCost": "Repair · {{cost}}",
+      "chartSub": "Average {{avg}} · {{pct}}% full"
+    },
+    "works": {
+      "workshop": "Workshop",
+      "benchesFree": "Every bench is free.",
+      "free": "Free",
+      "underWay": "Under works",
+      "noneIn": {
+        "stadium": "No works at the stadium",
+        "training": "No works at the training ground",
+        "academy": "No works at the academy"
+      },
+      "pickBeside": "Pick a works on the left"
+    },
+    "pick": {
+      "title": "Pick the works",
+      "areaBusy": "works under way",
+      "areaFree": "free",
+      "stand": "Expand a stand",
+      "seats": "seats",
+      "turf": "Change the grass",
+      "trainingAll": "Whole training ground",
+      "academyAll": "Whole academy",
+      "levelUp": "level {{from}} → {{to}}",
+      "max": "top level",
+      "repair": "repair · {{pct}}%",
+      "rebuild": "rebuild",
+      "running": "under way"
+    },
+    "job": {
+      "upgradeTo": "Upgrade to level {{level}}",
+      "levelTo": "Up to level {{level}}",
+      "maxLevel": "At the top level",
+      "repairTo": "Repair up to {{pct}}%",
+      "rebuild": "Rebuild",
+      "conditionFrom": "Condition {{from}}% → {{to}}%",
+      "stand": "+{{seats}} seats",
+      "standAbout": "Now {{now}} seats · new capacity {{capacity}}",
+      "turf": "Lay {{turf}} grass",
+      "weeks_one": "{{count}} week of works",
+      "weeks_other": "{{count}} weeks of works",
+      "areaFree": "Area free",
+      "areaBusy": "Area busy",
+      "nothing": "Nothing to build here.",
+      "step1": "Parts",
+      "step2": "Make or buy",
+      "step3": "Start the works",
+      "needHave": "needs {{need}} · has {{have}}",
+      "shortParts_one": "{{count}} part missing from the stock.",
+      "shortParts_other": "{{count}} parts missing from the stock.",
+      "nothingToMake": "Nothing to make: every part is in the stock.",
+      "makingUses": "Making the missing parts takes:",
+      "makeN": "Make: {{what}} ×{{count}}",
+      "bench_one": "at the bench: {{count}} day",
+      "bench_other": "at the bench: {{count}} days",
+      "benchShort_one": "at the bench: {{count}} day · materials missing",
+      "benchShort_other": "at the bench: {{count}} days · materials missing",
+      "noBench": "The workshop cannot make these parts yet.",
+      "buy": "Buy what is missing",
+      "buyCost": "Buy what is missing · {{cost}}",
+      "buyHint": "opens Materials with the cart filled",
+      "deadline": "Time",
+      "delivery": "Ready",
+      "area": "Area",
+      "areaFreeOf": "{{area}} free",
+      "areaBusyOf": "{{area}} under works",
+      "start": "Start the works",
+      "cannotYet": "Not yet:",
+      "whyParts_one": "{{count}} part missing from the stock.",
+      "whyParts_other": "{{count}} parts missing from the stock.",
+      "whyBusy": "{{area}} already has a works under way: {{works}}.",
+      "startNote": "Starting takes the parts from the stock. Cancelling gives half back."
+    }
+  },
+  "craftHelp": {
+    "open": "How it is made: {{name}}",
+    "madeWith": "Each unit takes",
+    "per": "{{count}} × {{material}}",
+    "inStock": "{{count}} in stock",
+    "bench_one": "{{count}} bench day per {{lot}} units",
+    "bench_other": "{{count}} bench days per {{lot}} units",
+    "needsLevel": "Needs a level {{level}} workshop (yours is level {{now}})",
+    "fromLevel": "Any workshop from level {{level}}",
+    "usedIn": "Used in",
+    "goesInto": "Goes into",
+    "takes": "{{component}}: {{count}} per unit",
+    "buyHint": "Buy it in the Shop on the Materials tab.",
+    "use": {
+      "stand": "Enlarging a stand",
+      "workshop": "Upgrading the workshop"
+    },
+    "make": "Make",
+    "locked": "Level {{level}}",
+    "short": "Materials missing",
+    "buyShort": "Buy what is missing",
+    "canMake": "Enough for {{count}}",
+    "makeColumn": "Make",
+    "queued": "Order placed: {{component}} ×{{count}}. It goes to the next free bench.",
+    "lockedHint": "Needs a level {{level}} workshop",
+    "buy": "Buy",
+    "stockHint": "Make puts the order on the workshop. The ? shows what each one is made of and where it is used.",
+    "openMaterial": "Where it is used: {{name}}"
   }
 }

@@ -81,6 +81,13 @@ export const SCOUTING = {
   /** The fee never passes this share of the buying club's annual revenue (report 2026-11-18: Brusque paid 9% per prospect). */
   PROSPECT_FEE_REVENUE_SHARE: 0.015,
   PROSPECT_FEE_FLOOR: 10_000,
+  /**
+   * The fee follows the prospect (report 2026-11-19: every prospect cost the same, weak ones too): score = mean of his
+   * real level and the top of his potential band; mult = MIN + (MAX − MIN) × t², t = (score − LOW) / (HIGH − LOW) in 0..1.
+   */
+  PROSPECT_FEE_QUALITY: { LOW: 3.5, HIGH: 6, MIN: 0.15, MAX: 1.25 } as const,
+  /** Smallest fee of a prospect (EUR). */
+  PROSPECT_FEE_MIN: 2_000,
 
   // ── Money ────────────────────────────────────────────────────────────────
   /** Weekly travel per active mission, share of the annual revenue / 52 (player missions: half). */

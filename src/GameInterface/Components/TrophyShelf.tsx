@@ -11,6 +11,18 @@ const ART: Record<TrophyKind, string> = {
   national: "season/trophy-cup.webp",
 };
 
+/**
+ * Crop of each painting so every trophy stands on the same base line with the same height (report 2026-11-19: the cup
+ * painting fills less of its frame and stood shorter and wider). Image height = box / share of the frame the trophy
+ * fills; top shift = 1 − bottom edge × that height. From the alpha bounding box of the 384 px paintings.
+ */
+const CROP: Record<TrophyKind, string> = {
+  league: "h-[103%] top-[-1.4%]",
+  cup: "h-[122%] top-[-20.3%]",
+  continental: "h-[103%] top-[-1.4%]",
+  national: "h-[122%] top-[-20.3%]",
+};
+
 /** The kind of a gallery title ("league:x", "cup:x", "continental:x"); anything else counts as a league title. */
 export function trophyKindOf(title: string): TrophyKind {
   const kind = title.split(":")[0];
@@ -32,16 +44,16 @@ export function TrophyShelf({ items }: { items: TrophyItem[] }) {
   const art = newVisualOn();
   return (
     <div className="rounded-md border border-border bg-card px-5 pt-5 pb-4 phone:px-3 phone:pt-3">
-      <div className="flex flex-wrap items-end justify-around gap-x-4 gap-y-5">
+      <div className="flex flex-wrap items-start justify-around gap-x-4 gap-y-5">
         {items.map((it) => {
           const off = it.count === 0;
           return (
             <div key={it.key} className="w-28 phone:w-24 flex flex-col items-center text-center min-w-0" title={it.label}>
-              <div className="h-24 phone:h-16 flex items-end justify-center">
+              <div className="relative h-24 phone:h-16 w-full flex items-end justify-center">
                 {art ? (
                   <img
                     src={gameArtUrl(ART[it.kind])} alt="" aria-hidden draggable={false}
-                    className={`h-24 phone:h-16 w-auto select-none ${off ? "grayscale opacity-30" : ""} ${it.kind === "national" ? "hue-rotate-[160deg] saturate-50" : ""}`}
+                    className={`absolute left-1/2 -translate-x-1/2 ${CROP[it.kind]} w-auto max-w-none select-none ${off ? "grayscale opacity-30" : ""} ${it.kind === "national" ? "hue-rotate-[160deg] saturate-50" : ""}`}
                   />
                 ) : (
                   <Icon name="trophy" size={48} className={off ? "text-muted-foreground/40" : "text-star-gold"} />

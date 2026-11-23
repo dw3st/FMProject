@@ -20,6 +20,7 @@ import { terminationBreaksDepth, terminationQuote, terminationThinLine } from "@
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
 import { ledgerSeason } from "@/backend/staffRoutes";
 import { freeSigningContext } from "@/backend/freeSigningWorld";
+import { freeArrivalCtx } from "@/Domain/negotiation/freeSigning";
 import { prestigeOf } from "@/backend/rivalWorld";
 import { preferredRival } from "@/Domain/negotiation/freeSigning";
 import { starterChance } from "@/Domain/negotiation/rivals";
@@ -195,6 +196,7 @@ export const contractRoutes = {
 
     const from = new URL(req.url).searchParams.get("from");
     let player;
+    let freeSince: string | undefined;
     if (from) {
       const src = await saveService.resolveSquadId(saveId, from);
       const squad = src ? await saveService.getSquad(saveId, src.leagueSlug, src.clubSlug) : null;
@@ -205,7 +207,9 @@ export const contractRoutes = {
         if (lent) player = { ...lent, loan: undefined };
       }
     } else {
-      player = (await saveService.getFreeAgents(saveId)).find((f) => f.player.id === playerId)?.player;
+      const agent = (await saveService.getFreeAgents(saveId)).find((f) => f.player.id === playerId);
+      player = agent?.player;
+      freeSince = agent?.since;
     }
     if (!player) return Response.json({ error: "player not found" }, { status: 404 });
     const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
@@ -218,20 +222,26 @@ export const contractRoutes = {
     // last club of a free agent.
     const fromSquad = renewal ? null : from ? await saveService.getSquadById(saveId, from) : await lastClubOf(saveId, player);
     const { negotiation, fame } = await managerDemandCtx(saveId, auth.seatId);
-    // A fee-free arrival (pre-contract: `?pre=1`; free agent: no `from`) asks more wage, a signing bonus and has rivals (4.47.9).
+    // A fee-free arrival has rivals (4.47.9). A pre-contract (`?pre=1`) asks more wage and a signing bonus; a free agent
+    // (no `from`) asks neither and less the longer he waits (12.28.5).
     const freeKind = renewal ? null : !from ? "free" as const : new URL(req.url).searchParams.get("pre") === "1" ? "pre" as const : null;
-    const b = demandBreakdown(player, mine, date, { fromSquad, renewal, negotiation, fame, freeArrival: !!freeKind });
-    const freeCtx = freeKind ? await freeSigningContext(saveService, saveId, { player, kind: freeKind, from: fromSquad ?? null, date }) : null;
+    const b = demandBreakdown(player, mine, date, {
+      fromSquad, renewal, negotiation, fame, ...(freeKind ? freeArrivalCtx(freeKind, freeSince) : {}),
+    });
+    const freeCtx = freeKind ? await freeSigningContext(saveService, saveId, { player, kind: freeKind, from: fromSquad ?? null, date, since: freeSince }) : null;
     // The explanation lines: exact for our own players; for anyone else, what the chief scout sees
     // (`obscurePersonality`) — nothing when he is unsure. `demand` (and the refusal on submit) stay real.
     let parts: Record<string, number | boolean | string> = {};
     if (renewal) {
       const renewableOn = renewalAvailableOn(player.contract, date);
-      parts = { ambition: b.ambition, loyalty: b.loyalty, ...(player.contract ? { currentWage: player.contract.wage } : {}) };
+      parts = {
+        ambition: b.ambition, loyalty: b.loyalty, ...(player.contract ? { currentWage: player.contract.wage } : {}),
+        ...(b.renewalCap !== undefined ? { renewalCap: b.renewalCap } : {}),
+      };
       if (renewableOn) parts.renewableOn = renewableOn;
     } else {
       // Poor facilities of our club (a signing only): the club's own condition, always known.
-      parts = { facilities: b.facilities };
+      parts = { facilities: b.facilities, ...(b.freeDays !== undefined ? { freeDays: b.freeDays, freeWait: b.freeWait } : {}) };
       // The uncertainty of this very player (`.claude/rules/game/scouting.md`).
       const viewer = await loadViewer(saveService, saveId, auth.seatId);
       const noise = viewer ? viewFor(viewer, player, fromSquad?.leagueSlug ?? (from ? (await saveService.getSquadIndex(saveId)).byId(from)?.leagueSlug ?? "" : "")).noise : 0;
@@ -253,7 +263,7 @@ export const contractRoutes = {
       ...(aiSeller && !player.loan ? { clause: releaseClause(player) } : {}),
       ...(b.negotiation !== 1 ? { negotiation: b.negotiation } : {}),
       ...(b.fame !== 1 ? { fame: b.fame } : {}),
-      ...(freeCtx ? { bonusAsk: freeCtx.ask, rivals: freeCtx.rivals.map((r) => r.rival.clubName) } : {}),
+      ...(freeCtx ? { ...(freeCtx.ask > 0 ? { bonusAsk: freeCtx.ask } : {}), rivals: freeCtx.rivals.map((r) => r.rival.clubName) } : {}),
       ...(own && own.morale !== undefined
         ? { moraleBand: moraleBand(own.morale), moraleDemandMult: moraleDemandMult(own), refuses: refusesRenewal(mine, own) }
         : {}),
@@ -275,9 +285,9 @@ export const contractRoutes = {
 
     let body: unknown;
     try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
-    const { wage, years, bonus } = (body ?? {}) as Record<string, unknown>;
-    if (typeof wage !== "number" || !Number.isFinite(wage) || typeof years !== "number"
-      || (bonus !== undefined && (typeof bonus !== "number" || !Number.isFinite(bonus) || bonus < 0 || bonus > 2_000_000_000))) {
+    // A free agent signs without a signing bonus (12.28.5): a `bonus` field is ignored.
+    const { wage, years } = (body ?? {}) as Record<string, unknown>;
+    if (typeof wage !== "number" || !Number.isFinite(wage) || typeof years !== "number") {
       return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     }
 
@@ -296,27 +306,22 @@ export const contractRoutes = {
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       const { negotiation, fame } = await managerDemandCtx(saveId, auth.seatId);
       const lastClub = await lastClubOf(saveId, agent.player);
-      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: lastClub, negotiation, fame, freeArrival: true });
-      // Signing bonus and the AI clubs after him (4.47.9).
-      const free = await freeSigningContext(saveService, saveId, { player: agent.player, kind: "free", from: lastClub, date });
-      if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand, bonusAsk: free.ask }, { status: 400 });
-      const offered = typeof bonus === "number" ? Math.round(bonus) : 0;
-      if (offered < free.ask) return Response.json({ error: "lowBonus", demand: check.demand, bonusAsk: free.ask }, { status: 400 });
-      // Paid now from the club's balance, like a fee: never above what the club has (code review 8.8.9).
-      if (offered > 0 && (squad.finances?.budget ?? 0) < offered) {
-        return Response.json({ error: "noMoney", demand: check.demand, bonusAsk: free.ask }, { status: 409 });
-      }
+      const arrival = freeArrivalCtx("free", agent.since);
+      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: lastClub, negotiation, fame, ...arrival });
+      // The AI clubs after him (4.47.9); no signing bonus for a free agent (12.28.5).
+      const free = await freeSigningContext(saveService, saveId, { player: agent.player, kind: "free", from: lastClub, date, since: agent.since });
+      if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
       if (free.rivals.length > 0) {
         const prestige = (await prestigeOf(saveService, saveId, date, [squad.id])).get(squad.id) ?? 0.5;
         const rival = preferredRival({
-          human: { pref: { wage, demand: check.demand, prestige, starter: starterChance(agent.player, squad), facilitiesAppeal: facilitiesAppeal(squad, agent.player) }, bonus: offered },
+          human: { pref: { wage, demand: check.demand, prestige, starter: starterChance(agent.player, squad), facilitiesAppeal: facilitiesAppeal(squad, agent.player) }, bonus: 0 },
           rivals: free.rivals, ask: free.ask,
         });
-        if (rival) return Response.json({ error: "prefersRival", rival: { clubName: rival.clubName }, demand: check.demand, bonusAsk: free.ask }, { status: 400 });
+        if (rival) return Response.json({ error: "prefersRival", rival: { clubName: rival.clubName }, demand: check.demand }, { status: 400 });
       }
       // The wage bill ceiling (`finances.md` → "Teto da folha").
       const overCap = payrollCapRefusal(squad, wage);
-      if (overCap) return Response.json({ error: "payrollCap", ...overCap, demand: check.demand, bonusAsk: free.ask }, { status: 409 });
+      if (overCap) return Response.json({ error: "payrollCap", ...overCap, demand: check.demand }, { status: 409 });
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);
@@ -326,12 +331,6 @@ export const contractRoutes = {
         players: [...squad.players, { ...arriving(agent.player, squad), squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }],
       });
       await saveService.writeFreeAgents(saveId, pool.filter((f) => f.player.id !== playerId));
-      if (offered > 0) {
-        await recordMoney(saveService, saveId, await ledgerSeason(saveService, saveId, ref.leagueSlug, date), ref, {
-          date, kind: "transfer_out", amount: -offered, label: `Signing bonus: ${agent.player.name}`,
-          ref: { stage: "signing_bonus", playerName: agent.player.name },
-        }, auth.seatId);
-      }
       // In the day log like every other move (achievements: free signings, `.claude/rules/game/achievements.md`).
       await saveService.appendDayTransfers(saveId, date, [{ playerId, from: "", to: squad.id, fee: 0, kind: "free", date }]);
       return Response.json({ contract });

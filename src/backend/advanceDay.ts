@@ -97,7 +97,7 @@ import {
   type PlayedMatchRecording,
 } from "@/Domain/advanceDay/matches";
 import { resolveSimMode } from "@/Domain/advanceDay/simMode";
-import { runFullMatch } from "@/backend/matchPool";
+import { matchPoolStats, runFullMatch } from "@/backend/matchPool";
 import { buildTrainingEvent, resolveTrainingPolicy } from "@/Domain/advanceDay/dailyTraining";
 import { recordDevChanges, snapshotDevHistory, type DayDevChanges } from "@/Domain/development/devHistory";
 import { isMentalKey } from "@/Domain/mental/mental";
@@ -130,9 +130,10 @@ import { pruneTalks } from "@/Domain/negotiation/negotiation";
 import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
+import { loanRenewalNews, offerLoanRenewals } from "@/backend/loanRenewalWorld";
+import { liveLoanRenewals } from "@/Domain/negotiation/loanRenewal";
 import { liveBids } from "@/Domain/negotiation/bids";
 import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
-import { signingBonusAsk } from "@/Domain/negotiation/freeSigning";
 import { dropNeverPlayed, freeAgentTick, idleVeterans, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
 import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
@@ -144,7 +145,7 @@ import { clubRolloverOutcome, findDueRollovers, planCountryRollover, tierOfLeagu
 import { applyTierFinanceChange, tierAdjustedCredits } from "@/Domain/advanceDay/tierFinances";
 import { applyAISeasonReaction, applyHumanSeasonReaction, clubSeasonOutcome } from "@/Domain/aiFinance/seasonReaction";
 import {
-  aiTransferBudgetOf, applyAITransferSpend, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
+  aiTransferBudgetOf, financialTierOf, popularityFromFollowers, seasonalTransferBudgetFor,
   naturalFinancialTier,
 } from "@/Domain/aiFinance/aiClubFinance";
 import {
@@ -221,6 +222,7 @@ import {
 } from "@/backend/continentalWorld";
 import { advanceIntercontinental, ensureIntercontinental, ICC_SLUG, playerIntercontinentalSlug } from "@/backend/intercontinentalWorld";
 import { ICC } from "@/Domain/intercontinental/iccConfig";
+import { yieldToEventLoop } from "@/backend/yieldToEventLoop";
 
 const DATA_DIR = fileURLToPath(new URL("../Data", import.meta.url));
 
@@ -311,6 +313,19 @@ export function payloadForSeat(
   seatId: string,
 ): Record<string, unknown> {
   return { ...outcome.payload, ...(outcome.seats[seatId] ?? {}) };
+}
+
+/**
+ * Body of `POST /api/advance-day`: the day, the new date and the seat's flags only. The day's events (every match with
+ * per-player stats, training and rest lines) stay on disk in the day log; a full-world payload was ~3.6 MB the client
+ * never read (`useAdvanceDay` and `MatchScreen` only use the flags).
+ */
+export function advanceDayResponseFor(
+  outcome: { payload: Record<string, unknown>; seats: Record<string, Record<string, unknown>> },
+  seatId: string,
+): Record<string, unknown> {
+  const { saveId, date, newDate } = outcome.payload;
+  return { saveId, date, newDate, ...(outcome.seats[seatId] ?? {}) };
 }
 
 /**
@@ -901,6 +916,9 @@ export async function advanceOneDay(
             const result = mode === "full"
               ? runFullMatch({ fixture, home: homeSquad, away: awaySquad, sim: { ...sim, pitchCondition, turf, referee, weather, ...(aiMorale ? { aiMorale } : {}) } })
               : buildQuickMatchEvent(fixture, homeSquad, awaySquad, { ...sim, pitchCondition, turf, referee, weather });
+            // In the pool the engine runs in workers and the server stays free; in process (`MATCH_WORKERS=0`) the
+            // match took ~1 s of CPU on this thread: give the server a short window before the next one (12.28).
+            if (mode === "full" && matchPoolStats().size === 0) await yieldToEventLoop();
             enqueueMatch([fixture.home, fixture.away], result, (r) => {
               if (sim.study && mode === "full") r.event = { ...r.event, study: sim.study };
               registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
@@ -2044,6 +2062,14 @@ export async function advanceOneDay(
             });
           }
         }
+        // Loans of the seat's club ending soon: one offer to renew for a season (12.29, `negotiation.md`).
+        if (market.loans?.length) {
+          const renewals = await offerLoanRenewals(saveService, saveId, ds.meta, market, currentDate, {
+            humanClubs, squadOf: (id) => squadsNow.find((sq) => sq.id === id),
+          });
+          market = renewals.market;
+          ds.deferred.negotiation.push(...renewals.news);
+        }
         market = { ...market, talks: pruneTalks(market.talks, currentDate) };
         // A closed window ends the seat's open conversations (bans stay).
         if (!windows.seat(ds.seatId).today.open && market.talks) {
@@ -2110,10 +2136,9 @@ export async function advanceOneDay(
           seasonEndOf: (sq) => activeLeagues.find((l) => l.leagueSlug === sq.leagueSlug)?.end ?? defaultSeasonEnd(currentDate),
         });
         if (fa.signedIds.size > 0) {
-          for (let sq of fa.squads) {
+          for (const sq of fa.squads) {
             if (!fa.changedIds.has(sq.id)) continue;
-            // The AI pays the free agent's signing bonus from its transfer budget too (4.47.9, never below 0).
-            for (const p of sq.players) if (fa.signedIds.has(p.id)) sq = applyAITransferSpend(sq, signingBonusAsk(p, "free", 0));
+            // No signing bonus for a free agent (12.28.5): the AI pays nothing on top of the wage.
             await saveService.saveSquadById(saveId, sq);
             for (const p of sq.players) {
               if (fa.signedIds.has(p.id)) dayMoves.push({ playerId: p.id, from: "", to: sq.id, fee: 0, kind: "free", date: currentDate });
@@ -3723,6 +3748,11 @@ export async function advanceOneDay(
           expires: bid.expires,
         }), saveService, ds.seatId);
       }
+      // Loan renewal offers still open keep their message too (12.29).
+      const freshRenewals = new Set(ds.deferred.negotiation.map((n) => n.offerId).filter(Boolean));
+      for (const offer of liveLoanRenewals(mkB?.loanRenewals, mkB?.loans, currentDate)) {
+        if (!freshRenewals.has(offer.id)) await emitInboxMessage(saveId, buildTransferNegotiationMessage(loanRenewalNews(offer)), saveService, ds.seatId);
+      }
     }
     for (const ds of daySeats) {
       for (const msg of ds.boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService, ds.seatId);
@@ -4159,7 +4189,7 @@ export const advanceDayRoutes = {
     return withSaveLock(saveId, async () => {
       const outcome = await runBufferedDay(saveId, recordings);
       if (!outcome.ok) return Response.json({ error: outcome.error }, { status: outcome.status });
-      return Response.json(payloadForSeat(outcome, auth.seatId));
+      return Response.json(advanceDayResponseFor(outcome, auth.seatId));
     });
   },
 

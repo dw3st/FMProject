@@ -31,6 +31,74 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.29",
+    date: "2026-11-19",
+    time: "17:06",
+    items: [
+      { tab: "squad", pt: "Empréstimos podem ser renovados por mais uma temporada: o clube dono de quem está emprestado com você oferece, e o clube que está com um jogador seu pede para ficar com ele quando ele jogou bem. A proposta chega na caixa de entrada alguns dias antes da volta.", en: "Loans can be renewed for one more season: the owner of a player on loan with you offers it, and the club holding one of your players asks to keep him when he played well. The offer arrives in the inbox a few days before he goes back." },
+    ],
+    fixes: [
+      { tab: "squad", pt: "Na renovação o jogador parte do salário que já ganha: pede no máximo 15% a mais num clube pequeno, 25% num médio e 40% num grande.", en: "On a renewal the player starts from the wage he already earns: he asks at most 15% more at a small club, 25% at a mid club and 40% at a big one." },
+      { tab: "market", pt: "Jogador livre não pede mais luvas nem salário extra, e pede menos quanto mais tempo fica sem clube (até 25% a menos depois de 3 meses).", en: "A free agent no longer asks a signing bonus or a wage premium, and asks less the longer he stays without a club (up to 25% less after 3 months)." },
+    ],
+  },
+  {
+    version: "12.28.4",
+    date: "2026-11-19",
+    time: "15:29",
+    items: [],
+    fixes: [
+      { tab: "scout", pt: "A compensação de um jovem sem clube acompanha o nível e o potencial dele: um jovem fraco sai bem mais barato.", en: "The fee of a club-less youngster follows his level and potential: a weak one costs much less." },
+      { tab: "club", pt: "Os troféus da sala de troféus ficam alinhados.", en: "The trophies of the trophy room are lined up." },
+      { tab: "club", pt: "Reciclar mostra cada item num cartão com a imagem, o nível que ele perde e o que devolve.", en: "Recycle shows each item on a card with its picture, the level it loses and what it gives back." },
+    ],
+  },
+  {
+    version: "12.28.3",
+    date: "2026-11-19",
+    time: "14:31",
+    items: [],
+    fixes: [
+      { tab: "friends", pt: "A reação de fogos toca sempre o mesmo som, o escolhido.", en: "The fireworks reaction always plays the same sound, the chosen one." },
+    ],
+  },
+  {
+    version: "12.28.2",
+    date: "2026-11-19",
+    time: "11:19",
+    items: [],
+    fixes: [
+      { tab: "club", pt: "No Clube, o ? ao lado de cada peça e material mostra do que é feito e onde é usado, e o estoque tem o botão Fabricar.", en: "In Club, the ? next to each part and material shows what it is made of and where it is used, and the stock has a Make button." },
+    ],
+  },
+  {
+    version: "12.28.1",
+    date: "2026-11-19",
+    time: "11:01",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "O placar da partida mostra a posição de cada time na tabela, ao lado do escudo.", en: "The match scoreboard shows each team's league position next to its crest." },
+      { tab: "leagues", pt: "A liga de um amigo não aparece mais como simulada.", en: "A friend's league no longer shows as simulated." },
+    ],
+  },
+  {
+    version: "12.28",
+    date: "2026-11-19",
+    time: "10:47",
+    items: [
+      { tab: "club", pt: "Aba Clube reorganizada em quatro abas: Visão geral, com o que precisa de reforma e o que dá para melhorar; Estádio, com o público; Obras, com tudo de uma obra num lugar só; e Materiais, com a loja e o estoque.", en: "Club tab reorganised into four tabs: Overview, with what needs repair and what can be upgraded; Stadium, with the crowd; Works, with everything about a job in one place; and Materials, with the shop and the stock." },
+    ],
+  },
+  {
+    version: "12.27.1",
+    date: "2026-11-19",
+    time: "10:40",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "O resultado da partida abre na hora: o jogo não fica mais parado enquanto o dia roda.", en: "The match result opens straight away: the game no longer freezes while the day runs." },
+    ],
+  },
+  {
     version: "12.27",
     date: "2026-11-19",
     time: "09:45",

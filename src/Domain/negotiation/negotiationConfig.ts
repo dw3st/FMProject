@@ -79,11 +79,10 @@ export const NEGOTIATION = {
    * as a signing bonus (luvas), asks a little more wage, and other clubs compete for him.
    */
   FREE_SIGNING: {
-    /** Signing bonus asked: market value × share (pre-contract / free agent), × (1 + PER_RIVAL × clubs competing). */
+    /** Pre-contract signing bonus: market value × share, × (1 + PER_RIVAL × clubs competing). A free agent asks none (12.28.5). */
     BONUS_SHARE_PRE: 0.25,
-    BONUS_SHARE_FREE: 0.15,
     PER_RIVAL: 0.15,
-    /** Wage demand × this for a free arrival. */
+    /** Wage demand × this on a pre-contract (not a free agent, 12.28.5). */
     WAGE_PREMIUM: 1.1,
     /** Weight of the bonus (offered / asked, capped at 1,5) in his choice between clubs, beside `PREFERENCE`. */
     BONUS_WEIGHT: 0.2,
@@ -148,5 +147,18 @@ export const NEGOTIATION = {
     BID_CHANCE: 0.35,
     /** Share of the wage AI borrowers offer: MIN..1 in steps of 0.1. */
     BID_MIN_SHARE: 0.5,
+  },
+
+  /** Renewing a loan for one more season (12.29, `.claude/rules/game/negotiation.md` → "Renovação de empréstimo"). */
+  LOAN_RENEWAL: {
+    /** The offer comes this many days before the loan ends, and can be answered until the day before. */
+    LEAD_DAYS: 14,
+    /** The contract must run at least this many days past the current return date. */
+    MIN_CONTRACT_EXTRA_DAYS: 60,
+    /** Out on loan: the borrower asks to keep him when he played this share of its matches, or rated this well. */
+    MIN_APPS_SHARE: 0.4,
+    MIN_RATING: 6.8,
+    /** Fewest matches for a rating to count. */
+    MIN_RATED_APPS: 5,
   },
 } as const;

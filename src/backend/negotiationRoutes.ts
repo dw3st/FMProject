@@ -20,6 +20,8 @@ import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate }
 import { currentWage, wageFactorOf } from "@/Domain/finance/wages";
 import { humanSaleBlocked, thinAfterSale } from "@/Domain/transfer/transferAcceptance";
 import { getSellPriority } from "@/Domain/transfer/sellList";
+import { liveLoanRenewals } from "@/Domain/negotiation/loanRenewal";
+import { acceptLoanRenewal } from "@/backend/loanRenewalWorld";
 import { autoLineupDefaultFormation } from "@/Domain/advanceDay/matchSimulationLineups";
 import {
   completeHumanSale, emptyMarket, returnDueLoans, findLiveBid, humanRosterSize, isOtherSeatClub, seasonEndOf, startLoan,
@@ -120,6 +122,46 @@ export const negotiationRoutes = {
         })),
       loanList: market?.playerLoanList ?? [],
       sellOnHeld: market?.sellOnHeld ?? [],
+      // Offers to renew a loan for one more season (12.29).
+      loanRenewals: liveLoanRenewals(market?.loanRenewals, market?.loans, date),
+    });
+  },
+
+  /** `POST { action: "accept" | "reject" }` - answers an offer to renew a loan for one more season (12.29). */
+  "/api/saves/:saveId/loan-renewals/:offerId": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const offerId = req.params.offerId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
+    const body = (await req.json().catch(() => null)) as { action?: unknown } | null;
+    const action = body?.action;
+    if (action !== "accept" && action !== "reject") return json({ error: "action required" }, 400);
+    return withSaveLock(saveId, async () => {
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (!meta) return json({ error: "save not found" }, 404);
+      if (meta.unemployed || !meta.clubId) return json({ error: "noClub" }, 409);
+      const date = meta.currentDate ?? "";
+      const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
+      const offer = liveLoanRenewals(market.loanRenewals, market.loans, date).find((o) => o.id === offerId);
+      if (!offer) return json({ error: "offerClosed" }, 409);
+      const without: MarketState = { ...market, loanRenewals: (market.loanRenewals ?? []).filter((o) => o.id !== offerId) };
+      if (action === "reject") {
+        await saveService.saveMarket(saveId, without, auth.seatId);
+        return json({ ok: true, status: "rejected" });
+      }
+      try {
+        const res = await acceptLoanRenewal(saveService, saveId, auth.seatId, meta, market, offer);
+        if (!res.ok) {
+          if (res.error === "offerClosed") await saveService.saveMarket(saveId, without, auth.seatId);
+          return json({ error: res.error }, 409);
+        }
+        await saveService.saveMarket(saveId, res.market, auth.seatId);
+        return json({ ok: true, status: "renewed", until: offer.until });
+      } catch (err) {
+        logError("negotiation", `save ${saveId}: failed to renew loan ${offerId}`, err);
+        return json({ error: "failed to complete" }, 500);
+      }
     });
   },
 

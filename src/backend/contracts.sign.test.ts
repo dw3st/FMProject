@@ -49,10 +49,11 @@ describe("free agents: demand + sign routes and scout view", () => {
     const demandRes = await apiRoutes["/api/saves/:saveId/players/:playerId/demand"](
       req(`/api/saves/${saveId}/players/free_test_1/demand`, { method: "GET" }, { saveId, playerId: "free_test_1" }),
     );
-    const { demand, bonusAsk } = (await demandRes.json()) as { demand: number; bonusAsk: number };
-    // A free arrival asks the wage premium and a signing bonus (4.47.9).
-    expect(demand).toBe(contractDemand(free, squad, meta.currentDate!, { freeArrival: true }));
-    expect(bonusAsk).toBeGreaterThan(0);
+    const { demand, bonusAsk } = (await demandRes.json()) as { demand: number; bonusAsk?: number };
+    // A free agent asks no wage premium and no signing bonus (12.28.5); he joined the pool today: no wait discount.
+    expect(demand).toBe(contractDemand(free, squad, meta.currentDate!, { freeSince: meta.currentDate! }));
+    expect(demand).toBe(contractDemand(free, squad, meta.currentDate!));
+    expect(bonusAsk).toBeUndefined();
 
     const sign = (wage: number, bonus?: number) => apiRoutes["/api/saves/:saveId/free-agents/:playerId/sign"](
       req(`/api/saves/${saveId}/free-agents/free_test_1/sign`, {
@@ -62,26 +63,16 @@ describe("free agents: demand + sign routes and scout view", () => {
     const low = await sign(1);
     expect(low.status).toBe(400);
     expect(await low.json()).toMatchObject({ error: "lowWage" });
-    const noBonus = await sign(demand);
-    expect(noBonus.status).toBe(400);
-    expect(await noBonus.json()).toMatchObject({ error: "lowBonus", bonusAsk });
 
-    // Well above what he asks, so no rival club beats it.
-    const bonus = bonusAsk * 2;
-    // The bonus is paid from the balance: without the money it is refused (code review 8.8.9).
+    // Well above what he asks, so no rival club beats it; a `bonus` sent is ignored and nothing leaves the balance.
     const club = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
-    await saveService.saveSquad(saveId, meta.leagueSlug, meta.clubId, { ...club, finances: { ...club.finances!, budget: 0 } });
-    const broke = await sign(demand * 2, bonus);
-    expect(broke.status).toBe(409);
-    expect(await broke.json()).toMatchObject({ error: "noMoney" });
-    await saveService.saveSquad(saveId, meta.leagueSlug, meta.clubId, { ...club, finances: { ...club.finances!, budget: bonus * 3 } });
-    const ok = await sign(demand * 2, bonus);
+    await saveService.saveSquad(saveId, meta.leagueSlug, meta.clubId, { ...club, finances: { ...club.finances!, budget: 1_000 } });
+    const ok = await sign(demand * 2, 5_000_000);
     expect(ok.status).toBe(200);
     const after = (await saveService.getSquad(saveId, meta.leagueSlug, meta.clubId))!;
     const signed = after.players.find((p) => p.id === "free_test_1")!;
     expect(signed.contract!.wage).toBe(demand * 2);
-    // No fee; the signing bonus leaves the balance on signing.
-    expect(after.finances?.budget).toBe(bonus * 3 - bonus);
+    expect(after.finances?.budget).toBe(1_000);
     expect(await saveService.getFreeAgents(saveId)).toEqual([]);
   }, 60_000);
 });

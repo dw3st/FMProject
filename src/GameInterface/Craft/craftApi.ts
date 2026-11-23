@@ -1,3 +1,4 @@
+import type { FacilityItemId } from "@/types/facilityTypes";
 import type { ComponentCounts, ComponentId, CraftJob, CraftStock, MaterialCounts, MaterialId, Supplier } from "@/types/craftTypes";
 
 /** `GET /api/saves/:id/craft` (`src/backend/craftRoutes.ts` → `view`). */
@@ -17,6 +18,8 @@ export interface CraftView {
   balance: number;
   recipes: { component: ComponentId; materials: MaterialCounts; days: number; minLevel: number; locked: boolean }[];
   upgrade: { level: number; recipe: ComponentCounts } | null;
+  /** Components each item above level 1 would give back if recycled. */
+  recycle?: Partial<Record<FacilityItemId, ComponentCounts>>;
 }
 
 export type CallResult<T> = { ok: true; data: T } | { ok: false; error: string };

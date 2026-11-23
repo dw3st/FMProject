@@ -6,54 +6,61 @@ import { Button } from "@/GameInterface/ui/Button";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { formatEuros } from "@/Domain/money";
 import { competitionName } from "@/Domain/world/labels";
-import {
-  attendanceOf, projectProgress, seasonFraction, standUnderWorks, standWeeks,
-} from "@/Domain/facilities/facilities";
+import { attendanceOf, projectProgress, seasonFraction, standUnderWorks, standWeeks } from "@/Domain/facilities/facilities";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
+import { MOWING_PATTERNS } from "@/Domain/facilities/turf";
 import type { Fixture } from "@/types/calendarTypes";
 import type { LeagueData } from "@/types/playerTypes";
-import type { FacilityItemId, FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
+import type { MaterialCounts } from "@/types/craftTypes";
+import type { FacilityKind, FacilityRequest, StandId } from "@/types/facilityTypes";
 import { useFacilities, type FacilitiesViewData, type RequestOutcome } from "@/GameInterface/Facilities/facilitiesApi";
-import { TurfCard } from "@/GameInterface/Facilities/TurfCard";
-import { CancelWorks } from "@/GameInterface/Facilities/FacilityItemsPanel";
-import { AreaCards, ClubFacilitiesHub, defaultItem } from "@/GameInterface/Facilities/ClubFacilitiesHub";
-import type { FacilitiesSection } from "@/GameInterface/Craft/ClubTabs";
-import { BuildActions, type RecipeBuild } from "@/GameInterface/Craft/RecipeLine";
-import { CRAFT } from "@/Domain/craft/craftConfig";
-import { recipeFor } from "@/Domain/craft/recipes";
-import { missingComponents } from "@/Domain/craft/stock";
-import type { ComponentId } from "@/types/craftTypes";
-import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
-import { RunningWorks, projectLabel, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
+import { itemEffectText } from "@/GameInterface/Facilities/FacilityItemsPanel";
+import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
+import { PitchSurfaceSvg } from "@/GameInterface/Components/PitchSurfaceSvg";
+import { ClubOverview } from "@/GameInterface/Facilities/ClubOverview";
+import { OUTLINE, WorksTab } from "@/GameInterface/Facilities/WorksTab";
+import { levelText, standBuild } from "@/GameInterface/Facilities/worksHelpers";
+import { useCraft } from "@/GameInterface/Craft/useCraft";
+import { formatGameDate } from "@/GameInterface/formatDate";
+import { runningWorksOf, projectLabel } from "@/GameInterface/Facilities/RunningWorks";
 import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { STADIUM_ART_ITEMS, stadiumArtLevel, stadiumMapFile } from "@/Domain/facilities/stadiumArt";
+import { clubTodo, itemJob, type WorksJob } from "@/Domain/facilities/clubTabs";
+
+/** The Club tabs this view draws (they share one data load); Materials is drawn by the screen. */
+export type FacilitiesSection = "overview" | "stadium" | "works";
+
+const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground";
 
 /**
- * Club → the four facilities tabs (#120, `.claude/rules/game/facilities.md`), one data load for all: Facilities (the
- * club map and the picked item's upgrade), Stadium (stands drawn from above, expansion, comfort, turf), Attendance
- * (KPIs, home games against capacity and demand, sponsors) and Works (items by area, training ground and academy,
- * works in progress). Every works is built from the workshop's stock (craft, spec 2026-11-18): no board approval.
+ * Club → Overview, Stadium and Works (spec 2026-11-19-club-tab-redesign, `.claude/rules/game/facilities.md`), one data
+ * load for the three: the club map and the to-do list; the stands, comfort, turf, crowd and the stadium sponsors; the
+ * works queue, picker and the chosen works in three steps. Every works is built from the workshop's stock (craft).
  */
 export function FacilitiesView({
-  saveId, squadId, fixtures, leagues, currentDate, section, onSection, sponsors,
+  saveId, squadId, fixtures, leagues, currentDate, section, onSection, job, onJob, onBuy, sponsors,
 }: {
   saveId: string;
   squadId: string;
   fixtures: Fixture[];
   leagues: LeagueData[];
   currentDate: string | null;
-  /** Which Club tab is open (the four that share this data). */
   section: FacilitiesSection;
   onSection: (s: FacilitiesSection) => void;
-  /** The club's sponsors strip, shown on the attendance tab. */
+  /** The works picked in the Works tab (null: the first of the to-do list). */
+  job: WorksJob | null;
+  /** Picks a works (and opens the Works tab when `open`). */
+  onJob: (job: WorksJob, open?: boolean) => void;
+  /** "Buy what is missing": Materials with this cart. */
+  onBuy: (cart: MaterialCounts) => void;
+  /** The club's sponsors, shown on the stadium tab. */
   sponsors?: ReactNode;
 }) {
   const { t, i18n } = useTranslation();
-  const { data, error, request, cancel, setMowing } = useFacilities(saveId, currentDate);
+  const [reload, setReload] = useState(0);
+  const { data, error, request, cancel, setMowing } = useFacilities(saveId, `${currentDate}:${reload}`);
+  const craft = useCraft(saveId);
   const [selected, setSelected] = useState<StandId | null>(null);
-  const [item, setItem] = useState<FacilityItemId | null>(null);
-  const [panel, setPanel] = useState<StadiumPanel>("stands");
-  const pickStand = (s: StandId) => { setSelected(s); setPanel("stands"); };
   const [seats, setSeats] = useState<number>(5000);
   const [outcome, setOutcome] = useState<{ kind: FacilityKind; result: RequestOutcome } | { cancelled: boolean } | null>(null);
   const [pending, setPending] = useState(false);
@@ -71,12 +78,16 @@ export function FacilitiesView({
     : seasonGames[0] ? seasonGames[0].attendance / Math.max(1, seasonGames[0].capacity) : 0;
   const avgAttendance = played.length > 0 ? played.reduce((s, g) => s + g.attendance, 0) / played.length : null;
   const works = standUnderWorks(f);
+  const stand: StandId = selected ?? "east";
+  const todo = clubTodo(data.items, data.busyGroups ?? []);
+  const shownJob: WorksJob = job ?? todo.repair[0]?.job ?? todo.improve[0]?.job ?? itemJob(data.items[0]!);
 
   const ask = async (req: FacilityRequest) => {
     setPending(true);
     const result = await request(req);
     setOutcome({ kind: req.kind, result });
     setPending(false);
+    if (result.built) craft.reload();
   };
 
   const stop = async (projectId: string) => {
@@ -84,129 +95,175 @@ export function FacilitiesView({
     const ok = await cancel(projectId);
     setOutcome({ cancelled: ok });
     setPending(false);
+    if (ok) craft.reload();
   };
 
-  // One works at a time per group (#152): the stadium (stands, comfort), the training ground, the academy.
-  const busyGroups = data.busyGroups ?? [];
-  const running = (kind: "stand" | "comfort" | "training" | "academy") =>
-    busyGroups.includes(kind === "stand" || kind === "comfort" ? "stadium" : kind);
-
-  const openItem = (id: FacilityItemId) => { setItem(id); onSection("facilities"); };
+  const stockChanged = () => setReload((n) => n + 1);
 
   return (
     <div className="flex flex-col gap-6">
       {outcome && <OutcomeNotice outcome={outcome} onClose={() => setOutcome(null)} />}
 
-      {/* The club map (new visual), the picked item's panel and its level track (craft). */}
-      {section === "facilities" && (
-        <ClubFacilitiesHub data={data} selected={item ?? defaultItem(data)} onSelect={setItem}
-          pending={pending} onAsk={ask} onCancel={stop} />
+      {section === "overview" && (
+        <ClubOverview data={data} craft={craft.view} avgAttendance={avgAttendance} pending={pending} onAsk={ask}
+          onOpen={(j) => onJob(j, true)} onStadium={() => onSection("stadium")} />
       )}
 
-      {/* The stadium seen from above; next to it the stand expansion, comfort or turf. */}
+      {/* The stands seen from above and their expansion; the crowd, comfort, turf and the stadium sponsors. */}
       {section === "stadium" && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6 items-start">
-            <section className="card-arcade rounded-md p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-1 min-w-0">
-                  <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.stadium.title")}</h3>
-                  {data.stadium?.name && <span className="text-sm text-muted-foreground truncate">{data.stadium.name}</span>}
-                </div>
-                <span className="text-sm text-muted-foreground">{t("facilities.stadium.hint")}</span>
-              </div>
-              <StadiumMap data={data} avgOcc={avgOcc} selected={selected} works={works} onSelect={pickStand} nf={nf} />
-            </section>
-
-            <div className="flex flex-col gap-3 min-w-0">
-              <OptionChips options={STADIUM_PANELS.map((k) => ({ key: k, label: t(`facilities.stadiumPanel.${k}`) }))}
-                value={panel} onChange={setPanel} aria-label={t("facilities.stadiumPanel.label")} />
-              {panel === "stands" && (
-                <section className="card-arcade rounded-md p-4 flex flex-col gap-4">
-                  {selected ? (
-                    <StandPanel
-                      data={data} stand={selected} seats={seats} onSeats={setSeats} nf={nf}
-                      busy={running("stand")} pending={pending}
-                      onAsk={() => void ask({ kind: "stand", stand: selected, seats })}
-                    />
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.stand.title")}</h3>
-                      <p className="text-sm text-muted-foreground m-0">{t("facilities.stand.pick")}</p>
-                    </div>
-                  )}
-                </section>
-              )}
-              {panel === "comfort" && (
-                <section className="card-arcade rounded-md p-4">
-                  <LevelBlock
-                    kind="comfort" level={data.levels.comfort} data={data} busy={running("comfort")} pending={pending}
-                    current={t("facilities.comfort.effect", { pct: Math.round((data.priceMult - 1) * 100) })}
-                    next={t("facilities.comfort.effect", { pct: Math.round((data.priceMult - 1) * 100) + FACILITIES.COMFORT_PRICE_STEP * 100 })}
-                    onAsk={() => void ask({ kind: "comfort" })}
-                  />
-                </section>
-              )}
-              {panel === "turf" && (
-                <TurfCard data={data} ground={squadId} pending={pending} onAsk={(req) => void ask(req)} onMowing={(m) => void setMowing(m)} />
-              )}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-6 items-start">
+          <section className="card-arcade rounded-md p-4 flex flex-col gap-4 min-w-0">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className={LABEL}>{t("clubTabs.stadium.stands")}</span>
+              <span className="text-sm text-muted-foreground">{t("facilities.stadium.hint")}</span>
             </div>
+            <StadiumMap data={data} avgOcc={avgOcc} selected={selected} works={works} onSelect={setSelected} nf={nf} />
+            <StandExpansion data={data} stand={stand} seats={seats} onSeats={setSeats} nf={nf}
+              onOpen={() => { setSelected(stand); onJob({ kind: "stand" }, true); }} />
+          </section>
+
+          <div className="flex flex-col gap-6 min-w-0">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              <Kpi label={t("facilities.kpi.capacity")} value={nf(data.capacity)}
+                sub={data.effectiveCapacity < data.capacity ? t("facilities.kpi.duringWorks", { seats: nf(data.effectiveCapacity) }) : undefined} />
+              <Kpi label={t("facilities.kpi.avgAttendance")} value={avgAttendance === null ? "—" : nf(avgAttendance)}
+                sub={avgAttendance === null ? undefined : t("facilities.kpi.occupancy", { pct: Math.round(avgOcc * 100) })} />
+              <Kpi label={t("facilities.kpi.record")} value={f.record ? nf(f.record.attendance) : "—"} sub={f.record ? formatGameDate(f.record.date, i18n.language) : undefined} />
+              <Kpi label={t("facilities.kpi.ticket")} value={`+${Math.round((data.priceMult - 1) * 100)}%`}
+                sub={t("facilities.kpi.comfortLevel", { level: levelText(data.levels.comfort, i18n.language) })} />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ComfortCard data={data} onOpen={() => onJob({ kind: "comfort" }, true)} />
+              <TurfSummary data={data} ground={squadId} onRepair={() => onJob({ kind: "item", mode: "repair", item: "stadiumPitch" }, true)}
+                onChange={() => onJob({ kind: "turf" }, true)} onMowing={(m) => void setMowing(m)} />
+            </div>
+            <AttendanceChart games={seasonGames} leagues={leagues} nf={nf}
+              sub={avgAttendance === null ? null : t("clubTabs.stadium.chartSub", { avg: nf(avgAttendance), pct: Math.round(avgOcc * 100) })} />
+            {sponsors}
           </div>
-        </>
+        </div>
       )}
 
-      {/* Crowd: capacity, average, record, ticket; the season's home games; the club's sponsors. */}
-      {section === "attendance" && (
-        <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Kpi label={t("facilities.kpi.capacity")} value={nf(data.capacity)}
-              sub={data.effectiveCapacity < data.capacity ? t("facilities.kpi.duringWorks", { seats: nf(data.effectiveCapacity) }) : undefined} />
-            <Kpi label={t("facilities.kpi.avgAttendance")} value={avgAttendance === null ? "—" : nf(avgAttendance)}
-              sub={avgAttendance === null ? undefined : t("facilities.kpi.occupancy", { pct: Math.round(avgOcc * 100) })} />
-            <Kpi label={t("facilities.kpi.record")} value={f.record ? nf(f.record.attendance) : "—"} sub={f.record ? formatGameDate(f.record.date, i18n.language) : undefined} />
-            <Kpi label={t("facilities.kpi.ticket")} value={`+${Math.round((data.priceMult - 1) * 100)}%`}
-              sub={t("facilities.kpi.comfortLevel", { level: levelText(data.levels.comfort) })} />
-          </div>
-          <AttendanceChart games={seasonGames} leagues={leagues} nf={nf} />
-          {sponsors}
-        </>
-      )}
-
-      {/* Every item by area (opens it on the map), the training ground and academy works, the works in progress. */}
       {section === "works" && (
         <>
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground m-0">{t("facilities.map.areasHint")}</p>
-            <AreaCards data={data} selected={null} onSelect={openItem} />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <section className="card-arcade rounded-md p-4">
-              <LevelBlock
-                kind="training" level={data.levels.training} data={data} busy={running("training")} pending={pending}
-                current={trainingText(data.effects.training.current, t)}
-                next={trainingText(data.effects.training.next, t)}
-                onAsk={() => void ask({ kind: "training" })}
-              />
-            </section>
-            <section className="card-arcade rounded-md p-4">
-              <LevelBlock
-                kind="academy" level={data.levels.academy} data={data} busy={running("academy")} pending={pending}
-                current={academyText(data.effects.academy.current, t, i18n.language)}
-                next={academyText(data.effects.academy.next, t, i18n.language)}
-                onAsk={() => void ask({ kind: "academy" })}
-              />
-            </section>
-          </div>
-          <ProjectsList data={data} nf={nf} pending={pending} onCancel={stop} />
+          <WorksTab
+            saveId={saveId} data={data} craft={craft.view} craftBusy={craft.busy} craftError={craft.actionError} runCraft={craft.run}
+            job={shownJob} onJob={(j) => onJob(j)} stand={stand} onStand={setSelected} seats={seats} onSeats={setSeats}
+            pending={pending} onAsk={ask} onCancel={stop} onBuy={onBuy} onStockChanged={stockChanged}
+          />
+          {data.weeklyUpkeep > 0 && (
+            <p className="text-sm text-muted-foreground m-0 tabular-nums">{t("facilities.projects.upkeep", { amount: formatEuros(data.weeklyUpkeep) })}</p>
+          )}
         </>
       )}
     </div>
   );
 }
 
-/** The stadium tab's right column: one of the stand expansion, comfort or turf at a time. */
-type StadiumPanel = "stands" | "comfort" | "turf";
-const STADIUM_PANELS: StadiumPanel[] = ["stands", "comfort", "turf"];
+/** Stadium tab: the picked stand's expansion (seats, weeks, parts) and the stadium works under way; the works itself is in Works. */
+function StandExpansion({ data, stand, seats, onSeats, nf, onOpen }: {
+  data: FacilitiesViewData; stand: StandId; seats: number; onSeats: (n: number) => void; nf: (n: number) => string; onOpen: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const options = Array.from({ length: (FACILITIES.SEATS_MAX - FACILITIES.SEATS_MIN) / FACILITIES.SEATS_STEP + 1 }, (_, i) => {
+    const n = FACILITIES.SEATS_MIN + i * FACILITIES.SEATS_STEP;
+    return { key: String(n), label: `+${n / 1000}K` };
+  });
+  const build = standBuild(data, Math.round(seats * data.seatCost));
+  const parts = (Object.keys(build.recipe) as (keyof typeof build.recipe)[]).map((id) => t(`craft.component.${id}`).toLowerCase()).join(", ");
+  const running = runningWorksOf(data.facilities.projects, "stadium");
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <span className={LABEL}>{t("clubTabs.stadium.expand", { stand: t(`facilities.stand.${stand}`) })}</span>
+        <OptionChips options={options} value={String(seats)} onChange={(k) => onSeats(Number(k))} aria-label={t("facilities.stand.seats")} />
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {t("clubTabs.stadium.expandSummary", { seats: nf(seats), weeks: standWeeks(seats), parts })}
+        </span>
+        <div>
+          <Button variant="secondary" className={OUTLINE} onClick={onOpen}>{t("clubTabs.todo.open")}</Button>
+        </div>
+      </div>
+      {running && (
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <span className={LABEL}>{t("clubTabs.stadium.underWorks")}</span>
+          <span className="text-sm font-semibold text-foreground">{projectLabel(running, t, nf)}</span>
+          <span className="flex items-center gap-3 text-sm tabular-nums">
+            <span className="h-1.5 flex-1 min-w-16 bg-border rounded overflow-hidden" aria-hidden>
+              <span className="block h-full bg-primary" style={{ width: `${Math.round(projectProgress(running, data.date) * 100)}%` }} />
+            </span>
+            <span className="text-muted-foreground">
+              {Math.round(projectProgress(running, data.date) * 100)}% · {t("facilities.projects.delivery", { date: formatGameDate(running.end, i18n.language) })}
+            </span>
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ComfortCard({ data, onOpen }: { data: FacilitiesViewData; onOpen: () => void }) {
+  const { t, i18n } = useTranslation();
+  const now = Math.round((data.priceMult - 1) * 100);
+  const q = data.quotes.comfort;
+  return (
+    <section className="card-arcade rounded-md p-4 flex flex-col gap-3 min-w-0">
+      <span className={LABEL}>{t("facilities.kind.comfort")}</span>
+      <span className="font-display font-black uppercase text-xl leading-none">{t("clubTabs.stadium.levelOf", { level: levelText(data.levels.comfort, i18n.language), max: FACILITIES.MAX_LEVEL })}</span>
+      <LevelMarks level={data.levels.comfort} />
+      <span className="text-sm text-muted-foreground tabular-nums">
+        {q
+          ? t("clubTabs.stadium.comfortNext", { now, next: now + FACILITIES.COMFORT_PRICE_STEP * 100 })
+          : t("facilities.comfort.effect", { pct: now })}
+      </span>
+      {q && (
+        <div className="flex justify-end mt-auto">
+          <Button variant="secondary" className={OUTLINE} onClick={onOpen}>{t("facilities.items.upgrade")}</Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TurfSummary({ data, ground, onRepair, onChange, onMowing }: {
+  data: FacilitiesViewData; ground: string; onRepair: () => void; onChange: () => void; onMowing: (m: (typeof MOWING_PATTERNS)[number]) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const pitch = data.items.find((i) => i.id === "stadiumPitch");
+  const condition = Math.round(pitch?.condition ?? 100);
+  const bad = condition < FACILITIES.WEAR.WARN_BELOW;
+  const effect = pitch && pitch.effects.length > 0 ? itemEffectText(pitch.effects, t, i18n.language) : null;
+  const repair = pitch?.quotes.repair["100"];
+  return (
+    <section className="card-arcade rounded-md p-4 flex flex-col sm:flex-row gap-4 min-w-0">
+      <PitchSurfaceSvg condition={condition} turf={data.turf} mowing={data.mowing} seed="club" ground={ground}
+        className="w-full sm:w-36 h-auto rounded border border-border shrink-0 self-start" />
+      <div className="flex flex-col gap-2 min-w-0 flex-1">
+        <span className={LABEL}>{t("facilities.turf.title")}</span>
+        <span className="font-display font-black uppercase text-xl leading-none">
+          {t(`facilities.turf.type.${data.turf}`)} · {t(`facilities.mowing.${data.mowing}`)}
+        </span>
+        <span className="flex items-center gap-3 text-sm tabular-nums">
+          <span className="h-1.5 flex-1 min-w-16 bg-border rounded overflow-hidden" aria-hidden>
+            <span className={`block h-full ${bad ? "bg-destructive" : condition < 70 ? "bg-chart-4" : "bg-star-green"}`} style={{ width: `${condition}%` }} />
+          </span>
+          <span className={`font-semibold ${bad ? "text-destructive" : "text-foreground"}`}>{condition}%</span>
+        </span>
+        {effect && <span className="text-sm text-muted-foreground">{effect}</span>}
+        <SelectCombobox label={t("facilities.mowing.label")} value={data.mowing} onChange={onMowing} floating
+          options={MOWING_PATTERNS.map((m) => ({ value: m, label: t(`facilities.mowing.${m}`) }))} />
+        <div className="flex flex-wrap justify-end gap-2 mt-auto">
+          <Button variant="secondary" className={OUTLINE} onClick={onChange}>{t("clubTabs.stadium.changeGrass")}</Button>
+          {repair && (
+            <Button onClick={onRepair} className="tabular-nums">
+              {repair.cost > 0 ? t("clubTabs.stadium.repairCost", { cost: formatEuros(repair.cost) }) : t("facilities.items.repair")}
+            </Button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 // ── Season games (played rows + estimates of the coming ones) ────────────────
 
@@ -387,84 +444,6 @@ function OccupancyLegend() {
   );
 }
 
-function StandPanel({
-  data, stand, seats, onSeats, nf, busy, pending, onAsk,
-}: {
-  data: FacilitiesViewData; stand: StandId; seats: number; onSeats: (n: number) => void;
-  nf: (n: number) => string; busy: boolean; pending: boolean; onAsk: () => void;
-}) {
-  const { t } = useTranslation();
-  const current = data.facilities.stands.find((s) => s.id === stand)?.seats ?? 0;
-  const cost = Math.round(seats * data.seatCost);
-  const weeks = standWeeks(seats);
-  const options = Array.from({ length: (FACILITIES.SEATS_MAX - FACILITIES.SEATS_MIN) / FACILITIES.SEATS_STEP + 1 }, (_, i) => {
-    const n = FACILITIES.SEATS_MIN + i * FACILITIES.SEATS_STEP;
-    return { key: String(n), label: `+${n / 1000}K` };
-  });
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h3 className="font-display font-black uppercase text-xl leading-none m-0">
-          {t("facilities.stand.expand", { stand: t(`facilities.stand.${stand}`) })}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1 mb-0 tabular-nums">
-          {t("facilities.stand.current", { seats: nf(current) })} · {t("craft.improves.stand", { seats: nf(seats) })}
-        </p>
-      </div>
-      <div className="flex flex-col gap-2">
-        <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("facilities.stand.seats")}</span>
-        <OptionChips options={options} value={String(seats)} onChange={(k) => onSeats(Number(k))} aria-label={t("facilities.stand.seats")} />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: weeks })} />
-        <Figure label={t("facilities.stand.newCapacity")} value={nf(data.capacity + seats)} />
-      </div>
-      <p className="text-sm text-muted-foreground m-0">{t("facilities.stand.halfDuringWorks")}</p>
-      <WorksBuild data={data} build={standBuild(data, cost)} busy={busy} pending={pending} onAsk={onAsk} group="stadium" />
-    </div>
-  );
-}
-
-function Figure({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1 min-w-0">
-      <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{label}</span>
-      <span className="font-display font-bold text-lg tabular-nums text-foreground leading-none truncate">{value}</span>
-    </div>
-  );
-}
-
-/** What a stand expansion takes from the stock: priced like the server's quote (seats × seat cost), its mix. */
-function standBuild(data: FacilitiesViewData, cost: number): RecipeBuild {
-  const recipe = recipeFor({ kind: "stand" }, cost, data.revenue);
-  const missing = data.stock ? missingComponents(data.stock, recipe) : recipe;
-  const workshop = data.facilities.craft?.workshop ?? 1;
-  const locked = (Object.keys(recipe) as ComponentId[]).filter((id) => CRAFT.RECIPES[id].minLevel > workshop);
-  return { recipe, missing, locked, canBuild: Object.keys(missing).length === 0 };
-}
-
-/** The works' recipe and the Build button (the area's running works above it). */
-function WorksBuild({ data, build, busy, pending, onAsk, group }: {
-  data: FacilitiesViewData; build: RecipeBuild; busy: boolean; pending: boolean; onAsk: () => void;
-  group: "stadium" | "training" | "academy";
-}) {
-  const { t } = useTranslation();
-  const running = busy ? runningWorksOf(data.facilities.projects, group) : undefined;
-  return (
-    <div className="flex flex-col gap-3">
-      {running && <RunningWorks project={running} date={data.date} />}
-      <BuildActions
-        build={build} stock={data.stock} workshop={data.facilities.craft?.workshop ?? 1} pending={pending} onBuild={onAsk}
-        blockedHint={busy ? t("facilities.groupBusy", { group: t(`facilities.items.group.${group}`) }) : null}
-      />
-    </div>
-  );
-}
-
-/** A derived group level (mean of the item levels / 2) with at most one decimal. */
-function levelText(level: number): string {
-  return String(Math.round(level * 10) / 10);
-}
 
 function LevelMarks({ level }: { level: number }) {
   return (
@@ -476,69 +455,12 @@ function LevelMarks({ level }: { level: number }) {
   );
 }
 
-function LevelBlock({
-  kind, level, data, current, next, busy, pending, onAsk,
-}: {
-  kind: "comfort" | "training" | "academy"; level: number; data: FacilitiesViewData;
-  current: string; next: string; busy: boolean; pending: boolean; onAsk: () => void;
-}) {
-  const { t } = useTranslation();
-  const quote = data.quotes[kind];
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t(`facilities.kind.${kind}`)}</h3>
-          <p className="text-sm text-muted-foreground mt-1 mb-0">{t(`facilities.${kind}.about`)}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className="font-display font-bold text-lg tabular-nums leading-none">{t("facilities.level", { level: levelText(level) })}</span>
-          <LevelMarks level={level} />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-md border border-border p-3">
-          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">{t("facilities.now")}</span>
-          <p className="text-sm text-foreground mt-1 mb-0 tabular-nums">{current}</p>
-        </div>
-        <div className="rounded-md border border-border p-3">
-          <span className="font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground">
-            {quote ? t("facilities.nextLevel", { level: quote.level }) : t("facilities.maxLevel")}
-          </span>
-          <p className="text-sm text-foreground mt-1 mb-0 tabular-nums">{quote ? next : "—"}</p>
-        </div>
-      </div>
-      {quote && (
-        <>
-          <Figure label={t("facilities.duration")} value={t("facilities.weeks", { count: quote.weeks })} />
-          <WorksBuild data={data} build={quote.build} busy={busy} pending={pending} onAsk={onAsk}
-            group={kind === "comfort" ? "stadium" : kind} />
-        </>
-      )}
-    </div>
-  );
-}
-
-type TFn = (key: string, opts?: Record<string, unknown>) => string;
-
 /** Tooltip anchor of bar `i` of `n`: left edge in the first third, right edge in the last, centred in between. */
 function tooltipAnchor(i: number, n: number): string {
   if (i < n / 3) return "left-0";
   if (i >= (2 * n) / 3) return "right-0";
   return "left-1/2 -translate-x-1/2";
 }
-const pct = (mult: number) => `${mult >= 1 ? "+" : "−"}${Math.abs(Math.round((mult - 1) * 100))}%`;
-
-function trainingText(e: FacilitiesViewData["effects"]["training"]["current"], t: TFn): string {
-  return t("facilities.training.effect", { recovery: pct(e.recoveryMult), injury: pct(e.injuryMult), dev: pct(e.devMult) });
-}
-
-function academyText(e: FacilitiesViewData["effects"]["academy"]["current"], t: TFn, lang: string): string {
-  return t("facilities.academy.effect", {
-    quality: formatSigned(e.qualityBonus, lang), max: e.intakeMax, promise: Math.round(e.promiseChance * 100),
-  });
-}
-
 function OutcomeNotice({ outcome, onClose }: {
   outcome: { kind: FacilityKind; result: RequestOutcome } | { cancelled: boolean }; onClose: () => void;
 }) {
@@ -582,7 +504,7 @@ function OutcomeNotice({ outcome, onClose }: {
 
 // ── Attendance chart ─────────────────────────────────────────────────────────
 
-function AttendanceChart({ games, leagues, nf }: { games: SeasonGame[]; leagues: LeagueData[]; nf: (n: number) => string }) {
+function AttendanceChart({ games, leagues, nf, sub }: { games: SeasonGame[]; leagues: LeagueData[]; nf: (n: number) => string; sub?: string | null }) {
   const { t, i18n } = useTranslation();
   const max = Math.max(1, ...games.map((g) => Math.max(g.capacity, g.demand))) * 1.08;
   const y = (v: number) => 100 - (v / max) * 100;
@@ -595,7 +517,10 @@ function AttendanceChart({ games, leagues, nf }: { games: SeasonGame[]; leagues:
   return (
     <section className="card-arcade rounded-md p-4 flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.chart.title")}</h3>
+        <div className="flex flex-col gap-1">
+          <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.chart.title")}</h3>
+          {sub && <span className="text-sm text-muted-foreground tabular-nums">{sub}</span>}
+        </div>
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <Legend swatch={<span className="h-3 w-3 rounded-sm bg-primary" />} label={t("facilities.chart.played")} />
           <Legend swatch={<span className="h-3 w-3 rounded-sm bg-primary/15 border border-dashed border-primary/70" />} label={t("facilities.chart.estimated")} />
@@ -656,50 +581,3 @@ function Legend({ swatch, label }: { swatch: React.ReactNode; label: string }) {
   return <span className="flex items-center gap-1.5">{swatch}{label}</span>;
 }
 
-// ── Works in progress ────────────────────────────────────────────────────────
-
-function ProjectsList({ data, nf, pending, onCancel }: {
-  data: FacilitiesViewData; nf: (n: number) => string; pending: boolean; onCancel: (projectId: string) => Promise<void>;
-}) {
-  const { t, i18n } = useTranslation();
-  const projects = data.facilities.projects;
-  return (
-    <section className="card-arcade rounded-md p-4 flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="font-display font-black uppercase text-xl leading-none m-0">{t("facilities.projects.title")}</h3>
-        {data.weeklyUpkeep > 0 && (
-          <span className="text-sm text-muted-foreground tabular-nums">{t("facilities.projects.upkeep", { amount: formatEuros(data.weeklyUpkeep) })}</span>
-        )}
-      </div>
-      {projects.length === 0 ? (
-        <p className="text-sm text-muted-foreground m-0">{t("facilities.projects.none")}</p>
-      ) : projects.map((p) => {
-        const progress = projectProgress(p, data.date);
-        const paidNow = p.paidNow === true;
-        const what = projectLabel(p, t, nf);
-        return (
-          <div key={p.id} className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold text-foreground">{what}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {t("facilities.projects.delivery", { date: formatGameDate(p.end, i18n.language) })}
-                {/* A works built from the stock costs no money; an old one shows what it cost and who paid. */}
-                {p.craft
-                  ? ` · ${t("craft.recipe.fromStock")}${p.quality ? ` · ${t(`craft.quality.${p.quality}`)}` : ""}`
-                  : ` · ${formatEuros(p.cost)}${p.boardShare > 0 ? ` · ${t("facilities.preview.funded", { pct: Math.round(p.boardShare * 100) })}` : ""}${
-                    paidNow ? ` · ${t("facilities.items.paidByClub")}` : ""}`}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-1.5 bg-border rounded overflow-hidden flex-1 min-w-16">
-                <div className="h-full bg-primary rounded" style={{ width: `${Math.round(progress * 100)}%` }} />
-              </div>
-              <span className="text-sm tabular-nums text-muted-foreground w-12 text-right">{Math.round(progress * 100)}%</span>
-              {p.craft && <CancelWorks pending={pending} onCancel={() => onCancel(p.id)} />}
-            </div>
-          </div>
-        );
-      })}
-    </section>
-  );
-}

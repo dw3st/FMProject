@@ -3,6 +3,7 @@ import { saveService, type SaveMeta } from "@/backend/SaveService";
 import { requireSeat, type SeatAuth } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { seatNextMatchDate } from "@/backend/advanceUntil";
+import { GROUP_ADVANCE } from "@/Domain/groupAdvance/groupAdvanceConfig";
 import { groupAdvanceView, resetAdvanceError, scheduleKick, seatMatchOn, seatVsSeat } from "@/backend/groupAdvance";
 import { simulateSeatGame } from "@/backend/h2h/h2hRooms";
 import { knockoutRecordingDecided, validatePlayedMatch } from "@/backend/playedMatchValidation";
@@ -203,7 +204,7 @@ export const groupAdvanceRoutes = {
       });
       return Response.json({ ok: true });
     });
-    if (res.ok) scheduleKick(saveId);
+    if (res.ok) scheduleKick(saveId, GROUP_ADVANCE.LIVE_RECORDING_KICK_DELAY_MS);
     return res;
   }),
 

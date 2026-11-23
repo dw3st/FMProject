@@ -1557,6 +1557,8 @@
       "count_one": "{{count}} lance",
       "count_other": "{{count}} lances"
     },
+    "tablePlace_ordinal_other": "{{count}}º",
+    "tablePlaceTitle": "{{place}} na tabela da liga",
     "effects": {
       "save": "DEFESA",
       "wide": "PRA FORA",
@@ -2595,6 +2597,8 @@
       "subject": {
         "bid": "{{club}} fez proposta por {{player}}",
         "loan_bid": "{{club}} quer {{player}} emprestado",
+        "loan_renewal_in": "{{club}} propõe renovar o empréstimo de {{player}}",
+        "loan_renewal_out": "{{club}} quer ficar com {{player}} emprestado",
         "loan_back": "{{player}} voltou ao {{club}}",
         "loan_home": "{{player}} voltou do {{club}}",
         "sell_on": "Cláusula de venda: {{player}}",
@@ -2613,6 +2617,8 @@
       "body": {
         "bid": "O {{club}} oferece {{fee}} por {{player}}.",
         "loan_bid": "O {{club}} quer {{player}} emprestado e pagaria {{share}}% do salário.",
+        "loan_renewal_in": "O {{club}} empresta {{player}} por mais uma temporada, até {{until}}. Você paga {{share}}% do salário.",
+        "loan_renewal_out": "O {{club}} quer ficar com {{player}} emprestado por mais uma temporada, até {{until}}, pagando {{share}}% do salário.",
         "loan_back": "O empréstimo de {{player}} acabou e ele voltou ao {{club}}.",
         "loan_home": "O empréstimo de {{player}} ao {{club}} acabou. Ele voltou ao seu elenco.",
         "sell_on": "{{player}} foi vendido pelo {{club}}. Sua cláusula de venda rendeu {{fee}}.",
@@ -4470,6 +4476,9 @@
     "signed": "Jogador contratado.",
     "currentWage": "Salário atual: {{wage}}/sem",
     "wageChange": "{{pct}}% sobre o atual",
+    "renewalCap": "Renovação: até +{{pct}}% sobre o salário atual",
+    "freeWait_one": "Sem clube há {{count}} dia: {{pct}}",
+    "freeWait_other": "Sem clube há {{count}} dias: {{pct}}",
     "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
     "refusal": {
       "lowWage": "O salário é baixo demais para esse jogador.",
@@ -4762,6 +4771,10 @@
     }
   },
   "negotiation": {
+    "loanRenewal": {
+      "offered": "Renovação oferecida","closed": "Esta proposta está encerrada.","renewed": "Empréstimo renovado.","rejected": "Proposta recusada: ele volta no fim do empréstimo.",
+      "noMoney": "Dinheiro insuficiente para a taxa do empréstimo.","until": "Nova data de volta","fee": "Taxa do empréstimo","deadline": "Responda até {{date}}.","accept": "Aceitar","reject": "Recusar"
+    },
     "situation": {
       "label": "Situação",
       "thinAfter": {
@@ -9179,7 +9192,11 @@
       "recycleConfirm": "Baixar {{item}} para o nível {{level}}?",
       "confirm": "Reciclar",
       "recycleDone": "Voltou ao estoque: {{list}}.",
-      "itemLevel": "{{item}} · nível {{level}}"
+      "itemLevel": "{{item}} · nível {{level}}",
+      "levelDown": "Nível {{from}} → {{to}}",
+      "recycleMin": "Já está no nível 1",
+      "recycleBusy": "Obra em andamento",
+      "givesNothing": "Não devolve componentes"
     },
     "shop": {
       "material": "Material",
@@ -9232,5 +9249,159 @@
       "workshop": "Mais bancadas e componentes melhores",
       "stand": "+{{seats}} lugares"
     }
+  },
+  "clubTabs": {
+    "label": "Seções do clube",
+    "tab": {
+      "overview": "Visão geral",
+      "stadium": "Estádio",
+      "works": "Obras",
+      "materials": "Materiais"
+    },
+    "area": {
+      "stadium": "Estádio",
+      "training": "CT",
+      "academy": "Base"
+    },
+    "overview": {
+      "stadium": "Estádio",
+      "seats": "{{seats}} lugares",
+      "avg": "público médio {{avg}}",
+      "comfort": "Conforto nível {{level}}",
+      "record": "recorde {{n}}",
+      "seeStadium": "Ver estádio",
+      "short": {
+        "stadiumPitch": "Gramado",
+        "seats": "Arquibancadas",
+        "stadiumStructure": "Estrutura e luz"
+      }
+    },
+    "todo": {
+      "title": "O que fazer",
+      "count_one": "{{count}} item",
+      "count_other": "{{count}} itens",
+      "empty": "Nada precisa de atenção agora.",
+      "repair": "Reformar · {{count}}",
+      "improve": "Melhorar · {{count}}",
+      "running": "Em andamento · {{count}}",
+      "below40": "abaixo de 40%: {{effect}}",
+      "levels": "Nível {{from}} → {{to}}",
+      "missing_one": "falta {{count}} peça",
+      "missing_other": "faltam {{count}} peças",
+      "repairNow": "Reformar",
+      "open": "Abrir obra",
+      "readyOn": "prontos em {{date}}"
+    },
+    "stadium": {
+      "stands": "Setores",
+      "expand": "Ampliar setor {{stand}}",
+      "expandSummary": "+{{seats}} lugares · {{weeks}} semanas · {{parts}}",
+      "underWorks": "Em obra",
+      "levelOf": "Nível {{level}} de {{max}}",
+      "comfortNext": "Ingresso +{{now}}% · próximo nível +{{next}}%",
+      "changeGrass": "Trocar a grama",
+      "repairCost": "Reformar · {{cost}}",
+      "chartSub": "Média {{avg}} · ocupação {{pct}}%"
+    },
+    "works": {
+      "workshop": "Oficina",
+      "benchesFree": "Todas as bancadas livres.",
+      "free": "Livre",
+      "underWay": "em obra",
+      "noneIn": {
+        "stadium": "Nenhuma obra no estádio",
+        "training": "Nenhuma obra no CT",
+        "academy": "Nenhuma obra na base"
+      },
+      "pickBeside": "Escolha uma obra ao lado"
+    },
+    "pick": {
+      "title": "Escolha a obra",
+      "areaBusy": "obra em andamento",
+      "areaFree": "livre",
+      "stand": "Ampliar setor",
+      "seats": "lugares",
+      "turf": "Troca de grama",
+      "trainingAll": "CT inteiro",
+      "academyAll": "Base inteira",
+      "levelUp": "nível {{from}} → {{to}}",
+      "max": "nível máximo",
+      "repair": "reformar · {{pct}}%",
+      "rebuild": "reconstruir",
+      "running": "em obra"
+    },
+    "job": {
+      "upgradeTo": "Melhorar para o nível {{level}}",
+      "levelTo": "Subir para o nível {{level}}",
+      "maxLevel": "No nível máximo",
+      "repairTo": "Reformar até {{pct}}%",
+      "rebuild": "Reconstruir",
+      "conditionFrom": "Condição {{from}}% → {{to}}%",
+      "stand": "+{{seats}} lugares",
+      "standAbout": "Hoje {{now}} lugares · capacidade nova {{capacity}}",
+      "turf": "Colocar grama {{turf}}",
+      "weeks_one": "{{count}} semana de obra",
+      "weeks_other": "{{count}} semanas de obra",
+      "areaFree": "Área livre",
+      "areaBusy": "Área ocupada",
+      "nothing": "Nada a fazer aqui.",
+      "step1": "Peças",
+      "step2": "Fabricar ou comprar",
+      "step3": "Começar a obra",
+      "needHave": "precisa {{need}} · tem {{have}}",
+      "shortParts_one": "Falta {{count}} peça no estoque.",
+      "shortParts_other": "Faltam {{count}} peças no estoque.",
+      "nothingToMake": "Nada a fabricar: as peças já estão no estoque.",
+      "makingUses": "Fabricar o que falta gasta:",
+      "makeN": "Fabricar: {{what}} ×{{count}}",
+      "bench_one": "na bancada: {{count}} dia",
+      "bench_other": "na bancada: {{count}} dias",
+      "benchShort_one": "na bancada: {{count}} dia · faltam materiais",
+      "benchShort_other": "na bancada: {{count}} dias · faltam materiais",
+      "noBench": "A oficina ainda não fabrica estas peças.",
+      "buy": "Comprar o que falta",
+      "buyCost": "Comprar o que falta · {{cost}}",
+      "buyHint": "abre Materiais com o carrinho cheio",
+      "deadline": "Prazo",
+      "delivery": "Entrega",
+      "area": "Área",
+      "areaFreeOf": "{{area}} livre",
+      "areaBusyOf": "{{area}} em obra",
+      "start": "Começar a obra",
+      "cannotYet": "Ainda não dá para começar:",
+      "whyParts_one": "falta {{count}} peça no estoque.",
+      "whyParts_other": "faltam {{count}} peças no estoque.",
+      "whyBusy": "{{area}} já tem uma obra em andamento: {{works}}.",
+      "startNote": "Ao começar, as peças saem do estoque. Cancelar devolve metade."
+    }
+  },
+  "craftHelp": {
+    "open": "Como é feito: {{name}}",
+    "madeWith": "Cada unidade leva",
+    "per": "{{count}} × {{material}}",
+    "inStock": "{{count}} no estoque",
+    "bench_one": "{{count}} dia de bancada a cada {{lot}} unidades",
+    "bench_other": "{{count}} dias de bancada a cada {{lot}} unidades",
+    "needsLevel": "Precisa da oficina nível {{level}} (a sua é nível {{now}})",
+    "fromLevel": "Qualquer oficina a partir do nível {{level}}",
+    "usedIn": "Usado em",
+    "goesInto": "Vai em",
+    "takes": "{{component}}: {{count}} por unidade",
+    "buyHint": "Compre na Loja da aba Materiais.",
+    "use": {
+      "stand": "Ampliar arquibancada",
+      "workshop": "Melhorar a oficina"
+    },
+    "make": "Fabricar",
+    "locked": "Nível {{level}}",
+    "short": "Faltam materiais",
+    "buyShort": "Comprar o que falta",
+    "canMake": "Dá para fazer {{count}}",
+    "makeColumn": "Fabricar",
+    "queued": "Pedido feito: {{component}} ×{{count}}. Entra na próxima bancada livre.",
+    "lockedHint": "Precisa da oficina nível {{level}}",
+    "buy": "Comprar",
+    "stockHint": "Fabricar põe o pedido na oficina. O ? mostra do que cada um é feito e onde é usado.",
+    "openMaterial": "Onde é usado: {{name}}"
   }
 }

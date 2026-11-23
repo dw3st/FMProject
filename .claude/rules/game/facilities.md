@@ -498,3 +498,19 @@ itens por área, que abrem o item na aba Instalações; as obras de grupo do CT 
 **Estoque** e **Loja**. As quatro primeiras são um `FacilitiesView` só (`section`), que mantém os dados e o item escolhido.
 Sem o visual novo, os cartões das áreas ficam no lugar do mapa e a trilha vai embaixo. A faixa de peças no estoque saiu
 da aba Instalações (o Estoque mostra).
+
+## Clube em quatro abas (12.28)
+
+Pedido do usuário ("tudo confuso"), spec `docs/superpowers/specs/2026-11-19-club-tab-redesign-design.md`. Só a tela mudou (regras, preços, receitas e prazos iguais). `SegmentedTabs` com quatro abas (`Craft/ClubTabs.tsx`); `parseClubTab`, `parseJob`, `clubTodo`, `itemJob`, `partsOf` em `src/Domain/facilities/clubTabs.ts` (com teste):
+
+- **Visão geral** (padrão, `ClubOverview.tsx`): o mapa do clube (clicar num item abre a obra dele), a legenda, o cartão do estádio (pintura, lugares, público médio, condição de gramado, arquibancadas e estrutura, Ver estádio) e **O que fazer**: Reformar (condição abaixo de 70, interditado primeiro; o efeito perdido; botão **Reformar** na linha só para reforma pequena com as peças no estoque e a área livre, a mesma rota), Melhorar (até 4, sem obra, pronto primeiro: "Pronto para montar" ou "faltam N peças"), Em andamento (obras e bancada da oficina). Toda linha tem **Abrir obra** (`?tab=works&job=<modo>:<item>`).
+- **Estádio**: setores (mapa) com a ampliação e a obra do estádio em andamento, os quatro números de público, conforto, gramado (corte num seletor), o gráfico dos jogos em casa e os patrocinadores; os botões abrem a obra em Obras.
+- **Obras** (`WorksTab.tsx`): a fila em cima (oficina e uma obra por área), o seletor agrupado por área à esquerda (setor, conforto, itens, troca de grama, CT inteiro, oficina, base inteira) e a obra escolhida em três passos: Peças, Fabricar ou comprar (põe o que falta na bancada; "Comprar o que falta" abre Materiais com o carrinho cheio) e Começar a obra (prazo, entrega, área e o motivo quando não dá). A oficina tem a fila e o pedido novo embaixo.
+- **Materiais**: Loja e Estoque lado a lado.
+- Links antigos: `facilities` → Visão geral, `attendance` → Estádio, `workshop` → Obras, `shop`/`stock` → Materiais. Sem `job`, Obras abre na primeira linha do O que fazer.
+
+## Como é feito e Fabricar no estoque (reports 8ee28237 e 98215796)
+
+Só tela. Todo componente listado (Estoque, passo 1 Peças, a fila da oficina, o pedido novo) e todo material (Estoque, passo 2, o pedido novo) tem um "?" (`Craft/CraftHelp.tsx`: `ComponentHelp`, `MaterialHelp`; abre parando o mouse no nome ou no "?", ou tocando no "?"; Escape ou um toque fora fecha; desenhado num portal, então a tabela não corta). Componente: o que cada unidade leva contra o estoque, dias de bancada por lote, o nível da oficina e onde é usado; material: os componentes em que entra. Dados puros em `src/Domain/craft/craftHelp.ts` (`componentUses`, `componentHelp`, `materialUses`, `makeState`, `orderShort`, com teste), lidos das receitas e misturas de `CRAFT`.
+
+Na aba Materiais cada componente do estoque tem **Fabricar** (abre o pedido novo da oficina embaixo, com o componente escolhido, a mesma rota `POST .../craft/queue`), **Comprar** quando falta material para uma unidade (a Loja com o carrinho de um lote) ou o nível da oficina que ele pede. O pedido novo ganhou "Usado em" e **Comprar o que falta** (o carrinho com a falta da quantidade escolhida). O cartão Oficina da fila de Obras tem **Novo pedido**. Uma ação de uma tela do ofício avisa as outras (`fm:craft-changed`, `useCraft`), então Loja e Estoque andam juntos.

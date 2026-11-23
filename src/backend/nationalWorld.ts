@@ -44,7 +44,7 @@ import {
   leaveNationalJob, nextCallUpDate, objectiveFailedBadly, objectiveMet, qualifierOutcome, rollNationalOffer, tournamentOutcome,
 } from "@/Domain/national/nationalCoach";
 import type { PlayedMatchRecording } from "@/Domain/advanceDay/matches";
-import { runRecording } from "@/backend/matchPool";
+import { matchPoolStats, runRecording } from "@/backend/matchPool";
 import type { NationalCoachNews } from "@/Domain/inbox/nationalCoachMessage";
 import type { MatchEvent, Scorer } from "@/types/dayLogTypes";
 import type { Fixture } from "@/types/calendarTypes";
@@ -57,6 +57,7 @@ import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { MainRole } from "@/Domain/roles";
 import type { Confed } from "@/types/registrationTypes";
 import { logError } from "@/Logger";
+import { yieldToEventLoop } from "@/backend/yieldToEventLoop";
 
 export const isNationalTeamId = (id: string): boolean => id.startsWith("nat_");
 export const nationalTeamId = (nation: string): string => `nat_${countryKey(nation)}`;
@@ -566,6 +567,8 @@ export async function playNationalDay(args: {
           tactics: { A: h.tactics, B: a.tactics },
         },
       }));
+      // In process (`MATCH_WORKERS=0`) the game just ran on this thread: a short window for the server (12.28).
+      if (matchPoolStats().size === 0) await yieldToEventLoop();
     }
   }
   // A failed game fails the day (as in series), never an unhandled rejection meanwhile.

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
-import { freeSigningRivals, freeSigningScore, preferredRival, signingBonusAsk } from "@/Domain/negotiation/freeSigning";
+import { freeArrivalCtx, freeSigningRivals, freeSigningScore, preferredRival, signingBonusAsk } from "@/Domain/negotiation/freeSigning";
 import { playerMarketValue } from "@/Domain/negotiation/askingPrice";
-import { contractDemand } from "@/Domain/contracts/contracts";
+import { contractDemand, demandBreakdown, freeWaitMult } from "@/Domain/contracts/contracts";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
 import type { SquadMarketProfile } from "@/types/transferMarketTypes";
 
@@ -29,15 +29,29 @@ function squad(id: string, v = 5): Squad {
 
 describe("signing bonus", () => {
   const p = player("target", 6);
-  test("a share of the value, more for a pre-contract and with rivals", () => {
+  test("a pre-contract asks a share of the value, more with rivals; a free agent asks none (12.28.5)", () => {
     const value = playerMarketValue(p);
     expect(signingBonusAsk(p, "pre", 0)).toBeGreaterThanOrEqual(value * NEGOTIATION.FREE_SIGNING.BONUS_SHARE_PRE);
-    expect(signingBonusAsk(p, "pre", 0)).toBeGreaterThan(signingBonusAsk(p, "free", 0));
     expect(signingBonusAsk(p, "pre", 2)).toBeGreaterThan(signingBonusAsk(p, "pre", 0));
+    expect(signingBonusAsk(p, "free", 0)).toBe(0);
+    expect(signingBonusAsk(p, "free", 2)).toBe(0);
   });
-  test("the wage premium of a free arrival", () => {
+  test("the wage premium only on a pre-contract", () => {
     const s = squad("h");
-    expect(contractDemand(p, s, "2026-10-01", { freeArrival: true })).toBeGreaterThan(contractDemand(p, s, "2026-10-01"));
+    const base = contractDemand(p, s, "2026-10-01");
+    expect(contractDemand(p, s, "2026-10-01", freeArrivalCtx("pre"))).toBeGreaterThan(base);
+    expect(contractDemand(p, s, "2026-10-01", freeArrivalCtx("free"))).toBe(base);
+  });
+  test("a free agent asks less the longer he waits, down to −25% at 90 days", () => {
+    const s = squad("h");
+    const base = contractDemand(p, s, "2026-10-01");
+    expect(contractDemand(p, s, "2026-10-01", freeArrivalCtx("free", "2026-10-01"))).toBe(base);
+    expect(Math.abs(contractDemand(p, s, "2026-10-01", freeArrivalCtx("free", "2026-08-17")) - base * 0.875)).toBeLessThanOrEqual(1);
+    const b = demandBreakdown(p, s, "2026-10-01", freeArrivalCtx("free", "2026-07-03"));
+    expect(b.freeDays).toBe(90);
+    expect(b.freeWait).toBeCloseTo(0.75);
+    expect(Math.abs(contractDemand(p, s, "2026-10-01", freeArrivalCtx("free", "2026-01-01")) - base * 0.75)).toBeLessThanOrEqual(1);
+    expect(freeWaitMult(45)).toBeCloseTo(0.875);
   });
 });
 
@@ -60,6 +74,10 @@ describe("rivals", () => {
     expect(two).toEqual(one);
     expect(one.length).toBeLessThanOrEqual(NEGOTIATION.FREE_SIGNING.MAX_RIVALS);
     expect(one.some((r) => r.clubId === "a")).toBe(false);
+  });
+
+  test("a free agent's rivals offer no bonus", () => {
+    for (const r of freeSigningRivals({ ...args, kind: "free" })) expect(r.bonus).toBe(0);
   });
 
   test("no need for him, no rival", () => {

@@ -31,10 +31,18 @@ export interface FreeSigningRival {
   bonus: number;
 }
 
-/** The signing bonus he asks, EUR (fee grid), more with clubs competing. */
+/**
+ * The signing bonus he asks, EUR (fee grid), more with clubs competing. Only a pre-contract asks one: a free agent
+ * signs without a bonus (report, 12.28.5).
+ */
 export function signingBonusAsk(player: RosterPlayer, kind: FreeSigningKind, rivals: number): number {
-  const share = kind === "pre" ? F.BONUS_SHARE_PRE : F.BONUS_SHARE_FREE;
-  return roundFeeUp(playerMarketValue(player) * share * (1 + F.PER_RIVAL * rivals));
+  if (kind === "free") return 0;
+  return roundFeeUp(playerMarketValue(player) * F.BONUS_SHARE_PRE * (1 + F.PER_RIVAL * rivals));
+}
+
+/** The demand context of a fee-free arrival: the wage premium only on a pre-contract; a free agent's wait discount. */
+export function freeArrivalCtx(kind: FreeSigningKind, since?: string): { freeArrival: boolean; freeSince?: string } {
+  return kind === "pre" ? { freeArrival: true } : { freeArrival: false, ...(since ? { freeSince: since } : {}) };
 }
 
 /** AI clubs whose market profile has a need for him (line and rating band): the squads a caller has to load. */
@@ -64,6 +72,8 @@ export function freeSigningRivals(args: {
   date: string;
   /** His club (pre-contract) or last club (free agent); never a rival. */
   fromId: string | null;
+  /** Free agent: the day he entered the pool (`FreeAgent.since`). */
+  since?: string;
   humanIds: ReadonlySet<string>;
   profiles: Record<string, SquadMarketProfile>;
   squadOf: (id: string) => Squad | null | undefined;
@@ -74,6 +84,7 @@ export function freeSigningRivals(args: {
   const rng = mulberry32(seedFrom(`free-signing:${player.id}:${kind}:${weekKey(args.date)}`));
   const baseAsk = signingBonusAsk(player, kind, 0);
   const from = args.fromId ? args.squadOf(args.fromId) ?? null : null;
+  const arrival = freeArrivalCtx(kind, args.since);
   const entered: { squad: Squad; urgency: number }[] = [];
   for (const [id, prof] of Object.entries(args.profiles).sort(([a], [b]) => a.localeCompare(b))) {
     if (id === args.fromId || args.humanIds.has(id)) continue;
@@ -84,7 +95,7 @@ export function freeSigningRivals(args: {
     const squad = args.squadOf(id);
     if (!squad || squad.players.length >= MAX_SQUAD || breaksStarLimit(squad, player.id, args.top)) continue;
     if (aiTransferBudgetOf(squad) < baseAsk * F.BUDGET_RATIO) continue;
-    if (!passesWageGate(aiClubFinance(squad), contractDemand(player, squad, args.date, { fromSquad: from, freeArrival: true }), 0)) continue;
+    if (!passesWageGate(aiClubFinance(squad), contractDemand(player, squad, args.date, { fromSquad: from, ...arrival }), 0)) continue;
     if (roll < F.RIVAL_CHANCE * need.urgency) entered.push({ squad, urgency: need.urgency });
   }
   const chosen = entered.sort((a, b) => b.urgency - a.urgency || a.squad.id.localeCompare(b.squad.id)).slice(0, F.MAX_RIVALS);
@@ -92,8 +103,8 @@ export function freeSigningRivals(args: {
   return chosen.map(({ squad }) => ({
     clubId: squad.id,
     clubName: squad.name,
-    wage: Math.round(contractDemand(player, squad, args.date, { fromSquad: from, freeArrival: true }) * (1 + rng() * F.WAGE_SPREAD)),
-    bonus: roundFeeUp(ask * (F.BONUS_MIN + rng() * F.BONUS_SPREAD)),
+    wage: Math.round(contractDemand(player, squad, args.date, { fromSquad: from, ...arrival }) * (1 + rng() * F.WAGE_SPREAD)),
+    bonus: ask > 0 ? roundFeeUp(ask * (F.BONUS_MIN + rng() * F.BONUS_SPREAD)) : 0,
   }));
 }
 

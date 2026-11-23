@@ -6,7 +6,7 @@ import { maxOfferYears } from "@/Domain/contracts/contracts";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import {
-  ContractTermsFields, SigningBonusField, useContractDemandInfo, useRefusalText,
+  ContractTermsFields, FreeAgentRivalsLine, useContractDemandInfo, useRefusalText,
 } from "@/GameInterface/Contracts/ContractTermsFields";
 import { RenewalResult, type RenewalOutcome } from "@/GameInterface/Contracts/RenewalResult";
 import { faceUrl } from "@/Domain/faces/faceUrl";
@@ -63,9 +63,6 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
   const maxYears = player ? maxOfferYears(player.age) : 5;
   useEffect(() => { setError(null); setDone(false); setOutcome(null); setYears(Math.min(2, maxYears)); }, [player?.id, maxYears]);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
-  // A free agent asks a signing bonus, paid on signing, with other clubs after him (4.47.9).
-  const [bonus, setBonus] = useState(0);
-  useEffect(() => { setBonus(demandInfo?.bonusAsk ?? 0); }, [demandInfo]);
 
   if (!player || !session) return null;
 
@@ -80,7 +77,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
       const res = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(mode === "sign" ? { wage, years, bonus } : { wage, years }),
+        body: JSON.stringify({ wage, years }),
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string; rival?: { clubName: string }; bill?: number; cap?: number };
@@ -149,7 +146,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
           ) : (
             <>
               <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} maxYears={maxYears} />
-              {mode === "sign" && <SigningBonusField ask={demandInfo?.bonusAsk} rivals={demandInfo?.rivals} bonus={bonus} onBonus={setBonus} paidOn="now" />}
+              {mode === "sign" && <FreeAgentRivalsLine rivals={demandInfo?.rivals} />}
               {mode === "renew" && demandInfo?.renewableOn ? (
                 <p className="text-sm text-chart-4 m-0">{t("contracts.recentlyRenewed", { date: formatGameDate(demandInfo.renewableOn, i18n.language) })}</p>
               ) : mode === "renew" && demandInfo?.refuses ? (

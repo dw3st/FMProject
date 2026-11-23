@@ -31,6 +31,11 @@ export interface ContractDemandInfo {
   currentWage?: number;
   /** Renewal: renewed recently, again only from this date. */
   renewableOn?: string;
+  /** Renewal: the most he asks over his current wage (share, by the club's size; 12.28.5). */
+  renewalCap?: number;
+  /** Free agent: days without a club and the discount they bring, a multiplier (12.28.5). */
+  freeDays?: number;
+  freeWait?: number;
   /** A fee-free arrival (pre-contract, free agent; 4.47.9): the signing bonus he asks, EUR, and the clubs also after him. */
   bonusAsk?: number;
   rivals?: string[];
@@ -62,6 +67,9 @@ function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | un
   if (neg !== 0) lines.push({ key: "neg", text: t("achievements.contractLine", { value: sign(neg) }) });
   const fame = pct(info.fame);
   if (fame !== 0) lines.push({ key: "fame", text: t("personality.demand.fame", { pct: sign(fame) }) });
+  if (info.renewalCap !== undefined) lines.push({ key: "cap", text: t("contracts.renewalCap", { pct: Math.round(info.renewalCap * 100) }) });
+  const wait = pct(info.freeWait);
+  if (info.freeDays !== undefined && wait !== 0) lines.push({ key: "wait", text: t("contracts.freeWait", { count: info.freeDays, pct: sign(wait) }) });
   if (lines.length === 0 && !info.refusesSmallerClub && !info.refusesPoorFacilities) return null;
   return (
     <ul className="m-0 p-0 list-none space-y-1">
@@ -95,8 +103,15 @@ function stepBonus(v: number, dir: 1 | -1): number {
   return Math.max(0, Math.round((v + dir * step) / step) * step);
 }
 
+/** The AI clubs also after a free agent (no signing bonus since 12.28.5). */
+export function FreeAgentRivalsLine({ rivals }: { rivals: string[] | undefined }) {
+  const { t } = useTranslation();
+  if (!rivals || rivals.length === 0) return null;
+  return <p className="text-sm text-chart-4 m-0">{t("contracts.bonus.rivals", { clubs: rivals.join(", "), count: rivals.length })}</p>;
+}
+
 /**
- * Signing bonus (luvas) of a fee-free arrival (4.47.9): what he asks, the amount offered (paid when he joins) and the
+ * Signing bonus (luvas) of a pre-contract (4.47.9): what he asks, the amount offered (paid when he joins) and the
  * AI clubs also after him. Nothing without an ask.
  */
 export function SigningBonusField({ ask, rivals, bonus, onBonus, paidOn }: {

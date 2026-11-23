@@ -1,28 +1,19 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
-import { OptionChips } from "@/GameInterface/ui/OptionChips";
-import { CraftIcon } from "@/GameInterface/Craft/CraftIcon";
-import { BuildActions } from "@/GameInterface/Craft/RecipeLine";
-import { CancelWorks, conditionTone } from "@/GameInterface/Facilities/FacilityItemsPanel";
+import { conditionTone } from "@/GameInterface/Facilities/FacilityItemsPanel";
 import { FacilityItemArt } from "@/GameInterface/Facilities/FacilityItemArt";
-import { RunningWorks, runningWorksOf } from "@/GameInterface/Facilities/RunningWorks";
-import type { FacilitiesViewData, FacilityItemView, ItemQuote } from "@/GameInterface/Facilities/facilitiesApi";
+import type { FacilitiesViewData, FacilityItemView } from "@/GameInterface/Facilities/facilitiesApi";
 import { CLUB_MAP_FILE, ITEM_POS, STAND_POS } from "@/GameInterface/Facilities/clubMapLayout";
-import { formatGameDate, formatSigned } from "@/GameInterface/formatDate";
-import { gameArtUrl, newVisualOn, paintedFacility } from "@/Domain/art/paintedFaces";
+import { formatSigned } from "@/GameInterface/formatDate";
+import { gameArtUrl, paintedFacility } from "@/Domain/art/paintedFaces";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
 import {
-  benefitContext, higherIsBetter, itemLevelBenefit, itemLevelTrack, type BenefitValue,
+  benefitContext, higherIsBetter, itemLevelTrack, type BenefitValue,
 } from "@/Domain/facilities/levelBenefit";
-import { CRAFT, MATERIALS } from "@/Domain/craft/craftConfig";
-import { craftableMissing, materialTotal, materialsNeeded } from "@/Domain/craft/shortfall";
-import type { ComponentCounts, ComponentId, CraftStock, MaterialId } from "@/types/craftTypes";
-import type { FacilityGroup, FacilityItemId, FacilityRequest } from "@/types/facilityTypes";
+import type { FacilityGroup, FacilityItemId } from "@/types/facilityTypes";
 
-type Mode = "upgrade" | "repair" | "rebuild";
-type RepairStep = "25" | "50" | "100";
-type Upgrade = "ready" | "missing" | null;
+export type Upgrade = "ready" | "missing" | null;
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
 const GROUPS: FacilityGroup[] = ["stadium", "training", "academy"];
@@ -57,7 +48,7 @@ export function benefitText(v: BenefitValue, t: TFn, lang: string): string {
 }
 
 /** Upgrade marker of every item (the area's works blocks it). */
-function useUpgrades(data: FacilitiesViewData) {
+export function useUpgrades(data: FacilitiesViewData) {
   const busy = useMemo(() => new Set(data.busyGroups ?? []), [data.busyGroups]);
   const upgrades = useMemo(
     () => Object.fromEntries(data.items.map((it) => [it.id, upgradeState(it, busy.has(it.group))])) as Record<FacilityItemId, Upgrade>,
@@ -74,62 +65,9 @@ export function defaultItem(data: FacilitiesViewData): FacilityItemId {
     ?? data.items.find((it) => state(it) === "missing")?.id ?? data.items[0]?.id ?? "stadiumPitch";
 }
 
-/**
- * Club → Facilities (craft, mocks B + A of 2026-11-18; own tab since 12.21): the painted club complex with each item's
- * level, an upgrade marker and its condition, and next to it the picked item's panel (next level's components, the
- * materials to make the missing ones, its real benefit, the works); below, its level track 1..10. Without the new
- * visual the area cards take the map's place.
- */
-export function ClubFacilitiesHub({
-  data, selected, onSelect, pending, onAsk, onCancel,
-}: {
-  data: FacilitiesViewData;
-  selected: FacilityItemId;
-  onSelect: (id: FacilityItemId) => void;
-  pending: boolean;
-  onAsk: (req: FacilityRequest) => Promise<void>;
-  onCancel: (projectId: string) => Promise<void>;
-}) {
-  const { t } = useTranslation();
-  const { busy, upgrades } = useUpgrades(data);
-  const setSelected = onSelect;
-  const [mapFailed, setMapFailed] = useState(false);
-  const item = data.items.find((it) => it.id === selected) ?? data.items[0];
-  const ctx = useMemo(
-    () => benefitContext(Object.fromEntries(data.items.map((it) => [it.id, it])) as Record<FacilityItemId, FacilityItemView>,
-      data.impliedLevel ?? FACILITIES.NEUTRAL_LEVEL),
-    [data.items, data.impliedLevel],
-  );
-  if (!item) return null;
-  const map = newVisualOn() && !mapFailed;
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground m-0">{t(map ? "facilities.map.hint" : "facilities.map.hintCards")}</p>
-        <MapLegend />
-      </div>
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
-        {map ? (
-          /* The map and, under it, the picked item's level track in two rows: the tab fits one screen. */
-          <div className="flex flex-col gap-4 min-w-0">
-            <ClubMap data={data} selected={item.id} upgrades={upgrades} onSelect={setSelected} onFail={() => setMapFailed(true)} />
-            <LevelTrack item={item} ctx={ctx} compact />
-          </div>
-        ) : (
-          <AreaCardsGrid data={data} selected={item.id} upgrades={upgrades} busy={busy} onSelect={setSelected} />
-        )}
-        <ItemPanel key={item.id} item={item} data={data} ctx={ctx} groupBusy={busy.has(item.group)}
-          pending={pending} onAsk={onAsk} onCancel={onCancel} />
-      </div>
-      {!map && <LevelTrack item={item} ctx={ctx} />}
-    </div>
-  );
-}
-
 // ── Legend ────────────────────────────────────────────────────────────────────
 
-function PlusMark({ tone, size = 24 }: { tone: string; size?: number }) {
+export function PlusMark({ tone, size = 24 }: { tone: string; size?: number }) {
   return (
     <span aria-hidden className={`inline-flex items-center justify-center rounded-full border-2 border-background text-background ${tone}`}
       style={{ width: size, height: size }}>
@@ -138,7 +76,7 @@ function PlusMark({ tone, size = 24 }: { tone: string; size?: number }) {
   );
 }
 
-function MapLegend() {
+export function MapLegend() {
   const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
@@ -159,8 +97,8 @@ function MapLegend() {
 
 // ── Map ───────────────────────────────────────────────────────────────────────
 
-function ClubMap({ data, selected, upgrades, onSelect, onFail }: {
-  data: FacilitiesViewData; selected: FacilityItemId; upgrades: Record<FacilityItemId, Upgrade>;
+export function ClubMap({ data, selected, upgrades, onSelect, onFail }: {
+  data: FacilitiesViewData; selected: FacilityItemId | null; upgrades: Record<FacilityItemId, Upgrade>;
   onSelect: (id: FacilityItemId) => void; onFail: () => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -207,14 +145,9 @@ function ClubMap({ data, selected, upgrades, onSelect, onFail }: {
   );
 }
 
-// ── Item panel ────────────────────────────────────────────────────────────────
+// ── Item pieces ────────────────────────────────────────────────────────────────
 
-function modesOf(item: FacilityItemView): Mode[] {
-  return (["upgrade", "repair", "rebuild"] as Mode[]).filter((m) =>
-    m === "repair" ? !item.condemned && item.quotes.repair["100"] !== null : item.quotes[m] !== null);
-}
-
-function ItemThumb({ id, level, tone, className = "" }: { id: FacilityItemId; level: number; tone: "ok" | "warn" | "bad"; className?: string }) {
+export function ItemThumb({ id, level, tone, className = "" }: { id: FacilityItemId; level: number; tone: "ok" | "warn" | "bad"; className?: string }) {
   const url = paintedFacility(id, level);
   const [failed, setFailed] = useState(false);
   if (url && !failed) {
@@ -224,140 +157,7 @@ function ItemThumb({ id, level, tone, className = "" }: { id: FacilityItemId; le
   return <div className={`overflow-hidden rounded ${className}`}><FacilityItemArt id={id} tone={tone} level={level} /></div>;
 }
 
-function ItemPanel({ item, data, ctx, groupBusy, pending, onAsk, onCancel }: {
-  item: FacilityItemView; data: FacilitiesViewData; ctx: ReturnType<typeof benefitContext>; groupBusy: boolean; pending: boolean;
-  onAsk: (req: FacilityRequest) => Promise<void>; onCancel: (projectId: string) => Promise<void>;
-}) {
-  const { t, i18n } = useTranslation();
-  const modes = modesOf(item);
-  const [mode, setMode] = useState<Mode | null>(modes[0] ?? null);
-  const steps = (["25", "50", "100"] as RepairStep[]).filter((s) => item.quotes.repair[s] !== null);
-  const [step, setStep] = useState<RepairStep>(steps.includes("100") ? "100" : steps[0] ?? "100");
-  const tone = conditionTone(item.condition, item.condemned);
-  const quote: ItemQuote | null = mode === null ? null : mode === "repair" ? item.quotes.repair[step] : item.quotes[mode];
-  const running = runningWorksOf(data.facilities.projects, item.group);
-  const workshop = data.facilities.craft?.workshop ?? 1;
-  const now = itemLevelBenefit(item.id, item.level, ctx);
-  const next = mode === "upgrade" && quote?.level !== undefined ? itemLevelBenefit(item.id, quote.level, ctx) : null;
-
-  const ask = () => {
-    if (!mode || !quote) return;
-    void onAsk(mode === "repair" ? { kind: "repair", item: item.id, to: quote.to ?? 100 } : { kind: mode, item: item.id });
-  };
-
-  return (
-    <section className="card-arcade rounded-md p-4 flex flex-col gap-4 min-w-0">
-      <div className="flex items-center gap-4 min-w-0">
-        <ItemThumb id={item.id} level={item.level} tone={tone.art} className="w-28 h-[70px] shrink-0" />
-        <div className="flex flex-col gap-1 min-w-0">
-          <h3 className="font-display font-black uppercase text-xl leading-none m-0 truncate">{t(`facilities.item.${item.id}`)}</h3>
-          <span className="text-sm text-muted-foreground">{t(`facilities.items.group.${item.group}`)}</span>
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {t("facilities.map.levelCond", { level: item.level, cond: Math.round(item.condition) })}
-            {item.quality ? ` · ${t("craft.qualityOf", { quality: t(`craft.quality.${item.quality}`) })}` : ""}
-          </span>
-        </div>
-      </div>
-
-      {item.project ? (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm text-muted-foreground m-0 tabular-nums">
-            {t(`facilities.kind.${item.project.kind}`)} · {t("facilities.projects.delivery", { date: formatGameDate(item.project.end, i18n.language) })}
-            {" · "}{Math.round(item.project.progress * 100)}%
-          </p>
-          {item.project.craft && <CancelWorks pending={pending} onCancel={() => onCancel(item.project!.id)} />}
-        </div>
-      ) : mode === null || !quote ? (
-        <p className="text-sm text-muted-foreground m-0">{t("facilities.map.maxLevel")}</p>
-      ) : (
-        <>
-          {modes.length > 1 && (
-            <OptionChips options={modes.map((m) => ({ key: m, label: t(`facilities.items.${m}`) }))}
-              value={mode} onChange={setMode} aria-label={t("facilities.items.actions")} />
-          )}
-          {mode === "repair" && steps.length > 1 && (
-            <OptionChips options={steps.map((s) => ({ key: s, label: t("facilities.items.to", { pct: item.quotes.repair[s]!.to }) }))}
-              value={step} onChange={setStep} aria-label={t("facilities.items.repair")} />
-          )}
-          <div className="flex flex-col gap-2">
-            <span className={LABEL}>
-              {mode === "upgrade" ? t("facilities.map.recipeOf", { level: quote.level }) : t(`facilities.map.recipe.${mode}`)}
-            </span>
-            <RecipeChips recipe={quote.build.recipe} missing={quote.build.missing} locked={quote.build.locked} />
-          </div>
-          <MaterialsForMissing missing={quote.build.missing} stock={data.stock} workshop={workshop} />
-          <div className="flex flex-col gap-2">
-            {next
-              ? now.map((v, i) => <BenefitRow key={v.key} now={v} next={next[i]!} />)
-              : <ChangeRow label={t("facilities.items.condition")} from={`${Math.round(item.condition)}%`} to={`${quote.to ?? 100}%`} better />}
-            <ChangeRow label={t("facilities.duration")} to={t("facilities.weeks", { count: quote.weeks })} />
-          </div>
-          {groupBusy && running && <RunningWorks project={running} date={data.date} />}
-          <BuildActions hideRecipe build={quote.build} stock={data.stock} workshop={workshop} pending={pending} onBuild={ask}
-            blockedHint={groupBusy ? t("facilities.groupBusy", { group: t(`facilities.items.group.${item.group}`) }) : null} />
-        </>
-      )}
-    </section>
-  );
-}
-
-function RecipeChips({ recipe, missing, locked }: { recipe: ComponentCounts; missing: ComponentCounts; locked: ComponentId[] }) {
-  const { t } = useTranslation();
-  const entries = (Object.entries(recipe) as [ComponentId, number][]).filter(([, n]) => n > 0);
-  return (
-    <ul className="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 gap-2">
-      {entries.map(([id, need]) => {
-        const short = missing[id] ?? 0;
-        const have = need - short;
-        return (
-          <li key={id} className={`flex items-center gap-3 rounded-md border bg-secondary/20 p-2 min-w-0 ${short > 0 ? "border-chart-4/60" : "border-star-green/50"}`}>
-            <CraftIcon kind="component" id={id} size={40} />
-            <span className="flex flex-col min-w-0 flex-1">
-              <span className="text-sm font-semibold text-foreground truncate">{t(`craft.component.${id}`)}</span>
-              <span className="flex items-baseline gap-2 tabular-nums">
-                <span className={`font-display font-bold text-lg leading-none ${short > 0 ? "text-chart-4" : "text-star-green"}`}>
-                  {t("craft.recipe.have", { have, need })}
-                </span>
-                {short > 0 && <span className="text-sm text-chart-4">{t("craft.recipe.missing", { count: short })}</span>}
-              </span>
-              {locked.includes(id) && <span className="text-sm text-chart-4">{t("craft.recipe.lockedAt", { level: CRAFT.RECIPES[id].minLevel })}</span>}
-            </span>
-            {short === 0 && <Icon name="check-circle" size={20} className="text-star-green shrink-0" />}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/** The materials the workshop needs for the missing components it can make, against the stock ("Aço 12/18"). */
-function MaterialsForMissing({ missing, stock, workshop }: { missing: ComponentCounts; stock: CraftStock | undefined; workshop: number }) {
-  const { t, i18n } = useTranslation();
-  const need = materialsNeeded(craftableMissing(missing, workshop));
-  const entries = MATERIALS.filter((m) => (need[m] ?? 0) > 0).map((m): [MaterialId, number] => [m, need[m] ?? 0]);
-  if (entries.length === 0) return null;
-  const nf = (n: number) => n.toLocaleString(i18n.language);
-  return (
-    <div className="flex flex-col gap-2">
-      <span className={LABEL}>{t("facilities.map.materials")}</span>
-      <ul className="m-0 p-0 list-none flex flex-wrap gap-2">
-        {entries.map(([m, n]) => {
-          const have = Math.min(n, stock ? materialTotal(stock, m) : 0);
-          const ok = have >= n;
-          return (
-            <li key={m} className={`flex items-center gap-2 rounded-md border px-2 py-1 text-sm tabular-nums ${ok ? "border-star-green/50" : "border-chart-4/60"}`}>
-              <CraftIcon kind="material" id={m} size={24} />
-              <span className="text-foreground">{t(`craft.material.${m}`)}</span>
-              <span className={`font-semibold ${ok ? "text-star-green" : "text-chart-4"}`}>{nf(have)}/{nf(n)}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-function ChangeRow({ label, from, to, better }: { label: string; from?: string; to: string; better?: boolean }) {
+export function ChangeRow({ label, from, to, better }: { label: string; from?: string; to: string; better?: boolean }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span className="text-sm text-muted-foreground">{label}</span>
@@ -372,7 +172,7 @@ function ChangeRow({ label, from, to, better }: { label: string; from?: string; 
   );
 }
 
-function BenefitRow({ now, next }: { now: BenefitValue; next: BenefitValue }) {
+export function BenefitRow({ now, next }: { now: BenefitValue; next: BenefitValue }) {
   const { t, i18n } = useTranslation();
   const gain = next.value - now.value;
   const better = higherIsBetter(now.key) ? gain > 0 : gain < 0;
@@ -382,7 +182,7 @@ function BenefitRow({ now, next }: { now: BenefitValue; next: BenefitValue }) {
 
 // ── Level track ───────────────────────────────────────────────────────────────
 
-function LevelTrack({ item, ctx, compact = false }: { item: FacilityItemView; ctx: ReturnType<typeof benefitContext>; compact?: boolean }) {
+export function LevelTrack({ item, ctx, compact = false }: { item: FacilityItemView; ctx: ReturnType<typeof benefitContext>; compact?: boolean }) {
   const { t, i18n } = useTranslation();
   const track = itemLevelTrack(item.id, ctx);
   const key = track[0]![0]!.key;
@@ -441,7 +241,7 @@ export function AreaCards({ data, selected, onSelect }: {
   return <AreaCardsGrid data={data} selected={selected} upgrades={upgrades} busy={busy} onSelect={onSelect} />;
 }
 
-function AreaCardsGrid({ data, selected, upgrades, busy, onSelect }: {
+export function AreaCardsGrid({ data, selected, upgrades, busy, onSelect }: {
   data: FacilitiesViewData; selected: FacilityItemId | null; upgrades: Record<FacilityItemId, Upgrade>; busy: Set<FacilityGroup>;
   onSelect: (id: FacilityItemId) => void;
 }) {

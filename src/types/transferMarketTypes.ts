@@ -55,6 +55,8 @@ export interface MarketState {
   preContracts?: PreContract[];
   /** Fee transfers agreed with the window closed: the player joins when it opens (tester report 0a35192c). */
   deferredTransfers?: DeferredTransfer[];
+  /** Offers to renew a loan of the human club for one more season (12.29), answered from the inbox. */
+  loanRenewals?: LoanRenewalOffer[];
   /** Players the human lost to a rival (kept for the talk screen, pruned after a week). */
   lostTargets?: { playerId: string; clubName: string; fee: number; date: string }[];
 }
@@ -208,4 +210,28 @@ export interface ActiveLoan {
   /** Level when the loan started, for the report (absent on older loans). */
   startOverall?: number;
   startStats?: import("@/types/playerTypes").PlayerStatsRecord;
+  /** A renewal for one more season was already offered (once per loan, 12.29). */
+  renewalOffered?: true;
+}
+
+/**
+ * An offer to keep a loan going one more season (12.29): `in` = the AI parent of a player on loan AT the human club
+ * offers to extend; `out` = the AI borrower of one of the human's players asks to keep him.
+ */
+export interface LoanRenewalOffer {
+  id: string;
+  direction: "in" | "out";
+  playerId: string;
+  playerName: string;
+  /** The AI club (the parent for `in`, the borrower for `out`). */
+  clubId: string;
+  clubName: string;
+  date: string;
+  /** Last day to answer (the day before the loan ends). */
+  expires: string;
+  /** New return date. */
+  until: string;
+  /** Share of the wage the borrower pays (0..1) and the loan fee the borrower pays, EUR. */
+  wageShare: number;
+  fee: number;
 }

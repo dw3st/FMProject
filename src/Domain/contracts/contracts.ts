@@ -5,7 +5,8 @@ import { moraleDemandMult } from "@/Domain/morale/morale";
 import { CONTRACT_CONFIG as C } from "@/Domain/contracts/contractConfig";
 import { overallAvg } from "@/Domain/playerRating";
 import { playerWeeklyWage, wageFactorOf } from "@/Domain/finance/wages";
-import { addDays } from "@/Domain/dates";
+import { addDays, daysBetween } from "@/Domain/dates";
+import { naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
 import type { PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
 import { clamp } from "@/Domain/math";
 import { unitFrom } from "@/Domain/rng";
@@ -30,8 +31,10 @@ export interface DemandContext {
   renewal?: boolean;
   /** The human manager's Negotiation attribute (`.claude/rules/game/achievements.md`); absent = neutral. */
   negotiation?: number;
-  /** He arrives without a fee (pre-contract, free agent): the wage demand × `FREE_SIGNING.WAGE_PREMIUM`. */
+  /** A pre-contract (he arrives without a fee): the wage demand × `FREE_SIGNING.WAGE_PREMIUM`. Free agents pay no premium. */
   freeArrival?: boolean;
+  /** A free agent: the day he entered the pool (`FreeAgent.since`); he asks less the longer he waits. */
+  freeSince?: string;
   /** The human manager's fame, 0..1, from his belongings (`fameShare`, 8.9.39): ambitious players ask less to join. */
   fame?: number;
 }
@@ -56,6 +59,11 @@ export interface DemandBreakdown {
   freeArrival: number;
   /** Signing only: the manager's fame (`fameDemandMult`); 1 for a renewal or the AI. */
   fame: number;
+  /** Own-club renewal with a contract: the most he asks over the current wage (share, by the club's natural tier). */
+  renewalCap?: number;
+  /** A free agent: days in the pool and the discount they bring (`freeWaitMult`). */
+  freeDays?: number;
+  freeWait: number;
   /** Ambition ≥ 17 and the club two or more tiers smaller. */
   refuses: boolean;
   /** Signing only: ambition ≥ 17 and the training ground below 25%. */
@@ -121,6 +129,16 @@ function personalityParts(player: RosterPlayer, squad: Squad, ctx: DemandContext
   };
 }
 
+/** Free agent waiting `days` in the pool: × (1 − FREE_WAIT_DISCOUNT × min(1, days / FREE_WAIT_DAYS)). */
+export function freeWaitMult(days: number): number {
+  return 1 - C.FREE_WAIT_DISCOUNT * clamp(days / C.FREE_WAIT_DAYS, 0, 1);
+}
+
+/** The most an own-club renewal asks over the current wage, by the club's natural tier (revenue). */
+export function renewalRaiseCap(squad: Pick<Squad, "finances">): number {
+  return C.RENEWAL_RAISE_CAP[naturalFinancialTier(squad.finances)];
+}
+
 /** The demand and its parts (see `DemandBreakdown`). */
 export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: string, ctx: DemandContext = {}): DemandBreakdown {
   const avg = teamAverage(squad);
@@ -132,12 +150,22 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
   const parts = personalityParts(player, squad, ctx);
   const negotiation = attributeReduce(ctx.negotiation);
   const freeArrival = ctx.freeArrival ? NEGOTIATION.FREE_SIGNING.WAGE_PREMIUM : 1;
+  const freeDays = ctx.freeSince && _date ? Math.max(0, daysBetween(ctx.freeSince, _date)) : undefined;
+  const freeWait = freeDays === undefined ? 1 : freeWaitMult(freeDays);
+  let demand = base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * parts.fame * negotiation * freeArrival * freeWait;
+  // An own-club renewal starts from the current wage (12.28.5): within [current × FLOOR, current × (1 + cap)].
+  const current = ctx.renewal ? player.contract?.wage : undefined;
+  const renewalCap = current && current > 0 ? renewalRaiseCap(squad) : undefined;
+  if (current && renewalCap !== undefined) demand = clamp(demand, current * C.RENEWAL_FLOOR, current * (1 + renewalCap));
   return {
-    demand: Math.round(base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * parts.fame * negotiation * freeArrival),
+    demand: Math.round(demand),
     base: Math.round(base),
     ...parts,
     negotiation,
     freeArrival,
+    freeWait,
+    ...(renewalCap !== undefined ? { renewalCap } : {}),
+    ...(freeDays !== undefined ? { freeDays } : {}),
   };
 }
 
