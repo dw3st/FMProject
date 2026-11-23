@@ -1,4 +1,4 @@
-import { MODE_A_SPEED } from "@/Domain/match/liveModes";
+import { LIVE_SPEED_BASE, MODE_A_SPEED } from "@/Domain/match/liveModes";
 import { afterEach, describe, expect, test } from "bun:test";
 import { MODE_A_PACE } from "@/Domain/match/livePace";
 import { readFileSync } from "node:fs";
@@ -173,7 +173,7 @@ describe("stage 22: 90 minutes, mode A pace, frames, mode B", () => {
     const played = match.state.matchTime - t0;
     // 4 x MODE_A_SPEED game-seconds per real second, times the eased variable pace (`MODE_A_PACE`: from 1 toward the
     // kick-off's midfield target, between SLOW and FAST).
-    const perSec = 4 * MODE_A_SPEED;
+    const perSec = 4 * MODE_A_SPEED * LIVE_SPEED_BASE;
     expect(played).toBeGreaterThan(perSec * MODE_A_PACE.SLOW);
     expect(played).toBeLessThan(perSec * MODE_A_PACE.FAST);
     const frames = ofType(out, "frame");

@@ -5,7 +5,7 @@ import { getBallPos } from "@/GameEngine/Domain/gameState";
  * Variable pace of mode A (2026-11-23, user report: at 2× the whole match was a blur). The game-seconds per real
  * second follow where the ball is: slow in the attacking third, on a shot and on a dangerous set piece, quick in
  * midfield and on a dead ball far from goal. `modeAPaceFactor` multiplies `MODE_A_SPEED`; its constants are scaled
- * so a whole match still takes ~14 real minutes at 1× (mean of 1 / factor over game time ≈ 1, `scripts/pace-measure.ts`).
+ * so a whole match still takes ~28 real minutes at 1× (with `LIVE_SPEED_BASE`) (mean of 1 / factor over game time ≈ 1, `scripts/pace-measure.ts`).
  * Drawing pace only: the simulation and its results are the same.
  */
 export const MODE_A_PACE = {

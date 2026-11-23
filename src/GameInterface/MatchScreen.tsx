@@ -49,6 +49,7 @@ import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type Pa
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
 import { pixelSprite } from "@/Domain/art/pixelSprite";
+import { LIVE_SPEED_BASE } from "@/Domain/match/liveModes";
 import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, nextMatchMarkers, shownMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS, readMatchMode, writeMatchMode, readHighlightLevel, writeHighlightLevel, HIGHLIGHT_LEVEL_PREFS, MODE_A_SPEED, type MatchPlayMode, type HighlightLevelPref } from "@/GameInterface/artPrefs";
 import { MatchAudio } from "@/GameInterface/MatchAudio/matchAudio";
 import { crowdExcitement } from "@/Domain/match/matchSound";
@@ -2573,7 +2574,7 @@ export function MatchScreen() {
                   debugMode={DEV_TOOLS && debug}
                   mirror={awayView}
                   initialState={gameState}
-                  gameSpeed={playMode === "full" ? gameSpeed * MODE_A_SPEED : gameSpeed}
+                  gameSpeed={(playMode === "full" ? gameSpeed * MODE_A_SPEED : gameSpeed) * LIVE_SPEED_BASE}
                   variablePace={playMode === "full" && !h2hMode}
                   presentationSpeed={gameSpeed}
                   highlights={playback}

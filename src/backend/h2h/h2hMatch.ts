@@ -31,7 +31,7 @@ import { captureLiveSnapshot, restoreLiveSnapshot } from "@/GameEngine/Support/L
 import type { HighlightLevel } from "@/GameEngine/Domain/Highlights";
 import type { GameState, PenaltyOutcome, TeamId } from "@/GameEngine/types";
 import { buildLiveMatchState, type LiveMatchInput, type LiveSideTactics } from "@/Domain/match/liveMatchSetup";
-import { MODE_A_SPEED, type MatchPlayMode } from "@/Domain/match/liveModes";
+import { LIVE_SPEED_BASE, MODE_A_SPEED, type MatchPlayMode } from "@/Domain/match/liveModes";
 import { easePace, modeAPaceFactor, paceViewOf } from "@/Domain/match/livePace";
 import { applyLiveTactics } from "@/Domain/tactics/liveTactics";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
@@ -328,7 +328,7 @@ export function createH2HMatch(input: LiveMatchInput, opts: H2HMatchOptions = {}
         const presenting = state.varReview != null || PRESENTATION_PHASES.has(state.matchPhase);
         // Mode A follows the ball (`MODE_A_PACE`): slow near goal, quick in midfield, eased.
         if (mode === "full" && !presenting) varPace = easePace(varPace, modeAPaceFactor(paceViewOf(state)), realMs / 1000);
-        const pace = presenting ? 1 : speed * (mode === "full" ? MODE_A_SPEED * varPace : 1);
+        const pace = presenting ? 1 : speed * LIVE_SPEED_BASE * (mode === "full" ? MODE_A_SPEED * varPace : 1);
         const act = playback ? playback.step(state) : { kind: "play" as const };
         if (act.kind === "jump") {
           state = restoreLiveSnapshot(structuredClone(act.point.snap));
