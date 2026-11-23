@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { saveService } from "@/backend/SaveService";
 import { advanceOneDay } from "@/backend/advanceDay";
+import { emptySeasonLog } from "@/types/playerTypes";
 
 /**
  * Season rollover with expiring contracts (`.claude/rules/game/contracts.md`): England is forced
@@ -34,7 +35,11 @@ describe("rollover with expiring contracts", () => {
       const ids = sq.players.filter((p) => p.age < 32).slice(0, n).map((p) => p.id);
       await saveService.saveSquad(saveId, e.leagueSlug, e.stem, {
         ...sq,
-        players: sq.players.map((p) => (ids.includes(p.id) ? { ...p, contract: { until: today, wage: p.contract!.wage } } : p)),
+        // They have played this season: a release that never played an official game leaves the world
+        // (`dropNeverPlayed`), and whether they play today's match depends on the line-up.
+        players: sq.players.map((p) => (ids.includes(p.id)
+          ? { ...p, contract: { until: today, wage: p.contract!.wage }, seasonLog: { ...(p.seasonLog ?? emptySeasonLog()), appearances: Math.max(5, p.seasonLog?.appearances ?? 0) } }
+          : p)),
       });
       return ids;
     };

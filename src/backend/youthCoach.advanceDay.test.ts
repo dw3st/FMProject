@@ -13,6 +13,7 @@ import { addDays } from "@/Domain/dates";
 import { preferredRole } from "@/Domain/positions/positionAptitude";
 import { getMainRole, type MainRole } from "@/Domain/roles";
 import { STAFF } from "@/Domain/staff/staffConfig";
+import { cheapQuota, isCheapStaff } from "@/Domain/staff/staffPool";
 import { DP_CATEGORIES } from "@/GameEngine/PlayerDevelopment";
 import { emptySeasonLog, type RosterPlayer, type Squad } from "@/types/playerTypes";
 
@@ -148,8 +149,12 @@ describe("the youth coach in advanceOneDay", () => {
     const old = { ...pool, members: pool.members.filter((m) => m.role !== "youthCoach") };
     await saveService.writeStaffPool(saveId, old);
     const topped = await saveService.getStaffPool(saveId, date);
-    expect(topped.members.filter((m) => m.role === "youthCoach")).toHaveLength(STAFF.POOL.BY_ROLE.youthCoach);
-    expect(topped.members.length).toBe(old.members.length + STAFF.POOL.BY_ROLE.youthCoach);
+    // The role's quota, then the cheap top-up (12.19.2) adds 0.5-1 star ones on top until the cheap quota is met.
+    const coaches = topped.members.filter((m) => m.role === "youthCoach");
+    expect(coaches.length).toBeGreaterThanOrEqual(STAFF.POOL.BY_ROLE.youthCoach);
+    expect(coaches.length).toBeLessThanOrEqual(STAFF.POOL.BY_ROLE.youthCoach + cheapQuota("youthCoach"));
+    expect(coaches.filter(isCheapStaff).length).toBeGreaterThanOrEqual(cheapQuota("youthCoach"));
+    expect(topped.members.length).toBe(old.members.length + coaches.length);
     // Written: the next read is the same pool, nothing added twice.
     expect(await saveService.getStaffPool(saveId, date)).toEqual(topped);
   }, 60_000);
