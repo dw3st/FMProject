@@ -18,6 +18,7 @@ import { DEFENSIVE_MIND as D } from '@/GameEngine/Configs/DefensiveMindConfig';
 import { DECISION_FLAGS, HOLDER_MIND } from '@/GameEngine/Configs/DecisionConfig';
 import { gaussianDraw, mentalRoll, type MoodBand } from '@/GameEngine/Infrastructure/ActionOutcomes';
 import { matchRandom } from '@/GameEngine/Infrastructure/MatchRng';
+import { effectiveMood } from '@/GameEngine/Domain/Confidence';
 import {
   DEFAULT_MENTAL, fatigueLapseMult, fmScale, formWindow, moodBand, windowedRoll,
 } from '@/GameEngine/Domain/HolderMind';
@@ -92,7 +93,8 @@ export function refreshMindRolls(p: GamePlayer, matchTime: number, timeScale: nu
   if (prev && matchTime < prev.nextAt) return prev;
   const m = mentalOf(p);
   const { concentration, aggression } = mindAttributes(m);
-  const band = moodBand(m.mood);
+  const mood = effectiveMood(m);
+  const band = moodBand(mood);
   const s = formWindow(matchTime);
   const dec100 = m.decisions * 100;
   const ant100 = m.anticipation * 100;
@@ -107,7 +109,7 @@ export function refreshMindRolls(p: GamePlayer, matchTime: number, timeScale: nu
   const conc = lapse ? 0 : con100 >= s ? Math.max(1, rawConc) : rawConc;
   // Aggression: FM rolls its mood against 150 − a (a hot head is more often in an aggressive mood), then U·(a + 5).
   // A hot head sits in a narrower range, so his mood decides the roll's shape more often.
-  const sMood = m.mood * D.AGGR_MOOD_SCALE;
+  const sMood = mood * D.AGGR_MOOD_SCALE;
   const ra = matchRandom() * (150 - agg100);
   const aggBand: MoodBand = ra < sMood ? 'good' : ra < -sMood ? 'bad' : 'normal';
   const aggr = mentalRoll(agg100, aggBand, D.AGGR_PLUS);

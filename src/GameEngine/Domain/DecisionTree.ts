@@ -26,6 +26,7 @@ import {
   DEFAULT_MENTAL, HOLDER_ACTIONS, argmaxIndex, distToGoalM, facingAwayWiden, flairBias, longShotRange,
   moodBand, normalisedPressure, perceiveScores, releaseFires, rollMindWindow, setHolderMind, simpleMinded,
 } from '@/GameEngine/Domain/HolderMind';
+import { effectiveMood } from '@/GameEngine/Domain/Confidence';
 import type { GamePlayer, HolderMindState, SetPiece, SetPieceRoutine, TeamIntent } from '@/GameEngine/types';
 
 const PITCH_CENTER_Y = PITCH_WIDTH / 2;
@@ -875,7 +876,7 @@ function holderMind(
 
   setHolderMind({
     state: st, fresh, pressure, pN, release, openOptions: pass.openCount ?? 0, distM, simple, widen, longShotRange: range,
-    mood: moodBand(mental.mood),
+    mood: moodBand(effectiveMood(mental)),
     trueScores: Object.fromEntries(HOLDER_ACTIONS.map((k, i) => [k, actions[i]!.score])),
     perceived: Object.fromEntries(HOLDER_ACTIONS.map((k, i) => [k, perceived[i]!])),
     trueBest: HOLDER_ACTIONS[argmaxIndex(actions.map(a => a.score))]!,
@@ -1169,7 +1170,7 @@ function fmHolderChoice(
   const trueIdx = pickCandidate(scoreCandidates(cands));
   if (mindOn) setHolderMind({
     state: st, fresh, pressure, pN, release, openOptions: a.ps.openCount ?? 0, distM, simple, widen, longShotRange: range,
-    mood: moodBand(mental.mood), trueScores: trueBest, perceived: percBest,
+    mood: moodBand(effectiveMood(mental)), trueScores: trueBest, perceived: percBest,
     trueBest: trueIdx >= 0 ? slotOf(cands[trueIdx]!.decision) : 'carry',
     picked: slotOf(decision),
     ...('move' in decision && decision.move ? { move: decision.move } : {}),

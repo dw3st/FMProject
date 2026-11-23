@@ -214,6 +214,7 @@ export function DebugPanel({ gameState, selectedPlayerId, ballHolderId, slot = '
           {/* ── Resolved slot tuning of the selected player (player instructions) ── */}
           {selectedPlayer && <TuningBlock player={selectedPlayer} />}
           {selectedPlayer?.mind && <MindBlock player={selectedPlayer} />}
+          {selectedPlayer?.mental && <ConfidenceBlock player={selectedPlayer} />}
 
           {/* ── Last decision telemetry event of the selected player (or the holder) — `decisions.md` ── */}
           <DecisionTelemetryBlock playerId={selectedPlayerId ?? ballHolderId ?? null} />
@@ -684,6 +685,22 @@ function MindBlock({ player }: { player: import('@/GameEngine/types').GamePlayer
         <span>conc {f0(r.conc)}{m?.concentration !== undefined ? ` / ${f0(m.concentration * 100)}` : ''}</span>
         <span>aggr {f0(r.aggr)}{m?.aggression !== undefined ? ` / ${f0(m.aggression * 100)}` : ''}</span>
       </div>
+    </div>
+  );
+}
+
+/** Phase 5: the selected player's mood — kickoff mood, in-match confidence and the mood the rolls read (`Confidence.ts`). */
+function ConfidenceBlock({ player }: { player: import('@/GameEngine/types').GamePlayer }) {
+  const m = player.mental!;
+  const c = m.confidence ?? 0;
+  const eff = Math.max(-1, Math.min(1, m.mood + c));
+  const sign = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(2)}`;
+  return (
+    <div className="flex items-center justify-between pb-1.5 border-b border-white/5 text-[9px] tabular-nums">
+      <span className="font-bold tracking-widest uppercase text-violet-300/80">Confidence</span>
+      <span className={c > 0 ? 'text-emerald-400' : c < 0 ? 'text-destructive' : 'text-muted-foreground/70'}>
+        mood {sign(m.mood)} · conf {sign(c)} → {sign(eff)}
+      </span>
     </div>
   );
 }

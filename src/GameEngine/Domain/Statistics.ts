@@ -113,6 +113,9 @@ export interface PlayerStats {
   /** Stage 16: defensive intents the mind changed, and those of them that dropped a mark or held back the press. */
   mindDefenseShifts:        number;
   mindMarkDrops:            number;
+  /** Phase 5 (`Confidence.ts`): in-match confidence rises (goal, assist, save, won duel) and falls (conceded, lost duel). */
+  confidenceRises:          number;
+  confidenceFalls:          number;
   // ── Aerial (`.claude/rules/game-engine/aerial.md`) ─────────────────────────
   /** Crosses played. */
   crosses:                  number;
@@ -405,6 +408,8 @@ function emptyStats(): PlayerStats {
     mindLapsesOffBall: 0,
     mindDefenseShifts: 0,
     mindMarkDrops: 0,
+    confidenceRises: 0,
+    confidenceFalls: 0,
     crosses:                  0,
     crossesCompleted:         0,
     aerialDuels:              0,
@@ -743,6 +748,7 @@ gameBus.on('mindDefenseShift', e => {
   s.mindDefenseShifts++;
   if (e.lapse && (e.from === 'track_mark' || e.from === 'press_holder' || e.from === 'step_into_carry_lane')) s.mindMarkDrops++;
 });
+gameBus.on('confidence', e => { const s = get(e.playerId); if (e.delta > 0) s.confidenceRises++; else s.confidenceFalls++; });
 gameBus.on('card', e => {
   const s = get(e.playerId);
   if (e.card === 'yellow') s.yellowCards++; else s.redCards++;
@@ -1212,6 +1218,8 @@ export function getTeamStats(team: TeamId): TeamStats {
     result.mindLapsesOffBall += stats.mindLapsesOffBall;
     result.mindDefenseShifts += stats.mindDefenseShifts;
     result.mindMarkDrops += stats.mindMarkDrops;
+    result.confidenceRises += stats.confidenceRises;
+    result.confidenceFalls += stats.confidenceFalls;
     result.crosses                  += stats.crosses;
     result.crossesCompleted         += stats.crossesCompleted;
     result.aerialDuels              += stats.aerialDuels;

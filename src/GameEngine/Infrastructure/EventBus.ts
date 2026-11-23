@@ -254,6 +254,8 @@ export interface GameEvents {
   lineMisread: { playerId: number; team: TeamId; err: number; lapse: boolean };
   /** Stage 16 (`DefensiveMind.ts`): a new mind window is a concentration lapse (defending or off the ball). */
   mindLapse: { playerId: number; team: TeamId; kind: 'defence' | 'offball' };
+  /** Phase 5 (`Confidence.ts`): a player's in-match confidence moved (`value` after, `delta` applied after the cap). */
+  confidence: { playerId: number; team: TeamId; delta: number; value: number; reason: import('@/GameEngine/Domain/Confidence').ConfidenceReason };
   /** Stage 16: the mind changed a defender's intent (lapse = dropped his mark / held back; else noise or aggression). */
   mindDefenseShift: { playerId: number; team: TeamId; from: string; to: string; lapse: boolean };
   /** Stage 13: a contact foul on (or, rarely, by) the ball holder, without a tackle. Emitted after `foul`. */

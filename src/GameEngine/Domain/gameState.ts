@@ -1,4 +1,5 @@
 import { TACKLE_CONFIG } from '@/GameEngine/Configs/TackleConfig';
+import { withDuelConfidence, withGoalConfidence, withSaveConfidence } from '@/GameEngine/Domain/Confidence';
 import { INSTR, playerDelta, setPossessionClock, resetInstructionState, stepAiInstructions } from '@/GameEngine/Configs/InstructionConfig';
 import { attributeReduce } from '@/Domain/achievements/managerAttributes';
 import { reorganizedSlots } from "@/Domain/formation/reorganize";
@@ -1903,7 +1904,8 @@ function finishInMatchPenalty(state: GameState, taker: GamePlayer, gk: GamePlaye
       fromX: taker.x, fromY: taker.y, goalX: taker.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
     });
     const concedingTeam: TeamId = taker.team === 'A' ? 'B' : 'A';
-    return { state: resetToKickoff({ ...s, score: newScore }, concedingTeam), passCompleted: false, tackled: false, goalScored: taker.team };
+    const players = withGoalConfidence(s.players, taker.team, taker.id);
+    return { state: resetToKickoff({ ...s, players, score: newScore }, concedingTeam), passCompleted: false, tackled: false, goalScored: taker.team };
   }
   const defTeam: TeamId = taker.team === 'A' ? 'B' : 'A';
   const defenders = s.players.filter(p => p.team === defTeam);
@@ -2763,7 +2765,7 @@ function turnVelocity(vx: number, vy: number, deg: number, k: number): { vx: num
 function keeperHoldsShot(s: GameState, gk: GamePlayer): TickResult {
   const gkFormation = gk.team === 'A' ? s.formationA : s.formationB;
   const goalKickLayout = resolveFormationSetPieces(gkFormation).goalKick;
-  let players = applyStaminaCost(s.players, gk.id, 'gkSave');
+  let players = withSaveConfidence(applyStaminaCost(s.players, gk.id, 'gkSave'), gk.id);
   if (goalKickLayout) players = applySetPieceToTeam(players, gk.team, goalKickLayout);
   const prevHolderId = s.ballHolderId;
   return {
@@ -2787,7 +2789,7 @@ function scoreShotGoal(s: GameState, shooter: GamePlayer, flying: ShotState): Ti
     fromX: flying.fromX, fromY: flying.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
   });
   const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
-  const kicked = resetToKickoff({ ...s, score: newScore }, concedingTeam);
+  const kicked = resetToKickoff({ ...s, players: withGoalConfidence(s.players, shooter.team, shooter.id, assistId), score: newScore }, concedingTeam);
   return {
     state: s.missedOffside
       ? checkGoalForOffside(s, kicked, {
@@ -6163,7 +6165,7 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
           fromX: flying.fromX, fromY: flying.fromY, goalX: shooter.attackDir === 1 ? PITCH_LENGTH : 0, minute: matchMinute(s),
         });
         const concedingTeam = shooter.team === 'A' ? 'B' : 'A';
-        const kicked = resetToKickoff({ ...s, score: newScore }, concedingTeam);
+        const kicked = resetToKickoff({ ...s, players: withGoalConfidence(s.players, shooter.team, shooter.id, assistId), score: newScore }, concedingTeam);
         return {
           state: s.missedOffside
             ? checkGoalForOffside(s, kicked, {
@@ -6367,11 +6369,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
             ballHolderId: tackler.id,
             possessionTime: 0,
             lastPasserId: null,
-            players: s.players.map(p => {
+            players: withDuelConfidence(s.players.map(p => {
               if (p.id === tackler!.id)      return { ...p, recoveryTime: DUEL_TACKLE_WIN_RECOVERY };
               if (p.id === updatedHolder.id) return { ...p, recoveryTime: DUEL_TACKLE_LOSS_RECOVERY };
               return p;
-            }),
+            }), tackler.id, updatedHolder.id, 'tackle'),
           }, prevHolderId);
           s = rollContactInjuries(s, [tackler.id, updatedHolder.id], matchMinute(s));
           return { state: s, passCompleted: false, tackled: true, goalScored: null };
@@ -6565,11 +6567,11 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
           // Attacker beats the defender — defender frozen, attacker keeps the ball
           s = {
             ...s,
-            players: s.players.map(p => {
+            players: withDuelConfidence(s.players.map(p => {
               if (p.id === defender.id) return { ...p, recoveryTime: rounding ? HOLDER_MOVES.ROUND_KEEPER_RECOVERY : DUEL_DRIBBLE_LOSS_RECOVERY };
               if (p.id === attacker.id) return { ...p, recoveryTime: DUEL_DRIBBLE_WIN_RECOVERY };
               return p;
-            }),
+            }), attacker.id, defender.id, 'dribble'),
           };
           return { state: s, passCompleted: false, tackled: false, goalScored: null };
         } else {
@@ -6579,9 +6581,9 @@ function tickStateCore(state: GameState, dt: number, passSpeed = 0.85): TickResu
             ...s,
             ballHolderId: defender.id,
             possessionTime: 0,
-            players: s.players.map(p =>
+            players: withDuelConfidence(s.players.map(p =>
               p.id === attacker.id ? { ...p, recoveryTime: DUEL_DRIBBLE_LOSS_RECOVERY } : p,
-            ),
+            ), defender.id, attacker.id, 'tackle'),
           }, prevHolderId);
           return { state: s, passCompleted: false, tackled: true, goalScored: null };
         }

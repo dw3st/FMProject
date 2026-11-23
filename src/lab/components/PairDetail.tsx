@@ -99,6 +99,8 @@ export function PairDetail({ result, aId, bId, labelFor }: Props) {
     { stat: "Early shoulder runs", key: "avgShoulderRunsEarly" },
     { stat: "Mind lapses",       key: "avgMindLapses" },
     { stat: "Marks dropped",     key: "avgMindMarkDrops" },
+    { stat: "Confidence rises",  key: "avgConfidenceRises" },
+    { stat: "Confidence falls",  key: "avgConfidenceFalls" },
     { stat: "Mind intent shifts", key: "avgMindDefenseShifts" },
     { stat: "Contact fouls",     key: "avgContactFouls" },
     { stat: "Fouls won own 3rd%",   key: "foulsOwnThirdPct" },

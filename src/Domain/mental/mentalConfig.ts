@@ -29,5 +29,5 @@ export const MENTAL = {
   },
 } as const;
 
-/** UI flag: the mental blocks of the screens stay hidden until the engine reads the attributes. */
-export const SHOW_MENTAL = false;
+/** UI flag: the screens show the mental attributes (on since phase 5: the engine reads them, `decisions.md`). */
+export const SHOW_MENTAL = true;

@@ -571,7 +571,7 @@ export interface FmMatchCounts {
   foulsWonCarrying?: number; foulsWonReceiving?: number; foulsWonHolding?: number;
   contactFouls?: number; lineMisreads?: number;
   /** Stage 16: concentration lapses (defending, off the ball), mind-changed defensive intents and dropped marks. */
-  mindLapsesDefence?: number; mindLapsesOffBall?: number; mindDefenseShifts?: number; mindMarkDrops?: number;
+  mindLapsesDefence?: number; mindLapsesOffBall?: number; mindDefenseShifts?: number; mindMarkDrops?: number; confidenceRises?: number; confidenceFalls?: number;
   /** Shots from 18+ yd of the goal mouth, when a collector counted them (`longShotsOf`); else absent. */
   longShots?: number;
   /** Median xG per shot, when a collector kept the histogram (`xgMedianOf`); else absent. */
@@ -595,7 +595,7 @@ export const FM_COUNT_KEYS = [
   "contactFouls", "lineMisreads", "headWonDef", "headWonMid", "headWonFwd",
   "shotsSaved", "shotsOffTarget", "shotsWoodwork", "shotsDeflected", "saves", "savesGood", "savesDifficult",
   "shotPower", "shotPlaced", "shotLob", "shotChip", "shotVolley", "shotHeaderLaunch", "shotFreeKick", "shotSpeedSum", "shotLaunchN",
-  "shotDistSumM", "shotsOutsideBox", "shotsLowLaunch", "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops",
+  "shotDistSumM", "shotsOutsideBox", "shotsLowLaunch", "mindLapsesDefence", "mindLapsesOffBall", "mindDefenseShifts", "mindMarkDrops", "confidenceRises", "confidenceFalls",
 ] as const satisfies readonly (keyof FmMatchCounts)[];
 
 /** Both teams' stats summed (any object with the `Statistics.ts` field names; a missing field counts 0). */

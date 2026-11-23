@@ -52,12 +52,23 @@ Declínio só a partir dos 33, a 0,3 × o declínio por idade. Mesmo custo por p
 evoluem exatamente como antes (comparado com a versão anterior: 924 jogadores reais × 80 partidas, 0 diferenças).
 O progresso mental sem histórico é semeado no meio do passo, como os outros.
 
-## Telas (atrás de `SHOW_MENTAL`, falso na fase 1)
+## Confiança durante a partida (fase 5)
+
+O humor do jogador (metade moral, metade forma) deixou de ser fixo na partida: gol, assistência, defesa do goleiro e
+duelo ganho sobem a confiança dele, gol sofrido e duelo perdido baixam (`Domain/Confidence.ts`, flag `CONFIDENCE`,
+ligado). As rolagens mentais leem humor + confiança. Nada é gravado depois do jogo. Ver
+`.claude/rules/game-engine/decisions.md` → "In-match confidence".
+
+## Telas (`SHOW_MENTAL`, ligado desde a fase 5)
 
 - Ficha (`PlayerCard`, grupo "Mental"), Desenvolvimento (`MentalAttributesPanel`), Olheiro (grupo "Mental" dos filtros e da
   ficha flutuante, `visibleAttributeGroups`), perfil do aposentado (`visibleAttributeList`).
-- O olheiro já borra as chaves (`obscurePlayer` passa por todas). As mudanças mentais ficam fora da caixa de entrada e do
-  registro de evolução (`devLog`) enquanto a flag estiver desligada; o dado evolui e é gravado.
+- O olheiro já borra as chaves (`obscurePlayer` passa por todas). Com a flag ligada as mudanças mentais entram na caixa de
+  entrada e no registro de evolução (`devLog`) como as outras; desligada, ficam de fora (o dado evolui e é gravado).
+- Fase 5 (2026-11-22): a flag foi ligada (o motor já lê os quatro atributos). Conferido: grupo "Mental" dos filtros do
+  olheiro renderiza com as quatro chaves, `DisplayPlayer.stats` traz os valores, `MentalAttributesPanel` renderiza;
+  i18n en e pt-BR já existiam (`attributes.*`, `attributeDescriptions.*`, `dashboard.playerCard.mental`,
+  `developmentScreen.attributes.mentalTitle`); `bun run ui:audit --hard` 0 duras.
 
 ## Testes
 

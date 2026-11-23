@@ -11,6 +11,7 @@ import { gaussianDraw, lapseScale, mentalRoll, type MoodBand } from '@/GameEngin
 import type { GamePlayer, HolderMindState, PlayerMental } from '@/GameEngine/types';
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/GameEngine/Domain/pitch';
 import { clamp } from '@/Domain/math';
+import { effectiveMood } from '@/GameEngine/Domain/Confidence';
 
 /** Holder action slots, in the order the perceived vector is kept. */
 export const HOLDER_ACTIONS = ['shoot', 'carry', 'pass', 'dribble', 'through_ball', 'cross', 'long_ball'] as const;
@@ -71,7 +72,7 @@ export function sigmaOf(decisions: number, dec100: number, decRoll: number): num
 
 /** A new window: the three rolls, the lapse and the noise of every action slot. Always the same number of draws. */
 export function rollMindWindow(mental: PlayerMental, energy: number, matchTime: number): HolderMindState {
-  const band = moodBand(mental.mood);
+  const band = moodBand(effectiveMood(mental));
   const s = formWindow(matchTime);
   const dec100 = mental.decisions * 100;
   const comp100 = mental.composure * 100;

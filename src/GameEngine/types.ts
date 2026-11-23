@@ -526,6 +526,9 @@ export interface PlayerMental {
   consistency: number;
   /** −1..1: half morale, half recent form, fixed at kickoff. */
   mood: number;
+  /** In-match confidence (phase 5, `Domain/Confidence.ts`, flag `CONFIDENCE`): added to `mood` by the rolls
+   *  (`effectiveMood`). Absent = untouched this match (the kickoff mood). */
+  confidence?: number;
   /** 0..1, derived per match (stage 16, `Domain/DefensiveMind.ts`): concentration (marking lapses) and aggression (press,
    *  step in). Absent = derived from the four attributes above (`mindAttributes`). */
   concentration?: number;

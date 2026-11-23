@@ -1207,6 +1207,18 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
 
   {
+    id:          'confidence-swing',
+    name:        '11v11 — Confidence swings (phase 5)',
+    description: 'Team A starts with every player one step from a good mood (mood 0.2) and Team B one step from a bad one (mood −0.2); goals, saves and won duels move each player’s in-match confidence (`Confidence.ts`, flag CONFIDENCE), which is added to the mood the mental rolls read. Select a player: the Confidence line of the Decision Scores panel shows kickoff mood, confidence and the mood in use; the Mind block shows the band. Debug log `mind` lists the bigger shifts.',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const base = createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), f433);
+      const tilt = (p: GamePlayer): GamePlayer => ({ ...p, mental: { ...(p.mental ?? { decisions: 0.4, composure: 0.4, flair: 0.4, anticipation: 0.4, consistency: 0.5, mood: 0 }), mood: p.team === 'A' ? 0.2 : -0.2 } });
+      return { ...base, players: base.players.map(tilt), benchA: base.benchA.map(tilt), benchB: base.benchB.map(tilt) };
+    },
+  },
+
+  {
     id:          'move-shield',
     name:        'Holder move — shield with the back to goal',
     description: 'Striker at 80 yd facing his own goal (moving back), two defenders tight on him and his midfielder far. He shields (slow edging away, a tackle on him succeeds less and fouls more) and turns when a lane opens (`HolderMoves.ts`). Decision log: "shield".',

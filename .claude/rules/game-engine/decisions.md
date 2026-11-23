@@ -263,3 +263,26 @@ Surfaces: events `mindLapse` (kind defence / offball), `mindDefenseShift` (the m
 intent shifts"; `fmTargets` counts and the `fm-targets.ts` line "mind (stage 16)". `/test`: scenario `mind-lapse`, Mind
 block of the selected player in the Decision Scores panel. Tests `DefensiveMind.test.ts`, `DefensiveMind.engine.test.ts`.
 Measurements: `fm-numbers.md` → "Etapa 16".
+
+## In-match confidence (phase 5, flag `CONFIDENCE`, on by default)
+
+Code: `Domain/Confidence.ts`, constants `CONFIDENCE` (`DecisionConfig.ts`, env `CONFIDENCE_OVERRIDES`). The kickoff mood
+is no longer fixed: `PlayerMental.confidence` (±0.4) moves on a goal (scorer +0.3, assister +0.15, teammates +0.04, the
+conceding side −0.04, its keeper −0.12 more), a keeper's save (+0.06), a won tackle (+0.04 / dispossessed −0.05) and a
+won dribble (+0.05 / beaten −0.04). Every mental roll reads `effectiveMood` = clamp(mood + confidence, −1, 1) (holder
+window, the holder telemetry band, the defensive / off-ball window and its aggression mood). No dice: off = the field is
+never written and a match is game-for-game identical. Hooks: penalty goal, both shot-goal paths, `keeperHoldsShot`, the
+tackle and dribble resolutions in `gameState.ts`. Not reverted by a VAR-disallowed goal; nothing persists after the match.
+
+Surfaces: event `confidence { delta, value, reason }`, debug `mind` (shifts ≥ 0.1); `Statistics` `confidenceRises`,
+`confidenceFalls`; `/lab` `avgConfidenceRises` / `avgConfidenceFalls` ("Confidence rises / falls" in `PairDetail`),
+`fmTargets` and the `fm-targets.ts` line "confidence (phase 5)". `/test`: scenario `confidence-swing`, the "Confidence"
+line (kickoff mood, confidence, mood in use) of the selected player in the Decision Scores panel. Tests
+`Confidence.test.ts`, `Confidence.engine.test.ts`.
+
+`SHOW_MENTAL` is on since phase 5 (`.claude/rules/game/mental.md`).
+
+M4 (2026-11-22, `decision-baseline.ts 300 premier_league --chunks 3 --mental 8,3 --same`, confidence on): seed 9000
+V−D −5.3 pp, seed 12000 −5.0 pp (±~4 each): the side with mental 8 now does worse than the side with 3, against +5.8 pp
+at stage 4. Not tuned (goal calibration comes at the end); the cause is not isolated (a confidence-off run at seed 9000
+was started to compare). Goals 2.79 / 2.89, shots 27.2 / 26.9 per match in those runs.

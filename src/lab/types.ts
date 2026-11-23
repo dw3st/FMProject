@@ -319,6 +319,8 @@ export interface TeamRawStats {
   mindLapsesOffBall: number;
   mindDefenseShifts: number;
   mindMarkDrops: number;
+  confidenceRises: number;
+  confidenceFalls: number;
   // Aerial play (`.claude/rules/game-engine/aerial.md`), summed across games.
   crosses: number;
   crossesCompleted: number;
@@ -618,6 +620,8 @@ export interface PerMatchView {
   /** Stage 16: per match. */
   avgMindLapses: number;
   avgMindMarkDrops: number;
+  avgConfidenceRises: number;
+  avgConfidenceFalls: number;
   avgMindDefenseShifts: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;
@@ -855,6 +859,8 @@ export interface VariantSummary {
   /** Stage 16: per match. */
   avgMindLapses: number;
   avgMindMarkDrops: number;
+  avgConfidenceRises: number;
+  avgConfidenceFalls: number;
   avgMindDefenseShifts: number;
   /** Aerial play per match (`aerial.md`). */
   avgCrosses: number;

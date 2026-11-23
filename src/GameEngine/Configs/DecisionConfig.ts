@@ -127,6 +127,10 @@ export interface DecisionFlags {
    *  short to the centre-back off the box or long past half-way, the set-piece launch error (base 90), direct free
    *  kicks from up to 29 m. Off = the set pieces of Etapa 14. */
   FM_SET_PIECES: boolean;
+  /** Phase 5 (`decisions.md` → "In-match confidence"): a goal, an assist, a save or a won duel lifts a player's
+   *  confidence, a goal conceded or a lost duel lowers it; it adds to the kickoff mood the mental rolls read. Off = the
+   *  mood stays fixed at kickoff (no field set, game-for-game identical). No dice either way. */
+  CONFIDENCE: boolean;
 }
 
 export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
@@ -175,7 +179,33 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   TEAM_INSTRUCTIONS: true, FM_RATINGS: true,
   FM_KEEPER: true,
   FM_SET_PIECES: true,
+  CONFIDENCE: true,
 };
+
+/**
+ * In-match confidence (phase 5, flag `CONFIDENCE`, `Domain/Confidence.ts`): deltas on the −1..1 mood scale. The mood the
+ * rolls read is clamp(kickoff mood + confidence, −1, 1); the bands stay ±`HOLDER_MIND.MOOD_GOOD` (0.35), so one goal moves
+ * a neutral scorer most of the way into a good mood. Confidence is clamped to ±CAP.
+ */
+export const CONFIDENCE = {
+  CAP: 0.4,
+  GOAL: 0.3,
+  ASSIST: 0.15,
+  /** Every other player of the scoring side / of the conceding side. */
+  TEAM_GOAL: 0.04,
+  TEAM_CONCEDED: -0.04,
+  /** The keeper who conceded, on top of TEAM_CONCEDED. */
+  KEEPER_CONCEDED: -0.12,
+  SAVE: 0.06,
+  TACKLE_WON: 0.04,
+  DISPOSSESSED: -0.05,
+  DRIBBLE_WON: 0.05,
+  BEATEN: -0.04,
+};
+{
+  const raw = typeof process !== 'undefined' ? process.env?.CONFIDENCE_OVERRIDES : undefined;
+  if (raw) { try { Object.assign(CONFIDENCE, JSON.parse(raw)); } catch { /* ignored */ } }
+}
 
 /**
  * The holder's extra moves (`Domain/HolderMoves.ts`, `decisions.md` → "Holder moves"). Distances in yards. Scores are
