@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.30",
     date: "2026-11-23",
-    time: "00:00",
+    time: "10:10",
     items: [
       { tab: "match", pt: "Motor da partida refeito: a partida dura os 90 minutos de verdade, a bola tem altura, quica e rola, o passe longo erra mais, a defesa intercepta o caminho da bola e o time sobe e desce junto.", en: "Match engine rebuilt: the match runs the real 90 minutes, the ball has height, bounces and rolls, long passes fail more, defenders cut the ball's path and the team moves up and down together." },
       { tab: "match", pt: "Chutes de fora da área, cavadinha só com o goleiro adiantado, cruzamentos e disputas pelo alto mais parecidos com o futebol real; o goleiro sai e fica na hora certa.", en: "Shots from outside the box, chips only over a keeper off his line, crosses and aerial duels closer to real football; the keeper comes out and stays at the right moments." },
