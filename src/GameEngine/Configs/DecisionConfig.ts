@@ -179,7 +179,7 @@ export const DEFAULT_DECISION_FLAGS: Readonly<DecisionFlags> = {
   TEAM_INSTRUCTIONS: true, FM_RATINGS: true,
   FM_KEEPER: true,
   FM_SET_PIECES: true,
-  CONFIDENCE: true,
+  CONFIDENCE: false,
 };
 
 /**

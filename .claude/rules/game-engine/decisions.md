@@ -284,5 +284,8 @@ line (kickoff mood, confidence, mood in use) of the selected player in the Decis
 
 M4 (2026-11-22, `decision-baseline.ts 300 premier_league --chunks 3 --mental 8,3 --same`, confidence on): seed 9000
 V−D −5.3 pp, seed 12000 −5.0 pp (±~4 each): the side with mental 8 now does worse than the side with 3, against +5.8 pp
-at stage 4. Not tuned (goal calibration comes at the end); the cause is not isolated (a confidence-off run at seed 9000
-was started to compare). Goals 2.79 / 2.89, shots 27.2 / 26.9 per match in those runs.
+at stage 4. Goals 2.79 / 2.89, shots 27.2 / 26.9 per match in those runs. Isolating (seed 9000): confidence off +0.3 pp (300);
+confidence on with `SHIELD` off −3.3 pp (150) or `HOLDER` off −2.0 pp (150), noise ±~6 at 150. Confidence is what
+turns the effect around, so **`CONFIDENCE` is off by default**; the flag, the surfaces and the tests stay. Still open:
+with it off the mental effect is near zero (+0.3 pp against the +3..+6 pp target), below the +5.8 pp of stage 4; the
+engine stages 9–21 changed what the mental rolls act on.

@@ -22,6 +22,7 @@ describe("in-match confidence", () => {
   });
 
   test("a goal: scorer, assister, teammates up; the other side and its keeper down", () => {
+    setDecisionFlags({ CONFIDENCE: true });
     const ps = [player(1, "A", "ST"), player(2, "A"), player(3, "A"), player(4, "B", "GK"), player(5, "B", "CB")];
     const changes = goalConfidenceChanges(ps, "A", 1, 2);
     const sum = (id: number) => changes.filter(c => c.playerId === id).reduce((a, c) => a + c.delta, 0);
