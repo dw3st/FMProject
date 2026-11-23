@@ -31,6 +31,21 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31",
+    date: "2026-11-23",
+    time: "11:55",
+    items: [
+      { tab: "match", pt: "O campo mostra a partida nova: a linha do passe vai até onde a bola para, a do chute segue a bola de verdade, e uma bola solta mostra onde vai parar.", en: "The pitch shows the new match: the pass line goes to where the ball stops, the shot line follows the real ball, and a loose ball shows where it will stop." },
+      { tab: "match", pt: "Lances com nome no campo: na trave, bloqueado, grande defesa, grande chance e jogada ensaiada.", en: "Named moments on the pitch: off the woodwork, blocked, great save, big chance and set piece routine." },
+      { tab: "match", pt: "O jogador chuta como o lance pede (cavadinha, voleio, chute normal), o goleiro repõe a bola rolando, com a mão ou no chute, sai do gol avisando e deixa escapar a bola quando ela escapa; o defensor driblado tropeça.", en: "Players strike the way the move asks (chip, volley, plain shot), the keeper restarts by rolling, throwing or kicking, shows when he comes off his line and lets the ball slip when it does; a beaten defender stumbles." },
+      { tab: "match", pt: "A linha de defesa que sobe junta aparece no campo, e a bola alta marca onde foi disputada.", en: "A back line stepping up together shows on the pitch, and a high ball marks where it was played." },
+    ],
+    fixes: [
+      { tab: "match", pt: "A bola na trave aparecia como chute para fora, e o goleiro fazia dois movimentos na mesma defesa.", en: "A shot off the woodwork showed as wide, and the keeper played two moves for the same save." },
+      { tab: "friends", pt: "No jogo contra outro técnico e ao assistir um amigo, a altura da bola é a de verdade.", en: "In a match against another manager and when watching a friend, the ball's height is the real one." },
+    ],
+  },
+  {
     version: "12.30",
     date: "2026-11-23",
     time: "10:10",
