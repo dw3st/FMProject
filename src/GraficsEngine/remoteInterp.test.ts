@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  EMPTY_REMOTE_FRAMES, heldBallId, pushRemoteFrame, remoteAlpha, remoteBallHeight, remotePositions, toRemoteFrame, withFramePositions,
+  EMPTY_REMOTE_FRAMES, heldBallId, pushRemoteFrame, remoteAlpha, remoteBallHeight, remoteDrawnBall, remotePositions, toRemoteFrame, withFramePositions,
 } from "@/GraficsEngine/remoteInterp";
 import type { GameState } from "@/GameEngine/types";
 
@@ -110,5 +110,21 @@ describe("frames of many steps (stage 22)", () => {
     const r = remotePositions(f, 1250, 200, 4)!;
     expect(r.ball).toEqual({ x: 80, y: 30 });
     expect(r.players.get(1)).toEqual({ x: 70, y: 30 });
+  });
+});
+
+describe("ball height in the frames (visual of the 90-minute engine)", () => {
+  const wire = (x: number, z?: number) => ({ ball: [x, 30] as [number, number], ...(z === undefined ? {} : { ballZ: z }), players: [] as [number, number, number][] });
+  test("the real height is blended between two frames", () => {
+    const frames = { prev: toRemoteFrame(wire(10, 0), 0), last: toRemoteFrame(wire(12, 4), 200), seq: 2 };
+    const r = remotePositions(frames, 300, 200, 4, 30)!;
+    expect(r.ballZ).toBeCloseTo(2, 5);
+    expect(remoteDrawnBall({ pass: null, shot: null }, r.ball, r.ballZ).h).toBeCloseTo(2, 5);
+  });
+  test("an older sender without the height keeps the arc", () => {
+    const frames = { prev: toRemoteFrame(wire(10), 0), last: toRemoteFrame(wire(12), 200), seq: 2 };
+    const r = remotePositions(frames, 300, 200, 4, 30)!;
+    expect(r.ballZ).toBeUndefined();
+    expect(remoteDrawnBall({ pass: null, shot: null }, r.ball, r.ballZ).h).toBe(0);
   });
 });

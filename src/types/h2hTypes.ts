@@ -88,6 +88,8 @@ export type WorkerOut =
       type: "frame";
       t: number;
       ball: [number, number];
+      /** Height of the ball (yd), the 3D ball's `z` (always sent with the 3D ball; absent = an older sender: the drawing uses its arc). */
+      ballZ?: number;
       /** [player id, x, y] in yards. */
       players: [number, number, number][];
       minute: number;

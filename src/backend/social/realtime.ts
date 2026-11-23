@@ -323,6 +323,7 @@ function parseWatchEvent(e: Record<string, unknown>): ClientEvent | null {
     if (e.steps !== undefined && !(isNum(e.steps) && e.steps >= 0 && e.steps <= 1000)) return null;
     if (e.rate !== undefined && !(isNum(e.rate) && e.rate >= 0 && e.rate <= 1000)) return null;
     if (e.jump !== undefined && e.jump !== true) return null;
+    if (e.ballZ !== undefined && !(isNum(e.ballZ) && e.ballZ >= 0 && e.ballZ <= 60)) return null;
     if (e.path !== undefined && !(Array.isArray(e.path) && e.path.length <= 64 && e.path.every(isPair))) return null;
     return {
       type: "relay_frame", ...at, t: e.t, ball: e.ball, minute: e.minute, phase: e.phase as never,
@@ -330,6 +331,7 @@ function parseWatchEvent(e: Record<string, unknown>): ClientEvent | null {
       ...(e.steps !== undefined ? { steps: e.steps as number } : {}),
       ...(e.rate !== undefined ? { rate: e.rate as number } : {}),
       ...(e.path !== undefined ? { path: e.path as [number, number][] } : {}),
+      ...(e.ballZ !== undefined ? { ballZ: e.ballZ as number } : {}),
       ...(e.jump ? { jump: true as const } : {}),
     };
   }

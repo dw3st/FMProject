@@ -277,3 +277,9 @@ export { LED_ADS };
  * cloth pointing to +x, CLOTH_PX long.
  */
 export const FLAG_SPRITE = { POLE_X: 40 / 256, POLE_Y: 128 / 256, CLOTH_PX: 204 } as const;
+
+/**
+ * Lines of the play in flight (visual of the 90-minute engine, part 1): a physical pass rings its receiver only when
+ * the ball ends within this many yards of him; otherwise the ring marks where it lands or stops.
+ */
+export const PLAY_LINES = { RECEIVER_REACH_YDS: 3 } as const;

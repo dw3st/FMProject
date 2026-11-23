@@ -21,6 +21,8 @@ import { lerpPos, type DrawnBall, type Pos } from "@/GraficsEngine/renderInterp"
 export interface RemoteFrame {
   at: number;
   ball: Pos;
+  /** Height of the ball (yd) when the sender sends it (the 3D ball); absent = the illustrative arc. */
+  ballZ?: number;
   players: Map<number, Pos>;
   steps?: number;
   path?: Pos[];
@@ -45,13 +47,14 @@ export interface RemoteFeed {
 
 /** A frame off the wire (`[id, x, y]` players, `[x, y]` ball, the optional steps / path / jump) received at `at`. */
 export function toRemoteFrame(
-  wire: { ball: [number, number]; players: [number, number, number][]; steps?: number; path?: [number, number][]; jump?: boolean },
+  wire: { ball: [number, number]; ballZ?: number; players: [number, number, number][]; steps?: number; path?: [number, number][]; jump?: boolean },
   at: number,
 ): RemoteFrame {
   const players = new Map<number, Pos>();
   for (const [id, x, y] of wire.players) players.set(id, { x, y });
   return {
     at, ball: { x: wire.ball[0], y: wire.ball[1] }, players,
+    ...(typeof wire.ballZ === "number" && Number.isFinite(wire.ballZ) && wire.ballZ >= 0 ? { ballZ: wire.ballZ } : {}),
     ...(typeof wire.steps === "number" && wire.steps > 1 ? { steps: wire.steps } : {}),
     ...(Array.isArray(wire.path) && wire.path.length > 0 ? { path: wire.path.map(([x, y]) => ({ x, y })) } : {}),
     ...(wire.jump ? { jump: true } : {}),
@@ -91,11 +94,11 @@ export function remotePositions(
   step: number,
   maxStep: number,
   ballMaxStep: number = maxStep,
-): { players: Map<number, Pos>; ball: Pos } | null {
+): { players: Map<number, Pos>; ball: Pos; ballZ?: number } | null {
   const last = frames.last;
   if (!last) return null;
   const prev = frames.prev;
-  if (!prev || last.jump) return { players: new Map(last.players), ball: { ...last.ball } };
+  if (!prev || last.jump) return { players: new Map(last.players), ball: { ...last.ball }, ...zOf(last.ballZ) };
   const alpha = remoteAlpha(now, last.at, step);
   const players = new Map<number, Pos>();
   // A frame of many steps: a player moves up to `maxStep` per step.
@@ -104,8 +107,11 @@ export function remotePositions(
     const was = prev.players.get(id);
     players.set(id, was ? lerpPos(was, cur, alpha, playerMax) : { x: cur.x, y: cur.y });
   }
-  return { players, ball: ballAlong(prev.ball, last, alpha, ballMaxStep) };
+  const z = last.ballZ !== undefined ? (prev.ballZ ?? 0) + (last.ballZ - (prev.ballZ ?? 0)) * alpha : undefined;
+  return { players, ball: ballAlong(prev.ball, last, alpha, ballMaxStep), ...zOf(z) };
 }
+
+const zOf = (z: number | undefined): { ballZ?: number } => (z === undefined ? {} : { ballZ: z });
 
 /** How far from the flight line (yards) a drawn ball may be and still be on that flight. */
 const ON_FLIGHT_YDS = 3;
@@ -147,8 +153,9 @@ export function remoteBallHeight(state: Pick<GameState, "pass" | "shot">, ball: 
 }
 
 /** The drawn ball of a remote match: position from the frames, height from the flight of the last state. */
-export function remoteDrawnBall(state: Pick<GameState, "pass" | "shot">, ball: Pos): DrawnBall {
-  return { x: ball.x, y: ball.y, h: remoteBallHeight(state, ball) };
+export function remoteDrawnBall(state: Pick<GameState, "pass" | "shot">, ball: Pos, ballZ?: number): DrawnBall {
+  // The sender's real height when the frames carry it (the 3D ball); else the illustrative arc of the last state.
+  return { x: ball.x, y: ball.y, h: ballZ ?? remoteBallHeight(state, ball) };
 }
 
 /**
