@@ -235,7 +235,7 @@ export function writeMatchSpeed(v: number): void {
 
 /**
  * How the live match plays (stage 19, `live-modes.md`): "full" = mode A, the 90 physical minutes sped up (1× of the
- * speed tabs = `MODE_A_SPEED`, ~7 real minutes); "highlights" = mode B, only the lances, at normal speed, the rest
+ * speed tabs = `MODE_A_SPEED`, ~14 real minutes); "highlights" = mode B, only the lances, at normal speed, the rest
  * skipped. Chosen in the preview and in the match, remembered per browser.
  */
 export { MATCH_PLAY_MODES, MODE_A_SPEED, type MatchPlayMode } from "@/Domain/match/liveModes";

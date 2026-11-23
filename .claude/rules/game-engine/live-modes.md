@@ -5,7 +5,7 @@ broadcast). The engine is the same in both modes: 0.2 s steps, `clockScale` 1.
 
 ## Mode A: whole match ("Inteira")
 
-The presentation clock speeds up: the pitch runs at `speed × MODE_A_SPEED` (13, `artPrefs.ts`), so 1× is ~7 real
+The presentation clock speeds up: the pitch runs at `speed × MODE_A_SPEED` (6,5 since 12.31, `artPrefs.ts`; 13 before, too fast to watch), so 1× is ~14 real
 minutes for the 90. The goal celebration and the replay keep the label speed (`PixiPitch presentationSpeed`).
 
 ## Mode B: only the highlights ("Só os lances")

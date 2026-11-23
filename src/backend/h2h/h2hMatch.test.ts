@@ -1,3 +1,4 @@
+import { MODE_A_SPEED } from "@/Domain/match/liveModes";
 import { afterEach, describe, expect, test } from "bun:test";
 import { MODE_A_PACE } from "@/Domain/match/livePace";
 import { readFileSync } from "node:fs";
@@ -161,7 +162,7 @@ describe("createH2HMatch", () => {
 describe("stage 22: 90 minutes, mode A pace, frames, mode B", () => {
   const toFirstHalf = (m: H2HMatch) => { for (let i = 0; i < 400 && m.state.matchPhase !== "firstHalf"; i++) m.tick(50); };
 
-  test("mode A: the 90 physical minutes at speed x 13; a frame every 200 ms with the ball path", () => {
+  test("mode A: the 90 physical minutes at speed x MODE_A_SPEED; a frame every 200 ms with the ball path", () => {
     match = createH2HMatch(input());
     expect(match.state.clockScale ?? 1).toBe(1);
     toFirstHalf(match);
@@ -170,16 +171,18 @@ describe("stage 22: 90 minutes, mode A pace, frames, mode B", () => {
     const out: WorkerOut[] = [];
     for (let i = 0; i < 20; i++) out.push(...match.tick(50)); // 1 s real
     const played = match.state.matchTime - t0;
-    // 4 x 13 = 52 game-seconds per real second, times the eased variable pace (`MODE_A_PACE`: from 1 toward the
+    // 4 x MODE_A_SPEED game-seconds per real second, times the eased variable pace (`MODE_A_PACE`: from 1 toward the
     // kick-off's midfield target, between SLOW and FAST).
-    expect(played).toBeGreaterThan(52 * MODE_A_PACE.SLOW);
-    expect(played).toBeLessThan(52 * MODE_A_PACE.FAST);
+    const perSec = 4 * MODE_A_SPEED;
+    expect(played).toBeGreaterThan(perSec * MODE_A_PACE.SLOW);
+    expect(played).toBeLessThan(perSec * MODE_A_PACE.FAST);
     const frames = ofType(out, "frame");
     expect(frames.length).toBe(5);
     const f = frames[2]!;
-    expect(f.steps).toBeGreaterThan(40);
+    // A frame (200 ms) covers perSec × 0.2 game-seconds, one step each 0.2 s: perSec steps at pace 1.
+    expect(f.steps).toBeGreaterThan(perSec * MODE_A_PACE.SLOW);
     expect(f.path!.length).toBe(Math.min(64, f.steps! - 1));
-    expect(f.rate).toBeGreaterThan(40);
+    expect(f.rate).toBeGreaterThan(perSec * MODE_A_PACE.SLOW);
   });
 
   /** A quick mode B match: the compressed clock so the inline forecast is cheap. */
