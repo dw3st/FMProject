@@ -167,13 +167,13 @@ describe("AI study plan (`.claude/rules/game/study.md`)", () => {
     const withLog = computeMatchSimulationLineups(fixture, club("h"), club("a"), undefined, null, null, null, undefined, log);
     expect(withLog).toEqual(base);
     expect(base.study).toBeUndefined();
-    expect(base.tactics.A).toEqual({ style: "balanced", familiarity: aiFamiliarity("balanced") });
+    expect(base.tactics.A).toEqual({ ai: true, style: "balanced", familiarity: aiFamiliarity("balanced") });
     expect(base.tactics.B).toEqual(base.tactics.A);
   });
 
   test("human against AI without a log: the AI plays balanced as before", () => {
     const sim = computeMatchSimulationLineups(fixture, club("h"), club("a"), "h", tactics);
-    expect(sim.tactics.B).toEqual({ style: "balanced", familiarity: aiFamiliarity("balanced") });
+    expect(sim.tactics.B).toEqual({ ai: true, style: "balanced", familiarity: aiFamiliarity("balanced") });
     expect(sim.study).toBeUndefined();
   });
 
