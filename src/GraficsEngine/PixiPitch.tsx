@@ -520,7 +520,7 @@ interface Props {
    */
   faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
   /** Texts drawn by the pitch effects; English defaults (the live match passes translations). */
-  effectLabels?: { save: string; wide: string; offside: string; woodwork?: string; blocked?: string; greatSave?: string; cornerSave?: string; cornerDeflect?: string };
+  effectLabels?: { save: string; wide: string; offside: string; woodwork?: string; blocked?: string; greatSave?: string; bigChance?: string; routine?: string; cornerSave?: string; cornerDeflect?: string };
   /**
    * Draw the pitch mirrored on the x axis (#98: the user plays away, home side on the left).
    * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
@@ -659,7 +659,7 @@ export interface PitchStadium {
 export interface PitchPerf { fps: number; drawMs: number }
 const PERF_SAMPLE_FRAMES = 30;
 
-const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE", woodwork: "OFF THE WOODWORK", blocked: "BLOCKED", greatSave: "GREAT SAVE", cornerSave: "SAVED · CORNER", cornerDeflect: "DEFLECTED · CORNER" };
+const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE", woodwork: "OFF THE WOODWORK", blocked: "BLOCKED", greatSave: "GREAT SAVE", bigChance: "BIG CHANCE", routine: "SET PIECE ROUTINE", cornerSave: "SAVED · CORNER", cornerDeflect: "DEFLECTED · CORNER" };
 
 export function PixiPitch({
   canvasWidth = 900,
@@ -2561,8 +2561,11 @@ export function PixiPitch({
       };
       /** The predicted path of a physical pass / shot, worked out once per sim state (drawing only). */
       let pathCache: { state: GameState; pts: PathPoint[] } | null = null;
+      let landingSeen: GameState | null = null;
       const physicalPath = (st: GameState): PathPoint[] => {
-        if (!st.ball?.free || (!st.pass && !st.shot)) return [];
+        const b = st.ball;
+        const loose = b?.phase === "loose" && Math.hypot(b.vx, b.vy) > PLAY_LINES.LOOSE_MIN_SPEED;
+        if (!loose && (!b?.free || (!st.pass && !st.shot))) return [];
         if (pathCache?.state !== st) pathCache = { state: st, pts: ballFlightPath(st) };
         return pathCache.pts;
       };
@@ -2592,6 +2595,20 @@ export function PixiPitch({
             dashed(playGfx, bx, by, tx, ty, { width: 1.5, color: 0xffffff, alpha: 0.55 });
             playGfx.circle(tx, ty, markerR * 1.4).stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 });
           }
+        }
+        if (!st.pass && !st.shot && st.ball?.phase === "loose" && path.length > 1) {
+          // Visual of the 90-minute engine (part 3): a ball running loose (overhit, heavy touch, deflection) shows
+          // where it will stop.
+          const end = path[path.length - 1]!;
+          const { px: ex, py: ey } = toPixel(end.x, end.y);
+          dashed(playGfx, bx, by, ex, ey, { width: 1.2, color: 0xffffff, alpha: 0.35 });
+          playGfx.circle(ex, ey, markerR * 0.45).fill({ color: 0xffffff, alpha: 0.35 });
+        }
+        // A high ball met in the air or come down: a ring where it was played (once per sim state).
+        const fb = st.ball;
+        if (fb && st !== landingSeen && (fb.metZ !== undefined || (fb.ended && fb.ended.peak > PLAY_LINES.HIGH_PEAK_YDS))) {
+          landingSeen = st;
+          if (framesShown()) impacts = [...impacts.slice(-2), { x: fb.x, y: fb.y, at: effectNow }];
         }
         if (st.shot?.physics && path.length > 1) {
           // A physical shot (stage 7): the arc is the ball's own path from where it is drawn (its height lifts the line
@@ -2639,6 +2656,25 @@ export function PixiPitch({
         if (e.grade !== "difficult" || !lastShotFx || lastShotFx.at !== effectNow || !lastShotFx.effect) return;
         const text = effectTexts.get(lastShotFx.effect);
         if (text) text.text = labelsOf().greatSave ?? DEFAULT_EFFECT_LABELS.greatSave;
+      });
+      // A big chance missed: the caption says so instead of a plain "wide".
+      const unsubBigChanceFx = gameBus.on("shotResolved", (e) => {
+        if (e.isGoal || e.inPosts || e.outcome === "woodwork" || !(e.xg >= PLAY_LINES.BIG_CHANCE_XG)) return;
+        if (!lastShotFx || lastShotFx.at !== effectNow || !lastShotFx.effect) return;
+        const text = effectTexts.get(lastShotFx.effect);
+        if (text) text.text = labelsOf().bigChance ?? DEFAULT_EFFECT_LABELS.bigChance;
+      });
+      // The back line steps up together (the offside trap): a brief line where it goes, at most every few seconds a side.
+      const lineFlashAt: Partial<Record<TeamId, number>> = {};
+      const unsubBackLineFx = gameBus.on("backLineState", (e) => {
+        if (e.mode !== "step_up" || effectNow - (lineFlashAt[e.team] ?? -Infinity) < PLAY_LINES.BACK_LINE_GAP_S) return;
+        lineFlashAt[e.team] = effectNow;
+        pushEffect({ kind: "line", lineX: e.x });
+      });
+      // A rehearsed set piece (the manager's routine): a caption over the taker.
+      const unsubRoutineFx = gameBus.on("setPieceRoutine", (e) => {
+        const taker = playerPos(e.takerId);
+        if (taker) pushEffect({ kind: "note", x: taker.x, y: taker.y }, labelsOf().routine ?? DEFAULT_EFFECT_LABELS.routine);
       });
       const unsubBlockFx = gameBus.on("shotBlocked", (e) => {
         const shooter = playerPos(e.player), blocker = playerPos(e.blockerId);
@@ -6133,6 +6169,9 @@ export function PixiPitch({
         unsubCornerFx();
         unsubSaveGradeFx();
         unsubComeOut();
+        unsubBigChanceFx();
+        unsubBackLineFx();
+        unsubRoutineFx();
         unsubBlockFx();
         unsubGoalFx();
         unsubFoulFx();
