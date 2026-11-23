@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.7",
+    date: "2026-11-23",
+    time: "23:57",
+    items: [],
+    fixes: [
+      { tab: "formation", pt: "Na Formação, clicar no goleiro depois de outro jogador não deixa mais a tela preta.", en: "In Formation, clicking the goalkeeper after another player no longer turns the screen black." },
+    ],
+  },
+  {
     version: "12.31.6",
     date: "2026-11-23",
     time: "23:43",

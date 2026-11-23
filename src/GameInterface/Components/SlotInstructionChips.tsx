@@ -32,6 +32,8 @@ export function SlotInstructionChips({
   disabled?: boolean;
 }) {
   const { t } = useTranslation();
+  // Every hook before the goalkeeper's early return: switching slots must not change the hook count.
+  const labels = useLevelLabels();
   if (role === "GK") return <p className="text-sm text-muted-foreground m-0">{t("instructions.noGoalkeeper")}</p>;
   const variants = variantsForRole(role);
   const variant = instruction?.variant ?? "default";
@@ -39,7 +41,6 @@ export function SlotInstructionChips({
   const set = (patch: Partial<SlotInstruction>) => onChange(clean({ ...(instruction ?? {}), ...patch }));
   const emit = (v: RoleVariantId | "default", p: PressLevel) => set({ variant: v === "default" ? undefined : v, press: p });
   const oops = oopRolesForRole(role);
-  const labels = useLevelLabels();
   return (
     <div className="flex flex-col gap-3">
       {variants.length > 0 && (
