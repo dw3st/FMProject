@@ -304,6 +304,7 @@ etapas ou quando a área correspondente for revisitada.
 | 2 | ~~Ligas europeias de ano civil com choque de data com UCL/UEL só logado~~ **Resolvido na 5.6:** só a partida da liga do clube é remarcada (nunca a rodada inteira), na virada e nos sorteios; Europa numa temporada medida: 169 clubes em dias seguidos → 0, nenhum no mesmo dia | `.claude/rules/game/rescheduling.md` |
 | 3 | ~~Clima (7.2): gols do mundo em −2,9%, logs de lance sem `weatherMult` no `/test`, smoke "Clima" não rodado~~ **Resolvido na 7.4.3:** chuva em `looseDecel` 0,8 (gols do mundo −1,5%, chutes −2,2%), uma linha `weather` por lance afetado no `/test`, smoke "Clima" rodado; campo neutro com aviso desde a 7.4.2 | `.claude/rules/game/weather.md` |
 | 4 | ~~Rivais (7.4): gol anulado pelo VAR congela o placar ao vivo; feed gravado fora do buffer do dia~~ **Resolvido na 7.4.3:** fase `disallowed` tira exatamente um gol do placar ao vivo; o feed é gravado dentro do buffer do dia (`beforeFlush`), entra junto com o dia ou nada entra | `.claude/rules/game/multiplayer.md` → "Parte 6: rivais" |
+| 5 | **Estilo de jogo por país (decidido em 2026-11-22, para depois):** os clubes da IA de cada liga ganham uma tendência de estilo (hoje todos jogam `balanced`). Ex.: a Bundesliga mais pressão alta e jogo direto, para chegar ao volume real (~3,1 gols por jogo); com o motor novo ela fica em ~2,5 só pelos atributos. Mexe só na escolha de tática da IA, não no motor | `.claude/rules/game/formations.md`, `src/Domain/formation/aiFormation.ts` |
 
 ---
 
