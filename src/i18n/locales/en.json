@@ -8256,6 +8256,8 @@
       "penaltiesManual": "Penalties: in games between managers, each takes and saves his own.",
       "modeOther": "{{name}} wants: {{mode}}",
       "modeResult": "The match plays: {{mode}}",
+      "modeRule": "Highlights only play when both managers pick them; if one wants the whole match, it is the whole match.",
+      "modeNeedsBoth": "{{name}} is on the whole match: to watch only the highlights, both have to pick \"Highlights\".",
       "orderOther": "{{name}} changed the tactics",
       "skipAsked": "Waiting for {{name}} to skip",
       "skipOther": "{{name}} wants the next lance"

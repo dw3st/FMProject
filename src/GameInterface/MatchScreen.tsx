@@ -2298,6 +2298,15 @@ export function MatchScreen() {
                   <Icon name="pause" className="w-4 h-4" />
                   <span className="tabular-nums">{t("h2h.pausesLeft", { count: myPausesLeft })}</span>
                 </button>
+                {/* Which mode the match plays (decided in the room: highlights only when both managers chose them). */}
+                <span
+                  className="flex items-center h-10 phone:h-8 px-3 rounded-lg border border-border bg-secondary/30 font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground whitespace-nowrap"
+                  title={t("h2h.room.modeRule")}
+                >
+                  {h2h.room?.mode === "highlights"
+                    ? `${t("match.mode.highlights")} · ${t(`match.highlights.level.${h2h.room.level}`)}`
+                    : t("match.mode.full")}
+                </span>
                 <span className="flex items-center gap-2" title={t("h2h.speed.hint")}>
                   <SegmentedTabs
                     compact

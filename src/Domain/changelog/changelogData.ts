@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.2",
+    date: "2026-11-23",
+    time: "12:50",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "A partida ao vivo ficou mais lenta: o 1× anda no ritmo do antigo 0.5×, e o 2× e o 4× também caíram pela metade.", en: "The live match is slower: 1× plays at the old 0.5×, and 2× and 4× are halved too." },
+      { tab: "friends", pt: "No jogo contra outro técnico, a sala explica que só os lances valem quando os dois escolhem, e a barra da partida mostra o modo em uso.", en: "In a match against another manager, the room explains that highlights only play when both pick them, and the match bar shows the mode in use." },
+    ],
+  },
+  {
     version: "12.31.1",
     date: "2026-11-23",
     time: "12:20",

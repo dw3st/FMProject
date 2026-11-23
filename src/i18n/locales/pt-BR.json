@@ -8250,6 +8250,8 @@
       "penaltiesManual": "Pênaltis: nos jogos entre técnicos, cada um bate e defende os seus.",
       "modeOther": "{{name}} quer: {{mode}}",
       "modeResult": "A partida vai ser: {{mode}}",
+      "modeRule": "Só os lances vale quando os dois técnicos escolhem; se um quiser a partida inteira, vale a inteira.",
+      "modeNeedsBoth": "{{name}} está na partida inteira: para ver só os lances, os dois precisam escolher \"Só os lances\".",
       "orderOther": "{{name}} mudou a tática",
       "skipAsked": "Esperando {{name}} para pular",
       "skipOther": "{{name}} quer o próximo lance"

@@ -190,6 +190,11 @@ export function MatchRoomScreen() {
             })}
           </span>
         </p>
+        {/* The rule, always (user report 12.31.2: "no highlights between managers" when only one had picked them). */}
+        <p className="text-sm text-muted-foreground m-0">{t("h2h.room.modeRule")}</p>
+        {me.mode === "highlights" && them.mode !== "highlights" && (
+          <p className="text-sm text-chart-4 font-semibold m-0" role="status">{t("h2h.room.modeNeedsBoth", { name: nameOf(them) })}</p>
+        )}
       </div>
       <p className="text-sm text-muted-foreground m-0">{t("h2h.room.penaltiesManual")}</p>
       <div className="flex flex-wrap items-center gap-4">
