@@ -98,7 +98,7 @@ function OfferCard({ offer, busy, onAction }: {
           <span className="block text-muted-foreground">{t("sponsors.expires", { date: formatGameDate(offer.expires, i18n.language) })}</span>
         </Term>
       </dl>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mt-auto flex flex-wrap items-center gap-2">
         <Button disabled={busy} onClick={() => onAction(offer, "accept")}>{t("sponsors.action.accept")}</Button>
         <Button
           variant="secondary"

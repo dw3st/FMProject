@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.4",
+    date: "2026-11-23",
+    time: "14:00",
+    items: [],
+    fixes: [
+      { tab: "finances", pt: "Nas propostas de patrocínio, os botões ficam sempre no pé do cartão, alinhados entre as propostas.", en: "In sponsorship offers, the buttons always sit at the bottom of the card, lined up across offers." },
+    ],
+  },
+  {
     version: "12.31.3",
     date: "2026-11-23",
     time: "13:45",
