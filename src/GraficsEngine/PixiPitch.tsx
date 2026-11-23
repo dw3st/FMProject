@@ -5729,7 +5729,11 @@ export function PixiPitch({
             const v = markerVel.get(holder.id);
             const sp = v ? Math.hypot(v.vx, v.vy) : 0;
             const dx = sp > 0.15 ? v!.vx / sp : holder.attackDir * xSign(), dy = sp > 0.15 ? v!.vy / sp : 0;
-            const reach = markerR * (figureShown(hg) ? MATCH_LOOK.FIGURE_SCALE : MATCH_LOOK.DISC_SCALE) + ballR * 0.9;
+            // At the feet, not past the shoulders (user report: the ball looked far from the figure): a fraction of the
+            // drawn body (the figure's shoulders reach its full radius, its feet much less), the disc's edge for a disc.
+            const reach = figureShown(hg)
+              ? markerR * MATCH_LOOK.FIGURE_SCALE * MATCH_LOOK.HELD_BALL.FIGURE_REACH + ballR * MATCH_LOOK.HELD_BALL.BALL_GAP
+              : markerR * MATCH_LOOK.DISC_SCALE + ballR * 0.9;
             if (markerMode(hg) === "pixel") {
               // A side-view figure: the ball on the ground in front of the foot, on the side he looks.
               bx = hg.x + (pixelFace.get(holder.id) ?? 1) * reach * 0.85; by = hg.y + markerR * MATCH_LOOK.TEAM_RING.DY;

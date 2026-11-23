@@ -50,6 +50,8 @@ export const MATCH_LOOK = {
   HOLDER: { R: 1.55, PULSE: 0.18, HZ: 1, COLOR: 0xffec96, ALPHA: 0.55 },
   /** Sprite figures are drawn this much bigger than the marker (10.2, option D of the user's choice). */
   FIGURE_SCALE: 1.35,
+  /** A held ball in front of a figure: this share of its drawn radius, plus this share of the ball's (12.31.1). */
+  HELD_BALL: { FIGURE_REACH: 0.62, BALL_GAP: 0.4 },
   /**
    * Under a sprite player (10.2, option D): a dark contact shadow and a thin ring in the kit colour on the ground, in
    * place of the soft glow of 8.2.18, which smeared into one blob when players bunched. Sizes in marker radii. A kit

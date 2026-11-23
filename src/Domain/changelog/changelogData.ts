@@ -31,6 +31,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.1",
+    date: "2026-11-23",
+    time: "12:20",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "A partida inteira ficou mais lenta: cerca de 14 minutos em 1×, 7 em 2× e 3 e meio em 4×.", en: "The whole match is slower: about 14 minutes at 1×, 7 at 2× and three and a half at 4×." },
+      { tab: "match", pt: "A barra da partida não muda mais de tamanho ao escolher os lances: inteira e o nível dos lances ficam num seletor só.", en: "The match bar no longer changes size when you pick the highlights: whole match and the highlight level are one control." },
+      { tab: "match", pt: "A bola de quem conduz fica nos pés do boneco, não mais longe dele.", en: "The ball of the player on it sits at the figure's feet, no longer away from him." },
+    ],
+  },
+  {
     version: "12.31",
     date: "2026-11-23",
     time: "11:55",
