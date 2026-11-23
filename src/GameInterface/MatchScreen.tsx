@@ -49,7 +49,7 @@ import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type Pa
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
 import { pixelSprite } from "@/Domain/art/pixelSprite";
-import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, nextMatchMarkers, shownMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS, readMatchMode, writeMatchMode, readHighlightLevel, writeHighlightLevel, MATCH_PLAY_MODES, HIGHLIGHT_LEVEL_PREFS, MODE_A_SPEED, type MatchPlayMode, type HighlightLevelPref } from "@/GameInterface/artPrefs";
+import { readGoalReplay, readMatchCamera, readPlayerLook, readQuality, writeGoalReplay, writeMatchCamera, readMatchMarkers, writeMatchMarkers, nextMatchMarkers, shownMatchMarkers, readMatchSound, writeMatchSound, readMatchVolume, readMatchSpeed, writeMatchSpeed, MATCH_SPEEDS, readMatchMode, writeMatchMode, readHighlightLevel, writeHighlightLevel, HIGHLIGHT_LEVEL_PREFS, MODE_A_SPEED, type MatchPlayMode, type HighlightLevelPref } from "@/GameInterface/artPrefs";
 import { MatchAudio } from "@/GameInterface/MatchAudio/matchAudio";
 import { crowdExcitement } from "@/Domain/match/matchSound";
 import { AUTO_QUALITY, nextAutoQuality, type PitchQuality } from "@/GraficsEngine/motionPrefs";
@@ -2350,37 +2350,36 @@ export function MatchScreen() {
                   active={String(gameSpeed)}
                   onChange={(k) => { setGameSpeed(Number(k)); writeMatchSpeed(Number(k)); }}
                 />
-                {/* Mode A / mode B (stage 19). */}
+                {/* Mode A / mode B (stage 19) and the highlight level in one control, and "next highlight" in a place that is
+                    always kept (user report: picking the highlights used to add two controls and push the bar onto two lines). */}
                 <span title={t("match.mode.hint")}>
                   <SegmentedTabs
                     compact
-                    tabs={MATCH_PLAY_MODES.map((m) => ({ key: m, label: t(`match.mode.${m}`) }))}
-                    active={playMode}
-                    onChange={(k) => { setPlayMode(k as MatchPlayMode); writeMatchMode(k as MatchPlayMode); }}
+                    tabs={[
+                      { key: "full", label: t("match.mode.full") },
+                      ...HIGHLIGHT_LEVEL_PREFS.map((l) => ({ key: `hl:${l}`, label: t(`match.highlights.level.${l}`) })),
+                    ]}
+                    active={playMode === "highlights" ? `hl:${hlLevel}` : "full"}
+                    onChange={(k) => {
+                      if (k === "full") { setPlayMode("full" as MatchPlayMode); writeMatchMode("full" as MatchPlayMode); return; }
+                      const level = k.slice(3) as HighlightLevelPref;
+                      setHlLevel(level); writeHighlightLevel(level);
+                      setPlayMode("highlights" as MatchPlayMode); writeMatchMode("highlights" as MatchPlayMode);
+                    }}
                   />
                 </span>
-                {playMode === "highlights" && (
-                  <>
-                    <span className="phone:hidden">
-                      <SegmentedTabs
-                        compact
-                        tabs={HIGHLIGHT_LEVEL_PREFS.map((l) => ({ key: l, label: t(`match.highlights.level.${l}`) }))}
-                        active={hlLevel}
-                        onChange={(k) => { setHlLevel(k as HighlightLevelPref); writeHighlightLevel(k as HighlightLevelPref); }}
-                      />
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => playback?.skip()}
-                      disabled={!playback || paused}
-                      title={t("match.highlights.next")}
-                      className="flex items-center gap-2 px-4 py-2 phone:px-2.5 phone:py-1.5 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all font-semibold text-sm cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Icon name="fast-forward" className="w-4 h-4" />
-                      <span className="phone:hidden">{t("match.highlights.next")}</span>
-                    </button>
-                  </>
-                )}
+                <button
+                  type="button"
+                  onClick={() => playback?.skip()}
+                  disabled={playMode !== "highlights" || !playback || paused}
+                  aria-hidden={playMode !== "highlights"}
+                  tabIndex={playMode === "highlights" ? 0 : -1}
+                  title={t("match.highlights.next")}
+                  aria-label={t("match.highlights.next")}
+                  className={`flex items-center justify-center w-10 h-10 phone:w-8 phone:h-8 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-all cursor-pointer text-foreground disabled:opacity-50 disabled:cursor-not-allowed ${playMode === "highlights" ? "" : "invisible"}`}
+                >
+                  <Icon name="fast-forward" className="w-4 h-4" />
+                </button>
               </>
             )}
             {managerOut && (
