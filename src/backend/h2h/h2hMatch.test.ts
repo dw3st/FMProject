@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { MODE_A_PACE } from "@/Domain/match/livePace";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createH2HMatch, type H2HMatch } from "@/backend/h2h/h2hMatch";
@@ -169,9 +170,10 @@ describe("stage 22: 90 minutes, mode A pace, frames, mode B", () => {
     const out: WorkerOut[] = [];
     for (let i = 0; i < 20; i++) out.push(...match.tick(50)); // 1 s real
     const played = match.state.matchTime - t0;
-    // 4 x 13 = 52 game-seconds per real second (a goal's restart freeze aside).
-    expect(played).toBeGreaterThan(40);
-    expect(played).toBeLessThan(53);
+    // 4 x 13 = 52 game-seconds per real second, times the eased variable pace (`MODE_A_PACE`: from 1 toward the
+    // kick-off's midfield target, between SLOW and FAST).
+    expect(played).toBeGreaterThan(52 * MODE_A_PACE.SLOW);
+    expect(played).toBeLessThan(52 * MODE_A_PACE.FAST);
     const frames = ofType(out, "frame");
     expect(frames.length).toBe(5);
     const f = frames[2]!;

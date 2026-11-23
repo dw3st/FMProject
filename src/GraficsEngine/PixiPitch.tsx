@@ -1,4 +1,5 @@
 import { SURROUND_ART } from "@/Domain/art/surroundArt";
+import { easePace, modeAPaceFactor, paceViewOf } from "@/Domain/match/livePace";
 import type { StadiumShape } from "@/Domain/matchday/stadiumShape";
 import { GOAL_CENTRE_Y, fmClaimDepth, keeperGoalX } from '@/GameEngine/Domain/Keeper';
 import { KEEPER_CONFIG } from '@/GameEngine/Configs/KeeperConfig';
@@ -596,6 +597,11 @@ interface Props {
    * 4×). Absent: `gameSpeed`.
    */
   presentationSpeed?: number;
+  /**
+   * Variable pace of mode A (`MODE_A_PACE`, `src/Domain/match/liveModes.ts`): the speed follows the ball, slow near goal and
+   * quick in midfield, eased so it never jumps. Drawing pace only. Absent: the fixed `gameSpeed`.
+   */
+  variablePace?: boolean;
   /** Graphics quality (art phase 8): `light` draws a calm pitch (no fireworks, flashes, crowd motion, weather). */
   quality?: PitchQuality;
   /** Art phase 9: the art pack's slimmer players ("Mais realista") instead of the current ones. Read at mount. */
@@ -697,6 +703,7 @@ export function PixiPitch({
   skipReplaySeq = 0,
   highlights = null,
   presentationSpeed,
+  variablePace = false,
   quality = "high",
   realPlayers = false,
   markers = "figures",
@@ -737,6 +744,10 @@ export function PixiPitch({
   /** Set by the pitch's setup: re-forecasts the highlights from the state now. */
   const invalidateHighlightsRef  = useRef<(() => void) | null>(null);
   const presentationSpeedRef     = useRef(presentationSpeed);
+  const variablePaceRef          = useRef(variablePace);
+  /** Eased pace factor of mode A; `effSpeed()` = gameSpeed × it. */
+  const paceRef                  = useRef(1);
+  const effSpeed = () => gameSpeedRef.current * (variablePaceRef.current ? paceRef.current : 1);
   const staminaTeamsRef          = useRef(staminaTeams);
   staminaTeamsRef.current = staminaTeams;
   const starsRef                 = useRef(stars);
@@ -779,6 +790,7 @@ export function PixiPitch({
   useEffect(() => { onReplayRef.current = onReplay; }, [onReplay]);
   useEffect(() => { if (skipReplaySeq > 0) skipReplayFnRef.current?.(); }, [skipReplaySeq]);
   useEffect(() => { presentationSpeedRef.current = presentationSpeed; }, [presentationSpeed]);
+  useEffect(() => { variablePaceRef.current = variablePace; if (!variablePace) paceRef.current = 1; }, [variablePace]);
   // A playback switched on (mode B chosen, or a new one) forecasts from the state the pitch holds now.
   useEffect(() => {
     highlightsRef.current = highlights;
@@ -1705,7 +1717,10 @@ export function PixiPitch({
         // Presentation pauses (kick-off show, half time, the extra-time break, the shootout, a VAR check) run in real
         // seconds, apart from the match speed (stage 2): at 32× the half-time pause still lasts its 4 s.
         const presenting = prevState.varReview != null || PRESENTATION_PHASES.has(prevState.matchPhase);
-        const gameSeconds = elapsedRealSeconds * (presenting ? 1 : gameSpeedRef.current);
+        if (variablePaceRef.current && !presenting) {
+          paceRef.current = easePace(paceRef.current, modeAPaceFactor(paceViewOf(prevState)), elapsedRealSeconds);
+        }
+        const gameSeconds = elapsedRealSeconds * (presenting ? 1 : effSpeed());
         const result = advanceSim(prevState, gameSeconds, simCarryRef.current);
         simCarryRef.current = result.carry;
         renderPair = nextRenderPair(renderPair, { prevState, result, steps: result.steps });
@@ -3915,7 +3930,7 @@ export function PixiPitch({
       const drawOfficials = (ball: YdPos, players: YdPos[]) => {
         if (!officialsOn) return;
         const st = stateRef.current;
-        const dtGame = pausedRef.current ? 0 : (app.ticker.deltaMS / 1000) * gameSpeedRef.current;
+        const dtGame = pausedRef.current ? 0 : (app.ticker.deltaMS / 1000) * effSpeed();
         const holder = st.players.find((p) => p.id === st.ballHolderId);
         const attackDir: 1 | -1 = holder?.attackDir === -1 ? -1 : 1;
         if (refHold && effectNow >= refHold.until) refHold = null;
@@ -4490,7 +4505,7 @@ export function PixiPitch({
         if (setPieceStartPending) {
           setPieceStartPending = false;
           if (lastDrawnPos && lastDrawnBall && drawState.setPiece) {
-            const seconds = transitionSeconds(drawState.setPiece.countdown, gameSpeedRef.current);
+            const seconds = transitionSeconds(drawState.setPiece.countdown, effSpeed());
             transition = startTransition(lastDrawnPos, lastDrawnBall, transitionNow, seconds);
           }
         }
@@ -4514,7 +4529,7 @@ export function PixiPitch({
         // Eased drawing (tester report): continuous velocity across the 0.2 s sim steps, no kink at each step.
         if (!replayRun) {
           const dtS = pausedRef.current ? 0 : app.ticker.deltaMS / 1000;
-          drawnPos = smoothPlayers(playerFollow, drawnPos, dtS, gameSpeedRef.current, TELEPORT_YDS);
+          drawnPos = smoothPlayers(playerFollow, drawnPos, dtS, effSpeed(), TELEPORT_YDS);
         }
         // In-match penalty: the taker's run-up with the stutter while the countdown runs, the ball on the spot.
         {

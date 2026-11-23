@@ -2574,6 +2574,7 @@ export function MatchScreen() {
                   mirror={awayView}
                   initialState={gameState}
                   gameSpeed={playMode === "full" ? gameSpeed * MODE_A_SPEED : gameSpeed}
+                  variablePace={playMode === "full" && !h2hMode}
                   presentationSpeed={gameSpeed}
                   highlights={playback}
                   teamAColor={matchKitColors.teamA}

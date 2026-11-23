@@ -12,3 +12,4 @@ export const MODE_A_SPEED = 13;
 export function isMatchPlayMode(v: unknown): v is MatchPlayMode {
   return v === "full" || v === "highlights";
 }
+

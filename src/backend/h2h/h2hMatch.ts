@@ -32,6 +32,7 @@ import type { HighlightLevel } from "@/GameEngine/Domain/Highlights";
 import type { GameState, PenaltyOutcome, TeamId } from "@/GameEngine/types";
 import { buildLiveMatchState, type LiveMatchInput, type LiveSideTactics } from "@/Domain/match/liveMatchSetup";
 import { MODE_A_SPEED, type MatchPlayMode } from "@/Domain/match/liveModes";
+import { easePace, modeAPaceFactor, paceViewOf } from "@/Domain/match/livePace";
 import { applyLiveTactics } from "@/Domain/tactics/liveTactics";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { customToFormation } from "@/Domain/formation/zones";
@@ -309,6 +310,9 @@ export function createH2HMatch(input: LiveMatchInput, opts: H2HMatchOptions = {}
 
   playback?.invalidate(state);
 
+  /** Eased variable pace factor of mode A. */
+  let varPace = 1;
+
   return {
     get state() { return state; },
     get done() { return done; },
@@ -321,7 +325,9 @@ export function createH2HMatch(input: LiveMatchInput, opts: H2HMatchOptions = {}
       if (!paused) {
         // Presentation pauses run in real seconds; the play at the mode's pace.
         const presenting = state.varReview != null || PRESENTATION_PHASES.has(state.matchPhase);
-        const pace = presenting ? 1 : speed * (mode === "full" ? MODE_A_SPEED : 1);
+        // Mode A follows the ball (`MODE_A_PACE`): slow near goal, quick in midfield, eased.
+        if (mode === "full" && !presenting) varPace = easePace(varPace, modeAPaceFactor(paceViewOf(state)), realMs / 1000);
+        const pace = presenting ? 1 : speed * (mode === "full" ? MODE_A_SPEED * varPace : 1);
         const act = playback ? playback.step(state) : { kind: "play" as const };
         if (act.kind === "jump") {
           state = restoreLiveSnapshot(structuredClone(act.point.snap));
