@@ -31,6 +31,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.30",
+    date: "2026-11-23",
+    time: "00:00",
+    items: [
+      { tab: "match", pt: "Motor da partida refeito: a partida dura os 90 minutos de verdade, a bola tem altura, quica e rola, o passe longo erra mais, a defesa intercepta o caminho da bola e o time sobe e desce junto.", en: "Match engine rebuilt: the match runs the real 90 minutes, the ball has height, bounces and rolls, long passes fail more, defenders cut the ball's path and the team moves up and down together." },
+      { tab: "match", pt: "Chutes de fora da área, cavadinha só com o goleiro adiantado, cruzamentos e disputas pelo alto mais parecidos com o futebol real; o goleiro sai e fica na hora certa.", en: "Shots from outside the box, chips only over a keeper off his line, crosses and aerial duels closer to real football; the keeper comes out and stays at the right moments." },
+      { tab: "match", pt: "Assista à partida inteira ou só aos lances, escolhendo na prévia; a barra de domínio mostra quem está por cima.", en: "Watch the whole match or only the highlights, chosen in the preview; the momentum bar shows who is on top." },
+      { tab: "formation", pt: "Instruções de equipe em cinco níveis: pressão (altura, intensidade, desarmes), transições ao perder e ao ganhar a bola, linha de impedimento, apoio por fora ou por dentro, saída do goleiro e mais.", en: "Team instructions in five levels: pressing (height, intensity, tackling), transitions on losing and winning the ball, offside trap, overlaps and underlaps, keeper distribution and more." },
+      { tab: "formation", pt: "Cada vaga tem uma função com e sem a bola; a IA ajusta as instruções pelo placar.", en: "Each slot has a duty with and without the ball; the AI adjusts its instructions to the score." },
+      { tab: "squad", pt: "Atributos mentais na ficha do jogador e no olheiro: decisões, frieza, talento e antecipação. Eles pesam nas escolhas dele em campo.", en: "Mental attributes on the player page and in the scout search: decisions, composure, flair and anticipation. They shape his choices on the pitch." },
+      { tab: "match", pt: "Notas dos jogadores, impedimentos, faltas, cartões, cansaço e substituições recalibrados com a partida nova; o volume de gols das ligas ficou perto do real.", en: "Player ratings, offsides, fouls, cards, fatigue and substitutions recalibrated for the new match; the leagues' goal volume is close to real football." },
+    ],
+  },
+  {
     version: "12.29",
     date: "2026-11-19",
     time: "17:06",
@@ -6776,8 +6790,7 @@ export const CURRENT_VERSION = latest.version;
  * roadmap stage (items move to a changelog entry once shipped) — see .claude/rules/changelog.md.
  */
 export const upcoming: ChangelogText[] = [
-  { pt: "Partida mais parecida com a real: passe longo errando mais, pressão mais calma, o time subindo e descendo junto", en: "A match closer to the real thing: long passes failing more, calmer pressing, the team moving up and down together" },
-  { pt: "Táticas novas: forma com e sem a bola, transições, linha de pressão e mais instruções", en: "New tactics: in and out of possession shapes, transitions, line of engagement and more instructions" },
+  { pt: "Estilo de jogo próprio para os clubes de cada país (a Bundesliga mais pressão e jogo direto)", en: "A playing style of their own for each country's clubs (the Bundesliga pressing more and playing more direct)" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];
