@@ -1066,6 +1066,7 @@ export function MatchScreen() {
       const sample = pts.length > 64 ? Array.from({ length: 64 }, (_, i) => pts[Math.floor((i * pts.length) / 64)]!) : pts;
       relayLive({
         type: "relay_frame", saveId, fixtureId: cur.fixtureId, t: performance.now(), ball: [ball.x, ball.y],
+        ...(cur.s.ball ? { ballZ: Math.round(Math.max(0, cur.s.ball.z) * 100) / 100 } : {}),
         players: cur.s.players.map((p) => [p.id, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100] as [number, number, number]),
         minute: matchMinute(cur.s), phase: cur.s.matchPhase, score: { ...cur.s.score },
         steps,
@@ -1923,7 +1924,7 @@ export function MatchScreen() {
 
   const effectLabels = useMemo(
     () => ({
-      save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside"),
+      save: t("match.effects.save"), wide: t("match.effects.wide"), offside: t("match.effects.offside"), woodwork: t("match.effects.woodwork"), blocked: t("match.effects.blocked"), greatSave: t("match.effects.greatSave"), bigChance: t("match.effects.bigChance"), routine: t("match.effects.routine"),
       cornerSave: t("match.effects.cornerSave"), cornerDeflect: t("match.effects.cornerDeflect"),
     }),
     [t],

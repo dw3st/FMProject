@@ -224,6 +224,7 @@ export function createH2HMatch(input: LiveMatchInput, opts: H2HMatchOptions = {}
       type: "frame",
       t: clockMs,
       ball: [ball.x, ball.y],
+      ...(state.ball ? { ballZ: Math.round(Math.max(0, state.ball.z) * 100) / 100 } : {}),
       players: state.players.map((p) => [p.id, p.x, p.y] as [number, number, number]),
       minute: matchMinute(state),
       phase: state.matchPhase,

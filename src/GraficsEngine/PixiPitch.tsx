@@ -11,7 +11,7 @@ import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, typ
 import { benchPropSpots } from "@/GraficsEngine/benchProps";
 import { BENCH_HAIR, BENCH_SKIN, BENCH_VIEW, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
 import { FACE_RETRY_S, faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
-import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS } from "@/GraficsEngine/pitchStyle";
+import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS, PLAY_LINES } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
 import { particleAt, weatherParticles, type Particle } from "@/GraficsEngine/weatherParticles";
@@ -77,7 +77,7 @@ import { gameBus } from "@/GameEngine/Infrastructure/EventBus";
 import { AERIAL_CONFIG } from "@/GameEngine/Configs/AerialConfig";
 import { FM_AERIAL } from "@/GameEngine/Configs/FmAerialConfig";
 import { isAerialKind } from "@/GameEngine/types";
-import { ballFlightPath } from "@/GraficsEngine/ballFlightPath";
+import { ballFlightPath, type PathPoint } from "@/GraficsEngine/ballFlightPath";
 import { passErrorOverlay } from "@/GraficsEngine/passErrorOverlay";
 import { evaluateBoxSetPiece, fmCornerPoint, goalKickLongPoint, goalKickShortSpot, throwInOptionSpots } from "@/GameEngine/Domain/SetPieces";
 import { FM_SET_PIECES, SP_YD_PER_M } from "@/GameEngine/Configs/FmSetPieceConfig";
@@ -109,7 +109,7 @@ import { addAnim, animOffset, contactJumpLift, isLongShot, liveAnims, STYLE, typ
 import { drawCoachArms, makeCoach, makeOfficial, setFlagRaised, showCard, type CoachSprite } from "@/GraficsEngine/touchlineRender";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { lightLook, type StadiumLight } from "@/Domain/matchday/stadiumLight";
-import type { TeamId } from "@/GameEngine/types";
+import type { GameState, TeamId } from "@/GameEngine/types";
 import { decide } from "@/GameEngine/Domain/DecisionTree";
 import { detectTeamIntent } from "@/GameEngine/Domain/IntentDetection";
 import { getExtraCarryLanes, getPassTargetBias } from "@/GameEngine/Configs/IntentConfig";
@@ -520,7 +520,7 @@ interface Props {
    */
   faceUrls?: Partial<Record<import('@/GameEngine/types').TeamId, Record<string, string>>>;
   /** Texts drawn by the pitch effects; English defaults (the live match passes translations). */
-  effectLabels?: { save: string; wide: string; offside: string; cornerSave?: string; cornerDeflect?: string };
+  effectLabels?: { save: string; wide: string; offside: string; woodwork?: string; blocked?: string; greatSave?: string; bigChance?: string; routine?: string; cornerSave?: string; cornerDeflect?: string };
   /**
    * Draw the pitch mirrored on the x axis (#98: the user plays away, home side on the left).
    * Drawing only — the game state, the simulation and the click mapping stay in engine yards.
@@ -659,7 +659,7 @@ export interface PitchStadium {
 export interface PitchPerf { fps: number; drawMs: number }
 const PERF_SAMPLE_FRAMES = 30;
 
-const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE", cornerSave: "SAVED · CORNER", cornerDeflect: "DEFLECTED · CORNER" };
+const DEFAULT_EFFECT_LABELS = { save: "SAVE", wide: "WIDE", offside: "OFFSIDE", woodwork: "OFF THE WOODWORK", blocked: "BLOCKED", greatSave: "GREAT SAVE", bigChance: "BIG CHANCE", routine: "SET PIECE ROUTINE", cornerSave: "SAVED · CORNER", cornerDeflect: "DEFLECTED · CORNER" };
 
 export function PixiPitch({
   canvasWidth = 900,
@@ -2541,6 +2541,12 @@ export function PixiPitch({
       playGfx.eventMode = 'none';
       world.addChild(playGfx);
       let impacts: { x: number; y: number; at: number }[] = [];
+      // Visual of the 90-minute engine (part 2): a keeper coming off his line (for a high ball, a loose ball, to sweep or
+      // to rush a holder) gets a short pulse around him, so his decision reads before he arrives.
+      let comeOuts: { id: number; at: number }[] = [];
+      const unsubComeOut = gameBus.on("keeperComeOut", (e) => {
+        if (framesShown()) comeOuts = [...comeOuts.filter((c) => c.id !== e.keeperId).slice(-1), { id: e.keeperId, at: effectNow }];
+      });
       const unsubImpact = gameBus.on("shotResolved", (e) => {
         if (framesShown()) impacts = [...impacts.slice(-2), { x: e.toX, y: e.toY, at: effectNow }];
       });
@@ -2553,11 +2559,36 @@ export function PixiPitch({
         }
         g.stroke(style);
       };
+      /** The predicted path of a physical pass / shot, worked out once per sim state (drawing only). */
+      let pathCache: { state: GameState; pts: PathPoint[] } | null = null;
+      let landingSeen: GameState | null = null;
+      const physicalPath = (st: GameState): PathPoint[] => {
+        const b = st.ball;
+        const loose = b?.phase === "loose" && Math.hypot(b.vx, b.vy) > PLAY_LINES.LOOSE_MIN_SPEED;
+        if (!loose && (!b?.free || (!st.pass && !st.shot))) return [];
+        if (pathCache?.state !== st) pathCache = { state: st, pts: ballFlightPath(st) };
+        return pathCache.pts;
+      };
       const drawPlayLines = (ball: { x: number; y: number }, positions: Map<number, { x: number; y: number }>) => {
         playGfx.clear();
         const st = stateRef.current;
         const { px: bx, py: by } = toPixel(ball.x, ball.y);
-        if (st.pass && st.pass.toId !== null) {
+        const path = physicalPath(st);
+        if (st.pass && st.ball?.free && path.length > 1) {
+          // A physical pass (stage 4): the line goes where the ball will really end (landing or stop point), and the
+          // ring sits on the receiver only when that is where it ends up.
+          const end = path[path.length - 1]!;
+          const { px: ex, py: ey } = toPixelNearGoal(end.x, end.y);
+          dashed(playGfx, bx, by, ex, ey, { width: 1.5, color: 0xffffff, alpha: 0.55 });
+          const to = st.pass.toId !== null ? positions.get(st.pass.toId) ?? st.players.find((p) => p.id === st.pass!.toId) : undefined;
+          const onTarget = to !== undefined && Math.hypot(to.x - end.x, to.y - end.y) <= PLAY_LINES.RECEIVER_REACH_YDS;
+          if (to && onTarget) {
+            const { px: tx, py: ty } = toPixel(to.x, to.y);
+            playGfx.circle(tx, ty, markerR * 1.4).stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 });
+          } else {
+            playGfx.circle(ex, ey, markerR * 0.7).stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 });
+          }
+        } else if (st.pass && st.pass.toId !== null) {
           const to = positions.get(st.pass.toId) ?? st.players.find((p) => p.id === st.pass!.toId);
           if (to) {
             const { px: tx, py: ty } = toPixel(to.x, to.y);
@@ -2565,11 +2596,42 @@ export function PixiPitch({
             playGfx.circle(tx, ty, markerR * 1.4).stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 });
           }
         }
-        if (st.shot) {
+        if (!st.pass && !st.shot && st.ball?.phase === "loose" && path.length > 1) {
+          // Visual of the 90-minute engine (part 3): a ball running loose (overhit, heavy touch, deflection) shows
+          // where it will stop.
+          const end = path[path.length - 1]!;
+          const { px: ex, py: ey } = toPixel(end.x, end.y);
+          dashed(playGfx, bx, by, ex, ey, { width: 1.2, color: 0xffffff, alpha: 0.35 });
+          playGfx.circle(ex, ey, markerR * 0.45).fill({ color: 0xffffff, alpha: 0.35 });
+        }
+        // A high ball met in the air or come down: a ring where it was played (once per sim state).
+        const fb = st.ball;
+        if (fb && st !== landingSeen && (fb.metZ !== undefined || (fb.ended && fb.ended.peak > PLAY_LINES.HIGH_PEAK_YDS))) {
+          landingSeen = st;
+          if (framesShown()) impacts = [...impacts.slice(-2), { x: fb.x, y: fb.y, at: effectNow }];
+        }
+        if (st.shot?.physics && path.length > 1) {
+          // A physical shot (stage 7): the arc is the ball's own path from where it is drawn (its height lifts the line
+          // the way it lifts the ball), so a dip, a lob or a deflection shows as it is.
+          const lift = m.scale * BALL.LIFT_PX_PER_YD;
+          playGfx.moveTo(bx, by - (st.ball?.z ?? 0) * lift);
+          for (const q of path.slice(1)) {
+            const { px, py } = toPixelNearGoal(q.x, q.y);
+            playGfx.lineTo(px, py - q.z * lift);
+          }
+          playGfx.stroke({ width: 2, color: 0xffe678, alpha: 0.75 });
+        } else if (st.shot) {
           const a = toPixelNearGoal(st.shot.fromX, st.shot.fromY), b = toPixelNearGoal(st.shot.toX, st.shot.toY);
           const lift = Math.min(60, Math.hypot(b.px - a.px, b.py - a.py) * 0.18);
           playGfx.moveTo(a.px, a.py).quadraticCurveTo((a.px + b.px) / 2, Math.min(a.py, b.py) - lift, b.px, b.py)
             .stroke({ width: 2, color: 0xffe678, alpha: 0.75 });
+        }
+        comeOuts = comeOuts.filter((c) => effectNow - c.at < PLAY_LINES.COME_OUT_S);
+        for (const c of comeOuts) {
+          const at = positions.get(c.id) ?? st.players.find((p) => p.id === c.id);
+          if (!at) continue;
+          const k = (effectNow - c.at) / PLAY_LINES.COME_OUT_S, { px, py } = toPixel(at.x, at.y);
+          playGfx.circle(px, py, markerR * (1.2 + k * 1.6)).stroke({ width: 2, color: 0xffe678, alpha: 0.8 * (1 - k) });
         }
         impacts = impacts.filter((i) => effectNow - i.at < 0.6);
         for (const i of impacts) {
@@ -2584,10 +2646,43 @@ export function PixiPitch({
         const labels = labelsOf();
         const before = effects.length;
         pushEffect(
-          { kind: "shot", fromX: e.fromX, fromY: e.fromY, toX: e.toX, toY: e.toY, result: e.inPosts ? "save" : "wide" },
-          e.inPosts ? labels.save : labels.wide,
+          { kind: "shot", fromX: e.fromX, fromY: e.fromY, toX: e.toX, toY: e.toY, result: e.outcome === "woodwork" ? "woodwork" : e.inPosts ? "save" : "wide" },
+          e.outcome === "woodwork" ? labels.woodwork ?? DEFAULT_EFFECT_LABELS.woodwork : e.inPosts ? labels.save : labels.wide,
         );
         lastShotFx = { at: effectNow, effect: effects.length > before ? effects[effects.length - 1] : undefined };
+      });
+      // Visual of the 90-minute engine (part 2): a difficult save says so; a shot blocked by a defender shows where.
+      const unsubSaveGradeFx = gameBus.on("keeperSave", (e) => {
+        if (e.grade !== "difficult" || !lastShotFx || lastShotFx.at !== effectNow || !lastShotFx.effect) return;
+        const text = effectTexts.get(lastShotFx.effect);
+        if (text) text.text = labelsOf().greatSave ?? DEFAULT_EFFECT_LABELS.greatSave;
+      });
+      // A big chance missed: the caption says so instead of a plain "wide".
+      const unsubBigChanceFx = gameBus.on("shotResolved", (e) => {
+        if (e.isGoal || e.inPosts || e.outcome === "woodwork" || !(e.xg >= PLAY_LINES.BIG_CHANCE_XG)) return;
+        if (!lastShotFx || lastShotFx.at !== effectNow || !lastShotFx.effect) return;
+        const text = effectTexts.get(lastShotFx.effect);
+        if (text) text.text = labelsOf().bigChance ?? DEFAULT_EFFECT_LABELS.bigChance;
+      });
+      // The back line steps up together (the offside trap): a brief line where it goes, at most every few seconds a side.
+      const lineFlashAt: Partial<Record<TeamId, number>> = {};
+      const unsubBackLineFx = gameBus.on("backLineState", (e) => {
+        if (e.mode !== "step_up" || effectNow - (lineFlashAt[e.team] ?? -Infinity) < PLAY_LINES.BACK_LINE_GAP_S) return;
+        lineFlashAt[e.team] = effectNow;
+        pushEffect({ kind: "line", lineX: e.x });
+      });
+      // A rehearsed set piece (the manager's routine): a caption over the taker.
+      const unsubRoutineFx = gameBus.on("setPieceRoutine", (e) => {
+        const taker = playerPos(e.takerId);
+        if (taker) pushEffect({ kind: "note", x: taker.x, y: taker.y }, labelsOf().routine ?? DEFAULT_EFFECT_LABELS.routine);
+      });
+      const unsubBlockFx = gameBus.on("shotBlocked", (e) => {
+        const shooter = playerPos(e.player), blocker = playerPos(e.blockerId);
+        if (!shooter || !blocker) return;
+        pushEffect(
+          { kind: "shot", fromX: shooter.x, fromY: shooter.y, toX: blocker.x, toY: blocker.y, result: "blocked" },
+          labelsOf().blocked ?? DEFAULT_EFFECT_LABELS.blocked,
+        );
       });
       const unsubCornerFx = gameBus.on("cornerAwarded", (e) => {
         const text = lastShotFx && lastShotFx.at === effectNow && lastShotFx.effect ? effectTexts.get(lastShotFx.effect) : undefined;
@@ -2713,7 +2808,9 @@ export function PixiPitch({
         anims = addAnim(anims, { playerId: keeperId, kind: "save", dir: { x: 0, y: side }, side }, effectNow);
       };
       const unsubAnimSave = gameBus.on("shotResolved", (e) => {
-        if (e.isGoal || !e.inPosts || !framesShown()) return;
+        // A physical shot (`outcome` set, stage 7): the engine already moved the keeper to where he met the ball, so
+        // no drawn dive on top of it (it pushed him past the ball).
+        if (e.isGoal || !e.inPosts || e.outcome !== undefined || !framesShown()) return;
         const shooter = playerPos(e.player);
         if (!shooter) return;
         const gk = stateRef.current.players.find((q) => q.team !== shooter.team && q.role === "GK");
@@ -2769,12 +2866,31 @@ export function PixiPitch({
         // A high ball brought down: on the chest.
         gameBus.on("aerialResolved", (e) => { if (e.outcome === "control" && topDownMoves()) act(e.winnerId, "chest"); }),
         gameBus.on("keeperFeet", (e) => { if (e.won && topDownMoves()) act(e.keeperId, "smother"); }),
+        // Visual of the 90-minute engine (part 2): the strike the engine chose (it comes right after "shot", whose pose
+        // it replaces): a chip or a lob is scooped, a volley is a volley, the rest a plain strike (a header keeps its own).
+        gameBus.on("shotLaunched", (e) => {
+          if (e.technique === "header") return;
+          const kind = e.technique === "chip" || e.technique === "lob" ? "chip" : e.technique === "volley" ? "volley" : "kick";
+          act(e.player, topDownMoves() ? kind : "kick");
+        }),
+        // A shot blocked or deflected: the defender put his body in the way.
+        gameBus.on("shotBlocked", (e) => act(e.blockerId, topDownMoves() ? "chest" : "tackleStand")),
+        gameBus.on("shotDeflected", (e) => act(e.blockerId, topDownMoves() ? "chest" : "tackleStand")),
+        // The holder's steps (holder-choice.md): holding or shielding at the flag he stands over the ball, a turn or a
+        // spin is a turn; a sprint or a run to the byline show in his stride.
+        gameBus.on("holderStep", (e) => {
+          if (!topDownMoves()) return;
+          if (e.step === "hold" || e.step === "flag") act(e.playerId, "receive");
+          else if (e.step === "turn" || e.step === "spin") act(e.playerId, "roulette", e.playerId % 2 === 0 ? 1 : -1);
+        }),
+        // A won dribble leaves the beaten defender stumbling.
+        gameBus.on("dribble", (e) => { if (e.success && topDownMoves()) act(e.targetId, "stumble"); }),
         // The holder's moves (`HolderMoves.ts`, stage 4 `movement.md`): an existing pose for each. Shielding he stands over
         // the ball (receive), cutting inside he turns (roulette), the lay-off is a first-time pass, the chip a lofted
         // strike (volley), rounding the keeper a step-over.
         gameBus.on("holderMove", (e) => {
           if (!topDownMoves()) return;
-          if (e.move === "chip") { act(e.playerId, "volley"); return; }
+          if (e.move === "chip") { act(e.playerId, "chip"); return; }
           if (e.move === "round_keeper") { act(e.playerId, "stepover", e.playerId % 2 === 0 ? 1 : -1); return; }
           if (e.phase !== "start") return;
           act(e.playerId, e.move === "shield" ? "receive" : e.move === "cut_inside" ? "roulette" : "pass");
@@ -2798,6 +2914,16 @@ export function PixiPitch({
           const keeper = playerPos(e.player)?.role === "GK";
           act(e.player, keeper ? (d < 32 ? "throw" : topDownMoves() ? "goalKick" : "kick") : d < 22 ? "pass" : "kick");
         }),
+        // Visual of the 90-minute engine (part 2): the keeper's restart by the pass the engine launched (it follows
+        // passAttempted): a goal kick is kicked off the grass (a short one passed), from his hands a ground or driven
+        // ball is thrown, a higher one punted.
+        gameBus.on("passLaunched", (e) => {
+          if (playerPos(e.player)?.role !== "GK") return;
+          const goalKick = stateRef.current.setPiece?.type === "goal_kick";
+          const low = e.type === "ground" || e.type === "driven";
+          const kind = goalKick ? (low && e.distance < 32 ? "pass" : "goalKick") : low && e.distance < 40 ? "throw" : "goalKick";
+          act(e.player, kind === "goalKick" && !topDownMoves() ? "kick" : kind);
+        }),
         gameBus.on("passCompleted", (e) => act(e.toId, topDownMoves() && playerPos(e.toId)?.role === "GK" ? "collect" : "receive")),
         gameBus.on("crossStarted", (e) => act(e.player, "kick")),
         gameBus.on("longBallStarted", (e) => act(e.player, "kick")),
@@ -2815,7 +2941,8 @@ export function PixiPitch({
           act(e.assistId, "celebrate");
         }),
         gameBus.on("shotResolved", (e) => {
-          if (e.isGoal || !e.inPosts) return;
+          // A physical shot: the keeperSave below picks his one pose (two used to play for the same save).
+          if (e.isGoal || !e.inPosts || e.outcome !== undefined) return;
           const shooter = playerPos(e.player);
           const gk = shooter && stateRef.current.players.find((q) => q.team !== shooter.team && q.role === "GK");
           if (!gk) return;
@@ -2830,7 +2957,8 @@ export function PixiPitch({
           if (!gk) return;
           const lateral = Math.abs(e.y - gk.y);
           const side: 1 | -1 = e.y >= gk.y ? 1 : -1;
-          if (e.kind === "hold") act(gk.id, lateral < 1.2 ? (topDownMoves() && (e.z ?? 0) < 0.5 ? "collect" : "catch") : "dive", side);
+          if (e.kind === "spill" && topDownMoves()) act(gk.id, "spill", side);
+          else if (e.kind === "hold") act(gk.id, lateral < 1.2 ? (topDownMoves() && (e.z ?? 0) < 0.5 ? "collect" : "catch") : "dive", side);
           else if (e.kind === "parry" && topDownMoves() && (e.z ?? 0) > 2) act(gk.id, "tipOver");
           else act(gk.id, "dive", side);
         }),
@@ -4481,7 +4609,7 @@ export function PixiPitch({
           const st = stateRef.current;
           const rp = remotePositions(frames, defaultNow(), remote.stepMs, TELEPORT_YDS, BALL_TELEPORT_YDS);
           drawnPos = rp ? rp.players : drawnPlayerPositions(st, st, 1, TELEPORT_YDS);
-          drawnB = rp ? remoteDrawnBall(st, rp.ball) : drawnBall(st, st, 1, BALL_TELEPORT_YDS);
+          drawnB = rp ? remoteDrawnBall(st, rp.ball, rp.ballZ) : drawnBall(st, st, 1, BALL_TELEPORT_YDS);
         } else {
           const drawState = stateRef.current;
           // A state swapped in from outside the pump that moved something (/test command) ends a transition.
@@ -4803,7 +4931,7 @@ export function PixiPitch({
             const ballPx = toPixel(drawnB.x, drawnB.y);
             const withBall = attackingTeam(stateRef.current);
             const ballDist = Math.hypot(ballPx.px - px, ballPx.py - py) / m.scale;
-            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, backpedals(player.role === "GK", withBall !== null && withBall !== player.team, ballDist));
+            const mo = stepMotion(prevM, { x: px / m.scale, y: py / m.scale }, dtS, { x: ballPx.px / m.scale, y: ballPx.py / m.scale }, backpedals(player.role === "GK", withBall !== null && withBall !== player.team, ballDist), player.sprint ? player.sprint.secs > 0 : undefined);
             spriteMotion.set(player.id, mo);
             const action = actionOf.get(player.id) ?? null;
             const sp = stateRef.current.setPiece;
@@ -6039,6 +6167,12 @@ export function PixiPitch({
         unsubAerialContact();
         unsubShotFx();
         unsubCornerFx();
+        unsubSaveGradeFx();
+        unsubComeOut();
+        unsubBigChanceFx();
+        unsubBackLineFx();
+        unsubRoutineFx();
+        unsubBlockFx();
         unsubGoalFx();
         unsubFoulFx();
         unsubCardFx();

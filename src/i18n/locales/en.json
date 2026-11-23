@@ -1566,6 +1566,11 @@
       "save": "SAVE",
       "wide": "WIDE",
       "offside": "OFFSIDE",
+      "woodwork": "OFF THE WOODWORK",
+      "blocked": "BLOCKED",
+      "greatSave": "GREAT SAVE",
+      "bigChance": "BIG CHANCE",
+      "routine": "SET PIECE ROUTINE",
       "cornerSave": "SAVED · CORNER",
       "cornerDeflect": "DEFLECTED · CORNER"
     },

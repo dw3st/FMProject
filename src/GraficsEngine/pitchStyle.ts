@@ -103,7 +103,7 @@ export const BALL = {
 export const BALL_HEIGHT = { CROSS: 6, LONG_BALL: 8, CLEARANCE: 5, SHOT: 1.5, HEADER: 0.5 } as const;
 
 /** Seconds (real time) each pitch effect stays; the last FADE_SHARE of it fades out. */
-export const EFFECT_DURATION = { shot: 1.5, goal: 1.5, foul: 1.5, card: 2, offside: 2 } as const;
+export const EFFECT_DURATION = { shot: 1.5, goal: 1.5, foul: 1.5, card: 2, offside: 2, note: 1.8, line: 1.1 } as const;
 export const EFFECT_FADE_SHARE = 0.3;
 
 /** Ball trail: passes at least MIN_PASS_YDS long, points kept SECONDS, line width px, max alpha. */
@@ -117,7 +117,7 @@ export const EFFECT_SHAPE = {
   CONFETTI: 12, CONFETTI_R: 2.5, CONFETTI_SPREAD: 0.9, CONFETTI_BASE: 2, CONFETTI_STEP: 0.8, CONFETTI_RINGS: 4, CONFETTI_Y: 1.2, CONFETTI_WHITE_EVERY: 3,
   FOUL_CROSS: 0.6,
   CARD_W: 0.7, CARD_H: 1, CARD_LIFT: 1.8, CARD_TILT: 0.35, CARD_OUTLINE_ALPHA: 0.4,
-  OFFSIDE_RING: 1.4, OFFSIDE_STRIP: 0.16,
+  OFFSIDE_RING: 1.4, OFFSIDE_STRIP: 0.16, BACK_LINE_ALPHA: 0.45,
   TEXT_SHOT: 2.4, TEXT_CARD: 3, TEXT_OFFSIDE: 2.4,
 } as const;
 
@@ -277,3 +277,15 @@ export { LED_ADS };
  * cloth pointing to +x, CLOTH_PX long.
  */
 export const FLAG_SPRITE = { POLE_X: 40 / 256, POLE_Y: 128 / 256, CLOTH_PX: 204 } as const;
+
+/**
+ * Lines of the play in flight (visual of the 90-minute engine, part 1): a physical pass rings its receiver only when
+ * the ball ends within this many yards of him; otherwise the ring marks where it lands or stops.
+ */
+export const PLAY_LINES = {
+  RECEIVER_REACH_YDS: 3, COME_OUT_S: 0.7,
+  /** Part 3: a loose ball faster than this (yd/s) shows where it stops; a flight above this peak (yd) rings where it came down. */
+  LOOSE_MIN_SPEED: 2, HIGH_PEAK_YDS: 2.5,
+  /** A missed shot with at least this xG is captioned as a big chance; a side's back-line flash waits this long (s). */
+  BIG_CHANCE_XG: 0.35, BACK_LINE_GAP_S: 8,
+} as const;

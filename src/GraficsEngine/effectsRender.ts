@@ -104,6 +104,12 @@ export function drawEffect(g: Graphics, e: PitchEffect, now: number, ctx: Effect
       g.circle(px, py, R * X.OFFSIDE_RING).stroke({ width: X.LINE_W, color: EFFECT_COLOR.HIGHLIGHT, alpha: a });
       return;
     }
+    case "note": return;
+    case "line": {
+      const t = ctx.toPixel(e.lineX, 0), b = ctx.toPixel(e.lineX, PITCH_WIDTH);
+      dashed(g, t.px, t.py, b.px, b.py, EFFECT_COLOR.WHITE, a * X.BACK_LINE_ALPHA);
+      return;
+    }
   }
 }
 
@@ -114,6 +120,7 @@ export function effectTextAnchor(e: PitchEffect, now: number, ctx: EffectCtx): {
     case "shot": { const to = ctx.toPixel(e.toX, e.toY); return { x: to.px, y: to.py - R * X.TEXT_SHOT }; }
     case "card": { const { px, py } = ctx.toPixel(e.x, e.y); return { x: px, y: py - R * X.TEXT_CARD - effectProgress(e, now) * R }; }
     case "offside": { const { px, py } = ctx.toPixel(e.x, e.y); return { x: px, y: py - R * X.TEXT_OFFSIDE }; }
+    case "note": { const { px, py } = ctx.toPixel(e.x, e.y); return { x: px, y: py - R * X.TEXT_OFFSIDE }; }
     default: return null;
   }
 }
