@@ -60,7 +60,7 @@ export const QUICK_SIM_CONFIG = {
    * 90-minute engine (stage 21): refitted on 26 leagues × 200 matches with the formation table below; the
    * engine scores MORE between weak sides (negative LEVEL_EXPONENT); rms per league 39% → 5.6%.
    */
-  BASE_GOALS: 1.036,
+  BASE_GOALS: 1.166, // 2026-11-22: × 1.125 after the shot-volume tune (main six leagues: quick/engine 0.892 → ~1.0)
   HOME_ADVANTAGE: 1.026,
   /**
    * Exponent on (atk × mid) / (def × gk). Also carries league-wide imbalance: derived (of_*) squads
