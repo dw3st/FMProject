@@ -8828,7 +8828,18 @@
     "contract": "Contract with {{club}} until {{date}}, {{wage}}/wk",
     "share": "your club pays {{pct}}% ({{wage}}/wk)",
     "options": "You can try to buy him from {{club}} now: the purchase ends the loan and he stays in the squad.",
-    "optionsPre": "You can try to buy him from {{club}} or sign a pre-contract: his contract ends in under 6 months."
+    "optionsPre": "You can try to buy him from {{club}} or sign a pre-contract: his contract ends in under 6 months.",
+    "returnButton": "Send back to {{club}}",
+    "returnTitle": "Send {{name}} back?",
+    "returnBody": "The loan ends today and {{name}} goes back to {{club}}. The fee paid is not refunded.",
+    "returnConfirm": "Send back",
+    "returnErrors": {
+      "windowClosed": "Your transfer window is closed.",
+      "seatLoan": "He was lent by another manager: agree on his return between you.",
+      "notLoanedIn": "He is no longer on loan at your club.",
+      "lobby": "The league has not started yet.",
+      "generic": "Could not send him back."
+    }
   },
   "fanbase": {
     "tab": "Social media",

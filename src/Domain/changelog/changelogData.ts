@@ -31,6 +31,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.39",
+    date: "2026-11-24",
+    items: [
+      { tab: "squad", pt: "Jogador emprestado ao seu clube pode ser devolvido antes da data: na ficha dele, \"Devolver ao clube\", com a sua janela aberta. A taxa paga não volta.", en: "A player on loan at your club can be sent back before the date: \"Send back\" on his page, with your window open. The fee paid is not refunded." },
+    ],
+  },
+  {
     version: "12.38",
     date: "2026-11-24",
     items: [

@@ -314,6 +314,37 @@ export const negotiationRoutes = {
   },
 
   /**
+   * `POST` - sends back to his AI club a player the human club has on loan, before the date (user request, 12.39):
+   * the window of the human club must be open; the loan fee is not refunded. 409 `notLoanedIn` (no such loan),
+   * `seatLoan` (lent by another manager: answered between the two), `windowClosed`, `noClub`.
+   */
+  "/api/saves/:saveId/loans/:playerId/return": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const playerId = decodeURIComponent(req.params.playerId!);
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
+    return withSaveLock(saveId, async () => {
+      const meta = await saveService.getSeatMeta(saveId, auth.seatId);
+      if (!meta) return json({ error: "save not found" }, 404);
+      if (!meta.clubId) return json({ error: "noClub" }, 409);
+      const market = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
+      const loan = (market.loans ?? []).find((l) => l.playerId === playerId && l.toClubId === meta.clubId);
+      if (!loan) return json({ error: "notLoanedIn" }, 409);
+      const humans = await saveService.humanClubIds(saveId);
+      if (humans.has(loan.fromClubId)) return json({ error: "seatLoan" }, 409);
+      const windows = await loadWindowContext(meta, await saveService.getSquadIndex(saveId), undefined, [seatWindowRef(meta)]);
+      const today = windows.seat(auth.seatId).today;
+      if (!today.open) return windowClosedResponse(today);
+      const res = await returnDueLoans(saveService, saveId, auth.seatId, meta, market, meta.currentDate ?? "", {
+        recalled: new Set([playerId]), humanClubs: humans,
+      });
+      await saveService.saveMarket(saveId, res.market, auth.seatId);
+      return json({ ok: true });
+    });
+  },
+
+  /**
    * `POST { playerId, fromSquadId, wageShare (0..100), fee }` - the human asks an AI club for a
    * loan. Answers `accept` (the player joins), `counter` (wage share and/or loan fee) or `reject`.
    */

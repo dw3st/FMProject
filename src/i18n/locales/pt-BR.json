@@ -8822,7 +8822,18 @@
     "contract": "Contrato com o {{club}} até {{date}}, {{wage}}/sem",
     "share": "seu clube paga {{pct}}% ({{wage}}/sem)",
     "options": "Dá para tentar comprá-lo do {{club}} agora: a compra encerra o empréstimo e ele fica no elenco.",
-    "optionsPre": "Dá para tentar comprá-lo do {{club}} ou assinar um pré-contrato: o contrato dele acaba em menos de 6 meses."
+    "optionsPre": "Dá para tentar comprá-lo do {{club}} ou assinar um pré-contrato: o contrato dele acaba em menos de 6 meses.",
+    "returnButton": "Devolver ao {{club}}",
+    "returnTitle": "Devolver {{name}}?",
+    "returnBody": "O empréstimo acaba hoje e {{name}} volta ao {{club}}. A taxa paga não é devolvida.",
+    "returnConfirm": "Devolver",
+    "returnErrors": {
+      "windowClosed": "Sua janela de transferências está fechada.",
+      "seatLoan": "Ele foi emprestado por outro técnico: combinem a volta entre vocês.",
+      "notLoanedIn": "Ele não está mais emprestado ao seu clube.",
+      "lobby": "A liga ainda não começou.",
+      "generic": "Não foi possível devolvê-lo."
+    }
   },
   "fanbase": {
     "tab": "Redes sociais",

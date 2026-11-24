@@ -253,7 +253,7 @@ export function PlayerScreen({
           </div>
         </a>
 
-        {isOwnPlayer && player.loan && <LoanedInCard player={player} canPreContract={canPreContract} />}
+        {isOwnPlayer && player.loan && <LoanedInCard player={player} canPreContract={canPreContract} saveId={session?.saveId} onReturned={() => { void refresh(); navigate(backTo); }} />}
         {!isOwnPlayer && <ForeignCheckLine playerId={player.id} fromSquadId={squadId} />}
         {!isOwnPlayer && <StarLimitLine playerId={player.id} />}
 
