@@ -27,6 +27,7 @@ import { RECOMMENDATION_ORIGIN } from "@/types/scoutingTypes";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { Label } from "@/GameInterface/ui/Label";
 import { Icon } from "@/GameInterface/Icons";
+import { ObserveModal } from "@/GameInterface/Scouting/ObserveModal";
 import {
   REPORT_GRADES, defaultDir, filterReports, sortReports, type ReportSortKey, type SortDir,
 } from "@/Domain/scouting/reportView";
@@ -102,6 +103,7 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects
     : <th className={th}>{label}</th>;
   // The search's player card on the name (tester report, 10.4.2).
   const hoverCard = useScoutHoverCard(saveId);
+  const [watch, setWatch] = useState<{ playerId: string; squadId: string; name: string } | null>(null);
   return (
     <div className={`${TABLE_STYLE.shell} overflow-x-auto`}>
       <table className="w-full text-sm border-collapse tabular-nums">
@@ -118,6 +120,7 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects
             {head("wage", t("scouting.col.wage"))}
             {head("value", t("scouting.col.value"))}
             {head("verdict", t("scouting.col.verdict"))}
+            <th className={th}><span className="sr-only">{t("scouting.observe")}</span></th>
           </tr>
         </thead>
         <tbody className={TABLE_STYLE.body}>
@@ -164,11 +167,22 @@ function ReportsTable({ reports, saveId, shortlisted, onShortlist, openProspects
               <td className={`${td} whitespace-nowrap text-muted-foreground font-medium`}>{formatWageShort(r.wageDemand)}</td>
               <td className={`${td} whitespace-nowrap font-bold ${ratingTextClass10((r.overall[0] + r.overall[1]) / 2)}`}>{money(r.value)}</td>
               <td className={`${td} text-muted-foreground`}>{t(`scouting.text.${r.text}`)}</td>
+              <td className={td}>
+                {!r.prospectId && r.squadId && !r.gone && r.k < 100 && (
+                  <button type="button" onClick={() => setWatch({ playerId: r.playerId, squadId: r.squadId, name: r.name })}
+                    title={t("scouting.observeHint")} aria-label={`${t("scouting.observe")}: ${r.name}`}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-sm font-semibold text-muted-foreground hover:border-primary hover:text-foreground">
+                    <Icon name="binoculars" size={16} />
+                    {t("scouting.observe")}
+                  </button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       {hoverCard.card}
+      <ObserveModal saveId={saveId} target={watch} onClose={() => setWatch(null)} />
     </div>
   );
 }

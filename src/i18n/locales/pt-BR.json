@@ -5958,6 +5958,8 @@
     "beingObserved": "Em observação: semana {{done}} de {{total}}",
     "noFreeScout": "Todos os olheiros estão em missão.",
     "observe": "Observar",
+    "observeTitle": "Observar de perto",
+    "observeHint": "Mandar um olheiro ver os atributos de perto",
     "attention": {
       "gem": "Joia encontrada: {{name}} ({{club}})",
       "shortlist": "Observado: {{name}} ({{reason}})"

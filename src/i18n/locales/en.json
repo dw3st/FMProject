@@ -5964,6 +5964,8 @@
     "beingObserved": "Being observed: week {{done}} of {{total}}",
     "noFreeScout": "Every scout is on a mission.",
     "observe": "Observe",
+    "observeTitle": "Watch closely",
+    "observeHint": "Send a scout to see his attributes up close",
     "attention": {
       "gem": "Gem found: {{name}} ({{club}})",
       "shortlist": "Shortlist: {{name}} ({{reason}})"

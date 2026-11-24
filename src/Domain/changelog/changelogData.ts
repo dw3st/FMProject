@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.33",
+    date: "2026-11-24",
+    time: "13:00",
+    items: [
+      { tab: "squad", pt: "Na renovação, quem virou prodígio, vive ótima fase, entrou no top 25 do mundo ou ganhou um prêmio pode pedir até o dobro do salário atual, e a janela diz o motivo.", en: "On renewal, a player who became a prodigy, is in great form, made the world top 25 or won an award can ask up to double his wage, and the window says why." },
+      { tab: "scout", pt: "Botão Observar nos relatórios e nas joias: manda um olheiro ver o jogador de perto sem sair da lista.", en: "Watch button in the reports and gems: send a scout to see the player up close without leaving the list." },
+    ],
+    fixes: [
+      { tab: "leagues", pt: "O Montana, da Bulgária, ganhou o escudo.", en: "Montana, from Bulgaria, now has its crest." },
+    ],
+  },
+  {
     version: "12.32",
     date: "2026-11-24",
     time: "12:39",
