@@ -34,6 +34,8 @@ export interface ContractDemandInfo {
   renewableOn?: string;
   /** Renewal: the most he asks over his current wage (share, by the club's size; 12.28.5). */
   renewalCap?: number;
+  /** Comma-separated breakouts behind a lifted cap (prodigy, form, top25, award). */
+  renewalBreakout?: string;
   /** Free agent: days without a club and the discount they bring, a multiplier (12.28.5). */
   freeDays?: number;
   freeWait?: number;
@@ -72,7 +74,12 @@ function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | un
   if (neg !== 0) lines.push({ key: "neg", text: t("achievements.contractLine", { value: sign(neg) }) });
   const fame = pct(info.fame);
   if (fame !== 0) lines.push({ key: "fame", text: t("personality.demand.fame", { pct: sign(fame) }) });
-  if (info.renewalCap !== undefined) lines.push({ key: "cap", text: t("contracts.renewalCap", { pct: Math.round(info.renewalCap * 100) }) });
+  if (info.renewalCap !== undefined) {
+    const why = (info.renewalBreakout ?? "").split(",").filter(Boolean).map((k) => t(`contracts.breakout.${k}`));
+    lines.push({ key: "cap", text: why.length > 0
+      ? t("contracts.renewalCapBreakout", { pct: Math.round(info.renewalCap * 100), why: why.join(", ") })
+      : t("contracts.renewalCap", { pct: Math.round(info.renewalCap * 100) }) });
+  }
   const wait = pct(info.freeWait);
   if (info.freeDays !== undefined && wait !== 0) lines.push({ key: "wait", text: t("contracts.freeWait", { count: info.freeDays, pct: sign(wait) }) });
   const vet = pct(info.freeVeteran);

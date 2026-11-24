@@ -4489,6 +4489,8 @@
     "currentWage": "Current wage: {{wage}}/wk",
     "wageChange": "{{pct}}% on the current",
     "renewalCap": "Renewal: up to +{{pct}}% on the current wage",
+    "renewalCapBreakout": "Renewal: up to +{{pct}}% on the current wage, because {{why}}",
+    "breakout": { "prodigy": "he became a prodigy", "form": "he is in great form", "top25": "he is in the world top 25", "award": "he won an individual award" },
     "freeWait_one": "No club for {{count}} day: {{pct}}",
     "freeWait_other": "No club for {{count}} days: {{pct}}",
     "freeVeteran": "Veteran without a club: {{pct}}",

@@ -4483,6 +4483,8 @@
     "currentWage": "Salário atual: {{wage}}/sem",
     "wageChange": "{{pct}}% sobre o atual",
     "renewalCap": "Renovação: até +{{pct}}% sobre o salário atual",
+    "renewalCapBreakout": "Renovação: até +{{pct}}% sobre o salário atual, porque {{why}}",
+    "breakout": { "prodigy": "virou prodígio", "form": "vive ótima fase", "top25": "está no top 25 do mundo", "award": "ganhou um prêmio individual" },
     "freeWait_one": "Sem clube há {{count}} dia: {{pct}}",
     "freeWait_other": "Sem clube há {{count}} dias: {{pct}}",
     "freeVeteran": "Veterano sem clube: {{pct}}",

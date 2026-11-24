@@ -40,6 +40,8 @@ export interface DemandContext {
   freeAgent?: boolean;
   /** The human manager's fame, 0..1, from his belongings (`fameShare`, 8.9.39): ambitious players ask less to join. */
   fame?: number;
+  /** Own-club renewal: why he asks past the tier cap (`renewalBreakouts`); any one lifts it to `RENEWAL_BREAKOUT_CAP`. */
+  breakout?: RenewalBreakout[];
 }
 
 /** The parts of a wage demand (each a multiplier, 1 = no effect) and whether he refuses the club. */
@@ -64,6 +66,8 @@ export interface DemandBreakdown {
   fame: number;
   /** Own-club renewal with a contract: the most he asks over the current wage (share, by the club's natural tier). */
   renewalCap?: number;
+  /** The breakouts behind a lifted renewal cap. */
+  renewalBreakout?: RenewalBreakout[];
   /** A free agent: days in the pool and the discount they bring (`freeWaitMult`). */
   freeDays?: number;
   freeWait: number;
@@ -144,6 +148,19 @@ export function freeVeteranMult(age: number): number {
   return 1 - clamp((age - C.FREE_VETERAN_FROM) * C.FREE_VETERAN_PER_YEAR, 0, C.FREE_VETERAN_MAX);
 }
 
+/** Why a renewal asks past the tier cap: his star (green prodigy, blue form, gold world top 25) or a season award. */
+export type RenewalBreakout = "prodigy" | "form" | "top25" | "award";
+
+/** The breakouts of a player, from his world star (`computeStars`) and a running award boost. */
+export function renewalBreakouts(player: Pick<RosterPlayer, "awardBoost">, star?: "gold" | "blue" | "green"): RenewalBreakout[] {
+  const out: RenewalBreakout[] = [];
+  if (star === "gold") out.push("top25");
+  if (star === "blue") out.push("form");
+  if (star === "green") out.push("prodigy");
+  if (player.awardBoost) out.push("award");
+  return out;
+}
+
 /** The most an own-club renewal asks over the current wage, by the club's natural tier (revenue). */
 export function renewalRaiseCap(squad: Pick<Squad, "finances">): number {
   return C.RENEWAL_RAISE_CAP[naturalFinancialTier(squad.finances)];
@@ -166,7 +183,8 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
   let demand = base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * parts.fame * negotiation * freeArrival * freeWait * freeVeteran;
   // An own-club renewal starts from the current wage (12.28.5): within [current × FLOOR, current × (1 + cap)].
   const current = ctx.renewal ? player.contract?.wage : undefined;
-  const renewalCap = current && current > 0 ? renewalRaiseCap(squad) : undefined;
+  const breakout = current && ctx.breakout && ctx.breakout.length > 0 ? ctx.breakout : undefined;
+  const renewalCap = current && current > 0 ? (breakout ? Math.max(renewalRaiseCap(squad), C.RENEWAL_BREAKOUT_CAP) : renewalRaiseCap(squad)) : undefined;
   if (current && renewalCap !== undefined) demand = clamp(demand, current * C.RENEWAL_FLOOR, current * (1 + renewalCap));
   return {
     demand: Math.round(demand),
@@ -177,6 +195,7 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
     freeWait,
     freeVeteran,
     ...(renewalCap !== undefined ? { renewalCap } : {}),
+    ...(breakout ? { renewalBreakout: breakout } : {}),
     ...(freeDays !== undefined ? { freeDays } : {}),
   };
 }

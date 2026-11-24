@@ -194,3 +194,7 @@ Report de tester. Lógica pura em `src/Domain/contracts/productivity.ts` (`PRODU
 - Pagamento: no avanço do dia, cada jogo oficial do clube em que ele tem nota paga por jogo + gols × por gol (`productivityEntries`), linha `wages` com `ref.stage = "productivity"` ("Bônus por produtividade"). Jogos de base e de seleção não pagam. A folha semanal e o teto da folha contam só o fixo.
 - Tela: chip "Contrato por produtividade" na renovação e no livre (`ProductivityFields`, quando a rota `demand` devolve `productivity`), abre em 70% fixo e o resto em bônus; mostra o esperado e se passa.
 - A IA não usa. Sem renovação automática do bônus: a renovação seguinte decide de novo.
+
+## Renovação de quem estourou (12.33)
+
+Report de tester. Na renovação no próprio clube, o teto de aumento sobe para `RENEWAL_BREAKOUT_CAP` (+100%) quando ele estourou (`renewalBreakouts`): estrela verde (prodígio), azul (ótima fase), dourada (top 25 do mundo, `getStarPlayers`) ou um prêmio individual em vigor (`awardBoost`). O pedido de hoje continua o mesmo; só o limite muda. A rota `demand` devolve `renewalBreakout` (lista separada por vírgula) e a janela diz o motivo ("até +100% sobre o salário atual, porque virou prodígio"). O diretor não usa (renova pela regra da IA).

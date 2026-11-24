@@ -3,7 +3,7 @@ import {
   addYearsIso, aiShouldRenew, contractDemand, demandBreakdown, evaluateContractOffer,
   contractRenewalDue, maxOfferYears, initialContract, isExpired, renewalContract,
 } from "@/Domain/contracts/contracts";
-import { stepWage } from "@/Domain/contracts/contracts";
+import { renewalBreakouts, stepWage } from "@/Domain/contracts/contracts";
 import { currentWage, squadWeeklyWages } from "@/Domain/finance/wages";
 import { initialFacilities } from "@/Domain/facilities/facilities";
 import { itemsOfGroup, wearFor } from "@/Domain/facilities/facilityItems";
@@ -289,6 +289,24 @@ describe("own-club renewal starts from the current wage (12.28.5)", () => {
       expect(b.renewalCap).toBe(cap);
       expect(b.demand).toBe(Math.round(2_000 * (1 + cap)));
     }
+  });
+
+  test("a breakout lifts the cap to +100% and is reported (0a3f6cd5)", () => {
+    const p = withWage(2_000);
+    const s = club(5_000_000, [p, ...mates]);
+    const b = demandBreakdown(p, s, END, { renewal: true, breakout: ["prodigy"] });
+    expect(b.renewalCap).toBe(1);
+    expect(b.renewalBreakout).toEqual(["prodigy"]);
+    expect(b.demand).toBeLessThanOrEqual(4_000);
+    expect(b.demand).toBeGreaterThan(Math.round(2_000 * 1.15));
+    expect(demandBreakdown(p, s, END, { renewal: true, breakout: [] }).renewalCap).toBe(0.15);
+  });
+
+  test("breakouts come from the star and a running award", () => {
+    expect(renewalBreakouts({}, "gold")).toEqual(["top25"]);
+    expect(renewalBreakouts({}, "blue")).toEqual(["form"]);
+    expect(renewalBreakouts({ awardBoost: { season: "2027", league: "x", mult: 1.1 } }, "green")).toEqual(["prodigy", "award"]);
+    expect(renewalBreakouts({})).toEqual([]);
   });
 
   test("never below current × 0.9, even when his market wage fell", () => {

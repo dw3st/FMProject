@@ -53,6 +53,8 @@ export const CONTRACT_CONFIG = {
    * current × (1 + cap of the club's natural tier) nor less than current × RENEWAL_FLOOR.
    */
   RENEWAL_RAISE_CAP: { LOW: 0.15, MEDIUM: 0.25, HIGH: 0.4, ELITE: 0.4 },
+  /** A breakout (prodigy, great form, world top 25, a season award) lifts the renewal cap to this (tester report 0a3f6cd5). */
+  RENEWAL_BREAKOUT_CAP: 1.0,
   RENEWAL_FLOOR: 0.9,
   /** A free agent asks less the longer he waits: × (1 − FREE_WAIT_DISCOUNT × min(1, days in the pool / FREE_WAIT_DAYS)). */
   FREE_WAIT_DISCOUNT: 0.25,

@@ -8,7 +8,8 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { loanedInFrom } from "@/Domain/negotiation/loans";
 import { expectedWeeklyBonus, goalsPerGame, parseContractBonus, productivityAllowed } from "@/Domain/contracts/productivity";
-import { renewalUntil, renewalAvailableOn, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
+import { getStarPlayers } from "@/backend/starsIndex";
+import { renewalUntil, renewalAvailableOn, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer, renewalBreakouts } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Personality } from "@/types/personalityTypes";
 import { obscurePersonality, personalityOf } from "@/Domain/personality/personality";
@@ -142,13 +143,14 @@ export const contractRoutes = {
       const availableOn = renewalAvailableOn(player.contract, date);
       if (availableOn) return Response.json({ error: "recentlyRenewed", availableOn }, { status: 409 });
       const { negotiation } = await managerDemandCtx(saveId, auth.seatId);
+      const breakout = renewalBreakouts(player, (await getStarPlayers(saveId))?.[player.id]);
       // A furious player only renews with an open renewal promise (`.claude/rules/game/morale.md`).
       if (!out && refusesRenewal(squad, player)) {
-        return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date, { renewal: true, negotiation }) }, { status: 400 });
+        return Response.json({ error: "unhappy", demand: contractDemand(player, squad, date, { renewal: true, negotiation, breakout }) }, { status: 400 });
       }
       // A renewal at his own club, also when he is out on loan (`personality.md`): loyalty, no
       // smaller-club premium — the same context as the demand route.
-      const check = evaluateContractOffer({ wage, years, productivity: bonus }, player, squad, date, { renewal: true, negotiation });
+      const check = evaluateContractOffer({ wage, years, productivity: bonus }, player, squad, date, { renewal: true, negotiation, breakout });
       if (!check.accepted) {
         return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
       }
@@ -232,7 +234,9 @@ export const contractRoutes = {
     // (no `from`) asks neither and less the longer he waits (12.28.5).
     const freeKind = renewal ? null : !from ? "free" as const : new URL(req.url).searchParams.get("pre") === "1" ? "pre" as const : null;
     const b = demandBreakdown(player, mine, date, {
-      fromSquad, renewal, negotiation, fame, ...(freeKind ? freeArrivalCtx(freeKind, freeSince) : {}),
+      fromSquad, renewal, negotiation, fame,
+      ...(renewal ? { breakout: renewalBreakouts(player, (await getStarPlayers(saveId))?.[player.id]) } : {}),
+      ...(freeKind ? freeArrivalCtx(freeKind, freeSince) : {}),
     });
     const freeCtx = freeKind ? await freeSigningContext(saveService, saveId, { player, kind: freeKind, from: fromSquad ?? null, date, since: freeSince }) : null;
     // The explanation lines: exact for our own players; for anyone else, what the chief scout sees
@@ -243,6 +247,7 @@ export const contractRoutes = {
       parts = {
         ambition: b.ambition, loyalty: b.loyalty, ...(player.contract ? { currentWage: player.contract.wage } : {}),
         ...(b.renewalCap !== undefined ? { renewalCap: b.renewalCap } : {}),
+        ...(b.renewalBreakout ? { renewalBreakout: b.renewalBreakout.join(",") } : {}),
       };
       if (renewableOn) parts.renewableOn = renewableOn;
     } else {
