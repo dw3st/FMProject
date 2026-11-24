@@ -585,7 +585,9 @@
         "negative_balance": "The board refused a new place ({{role}}): the balance is negative. Ask again in {{days}} days.",
         "max_reached": "The board has already granted two extra places ({{role}})."
       }
-    }
+    },
+    "leavingBadge": "Leaves when the contract ends",
+    "leavingHelp": "The director decided not to renew. You can still renew in his file."
   },
   "staffPool": {
     "role": "Role",
@@ -9487,6 +9489,23 @@
       "W": "W",
       "D": "D",
       "L": "L"
+    }
+  },
+  "assistant": {
+    "title": "Your assistant",
+    "dismiss": "Ignore",
+    "tip": {
+      "tired": "{{name}} is tired ({{energy}}% condition). Worth a change.",
+      "booked": "{{name}} is on a yellow. One more tackle could get him sent off.",
+      "attack": "We are behind and time is running out. Time to go on the attack.",
+      "protect": "One goal up in the closing minutes. We can shut up shop.",
+      "mark": "{{name}} is dangerous today ({{shots}} shots, {{goals}} goals). Worth man-marking."
+    },
+    "action": {
+      "sub": "Open substitutions",
+      "attack": "Attacking mentality",
+      "protect": "Defensive mentality",
+      "mark": "Man-mark him"
     }
   }
 }

@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.36",
+    date: "2026-11-24",
+    time: "15:30",
+    items: [
+      { tab: "match", pt: "Seu auxiliar dá dicas durante a partida: trocar quem está cansado ou com amarelo, mudar a mentalidade no fim do jogo e marcar de perto o adversário mais perigoso.", en: "Your assistant gives tips during the match: replace tired or booked players, change the mentality late on and man-mark the most dangerous opponent." },
+    ],
+    fixes: [
+      { tab: "staff", pt: "Profissional que sai no fim do contrato aparece com um selo claro, sem o texto todo em vermelho.", en: "A staff member leaving at the end of the contract shows a clear badge instead of all-red text." },
+      { tab: "match", pt: "Escudo escuro no tapete do túnel agora aparece sobre um fundo claro.", en: "A dark crest on the tunnel mat now shows on a light background." },
+    ],
+  },
+  {
     version: "12.35",
     date: "2026-11-24",
     time: "14:10",

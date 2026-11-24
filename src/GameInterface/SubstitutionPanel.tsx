@@ -38,6 +38,8 @@ export interface SubstitutionPanelProps {
   onMoveToSlot?: (id: number, slot: number) => void;
   /** A bench player takes the slot an injured player left (#140, manual injury substitutions). */
   onFillVacancy?: (injuredId: number, inId: number) => void;
+  /** Tab the panel opens on (the in-match assistant's advice). Absent = player swap. */
+  initialTab?: "subs" | "formation" | "tactics" | "instructions";
   /** Live formation change; absent hides the Formation tab (`/test` has its own selector). */
   onChangeFormation?: (formationId: string) => void;
   /** The manager's own formations (saved free formation, saved lineups) offered next to the ready ones (tester report, 8.9.37). */
@@ -87,9 +89,10 @@ export function SubstitutionPanel({
   faceUrls,
   roster,
   onClose,
+  initialTab,
 }: SubstitutionPanelProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"subs" | "formation" | "tactics" | "instructions">("subs");
+  const [activeTab, setActiveTab] = useState<"subs" | "formation" | "tactics" | "instructions">(initialTab ?? "subs");
   const [instrSlot, setInstrSlot] = useState<number | null>(null);
   /** The formation being looked at in the Formation tab; null = the current one. */
   const [previewFormation, setPreviewFormation] = useState<string | null>(null);

@@ -41,10 +41,14 @@ export function StaffCard({ member, effect, onOpen, clubColors }: { member: Staf
         </p>
       )}
       {c && (
-        <p className={`text-sm tabular-nums m-0 ${leaving ? "text-destructive" : "text-foreground"}`}>
+        <p className="text-sm tabular-nums m-0 text-foreground">
           {t("staff.contractLine", { until: contractEnd(c.until), wage: formatWageFull(c.wage) })}
-          {leaving ? ` · ${t("staff.leaving")}` : ""}
         </p>
+      )}
+      {c && leaving && (
+        <span className="self-start inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-sm text-destructive" title={t("staff.leavingHelp")}>
+          <Icon name="log-out" size={16} />{t("staff.leavingBadge")}
+        </span>
       )}
       {member.endsInDays !== undefined && !leaving && (
         <p className="flex items-center gap-1.5 text-sm text-chart-4 m-0 tabular-nums">

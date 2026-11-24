@@ -64,6 +64,28 @@ export function needsLightOutline(teamColor: number, pitchColor: number = PITCH_
   return contrastRatio(teamColor, pitchColor) < 1.6 && colorDistance(teamColor, pitchColor) < 160;
 }
 
+/** Mean luminance (0..1) of the visible pixels of RGBA data; null with almost nothing visible. */
+export function visibleLuminance(data: ArrayLike<number>): number | null {
+  let sum = 0, n = 0;
+  for (let i = 0; i + 3 < data.length; i += 4) {
+    const a = data[i + 3]! / 255;
+    if (a < 0.5) continue;
+    sum += (0.2126 * data[i]! + 0.7152 * data[i + 1]! + 0.0722 * data[i + 2]!) / 255;
+    n++;
+  }
+  return n < 20 ? null : sum / n;
+}
+
+/** True when a crest canvas is mostly dark (it needs a light backing on a dark ground). */
+export function crestIsDark(canvas: HTMLCanvasElement): boolean {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return false;
+  try {
+    const lum = visibleLuminance(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
+    return lum !== null && lum < 0.28;
+  } catch { return false; }
+}
+
 const cache = new Map<string, Promise<HTMLCanvasElement | null>>();
 
 /** Seconds before each new try of a face that failed to load (tester report: a blank disc for the whole match). */

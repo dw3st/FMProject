@@ -1,0 +1,85 @@
+import type { GameState, TeamId } from "@/GameEngine/types";
+import type { Mentality } from "@/types/tacticsTypes";
+
+/**
+ * The assistant's advice during the live match (tester report 31dd5a2d): what he would change now. Pure; the match
+ * screen re-reads it once a game minute and the manager applies or dismisses each tip. Advice only: nothing is
+ * changed by itself.
+ */
+export const ASSISTANT_ADVICE = {
+  MAX_TIPS: 3,
+  /** Outfield energy under which a starter is worth taking off (FM condition scale). */
+  TIRED_ENERGY: 68,
+  TIRED_FROM_MINUTE: 55,
+  BOOKED_FROM_MINUTE: 60,
+  CHASE_FROM_MINUTE: 70,
+  PROTECT_FROM_MINUTE: 80,
+  MARK_FROM_MINUTE: 20,
+  /** An opponent this dangerous today (shots, goals count as 2) is worth man-marking. */
+  MARK_THREAT: 3,
+};
+
+export type AdviceTip =
+  | { kind: "tired"; id: string; playerId: number; name: string; energy: number }
+  | { kind: "booked"; id: string; playerId: number; name: string }
+  | { kind: "attack"; id: string }
+  | { kind: "protect"; id: string }
+  | { kind: "mark"; id: string; playerId: number; name: string; shots: number; goals: number };
+
+const DEFENSIVE_ROLES = new Set(["CB", "LB", "RB", "LWB", "RWB", "CDM"]);
+const isLive = (p: GameState["matchPhase"]) =>
+  p === "firstHalf" || p === "secondHalf" || p === "extraTimeFirst" || p === "extraTimeSecond";
+
+export function assistantAdvice(
+  state: GameState,
+  side: TeamId,
+  minute: number,
+  mentality: Mentality,
+  /** Shots and goals of an opponent player in this match (the live Statistics). */
+  statsOf: (playerId: number) => { shots: number; goals: number },
+): AdviceTip[] {
+  if (!isLive(state.matchPhase)) return [];
+  const other: TeamId = side === "A" ? "B" : "A";
+  const tips: AdviceTip[] = [];
+  const mine = state.players.filter((p) => p.team === side);
+  const subsLeft = side === "A" ? state.subsRemainingA : state.subsRemainingB;
+  const bench = side === "A" ? state.benchA : state.benchB;
+  const pending = new Set((side === "A" ? state.pendingSubsA : state.pendingSubsB).map((s) => s.outId));
+  const canSub = subsLeft > 0 && bench.length > 0;
+  const my = state.score[side];
+  const their = state.score[other];
+  const agg = state.aggregate ?? { A: 0, B: 0 };
+  const diff = my + agg[side] - (their + agg[other]);
+
+  if (diff < 0 && minute >= ASSISTANT_ADVICE.CHASE_FROM_MINUTE && mentality !== "attacking") tips.push({ kind: "attack", id: "attack" });
+  if (diff === 1 && minute >= ASSISTANT_ADVICE.PROTECT_FROM_MINUTE && mentality !== "defensive") tips.push({ kind: "protect", id: "protect" });
+
+  if (canSub && minute >= ASSISTANT_ADVICE.TIRED_FROM_MINUTE) {
+    const tired = mine
+      .filter((p) => p.role !== "GK" && !pending.has(p.id) && p.energy < ASSISTANT_ADVICE.TIRED_ENERGY)
+      .sort((a, b) => a.energy - b.energy)[0];
+    if (tired) tips.push({ kind: "tired", id: `tired:${tired.id}`, playerId: tired.id, name: tired.name, energy: Math.round(tired.energy) });
+  }
+
+  if (canSub && minute >= ASSISTANT_ADVICE.BOOKED_FROM_MINUTE) {
+    const reds = new Set(state.cards.filter((c) => c.card === "red").map((c) => c.playerId));
+    const booked = state.cards
+      .filter((c) => c.team === side && c.card === "yellow" && !reds.has(c.playerId) && !pending.has(c.playerId))
+      .map((c) => mine.find((p) => p.id === c.playerId))
+      .find((p) => p && DEFENSIVE_ROLES.has(p.role));
+    if (booked) tips.push({ kind: "booked", id: `booked:${booked.id}`, playerId: booked.id, name: booked.name });
+  }
+
+  if (minute >= ASSISTANT_ADVICE.MARK_FROM_MINUTE) {
+    const marked = new Set((state.manMarks?.[side] ?? []).map((m) => m.targetId));
+    const threat = state.players
+      .filter((p) => p.team === other && p.role !== "GK" && !marked.has(p.id))
+      .map((p) => ({ p, ...statsOf(p.id) }))
+      .map((r) => ({ ...r, threat: r.shots + r.goals * 2 }))
+      .filter((r) => r.threat >= ASSISTANT_ADVICE.MARK_THREAT)
+      .sort((a, b) => b.threat - a.threat || a.p.id - b.p.id)[0];
+    if (threat) tips.push({ kind: "mark", id: `mark:${threat.p.id}`, playerId: threat.p.id, name: threat.p.name, shots: threat.shots, goals: threat.goals });
+  }
+
+  return tips.slice(0, ASSISTANT_ADVICE.MAX_TIPS);
+}

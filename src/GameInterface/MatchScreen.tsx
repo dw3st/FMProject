@@ -86,6 +86,8 @@ import { squadLogoUrl } from "@/GameInterface/Components/ClubLogo";
 import { MatchEventBanner, type MatchBannerItem } from "@/GameInterface/MatchEventBanner";
 import { StatsPanel } from "@/GameInterface/StatsPanel";
 import { MatchSummaryPanel, type MatchFeedItem, type SummaryTeamStats } from "@/GameInterface/MatchSummaryPanel";
+import { AssistantAdviceCard } from "@/GameInterface/Components/AssistantAdviceCard";
+import { assistantAdvice, type AdviceTip } from "@/Domain/match/assistantAdvice";
 import { MomentumBar } from "@/GameInterface/Momentum/MomentumBar";
 import { useMomentum } from "@/GameInterface/Momentum/useMomentum";
 import { PenaltyShootoutStrip } from "@/GameInterface/Components/PenaltyShootoutStrip";
@@ -375,6 +377,10 @@ export function MatchScreen() {
   /** Possession heat map, filled on every emitted state (drawing only). */
   const heatmapRef = useRef<HeatmapAcc | null>(createPossessionHeatmap());
   const [showSubPanel, setShowSubPanel] = useState(false);
+  /** Tab the substitutions panel opens on (an assistant tip opens it on the right one). */
+  const [subPanelTab, setSubPanelTab] = useState<"subs" | "instructions" | undefined>(undefined);
+  /** Assistant tips the manager dismissed this match. */
+  const [dismissedTips, setDismissedTips] = useState<Set<string>>(() => new Set());
   // The two-manager match: the pause the panel itself asked for (resumed when it closes).
   const subsPauseRef = useRef(false);
   /** Whether closing the substitution panel resumes play: only when the panel paused a running match. */
@@ -1410,7 +1416,7 @@ export function MatchScreen() {
       setManagerOut("sentOff");
       panelPauseRef.current = NO_PANEL_PAUSE;
       showSubPanelRef.current = false;
-      setShowSubPanel(false);
+      setShowSubPanel(false); setSubPanelTab(undefined);
       if (!h2hModeRef.current) {
         patchVarState({ autoSubs: { A: true } });
         gameBus.emit("testCommand", { type: "setManualInjurySubs", team: "A", on: false });
@@ -1741,6 +1747,25 @@ export function MatchScreen() {
     setReportOpen(true);
   }
 
+  // The assistant's advice (report 31dd5a2d): recomputed once a match minute, never applied by itself.
+  const adviceMinute = gameState ? matchMinute(gameState) : 0;
+  const adviceTips: AdviceTip[] = useMemo(() => {
+    if (!gameState) return [];
+    const stats = getAllPlayerStats();
+    return assistantAdvice(gameState, mySide, adviceMinute, mentality, (id) => {
+      const s = stats.get(id);
+      return { shots: s?.shots ?? 0, goals: s?.goals ?? 0 };
+    }).filter((tip) => !dismissedTips.has(tip.id));
+  }, [adviceMinute, mentality, dismissedTips, mySide, gameState?.matchPhase, gameState?.subsRemainingA, gameState?.subsRemainingB]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function actOnTip(tip: AdviceTip) {
+    setDismissedTips((d) => new Set(d).add(tip.id));
+    if (tip.kind === "attack") { handleMentalityChange("attacking"); return; }
+    if (tip.kind === "protect") { handleMentalityChange("defensive"); return; }
+    setSubPanelTab(tip.kind === "mark" ? "instructions" : "subs");
+    handleOpenSubPanel();
+  }
+
   function handleOpenSubPanel() {
     if (h2hMode) {
       // Opening the panel uses one of the counted pauses when one is left (report: managers expected it to pause, as
@@ -1763,13 +1788,13 @@ export function MatchScreen() {
       if (subsPauseRef.current && h2h.pause?.by === mySide) h2h.resume();
       subsPauseRef.current = false;
       showSubPanelRef.current = false;
-      setShowSubPanel(false);
+      setShowSubPanel(false); setSubPanelTab(undefined);
       return;
     }
     const resume = panelPauseRef.current;
     panelPauseRef.current = NO_PANEL_PAUSE;
     showSubPanelRef.current = false;
-    setShowSubPanel(false);
+    setShowSubPanel(false); setSubPanelTab(undefined);
     setPaused((p) => pausedAfterClose(resume, p));
   }
 
@@ -2723,6 +2748,7 @@ export function MatchScreen() {
           feed={feed}
           extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} open={heatmapOpen} onToggle={toggleHeatmap} />}
           referee={touchline?.referee ?? null}
+          advice={managerOut ? null : <AssistantAdviceCard tips={adviceTips} onAct={actOnTip} onDismiss={(id) => setDismissedTips((d) => new Set(d).add(id))} />}
           momentum={<MomentumBar bar={awayView ? -momentum.bar : momentum.bar} colorLeft={shownKits.A} colorRight={shownKits.B} nameLeft={shownTeams.A?.name} nameRight={shownTeams.B?.name} />}
         />
           </div>
@@ -2731,6 +2757,7 @@ export function MatchScreen() {
 
       {showSubPanel && (
         <SubstitutionPanel
+          initialTab={subPanelTab}
           gameState={gameState}
           playerTeam={mySide}
           ratings={ratings}

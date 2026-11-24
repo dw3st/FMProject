@@ -10,7 +10,7 @@ import { CROWD_MOTION, fanLooks, fanPose, handFlagAngle } from "@/GraficsEngine/
 import { bindAtlas, buildArtCrowdAtlas, buildCrowdAtlas, type ArtCrowdSheet, type FanArms } from "@/GraficsEngine/crowdFigures";
 import { benchPropSpots } from "@/GraficsEngine/benchProps";
 import { BENCH_HAIR, BENCH_SKIN, BENCH_VIEW, benchKits, benchLayout, benchLook, benchPose, benchShown, photographerSpots } from "@/GraficsEngine/benchView";
-import { FACE_RETRY_S, faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
+import { crestIsDark, FACE_RETRY_S, faceRasterSize, loadCrestCanvas, loadFaceCanvas, loadImage, markerLabelFontSize, needsLightOutline, playerMarkerRadius, PITCH_COLOR } from "@/GraficsEngine/playerFaces";
 import { BALL, CARD_BADGE, FLAG_SPRITE, LED, LED_FRAME, ledBoards, SUB_WALK, EFFECT_DURATION, FATIGUE_BAR, HOLDER_GLOW, LIGHTING, MARKER_SHADOW, MATCH_LOOK, STADIUM, TELEPORT_YDS, BALL_TELEPORT_YDS, PLAY_LINES } from "@/GraficsEngine/pitchStyle";
 import { matchClockMinutes, matchLighting, minutesOf, type Lighting } from "@/GraficsEngine/matchLighting";
 import { shadowPolygons } from "@/GraficsEngine/playerShadow";
@@ -3866,6 +3866,12 @@ export function PixiPitch({
           if (st.homeCrest) {
             void loadCrestCanvas(st.homeCrest, 128).then((canvas) => {
               if (!canvas || crestMat.destroyed) return;
+              // A dark crest disappears on the dark mat (report 5a8610ef): give it a light disc instead.
+              if (crestIsDark(canvas)) {
+                const light = new Graphics();
+                light.circle(cx, cy, r * 0.8).fill(0xe8edf2);
+                crestMat.addChild(light);
+              }
               const sp = new Sprite(Texture.from(canvas));
               sp.anchor.set(0.5);
               sp.position.set(cx, cy);

@@ -585,7 +585,9 @@
         "negative_balance": "A diretoria recusou a vaga ({{role}}): o saldo está negativo. Peça de novo em {{days}} dias.",
         "max_reached": "A diretoria já abriu duas vagas a mais ({{role}})."
       }
-    }
+    },
+    "leavingBadge": "Sai no fim do contrato",
+    "leavingHelp": "O diretor decidiu não renovar. Você ainda pode renovar na ficha dele."
   },
   "staffPool": {
     "role": "Função",
@@ -9472,6 +9474,23 @@
       "W": "V",
       "D": "E",
       "L": "D"
+    }
+  },
+  "assistant": {
+    "title": "Seu auxiliar",
+    "dismiss": "Ignorar",
+    "tip": {
+      "tired": "{{name}} está cansado ({{energy}}% de fôlego). Vale trocar.",
+      "booked": "{{name}} tem amarelo. Um carrinho agora pode custar a expulsão.",
+      "attack": "Estamos atrás e o tempo está acabando. Hora de ir para o ataque.",
+      "protect": "Um gol na frente nos minutos finais. Dá para fechar o time.",
+      "mark": "{{name}} está perigoso hoje ({{shots}} chutes, {{goals}} gols). Vale marcar de perto."
+    },
+    "action": {
+      "sub": "Abrir substituições",
+      "attack": "Mentalidade ofensiva",
+      "protect": "Mentalidade defensiva",
+      "mark": "Marcar de perto"
     }
   }
 }
