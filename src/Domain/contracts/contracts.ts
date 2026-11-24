@@ -7,7 +7,8 @@ import { overallAvg } from "@/Domain/playerRating";
 import { playerWeeklyWage, wageFactorOf } from "@/Domain/finance/wages";
 import { addDays, daysBetween } from "@/Domain/dates";
 import { naturalFinancialTier } from "@/Domain/aiFinance/aiClubFinance";
-import type { PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
+import type { ContractBonus, PlayerContract, RosterPlayer, Squad } from "@/types/playerTypes";
+import { PRODUCTIVITY, expectedWeeklyBonus, productivityAllowed } from "@/Domain/contracts/productivity";
 import { clamp } from "@/Domain/math";
 import { unitFrom } from "@/Domain/rng";
 import {
@@ -15,7 +16,7 @@ import {
 } from "@/Domain/personality/personality";
 import { appealDemandMult, facilitiesAppeal, refusesPoorFacilities } from "@/Domain/facilities/facilities";
 
-type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub" | "poorFacilities";
+type ContractRefusal = "lowWage" | "tooManyYears" | "invalidYears" | "smallerClub" | "poorFacilities" | "noProductivity";
 
 /**
  * Where a signing comes from (`.claude/rules/game/personality.md`): the player's current club (a
@@ -35,6 +36,8 @@ export interface DemandContext {
   freeArrival?: boolean;
   /** A free agent: the day he entered the pool (`FreeAgent.since`); he asks less the longer he waits. */
   freeSince?: string;
+  /** Signing a free agent: a veteran (30+) without a club asks less (`freeVeteranMult`). */
+  freeAgent?: boolean;
   /** The human manager's fame, 0..1, from his belongings (`fameShare`, 8.9.39): ambitious players ask less to join. */
   fame?: number;
 }
@@ -64,6 +67,8 @@ export interface DemandBreakdown {
   /** A free agent: days in the pool and the discount they bring (`freeWaitMult`). */
   freeDays?: number;
   freeWait: number;
+  /** A free agent of 30+: the age discount (`freeVeteranMult`), else 1. */
+  freeVeteran: number;
   /** Ambition ≥ 17 and the club two or more tiers smaller. */
   refuses: boolean;
   /** Signing only: ambition ≥ 17 and the training ground below 25%. */
@@ -134,6 +139,11 @@ export function freeWaitMult(days: number): number {
   return 1 - C.FREE_WAIT_DISCOUNT * clamp(days / C.FREE_WAIT_DAYS, 0, 1);
 }
 
+/** A veteran free agent: × (1 − min(FREE_VETERAN_MAX, FREE_VETERAN_PER_YEAR × (age − FREE_VETERAN_FROM))). */
+export function freeVeteranMult(age: number): number {
+  return 1 - clamp((age - C.FREE_VETERAN_FROM) * C.FREE_VETERAN_PER_YEAR, 0, C.FREE_VETERAN_MAX);
+}
+
 /** The most an own-club renewal asks over the current wage, by the club's natural tier (revenue). */
 export function renewalRaiseCap(squad: Pick<Squad, "finances">): number {
   return C.RENEWAL_RAISE_CAP[naturalFinancialTier(squad.finances)];
@@ -152,7 +162,8 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
   const freeArrival = ctx.freeArrival ? NEGOTIATION.FREE_SIGNING.WAGE_PREMIUM : 1;
   const freeDays = ctx.freeSince && _date ? Math.max(0, daysBetween(ctx.freeSince, _date)) : undefined;
   const freeWait = freeDays === undefined ? 1 : freeWaitMult(freeDays);
-  let demand = base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * parts.fame * negotiation * freeArrival * freeWait;
+  const freeVeteran = ctx.freeAgent ? freeVeteranMult(player.age) : 1;
+  let demand = base * parts.ambition * parts.loyalty * parts.compatriot * parts.smallerClub * parts.facilities * parts.fame * negotiation * freeArrival * freeWait * freeVeteran;
   // An own-club renewal starts from the current wage (12.28.5): within [current × FLOOR, current × (1 + cap)].
   const current = ctx.renewal ? player.contract?.wage : undefined;
   const renewalCap = current && current > 0 ? renewalRaiseCap(squad) : undefined;
@@ -164,6 +175,7 @@ export function demandBreakdown(player: RosterPlayer, squad: Squad, _date: strin
     negotiation,
     freeArrival,
     freeWait,
+    freeVeteran,
     ...(renewalCap !== undefined ? { renewalCap } : {}),
     ...(freeDays !== undefined ? { freeDays } : {}),
   };
@@ -175,7 +187,7 @@ export function contractDemand(player: RosterPlayer, squad: Squad, date: string,
 }
 
 export function evaluateContractOffer(
-  offer: { wage: number; years: number },
+  offer: { wage: number; years: number; productivity?: ContractBonus | null },
   player: RosterPlayer,
   squad: Squad,
   date: string,
@@ -191,6 +203,13 @@ export function evaluateContractOffer(
   }
   // A single season (to the end of this one) is always on: a veteran free agent signs short (tester report, 4.41.25).
   if (offer.years > 1 && player.age + offer.years > C.MAX_CONTRACT_AGE) return { accepted: false, reason: "tooManyYears", demand };
+  // A productivity contract (12.32): 30+, the fixed part at least 60% of the demand, fixed + the expected bonus ≥ demand.
+  if (offer.productivity) {
+    if (!productivityAllowed(player)) return { accepted: false, reason: "noProductivity", demand };
+    if (!Number.isFinite(offer.wage) || offer.wage < demand * PRODUCTIVITY.FIXED_MIN_SHARE) return { accepted: false, reason: "lowWage", demand };
+    if (offer.wage + expectedWeeklyBonus(player, offer.productivity) < demand) return { accepted: false, reason: "lowWage", demand };
+    return { accepted: true, reason: "ok", demand };
+  }
   if (!Number.isFinite(offer.wage) || offer.wage < demand) return { accepted: false, reason: "lowWage", demand };
   return { accepted: true, reason: "ok", demand };
 }

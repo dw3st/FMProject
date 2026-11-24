@@ -180,3 +180,17 @@ Report de jogadores (ganha ~€2 mil, pedia €10 mil). Numa renovação no pró
 
 O humano contratando um livre: sem luvas, sem o prêmio de salário (`WAGE_PREMIUM` só no pré-contrato) e o pedido × `freeWaitMult` = 1 − `FREE_WAIT_DISCOUNT` (0,25) × min(1, dias no pool / `FREE_WAIT_DAYS` (90)), a partir de `FreeAgent.since` (`DemandContext.freeSince`, `freeArrivalCtx`). A disputa com rivais da IA continua pela preferência (salário, prestígio, titularidade). A rota `demand` devolve `freeDays` e `freeWait` ("Sem clube há N dias: −N%"); a rota `sign` ignora `bonus` e não lança luvas no extrato. A IA no `freeAgentTick` também não paga luvas.
 
+
+## Livre veterano (12.32)
+
+Report de tester. Um livre de 30 anos ou mais pede menos: × (1 − `FREE_VETERAN_PER_YEAR` 0,08 × (idade − 29)), até −40% (`FREE_VETERAN_MAX`), em `freeVeteranMult` (só com `DemandContext.freeAgent`, posto por `freeArrivalCtx("free")`). Soma com o desconto do tempo sem clube. A rota `demand` devolve `freeVeteran` e a janela mostra a linha. A IA (`renewalContract`) não muda.
+
+## Contrato por produtividade (12.32)
+
+Report de tester. Lógica pura em `src/Domain/contracts/productivity.ts` (`PRODUCTIVITY`, com teste).
+
+- Só jogador de 30+ (`productivityAllowed`), no clube humano: renovação (não com ele emprestado a outro clube, 400 `noProductivity`) e contratação de livre. `{ productivity: { appearance, goal } }` no corpo (`parseContractBonus`: inteiros ≥ 0 até €50M; os dois 0 = sem bônus; outro valor 400 `invalidBonus`); vai para `PlayerContract.bonus`.
+- Aceite (`evaluateContractOffer({ ..., productivity })`): fixo ≥ 60% do pedido (`FIXED_MIN_SHARE`) e fixo + bônus esperado ≥ pedido. Esperado por semana = 0,8 × (por jogo + gols por jogo × por gol) (`expectedWeeklyBonus`); gols por jogo da temporada (5+ jogos), senão da última linha do histórico com 5+ jogos, senão pela linha (atacante 0,35, meia 0,12, zagueiro 0,04, goleiro 0). Na disputa com rivais por um livre conta o fixo + o esperado.
+- Pagamento: no avanço do dia, cada jogo oficial do clube em que ele tem nota paga por jogo + gols × por gol (`productivityEntries`), linha `wages` com `ref.stage = "productivity"` ("Bônus por produtividade"). Jogos de base e de seleção não pagam. A folha semanal e o teto da folha contam só o fixo.
+- Tela: chip "Contrato por produtividade" na renovação e no livre (`ProductivityFields`, quando a rota `demand` devolve `productivity`), abre em 70% fixo e o resto em bônus; mostra o esperado e se passa.
+- A IA não usa. Sem renovação automática do bônus: a renovação seguinte decide de novo.

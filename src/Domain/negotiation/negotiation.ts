@@ -121,7 +121,7 @@ export function recordRound(
     : { playerId: init.playerId, kind: init.kind, date: init.date, rounds: 0, history: [], ...(talk?.closedUntil ? { closedUntil: talk.closedUntil } : {}) };
   const history = [...base.history, { by: "you" as const, ...offer, outcome: "offer" as const }, answer].slice(-12);
   const counter = answer.outcome === "counter"
-    ? { fee: answer.fee ?? 0, ...(answer.sellOnPct !== undefined ? { sellOnPct: answer.sellOnPct } : {}), ...(answer.wageShare !== undefined ? { wageShare: answer.wageShare } : {}) }
+    ? { fee: answer.fee ?? 0, ...(answer.sellOnPct !== undefined ? { sellOnPct: answer.sellOnPct } : {}), ...(answer.wageShare !== undefined ? { wageShare: answer.wageShare } : {}), ...(answer.seasons !== undefined ? { seasons: answer.seasons } : {}) }
     : undefined;
   return {
     ...base,

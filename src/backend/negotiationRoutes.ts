@@ -13,7 +13,7 @@ import { logError } from "@/Logger";
 import {
   activeCounter, parseSellOnPct, pruneTalks, recordRound, respondToHumanCounter, talkGate, talkKey,
 } from "@/Domain/negotiation/negotiation";
-import { loanUntil, loanWeeks, respondToLoanRequest } from "@/Domain/negotiation/loans";
+import { loanUntil, loanWeeks, parseLoanSeasons, respondToLoanRequest } from "@/Domain/negotiation/loans";
 import { liveBids } from "@/Domain/negotiation/bids";
 import { HUMAN_MAX_SQUAD, MAX_SQUAD } from "@/Domain/contracts/freeAgents";
 import { aiClubFinance, aiTransferBudgetOf, estimateWeeklyWage, passesWageGate } from "@/Domain/aiFinance/aiClubFinance";
@@ -333,6 +333,8 @@ export const negotiationRoutes = {
     const fee = rawFee === undefined ? 0 : rawFee;
     if (typeof fee !== "number" || !Number.isFinite(fee) || fee < 0) return json({ error: "missing or invalid fields" }, 400);
     const wageShare = rawShare / 100;
+    const seasons = parseLoanSeasons(body?.seasons);
+    if (seasons === null) return json({ error: "missing or invalid fields" }, 400);
 
     return withSaveLock(saveId, async () => {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
@@ -362,12 +364,14 @@ export const negotiationRoutes = {
       const market: MarketState = (await saveService.getMarket(saveId, auth.seatId)) ?? emptyMarket();
       const key = talkKey("loan", playerId);
       const counter = activeCounter(market.talks?.[key], date);
-      const meetsCounter = !!counter && wageShare >= (counter.wageShare ?? 1) && fee >= counter.fee;
+      const meetsCounter = !!counter && (counter.seasons ?? 1) === seasons && wageShare >= (counter.wageShare ?? 1) && fee >= counter.fee;
       const gate = talkGate(market.talks?.[key], date, meetsCounter);
       if (gate === "closed") return json({ error: "talksClosed", until: market.talks?.[key]?.closedUntil }, 409);
       if (gate === "noRounds") return json({ error: "noRounds" }, 409);
 
-      const until = loanUntil(date, seasonEndOf(meta.activeLeagues, borrower.leagueSlug, date));
+      // Never past his contract: a two-season loan of a player in his last season is cut to it (startLoan too).
+      const wanted = loanUntil(date, seasonEndOf(meta.activeLeagues, borrower.leagueSlug, date), seasons);
+      const until = player.contract?.until && player.contract.until < wanted ? player.contract.until : wanted;
       const listed = getSellPriority(playerId, market.profiles?.[parent.id]?.sellList ?? []) !== null;
       const answer = meetsCounter
         ? { kind: "accept" as const }
@@ -376,9 +380,9 @@ export const negotiationRoutes = {
           starterIds: new Set(autoLineupDefaultFormation(parent)), listed,
         });
       const talk = recordRound(
-        market.talks?.[key], { playerId, kind: "loan", date }, { fee, wageShare },
-        answer.kind === "accept" ? { by: "club", fee, wageShare, outcome: "accepted" }
-        : answer.kind === "counter" ? { by: "club", fee: answer.fee, wageShare: answer.wageShare, outcome: "counter" }
+        market.talks?.[key], { playerId, kind: "loan", date }, { fee, wageShare, ...(seasons === 2 ? { seasons } : {}) },
+        answer.kind === "accept" ? { by: "club", fee, wageShare, ...(seasons === 2 ? { seasons } : {}), outcome: "accepted" }
+        : answer.kind === "counter" ? { by: "club", fee: answer.fee, wageShare: answer.wageShare, ...(seasons === 2 ? { seasons } : {}), outcome: "counter" }
         : { by: "club", outcome: "rejected" },
       );
       let next: MarketState = { ...market, talks: { ...pruneTalks(market.talks, date), [key]: talk } };

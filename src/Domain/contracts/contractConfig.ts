@@ -57,6 +57,10 @@ export const CONTRACT_CONFIG = {
   /** A free agent asks less the longer he waits: × (1 − FREE_WAIT_DISCOUNT × min(1, days in the pool / FREE_WAIT_DAYS)). */
   FREE_WAIT_DISCOUNT: 0.25,
   FREE_WAIT_DAYS: 90,
+  /** A free agent of 31+ asks 8% less per year over 30, at most 40% (report: veterans without a club asked too much). */
+  FREE_VETERAN_FROM: 30,
+  FREE_VETERAN_PER_YEAR: 0.08,
+  FREE_VETERAN_MAX: 0.4,
 } as const;
 
 /**

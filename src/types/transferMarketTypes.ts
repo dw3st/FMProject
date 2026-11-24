@@ -175,6 +175,8 @@ export interface NegotiationRound {
   fee?: number;
   sellOnPct?: number;
   wageShare?: number;
+  /** Loan: seasons asked (absent = 1). */
+  seasons?: number;
   outcome: "offer" | "accepted" | "counter" | "rejected" | "insulted" | "prefers_rival" | "lost";
 }
 
@@ -187,7 +189,7 @@ export interface NegotiationTalk {
   /** Talks closed until this date (inclusive) after a lowball. */
   closedUntil?: string;
   /** Last counter of the club (valid on `date`). */
-  counter?: { fee: number; sellOnPct?: number; wageShare?: number };
+  counter?: { fee: number; sellOnPct?: number; wageShare?: number; seasons?: number };
   history: NegotiationRound[];
 }
 

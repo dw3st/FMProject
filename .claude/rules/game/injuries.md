@@ -373,3 +373,7 @@ Report de tester (o jogador saía e a jogada seguia). Depois de uma lesão o ár
 - Teste: `Injury.engine.test.ts` ("play stopped for an injury").
 
 Mundo (`ai-formation-goals.ts --engine 800 --chunks 3 --modes ai --quick 0`, contra a 10.7): Premier 2,116 → 2,174 gols, 5,75 → 5,78 chutes; Championship 1,843 → 1,827, 5,48 → 5,45; somadas +1,1% e 0% (ruído ~±2%), quickSim não recalibrado.
+
+## Menos lesões (12.32)
+
+Report de tester (lesões demais desde o motor de 90 minutos). `BASE` 0,000109 → 0,0000654 e `CONTACT_BASE` 0,00288 → 0,001728 (× 0,6; o motor de 90 minutos tem ~4× os contatos de antes). Medido (`bun scripts/injury-calibrate.ts 20`, elenco descansado, Premier + Championship, 40 jogos, ruído ±0,08): 0,225 lesões por jogo. `QUICKSIM_CONTACT_SCALE` não mudou. A meta de 0,3 do script é a antiga: não rodar `--apply` sem decidir uma meta nova.

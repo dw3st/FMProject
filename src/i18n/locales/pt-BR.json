@@ -3837,6 +3837,7 @@
       "legendHire": "Lenda de volta à base: {{player}}",
       "signingBonus": "Luvas: {{player}}",
       "playerBonus": "Bônus por desafio",
+      "productivityBonus": "Bônus por produtividade: {{player}}",
       "deferredRefund": "Devolução: {{player}}",
       "craftMaterials": "Materiais da oficina"
     },
@@ -4484,6 +4485,7 @@
     "renewalCap": "Renovação: até +{{pct}}% sobre o salário atual",
     "freeWait_one": "Sem clube há {{count}} dia: {{pct}}",
     "freeWait_other": "Sem clube há {{count}} dias: {{pct}}",
+    "freeVeteran": "Veterano sem clube: {{pct}}",
     "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
     "refusal": {
       "lowWage": "O salário é baixo demais para esse jogador.",
@@ -4496,7 +4498,9 @@
       "recentlyRenewed": "Renovado há pouco: nova renovação só a partir de {{date}}.",
       "lowBonus": "As luvas estão abaixo do que ele pede.",
       "noMoney": "O saldo do clube não cobre as luvas.",
-      "payrollCap": "A diretoria não deixa a folha passar de 85% da receita: ela iria a {{bill}} por semana, o limite é {{cap}}."
+      "payrollCap": "A diretoria não deixa a folha passar de 85% da receita: ela iria a {{bill}} por semana, o limite é {{cap}}.",
+      "noProductivity": "Contrato por produtividade só para jogadores de 30 anos ou mais, e não com ele emprestado.",
+      "invalidBonus": "Bônus inválido."
     },
     "result": {
       "renewed": "Renovou",
@@ -4517,6 +4521,16 @@
       "rivals_other": "{{clubs}} também querem ele.",
       "prefersRival": "Ele prefere a proposta do {{club}}. Aumente o salário ou as luvas.",
       "agreed": "Luvas de {{amount}}, pagas quando ele chegar"
+    },
+    "productivity": {
+      "toggle": "Contrato por produtividade",
+      "hint": "Salário fixo menor e um bônus por jogo oficial disputado e por gol.",
+      "perMatch": "Por jogo disputado",
+      "perGoal": "Por gol",
+      "expected": "Bônus esperado: {{amount}}/sem ({{goals}} gols por jogo)",
+      "total": "Fixo + bônus esperado: {{total}} · ele pede {{demand}}, fixo de no mínimo {{min}}",
+      "down": "Menos",
+      "up": "Mais"
     }
   },
   "seatOffers": {
@@ -4777,8 +4791,16 @@
   },
   "negotiation": {
     "loanRenewal": {
-      "offered": "Renovação oferecida","closed": "Esta proposta está encerrada.","renewed": "Empréstimo renovado.","rejected": "Proposta recusada: ele volta no fim do empréstimo.",
-      "noMoney": "Dinheiro insuficiente para a taxa do empréstimo.","until": "Nova data de volta","fee": "Taxa do empréstimo","deadline": "Responda até {{date}}.","accept": "Aceitar","reject": "Recusar"
+      "offered": "Renovação oferecida",
+      "closed": "Esta proposta está encerrada.",
+      "renewed": "Empréstimo renovado.",
+      "rejected": "Proposta recusada: ele volta no fim do empréstimo.",
+      "noMoney": "Dinheiro insuficiente para a taxa do empréstimo.",
+      "until": "Nova data de volta",
+      "fee": "Taxa do empréstimo",
+      "deadline": "Responda até {{date}}.",
+      "accept": "Aceitar",
+      "reject": "Recusar"
     },
     "situation": {
       "label": "Situação",
@@ -4866,8 +4888,11 @@
     "sellOn": "Cláusula de venda futura",
     "sellOnHint": "Parte que o {{club}} recebe se você vender ele depois. Quanto maior, menor a taxa que eles pedem.",
     "wageShare": "Salário que você paga",
+    "loanLength": "Duração",
+    "loanSeasons_one": "{{count}} temporada",
+    "loanSeasons_other": "{{count}} temporadas",
     "loanFee": "Taxa de empréstimo",
-    "loanDuration": "Ele fica até o fim da temporada, ou da próxima se faltarem menos de dois meses.",
+    "loanDuration": "Uma temporada: até o fim desta, ou da próxima se faltarem menos de dois meses. Duas: uma temporada a mais. Nunca além do contrato.",
     "returns": "Volta em",
     "patience": "Tentativas hoje: {{count}} de {{total}}. Uma oferta muito baixa encerra a conversa por 14 dias.",
     "closedUntil": "O clube encerrou a conversa até {{date}}.",

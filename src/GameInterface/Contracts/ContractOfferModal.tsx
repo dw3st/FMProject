@@ -6,7 +6,7 @@ import { maxOfferYears } from "@/Domain/contracts/contracts";
 import { loadSession } from "@/GameInterface/gameSession";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import {
-  ContractTermsFields, FreeAgentRivalsLine, useContractDemandInfo, useRefusalText,
+  ContractTermsFields, FreeAgentRivalsLine, ProductivityFields, useContractDemandInfo, useRefusalText,
 } from "@/GameInterface/Contracts/ContractTermsFields";
 import { RenewalResult, type RenewalOutcome } from "@/GameInterface/Contracts/RenewalResult";
 import { faceUrl } from "@/Domain/faces/faceUrl";
@@ -58,13 +58,30 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
   const [done, setDone] = useState(false);
   const [outcome, setOutcome] = useState<RenewalOutcome | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Productivity contract (12.32): part of the wage as a bonus per match and per goal.
+  const [prodOn, setProdOn] = useState(false);
+  const [perMatch, setPerMatch] = useState(0);
+  const [perGoal, setPerGoal] = useState(0);
 
   // A free agent near the age cap only takes a short deal: open on what he accepts (tester report, 4.41.25).
   const maxYears = player ? maxOfferYears(player.age) : 5;
-  useEffect(() => { setError(null); setDone(false); setOutcome(null); setYears(Math.min(2, maxYears)); }, [player?.id, maxYears]);
+  useEffect(() => { setError(null); setDone(false); setOutcome(null); setYears(Math.min(2, maxYears)); setProdOn(false); }, [player?.id, maxYears]);
   useEffect(() => { if (demand !== null) setWage(demand); }, [demand]);
 
   if (!player || !session) return null;
+
+  // Turning it on opens on 70% fixed and the rest as bonus (60% per match, 40% per goal when he scores).
+  function toggleProductivity(on: boolean) {
+    setProdOn(on);
+    if (!on || demand === null) { if (!on && demand !== null) setWage(demand); return; }
+    const fixed = Math.round(demand * 0.7 / 100) * 100;
+    const rest = demand - fixed;
+    const gpg = demandInfo?.productivity?.goalsPerGame ?? 0;
+    const goalShare = gpg > 0.05 ? 0.4 : 0;
+    setWage(fixed);
+    setPerMatch(Math.ceil((rest * (1 - goalShare)) / 0.8 / 100) * 100);
+    setPerGoal(goalShare > 0 ? Math.ceil((rest * goalShare) / (0.8 * gpg) / 100) * 100 : 0);
+  }
 
   async function submit() {
     if (submitting || !player || !session) return;
@@ -77,7 +94,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
       const res = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ wage, years }),
+        body: JSON.stringify({ wage, years, ...(prodOn ? { productivity: { appearance: perMatch, goal: perGoal } } : {}) }),
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string; rival?: { clubName: string }; bill?: number; cap?: number };
@@ -88,7 +105,7 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
         return;
       }
       if (mode === "renew") {
-        const body = (await res.json().catch(() => ({}))) as { contract?: { until: string; wage: number } };
+        const body = (await res.json().catch(() => ({}))) as { contract?: { until: string; wage: number; bonus?: { appearance: number; goal: number } } };
         const c = body.contract;
         setOutcome({
           kind: "renewed",
@@ -146,6 +163,10 @@ export function ContractOfferModal({ mode, player, onClose, onDone, onListForSal
           ) : (
             <>
               <ContractTermsFields wage={wage} years={years} onWage={setWage} onYears={setYears} demand={demand} info={demandInfo} maxYears={maxYears} />
+              <ProductivityFields
+                info={demandInfo} enabled={prodOn} onEnabled={toggleProductivity}
+                appearance={perMatch} goal={perGoal} onAppearance={setPerMatch} onGoal={setPerGoal} wage={wage} demand={demand}
+              />
               {mode === "sign" && <FreeAgentRivalsLine rivals={demandInfo?.rivals} />}
               {mode === "renew" && demandInfo?.renewableOn ? (
                 <p className="text-sm text-chart-4 m-0">{t("contracts.recentlyRenewed", { date: formatGameDate(demandInfo.renewableOn, i18n.language) })}</p>

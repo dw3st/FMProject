@@ -41,8 +41,8 @@ export function signingBonusAsk(player: RosterPlayer, kind: FreeSigningKind, riv
 }
 
 /** The demand context of a fee-free arrival: the wage premium only on a pre-contract; a free agent's wait discount. */
-export function freeArrivalCtx(kind: FreeSigningKind, since?: string): { freeArrival: boolean; freeSince?: string } {
-  return kind === "pre" ? { freeArrival: true } : { freeArrival: false, ...(since ? { freeSince: since } : {}) };
+export function freeArrivalCtx(kind: FreeSigningKind, since?: string): { freeArrival: boolean; freeSince?: string; freeAgent?: boolean } {
+  return kind === "pre" ? { freeArrival: true } : { freeArrival: false, freeAgent: true, ...(since ? { freeSince: since } : {}) };
 }
 
 /** AI clubs whose market profile has a need for him (line and rating band): the squads a caller has to load. */

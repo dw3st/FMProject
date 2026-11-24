@@ -135,6 +135,14 @@ export interface PlayerContract {
   wage: number;
   /** Game date of the last renewal: another one waits `CONTRACT_CONFIG.RENEW_COOLDOWN_DAYS` (report). */
   renewedOn?: string;
+  /** Productivity contract (12.32, players of 30+): EUR paid per official match played and per goal (`productivity.ts`). */
+  bonus?: ContractBonus;
+}
+
+/** The variable part of a productivity contract, EUR. */
+export interface ContractBonus {
+  appearance: number;
+  goal: number;
 }
 
 /** The two traits the assistant can work on (`.claude/rules/game/personality.md` → "Mentalidade"). */

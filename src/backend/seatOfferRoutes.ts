@@ -20,7 +20,7 @@ import {
 import { createSeatOffer, offerExpiry, respondSeatOffer, seatOfferView, type SeatOfferAnswer } from "@/Domain/seatOffers/seatOffers";
 import { SEAT_OFFERS } from "@/Domain/seatOffers/seatOfferConfig";
 import { parseSellOnPct, roundFeeUp } from "@/Domain/negotiation/negotiation";
-import { loanUntil } from "@/Domain/negotiation/loans";
+import { loanUntil, parseLoanSeasons } from "@/Domain/negotiation/loans";
 import { evaluateContractOffer } from "@/Domain/contracts/contracts";
 import type { WindowStatus } from "@/Domain/market/windows";
 import type { SeatOffer, SeatOfferSide, SeatOfferTerms, SeatOfferView } from "@/types/seatOfferTypes";
@@ -124,8 +124,9 @@ async function createOffer(saveId: string, seatId: string, body: Record<string, 
   } else {
     const share = parseShare(body.wageShare);
     const fee = body.fee === undefined ? 0 : body.fee;
-    if (share === null || !isFee(fee)) return json({ error: "invalidTerms" }, 400);
-    let until = loanUntil(date, seasonEndOf(meta.activeLeagues, meta.leagueSlug, date));
+    const seasons = parseLoanSeasons(body.seasons);
+    if (share === null || !isFee(fee) || seasons === null) return json({ error: "invalidTerms" }, 400);
+    let until = loanUntil(date, seasonEndOf(meta.activeLeagues, meta.leagueSlug, date), seasons);
     const contractEnd = check.player.contract?.until;
     if (contractEnd && contractEnd < until) until = contractEnd;
     terms = { fee: roundFeeUp(fee), wageShare: share, until };

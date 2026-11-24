@@ -31,6 +31,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.32",
+    date: "2026-11-24",
+    time: "12:39",
+    items: [
+      { tab: "squad", pt: "Contrato por produtividade para jogadores de 30 anos ou mais: salário fixo menor e um bônus por jogo disputado e por gol.", en: "Productivity contract for players of 30 or more: a lower fixed wage plus a bonus per match played and per goal." },
+      { tab: "market", pt: "Empréstimos de até duas temporadas.", en: "Loans of up to two seasons." },
+      { tab: "market", pt: "Jogadores livres de 30 anos ou mais pedem salário menor, mais ainda quanto mais velhos.", en: "Free agents of 30 or more ask for a lower wage, lower still the older they are." },
+    ],
+    fixes: [
+      { tab: "match", pt: "Menos lesões nas partidas e nos treinos.", en: "Fewer injuries in matches and training." },
+    ],
+  },
+  {
     version: "12.31.8",
     date: "2026-11-24",
     time: "02:10",

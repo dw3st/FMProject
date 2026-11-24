@@ -29,6 +29,8 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
   switch (entry.kind) {
     case "wages":
       // A friendly termination of a player's contract (tester suggestion).
+      // A productivity contract's bonus (12.32): per match played and per goal.
+      if (ref?.stage === "productivity") return { key: "productivityBonus", player: ref.playerName ?? "" };
       return { key: ref?.stage === "termination" ? "playerTermination" : ref?.stage === "bonus" ? "playerBonus" : "wages" };
     case "commercial":
       // Sponsors (`.claude/rules/game/sponsors.md`): the weekly income of the contracts, or a bonus at the rollover.

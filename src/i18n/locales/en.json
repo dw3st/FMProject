@@ -3840,6 +3840,7 @@
       "legendHire": "Legend back to the academy: {{player}}",
       "signingBonus": "Signing bonus: {{player}}",
       "playerBonus": "Challenge bonus",
+      "productivityBonus": "Productivity bonus: {{player}}",
       "deferredRefund": "Refund: {{player}}",
       "craftMaterials": "Materials for the workshop"
     },
@@ -4490,6 +4491,7 @@
     "renewalCap": "Renewal: up to +{{pct}}% on the current wage",
     "freeWait_one": "No club for {{count}} day: {{pct}}",
     "freeWait_other": "No club for {{count}} days: {{pct}}",
+    "freeVeteran": "Veteran without a club: {{pct}}",
     "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
     "refusal": {
       "lowWage": "The wage is too low for this player.",
@@ -4502,7 +4504,9 @@
       "recentlyRenewed": "Renewed recently: no new renewal before {{date}}.",
       "lowBonus": "The signing bonus is below what he asks.",
       "noMoney": "The club balance does not cover the signing bonus.",
-      "payrollCap": "The board will not let the wage bill pass 85% of the revenue: it would reach {{bill}} a week, the limit is {{cap}}."
+      "payrollCap": "The board will not let the wage bill pass 85% of the revenue: it would reach {{bill}} a week, the limit is {{cap}}.",
+      "noProductivity": "A productivity contract is only for players of 30 or more, and not while out on loan.",
+      "invalidBonus": "Invalid bonus."
     },
     "result": {
       "renewed": "Renewed",
@@ -4523,6 +4527,16 @@
       "rivals_other": "{{clubs}} are also after him.",
       "prefersRival": "He prefers the offer of {{club}}. Raise the wage or the signing bonus.",
       "agreed": "Signing bonus {{amount}}, paid when he joins"
+    },
+    "productivity": {
+      "toggle": "Productivity contract",
+      "hint": "A lower fixed wage plus a bonus for each official match he plays and each goal.",
+      "perMatch": "Per match played",
+      "perGoal": "Per goal",
+      "expected": "Expected bonus: {{amount}}/week ({{goals}} goals per game)",
+      "total": "Fixed + expected bonus: {{total}} · he asks {{demand}}, fixed at least {{min}}",
+      "down": "Less",
+      "up": "More"
     }
   },
   "seatOffers": {
@@ -4783,8 +4797,16 @@
   },
   "negotiation": {
     "loanRenewal": {
-      "offered": "Renewal offered","closed": "This offer is closed.","renewed": "Loan renewed.","rejected": "Offer turned down: he goes back at the end of the loan.",
-      "noMoney": "Not enough money for the loan fee.","until": "New return date","fee": "Loan fee","deadline": "Answer by {{date}}.","accept": "Accept","reject": "Turn down"
+      "offered": "Renewal offered",
+      "closed": "This offer is closed.",
+      "renewed": "Loan renewed.",
+      "rejected": "Offer turned down: he goes back at the end of the loan.",
+      "noMoney": "Not enough money for the loan fee.",
+      "until": "New return date",
+      "fee": "Loan fee",
+      "deadline": "Answer by {{date}}.",
+      "accept": "Accept",
+      "reject": "Turn down"
     },
     "situation": {
       "label": "Situation",
@@ -4872,8 +4894,11 @@
     "sellOn": "Sell-on clause",
     "sellOnHint": "The share {{club}} gets if you sell him later. The bigger it is, the lower the fee they ask.",
     "wageShare": "Wage you pay",
+    "loanLength": "Length",
+    "loanSeasons_one": "{{count}} season",
+    "loanSeasons_other": "{{count}} seasons",
     "loanFee": "Loan fee",
-    "loanDuration": "He stays until the end of the season, or the next one if fewer than two months remain.",
+    "loanDuration": "One season: to the end of this one, or the next if less than two months remain. Two: one season more. Never past his contract.",
     "returns": "Returns",
     "patience": "Tries left today: {{count}} of {{total}}. A very low offer ends the talks for 14 days.",
     "closedUntil": "The club broke off talks until {{date}}.",

@@ -296,3 +296,7 @@ Pedido do usuário. Lógica pura em `src/Domain/negotiation/loanRenewal.ts` (`NE
 - Telas: `LoanRenewalCard` na caixa de entrada (Aceitar/Recusar); Elenco → Emprestados e a aba de negociações mostram "Renovação oferecida" na data de volta (`GET /negotiation` → `loanRenewals`).
 - IA × IA e empréstimos entre técnicos humanos não mudam. Testes: `bun test src/Domain/negotiation/loanRenewal.test.ts src/backend/loanRenewal.routes.test.ts`.
 
+
+## Empréstimo de duas temporadas (12.32)
+
+Pedido do usuário. Pedir emprestado (`POST /loans { ..., seasons: 1 | 2 }`, `parseLoanSeasons`) e a proposta de empréstimo entre técnicos aceitam 2 temporadas: `loanUntil(date, seasonEnd, seasons)` vai ao fim da temporada seguinte, nunca além do contrato. O mínimo do clube de origem (`loanMinimum`) usa as semanas do período inteiro. Na virada do meio do empréstimo ele não volta (o passo 7a só devolve com `until` até 60 dias depois). Tela: chips "Duração" na aba Empréstimo da negociação. A IA cedendo ao humano continua de uma temporada.

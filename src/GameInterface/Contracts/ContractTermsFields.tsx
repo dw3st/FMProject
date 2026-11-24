@@ -1,5 +1,6 @@
 import { stepWage } from "@/Domain/contracts/contracts";
 import { StepButton } from "@/GameInterface/ui/StepButton";
+import { Chip } from "@/GameInterface/ui/Chip";
 import { useEffect, useState, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { formatFee as formatWage, formatWageFull } from "@/Domain/money";
@@ -36,6 +37,10 @@ export interface ContractDemandInfo {
   /** Free agent: days without a club and the discount they bring, a multiplier (12.28.5). */
   freeDays?: number;
   freeWait?: number;
+  /** Free agent of 30+: the age discount, a multiplier. */
+  freeVeteran?: number;
+  /** A player of 30+ (12.32): a productivity contract is open; his goals per game value the bonus. */
+  productivity?: { goalsPerGame: number };
   /** A fee-free arrival (pre-contract, free agent; 4.47.9): the signing bonus he asks, EUR, and the clubs also after him. */
   bonusAsk?: number;
   rivals?: string[];
@@ -70,6 +75,8 @@ function PersonalityDemandLines({ info }: { info: ContractDemandInfo | null | un
   if (info.renewalCap !== undefined) lines.push({ key: "cap", text: t("contracts.renewalCap", { pct: Math.round(info.renewalCap * 100) }) });
   const wait = pct(info.freeWait);
   if (info.freeDays !== undefined && wait !== 0) lines.push({ key: "wait", text: t("contracts.freeWait", { count: info.freeDays, pct: sign(wait) }) });
+  const vet = pct(info.freeVeteran);
+  if (vet !== 0) lines.push({ key: "vet", text: t("contracts.freeVeteran", { pct: sign(vet) }) });
   if (lines.length === 0 && !info.refusesSmallerClub && !info.refusesPoorFacilities) return null;
   return (
     <ul className="m-0 p-0 list-none space-y-1">
@@ -157,7 +164,7 @@ export function useRefusalText() {
     if (error === "payrollCap") {
       return t("contracts.refusal.payrollCap", { bill: formatWage(extra?.bill ?? 0), cap: formatWage(extra?.cap ?? 0) });
     }
-    const known = ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub", "poorFacilities", "recentlyRenewed", "noMoney"];
+    const known = ["lowWage", "lowBonus", "tooManyYears", "invalidYears", "squadFull", "unhappy", "smallerClub", "poorFacilities", "recentlyRenewed", "noMoney", "noProductivity", "invalidBonus"];
     return known.includes(error) ? t(`contracts.refusal.${error}`) : error;
   };
 }
@@ -242,6 +249,69 @@ export function ContractTermsFields({ wage, years, onWage, onYears, demand, info
           {askingShown && demand !== null && wageBill !== undefined ? " " : ""}
           {wageBill !== undefined ? t("contracts.billLine", { before: formatWage(wageBill), after: formatWage(wageBill + shownWage) }) : ""}
         </p>
+      )}
+    </div>
+  );
+}
+
+/** Steps of a bonus amount: €100 below €10k, €500 below €100k, €5k above. */
+export function stepProductivity(v: number, dir: 1 | -1): number {
+  const step = v + (dir > 0 ? 0 : -1) < 10_000 ? 100 : v + (dir > 0 ? 0 : -1) < 100_000 ? 500 : 5000;
+  return Math.max(0, Math.round(v / step) * step + dir * step);
+}
+
+/** Productivity contract (12.32): the bonus per match played and per goal of a player of 30+, and what it is worth. */
+export function ProductivityFields({ info, enabled, onEnabled, appearance, goal, onAppearance, onGoal, wage, demand }: {
+  info: ContractDemandInfo | null | undefined;
+  enabled: boolean;
+  onEnabled: (v: boolean) => void;
+  appearance: number;
+  goal: number;
+  onAppearance: (v: number) => void;
+  onGoal: (v: number) => void;
+  wage: number;
+  demand: number | null;
+}) {
+  const { t } = useTranslation();
+  const appId = useId();
+  const goalId = useId();
+  if (!info?.productivity) return null;
+  const gpg = info.productivity.goalsPerGame;
+  const expected = Math.round(0.8 * (appearance + gpg * goal));
+  const row = (id: string, label: string, value: number, set: (v: number) => void) => (
+    <div className="space-y-1">
+      <label htmlFor={id} className="block text-[13px] font-bold text-muted-foreground uppercase tracking-[0.08em] font-display">{label}</label>
+      <div className="flex items-center gap-2">
+        <StepButton dir={-1} label={t("contracts.productivity.down")} disabled={value <= 0} onClick={() => set(stepProductivity(value, -1))} />
+        <input
+          id={id}
+          inputMode="numeric"
+          value={value}
+          onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")))}
+          className="flex-1 min-w-0 h-10 px-3 rounded border border-border bg-muted/20 text-foreground text-sm font-semibold tabular-nums focus:outline-none focus:border-primary"
+        />
+        <StepButton dir={1} label={t("contracts.productivity.up")} onClick={() => set(stepProductivity(value, 1))} />
+        <span className="text-sm font-semibold tabular-nums w-20 text-right">{formatWage(value)}</span>
+      </div>
+    </div>
+  );
+  return (
+    <div className="space-y-2">
+      <Chip selected={enabled} onClick={() => onEnabled(!enabled)}>{t("contracts.productivity.toggle")}</Chip>
+      {enabled && (
+        <>
+          <p className="text-sm text-muted-foreground m-0">{t("contracts.productivity.hint")}</p>
+          {row(appId, t("contracts.productivity.perMatch"), appearance, onAppearance)}
+          {row(goalId, t("contracts.productivity.perGoal"), goal, onGoal)}
+          <p className="text-sm text-muted-foreground m-0 tabular-nums">
+            {t("contracts.productivity.expected", { amount: formatWageFull(expected), goals: gpg.toFixed(2) })}
+          </p>
+          {demand !== null && (
+            <p className={`text-sm m-0 tabular-nums ${wage + expected >= demand && wage >= demand * 0.6 ? "text-chart-2" : "text-chart-4"}`}>
+              {t("contracts.productivity.total", { total: formatWageFull(wage + expected), demand: formatWageFull(demand), min: formatWageFull(Math.ceil(demand * 0.6)) })}
+            </p>
+          )}
+        </>
       )}
     </div>
   );

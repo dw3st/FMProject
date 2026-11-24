@@ -7,6 +7,7 @@ import { saveService } from "@/backend/SaveService";
 import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { loanedInFrom } from "@/Domain/negotiation/loans";
+import { expectedWeeklyBonus, goalsPerGame, parseContractBonus, productivityAllowed } from "@/Domain/contracts/productivity";
 import { renewalUntil, renewalAvailableOn, addYearsIso, contractDemand, defaultSeasonEnd, demandBreakdown, evaluateContractOffer } from "@/Domain/contracts/contracts";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 import type { Personality } from "@/types/personalityTypes";
@@ -109,10 +110,13 @@ export const contractRoutes = {
 
     let body: unknown;
     try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
-    const { wage, years } = (body ?? {}) as Record<string, unknown>;
+    const { wage, years, productivity: rawBonus } = (body ?? {}) as Record<string, unknown>;
     if (typeof wage !== "number" || !Number.isFinite(wage) || typeof years !== "number") {
       return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     }
+    // Productivity contract (12.32): a bonus per match played and per goal.
+    const bonus = parseContractBonus(rawBonus);
+    if (bonus === "invalid") return Response.json({ error: "invalidBonus" }, { status: 400 });
 
     return withSaveLock(saveId, async () => {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
@@ -130,6 +134,8 @@ export const contractRoutes = {
       if (!holder || !player) return Response.json({ error: "player not found" }, { status: 404 });
       // A borrowed player keeps his parent club's contract.
       if (!out && player.loan) return Response.json({ error: "onLoan" }, { status: 400 });
+      // Out on loan the borrower pays part of the wage: no productivity contract then.
+      if (out && bonus) return Response.json({ error: "noProductivity" }, { status: 400 });
 
       const date = meta.currentDate ?? new Date().toISOString().slice(0, 10);
       // Renewed recently: not again before the cooldown ends.
@@ -142,7 +148,7 @@ export const contractRoutes = {
       }
       // A renewal at his own club, also when he is out on loan (`personality.md`): loyalty, no
       // smaller-club premium — the same context as the demand route.
-      const check = evaluateContractOffer({ wage, years }, player, squad, date, { renewal: true, negotiation });
+      const check = evaluateContractOffer({ wage, years, productivity: bonus }, player, squad, date, { renewal: true, negotiation });
       if (!check.accepted) {
         return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
       }
@@ -153,7 +159,7 @@ export const contractRoutes = {
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);
-      const contract = { until: renewalUntil(player, date, seasonEnd, years), wage, renewedOn: date };
+      const contract = { until: renewalUntil(player, date, seasonEnd, years), wage, renewedOn: date, ...(bonus ? { bonus } : {}) };
       if (out) {
         await saveService.saveSquadById(saveId, { ...holder, players: holder.players.map((p) => (p.id === playerId ? { ...p, contract } : p)) });
         await saveService.saveMarket(saveId, { ...market!, loans: (market!.loans ?? []).map((l) => (l === out ? { ...l, wage } : l)) }, auth.seatId);
@@ -241,7 +247,11 @@ export const contractRoutes = {
       if (renewableOn) parts.renewableOn = renewableOn;
     } else {
       // Poor facilities of our club (a signing only): the club's own condition, always known.
-      parts = { facilities: b.facilities, ...(b.freeDays !== undefined ? { freeDays: b.freeDays, freeWait: b.freeWait } : {}) };
+      parts = {
+        facilities: b.facilities,
+        ...(b.freeDays !== undefined ? { freeDays: b.freeDays, freeWait: b.freeWait } : {}),
+        ...(b.freeVeteran !== 1 ? { freeVeteran: b.freeVeteran } : {}),
+      };
       // The uncertainty of this very player (`.claude/rules/game/scouting.md`).
       const viewer = await loadViewer(saveService, saveId, auth.seatId);
       const noise = viewer ? viewFor(viewer, player, fromSquad?.leagueSlug ?? (from ? (await saveService.getSquadIndex(saveId)).byId(from)?.leagueSlug ?? "" : "")).noise : 0;
@@ -261,6 +271,8 @@ export const contractRoutes = {
       // The club's weekly wage bill and revenue (report 2026-11-18): the window warns past PAYROLL_WARN_SHARE.
       payroll: { bill: squadWeeklyWages(mine.players, wageFactorOf(mine)), weeklyRevenue: Math.round(wageRevenueBasisOf(mine) / 52) },
       ...(aiSeller && !player.loan ? { clause: releaseClause(player) } : {}),
+      // Productivity contract (12.32): a player of 30+ may take part of it as a bonus; his goals per game value it.
+      ...(productivityAllowed(player) && !(renewal && player.loan) ? { productivity: { goalsPerGame: Math.round(goalsPerGame(player) * 1000) / 1000 } } : {}),
       ...(b.negotiation !== 1 ? { negotiation: b.negotiation } : {}),
       ...(b.fame !== 1 ? { fame: b.fame } : {}),
       ...(freeCtx ? { ...(freeCtx.ask > 0 ? { bonusAsk: freeCtx.ask } : {}), rivals: freeCtx.rivals.map((r) => r.rival.clubName) } : {}),
@@ -286,10 +298,12 @@ export const contractRoutes = {
     let body: unknown;
     try { body = await req.json(); } catch { return Response.json({ error: "invalid body" }, { status: 400 }); }
     // A free agent signs without a signing bonus (12.28.5): a `bonus` field is ignored.
-    const { wage, years } = (body ?? {}) as Record<string, unknown>;
+    const { wage, years, productivity: rawBonus } = (body ?? {}) as Record<string, unknown>;
     if (typeof wage !== "number" || !Number.isFinite(wage) || typeof years !== "number") {
       return Response.json({ error: "missing or invalid fields" }, { status: 400 });
     }
+    const bonus = parseContractBonus(rawBonus);
+    if (bonus === "invalid") return Response.json({ error: "invalidBonus" }, { status: 400 });
 
     return withSaveLock(saveId, async () => {
       const meta = await saveService.getSeatMeta(saveId, auth.seatId);
@@ -307,14 +321,14 @@ export const contractRoutes = {
       const { negotiation, fame } = await managerDemandCtx(saveId, auth.seatId);
       const lastClub = await lastClubOf(saveId, agent.player);
       const arrival = freeArrivalCtx("free", agent.since);
-      const check = evaluateContractOffer({ wage, years }, agent.player, squad, date, { fromSquad: lastClub, negotiation, fame, ...arrival });
+      const check = evaluateContractOffer({ wage, years, productivity: bonus }, agent.player, squad, date, { fromSquad: lastClub, negotiation, fame, ...arrival });
       // The AI clubs after him (4.47.9); no signing bonus for a free agent (12.28.5).
       const free = await freeSigningContext(saveService, saveId, { player: agent.player, kind: "free", from: lastClub, date, since: agent.since });
       if (!check.accepted) return Response.json({ error: check.reason, demand: check.demand }, { status: 400 });
       if (free.rivals.length > 0) {
         const prestige = (await prestigeOf(saveService, saveId, date, [squad.id])).get(squad.id) ?? 0.5;
         const rival = preferredRival({
-          human: { pref: { wage, demand: check.demand, prestige, starter: starterChance(agent.player, squad), facilitiesAppeal: facilitiesAppeal(squad, agent.player) }, bonus: 0 },
+          human: { pref: { wage: bonus ? wage + expectedWeeklyBonus(agent.player, bonus) : wage, demand: check.demand, prestige, starter: starterChance(agent.player, squad), facilitiesAppeal: facilitiesAppeal(squad, agent.player) }, bonus: 0 },
           rivals: free.rivals, ask: free.ask,
         });
         if (rival) return Response.json({ error: "prefersRival", rival: { clubName: rival.clubName }, demand: check.demand }, { status: 400 });
@@ -325,7 +339,7 @@ export const contractRoutes = {
 
       const seasonEnd = (meta.activeLeagues ?? []).find((l) => l.leagueSlug === meta.leagueSlug)?.end
         ?? defaultSeasonEnd(date);
-      const contract = { until: addYearsIso(seasonEnd, years - 1), wage };
+      const contract = { until: addYearsIso(seasonEnd, years - 1), wage, ...(bonus ? { bonus } : {}) };
       await saveService.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, {
         ...squad,
         players: [...squad.players, { ...arriving(agent.player, squad), squadId: squad.id, contract, arrival: { squadId: squad.id, kind: "free", on: date } }],

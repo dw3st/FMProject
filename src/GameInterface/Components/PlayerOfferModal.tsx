@@ -84,6 +84,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   const [sellOn, setSellOn] = useState<(typeof SELL_ON_KEYS)[number]>("0");
   const [wageShare, setWageShare] = useState(100);
   const [loanFee, setLoanFee] = useState(0);
+  const [loanSeasons, setLoanSeasons] = useState<"1" | "2">("1");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<TransferRecord | null>(null);
   // Agreed with the window closed (tester report 0a35192c): the day he joins.
@@ -363,7 +364,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
   async function submitLoan(share: number, fee: number) {
     if (submitting || seatListPending || !activePlayer.squadId) return;
     if (isSeat) {
-      void submitSeatOffer({ kind: "loan", wageShare: share, fee });
+      void submitSeatOffer({ kind: "loan", wageShare: share, fee, seasons: Number(loanSeasons) });
       return;
     }
     const session = loadSession();
@@ -374,7 +375,7 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
       const res = await fetch(`/api/saves/${session.saveId}/loans`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, wageShare: share, fee }),
+        body: JSON.stringify({ playerId: activePlayer.id, fromSquadId: activePlayer.squadId, wageShare: share, fee, seasons: Number(loanSeasons) }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         error?: string; talk?: NegotiationTalk; until?: string;
@@ -659,6 +660,15 @@ export function PlayerOfferModal({ player, onClose, onTransferComplete }: Props)
                 </>
               ) : (
                 <>
+                  <div>
+                    <label className={LABEL}>{t("negotiation.loanLength")}</label>
+                    <OptionChips<"1" | "2">
+                      aria-label={t("negotiation.loanLength")}
+                      options={[{ key: "1", label: t("negotiation.loanSeasons", { count: 1 }) }, { key: "2", label: t("negotiation.loanSeasons", { count: 2 }) }]}
+                      value={loanSeasons}
+                      onChange={setLoanSeasons}
+                    />
+                  </div>
                   <div>
                     <label className={LABEL}>{t("negotiation.wageShare")}</label>
                     <div className="flex items-center gap-3">

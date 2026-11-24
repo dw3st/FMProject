@@ -18,13 +18,23 @@ const L = NEGOTIATION.LOAN;
  * Return date of a loan starting on `date`: the end of the borrower's season, or of the next one
  * when fewer than `SHORT_SEASON_DAYS` remain (or the season is already over).
  */
-export function loanUntil(date: string, seasonEnd: string): string {
+export function loanUntil(date: string, seasonEnd: string, seasons: LoanSeasons = 1): string {
+  let end = seasonEnd;
   if (daysBetween(date, seasonEnd) < L.SHORT_SEASON_DAYS) {
-    let end = addYearsIso(seasonEnd, 1);
+    end = addYearsIso(seasonEnd, 1);
     while (daysBetween(date, end) < L.SHORT_SEASON_DAYS) end = addYearsIso(end, 1);
-    return end;
   }
-  return seasonEnd;
+  // A two-season loan (12.32, tester report): the end of the season after the first.
+  return seasons === 2 ? addYearsIso(end, 1) : end;
+}
+
+/** Loan length in seasons: one (the default) or two, as in real football. */
+export type LoanSeasons = 1 | 2;
+
+/** The `seasons` field of a loan request: absent = 1; anything but 1 or 2 is invalid (null). */
+export function parseLoanSeasons(v: unknown): LoanSeasons | null {
+  if (v === undefined || v === null) return 1;
+  return v === 1 || v === 2 ? v : null;
 }
 
 /** Weeks a loan from `date` to `until` lasts (at least 1). */

@@ -94,3 +94,13 @@ describe("rivals", () => {
     expect(preferredRival({ human: { pref: { ...pref, wage: 150 }, bonus: 150 }, rivals, ask: 100 })).toBeNull();
   });
 });
+
+describe("free veteran discount", () => {
+  test("8% a year over 30, at most 40%; only for a free agent", async () => {
+    const { freeVeteranMult } = await import("@/Domain/contracts/contracts");
+    expect(freeVeteranMult(29)).toBe(1);
+    expect(freeVeteranMult(30)).toBe(1);
+    expect(freeVeteranMult(33)).toBeCloseTo(0.76);
+    expect(freeVeteranMult(40)).toBeCloseTo(0.6);
+  });
+});

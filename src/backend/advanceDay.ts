@@ -1,3 +1,4 @@
+import { productivityEntries } from "@/Domain/contracts/productivity";
 import { buildBetsMessage } from "@/Domain/inbox/betsMessage";
 import { settleSeatBets } from "@/backend/betsWorld";
 import { addManagerCards } from "@/Domain/managers/managerRecords";
@@ -2293,7 +2294,11 @@ export async function advanceOneDay(
         await saveService.saveSquad(saveId, seatEntry.leagueSlug, seatEntry.stem, playerSquad);
       }
       const scoutingEntries = ds.scouting?.entries ?? [];
-      if (playerSquad && (isWeeklyTick || ds.homeFixtures.length > 0 || facilityEntries.length > 0 || scoutingEntries.length > 0)) {
+      // Productivity contracts (12.32, `contracts.md`): the bonus of today's official matches.
+      const productivity = playerSquad
+        ? productivityEntries(playerSquad, dayEvents.filter((e): e is MatchEvent => e.kind === "match"), currentDate)
+        : [];
+      if (playerSquad && (isWeeklyTick || ds.homeFixtures.length > 0 || facilityEntries.length > 0 || scoutingEntries.length > 0 || productivity.length > 0)) {
         const catalogForFinance = await getLeagueData();
         const priceMult = playerSquad.facilities?.items ? comfortPriceMult(playerSquad.facilities) : 1;
         const homeFixturesToday: PlayerHomeFixtureToday[] = ds.homeFixtures.map((f, i) => ({
@@ -2313,6 +2318,7 @@ export async function advanceOneDay(
           }),
           ...facilityEntries,
           ...(playerSquad.id === seatClubId ? scoutingEntries : []),
+          ...productivity,
         ];
         if (moneyEntries.length > 0) {
           const season = await ledgerSeasonOf(ds);
