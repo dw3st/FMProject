@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { assistantAdvice } from "@/Domain/match/assistantAdvice";
 import type { GameState } from "@/GameEngine/types";
 
-const pl = (id: number, team: "A" | "B", role: string, energy = 90, name = `P${id}`) => ({ id, team, role, energy, name });
+const pl = (id: number, team: "A" | "B", role: string, energy = 90, name = `P${id}`) => ({ id, team, role, energy, name, slotIndex: id, x: 50, y: 37 });
 const state = (over: Partial<Record<string, unknown>> = {}) => ({
   matchPhase: "secondHalf", score: { A: 0, B: 0 }, subsRemainingA: 3, subsRemainingB: 3,
   benchA: [pl(50, "A", "CM")], benchB: [], pendingSubsA: [], pendingSubsB: [], cards: [], manMarks: {},
@@ -30,5 +30,14 @@ describe("assistant advice", () => {
       (id) => (id === 11 ? { shots: 2, goals: 1 } : { shots: 0, goals: 0 }));
     expect(tips.map((t) => t.kind)).toEqual(["tired", "booked", "mark"]);
     expect(tips[2]).toMatchObject({ playerId: 11 });
+  });
+  test("each tip carries what 'apply' does (report be8dd622)", () => {
+    const tips = assistantAdvice(state({ cards: [{ team: "A", playerId: 2, card: "yellow" }] }), "A", 70, "balanced",
+      (id) => (id === 11 ? { shots: 2, goals: 1 } : { shots: 0, goals: 0 }));
+    expect(tips[0]).toMatchObject({ kind: "tired", sub: { inId: 50 } });
+    expect(tips[2]).toMatchObject({ kind: "mark", marker: { name: "Tired CB" } });
+    const queued = assistantAdvice(state({ pendingSubsA: [{ outId: 3, inId: 50 }] }), "A", 70, "balanced", none);
+    expect(queued.find((t) => t.kind === "tired")).toMatchObject({ playerId: 2 });
+    expect((queued.find((t) => t.kind === "tired") as { sub?: unknown }).sub).toBeUndefined();
   });
 });

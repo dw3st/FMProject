@@ -1764,6 +1764,22 @@ export function MatchScreen() {
     }).filter((tip) => !dismissedTips.has(tip.id));
   }, [adviceMinute, mentality, dismissedTips, mySide, gameState?.matchPhase, gameState?.subsRemainingA, gameState?.subsRemainingB]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** "Aplicar" (report be8dd622): does what the assistant planned, without opening the panel. */
+  function applyTip(tip: AdviceTip) {
+    if ((tip.kind === "tired" || tip.kind === "booked") && tip.sub) {
+      setDismissedTips((d) => new Set(d).add(tip.id));
+      handleQueueSub({ outId: tip.playerId, inId: tip.sub.inId });
+      return;
+    }
+    if (tip.kind === "mark" && tip.marker && gameState) {
+      setDismissedTips((d) => new Set(d).add(tip.id));
+      const kept = (gameState.manMarks?.[mySide] ?? []).map((m) => ({ markerSlot: m.markerSlot, targetId: m.targetId }));
+      handleManMarks([...kept, { markerSlot: tip.marker.slot, targetId: tip.playerId }]);
+      return;
+    }
+    actOnTip(tip);
+  }
+
   function actOnTip(tip: AdviceTip) {
     setDismissedTips((d) => new Set(d).add(tip.id));
     if (tip.kind === "attack") { handleMentalityChange("attacking"); return; }
@@ -2754,7 +2770,7 @@ export function MatchScreen() {
           feed={feed}
           extra={<PossessionHeatmap heatmap={heatmapRef} mirror={awayView} teams={{ A: mySide, B: otherH2HSide }} open={heatmapOpen} onToggle={toggleHeatmap} />}
           referee={touchline?.referee ?? null}
-          advice={managerOut ? null : <AssistantAdviceCard tips={adviceTips} onAct={actOnTip} onDismiss={(id) => setDismissedTips((d) => new Set(d).add(id))} />}
+          advice={managerOut ? null : <AssistantAdviceCard tips={adviceTips} onApply={applyTip} onAct={actOnTip} onDismiss={(id) => setDismissedTips((d) => new Set(d).add(id))} />}
           momentum={<MomentumBar bar={awayView ? -momentum.bar : momentum.bar} colorLeft={shownKits.A} colorRight={shownKits.B} nameLeft={shownTeams.A?.name} nameRight={shownTeams.B?.name} />}
         />
           </div>

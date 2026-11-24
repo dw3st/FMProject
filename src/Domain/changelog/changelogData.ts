@@ -31,6 +31,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.40",
+    date: "2026-11-24",
+    items: [
+      { tab: "match", pt: "Sugestões do auxiliar na partida com um botão para aplicar: na troca, ele já diz quem entra (\"Trocar por ...\"); na marcação, quem marca. \"Escolher\" abre o painel para decidir à mão.", en: "The assistant's tips in the match have a button to apply them: for a substitution he names who comes on (\"Bring on ...\"); for marking, who marks. \"Choose\" opens the panel to decide by hand." },
+    ],
+  },
+  {
     version: "12.39",
     date: "2026-11-24",
     items: [

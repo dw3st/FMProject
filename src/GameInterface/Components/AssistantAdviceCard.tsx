@@ -3,8 +3,11 @@ import type { AdviceTip } from "@/Domain/match/assistantAdvice";
 import { Icon } from "@/GameInterface/Icons";
 
 /** The assistant's tips during the live match (report 31dd5a2d): one line each, with the action and a dismiss. */
-export function AssistantAdviceCard({ tips, onAct, onDismiss }: {
+export function AssistantAdviceCard({ tips, onApply, onAct, onDismiss }: {
   tips: AdviceTip[];
+  /** Does the planned change at once (report be8dd622): the substitution or the marking the assistant picked. */
+  onApply: (tip: AdviceTip) => void;
+  /** Opens the panel to choose by hand. */
   onAct: (tip: AdviceTip) => void;
   onDismiss: (id: string) => void;
 }) {
@@ -19,6 +22,11 @@ export function AssistantAdviceCard({ tips, onAct, onDismiss }: {
       case "mark": return t("assistant.tip.mark", { name: tip.name, shots: tip.shots, goals: tip.goals });
     }
   };
+  /** The one-click change, when the assistant has one. */
+  const planned = (tip: AdviceTip): string | null =>
+    (tip.kind === "tired" || tip.kind === "booked") && tip.sub ? t("assistant.apply.sub", { name: tip.sub.inName })
+      : tip.kind === "mark" && tip.marker ? t("assistant.apply.mark", { name: tip.marker.name })
+        : null;
   const action = (tip: AdviceTip) =>
     tip.kind === "attack" ? t("assistant.action.attack")
       : tip.kind === "protect" ? t("assistant.action.protect")
@@ -32,10 +40,16 @@ export function AssistantAdviceCard({ tips, onAct, onDismiss }: {
       {tips.map((tip) => (
         <div key={tip.id} className="flex flex-col gap-1">
           <p className="text-sm text-foreground m-0 tabular-nums">{text(tip)}</p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {planned(tip) && (
+              <button type="button" onClick={() => onApply(tip)}
+                className="h-8 px-2 rounded-md border border-primary bg-primary/15 text-sm font-semibold text-primary hover:bg-primary/25">
+                {planned(tip)}
+              </button>
+            )}
             <button type="button" onClick={() => onAct(tip)}
               className="h-8 px-2 rounded-md border border-border bg-card text-sm font-semibold text-foreground hover:border-primary">
-              {action(tip)}
+              {planned(tip) ? t("assistant.choose") : action(tip)}
             </button>
             <button type="button" onClick={() => onDismiss(tip.id)} className="h-8 px-2 text-sm text-muted-foreground hover:text-foreground">
               {t("assistant.dismiss")}

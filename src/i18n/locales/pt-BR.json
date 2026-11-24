@@ -9677,7 +9677,12 @@
       "attack": "Mentalidade ofensiva",
       "protect": "Mentalidade defensiva",
       "mark": "Marcar de perto"
-    }
+    },
+    "apply": {
+      "sub": "Trocar por {{name}}",
+      "mark": "{{name}} marca"
+    },
+    "choose": "Escolher"
   },
   "youthTrials": {
     "title": "Peneira de jovens",

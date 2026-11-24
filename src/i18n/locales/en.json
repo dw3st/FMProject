@@ -9692,7 +9692,12 @@
       "attack": "Attacking mentality",
       "protect": "Defensive mentality",
       "mark": "Man-mark him"
-    }
+    },
+    "apply": {
+      "sub": "Bring on {{name}}",
+      "mark": "{{name}} marks him"
+    },
+    "choose": "Choose"
   },
   "youthTrials": {
     "title": "Youth trials",
