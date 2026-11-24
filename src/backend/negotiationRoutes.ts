@@ -369,9 +369,8 @@ export const negotiationRoutes = {
       if (gate === "closed") return json({ error: "talksClosed", until: market.talks?.[key]?.closedUntil }, 409);
       if (gate === "noRounds") return json({ error: "noRounds" }, 409);
 
-      // Never past his contract: a two-season loan of a player in his last season is cut to it (startLoan too).
-      const wanted = loanUntil(date, seasonEndOf(meta.activeLeagues, borrower.leagueSlug, date), seasons);
-      const until = player.contract?.until && player.contract.until < wanted ? player.contract.until : wanted;
+      // The loan follows the borrower's calendar: the AI parent renews a contract ending sooner (report 98afd1e0).
+      const until = loanUntil(date, seasonEndOf(meta.activeLeagues, borrower.leagueSlug, date), seasons);
       const listed = getSellPriority(playerId, market.profiles?.[parent.id]?.sellList ?? []) !== null;
       const answer = meetsCounter
         ? { kind: "accept" as const }
@@ -388,7 +387,7 @@ export const negotiationRoutes = {
       let next: MarketState = { ...market, talks: { ...pruneTalks(market.talks, date), [key]: talk } };
       if (answer.kind === "accept") {
         try {
-          next = await startLoan(saveService, saveId, auth.seatId, meta, next, { player, parent, borrower, wageShare, until, fee });
+          next = await startLoan(saveService, saveId, auth.seatId, meta, next, { player, parent, borrower, wageShare, until, fee, extendContract: true });
           await saveService.appendDayTransfers(saveId, date, [{ playerId, from: parent.id, to: borrower.id, fee, kind: "loan", date }]);
         } catch (err) {
           logError("negotiation", `save ${saveId}: failed to start loan of ${playerId}`, err);

@@ -1,3 +1,4 @@
+import { contractCoveringLoan } from "@/Domain/negotiation/loans";
 import { randomUUID } from "crypto";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import { executeTransferFee } from "@/backend/FinancialService";
@@ -50,7 +51,7 @@ export async function offerLoanRenewals(
     const parent = await read(loan.fromClubId);
     const player = borrower?.players.find((p) => p.id === loan.playerId && p.loan);
     if (!borrower || !parent || !player) continue;
-    const until = renewedUntil(loan, player.contract?.until);
+    const until = renewedUntil(loan, player.contract?.until, inbound);
     if (!until) continue;
     if (inbound) {
       const terms = inboundRenewalTerms({
@@ -107,7 +108,12 @@ export async function acceptLoanRenewal(
   if (offer.direction === "in" && offer.fee > (borrower.finances?.budget ?? 0)) return { ok: false, error: "noMoney" };
   const renewed: Squad = {
     ...borrower,
-    players: borrower.players.map((p) => (p.id === player.id ? { ...p, loan: { ...player.loan!, until: offer.until, wageShare: offer.wageShare } } : p)),
+    players: borrower.players.map((p) => (p.id === player.id ? {
+      ...p,
+      loan: { ...player.loan!, until: offer.until, wageShare: offer.wageShare },
+      // The AI parent renews him to cover the new season (report 98afd1e0).
+      ...(offer.direction === "in" ? { contract: contractCoveringLoan(p.contract, offer.until) } : {}),
+    } : p)),
   };
   if (offer.fee > 0) {
     await executeTransferFee(

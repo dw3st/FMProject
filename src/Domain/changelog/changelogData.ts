@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.36.1",
+    date: "2026-11-24",
+    time: "16:10",
+    items: [],
+    fixes: [
+      { tab: "market", pt: "Jogador emprestado por um clube de outro calendário fica até o fim da sua temporada: o clube dono renova o contrato dele antes, em vez de pedi-lo de volta no meio do campeonato.", en: "A player loaned from a club on another calendar stays until the end of your season: his club renews his contract first instead of calling him back mid-season." },
+    ],
+  },
+  {
     version: "12.36",
     date: "2026-11-24",
     time: "15:30",

@@ -22,7 +22,13 @@ export function renewalDue(loan: Pick<ActiveLoan, "until" | "renewalOffered">, d
 }
 
 /** New return date: one season later, never past the contract; null when the contract does not cover another season. */
-export function renewedUntil(loan: Pick<ActiveLoan, "until">, contractUntil: string | undefined): string | null {
+export function renewedUntil(
+  loan: Pick<ActiveLoan, "until">,
+  contractUntil: string | undefined,
+  /** The parent is an AI club: it renews the contract to cover the new season (`contractCoveringLoan`). */
+  parentRenews = false,
+): string | null {
+  if (parentRenews) return addYearsIso(loan.until, 1);
   if (!contractUntil || daysBetween(loan.until, contractUntil) < R.MIN_CONTRACT_EXTRA_DAYS) return null;
   const next = addYearsIso(loan.until, 1);
   return contractUntil < next ? contractUntil : next;

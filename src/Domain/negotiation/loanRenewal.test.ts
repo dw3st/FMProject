@@ -42,6 +42,8 @@ describe("when the offer comes", () => {
     expect(renewedUntil(loan, "2027-12-31")).toBe("2027-12-31");
     expect(renewedUntil(loan, "2027-06-30")).toBeNull();
     expect(renewedUntil(loan, undefined)).toBeNull();
+    // An AI parent renews the contract to cover the season (report 98afd1e0).
+    expect(renewedUntil(loan, "2027-06-30", true)).toBe("2028-05-31");
   });
   test("the offer answers until the day before; only live offers of running loans count", () => {
     const o = loanRenewalOffer({ id: "x", direction: "in", player: { id: "p", name: "P" }, club: { id: "a", name: "A" },

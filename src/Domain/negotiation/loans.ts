@@ -9,7 +9,7 @@ import { aiClubFinance, passesWageGate } from "@/Domain/aiFinance/aiClubFinance"
 import { closePartialSeason } from "@/Domain/history/history";
 import { roundFeeUp } from "@/Domain/negotiation/negotiation";
 import { NEGOTIATION } from "@/Domain/negotiation/negotiationConfig";
-import type { PlayerLoan, RosterPlayer, Squad } from "@/types/playerTypes";
+import type { PlayerContract, PlayerLoan, RosterPlayer, Squad } from "@/types/playerTypes";
 import type { ActiveLoan, MarketBid } from "@/types/transferMarketTypes";
 
 const L = NEGOTIATION.LOAN;
@@ -26,6 +26,18 @@ export function loanUntil(date: string, seasonEnd: string, seasons: LoanSeasons 
   }
   // A two-season loan (12.32, tester report): the end of the season after the first.
   return seasons === 2 ? addYearsIso(end, 1) : end;
+}
+
+/**
+ * An AI club lending a player renews him first so the contract covers the loan (tester report 98afd1e0: loans
+ * followed the parent's calendar and ended mid-season at the borrower). The end moves by whole seasons, so it stays
+ * on the parent league's season end; the wage stays. A contract that already covers the loan is returned as is.
+ */
+export function contractCoveringLoan(contract: PlayerContract | undefined, loanEnd: string): PlayerContract | undefined {
+  if (!contract || contract.until >= loanEnd) return contract;
+  let until = contract.until;
+  while (until < loanEnd) until = addYearsIso(until, 1);
+  return { ...contract, until };
 }
 
 /** Loan length in seasons: one (the default) or two, as in real football. */

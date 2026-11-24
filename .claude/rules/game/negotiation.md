@@ -300,3 +300,7 @@ Pedido do usuário. Lógica pura em `src/Domain/negotiation/loanRenewal.ts` (`NE
 ## Empréstimo de duas temporadas (12.32)
 
 Pedido do usuário. Pedir emprestado (`POST /loans { ..., seasons: 1 | 2 }`, `parseLoanSeasons`) e a proposta de empréstimo entre técnicos aceitam 2 temporadas: `loanUntil(date, seasonEnd, seasons)` vai ao fim da temporada seguinte, nunca além do contrato. O mínimo do clube de origem (`loanMinimum`) usa as semanas do período inteiro. Na virada do meio do empréstimo ele não volta (o passo 7a só devolve com `until` até 60 dias depois). Tela: chips "Duração" na aba Empréstimo da negociação. A IA cedendo ao humano continua de uma temporada.
+
+## Empréstimo segue o calendário de quem recebe (12.36.1)
+
+Report de tester (98afd1e0: emprestados de clubes europeus voltavam em maio, no meio da Série C). O empréstimo era cortado no fim do contrato com o clube dono, que segue o calendário da liga dele. Agora, quando o dono é da IA, ele renova o contrato do jogador até cobrir o empréstimo (`contractCoveringLoan`, `loans.ts`: o fim anda em temporadas inteiras, o salário fica): ao pedir emprestado (`startLoan(..., { extendContract })`, a data é o fim da temporada de quem recebe) e na renovação do empréstimo vinda do dono (`renewedUntil(..., parentRenews)`, `acceptLoanRenewal`). Com o dono humano (proposta da IA, entre técnicos) o corte no fim do contrato continua: quem renova é o técnico.

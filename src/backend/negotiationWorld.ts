@@ -10,7 +10,7 @@ import { executeTransferFee, paySellOnReceiver } from "@/backend/FinancialServic
 import { recordTransferHistory } from "@/backend/clubHistoryWorld";
 import { seasonLabel } from "@/Domain/history/history";
 import { sellOnOwed } from "@/Domain/negotiation/negotiation";
-import { dueLoans, outgoingLoanCount, squadsAfterLoanEnd, squadsAfterLoanStart } from "@/Domain/negotiation/loans";
+import { contractCoveringLoan, dueLoans, outgoingLoanCount, squadsAfterLoanEnd, squadsAfterLoanStart } from "@/Domain/negotiation/loans";
 import { isExpired } from "@/Domain/contracts/contracts";
 import { MAX_SQUAD, MIN_BY_ROLE, refillSquad, roleOf, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { overallAvg } from "@/Domain/playerRating";
@@ -98,14 +98,19 @@ export async function startLoan(
   seatId: string,
   meta: SeatMeta,
   market: MarketState,
-  args: { player: RosterPlayer; parent: Squad; borrower: Squad; wageShare: number; until: string; fee: number; recall?: boolean },
+  args: {
+    player: RosterPlayer; parent: Squad; borrower: Squad; wageShare: number; until: string; fee: number; recall?: boolean;
+    /** The parent is an AI club: it renews the contract to cover the loan instead of cutting the loan short. */
+    extendContract?: boolean;
+  },
 ): Promise<MarketState> {
-  const { player, parent, borrower } = args;
+  const { parent, borrower } = args;
+  const player = args.extendContract ? { ...args.player, contract: contractCoveringLoan(args.player.contract, args.until) } : args.player;
   const date = meta.currentDate ?? "";
   const parentRef = await service.resolveSquadId(saveId, parent.id);
   const borrowerRef = await service.resolveSquadId(saveId, borrower.id);
   if (!parentRef || !borrowerRef) throw new Error(`startLoan: squads ${parent.id}/${borrower.id} not found`);
-  // Never past the contract (it stays the parent's).
+  // Never past the contract (it stays the parent's; an AI parent has just renewed it above).
   const until = player.contract?.until && player.contract.until < args.until ? player.contract.until : args.until;
   const loan: PlayerLoan = { fromClubId: parent.id, fromClubName: parent.name, until, wageShare: args.wageShare };
   const moved = squadsAfterLoanStart(player, parent, borrower, loan, historyFromOf(meta.activeLeagues, parentRef.leagueSlug));
