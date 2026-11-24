@@ -326,6 +326,8 @@ export function MatchScreen() {
   const [reportOpen, setReportOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const pausedRef = useRef(false);
+  /** The next emitted state goes to the screen at once: the substitution panel opened mid-tick must show it (tester report 5244133e). */
+  const urgentStateRef = useRef(false);
   const uiThrottleRef = useRef<UiStateThrottle<GameState> | null>(null);
   const deliveredStateRef = useRef<GameState | null>(null);
   // The speed the last match was left at (tester report); a match between two managers runs at a fixed 1x.
@@ -884,7 +886,8 @@ export function MatchScreen() {
       accumulatePossession(possessionRef.current, next);
       if (heatmapRef.current) samplePossessionHeatmap(heatmapRef.current, next);
       for (const p of next.players) knownPlayersRef.current.set(p.id, p);
-      throttle.push(next, pausedRef.current);
+      throttle.push(next, pausedRef.current || urgentStateRef.current);
+      urgentStateRef.current = false;
     });
     return () => {
       off();
@@ -1181,6 +1184,10 @@ export function MatchScreen() {
         }
         panelPauseRef.current = openPanelPause(panelPauseRef.current, showSubPanelRef.current, pausedRef.current);
         showSubPanelRef.current = true;
+        // The injury happened inside this tick: the state with the vacancy is emitted right after, and it
+        // must reach the panel in the same render, not 100 ms later (the panel showed twice: before and after).
+        urgentStateRef.current = true;
+        pausedRef.current = true;
         setPaused(true);
         setShowSubPanel(true);
       }),
