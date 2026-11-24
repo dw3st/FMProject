@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
   checkTrialRequest, coachGemMult, fameMult, generateTrialPlayers, parseTrialRequest, revealOf, seasonCount,
-  trialCost, trialCount, trialKnowledge, trialReputation, withScheduled,
+  trialCost, trialCount, trialGemSeen, trialKnowledge, trialReputation, withScheduled,
 } from "@/Domain/youth/trials";
 import { YOUTH_TRIAL } from "@/Domain/youth/trialConfig";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { overallAvg } from "@/Domain/playerRating";
+import { getMainRole } from "@/Domain/roles";
+import { uncertaintyOf } from "@/Domain/scouting/knowledge";
+import { obscureForViewer } from "@/Domain/staff/staff";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
 
 function mk(i: number, pos: string, level: number): RosterPlayer {
@@ -98,6 +101,24 @@ describe("youth trials: the trial day", () => {
     const rate = gems / seen;
     expect(rate).toBeGreaterThan(0.002);
     expect(rate).toBeLessThan(0.007);
+  });
+  test("the gem tag marks few ordinary youngsters and most real gems", () => {
+    const tally = { ordinary: 0, falseTag: 0, gems: 0, tagged: 0 };
+    for (const k of YOUTH_TRIAL.KNOWLEDGE) {
+      for (let d = 1; d <= 150; d++) {
+        const date = `2031-${String(1 + (d % 12)).padStart(2, "0")}-${String(1 + (d % 28)).padStart(2, "0")}`;
+        const ps = generateTrialPlayers({ ...base, seatId: `g${d}`, fame: 2, coachStars: 5, trial: { ...base.trial, date } });
+        for (const p of ps) {
+          const seen = obscureForViewer(p, { knowledge: k, noise: uncertaintyOf(k) }, "sv");
+          const tag = trialGemSeen(overallAvg(seen), p.age, base.squad, getMainRole(p.positions[0] ?? "CM"));
+          if (p.profile.archetype === "Wonderkid") { tally.gems++; if (tag) tally.tagged++; }
+          else { tally.ordinary++; if (tag) tally.falseTag++; }
+        }
+      }
+    }
+    console.log("gem tag", tally);
+    expect(tally.falseTag / tally.ordinary).toBeLessThan(0.02);
+    expect(tally.tagged / tally.gems).toBeGreaterThan(0.35);
   });
 });
 

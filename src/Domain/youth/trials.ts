@@ -100,6 +100,13 @@ export function generateTrialPlayers(args: {
   return out;
 }
 
+/** The gem tag of a trial youngster: the seen level clearly above an ordinary trialist of his line (never the
+ *  potential band: every 16-year-old's ceiling passes the starters). */
+export function trialGemSeen(seenOverall: number, age: number, squad: Squad, role: MainRole): boolean {
+  if (age > 20) return false;
+  return seenOverall >= lineAverage(squad, role) - T.LEVEL_OFFSET + T.GEM_SEEN_ABOVE;
+}
+
 /** Whether a trial youngster has made it, and how. */
 export function revealOf(
   player: RosterPlayer,

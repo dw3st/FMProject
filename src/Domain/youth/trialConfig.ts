@@ -17,6 +17,8 @@ export const YOUTH_TRIAL = {
   LEVEL_SIGMA: 0.5,
   GEM_CHANCE: 0.004,
   GEM_BONUS: 1.0,
+  /** The gem tag: the level the youth coach sees is at least this much above an ordinary trialist's mean. */
+  GEM_SEEN_ABOVE: 1.2,
   /** Gem chance × by the youth coach's stars [1★, 3★, 5★]; none = 2★. */
   COACH_GEM: [0.75, 1, 1.4] as const,
   /** Knowledge of the results by the youth coach's stars [1★, 3★, 5★]; none = 2★. */

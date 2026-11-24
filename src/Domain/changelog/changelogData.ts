@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.37.1",
+    date: "2026-11-24",
+    time: "19:06",
+    items: [],
+    fixes: [
+      { tab: "squad", pt: "Peneira: o selo de joia aparecia em todos os garotos. Agora vira \"Possível joia\" e só aparece quando o treinador da base vê um garoto bem acima dos outros.", en: "Youth trials: every youngster got the gem tag. It is now \"Possible gem\" and only shows when the youth coach sees one well above the rest." },
+    ],
+  },
+  {
     version: "12.37",
     date: "2026-11-24",
     time: "17:30",

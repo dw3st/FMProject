@@ -7,14 +7,13 @@ import { wageRevenueBasisOf } from "@/Domain/finance/wages";
 import { overallAvg } from "@/Domain/playerRating";
 import { getMainRole } from "@/Domain/roles";
 import { uncertaintyOf } from "@/Domain/scouting/knowledge";
-import { isGem, starterLineAverages } from "@/Domain/scouting/missions";
 import { seenOverallRange } from "@/Domain/scouting/seen";
 import { effectiveStars, obscureForViewer } from "@/Domain/staff/staff";
 import { potentialBand } from "@/Domain/youth/potential";
 import { YOUTH_TRIAL as T } from "@/Domain/youth/trialConfig";
 import {
   checkTrialRequest, emptyTrials, fameMult, parseTrialRequest, seasonCount, trialCost, trialCount, trialKnowledge,
-  TRIAL_SIZES, trialWindow, withScheduled,
+  TRIAL_SIZES, trialGemSeen, trialWindow, withScheduled,
 } from "@/Domain/youth/trials";
 import { YOUTH } from "@/Domain/youth/youthConfig";
 import { seedFrom } from "@/Domain/rng";
@@ -49,9 +48,7 @@ export function trialPlayerView(p: RosterPlayer, squad: Squad, saveId: string, k
   const overall = seenOverallRange(ovr, noise) ?? [ovr, ovr];
   const [lo, hi] = potentialBand(seen);
   const potential: [number, number] = [Math.max(0, lo - noise), Math.min(10, hi + noise)];
-  const line = getMainRole(p.positions[0] ?? "CM");
-  const lineAverage = starterLineAverages(squad)[line];
-  const gem = isGem({ age: p.age, country: "", ownCountry: "", potentialHigh: hi, lineAverage });
+  const gem = trialGemSeen(ovr, p.age, squad, getMainRole(p.positions[0] ?? "CM"));
   return { player: seen, overall, potential, gem };
 }
 
