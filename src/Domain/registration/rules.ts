@@ -246,3 +246,28 @@ export function matchdayPool(
   const benchForeign = new Set(rest.filter(foreignOf).sort(byQuality).slice(0, room).map((p) => p.id));
   return { lineup: result, bench: rest.filter((p) => !foreignOf(p) || benchForeign.has(p.id)), replaced };
 }
+
+/** The per-match foreign limit as the screens explain it: foreigners in the XI, room left on the bench, who stays out. */
+export interface ForeignMatchdayLimit {
+  max: number;
+  inXI: number;
+  /** Foreigners who may still sit on the bench. */
+  benchRoom: number;
+  /** Registered, available foreigners left off the bench by the limit. */
+  leftOut: string[];
+}
+
+/** Null when the rule has no per-match limit or nobody is left out by it. */
+export function foreignMatchdayLimit(
+  xiIds: readonly string[], players: RosterPlayer[], rule: RegistrationRule, country: string,
+): ForeignMatchdayLimit | null {
+  const max = rule.maxForeignMatchday;
+  if (max == null) return null;
+  const xi = new Set(xiIds.filter(Boolean));
+  const foreign = players.filter((p) => isForeign(p, rule, country));
+  const inXI = foreign.filter((p) => xi.has(p.id)).length;
+  const benchRoom = Math.max(0, max - inXI);
+  const bench = foreign.filter((p) => !xi.has(p.id)).sort(byQuality);
+  const leftOut = bench.slice(benchRoom).map((p) => p.id);
+  return leftOut.length > 0 ? { max, inXI, benchRoom, leftOut } : null;
+}

@@ -232,3 +232,7 @@ Report do usuário. `outOfCompetition` (`src/Domain/registration/eliminated.ts`,
 ## Uma lista só, coluna por competição (11.0)
 
 Report de tester. A aba Inscritos lista o elenco uma vez (`registrationTableRows`, `Squad/registrationTable.ts`, com teste), com uma coluna por competição e uma caixa de marcar em cada (`ui/TickBox.tsx`): marcada = inscrito; azul e fixa = livre (jovem, sempre inscrito); apagada = prazo fechado ou sem vaga, com o motivo no `title`. Clicar grava a lista daquela competição pela mesma rota `PUT` (`toggledIds`). Acima da tabela, um cartão por competição com prazo, regra, contadores e o botão Automático. Os selos (Estrangeiro, Green card, Formado) valem quando alguma competição os dá; os de Inscrito / Não inscrito e as abas por competição saíram. Clicar no nome da competição no cabeçalho ordena os inscritos primeiro.
+
+## Aviso do limite de estrangeiros por jogo (12.37)
+
+Report 119162b0 (Brasileirão B, banco só com brasileiros). `foreignMatchdayLimit` (`rules.ts`, com teste) diz quantos estrangeiros estão no XI, quantos cabem no banco e quem fica de fora. O `match-setup` devolve `foreignLimit` (nomes) e a janela de substituição mostra a linha acima do banco; a Formação calcula o mesmo com as linhas da inscrição da competição do próximo jogo (`foreign`, `rule.maxForeignMatchday`) e avisa abaixo do título do banco. Só aviso: a regra não mudou.

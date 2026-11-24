@@ -160,7 +160,7 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
       .filter((f) => !f.played && f.date >= (currentDate ?? "") && (f.home === clubId || f.away === clubId))
       .sort((a, b) => a.date.localeCompare(b.date))[0]?.competition ?? null;
   }, [fixtures, currentDate, clubSquad?.id, national]);
-  const [unregistered, setUnregistered] = useState<{ competition: string; ids: Set<string> } | null>(null);
+  const [unregistered, setUnregistered] = useState<{ competition: string; ids: Set<string>; foreign: Set<string>; maxForeign: number | null } | null>(null);
   const [regLeagues, setRegLeagues] = useState<LeagueData[]>([]);
   useEffect(() => {
     if (!session?.saveId || !nextCompetition) {
@@ -171,7 +171,12 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
     fetchRegistration(session.saveId)
       .then((d) => {
         const comp = d.competitions.find((c) => c.slug === nextCompetition);
-        if (live) setUnregistered(comp ? { competition: comp.slug, ids: new Set(comp.rows.filter((r) => !r.registered).map((r) => r.id)) } : null);
+        if (live) setUnregistered(comp ? {
+          competition: comp.slug,
+          ids: new Set(comp.rows.filter((r) => !r.registered).map((r) => r.id)),
+          foreign: new Set(comp.rows.filter((r) => r.registered && r.foreign).map((r) => r.id)),
+          maxForeign: comp.rule.maxForeignMatchday ?? null,
+        } : null);
       })
       .catch(() => { if (live) setUnregistered(null); });
     void fetch("/api/leagues")
@@ -750,6 +755,11 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
   const notInXi = squad ? squad.players.filter((p) => !usedInXi.has(p.id)) : [];
   const bench = sortBenchByPosition(registeredOnly(notInXi));
   const hiddenFromBench = notInXi.length - bench.length;
+  // Per-match foreign limit (Brazil: 9 in the XI and the bench): how many foreigners of the bench stay out on match day.
+  const foreignInXI = unregistered?.maxForeign != null ? lineup.filter((id) => id && unregistered.foreign.has(id)).length : 0;
+  const foreignBench = unregistered?.maxForeign != null ? bench.filter((p) => unregistered.foreign.has(p.id) && !isUnavailable(p, currentDate)).length : 0;
+  const foreignRoom = unregistered?.maxForeign != null ? Math.max(0, unregistered.maxForeign - foreignInXI) : 0;
+  const foreignOut = Math.max(0, foreignBench - foreignRoom);
 
   const targetSlotRole =
     selectedSlotIdx !== null && slots[selectedSlotIdx] ? slots[selectedSlotIdx]!.role : undefined;
@@ -1049,6 +1059,11 @@ function FormationBoard({ national, nationalTeamId }: { national: boolean; natio
                   </div>
                   <div className="flex flex-col min-h-0">
                     <SquadListHeader title={t("formations.bench")} count={bench.length} />
+                    {foreignOut > 0 && unregistered?.maxForeign != null && (
+                      <p className="text-sm text-chart-4 m-0 mb-1">
+                        {t("formations.foreignLimit", { max: unregistered.maxForeign, inXI: foreignInXI, count: foreignOut })}
+                      </p>
+                    )}
                     {hiddenFromBench > 0 && unregistered && (
                       <p className="text-sm text-muted-foreground m-0 mb-1">
                         {t("formations.unregisteredHidden", { count: hiddenFromBench, competition: competitionName(unregistered.competition, regLeagues, i18n.language) })}

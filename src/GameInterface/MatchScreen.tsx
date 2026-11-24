@@ -44,7 +44,7 @@ import { DEFAULT_TACTICAL_STYLE, DEFAULT_MENTALITY, MENTALITY_OPTIONS } from "@/
 import { loadSession } from "@/GameInterface/gameSession";
 import { formationForSimId } from "@/Domain/matchFormations";
 import { staffEffectsOf } from "@/Domain/staff/staff";
-import { SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
+import { type ForeignLimitNotice, SubstitutionPanel } from "@/GameInterface/SubstitutionPanel";
 import { NO_PANEL_PAUSE, manualToggle, openPanelPause, pausedAfterClose, type PanelPause } from "@/GameInterface/panelPause";
 import { faceUrl, managerFaceUrl, refereeFaceUrl } from "@/Domain/faces/faceUrl";
 import { newVisualOn } from "@/Domain/art/paintedFaces";
@@ -315,6 +315,8 @@ export function MatchScreen() {
   const [clockNow, setClockNow] = useState(0);
   /** Both match squads (starters + bench) for the faces on the pitch (#61). */
   const [myRoster, setMyRoster] = useState<RosterPlayer[] | undefined>(undefined);
+  /** The per-match foreign limit keeping registered foreigners off the bench (Brazil: 9 in the XI and the bench). */
+  const [foreignLimit, setForeignLimit] = useState<ForeignLimitNotice | null>(null);
   const [faceRoster, setFaceRoster] = useState<Record<TeamId, {
     players: { id: string; nationality?: string | null }[];
     clubColors: readonly string[];
@@ -603,6 +605,7 @@ export function MatchScreen() {
           sunSide?: StadiumSun | null;
           /** Players each side may name for this competition (registration); null = everyone. */
           registered?: { mine: string[]; opp: string[] } | null;
+          foreignLimit?: ForeignLimitNotice | null;
           /** The user's manager serves a touchline ban in this match (`var.md` §4). */
           managerBanned?: boolean;
           /** His national team's game (Etapa 41b): the teams are nations. */
@@ -645,6 +648,7 @@ export function MatchScreen() {
           if (data.managerBanned) setManagerOut("banned");
           const mineRoster = { players: data.mySquad.players, clubColors: data.save.clubColors };
           setMyRoster(data.mySquad.players);
+          setForeignLimit(data.foreignLimit ?? null);
           const oppRoster = { players: opp.players, clubColors: opp.colors };
           setFaceRoster(side === "A" ? { A: mineRoster, B: oppRoster } : { A: oppRoster, B: mineRoster });
           const style = data.myTactics?.tactical_style ?? DEFAULT_TACTICAL_STYLE;
@@ -2765,6 +2769,7 @@ export function MatchScreen() {
           ratings={ratings}
           faceUrls={faceUrls?.[mySide]}
           roster={myRoster}
+          foreignLimit={foreignLimit}
           onQueueSub={managerOut ? orderSub : handleQueueSub}
           {...(managerOut ? {} : {
             onUnqueueSub: handleUnqueueSub,

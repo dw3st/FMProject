@@ -24,6 +24,14 @@ import { attrDisplay } from "@/Domain/attributes";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/** The per-match foreign limit as the match setup sends it (`matchSetup.ts` → `foreignLimit`). */
+export interface ForeignLimitNotice {
+  max: number;
+  inXI: number;
+  benchRoom: number;
+  leftOut: string[];
+}
+
 export interface SubstitutionPanelProps {
   gameState: GameState;
   playerTeam: TeamId;
@@ -54,6 +62,8 @@ export interface SubstitutionPanelProps {
   faceUrls?: Record<string, string>;
   /** The club's squad, for the hover card of the mini pitch and the bench. */
   roster?: RosterPlayer[];
+  /** Registered foreigners kept off the bench by the per-match limit; absent = no notice. */
+  foreignLimit?: ForeignLimitNotice | null;
   onClose: () => void;
 }
 
@@ -88,6 +98,7 @@ export function SubstitutionPanel({
   liveTactics,
   faceUrls,
   roster,
+  foreignLimit,
   onClose,
   initialTab,
 }: SubstitutionPanelProps) {
@@ -202,14 +213,26 @@ export function SubstitutionPanel({
             {...(onUnqueueSub ? { onUnqueueSub } : {})}
             faceUrls={faceUrls}
             {...(roster ? { roster } : {})}
-            top={onFillVacancy ? (
-              <InjuryVacancyPanel
-                vacancies={gameState.injuryVacancies?.[playerTeam] ?? []}
-                bench={availableBench}
-                ratings={ratings}
-                canSub={subsRemaining > 0}
-                onFill={onFillVacancy}
-              />
+            top={onFillVacancy || foreignLimit ? (
+              <>
+                {foreignLimit && (
+                  <p className="text-sm text-chart-4 m-0 mb-2">
+                    {t("substitutionPanel.foreignLimit", {
+                      max: foreignLimit.max, inXI: foreignLimit.inXI, count: foreignLimit.benchRoom,
+                      players: foreignLimit.leftOut.join(", "),
+                    })}
+                  </p>
+                )}
+                {onFillVacancy && (
+                  <InjuryVacancyPanel
+                    vacancies={gameState.injuryVacancies?.[playerTeam] ?? []}
+                    bench={availableBench}
+                    ratings={ratings}
+                    canSub={subsRemaining > 0}
+                    onFill={onFillVacancy}
+                  />
+                )}
+              </>
             ) : undefined}
           />
         )}

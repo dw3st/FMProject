@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  autoRegister, canAdd, countsOf, limitForeignPool, matchdayPool, registeredSet, rosterSig, ruleFor, validateList, type RegCtx,
+  autoRegister, canAdd, countsOf, foreignMatchdayLimit, limitForeignPool, matchdayPool, registeredSet, rosterSig, ruleFor, validateList, type RegCtx,
 } from "@/Domain/registration/rules";
 import { REGISTRATION_RULES as R } from "@/Domain/registration/registrationConfig";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -146,5 +146,23 @@ describe("per-match foreign limit (Brazil)", () => {
     const pool = limitForeignPool(players, R.brazil!, "Brazil");
     expect(pool.filter((p) => p.nationality !== "Brazil").length).toBe(9);
     expect(pool.some((p) => p.id === "bf0")).toBe(false);
+  });
+});
+
+describe("foreignMatchdayLimit", () => {
+  const brazil = R.brazil!;
+  const foreigner = (id: string, ovr: number) => mk(id, ovr, { nationality: "Argentina" });
+  test("XI with the 9 foreigners leaves every bench foreigner out", () => {
+    const xi = Array.from({ length: 9 }, (_, i) => foreigner(`f${i}`, 6));
+    const bench = [foreigner("b1", 5), foreigner("b2", 4), mk("d1", 5, { nationality: "Brazil" })];
+    const out = foreignMatchdayLimit(xi.map((p) => p.id), [...xi, ...bench], brazil, "Brazil");
+    expect(out).toEqual({ max: 9, inXI: 9, benchRoom: 0, leftOut: ["b1", "b2"] });
+  });
+  test("room on the bench keeps the best foreigners, null when nobody is out", () => {
+    const xi = Array.from({ length: 8 }, (_, i) => foreigner(`f${i}`, 6));
+    const bench = [foreigner("b1", 4), foreigner("b2", 5)];
+    expect(foreignMatchdayLimit(xi.map((p) => p.id), [...xi, ...bench], brazil, "Brazil")?.leftOut).toEqual(["b1"]);
+    expect(foreignMatchdayLimit(xi.map((p) => p.id), [...xi, bench[0]!], brazil, "Brazil")).toBeNull();
+    expect(foreignMatchdayLimit([], [foreigner("x", 5)], R.premier_league!, "England")).toBeNull();
   });
 });

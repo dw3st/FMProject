@@ -1297,6 +1297,8 @@
     }
   },
   "formations": {
+    "foreignLimit_one": "Limite de {{max}} estrangeiros no jogo, entre titulares e banco: com {{inXI}} no time, {{count}} estrangeiro do banco fica de fora.",
+    "foreignLimit_other": "Limite de {{max}} estrangeiros no jogo, entre titulares e banco: com {{inXI}} no time, {{count}} estrangeiros do banco ficam de fora.",
     "presets": {
       "unknownPlayer": "Um jogador",
       "title": "Escalações salvas",
@@ -3580,6 +3582,8 @@
     "secondYellow": "segundo amarelo"
   },
   "substitutionPanel": {
+    "foreignLimit_one": "Limite de {{max}} estrangeiros no jogo, entre titulares e banco: {{inXI}} no time, cabe {{count}} no banco. Fora do banco: {{players}}.",
+    "foreignLimit_other": "Limite de {{max}} estrangeiros no jogo, entre titulares e banco: {{inXI}} no time, cabem {{count}} no banco. Fora do banco: {{players}}.",
     "fitnessTitle": "Fôlego {{value}}",
     "title": "Substituições",
     "xiAvg": "Média XI",

@@ -37,6 +37,8 @@ import type { StadiumSun } from "@/Domain/matchday/stadiumSun";
 import { matchSun, matchWeatherOf } from "@/backend/stadiumData";
 import type { WeatherOfMatch } from "@/Domain/matchday/matchWeatherEffect";
 import { tablePositions } from "@/Domain/match/tablePositions";
+import { foreignMatchdayLimit } from "@/Domain/registration/rules";
+import { isUnavailable } from "@/Domain/discipline/discipline";
 
 // fileURLToPath (not `.pathname`): a bare `.pathname` breaks Bun.file() on Windows ("/C:/...").
 const FORMATIONS_DIR = fileURLToPath(new URL("../Data/formations", import.meta.url));
@@ -247,6 +249,14 @@ export async function matchSetupFor(
         opp: (oppPool ?? opponentSquad)?.players.map((p) => p.id) ?? [],
       }
     : null;
+  // Per-match foreign limit (Brazil: 9 in the XI and the bench): who it keeps off the bench, for the panel's notice.
+  const foreignLimitInfo = myReg && matchDate
+    ? foreignMatchdayLimit(resolved.lineup, mySquad.players.filter((p) => myReg!.ids.has(p.id) && !isUnavailable(p, matchDate)), myReg.rule, myReg.country)
+    : null;
+  const foreignLimit = foreignLimitInfo
+    ? { max: foreignLimitInfo.max, inXI: foreignLimitInfo.inXI, benchRoom: foreignLimitInfo.benchRoom,
+        leftOut: foreignLimitInfo.leftOut.map((id) => mySquad.players.find((p) => p.id === id)?.name ?? id) }
+    : null;
   const matchMarking = save.matchMarking && save.matchMarking.date === matchDate ? save.matchMarking : null;
   // Pitch of the stadium the match is played in (`src/Domain/facilities/pitch.ts`).
   let pitch: MatchPitch | null = null;
@@ -334,6 +344,7 @@ export async function matchSetupFor(
     rotationApplied: resolved.rotationApplied,
     oppLineup,
     registered,
+    foreignLimit,
     matchMarking,
     pitchCondition,
     pitch,

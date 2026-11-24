@@ -1297,6 +1297,8 @@
     }
   },
   "formations": {
+    "foreignLimit_one": "Limit of {{max}} foreigners in the match, starters and bench: with {{inXI}} in the team, {{count}} foreigner on the bench stays out.",
+    "foreignLimit_other": "Limit of {{max}} foreigners in the match, starters and bench: with {{inXI}} in the team, {{count}} foreigners on the bench stay out.",
     "presets": {
       "unknownPlayer": "A player",
       "title": "Saved lineups",
@@ -3583,6 +3585,8 @@
     "secondYellow": "second yellow"
   },
   "substitutionPanel": {
+    "foreignLimit_one": "Limit of {{max}} foreigners in the match, starters and bench: {{inXI}} in the team, room for {{count}} on the bench. Left out: {{players}}.",
+    "foreignLimit_other": "Limit of {{max}} foreigners in the match, starters and bench: {{inXI}} in the team, room for {{count}} on the bench. Left out: {{players}}.",
     "fitnessTitle": "Fitness {{value}}",
     "title": "Substitutions",
     "xiAvg": "XI avg",
