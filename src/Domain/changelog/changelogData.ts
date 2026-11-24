@@ -39,6 +39,7 @@ export const changelog: ChangelogEntry[] = [
     ],
     fixes: [
       { tab: "match", pt: "Com a troca manual na lesão, o painel de substituições já abre com a vaga do lesionado.", en: "With manual injury subs, the substitutions panel now opens with the injured player's slot already shown." },
+      { tab: "match", pt: "No jogo ao vivo entre técnicos, as mudanças de tática, as instruções por jogador e os atalhos de escalação voltaram a valer.", en: "In the live match between managers, tactic changes, player instructions and line-up shortcuts work again." },
     ],
   },
   {

@@ -192,6 +192,16 @@ describe("play mode (stage 22)", () => {
   });
 });
 
+describe("slot instruction command", () => {
+  test("accepts duty, role out of possession and the player's own levels (stage 20)", () => {
+    const instruction = { variant: "fb_overlap", press: "more", duty: "attack", oop: "fb_press", shooting: 1, dribbling: -2 } as const;
+    expect(parseH2HCommand({ kind: "instruction", slot: 1, instruction })).toEqual({ kind: "instruction", slot: 1, instruction });
+    expect(parseH2HCommand({ kind: "instruction", slot: 1, instruction: { duty: "sideways" } })).toBeNull();
+    expect(parseH2HCommand({ kind: "instruction", slot: 1, instruction: { shooting: 3 } })).toBeNull();
+    expect(parseH2HCommand({ kind: "instruction", slot: 1, instruction: { oop: "nope" } })).toBeNull();
+  });
+});
+
 describe("roomView", () => {
   test("copies the room state", () => {
     const r = startPause(liveRoom(), "A", T0);

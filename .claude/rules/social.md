@@ -136,7 +136,7 @@ Cliente → servidor: `h2h_join { saveId, fixtureId }`, `h2h_ready`, `h2h_cmd { 
 `h2h_leave`. Servidor → cliente: `h2h_room { room, mySide }`, `h2h_invite { saveId, fixtureId, from }` (também
 reenviado a cada `hello` enquanto a sala espera, `resendH2HInvites`), `h2h_frame`, `h2h_state`, `h2h_event`,
 `h2h_paused`, `h2h_closed { reason }`, `h2h_done`. Os frames do cliente podem ter até 8 KB (`H2H.MAX_FRAME_BYTES`, o
-`maxPayloadLength` do socket; maiores são ignorados); por socket `h2h_cmd` 20 a cada 10 s e os outros `h2h_*` 30 por
+`maxPayloadLength` do socket; maiores são ignorados); por socket `h2h_cmd` 40 a cada 10 s e os outros `h2h_*` 30 por
 minuto. Entrada recusada é silenciosa. Ver `.claude/rules/game/multiplayer.md` → "Parte 7".
 
 ## Assistir ao jogo de um amigo (multiplayer parte 8, 8.1)

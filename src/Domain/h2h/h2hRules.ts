@@ -1,7 +1,7 @@
 import { H2H } from "@/Domain/h2h/h2hConfig";
 import { FORMATION_IDS } from "@/Domain/matchFormations";
 import { parseAxesOverride, parseCustomFormation } from "@/Domain/formation/zones";
-import { isRoleVariantId } from "@/GameEngine/Configs/RoleVariantConfig";
+import { PLAYER_LEVEL_KEYS, isOopRoleId, isRoleVariantId } from "@/GameEngine/Configs/RoleVariantConfig";
 import { MENTALITY_OPTIONS } from "@/types/tacticsTypes";
 import type { InstructionLevel, Mentality, PressLevel, SlotInstruction, TacticalStyle, TeamInstructions } from "@/types/tacticsTypes";
 import { isLevel, parseTeamInstructions } from "@/Domain/tactics/teamInstructions";
@@ -216,8 +216,24 @@ function isSlot(v: unknown): v is number {
 
 function parseInstruction(v: unknown): SlotInstruction | null | undefined {
   if (v === null) return null;
-  if (!isObj(v) || !hasOnly(v, ["variant", "press"])) return undefined;
+  // Stage 20 added duty, the role out of possession and the player's own levels; the worker fits them to the slot
+  // (`effectiveInstruction`), so only the shape is checked here.
+  if (!isObj(v) || !hasOnly(v, ["variant", "press", "duty", "oop", ...PLAYER_LEVEL_KEYS])) return undefined;
   const out: SlotInstruction = {};
+  if (v.duty !== undefined && v.duty !== null) {
+    if (v.duty !== "defend" && v.duty !== "support" && v.duty !== "attack") return undefined;
+    out.duty = v.duty;
+  }
+  if (v.oop !== undefined && v.oop !== null) {
+    if (!isOopRoleId(v.oop)) return undefined;
+    out.oop = v.oop;
+  }
+  for (const k of PLAYER_LEVEL_KEYS) {
+    const lv = v[k];
+    if (lv === undefined || lv === null) continue;
+    if (!isLevel(lv)) return undefined;
+    out[k] = lv;
+  }
   if (v.variant !== undefined) {
     if (!isRoleVariantId(v.variant)) return undefined;
     out.variant = v.variant;

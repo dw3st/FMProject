@@ -805,7 +805,7 @@ Spec: `docs/superpowers/specs/2026-10-27-multiplayer-h2h-live-design.md`. Plano:
 - Estado do fio (`wireState`, `wirePlayer`): sem os campos só do motor (`fit`, `baseStats`, `decisionMemory`, `engine`,
   `bounds`, `fatigueBaselineEnergy`, `throughBallCellsCache`), números arredondados; os bancos só quando mudam; as
   estatísticas inteiras (`snapshot`) a cada 3 s, numa entrada e numa volta.
-- Limites por socket: `h2h_cmd` 20 a cada 10 s, os outros `h2h_*` 30 por minuto; frames acima de 8 KB ignorados
+- Limites por socket: `h2h_cmd` 40 a cada 10 s, os outros `h2h_*` 30 por minuto; frames acima de 8 KB ignorados
   (`H2H.MAX_FRAME_BYTES`, também o `maxPayloadLength` do socket). Entrada recusada é silenciosa.
 
 ### Telas
