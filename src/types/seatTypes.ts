@@ -45,6 +45,8 @@ export interface SeatState {
   retiredFavorites?: string[];
   /** Public world: ISO of the last time the manager opened the world (written at most hourly). */
   lastSeenAt?: string;
+  /** Club partnerships (report 648035a3): the satellite and the parent club. */
+  partnerships?: import("@/types/partnershipTypes").SeatPartnerships;
   /** Public world: ISO of the inactivity warning (5 days). */
   inactiveWarnedAt?: string;
   clubId:     string;
@@ -140,7 +142,7 @@ export const SEAT_KEYS = [
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "youthTrials", "trialReveals", "youthCoachPlanned", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerReactions", "managerStudies", "trustedStaff", "betNet", "betExact", "betLongshot", "casinoNet", "casinoBiggestWin", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
-  "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites", "tacticLog",
+  "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites", "tacticLog", "partnerships",
 ] as const satisfies readonly (keyof SeatState)[];
 
 type MissingSeatKeys = Exclude<keyof SeatState, (typeof SEAT_KEYS)[number]>;

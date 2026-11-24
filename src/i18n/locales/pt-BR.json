@@ -2783,7 +2783,10 @@
         "pre_contract_failed": "O pré-contrato caiu: {{player}}",
         "seat_offer": "Proposta por {{player}}",
         "deferred_joined": "{{player}} chegou do {{club}}",
-        "deferred_cancelled": "A contratação caiu: {{player}}"
+        "deferred_cancelled": "A contratação caiu: {{player}}",
+        "partnership_signed": "Parceria com o {{club}}",
+        "partnership_ended": "Fim da parceria com o {{club}}",
+        "partnership_offer": "{{club}} oferece {{player}} emprestado"
       },
       "body": {
         "bid": "O {{club}} oferece {{fee}} por {{player}}.",
@@ -2803,7 +2806,13 @@
         "pre_contract_failed": "O pré-contrato com {{player}} caiu (ele saiu do {{club}} ou seu elenco está cheio).",
         "seat_offer": "Novidade na proposta por {{player}} com o {{club}}.",
         "deferred_joined": "A janela abriu e {{player}} deixou o {{club}} para o seu elenco. A taxa de {{fee}} foi paga quando o negócio fechou.",
-        "deferred_cancelled": "O negócio de {{player}} com o {{club}} caiu (ele saiu do clube ou seu elenco está cheio). A taxa de {{fee}} foi devolvida."
+        "deferred_cancelled": "O negócio de {{player}} com o {{club}} caiu (ele saiu do clube ou seu elenco está cheio). A taxa de {{fee}} foi devolvida.",
+        "partnership_signed_satellite": "O {{club}} aceitou ser seu clube satélite. Empreste jovens pela aba Negociações do Mercado.",
+        "partnership_signed_parent": "O {{club}} aceitou ser seu clube-mãe. Nas janelas ele vai oferecer jovens emprestados.",
+        "partnership_ended_human": "A parceria com o {{club}} acabou: o clube agora tem um técnico humano. Os empréstimos seguem até a data.",
+        "partnership_ended_other": "A parceria com o {{club}} acabou: ele fechou com outro clube. Os empréstimos seguem até a data.",
+        "partnership_ended_level": "A parceria com o {{club}} acabou: os níveis dos dois clubes não servem mais. Os empréstimos seguem até a data.",
+        "partnership_offer": "O {{club}}, seu clube-mãe, oferece {{player}} emprestado até {{until}}, sem taxa. Você paga {{share}}% do salário. Responda até {{deadline}}."
       },
       "seatOffer": {
         "offer": {
@@ -9724,6 +9733,66 @@
       "invalidPlayers": "Escolha jovens da lista.",
       "notFound": "Peneira não encontrada.",
       "generic": "Não foi possível concluir."
+    }
+  },
+  "partnerships": {
+    "title": "Parcerias",
+    "since": "Parceiros desde {{date}}",
+    "end": "Encerrar parceria",
+    "endConfirm": "Confirmar fim",
+    "club": "Clube",
+    "pickClub": "Escolha um clube",
+    "pickPlayer": "Escolha um jogador",
+    "propose": "Propor parceria",
+    "division": "{{n}}ª divisão",
+    "apps": "{{n}} jogos",
+    "until": "até {{date}}",
+    "youPay": "você paga {{share}}%",
+    "satellite": {
+      "title": "Clube satélite",
+      "none": "Um clube de nível abaixo do seu recebe seus jovens emprestados, sem taxa.",
+      "noCandidate": "Nenhum clube do país aceita ser seu satélite agora.",
+      "rule": "Sem taxa, até {{max}} emprestados ao mesmo tempo. Só vai quem seria titular lá, e você pode chamar de volta.",
+      "lend": "Emprestar ao satélite",
+      "share": "Parte do salário que o satélite paga",
+      "send": "Emprestar",
+      "full": "Já há {{max}} jogadores emprestados ao satélite."
+    },
+    "parent": {
+      "title": "Clube-mãe",
+      "none": "Um clube de nível acima do seu oferece jovens emprestados nas janelas.",
+      "noCandidate": "Nenhum clube do país aceita ser seu clube-mãe agora.",
+      "rule": "Nas janelas, o clube-mãe oferece jovens que não joga, sem taxa, pagando ao menos metade do salário.",
+      "offer": "Oferta: {{player}} emprestado",
+      "accepted": "Empréstimo aceito.",
+      "declined": "Oferta recusada."
+    },
+    "refusal": {
+      "self": "seu clube",
+      "slotFull": "já tem parceiro",
+      "taken": "já é parceiro de outro clube",
+      "sameLevel": "mesmo nível",
+      "wrongSide": "nível errado",
+      "human": "tem técnico humano"
+    },
+    "errors": {
+      "generic": "Não deu certo. Tente de novo.",
+      "windowClosed": "A janela de transferências está fechada.",
+      "notStarter": "O satélite só aceita quem seria titular lá.",
+      "loanLimit": "O satélite já tem o máximo de emprestados.",
+      "satelliteFull": "O elenco do satélite está cheio.",
+      "squadDepth": "Seu elenco ficaria curto demais.",
+      "squadFull": "Seu elenco está cheio.",
+      "starLimit": "Seu clube já tem o máximo de jogadores do top 25 do mundo.",
+      "offerClosed": "A oferta não vale mais.",
+      "onLoan": "Ele já está emprestado.",
+      "committed": "Ele já tem transferência acertada.",
+      "noPartner": "Essa parceria já acabou.",
+      "slotFull": "Você já tem esse parceiro.",
+      "taken": "Esse clube já é parceiro de outro.",
+      "sameLevel": "O clube é do mesmo nível que o seu.",
+      "wrongSide": "O nível do clube não serve para essa parceria.",
+      "human": "Esse clube tem técnico humano."
     }
   }
 }

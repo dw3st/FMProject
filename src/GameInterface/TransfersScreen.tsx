@@ -10,6 +10,7 @@ import { NegotiationOverview } from "@/GameInterface/Negotiation/NegotiationOver
 import { loadSession } from "@/GameInterface/gameSession";
 import type { TransfersSplitResponse } from "@/types/transferTypes";
 import { StaffPoolTab } from "@/GameInterface/Transfers/StaffPoolTab";
+import { PartnershipsPanel } from "@/GameInterface/Negotiation/PartnershipsPanel";
 import { useTransferWindows, WindowBanner, WindowsTable } from "@/GameInterface/Transfers/transferWindow";
 
 const TABS = ["my", "world", "sell", "loans", "windows", "staff"] as const;
@@ -87,7 +88,12 @@ export function TransfersScreen() {
         ) : activeTab === "windows" ? (
           <WindowsTable data={windows} />
         ) : activeTab === "loans" ? (
-          loadSession() ? <NegotiationOverview saveId={loadSession()!.saveId} sections={["seatOffers", "bids", "rivals", "preContracts", "deferred", "out", "in", "sellOn"]} /> : null
+          loadSession() ? (
+            <>
+              <PartnershipsPanel saveId={loadSession()!.saveId} />
+              <NegotiationOverview saveId={loadSession()!.saveId} sections={["seatOffers", "bids", "rivals", "preContracts", "deferred", "out", "in", "sellOn"]} />
+            </>
+          ) : null
         ) : loading && activeTab !== "sell" ? (
           <div className="card-arcade rounded-md p-12 text-center">
             <p className="text-muted-foreground text-sm m-0">{t("transfers.loadingTransfers")}</p>

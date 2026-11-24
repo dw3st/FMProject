@@ -303,7 +303,9 @@ export interface TransferInboxMessage extends InboxMessageBase {
     // Offers between two human seats (multiplayer part 4, `.claude/rules/game/multiplayer.md`)
     | "seat_offer"
     // Renewing a loan for one more season (12.29): the parent of a player on loan here / the borrower of one of ours
-    | "loan_renewal_in" | "loan_renewal_out";
+    | "loan_renewal_in" | "loan_renewal_out"
+    // Club partnerships (report 648035a3): signed by the AI club, or ended (by either side, or the levels no longer fit)
+    | "partnership_signed" | "partnership_ended" | "partnership_offer";
   /** "" for the window news. */
   playerId: string;
   playerName: string;
@@ -329,6 +331,9 @@ export interface TransferInboxMessage extends InboxMessageBase {
   offerAction?: "offer" | "counter" | "accept" | "reject" | "withdraw" | "expired" | "closed";
   offerKind?: "transfer" | "loan";
   myTurn?: boolean;
+  /** partnership_*: which partner (the other club is our satellite or our parent) and why it ended. */
+  partnerKind?: "satellite" | "parent";
+  partnerEnd?: "human" | "other" | "level";
 }
 
 /**

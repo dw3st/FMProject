@@ -31,6 +31,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.41",
+    date: "2026-11-24",
+    items: [
+      { tab: "market", pt: "Parcerias entre clubes, em Mercado → Negociações: um clube satélite, de nível abaixo, recebe seus jovens emprestados sem taxa (até 5, só quem seria titular lá); um clube-mãe, de nível acima, oferece jovens dele nas janelas. Qualquer lado pode encerrar.", en: "Club partnerships, in Market → Negotiations: a satellite club below yours takes your young players on loan with no fee (up to 5, only those who would start there); a parent club above yours offers its own in the windows. Either side can end it." },
+    ],
+  },
+  {
     version: "12.40",
     date: "2026-11-24",
     items: [
@@ -7007,6 +7014,7 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Estilo de jogo próprio para os clubes de cada país (a Bundesliga mais pressão e jogo direto)", en: "A playing style of their own for each country's clubs (the Bundesliga pressing more and playing more direct)" },
+  { pt: "Mais jogos no cassino do técnico", en: "More games in the manager's casino" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

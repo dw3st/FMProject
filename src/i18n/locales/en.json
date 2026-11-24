@@ -2786,7 +2786,10 @@
         "pre_contract_failed": "Pre-contract fell through: {{player}}",
         "seat_offer": "Offer for {{player}}",
         "deferred_joined": "{{player}} joined from {{club}}",
-        "deferred_cancelled": "Transfer fell through: {{player}}"
+        "deferred_cancelled": "Transfer fell through: {{player}}",
+        "partnership_signed": "Partnership with {{club}}",
+        "partnership_ended": "Partnership with {{club}} ended",
+        "partnership_offer": "{{club}} offer {{player}} on loan"
       },
       "body": {
         "bid": "{{club}} offer {{fee}} for {{player}}.",
@@ -2806,7 +2809,13 @@
         "pre_contract_failed": "The pre-contract with {{player}} fell through (he left {{club}} or your squad is full).",
         "seat_offer": "News on the offer for {{player}} with {{club}}.",
         "deferred_joined": "The window opened and {{player}} left {{club}} for your squad. The fee of {{fee}} was paid when the deal was agreed.",
-        "deferred_cancelled": "The deal for {{player}} with {{club}} fell through (he left the club or your squad is full). The fee of {{fee}} was refunded."
+        "deferred_cancelled": "The deal for {{player}} with {{club}} fell through (he left the club or your squad is full). The fee of {{fee}} was refunded.",
+        "partnership_signed_satellite": "{{club}} agreed to be your satellite club. Lend young players from the Negotiations tab of the Market.",
+        "partnership_signed_parent": "{{club}} agreed to be your parent club. In the windows it will offer young players on loan.",
+        "partnership_ended_human": "The partnership with {{club}} ended: the club now has a human manager. Loans go on until their date.",
+        "partnership_ended_other": "The partnership with {{club}} ended: it partnered another club. Loans go on until their date.",
+        "partnership_ended_level": "The partnership with {{club}} ended: the two clubs' levels no longer fit. Loans go on until their date.",
+        "partnership_offer": "{{club}}, your parent club, offers {{player}} on loan until {{until}}, with no fee. You pay {{share}}% of the wage. Answer by {{deadline}}."
       },
       "seatOffer": {
         "offer": {
@@ -9739,6 +9748,66 @@
       "invalidPlayers": "Pick youngsters from the list.",
       "notFound": "Trial not found.",
       "generic": "Could not complete it."
+    }
+  },
+  "partnerships": {
+    "title": "Partnerships",
+    "since": "Partners since {{date}}",
+    "end": "End partnership",
+    "endConfirm": "Confirm end",
+    "club": "Club",
+    "pickClub": "Pick a club",
+    "pickPlayer": "Pick a player",
+    "propose": "Propose partnership",
+    "division": "Division {{n}}",
+    "apps": "{{n}} games",
+    "until": "until {{date}}",
+    "youPay": "you pay {{share}}%",
+    "satellite": {
+      "title": "Satellite club",
+      "none": "A club below yours takes your young players on loan, with no fee.",
+      "noCandidate": "No club of the country takes the satellite role now.",
+      "rule": "No fee, up to {{max}} on loan at once. Only players who would start there go, and you can call them back.",
+      "lend": "Lend to the satellite",
+      "share": "Share of the wage the satellite pays",
+      "send": "Lend",
+      "full": "{{max}} players are already on loan to the satellite."
+    },
+    "parent": {
+      "title": "Parent club",
+      "none": "A club above yours offers young players on loan in the windows.",
+      "noCandidate": "No club of the country takes the parent role now.",
+      "rule": "In the windows the parent offers young players it does not use, with no fee, paying at least half the wage.",
+      "offer": "Offer: {{player}} on loan",
+      "accepted": "Loan accepted.",
+      "declined": "Offer refused."
+    },
+    "refusal": {
+      "self": "your club",
+      "slotFull": "already partnered",
+      "taken": "partners another club",
+      "sameLevel": "same level",
+      "wrongSide": "wrong level",
+      "human": "human manager"
+    },
+    "errors": {
+      "generic": "That did not work. Try again.",
+      "windowClosed": "The transfer window is closed.",
+      "notStarter": "The satellite only takes players who would start there.",
+      "loanLimit": "The satellite already has the most loans allowed.",
+      "satelliteFull": "The satellite's squad is full.",
+      "squadDepth": "Your squad would be too short.",
+      "squadFull": "Your squad is full.",
+      "starLimit": "Your club already has the most world top-25 players allowed.",
+      "offerClosed": "The offer is no longer open.",
+      "onLoan": "He is already on loan.",
+      "committed": "He already has a transfer agreed.",
+      "noPartner": "That partnership has already ended.",
+      "slotFull": "You already have that partner.",
+      "taken": "That club partners another one.",
+      "sameLevel": "The club is at your level.",
+      "wrongSide": "The club's level does not fit this partnership.",
+      "human": "That club has a human manager."
     }
   }
 }

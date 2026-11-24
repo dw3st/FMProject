@@ -613,6 +613,8 @@ export async function acceptJobOffer(
     style_focus: undefined,
     // A new club: opponents start reading the manager again (`.claude/rules/game/study.md`).
     tacticLog: undefined,
+    // Partnerships belong to the club he left (`.claude/rules/game/partnerships.md`).
+    partnerships: undefined,
     ...(standings ? {
       standing: newPassage({ date, clubId: offer.squadId, clubName: taken.clubName, leagueSlug: taken.leagueSlug, board: taken.board }),
     } : {}),
@@ -667,6 +669,7 @@ export async function resignFromClub(
     press: undefined,
     rotationOverride: undefined,
     tacticLog: undefined,
+    partnerships: undefined,
     youthCallUps: undefined,
     youthCallUpsSkipped: undefined,
     managerContract: undefined,

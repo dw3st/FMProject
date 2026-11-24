@@ -1,4 +1,6 @@
 import { SeatFriendlyAnswer } from "@/GameInterface/World/SeatFriendlyControls";
+import { ParentOfferBox } from "@/GameInterface/Negotiation/PartnershipsPanel";
+import type { SeatPartnerships } from "@/types/partnershipTypes";
 import { BetsInboxBody } from "@/GameInterface/Achievements/BetsInboxBody";
 import { newVisualOn, paintedNews } from "@/Domain/art/paintedFaces";
 import { inboxAction } from "@/GameInterface/Inbox/inboxAction";
@@ -1304,6 +1306,8 @@ function transferVars(message: Extract<InboxMessage, { category: "transfer" }>) 
 /** i18n key of a transfer message's subject or body; an offer between managers has one text per move. */
 function transferTextKey(message: Extract<InboxMessage, { category: "transfer" }>, part: "subject" | "body"): string {
   if (message.kind === "seat_offer") return `inbox.transfer.seatOffer.${message.offerAction ?? "offer"}.${part}`;
+  if (part === "body" && message.kind === "partnership_signed") return `inbox.transfer.body.partnership_signed_${message.partnerKind ?? "parent"}`;
+  if (part === "body" && message.kind === "partnership_ended") return `inbox.transfer.body.partnership_ended_${message.partnerEnd ?? "level"}`;
   return `inbox.transfer.${part}.${message.kind}`;
 }
 
@@ -1364,8 +1368,44 @@ function TransferNegotiationBody({ message }: { message: Extract<InboxMessage, {
       <p className="text-sm text-foreground m-0">{t(transferTextKey(message, "body"), vars)}</p>
       {isBid && saveId && bid !== undefined && <BidCard key={message.id} saveId={saveId} bid={bid} onAnswered={() => void refresh()} />}
       {isRenewal && saveId && renewal !== undefined && <LoanRenewalCard key={message.id} saveId={saveId} offer={renewal} onAnswered={() => void refresh()} />}
+      {message.kind === "partnership_offer" && saveId && <PartnershipOfferAnswer key={message.id} saveId={saveId} offerId={message.offerId} onAnswered={() => void refresh()} />}
       {seatShown && saveId && <SeatOfferCard key={message.id} saveId={saveId} offer={seatOffer} onChanged={() => void refresh()} />}
     </div>
+  );
+}
+
+/** The parent club's loan offer (`partnerships.md`): the live box while it is still pending. */
+function PartnershipOfferAnswer({ saveId, offerId, onAnswered }: { saveId: string; offerId?: string; onAnswered: () => void }) {
+  const { t } = useTranslation();
+  const [offer, setOffer] = useState<NonNullable<NonNullable<SeatPartnerships["parent"]>["pending"]> | null | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void fetch(`/api/saves/${saveId}/partnerships`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v: { partnerships?: SeatPartnerships } | null) => {
+        const p = v?.partnerships?.parent?.pending;
+        if (alive) setOffer(p && p.id === offerId ? p : null);
+      })
+      .catch(() => { if (alive) setOffer(null); });
+    return () => { alive = false; };
+  }, [saveId, offerId]);
+  if (result) return <p className="text-sm text-muted-foreground m-0">{result}</p>;
+  if (offer === undefined) return null;
+  if (!offer) return <p className="text-sm text-muted-foreground m-0">{t("partnerships.errors.offerClosed")}</p>;
+  return (
+    <ParentOfferBox offer={offer} busy={busy} onAnswer={async (accept) => {
+      setBusy(true);
+      const res = await fetch(`/api/saves/${saveId}/partnerships/parent/offer`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accept }),
+      });
+      const out = (await res.json().catch(() => ({}))) as { error?: string };
+      setBusy(false);
+      setResult(res.ok ? t(accept ? "partnerships.parent.accepted" : "partnerships.parent.declined")
+        : t(`partnerships.errors.${out.error ?? "generic"}`, { defaultValue: t("partnerships.errors.generic") }));
+      if (res.ok) onAnswered();
+    }} />
   );
 }
 

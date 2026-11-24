@@ -135,6 +135,7 @@ import type { MarketState } from "@/types/transferMarketTypes";
 import { parentLoanWages } from "@/Domain/negotiation/loans";
 import { marketAfterSellOnPaid, pruneSellOnHeld, returnDueLoans, sellOnFor, settleSellOn } from "@/backend/negotiationWorld";
 import { loanRenewalNews, offerLoanRenewals } from "@/backend/loanRenewalWorld";
+import { partnershipDay } from "@/backend/partnershipWorld";
 import { liveLoanRenewals } from "@/Domain/negotiation/loanRenewal";
 import { liveBids } from "@/Domain/negotiation/bids";
 import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
@@ -2101,6 +2102,22 @@ export async function advanceOneDay(
             });
           }
         }
+        // Club partnerships (report 648035a3, `partnerships.md`): broken ones end, the parent offers a loan on Mondays.
+        if (ds.meta.partnerships) {
+          const seatWin = windows.seat(ds.seatId).today;
+          const part = await partnershipDay(saveService, saveId, {
+            seatId: ds.seatId, meta: ds.meta, date: currentDate, windowOpen: seatWin.open, windowUntil: seatWin.until, humans: humanClubs,
+          });
+          if (part.partnerships) ds.patch.partnerships = part.partnerships;
+          for (const n of part.news) {
+            ds.deferred.negotiation.push({
+              date: currentDate, kind: n.kind, playerId: n.playerId ?? "", playerName: n.playerName ?? "", clubName: n.clubName,
+              partnerKind: n.partnerKind, ...(n.partnerEnd ? { partnerEnd: n.partnerEnd } : {}),
+              ...(n.offerId ? { offerId: n.offerId } : {}), ...(n.wageShare !== undefined ? { wageShare: n.wageShare } : {}),
+              ...(n.until ? { until: n.until } : {}), ...(n.expires ? { expires: n.expires } : {}),
+            });
+          }
+        }
         // Loans of the seat's club ending soon: one offer to renew for a season (12.29, `negotiation.md`).
         if (market.loans?.length) {
           const renewals = await offerLoanRenewals(saveService, saveId, ds.meta, market, currentDate, {
@@ -3797,6 +3814,15 @@ export async function advanceOneDay(
       for (const offer of liveLoanRenewals(mkB?.loanRenewals, mkB?.loans, currentDate)) {
         if (!freshRenewals.has(offer.id)) await emitInboxMessage(saveId, buildTransferNegotiationMessage(loanRenewalNews(offer)), saveService, ds.seatId);
       }
+      // The parent club's pending loan offer keeps its message too (`partnerships.md`).
+      const partP = ("partnerships" in ds.patch ? ds.patch.partnerships : ds.meta.partnerships)?.parent;
+      const pend = partP?.pending;
+      if (partP && pend && pend.expires >= currentDate && !freshRenewals.has(pend.id) && !ds.job.ended) {
+        await emitInboxMessage(saveId, buildTransferNegotiationMessage({
+          date: currentDate, kind: "partnership_offer", playerId: pend.playerId, playerName: pend.playerName, clubName: partP.clubName,
+          partnerKind: "parent", offerId: pend.id, wageShare: pend.wageShare, until: pend.until, expires: pend.expires,
+        }), saveService, ds.seatId);
+      }
     }
     for (const ds of daySeats) {
       for (const msg of ds.boardMessages) await emitInboxMessage(saveId, buildBoardMessage(msg), saveService, ds.seatId);
@@ -4002,6 +4028,7 @@ export async function advanceOneDay(
         ds.patch.press = undefined;
         ds.patch.rotationOverride = undefined;
         ds.patch.tacticLog = undefined;
+        ds.patch.partnerships = undefined;
         ds.patch.youthCallUps = undefined;
         ds.patch.youthCallUpsSkipped = undefined;
         ds.patch.jobSeeking = undefined;
