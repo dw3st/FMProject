@@ -309,7 +309,7 @@ Com `SaveMeta.responsibilities.scouting === "chief"` (aba Responsabilidades da E
   Desempregado / sem clube: nada.
 - **Regra** (`planChiefMissions`, `src/Domain/scouting/chiefPlanner.ts`, pura, desempate por
   `seedFrom(save:data:país)`):
-  - com 2+ livres, o par (olheiro, país) de maior conhecimento por país vai numa missão de **jovens** de 4 semanas;
+  - com 2+ livres, ou com 1 livre e nenhuma missão de jovens em andamento (12.37, report do usuário: olheiros liberados um por segunda nunca davam dois livres juntos, e nenhum jovem aparecia), o par (olheiro, país) de maior conhecimento por país vai numa missão de **jovens** de 4 semanas;
   - os outros vão numa missão de **país** de 8 semanas no país onde cada um tem mais conhecimento
     (`countryKnowledgeOf`) e que nenhuma missão ativa já cobre (uma missão de liga bloqueia o país dela); sem país
     conhecido ao menos "moderado" (25), uma missão de **continente** de 8 semanas no continente da nacionalidade dele;

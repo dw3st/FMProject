@@ -10,7 +10,7 @@ import type { ScoutFocus, ScoutTarget } from "@/types/scoutingTypes";
 /**
  * The chief scout's Monday planning (issue #157, `.claude/rules/game/scouting.md` → "Missões pelo
  * olheiro-chefe"). Pure and deterministic (`seedFrom(save:date:country)` breaks ties): every free
- * scout gets one mission. With 2+ free scouts the best (scout, country) pair by country knowledge
+ * scout gets one mission. With 2+ free scouts (or no youth mission running) the best (scout, country) pair by country knowledge
  * goes on a youth mission (4 weeks); the others go on a country mission (8 weeks) in their best
  * country not already targeted, or, when none is known at least "moderate", on their nationality's
  * continent (8 weeks). Region missions look for "only who improves the squad", each on a different line: the
@@ -133,8 +133,10 @@ export function planChiefMissions(input: ChiefPlanInput): PlannedMission[] {
   const out: PlannedMission[] = [];
   let free = [...scouts];
 
-  // At least one youth mission when 2+ scouts are free: the best (scout, country) pair.
-  if (free.length >= 2) {
+  // A youth mission when 2+ scouts are free, or when none is running (report: scouts freed one a week never had
+  // two free on the same Monday, so no youth mission and no prospects ever came): the best (scout, country) pair.
+  const youthRunning = input.activeTargets.some((t) => t.kind === "youth");
+  if (free.length >= 2 || (free.length >= 1 && !youthRunning)) {
     let pick: { s: ChiefScout; c: string; k: number; h: number } | null = null;
     for (const s of free) {
       const top = ranked(s, "youth")[0];

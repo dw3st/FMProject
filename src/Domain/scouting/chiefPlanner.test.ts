@@ -6,6 +6,9 @@ const CONTINENT: Record<string, string> = {
   England: "Europe", Spain: "Europe", France: "Europe", Brazil: "South America", Argentina: "South America", Japan: "Asia",
 };
 
+/** A youth mission already running elsewhere: the region tests look at the other missions. */
+const YOUTH_RUNNING = { kind: "youth", country: "Peru" } as const;
+
 const avgs = { GK: 4.5, Defender: 5.2, Midfielder: 4.9, Forward: 5.4 };
 const counts = { GK: 3, Defender: 8, Midfielder: 8, Forward: 5 };
 
@@ -18,7 +21,7 @@ function input(over: Partial<ChiefPlanInput> = {}): ChiefPlanInput {
     ],
     countries: Object.keys(CONTINENT),
     continentOf: (c) => CONTINENT[c],
-    activeTargets: [],
+    activeTargets: [YOUTH_RUNNING],
     lineAverages: avgs,
     lineCounts: counts,
     ...over,
@@ -77,7 +80,7 @@ describe("planChiefMissions", () => {
   test("active targets are not repeated (a league blocks its country)", () => {
     const plan = planChiefMissions(input({
       scouts: [input().scouts[1]!],
-      activeTargets: [{ kind: "league", league: "brasileirao" }],
+      activeTargets: [YOUTH_RUNNING, { kind: "league", league: "brasileirao" }],
       countryOfLeague: (l) => (l === "brasileirao" ? "Brazil" : undefined),
     }));
     expect(plan[0]!.target).toEqual({ kind: "country", country: "Argentina" });
@@ -86,10 +89,16 @@ describe("planChiefMissions", () => {
   test("no country known at least moderately: his nationality's continent", () => {
     const plan = planChiefMissions(input({
       scouts: [{ scoutId: "f2", name: "X", member: { nationality: "Japan" } }],
-      activeTargets: [{ kind: "country", country: "Japan" }],
+      activeTargets: [YOUTH_RUNNING, { kind: "country", country: "Japan" }],
     }));
     expect(plan[0]!.target).toEqual({ kind: "continent", continent: "Asia" });
     expect(plan[0]!.weeks).toBe(CHIEF_PLAN.CONTINENT_WEEKS);
+  });
+
+  test("no youth mission running: the first free scout goes on one, even alone", () => {
+    const plan = planChiefMissions(input({ scouts: [input().scouts[1]!], activeTargets: [] }));
+    expect(plan.map((p) => p.target.kind)).toEqual(["youth"]);
+    expect(plan[0]!.weeks).toBe(CHIEF_PLAN.YOUTH_WEEKS);
   });
 
   test("no free scout or no country: nothing", () => {

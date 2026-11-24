@@ -41,6 +41,7 @@ export const changelog: ChangelogEntry[] = [
       { tab: "squad", pt: "Seu elenco não recebe mais garotos de preenchimento para completar posições (só um goleiro e onze jogadores), e um garoto desses que já veio sai de graça na rescisão.", en: "Your squad no longer gets filler youngsters to complete positions (only a keeper and eleven players), and one who already came leaves for free when released." },
       { tab: "formation", pt: "Limite de estrangeiros por jogo (Brasileirão): a Formação e a janela de substituição avisam quantos estrangeiros do banco ficam de fora e quem são.", en: "Foreign limit per match (Brazil): the Formation screen and the substitution window say how many foreigners on the bench stay out and who they are." },
       { tab: "match", pt: "Jogador machucado no modo só os lances: a janela de substituição abre uma vez só, já com ele marcado.", en: "Injured player in highlights mode: the substitution window opens once, with him already marked." },
+      { tab: "scout", pt: "Com as missões pelo olheiro-chefe, sempre há uma missão de jovens em andamento: os jovens sem clube voltam a aparecer nas Joias.", en: "With the chief scout planning the missions, a youth mission is always running: unattached youngsters show up again in Gems." },
       { tab: "general", pt: "Lendas da loja nas posições certas: alas como meias e laterais esquerdos (Roberto Carlos, Marcelo) com o pé esquerdo.", en: "Shop legends in the right positions: wingers as wide midfielders and left-backs (Roberto Carlos, Marcelo) with the left foot." },
     ],
   },
