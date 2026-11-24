@@ -31,6 +31,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.38",
+    date: "2026-11-24",
+    items: [
+      { tab: "formation", pt: "Instruções da equipe em lista: cada instrução mostra o nível em uma barra, com o nível do estilo marcado e as mudanças em amarelo. Ao escolher uma, os cinco níveis aparecem ao lado, cada um explicando o que faz.", en: "Team instructions as a list: each instruction shows its level on a bar, with the style's level marked and the changes in amber. Picking one shows its five levels beside it, each explaining what it does." },
+    ],
+  },
+  {
     version: "12.37.1",
     date: "2026-11-24",
     time: "19:06",

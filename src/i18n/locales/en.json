@@ -1293,7 +1293,161 @@
         "right": "Right",
         "wings": "Wings"
       },
-      "shapeSwitch": "Shape with or without the ball"
+      "shapeSwitch": "Shape with or without the ball",
+      "desc": {
+        "mentality": [
+          "The whole team thinks about defending; attacks little and with care.",
+          "More players behind the ball, less risk going forward.",
+          "Attack and defence as the style sets them.",
+          "The team pushes up, takes more risks and gets into the box more.",
+          "All in for a goal: high line and many players forward."
+        ],
+        "passing": [
+          "Short passes, close together, almost no risk.",
+          "Prefers the short, safe pass.",
+          "Mixes short and long passes.",
+          "Looks for the long ball to skip the midfield.",
+          "Long ball to the forwards whenever possible."
+        ],
+        "tempo": [
+          "Keeps the ball moving without hurry and waits for space.",
+          "Plays calmly, without forcing.",
+          "The style's tempo.",
+          "Plays forward more quickly.",
+          "Decides at once, as fast as possible."
+        ],
+        "width": [
+          "Everyone tucked into the middle.",
+          "The team attacks more through the middle.",
+          "The style's width.",
+          "The wingers go wide and stretch the defence.",
+          "Very wide, hugging the touchlines."
+        ],
+        "passTarget": [
+          "Ball always to the feet of a standing player.",
+          "Prefers the pass to feet.",
+          "Mixes passes to feet and into space.",
+          "Looks for players running into space.",
+          "Plays into empty space whenever possible."
+        ],
+        "flanks": [
+          "The full-backs come inside, close to the midfielders.",
+          "The full-backs support more from inside.",
+          "The full-backs pick their route.",
+          "The full-backs overlap the winger.",
+          "The full-backs always run up the line."
+        ],
+        "crossing": [
+          "Crosses at once, far from the byline.",
+          "Prefers early crosses.",
+          "Crosses when the chance comes.",
+          "Takes the ball to the byline first.",
+          "Only crosses after reaching the byline."
+        ],
+        "dribbling": [
+          "Hardly dribbles, moves the ball on quickly.",
+          "Dribbles little.",
+          "Dribbles when it pays.",
+          "Takes on the marker more often.",
+          "Runs at defenders whenever possible."
+        ],
+        "shooting": [
+          "Only shoots with a clear chance; looks for the pass.",
+          "Shoots less from distance.",
+          "Shoots when the chance looks good.",
+          "Tries more shots.",
+          "Shoots whenever the goal is in sight."
+        ],
+        "freedom": [
+          "Everyone keeps to his role, no improvising.",
+          "More tactical discipline.",
+          "The style's freedom.",
+          "Players may leave their position to create.",
+          "A lot of freedom to improvise."
+        ],
+        "gkDistribution": [
+          "The keeper always plays it short.",
+          "Prefers playing it short.",
+          "Short or long, as the game asks.",
+          "Prefers kicking it forward.",
+          "Always kicks it long."
+        ],
+        "onLoss": [
+          "Everyone gets back into position as soon as the ball is lost.",
+          "Prefers to drop back and get organised.",
+          "Presses or drops back as the play asks.",
+          "Presses right after losing the ball.",
+          "Everyone goes after the ball to win it back at once."
+        ],
+        "onWin": [
+          "Keeps the ball and sets the team before attacking.",
+          "Prefers to stay calm after winning it.",
+          "Breaks or waits as the play asks.",
+          "Breaks quickly on the counter.",
+          "Always counters, with many players."
+        ],
+        "engagement": [
+          "Only presses near its own box.",
+          "Waits for the opponent in its own half.",
+          "Starts pressing in midfield.",
+          "Presses in the opponent's half.",
+          "Presses from their very first pass."
+        ],
+        "line": [
+          "The defence stays very close to the box.",
+          "The defence sits deeper.",
+          "The style's defensive height.",
+          "The defence steps up and squeezes the pitch.",
+          "A very high line, space left behind."
+        ],
+        "pressing": [
+          "Hardly presses the player on the ball.",
+          "Presses less.",
+          "The style's pressing.",
+          "Presses more and tires more.",
+          "Presses all the time, costs a lot of stamina."
+        ],
+        "trap": [
+          "Closes the flanks and forces play through the middle.",
+          "Prefers to push the opponent inside.",
+          "Forces neither side.",
+          "Prefers to push the opponent wide.",
+          "Closes the middle and forces play down the wings."
+        ],
+        "tackling": [
+          "Never goes to ground; just blocks the way.",
+          "Avoids hard tackles.",
+          "Tackles when it looks right.",
+          "Tackles harder; more fouls.",
+          "Always goes in hard; more fouls and cards."
+        ],
+        "crosses": [
+          "Always blocks the cross, even far from the box.",
+          "Tries to stop the cross.",
+          "Blocks or allows it as the play asks.",
+          "Lets them cross and marks inside the box.",
+          "Always lets them cross and defends in the air."
+        ],
+        "defWidth": [
+          "Without the ball, everyone tight in the middle.",
+          "Without the ball, the team stays more compact.",
+          "The style's width without the ball.",
+          "Without the ball, covers the flanks more.",
+          "Without the ball, very wide, hugging the touchlines."
+        ]
+      },
+      "focusDesc": {
+        "left": "Attacks go mostly down the left.",
+        "center": "Attacks go mostly through the middle.",
+        "mixed": "Attacks use the whole pitch.",
+        "right": "Attacks go mostly down the right.",
+        "wings": "Attacks go down both wings."
+      },
+      "changes_one": "{{count}} change from the {{style}} template",
+      "changes_other": "{{count}} changes from the {{style}} template",
+      "detailSub": "{{style}} template: {{level}}",
+      "templateTag": "Template",
+      "pick": "Pick an instruction in the list to see its levels."
     }
   },
   "formations": {

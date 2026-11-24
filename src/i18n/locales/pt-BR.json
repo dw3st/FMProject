@@ -1293,7 +1293,161 @@
         "right": "Direita",
         "wings": "Pontas"
       },
-      "shapeSwitch": "Forma com ou sem a bola"
+      "shapeSwitch": "Forma com ou sem a bola",
+      "desc": {
+        "mentality": [
+          "Todo o time pensa em defender; ataca pouco e com cuidado.",
+          "Mais gente atrás da bola, risco menor no ataque.",
+          "Ataque e defesa no peso que o estilo dá.",
+          "O time sobe, corre mais riscos e chega mais à área.",
+          "Tudo pelo gol: linha alta e muita gente no ataque."
+        ],
+        "passing": [
+          "Toques curtos, perto um do outro, quase sem risco.",
+          "Prefere o passe curto e seguro.",
+          "Mistura passes curtos e longos.",
+          "Procura a bola longa para pular o meio.",
+          "Bola longa sempre que der, para os da frente."
+        ],
+        "tempo": [
+          "Gira a bola sem pressa e espera o espaço.",
+          "Joga com calma, sem forçar.",
+          "Ritmo do estilo.",
+          "Joga para frente mais rápido.",
+          "Decide na hora, o mais rápido possível."
+        ],
+        "width": [
+          "Todo mundo fechado pelo meio.",
+          "O time ataca mais por dentro.",
+          "Largura do estilo.",
+          "Os pontas abrem e esticam a defesa.",
+          "Bem aberto, colado nas laterais."
+        ],
+        "passTarget": [
+          "Bola sempre no pé de quem está parado.",
+          "Prefere o passe no pé.",
+          "Mistura passe no pé e no espaço.",
+          "Procura quem corre para o espaço.",
+          "Lança no espaço vazio sempre que puder."
+        ],
+        "flanks": [
+          "Os laterais entram por dentro, perto dos meias.",
+          "Os laterais apoiam mais por dentro.",
+          "Os laterais escolhem o caminho.",
+          "Os laterais passam por fora do ponta.",
+          "Os laterais sempre sobem pela linha."
+        ],
+        "crossing": [
+          "Cruza logo, de longe da linha de fundo.",
+          "Prefere cruzar cedo.",
+          "Cruza quando aparece a chance.",
+          "Leva a bola até a linha de fundo antes.",
+          "Só cruza depois de chegar na linha."
+        ],
+        "dribbling": [
+          "Quase não dribla, solta a bola rápido.",
+          "Dribla pouco.",
+          "Dribla quando vale a pena.",
+          "Encara o marcador com mais frequência.",
+          "Parte para cima sempre que puder."
+        ],
+        "shooting": [
+          "Só chuta com chance clara; procura o passe.",
+          "Chuta menos de longe.",
+          "Chuta quando acha boa a chance.",
+          "Arrisca mais o chute.",
+          "Chuta sempre que vê o gol."
+        ],
+        "freedom": [
+          "Cada um fica na sua função, sem inventar.",
+          "Mais disciplina tática.",
+          "Liberdade do estilo.",
+          "Os jogadores podem sair da posição e criar.",
+          "Muita liberdade para improvisar."
+        ],
+        "gkDistribution": [
+          "O goleiro sempre sai jogando curto.",
+          "Prefere a saída curta.",
+          "Saída curta ou longa conforme o jogo.",
+          "Prefere lançar para frente.",
+          "Sempre chuta longe."
+        ],
+        "onLoss": [
+          "Todo mundo volta para a posição logo que perde.",
+          "Prefere voltar e se organizar.",
+          "Pressiona ou volta conforme o lance.",
+          "Pressiona logo depois de perder a bola.",
+          "Todo mundo vai para cima para recuperar na hora."
+        ],
+        "onWin": [
+          "Segura a bola e arruma o time antes de atacar.",
+          "Prefere ter calma depois de recuperar.",
+          "Sai rápido ou espera conforme o lance.",
+          "Sai rápido no contra-ataque.",
+          "Contra-ataca sempre, com muita gente."
+        ],
+        "engagement": [
+          "Só pressiona perto da própria área.",
+          "Espera o adversário no próprio campo.",
+          "Começa a pressionar no meio-campo.",
+          "Pressiona já no campo do adversário.",
+          "Pressiona desde a saída de bola deles."
+        ],
+        "line": [
+          "A defesa fica bem perto da área.",
+          "A defesa fica mais recuada.",
+          "Altura da defesa do estilo.",
+          "A defesa sobe e encurta o campo.",
+          "Linha bem alta, deixa espaço nas costas."
+        ],
+        "pressing": [
+          "Quase não pressiona quem tem a bola.",
+          "Pressiona menos.",
+          "Pressão do estilo.",
+          "Pressiona mais e cansa mais.",
+          "Pressão o tempo todo, gasta muito fôlego."
+        ],
+        "trap": [
+          "Fecha os lados e força o jogo pelo meio.",
+          "Prefere empurrar o adversário para dentro.",
+          "Não força nenhum lado.",
+          "Prefere empurrar o adversário para os lados.",
+          "Fecha o meio e força o jogo pelas pontas."
+        ],
+        "tackling": [
+          "Nunca vai ao chão; só fecha o caminho.",
+          "Evita a entrada forte.",
+          "Entra quando acha certo.",
+          "Dá o bote com mais força; mais faltas.",
+          "Entra sempre forte; mais faltas e cartões."
+        ],
+        "crosses": [
+          "Fecha o cruzamento sempre, até longe da área.",
+          "Tenta impedir o cruzamento.",
+          "Fecha ou deixa conforme o lance.",
+          "Deixa cruzar e marca dentro da área.",
+          "Deixa cruzar sempre e defende de cabeça."
+        ],
+        "defWidth": [
+          "Sem a bola, todo mundo bem fechado pelo meio.",
+          "Sem a bola, o time fica mais compacto.",
+          "Largura sem a bola do estilo.",
+          "Sem a bola, cobre mais os lados.",
+          "Sem a bola, bem aberto, colado nas laterais."
+        ]
+      },
+      "focusDesc": {
+        "left": "O ataque passa mais pelo lado esquerdo.",
+        "center": "O ataque passa mais pelo meio.",
+        "mixed": "O ataque usa todo o campo.",
+        "right": "O ataque passa mais pelo lado direito.",
+        "wings": "O ataque passa pelas duas pontas."
+      },
+      "changes_one": "{{count}} mudança do modelo {{style}}",
+      "changes_other": "{{count}} mudanças do modelo {{style}}",
+      "detailSub": "Modelo {{style}}: {{level}}",
+      "templateTag": "Modelo",
+      "pick": "Escolha uma instrução na lista para ver os níveis."
     }
   },
   "formations": {
