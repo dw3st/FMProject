@@ -18,6 +18,11 @@ const TROPICAL = new Set([
   "Colombia", "Venezuela", "Peru", "Kenya", "Nigeria", "Ghana", "Cameroon", "Indonesia", "Fiji",
 ]);
 const ARID = new Set(["Saudi Arabia", "United Arab Emirates", "Egypt", "Algeria"]);
+/** Winters without snow at football level: a winter snow draw is played as cold instead. */
+const MILD_WINTER = new Set([
+  "Brazil", "Paraguay", "Uruguay", "Australia", "South Africa", "Portugal", "Mexico", "Morocco", "Tunisia",
+  "Israel", "Cyprus", "Malta", "Greece",
+]);
 
 /** Climate from the country name as written in `leagueData`/squads (`"England"`, `"Brazil"`). */
 export function climateOf(country: string | null | undefined): Climate {
@@ -183,7 +188,8 @@ export function matchConditions(
   const climate = climateOf(homeCountry);
   const month = Number(fixture.date.slice(5, 7));
   const key = climate === "tropical" || climate === "arid" ? climate : seasonOf(month, climate);
-  const drawn = pickWeighted(WEATHER[key], rng());
+  const raw = pickWeighted(WEATHER[key], rng());
+  const drawn = raw === "snow" && homeCountry && MILD_WINTER.has(homeCountry) ? "cold" : raw;
   const night = kickoff >= SUNSET[key];
   return { kickoff, weather: night ? (NIGHT_WEATHER[drawn] ?? drawn) : drawn, night, sunset: SUNSET[key] };
 }

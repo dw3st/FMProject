@@ -31,6 +31,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.31.8",
+    date: "2026-11-24",
+    time: "02:10",
+    items: [
+      { tab: "general", pt: "Avançar até o próximo jogo para quando chega uma proposta por um jogador seu.", en: "Advancing to the next match stops when an offer arrives for one of your players." },
+    ],
+    fixes: [
+      { tab: "match", pt: "Só os lances: depois de uma lesão, a tela de substituições não reabre sozinha depois de fechada.", en: "Highlights only: after an injury, the substitutions screen no longer reopens by itself once closed." },
+      { tab: "match", pt: "Não neva mais no Brasil e em outros países de inverno ameno.", en: "It no longer snows in Brazil and other countries with mild winters." },
+      { tab: "staff", pt: "Os cartões da Equipe técnica ficam alinhados entre as funções.", en: "Coaching staff cards line up across roles." },
+      { tab: "manager", pt: "Temporadas do técnico: cada temporada conta para o clube que ele treinou na maior parte dela.", en: "Manager seasons: each season counts for the club he managed for most of it." },
+    ],
+  },
+  {
     version: "12.31.7",
     date: "2026-11-23",
     time: "23:57",

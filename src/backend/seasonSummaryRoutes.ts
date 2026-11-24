@@ -64,23 +64,45 @@ export async function keptSeasonReport(saveId: string, seatId: string, year: num
   return fresh;
 }
 
+/** Share of a season the seat must have managed for it to count as his (a manager hired after the end never does). */
+const MANAGED_SHARE = 0.5;
+const dayNum = (d: string) => Date.parse(`${d}T00:00:00Z`) / 86_400_000;
+
 /**
- * The seasons the seat managed to the end: the last one (`lastSeason`) and every club-history row signed with his
- * manager's name at a club of his career. Each is stored the first time it is listed.
+ * The seasons the seat managed: the last one (`lastSeason`) and every season of a club of his career that he managed for
+ * at least half of it (his passages against the league's window; without an archive, the row signed with his name).
+ * Each is stored the first time it is listed.
  */
 export async function seatSeasonReports(saveId: string, seatId: string): Promise<SeasonSummary[]> {
   const seat = await saveService.getSeat(saveId, seatId);
   if (!seat) return [];
   const stored = await saveService.getSeasonReports(saveId, seatId);
   const wanted: { year: number; clubId: string }[] = [];
+  const notMine: { year: number; clubId: string }[] = [];
   if (seat.lastSeason) wanted.push({ year: seat.lastSeason.year, clubId: seat.lastSeason.clubId });
   const record = (await saveService.getManagers(saveId)).find((m) => m.seatId === seatId);
   if (record) {
-    for (const squadId of new Set((record.clubs ?? []).map((c) => c.squadId).filter(Boolean))) {
+    const passages = (record.clubs ?? []).filter((c) => c.squadId);
+    for (const squadId of new Set(passages.map((c) => c.squadId))) {
+      const mine = passages.filter((c) => c.squadId === squadId);
       const history = await saveService.getClubHistory(saveId, squadId);
       for (const row of history?.seasons ?? []) {
         const year = Number(row.season.slice(0, 4));
-        if (row.manager === record.name && Number.isInteger(year)) wanted.push({ year, clubId: squadId });
+        if (!Number.isInteger(year)) continue;
+        const archive = await saveService.readLeagueSeasonArchive(saveId, row.league, year);
+        let managed: boolean;
+        if (archive?.start && archive.end) {
+          const s = dayNum(archive.start), e = dayNum(archive.end);
+          const days = mine.reduce((sum, c) => {
+            const from = Math.max(s, dayNum(c.from)), to = Math.min(e, c.to ? dayNum(c.to) : e);
+            return sum + Math.max(0, to - from);
+          }, 0);
+          managed = e > s && days / (e - s) >= MANAGED_SHARE;
+        } else {
+          managed = row.manager === record.name;
+        }
+        if (managed) wanted.push({ year, clubId: squadId });
+        else if (archive?.start) notMine.push({ year, clubId: squadId });
       }
     }
   }
@@ -88,7 +110,10 @@ export async function seatSeasonReports(saveId: string, seatId: string): Promise
     if (stored.some((r) => sameReport(r, w.year, w.clubId))) continue;
     await keptSeasonReport(saveId, seatId, w.year, w.clubId);
   }
-  return (await saveService.getSeasonReports(saveId, seatId)).sort((a, b) => b.year - a.year);
+  // A report kept before this rule for a season his passages show he did not manage is left out of the list.
+  return (await saveService.getSeasonReports(saveId, seatId))
+    .filter((r) => !notMine.some((w) => sameReport(r, w.year, w.clubId)) || wanted.some((w) => sameReport(r, w.year, w.clubId)))
+    .sort((a, b) => b.year - a.year);
 }
 
 /** After a day: freeze the report of every seat whose season just ended (never fails the day). */

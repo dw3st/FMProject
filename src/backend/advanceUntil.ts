@@ -96,6 +96,8 @@ export interface AdvanceBatchResult {
   renewalOffer?: boolean;
   /** A press conference invite arrived on the last simulated day (`.claude/rules/game/press.md`): the batch stops there. */
   pressInvite?: boolean;
+  /** An offer for one of the manager's players arrived on the last simulated day: the batch stops there. */
+  playerBids?: boolean;
   error?: { status: number; message: string };
 }
 
@@ -155,6 +157,7 @@ export async function runAdvanceBatch(maxDays: number, deps: AdvanceBatchDeps): 
     }
     if (step.payload.renewalOffer === true) { result.renewalOffer = true; result.done = true; return result; }
     if (step.payload.pressInvite === true) { result.pressInvite = true; result.done = true; return result; }
+    if (step.payload.playerBids === true) { result.playerBids = true; result.done = true; return result; }
   }
 }
 

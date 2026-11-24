@@ -4002,6 +4002,8 @@ export async function advanceOneDay(
           : {}),
         ...(ds.job.ended ? { sacked: true as const } : {}),
         ...(offers > 0 ? { jobOffers: offers } : {}),
+        // Offers of other clubs for the seat's players (AI bids, loan bids): the fast-forward stops (tester report).
+        ...(ds.deferred.negotiation.some((n) => n.kind === "bid" || n.kind === "loan_bid") ? { playerBids: true as const } : {}),
         ...(ds.job.renewal && ds.job.renewal !== ds.meta.managerRenewal && !ds.job.ended ? { renewalOffer: true as const } : {}),
         ...(ds.achievementsUnlocked > 0 ? { achievements: ds.achievementsUnlocked } : {}),
         ...(ds.pressOut.invite ? { pressInvite: true as const } : {}),

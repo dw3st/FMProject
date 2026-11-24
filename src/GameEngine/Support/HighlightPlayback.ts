@@ -23,7 +23,7 @@ const PLAY_PHASES: ReadonlySet<GameState['matchPhase']> = new Set(['preMatch', '
 const EPS = 1e-6;
 
 export type PlaybackAction =
-  | { kind: 'play' }
+  | { kind: 'play'; reached?: true }
   | { kind: 'freeze' }
   | { kind: 'jump'; point: ForecastPoint; live: boolean };
 
@@ -54,7 +54,9 @@ export function decidePlayback(x: PlaybackInput): PlaybackAction {
     const open = f.open?.at && f.open.at.clock > x.clock + EPS ? f.open.at : null;
     if (open) return { kind: 'jump', point: open, live: true };
     if (f.open && !f.open.at) return { kind: 'play' }; // inside the lance that reaches the frontier
-    if (f.at.clock >= x.clock - EPS) return { kind: 'jump', point: f.at, live: true };
+    if (f.at.clock > x.clock + EPS) return { kind: 'jump', point: f.at, live: true };
+    // The page got there by itself (it played the lance with the injury or the penalty): go live, no jump back.
+    return { kind: 'play', reached: true };
   }
   return { kind: 'freeze' };
 }
@@ -160,6 +162,7 @@ export class HighlightPlayback {
     const act = decidePlayback({
       clock, phase: state.matchPhase, windows: this.shown, frontier: this.frontier, skipId: this.skipId, live: this.live !== false,
     });
+    if (act.kind === 'play' && act.reached && this.frontier) this.live = this.frontier.reason;
     if (act.kind === 'jump') {
       const from = clock;
       const to = act.point.clock;

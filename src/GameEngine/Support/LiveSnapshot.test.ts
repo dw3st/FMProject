@@ -217,6 +217,10 @@ describe("highlights playback (stage 19)", () => {
     const frontier = { reason: "end", at: point(90), open: null } as never;
     const f = decidePlayback({ clock: 60, phase: "secondHalf", windows, frontier, skipId: null, live: false });
     expect(f.kind === "jump" && f.live && f.point.clock).toBe(90);
+    // The page reached the injury frontier by itself (it played that lance): live, never a jump back to it.
+    const injury = { reason: "injury", at: point(90), open: null } as never;
+    const r = decidePlayback({ clock: 90, phase: "secondHalf", windows, frontier: injury, skipId: null, live: false });
+    expect(r.kind === "play" && r.reached).toBe(true);
     expect(decidePlayback({ clock: 0, phase: "preMatch", windows, frontier: null, skipId: null, live: false }).kind).toBe("play");
   });
 

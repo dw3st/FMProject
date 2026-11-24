@@ -112,3 +112,14 @@ describe("matchConditions sunset", () => {
     expect(matchConditions({ date: "2027-07-10", home: "a", away: "b" }, "Kenya").sunset).toBe(SUNSET.tropical);
   });
 });
+
+describe("matchConditions mild winters", () => {
+  test("it never snows in Brazil, even in July", () => {
+    for (let d = 1; d <= 31; d++) {
+      for (let i = 0; i < 20; i++) {
+        const date = `2027-07-${String(d).padStart(2, "0")}`;
+        expect(matchConditions({ date, home: `h${i}`, away: `a${i}` }, "Brazil").weather).not.toBe("snow");
+      }
+    }
+  });
+});

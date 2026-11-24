@@ -26,7 +26,7 @@ export function StaffRoleBlock({ role, tone, limit, busy, onAsk, wide, children 
   const full = limit.used >= limit.max;
   return (
     <section className="rounded-md border border-border p-3 flex flex-col gap-3 h-full">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <header className="flex items-center gap-3">
         <span className={`flex items-center justify-center w-9 h-9 rounded-md bg-secondary/40 shrink-0 ${tone}`} aria-hidden>
           <Icon name={ROLE_ICON[role]} size={18} />
         </span>
@@ -37,7 +37,9 @@ export function StaffRoleBlock({ role, tone, limit, busy, onAsk, wide, children 
             {req && req.extra > 0 ? ` · ${t("staff.slotRequest.granted", { count: req.extra })}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+      </header>
+      {/* The action sits on its own row, always the same height: the cards line up across blocks. */}
+      <div className="flex flex-wrap items-center gap-2 min-h-8">
           {!full && (
             <button type="button" className={ACTION} onClick={() => { navigate(`/transfers?tab=staff&role=${role}`); }}>
               <Icon name="search" size={16} />{t("staff.search")}
@@ -56,8 +58,7 @@ export function StaffRoleBlock({ role, tone, limit, busy, onAsk, wide, children 
           {full && req?.blocked === "max_reached" && (
             <span className="text-sm text-muted-foreground">{t("staff.slotRequest.maxReached")}</span>
           )}
-        </div>
-      </header>
+      </div>
       <div className={`grid gap-3 ${wide ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" : ""}`}>{children}</div>
     </section>
   );
