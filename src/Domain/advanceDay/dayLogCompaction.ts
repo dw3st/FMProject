@@ -42,7 +42,7 @@ export function slimDayLog(log: StoredDayLog, humanClubs: ReadonlySet<string>): 
       score: e.score, teamStats: { home: team(e.teamStats.home), away: team(e.teamStats.away) },
       playerStats: {}, playerRatings: {}, playerNames: names, playerTeams: {}, scorers: e.scorers,
       substitutions: [], developmentChanges: [], durationMs: 0,
-      ...(e.decider ? { decider: e.decider } : {}), compact: true, slim: true,
+      ...(e.decider ? { decider: e.decider } : {}), ...(e.formations ? { formations: e.formations } : {}), compact: true, slim: true,
     });
   }
   let youthMatches = log.youthMatches;

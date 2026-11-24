@@ -168,3 +168,7 @@ bun test src/Domain/study src/Domain/advanceDay/matchSimulationLineups.test.ts s
 - Na partida ao vivo o marcador é escolhido no servidor pelo XI provável da IA; a vaga marca quem estiver nela.
 - A leitura não distingue competição: um time alternativo na copa entra no mesmo registro.
 - O `/lab` escolhe marcador e alvo pelo XI automático das variantes (o motor do lab escala por conta própria).
+
+## Relatório do analista (12.35)
+
+Report de tester 955c069c. Na prévia de um jogo de clube, o cartão "Relatório do analista" (`Components/OpponentReportCard.tsx`) mostra do adversário: os 3 destaques da temporada (gols, assistências, nota; 3+ jogos), os 5 últimos jogos e a campanha com cada formação e contra cada formação (os 20 últimos jogos). Lógica pura em `src/Domain/scouting/opponentReport.ts` (`OPPONENT_REPORT`, com teste); a rota `GET /api/saves/:id/clubs/:squadId/opponent-report` (`opponentReportWorld.ts`, cache por save, clube e dia) lê os jogos da liga, da copa e das continentais e as formações de `MatchEvent.formations` (formação e estilo de cada lado, gravados no avanço do dia desde a 12.35 e mantidos na compactação dos logs). Jogos de antes não têm formação. Sem efeito de partida.

@@ -167,6 +167,8 @@ export interface MatchEvent {
   compact?: true;
   /** Slimmed past `DAY_LOG_KEEP_FULL_DAYS` (`slimDayLog`): result, scorers and the required team numbers only. */
   slim?: true;
+  /** Formation id and tactical style of each side (pre-match analyst, report 955c069c). Absent: before 12.35. */
+  formations?: { home: string; away: string; homeStyle?: string; awayStyle?: string };
   /** Condition 0..100 of the pitch the match was played on (`matchPitchCondition`). Absent: not tracked. */
   pitchCondition?: number;
   /** Weather drawn for the match (`matchConditions`, `.claude/rules/game/weather.md`). Absent: none (youth, national). */

@@ -4,6 +4,7 @@ import { clubFacts, clubLegends, emptyClubHistory, nextIdol, titleGallery, topPl
 import { seasonLabel } from "@/Domain/history/history";
 import type { ClubHistoryResponse } from "@/types/clubHistoryTypes";
 import { clubOverview, clubStadiumLevel, clubTrophyPlaceholders } from "@/backend/clubOverviewWorld";
+import { opponentReport } from "@/backend/opponentReportWorld";
 
 type Req = Request & { params: Record<string, string> };
 
@@ -25,6 +26,21 @@ export const clubHistoryRoutes = {
     const squad = await saveService.getSquadById(saveId, squadId);
     if (!squad) return Response.json({ error: "club not found" }, { status: 404 });
     return Response.json(await clubOverview(saveService, saveId, meta, squad));
+  },
+
+  /** `GET` — the pre-match analyst's report on a club (report 955c069c): `OpponentReport`. 404 for a club not in the save. */
+  "/api/saves/:saveId/clubs/:squadId/opponent-report": async (req: Req) => {
+    const saveId = req.params.saveId!;
+    const auth = requireSeat(req, saveId);
+    if (auth instanceof Response) return auth;
+    if (req.method !== "GET") return Response.json({ error: "method not allowed" }, { status: 405 });
+    const squadId = req.params.squadId ?? "";
+    if (!SQUAD_ID.test(squadId)) return Response.json({ error: "club not found" }, { status: 404 });
+    const meta = await saveService.getMeta(saveId);
+    if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
+    const squad = await saveService.getSquadById(saveId, squadId);
+    if (!squad) return Response.json({ error: "club not found" }, { status: 404 });
+    return Response.json(await opponentReport(saveService, saveId, squad, meta.currentDate ?? ""));
   },
 
   /**

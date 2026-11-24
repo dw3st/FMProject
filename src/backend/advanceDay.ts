@@ -922,6 +922,7 @@ export async function advanceOneDay(
             if (mode === "full" && matchPoolStats().size === 0) await yieldToEventLoop();
             enqueueMatch([fixture.home, fixture.away], result, (r) => {
               if (sim.study && mode === "full") r.event = { ...r.event, study: sim.study };
+              r.event = { ...r.event, formations: { home: sim.homeFormation.id, away: sim.awayFormation.id, homeStyle: sim.tactics.A.style, awayStyle: sim.tactics.B.style } };
               registrationViolations += unregisteredOf(new Set([...sim.homeLineup, ...sim.awayLineup, ...Object.keys(r.event.playerStats ?? {})]));
               dayEvents.push(r.event);
               // AI sides keep their season formation (`src/Domain/formation/aiFormation.ts`).

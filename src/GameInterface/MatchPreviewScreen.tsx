@@ -37,6 +37,7 @@ import { RefereeBadge } from "@/GameInterface/Referees/RefereeBadge";
 import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { Button } from "@/GameInterface/ui/Button";
 import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
+import { OpponentReportCard } from "@/GameInterface/Components/OpponentReportCard";
 import { Player } from "@/Domain/Player";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { matchHeading } from "@/Domain/world/matchHeading";
@@ -1443,6 +1444,13 @@ export function MatchPreviewScreen() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Pre-match analyst (report 955c069c) */}
+      {matchSetup && !national && session?.saveId && opponentId && (
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
+          <OpponentReportCard saveId={session.saveId} clubId={opponentId} clubName={opponentName} />
         </div>
       )}
 

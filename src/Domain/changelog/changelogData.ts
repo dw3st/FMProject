@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.35",
+    date: "2026-11-24",
+    time: "14:10",
+    items: [
+      { tab: "match", pt: "Relatório do analista na prévia do jogo: os destaques do adversário, os últimos resultados e como ele se sai com cada formação e contra cada formação.", en: "Analyst report in the match preview: the opponent's key players, recent results and how it does with each formation and against each one." },
+    ],
+  },
+  {
     version: "12.34.1",
     date: "2026-11-24",
     time: "13:55",

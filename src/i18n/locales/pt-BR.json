@@ -9451,5 +9451,27 @@
     "withTitles": "Com títulos",
     "others": "Outros países",
     "summary": "Títulos neste país: {{count}}"
+  },
+  "analyst": {
+    "title": "Relatório do analista",
+    "subtitle": "O que o analista viu do {{club}}.",
+    "loading": "Carregando o relatório...",
+    "keyPlayers": "Destaques",
+    "noPlayers": "Ninguém com jogos suficientes ainda.",
+    "playerLine": "{{goals}} G · {{assists}} A · nota {{rating}}",
+    "markHint": "Para marcar um deles de perto, use a marcação individual abaixo.",
+    "form": "Últimos jogos",
+    "noGames": "Nenhum jogo nesta temporada ainda.",
+    "vsHome": "x {{club}} (casa)",
+    "vsAway": "x {{club}} (fora)",
+    "byFormation": "Com cada formação",
+    "byFaced": "Contra cada formação",
+    "noTactics": "Ainda sem jogos registrados com a formação.",
+    "record": "{{played}} J · {{won}} V · {{drawn}} E · {{lost}} D",
+    "result": {
+      "W": "V",
+      "D": "E",
+      "L": "D"
+    }
   }
 }
