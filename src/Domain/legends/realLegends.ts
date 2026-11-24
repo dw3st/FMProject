@@ -18,6 +18,8 @@ export interface RealLegendEntry {
   nationality: string | null;
   line: "GK" | "DEF" | "MID" | "FWD";
   position: string;
+  /** Stronger foot when known (curated, `data_process/curated/legendCorrections.json`); absent = right. */
+  foot?: "left" | "right";
   ballonDor: number;
   worldCups: number[];
   /** Wikipedia languages with an article about him (fame). */
@@ -41,7 +43,7 @@ export function realLegendLevel(e: RealLegendEntry): number {
 
 export function realLegendRetiree(e: RealLegendEntry): RetiredPlayer {
   return {
-    id: e.id, name: e.name, nationality: e.nationality, positions: [e.position], preferredFoot: "right",
+    id: e.id, name: e.name, nationality: e.nationality, positions: [e.position], preferredFoot: e.foot ?? "right",
     profile: { summary: "", archetype: "Legend" }, retiredOn: RETIRED_ON, squadId: "", age: 36,
     wasWorldClass: realWorldClass(e), statsAtRetirement: mentalStatsFor(statsFor(e.id, e.position, realLegendLevel(e)), 36, e.id),
     appearances: 0, goals: 0,

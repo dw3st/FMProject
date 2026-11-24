@@ -17,6 +17,7 @@ import { scoutingRoutes } from "@/backend/scoutingRoutes";
 import { navBadgeRoutes } from "@/backend/navBadgeRoutes";
 import { moraleRoutes } from "@/backend/moraleRoutes";
 import { youthRoutes } from "@/backend/youthRoutes";
+import { youthTrialRoutes } from "@/backend/youthTrialRoutes";
 import { youthCompRoutes } from "@/backend/youthCompRoutes";
 import { nationalRoutes } from "@/backend/nationalRoutes";
 import { refereeRoutes } from "@/backend/refereeRoutes";
@@ -120,6 +121,7 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...navBadgeRoutes,
   ...moraleRoutes,
   ...youthRoutes,
+  ...youthTrialRoutes,
   ...youthCompRoutes,
   ...nationalRoutes,
   ...refereeRoutes,

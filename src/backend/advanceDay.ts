@@ -1,3 +1,4 @@
+import { trialReputation } from "@/Domain/youth/trials";
 import { productivityEntries } from "@/Domain/contracts/productivity";
 import { buildBetsMessage } from "@/Domain/inbox/betsMessage";
 import { settleSeatBets } from "@/backend/betsWorld";
@@ -14,6 +15,8 @@ import { notifyWorld } from "@/backend/worlds/worldNotify";
 import { nextManagerBan, sanitizeManagerCards } from "@/Domain/referees/managerBan";
 import { buildManagerBanMessage } from "@/Domain/inbox/disciplineMessage";
 import { applyManagerCard, applyPressEffect } from "@/Domain/boardFans/boardFans";
+import { runTrialDay, seatRevealReward, squadTrialReveals, withRevealReward, type TrialRevealEvent } from "@/backend/youthTrialWorld";
+import { YOUTH_TRIAL } from "@/Domain/youth/trialConfig";
 import { commercialAfterFollowers, fansDeltaOf, heatOf, seasonTrend } from "@/Domain/fanbase/fanbase";
 import { BOARD_FANS } from "@/Domain/boardFans/boardFansConfig";
 import { FACILITIES } from "@/Domain/facilities/facilityConfig";
@@ -1018,6 +1021,17 @@ export async function advanceOneDay(
         if (withGoals) squadWrites.set(ds.clubId, { league: ds.entry.leagueSlug, club: ds.entry.stem, squad: withGoals });
       }
     }
+    // Youth trials (`youth.md` → "Peneira de jovens"): the trial of today runs, old results expire.
+    for (const ds of daySeats) {
+      if (!ds.clubId || !ds.meta.youthTrials) continue;
+      const sq = squadWrites.get(ds.clubId)?.squad ?? (await saveService.getSquadById(saveId, ds.clubId));
+      if (!sq) continue;
+      const trial = runTrialDay({ saveId, seatId: ds.seatId, date: currentDate, state: ds.meta.youthTrials, squad: sq });
+      if (!trial) continue;
+      ds.patch.youthTrials = trial.state;
+      ds.meta = { ...ds.meta, youthTrials: trial.state };
+      if (trial.ran) ds.deferred.youth.push({ date: currentDate, kind: "trial", trial: trial.ran });
+    }
 
     // ── National teams (`.claude/rules/game/national-teams.md`): returns, draws, call-ups, today's games ──
     // After the club games (no club plays in a FIFA window) and before training: who is with his national
@@ -1029,7 +1043,7 @@ export async function advanceOneDay(
       squadOf: async (id) => squadWrites.get(id)?.squad ?? (await saveService.getSquadById(saveId, id)),
       ...(options.marketFrozen ? {} : {
         humans: Object.fromEntries(daySeats.map((ds) => [ds.seatId, {
-          reputation: managerReputation(managersToday, ds.meta.unemployed ? ds.meta.unemployed.board : (ds.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets, ds.meta.managerDecor, licenceReputation(ds.meta.managerStudies, currentDate)),
+          reputation: managerReputation(managersToday, ds.meta.unemployed ? ds.meta.unemployed.board : (ds.meta.board?.board ?? 60), parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets, ds.meta.managerDecor, licenceReputation(ds.meta.managerStudies, currentDate) + trialReputation(ds.meta.trialReveals)),
           nationality: managerNation(ds.meta.manager?.nationalityIso),
         }])),
       }),
@@ -1859,13 +1873,36 @@ export async function advanceOneDay(
       const squadsToday = await saveService.getAllSquads(saveId);
       // Monday: the standing bars of every player (`.claude/rules/game/standing.md`), before the market reads values.
       const standingRanks = new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1 ? worldRanks(squadsToday) : null;
+      // Monday: trial youngsters who made it (`youth.md` → "Peneira de jovens"), read off the same world snapshot.
+      const trialTop = standingRanks && daySeats.some((ds) => ds.meta.youthTrials) ? worldTopIds(squadsToday, YOUTH_TRIAL.REVEAL.WORLD_TOP) : null;
+      const trialEvents: TrialRevealEvent[] = [];
       for (const read of squadsToday) {
-        const squad = standingRanks ? withStandings(read, standingRanks) : read;
+        const standing = standingRanks ? withStandings(read, standingRanks) : read;
+        const revealed = trialTop ? squadTrialReveals(standing, trialTop, currentDate) : { squad: standing, events: [] };
+        trialEvents.push(...revealed.events);
+        const squad = revealed.squad;
         if (squad !== read) await saveService.saveSquadById(saveId, squad);
         if (humanClubs.has(squad.id) || !earlyRenewalDue(squad.id, currentDate)) { allSquadsMarket.push(squad); continue; }
         const early = earlyRenewals(squad, currentDate, preContracted);
         if (early.renewed.length > 0) await saveService.saveSquadById(saveId, early.squad);
         allSquadsMarket.push(early.squad);
+      }
+      for (const ev of trialEvents) {
+        const at = allSquadsMarket.findIndex((q) => q.id === ev.clubId);
+        if (at >= 0) {
+          allSquadsMarket[at] = withRevealReward(allSquadsMarket[at]!);
+          await saveService.saveSquadById(saveId, allSquadsMarket[at]!);
+        }
+        const ds = daySeats.find((d) => d.seatId === ev.seatId);
+        if (!ds) continue;
+        const reward = seatRevealReward(ds.meta, ds.board, ds.clubId === ev.clubId, ev.kind);
+        ds.patch.trialReveals = reward.trialReveals;
+        ds.meta = { ...ds.meta, trialReveals: reward.trialReveals };
+        ds.board = reward.board;
+        ds.deferred.youth.push({
+          date: currentDate, kind: "trial_revealed",
+          revealed: { id: ev.player.id, name: ev.player.name, kind: ev.kind, clubName: ev.nowClub.name, squadId: ev.nowClub.id },
+        });
       }
       // The world's rotation + AI profiles; a market written before the first tick (a seat's lists from a route)
       // has no rotation yet: give it one instead of crashing or never refreshing.
@@ -3359,7 +3396,7 @@ export async function advanceOneDay(
           newOffers.push(...await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
             decor: ds.meta.managerDecor,
-            studies: ds.meta.managerStudies,
+            studies: ds.meta.managerStudies, trialReveals: ds.meta.trialReveals,
             nationalityIso: ds.meta.manager?.nationalityIso,
             seatId: ds.seatId, window: "season_end", date: currentDate, expires: seasonEndExpiry(currentDate, firstMatch),
             managers: await managerTracker.list(), board: ds.rollover.boardAtSeasonEnd ?? ds.board.board,
@@ -3376,7 +3413,7 @@ export async function advanceOneDay(
             newOffers.push(...await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
             decor: ds.meta.managerDecor,
-            studies: ds.meta.managerStudies,
+            studies: ds.meta.managerStudies, trialReveals: ds.meta.trialReveals,
             nationalityIso: ds.meta.manager?.nationalityIso,
               seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.seeking.VALID_DAYS),
               managers: await managerTracker.list(), board: ds.board.board,
@@ -3396,7 +3433,7 @@ export async function advanceOneDay(
               newOffers.push(...await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
             decor: ds.meta.managerDecor,
-            studies: ds.meta.managerStudies,
+            studies: ds.meta.managerStudies, trialReveals: ds.meta.trialReveals,
             nationalityIso: ds.meta.manager?.nationalityIso,
                 seatId: ds.seatId, window: "mid_season", date: currentDate, expires: addDays(currentDate, JOBS.midSeason.VALID_DAYS),
                 managers: await managerTracker.list(), board: ds.board.board,
@@ -3411,7 +3448,7 @@ export async function advanceOneDay(
         const offers = await generateJobOffers(saveService, saveId, {
             assets: ds.meta.managerAssets,
             decor: ds.meta.managerDecor,
-            studies: ds.meta.managerStudies,
+            studies: ds.meta.managerStudies, trialReveals: ds.meta.trialReveals,
             nationalityIso: ds.meta.manager?.nationalityIso,
           seatId: ds.seatId, window: "unemployed", date: currentDate, expires: addDays(currentDate, JOBS.unemployed.VALID_DAYS),
           managers: await managerTracker.list(), board: unemployed.board, humanSquadId: null,
@@ -3438,7 +3475,7 @@ export async function advanceOneDay(
         if (st) {
           const mp = ((await saveService.getLeagueStandings(saveId, league)) ?? []).find((r) => r.squadId === clubId)?.mp ?? 0;
           const squad = await saveService.getSquadById(saveId, clubId);
-          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets, ds.meta.managerDecor, licenceReputation(ds.meta.managerStudies, currentDate));
+          const rep = managerReputation(await managerTracker.list(), ds.board.board, parseInt(currentDate.slice(0, 4), 10), ds.seatId, ds.meta.managerAssets, ds.meta.managerDecor, licenceReputation(ds.meta.managerStudies, currentDate) + trialReputation(ds.meta.trialReveals));
           const day = contractDay({
             date: currentDate, contract, ...(ds.job.renewal ? { renewal: ds.job.renewal } : {}),
             notices: ds.job.notices ?? [], board: ds.board.board, seasonEnd: st.end, played: mp, totalRounds: st.totalRounds,
@@ -3831,6 +3868,7 @@ export async function advanceOneDay(
         index,
         squadOf: (id) => saveService.getSquadById(saveId, id),
         earnings: (ds.meta.managerEarnings ?? 0) + ds.managerEarned,
+        trialReveals: (ds.patch.trialReveals ?? ds.meta.trialReveals)?.count ?? 0,
         bets: { net: ds.patch.betNet ?? ds.meta.betNet ?? 0, exact: ds.patch.betExact ?? ds.meta.betExact ?? 0, longshot: ds.patch.betLongshot ?? ds.meta.betLongshot ?? false },
         ...(ds.rollover.seasonEnded ? { rollover: { championOf: ds.rollover.championOf, moves: ds.rollover.moves, objectiveMet: ds.rollover.objectiveMet } } : {}),
         sacked: !!ds.job.ended && ds.job.ended.reason !== "contract",

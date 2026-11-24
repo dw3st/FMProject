@@ -297,6 +297,11 @@ export function PlayerScreen({
             leagues={leagues}
           />
           <YouthSeasonLine log={player.seasonLog} />
+          {player.trialOf && (
+            <p className="text-sm text-muted-foreground m-0">
+              {t("youthTrials.foundAt", { club: player.trialOf.clubName, date: new Date(`${player.trialOf.date}T12:00:00`).toLocaleDateString(i18n.language) })}
+            </p>
+          )}
           <NationalCareerLine player={player} today={today || undefined} />
         </section>
     </ScreenContainer>

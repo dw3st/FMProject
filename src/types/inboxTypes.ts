@@ -206,7 +206,11 @@ export interface ContractInboxMessage extends InboxMessageBase {
  */
 export interface YouthInboxMessage extends InboxMessageBase {
   category: "youth";
-  kind:     "intake" | "released" | "goal";
+  kind:     "intake" | "released" | "goal" | "trial" | "trial_revealed";
+  /** Trial only: youngsters seen and gems among them (seen). */
+  trial?:   { count: number; gems: number; expires: string };
+  /** Trial revealed only. */
+  revealed?: { id: string; name: string; kind: import("@/types/youthTrialTypes").TrialReveal; clubName: string; squadId: string };
   /** Goal only: development goals that ended this week (`src/Domain/youth/youthGoals.ts`). */
   goals?:   { id: string; name: string; level: number; outcome: "reached" | "missed" }[];
   /** Intake only. */

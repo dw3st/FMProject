@@ -2545,6 +2545,14 @@
       "goal": {
         "reached": "{{player}} chegou à meta: OVR {{ovr}}.",
         "missed": "{{player}} não chegou à meta de OVR {{ovr}} no prazo."
+      },
+      "trial": "A peneira terminou: {{count}} jovens observados. Dá para contratar até {{date}}.",
+      "trialGem": "O treinador da base acha que há uma joia entre eles.",
+      "trialOpen": "Ver na aba Base",
+      "trialRevealed": {
+        "first_team": "{{player}}, revelado na sua peneira, virou titular no {{club}}.",
+        "world_top": "{{player}}, revelado na sua peneira, está entre os 100 melhores do mundo.",
+        "sold": "{{player}}, revelado na sua peneira, foi vendido por uma taxa grande ao {{club}}."
       }
     },
     "retirement": {
@@ -2769,7 +2777,10 @@
         "intake": "Safra {{year}} da base: {{count}} jovens",
         "released": "Jogadores dispensados da base",
         "standout": "Destaque: {{player}}",
-        "goal": "Metas da base"
+        "goal": "Metas da base",
+        "trial": "Peneira: {{count}} jovens observados",
+        "trialGem": "Pode haver uma joia entre eles",
+        "trialRevealed": "{{player}}, da sua peneira, se revelou"
       },
       "retirement": {
         "retired": "{{player}} se aposenta",
@@ -3832,6 +3843,7 @@
       "scoutingTravel": "Viagens de observação: {{competition}}",
       "scoutingTravelPlayer": "Viagens de observação: {{player}}",
       "prospectFee": "Compensação de formação: {{player}}",
+      "youthTrial": "Peneira de jovens",
       "facilityRepair": "Reforma: {{item}}",
       "facilityRebuild": "Reconstrução: {{item}}",
       "facilityUpgrade": "Melhoria: {{item}}",
@@ -6645,6 +6657,10 @@
       "bets_exact": {
         "name": "Vidente",
         "desc": "Placares exatos acertados"
+      },
+      "trial_reveals": {
+        "name": "Olheiro da várzea",
+        "desc": "Jogadores da sua peneira que se revelaram"
       }
     },
     "titles": {
@@ -6677,7 +6693,8 @@
       "national_wins": "Herói nacional",
       "career_earnings": "Pé-de-meia",
       "bets_profit": "O apostador",
-      "bets_exact": "O vidente"
+      "bets_exact": "O vidente",
+      "trial_reveals": "O olheiro da várzea"
     },
     "secrets": {
       "fortress": {
@@ -9491,6 +9508,48 @@
       "attack": "Mentalidade ofensiva",
       "protect": "Mentalidade defensiva",
       "mark": "Marcar de perto"
+    }
+  },
+  "youthTrials": {
+    "title": "Peneira de jovens",
+    "subtitle": "Observe jovens sem clube e contrate os melhores para a base, sem taxa. Restam {{left}} de {{per}} peneiras nesta temporada.",
+    "reveals": "Revelados até agora: {{count}}.",
+    "age": "Idade",
+    "ageOption": "{{age}} anos",
+    "size": "Tamanho",
+    "when": "Quando",
+    "sizes": {
+      "small": "Pequena · {{count}}",
+      "medium": "Média · {{count}}",
+      "large": "Grande · {{count}}"
+    },
+    "inDays_one": "Em {{count}} dia",
+    "inDays_other": "Em {{count}} dias",
+    "cost": "Custo {{cost}} · dia {{date}}",
+    "schedule": "Marcar peneira",
+    "cancel": "Cancelar",
+    "scheduled": "Peneira marcada para {{date}}: cerca de {{count}} jovens de {{age}} anos.",
+    "noneLeft": "As peneiras desta temporada já foram usadas.",
+    "results_one": "Peneira de {{date}}: {{count}} jovem, contratação até {{expires}}.",
+    "results_other": "Peneira de {{date}}: {{count}} jovens, contratação até {{expires}}.",
+    "academy": "Base: {{size}}/{{max}}",
+    "sign_one": "Contratar {{count}}",
+    "sign_other": "Contratar {{count}}",
+    "blurNote": "Nível e potencial vistos pelo treinador da base: quanto melhor ele, mais estreita a faixa.",
+    "gem": "Joia",
+    "signed_one": "{{count}} jovem foi para a base.",
+    "signed_other": "{{count}} jovens foram para a base.",
+    "signedFull": "{{count}} foram para a base; {{left}} ficaram de fora porque a base está cheia.",
+    "foundAt": "Revelado na peneira do {{club}} ({{date}}).",
+    "errors": {
+      "invalidTrial": "Peneira inválida.",
+      "trialPending": "Já há uma peneira marcada.",
+      "trialLimit": "As peneiras desta temporada já foram usadas.",
+      "noClub": "Sem clube.",
+      "offerClosed": "O prazo para contratar estes jovens acabou.",
+      "invalidPlayers": "Escolha jovens da lista.",
+      "notFound": "Peneira não encontrada.",
+      "generic": "Não foi possível concluir."
     }
   }
 }

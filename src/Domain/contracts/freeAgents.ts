@@ -73,6 +73,14 @@ function makeYouthPlayer(squad: Squad, role: MainRole, tag: string): RosterPlaye
   };
 }
 
+/** The human club only gets a youngster to keep a keeper and eleven players. */
+export const HUMAN_MIN_XI = 11;
+
+/** A youngster the refill created (`youth_<club>_s2028_25`, `youth_<club>_loan20270517_25`), not an academy graduate. */
+export function isFillerYouth(p: Pick<RosterPlayer, "id" | "squadId">): boolean {
+  return /^youth_.+_(s\d{4}|loan\d{8})_\d+(_\d+)?$/.test(p.id);
+}
+
 export interface RefillResult {
   squad: Squad;
   /** Free agents signed (to be removed from the pool). */
@@ -84,7 +92,7 @@ export interface RefillResult {
 /**
  * Season-rollover refill after contract expiries. AI club: while any role is under its minimum or
  * the squad under `MIN_SQUAD_AI`, sign the best free agent of the neediest role that fits the wage
- * cap, else create a youngster (3-year contract). Human club: only the per-role minimums, always
+ * cap, else create a youngster (3-year contract). Human club: only a keeper and eleven players, always
  * with youngsters (it never gets players it did not choose).
  */
 export function refillSquad(args: {
@@ -101,12 +109,15 @@ export function refillSquad(args: {
   const signed: RosterPlayer[] = [];
   const youth: RosterPlayer[] = [];
   const taken = new Set<string>();
-  const minTotal = isHuman || args.onlyMinimums ? 0 : C.MIN_SQUAD_AI;
+  // The human club (report 2026-11-24): no fillers to complete a line, only what keeps an XI on the pitch.
+  const minTotal = isHuman ? HUMAN_MIN_XI : args.onlyMinimums ? 0 : C.MIN_SQUAD_AI;
 
   for (let guard = 0; guard < MAX_SQUAD + 8; guard++) {
     const counts = countByRole(squad.players);
     const ratio = (r: MainRole) => counts[r] / MIN_BY_ROLE[r];
-    const deficits = ROLES.filter((r) => counts[r] < MIN_BY_ROLE[r]);
+    const deficits = isHuman
+      ? (counts.GK === 0 ? ["GK" as MainRole] : [])
+      : ROLES.filter((r) => counts[r] < MIN_BY_ROLE[r]);
     let role: MainRole | null = null;
     if (deficits.length > 0) role = [...deficits].sort((a, b) => ratio(a) - ratio(b))[0]!;
     else if (squad.players.length < minTotal) role = [...ROLES].sort((a, b) => ratio(a) - ratio(b))[0]!;

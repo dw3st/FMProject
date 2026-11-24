@@ -68,6 +68,8 @@ export interface AchievementSnapshot {
   facilityLevels: number;
   /** What the manager earned over his career (wages, severance). */
   earnings?: number;
+  /** Trial youngsters of the manager who made it (`SeatState.trialReveals.count`). */
+  trialReveals?: number;
   /** His bets (`.claude/rules/game/bets.md`). */
   bets?: { net: number; exact: number; longshot: boolean };
 }
@@ -109,6 +111,7 @@ export function trackValues(state: AchievementsState, snap: AchievementSnapshot)
     bets_exact: snap.bets?.exact ?? 0,
     youth_promoted: state.promotedIds.length,
     young_award: c.youngAwards,
+    trial_reveals: snap.trialReveals ?? 0,
     sales_profit: c.salesProfit,
     big_signing: c.biggestSigning,
     free_starter: free,

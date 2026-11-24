@@ -31,6 +31,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.37",
+    date: "2026-11-24",
+    time: "17:30",
+    items: [
+      { tab: "squad", pt: "Peneira de jovens: na aba Base, marque uma peneira (idade, tamanho e dia), veja os garotos que apareceram e contrate os melhores de graça. Uma joia é rara; um garoto que vinga dá seguidores, torcida e reputação ao clube.", en: "Youth trials: in the Academy tab, schedule a trial (age, size and day), see the youngsters who showed up and sign the best for free. A gem is rare; one who makes it brings the club followers, fans and reputation." },
+    ],
+    fixes: [
+      { tab: "squad", pt: "Seu elenco não recebe mais garotos de preenchimento para completar posições (só um goleiro e onze jogadores), e um garoto desses que já veio sai de graça na rescisão.", en: "Your squad no longer gets filler youngsters to complete positions (only a keeper and eleven players), and one who already came leaves for free when released." },
+      { tab: "match", pt: "Jogador machucado no modo só os lances: a janela de substituição abre uma vez só, já com ele marcado.", en: "Injured player in highlights mode: the substitution window opens once, with him already marked." },
+      { tab: "general", pt: "Lendas da loja nas posições certas: alas como meias e laterais esquerdos (Roberto Carlos, Marcelo) com o pé esquerdo.", en: "Shop legends in the right positions: wingers as wide midfielders and left-backs (Roberto Carlos, Marcelo) with the left foot." },
+    ],
+  },
+  {
     version: "12.36.1",
     date: "2026-11-24",
     time: "16:10",

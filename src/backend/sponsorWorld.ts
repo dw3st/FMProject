@@ -3,6 +3,7 @@
  * club's context (country, tier, appeal, the board's target), creates the record of a human club, runs the rollover
  * of its country and derives what the screens show (the view, the master sponsor, the pitch boards).
  */
+import { trialReputation } from "@/Domain/youth/trials";
 import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import { getLeagueData } from "@/backend/advanceDay";
 import { playerCupSlug } from "@/backend/cupWorld";
@@ -113,7 +114,7 @@ export async function sponsorContext(
   }
   const reputation = managerReputation(
     await service.getManagers(saveId), opts.board ?? meta?.board?.board ?? 60, yearOf(opts.date), seatId,
-    meta?.managerAssets, meta?.managerDecor, licenceReputation(meta?.managerStudies, opts.date),
+    meta?.managerAssets, meta?.managerDecor, licenceReputation(meta?.managerStudies, opts.date) + trialReputation(meta?.trialReveals),
   );
   const top = opts.top ?? worldTopIds(await service.getAllSquads(saveId));
   const target = opts.target ?? meta?.board?.objective?.target ?? Math.max(1, Math.ceil(league.size / 2));

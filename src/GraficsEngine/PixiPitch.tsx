@@ -1689,7 +1689,7 @@ export function PixiPitch({
         celebration = null;
         endReplay();
         gameBus.emit('stateChanged', stateRef.current);
-        const injury = highlightsRef.current?.pendingInjury();
+        const injury = highlightsRef.current?.pendingInjury(next);
         if (injury) gameBus.emit('injuryNeedsSub', injury);
       };
       invalidateHighlightsRef.current = () => {

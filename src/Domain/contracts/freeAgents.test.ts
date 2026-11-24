@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { freeAgentTick, MIN_BY_ROLE, refillSquad, roleOf, trimSquadToCap } from "@/Domain/contracts/freeAgents";
+import { freeAgentTick, HUMAN_MIN_XI, isFillerYouth, MIN_BY_ROLE, refillSquad, roleOf, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { mulberry32 } from "@/Domain/rng";
 import type { FreeAgent, RosterPlayer, Squad } from "@/types/playerTypes";
 
@@ -53,8 +53,25 @@ describe("refillSquad", () => {
 
   test("fills every role minimum", () => {
     const sq = squad(full().filter((p) => roleOf(p) !== "GK"));
-    const r = refillSquad({ squad: sq, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "t" });
+    const r = refillSquad({ squad: sq, pool: [], nextSeasonEnd: "2028-05-31", isHuman: false, onlyMinimums: true, tagPrefix: "t" });
     expect(r.squad.players.filter((p) => roleOf(p) === "GK").length).toBe(MIN_BY_ROLE.GK);
+  });
+
+  test("human club: no filler to complete a line, only a keeper and eleven players", () => {
+    const thin = squad(full().filter((p) => !["d5", "d6", "m6"].includes(p.id)));
+    expect(refillSquad({ squad: thin, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "t" }).youth).toHaveLength(0);
+    const noKeeper = squad(full().filter((p) => roleOf(p) !== "GK"));
+    const r = refillSquad({ squad: noKeeper, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "t" });
+    expect(r.youth.map(roleOf)).toEqual(["GK"]);
+    const nine = squad(full().slice(0, 9));
+    expect(refillSquad({ squad: nine, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "t" }).squad.players).toHaveLength(HUMAN_MIN_XI);
+  });
+
+  test("filler youngsters are told apart from academy graduates", () => {
+    expect(isFillerYouth({ id: "youth_c1_s2028_25", squadId: "c1" })).toBe(true);
+    expect(isFillerYouth({ id: "youth_c1_loan20270517_25_2", squadId: "c1" })).toBe(true);
+    expect(isFillerYouth({ id: "youth_c1_2027_3", squadId: "c1" })).toBe(false);
+    expect(isFillerYouth({ id: "p1", squadId: "c1" })).toBe(false);
   });
 
   test("human club gets only youth up to role minimums, never free agents", () => {
@@ -67,10 +84,10 @@ describe("refillSquad", () => {
     // Three loans back on the same day: each return leaves the squad at the same size and asks for a youngster
     // with the same tag (tester report: three players with one id in the squad).
     const base = squad(full().filter((p) => p.id !== "d6"));
-    const first = refillSquad({ squad: base, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "loan20270517" });
+    const first = refillSquad({ squad: base, pool: [], nextSeasonEnd: "2028-05-31", isHuman: false, onlyMinimums: true, tagPrefix: "loan20270517" });
     expect(first.youth).toHaveLength(1);
     const afterReturn = { ...first.squad, players: first.squad.players.filter((p) => p.id !== "d5") };
-    const second = refillSquad({ squad: afterReturn, pool: [], nextSeasonEnd: "2028-05-31", isHuman: true, tagPrefix: "loan20270517" });
+    const second = refillSquad({ squad: afterReturn, pool: [], nextSeasonEnd: "2028-05-31", isHuman: false, onlyMinimums: true, tagPrefix: "loan20270517" });
     expect(second.youth).toHaveLength(1);
     expect(second.youth[0]!.id).not.toBe(first.youth[0]!.id);
     const ids = second.squad.players.map((p) => p.id);

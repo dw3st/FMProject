@@ -193,3 +193,24 @@ Report de tester. `POST /youth/promote-many { ids }` (até 50, a regra do promov
 ## Dispensa automática (12.16)
 
 Report de tester. `Squad.youthAutoRelease { by: "level" | "potential", below }` (só o clube humano, `src/Domain/youth/autoRelease.ts`, com teste): `PUT /api/saves/:id/youth/auto-release { rule | null }` grava a regra e manda aos livres, na hora, quem está abaixo (nível atual ou o topo do potencial, arredondados a uma casa como na tela); na virada do país do clube, depois da safra, a regra roda de novo e os dispensados entram na mesma mensagem `released`. Renascidos e jogadores criados nunca saem pela regra. Tela: aba Base, bloco "Dispensar jogadores da base" (critério em chips, valor, dispensar agora e o chip "Dispensar automaticamente"). 400 `invalidRule`.
+
+## Peneira de jovens (12.37)
+
+Report de tester 107866d4, spec `docs/superpowers/specs/2026-11-24-youth-trials-design.md`. Só o clube humano. Lógica pura em `src/Domain/youth/trials.ts` (`YOUTH_TRIAL`, `trialConfig.ts`, com teste), E/S do dia em `src/backend/youthTrialWorld.ts`, rotas em `src/backend/youthTrialRoutes.ts`, tela `Squad/YouthTrialsPanel.tsx` no topo da aba Base.
+
+- **Marcar:** idade (15, 16 ou 17), tamanho (20, 40 ou 60 jovens) e o dia (14, 21 ou 28 dias à frente). Custa 0,2% / 0,5% / 1% da receita anual (`wageRevenueBasisOf`), pago na hora (extrato `scouting`, `ref.stage = "trial"`, "Peneira de jovens"). Uma marcada por vez, 2 por temporada da liga do clube (`SeatState.youthTrials.seasons`); cancelar não devolve o dinheiro nem a vaga. 409 `trialPending` / `trialLimit`, 400 `invalidTrial`; guarda de lobby.
+- **No dia** (`runTrialDay`, avanço do dia): os jovens são gerados (`generateTrialPlayers`, `makeAcademyPlayer`, semente `save:assento:data:trial`, ids `trial_<assento>_<hash>_<i>`): nível = média da linha do clube − 2,2 ± 0,5 (a safra usa −1,8); joia com chance 0,4% × treinador da base (1★ ×0,75, 3★ ×1, 5★ ×1,4; vago 2★) × fama, +1,0 de nível (teto de prodígio), arquétipo Wonderkid. Inbox `youth` / `trial` (com quantas joias). Os resultados ficam 14 dias; depois somem.
+- **Ver:** a tabela mostra nível e potencial em faixa, borrados pelo conhecimento do treinador da base (30 / 50 / 70 com 1★ / 3★ / 5★, `obscureForViewer`), e a marca Joia pelo potencial visto (`isGem`).
+- **Contratar** (`POST …/youth/trials/sign { ids }`): de graça, para `squad.youth` com o contrato de base e `RosterPlayer.trialOf` (clube, data, assento); com a base cheia (18) os que não cabem voltam em `youthFull`.
+- **Revelação** (toda segunda, `squadTrialReveals`, sobre todos os elencos do mundo): um jogador da peneira vira revelação uma vez (`trialRevealed`) quando chega ao time principal com nível 6,0, entra no top 100 do mundo ou é vendido por €10M ou mais (lido de `RosterPlayer.arrival`, até uma semana de atraso). O clube da peneira ganha +2% de seguidores e um passo de fama (`Squad.trialFame`: × 1,25 no número de jovens e na chance de joia por revelação, até × 2); o assento soma `SeatState.trialReveals` (+1 de reputação do técnico por revelação, +2 no top 100, até 5, `trialReputation`) e, se ainda treina o clube, +3 na torcida. Inbox `trial_revealed`; conquista `trial_reveals` (1 / 3 / 8, Base). A ficha diz "Revelado na peneira do <clube>".
+- Sem efeito de partida: nada em `/test` nem `/lab`.
+
+`bun scripts/youth-trial-measure.ts 300` (Premier, 16 anos, fama 1):
+
+| Tamanho | Jovens | Joias por peneira (1★ / 3★ / 5★) | Nível médio | Melhor (p95) |
+|---|---|---|---|---|
+| Pequena | 20 | 0,05 / 0,09 / 0,12 | 29 | 46 |
+| Média | 40 | 0,12 / 0,20 / 0,25 | 30 | 49 |
+| Grande | 60 | 0,19 / 0,28 / 0,35 | 30 | 49 |
+
+Testes: `bun test src/Domain/youth src/backend/youthTrial.routes.test.ts`.

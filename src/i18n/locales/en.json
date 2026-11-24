@@ -2548,6 +2548,14 @@
       "goal": {
         "reached": "{{player}} reached his goal: OVR {{ovr}}.",
         "missed": "{{player}} did not reach his OVR {{ovr}} goal in time."
+      },
+      "trial": "The trial is over: {{count}} youngsters seen. You can sign them until {{date}}.",
+      "trialGem": "The youth coach thinks there is a gem among them.",
+      "trialOpen": "See in the Academy tab",
+      "trialRevealed": {
+        "first_team": "{{player}}, found at your trial, became a starter at {{club}}.",
+        "world_top": "{{player}}, found at your trial, is among the 100 best in the world.",
+        "sold": "{{player}}, found at your trial, was sold for a big fee to {{club}}."
       }
     },
     "retirement": {
@@ -2772,7 +2780,10 @@
         "intake": "Academy intake {{year}}: {{count}} youngsters",
         "released": "Academy players released",
         "standout": "Standout: {{player}}",
-        "goal": "Academy goals"
+        "goal": "Academy goals",
+        "trial": "Trial: {{count}} youngsters seen",
+        "trialGem": "There may be a gem among them",
+        "trialRevealed": "{{player}}, from your trial, made it"
       },
       "retirement": {
         "retired": "{{player}} retires",
@@ -3835,6 +3846,7 @@
       "scoutingTravel": "Scouting travel: {{competition}}",
       "scoutingTravelPlayer": "Scouting travel: {{player}}",
       "prospectFee": "Training compensation: {{player}}",
+      "youthTrial": "Youth trial",
       "facilityRepair": "Repair: {{item}}",
       "facilityRebuild": "Rebuild: {{item}}",
       "facilityUpgrade": "Upgrade: {{item}}",
@@ -6651,6 +6663,10 @@
       "career_earnings": {
         "name": "Nest egg",
         "desc": "What you earned over your career"
+      },
+      "trial_reveals": {
+        "name": "Grassroots scout",
+        "desc": "Players from your trials who made it"
       }
     },
     "titles": {
@@ -6683,7 +6699,8 @@
       "national_wins": "National hero",
       "bets_profit": "The punter",
       "bets_exact": "The seer",
-      "career_earnings": "Nest egg"
+      "career_earnings": "Nest egg",
+      "trial_reveals": "The grassroots scout"
     },
     "secrets": {
       "fortress": {
@@ -9506,6 +9523,48 @@
       "attack": "Attacking mentality",
       "protect": "Defensive mentality",
       "mark": "Man-mark him"
+    }
+  },
+  "youthTrials": {
+    "title": "Youth trials",
+    "subtitle": "Watch youngsters without a club and sign the best into the academy, with no fee. {{left}} of {{per}} trials left this season.",
+    "reveals": "Found so far: {{count}}.",
+    "age": "Age",
+    "ageOption": "{{age}} years",
+    "size": "Size",
+    "when": "When",
+    "sizes": {
+      "small": "Small · {{count}}",
+      "medium": "Medium · {{count}}",
+      "large": "Large · {{count}}"
+    },
+    "inDays_one": "In {{count}} day",
+    "inDays_other": "In {{count}} days",
+    "cost": "Cost {{cost}} · on {{date}}",
+    "schedule": "Schedule trial",
+    "cancel": "Cancel",
+    "scheduled": "Trial on {{date}}: about {{count}} youngsters aged {{age}}.",
+    "noneLeft": "This season's trials have been used.",
+    "results_one": "Trial of {{date}}: {{count}} youngster, sign by {{expires}}.",
+    "results_other": "Trial of {{date}}: {{count}} youngsters, sign by {{expires}}.",
+    "academy": "Academy: {{size}}/{{max}}",
+    "sign_one": "Sign {{count}}",
+    "sign_other": "Sign {{count}}",
+    "blurNote": "Level and potential as the youth coach sees them: the better he is, the narrower the range.",
+    "gem": "Gem",
+    "signed_one": "{{count}} youngster joined the academy.",
+    "signed_other": "{{count}} youngsters joined the academy.",
+    "signedFull": "{{count}} joined the academy; {{left}} left out because it is full.",
+    "foundAt": "Found at the {{club}} youth trial ({{date}}).",
+    "errors": {
+      "invalidTrial": "Invalid trial.",
+      "trialPending": "A trial is already scheduled.",
+      "trialLimit": "This season's trials have been used.",
+      "noClub": "No club.",
+      "offerClosed": "The time to sign these youngsters is over.",
+      "invalidPlayers": "Pick youngsters from the list.",
+      "notFound": "Trial not found.",
+      "generic": "Could not complete it."
     }
   }
 }

@@ -29,6 +29,7 @@ export const TRACKS: Record<TrackId, TrackDef> = {
   national_wins:      { category: "matches", attribute: "motivation", thresholds: [5, 20, 50] },
   youth_promoted:     { category: "youth", attribute: "youth", thresholds: [3, 10, 25] },
   young_award:        { category: "youth", attribute: "youth", thresholds: [1, 2, 4] },
+  trial_reveals:      { category: "youth", attribute: "youth", thresholds: [1, 3, 8] },
   sales_profit:       { category: "market", attribute: "negotiation", thresholds: [5_000_000, 30_000_000, 100_000_000] },
   big_signing:        { category: "market", attribute: "negotiation", thresholds: [5_000_000, 25_000_000, 60_000_000] },
   free_starter:       { category: "market", attribute: "negotiation", thresholds: [1, 3, 6] },

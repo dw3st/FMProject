@@ -82,6 +82,7 @@ export function describeLedgerEntry(entry: Pick<LedgerEntry, "kind" | "ref">): L
     case "scouting":
       // `.claude/rules/game/scouting.md`: the mission's region (country / league slug / continent) or player.
       if (ref?.stage === "prospect") return { key: "prospectFee", player: ref.playerName ?? "" };
+      if (ref?.stage === "trial") return { key: "youthTrial" };
       return ref?.playerName ? { key: "scoutingTravelPlayer", player: ref.playerName } : { key: "scoutingTravel", ...(ref?.competition ? { competition: ref.competition } : {}) };
     case "manager":
       return { key: ref?.stage === "severance" ? "managerSeverance" : ref?.stage === "compensation" ? "managerCompensation" : "managerWage" };

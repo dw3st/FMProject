@@ -406,8 +406,22 @@ export function buildYouthMessage(args: {
   best?:    YouthInboxMessage["best"];
   players?: { id: string; name: string }[];
   goals?:   YouthInboxMessage["goals"];
+  trial?:   YouthInboxMessage["trial"];
+  revealed?: YouthInboxMessage["revealed"];
 }): YouthInboxMessage {
-  const { date, kind, year, count, best, players, goals } = args;
+  const { date, kind, year, count, best, players, goals, trial, revealed } = args;
+  if (kind === "trial" && trial) {
+    return {
+      id: `youth-${date}-trial-${randomUUID()}`, date, createdAt: date, read: false, category: "youth",
+      subject: `Youth trial: ${trial.count} youngsters seen`, preview: trial.gems > 0 ? "A possible gem among them" : "", kind, trial,
+    };
+  }
+  if (kind === "trial_revealed" && revealed) {
+    return {
+      id: `youth-${date}-revealed-${revealed.id}`, date, createdAt: date, read: false, category: "youth",
+      subject: `${revealed.name}, found at your trial, made it`, preview: revealed.clubName, kind, revealed,
+    };
+  }
   if (kind === "goal") {
     return {
       id: `youth-${date}-goal-${randomUUID()}`, date, createdAt: date, read: false, category: "youth",

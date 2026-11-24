@@ -155,6 +155,10 @@ export interface SettlingState {
 }
 
 export interface RosterPlayer {
+  /** Found in a youth trial (`.claude/rules/game/youth.md` → "Peneira de jovens"): kept for good. */
+  trialOf?: import("@/types/youthTrialTypes").TrialOrigin;
+  /** The day his trial paid off (counted once). */
+  trialRevealed?: { kind: import("@/types/youthTrialTypes").TrialReveal; on: string };
   id: string;
   name: string;
   age: number;
@@ -336,6 +340,8 @@ interface ClubCoach {
 }
 
 export interface Squad {
+  /** Youth trial reveals of the club: more and better youngsters come to its trials. */
+  trialFame?: number;
   id: string;
   name: string;
   colors: [string, string];

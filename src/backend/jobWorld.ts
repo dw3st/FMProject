@@ -1,3 +1,4 @@
+import { trialReputation } from "@/Domain/youth/trials";
 import type { ManagerAssets } from "@/Domain/managers/assets";
 import { presetsForNewClub } from "@/Domain/tactics/lineupPresets";
 import { initClubMorale, stripClubMorale } from "@/Domain/morale/morale";
@@ -213,6 +214,8 @@ export interface OfferRequest {
   decor?: readonly string[];
   /** Languages and licences (9.3): licences add reputation, languages and idol clubs weigh the offers. */
   studies?: ManagerStudies;
+  /** Reveals of the manager's youth trials (reputation, `youth.md`). */
+  trialReveals?: { count: number; top: number };
   nationalityIso?: string;
 }
 
@@ -231,7 +234,7 @@ function offerCountryWeight(req: OfferRequest, candidates: readonly OfferCandida
  */
 export async function generateJobOffers(service: SaveService, saveId: string, req: OfferRequest): Promise<JobOffer[]> {
   const year = parseInt(req.date.slice(0, 4), 10);
-  const rep = managerReputation(req.managers, req.board, year, req.seatId, req.assets, req.decor, licenceReputation(req.studies, req.date));
+  const rep = managerReputation(req.managers, req.board, year, req.seatId, req.assets, req.decor, licenceReputation(req.studies, req.date) + trialReputation(req.trialReveals));
   // The seat is in the seed: two managers of the same world never draw the same offers on the same day.
   const rng = mulberry32(seedFrom(`jobs:${saveId}:${req.seatId}:${req.date}:${req.window}`));
   const count = req.seeking
@@ -625,7 +628,7 @@ export async function reputationOf(service: SaveService, saveId: string, meta: S
   const board = meta.unemployed ? meta.unemployed.board : (meta.board?.board ?? 60);
   const year = parseInt((meta.currentDate ?? "2026").slice(0, 4), 10);
   try {
-    return managerReputation(managers, board, year, meta.seatId, meta.managerAssets, meta.managerDecor, licenceReputation(meta.managerStudies, meta.currentDate ?? ""));
+    return managerReputation(managers, board, year, meta.seatId, meta.managerAssets, meta.managerDecor, licenceReputation(meta.managerStudies, meta.currentDate ?? "") + trialReputation(meta.trialReveals));
   } catch (e) {
     logError("jobs", `save ${saveId}: reputation failed`, e);
     return 0;

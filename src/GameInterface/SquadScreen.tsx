@@ -14,6 +14,7 @@ import { SquadRosterTable } from "@/GameInterface/SquadRosterTable";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { YouthTable } from "@/GameInterface/Components/YouthTable";
 import { YouthCallUpsPanel } from "@/GameInterface/Squad/YouthCallUpsPanel";
+import { YouthTrialsPanel } from "@/GameInterface/Squad/YouthTrialsPanel";
 import { ClubHistoryView } from "@/GameInterface/Components/ClubHistoryView";
 import { SquadDepthView } from "@/GameInterface/Components/SquadDepthView";
 import { RegistrationView } from "@/GameInterface/Squad/RegistrationView";
@@ -31,6 +32,8 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
   const { session, squad: mySquad, loading: saveLoading, refresh, currentDate } = useGameSave();
   const [squad, setSquad] = useState<Squad | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Bumped when trial youngsters are signed, so the academy table reloads. */
+  const [youthRev, setYouthRev] = useState(0);
   const [error, setError] = useState(false);
   const [offerTarget, setOfferTarget] = useState<DisplayPlayer | null>(null);
   // Another club's page opens on its overview (tester report, 8.9.30); the own club on the squad.
@@ -186,7 +189,10 @@ export function SquadScreen({ league, club }: { league: string; club: string }) 
         ) : activeTab === "registration" && squad.id === mySquadId ? (
           <RegistrationView />
         ) : activeTab === "youth" && squad.id === mySquadId ? (
-          <YouthTable clubColors={squad.colors} callUps={<YouthCallUpsPanel />} />
+          <div className="flex flex-col gap-6">
+            <YouthTrialsPanel onSigned={() => setYouthRev((n) => n + 1)} />
+            <YouthTable key={youthRev} clubColors={squad.colors} callUps={<YouthCallUpsPanel />} />
+          </div>
         ) : activeTab === "loans" && squad.id === mySquadId && session ? (
           <NegotiationOverview saveId={session.saveId} sections={["out", "in"]} />
         ) : (

@@ -95,6 +95,11 @@ export interface PlaybackOptions {
   now?: () => number;
 }
 
+/** True when `state` holds the open vacancy of `injury` (the injury has already happened in it). */
+export function injuryVacancyOpen(state: GameState, injury: { team: TeamId; injuredId: number }): boolean {
+  return (state.injuryVacancies?.[injury.team] ?? []).some(v => v.injuredId === injury.injuredId);
+}
+
 export class HighlightPlayback {
   private gen = 0;
   private all: ForecastWindow[] = [];
@@ -175,9 +180,15 @@ export class HighlightPlayback {
     return act;
   }
 
-  /** The injury the manager must answer after a jump to an `injury` frontier (the pitch re-emits it). */
-  pendingInjury(): ForecastFrontier['injury'] | null {
-    return this.live === 'injury' ? this.frontier?.injury ?? null : null;
+  /**
+   * The injury the manager must answer after a jump to an `injury` frontier (the pitch re-emits it). Only when the
+   * state landed on already has the vacancy: a jump to the start of the lance that ends in the injury lands before
+   * it (report b8d9fe70: the panel opened with nobody injured, then again when the injury happened live).
+   */
+  pendingInjury(state?: GameState): ForecastFrontier['injury'] | null {
+    const injury = this.live === 'injury' ? this.frontier?.injury ?? null : null;
+    if (!injury || !state) return injury;
+    return injuryVacancyOpen(state, injury) ? injury : null;
   }
 
   subscribe(fn: (v: PlaybackView) => void): () => void {

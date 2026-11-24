@@ -16,7 +16,7 @@ export const TRACK_IDS = [
   "league_titles", "cup_titles", "continental_titles", "promotions",
   "wins", "win_streak", "unbeaten_run", "thrashings",
   "comebacks", "ten_men_wins", "shootout_wins", "derby_wins", "national_wins", "career_earnings", "bets_profit", "bets_exact",
-  "youth_promoted", "young_award",
+  "youth_promoted", "young_award", "trial_reveals",
   "sales_profit", "big_signing", "free_starter",
   "balance", "stadium", "facilities",
   "seasons", "clubs", "ranking", "manager_awards",

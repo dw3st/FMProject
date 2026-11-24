@@ -1193,6 +1193,8 @@ export function MatchScreen() {
         // The injury happened inside this tick: the state with the vacancy is emitted right after, and it
         // must reach the panel in the same render, not 100 ms later (the panel showed twice: before and after).
         urgentStateRef.current = true;
+        // A jump of the highlights mode emitted the state before this event: hand it over now, not 100 ms later.
+        uiThrottleRef.current?.flush();
         pausedRef.current = true;
         setPaused(true);
         setShowSubPanel(true);

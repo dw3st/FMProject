@@ -627,6 +627,8 @@ function newsTexts(
       return { subject: t(`inbox.subjects.contract.${message.kind}`), preview: message.players.map((p) => p.name).join(", ") };
     case "youth":
       if (message.kind === "goal") return { subject: t("inbox.subjects.youth.goal"), preview: (message.goals ?? []).map((g) => g.name).join(", ") };
+      if (message.kind === "trial") return { subject: t("inbox.subjects.youth.trial", { count: message.trial?.count ?? 0 }), preview: (message.trial?.gems ?? 0) > 0 ? t("inbox.subjects.youth.trialGem") : "" };
+      if (message.kind === "trial_revealed") return { subject: t("inbox.subjects.youth.trialRevealed", { player: message.revealed?.name ?? "" }), preview: message.revealed?.clubName ?? "" };
       return message.kind === "intake"
         ? {
             subject: t("inbox.subjects.youth.intake", { year: message.year ?? "", count: message.count ?? 0 }),
@@ -953,7 +955,24 @@ export function InboxMessageBody({ message, leagues }: { message: InboxMessage; 
         ))}
       </ul>
     )}
-    {message.category === "youth" && message.kind !== "goal" && (
+    {message.category === "youth" && message.kind === "trial" && message.trial && (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-foreground m-0">
+          {t("inbox.youth.trial", { count: message.trial.count, date: formatInboxDate(message.trial.expires) })}
+          {message.trial.gems > 0 && ` ${t("inbox.youth.trialGem")}`}
+        </p>
+        <TrialAcademyLink />
+      </div>
+    )}
+    {message.category === "youth" && message.kind === "trial_revealed" && message.revealed && (
+      <p className="text-sm text-foreground m-0">
+        <PlayerNameText
+          text={t(`inbox.youth.trialRevealed.${message.revealed.kind}`, { player: message.revealed.name, club: message.revealed.clubName })}
+          players={[{ id: message.revealed.id, name: message.revealed.name }]}
+        />
+      </p>
+    )}
+    {message.category === "youth" && message.kind !== "goal" && message.kind !== "trial" && message.kind !== "trial_revealed" && (
       <p className="text-sm text-foreground m-0">
         {message.kind === "intake"
           ? t("inbox.youth.intake", {
@@ -1707,4 +1726,19 @@ export function InboxCategoryTile({ message, large = false }: { message: InboxMe
 /** The painted illustration of a message's category (art phase 7), or null without the new visual / art. */
 export function inboxIllustration(message: InboxMessage): string | null {
   return paintedNews(message.category);
+}
+
+/** Link from a trial message to the club's academy tab. */
+function TrialAcademyLink() {
+  const { t } = useTranslation();
+  const { session } = useGameSave();
+  if (!session) return null;
+  return (
+    <a
+      href={`/squad/${encodeURIComponent(session.leagueSlug)}/${encodeURIComponent(session.clubId)}?tab=youth`}
+      className="font-semibold text-primary hover:underline w-fit"
+    >
+      {t("inbox.youth.trialOpen")}
+    </a>
+  );
 }

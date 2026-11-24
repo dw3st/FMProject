@@ -2,7 +2,7 @@
  * Friendly termination (tester suggestion): the club ends a player's contract early by paying him a share of what is
  * left on it, by how much he matters to the squad, capped at half his market value. He leaves as a free agent. Pure.
  */
-import { MIN_BY_ROLE } from "@/Domain/contracts/freeAgents";
+import { isFillerYouth, MIN_BY_ROLE } from "@/Domain/contracts/freeAgents";
 import { getMainRole, type MainRole } from "@/Domain/roles";
 import { suggestedStatuses } from "@/Domain/morale/morale";
 import type { RosterPlayer, Squad } from "@/types/playerTypes";
@@ -48,6 +48,8 @@ export function terminationQuote(player: RosterPlayer, squad: Pick<Squad, "playe
   const raw = wagesLeft * share;
   const cap = Math.max(0, marketValue) * TERMINATION.VALUE_CAP;
   const capped = raw > cap;
+  // A refill youngster the club never chose leaves for nothing (report 2026-11-24).
+  if (isFillerYouth(player)) return { fee: 0, weeksLeft, wagesLeft, share: 0, status, capped: false };
   const fee = Math.round((capped ? cap : raw) / TERMINATION.ROUND) * TERMINATION.ROUND;
   return { fee, weeksLeft, wagesLeft, share, status, capped };
 }

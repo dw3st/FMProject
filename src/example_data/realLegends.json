@@ -348,11 +348,12 @@
   "name": "Gareth Bale",
   "birthYear": 1989,
   "nationality": "Wales",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 94
+  "fame": 94,
+  "foot": "left"
  },
  {
   "id": "rl_Q43913",
@@ -464,11 +465,12 @@
   "name": "Ryan Giggs",
   "birthYear": 1973,
   "nationality": "Wales",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "LM",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 88
+  "fame": 88,
+  "foot": "left"
  },
  {
   "id": "rl_Q164521",
@@ -476,8 +478,8 @@
   "name": "George Best",
   "birthYear": 1946,
   "nationality": "Northern Ireland",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 1,
   "worldCups": [],
   "fame": 88
@@ -661,12 +663,13 @@
   "birthYear": 1973,
   "nationality": "Brazil",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    2002
   ],
-  "fame": 84
+  "fame": 84,
+  "foot": "left"
  },
  {
   "id": "rl_Q11576",
@@ -777,10 +780,11 @@
   "birthYear": 1988,
   "nationality": "Spain",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 80
+  "fame": 80,
+  "foot": "left"
  },
  {
   "id": "rl_Q483145",
@@ -788,8 +792,8 @@
   "name": "Luís Figo",
   "birthYear": 1972,
   "nationality": "Portugal",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 1,
   "worldCups": [],
   "fame": 80
@@ -856,10 +860,11 @@
   "birthYear": 1989,
   "nationality": "Spain",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 79
+  "fame": 79,
+  "foot": "left"
  },
  {
   "id": "rl_Q483577",
@@ -1063,7 +1068,7 @@
   "birthYear": 1978,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 75
@@ -1087,7 +1092,7 @@
   "birthYear": 1972,
   "nationality": "France",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [
    1998
@@ -1163,7 +1168,7 @@
   "birthYear": 1984,
   "nationality": "Italy",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 73
@@ -1187,10 +1192,11 @@
   "birthYear": 1980,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 72
+  "fame": 72,
+  "foot": "left"
  },
  {
   "id": "rl_Q213427",
@@ -1236,8 +1242,8 @@
   "name": "Arda Turan",
   "birthYear": 1987,
   "nationality": "Türkiye",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 72
@@ -1300,8 +1306,8 @@
   "name": "Megan Rapinoe",
   "birthYear": 1985,
   "nationality": "United States",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 71
@@ -1502,8 +1508,8 @@
   "name": "Park Ji-Sung",
   "birthYear": 1981,
   "nationality": "South Korea",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 68
@@ -1576,8 +1582,8 @@
   "name": "Theo Walcott",
   "birthYear": 1989,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 67
@@ -1614,11 +1620,12 @@
   "name": "Oleh Blokhin",
   "birthYear": 1952,
   "nationality": "Ukraine",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "LM",
   "ballonDor": 1,
   "worldCups": [],
-  "fame": 66
+  "fame": 66,
+  "foot": "left"
  },
  {
   "id": "rl_Q189217",
@@ -1650,8 +1657,8 @@
   "name": "Dirk Kuyt",
   "birthYear": 1980,
   "nationality": "Netherlands",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 66
@@ -1663,7 +1670,7 @@
   "birthYear": 1989,
   "nationality": "Spain",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 66
@@ -1674,8 +1681,8 @@
   "name": "Clarence Seedorf",
   "birthYear": 1976,
   "nationality": "Netherlands",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 66
@@ -1760,8 +1767,8 @@
   "name": "Antonio Valencia",
   "birthYear": 1985,
   "nationality": "Ecuador",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 65
@@ -1839,8 +1846,8 @@
   "name": "Ricardo Quaresma",
   "birthYear": 1983,
   "nationality": "Portugal",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 65
@@ -1890,10 +1897,11 @@
   "birthYear": 1988,
   "nationality": "Portugal",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 65
+  "fame": 65,
+  "foot": "left"
  },
  {
   "id": "rl_Q570811",
@@ -1951,8 +1959,8 @@
   "name": "Santi Cazorla",
   "birthYear": 1984,
   "nationality": "Spain",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 64
@@ -2089,10 +2097,11 @@
   "birthYear": 1984,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 63
+  "fame": 63,
+  "foot": "left"
  },
  {
   "id": "rl_Q188632",
@@ -2178,8 +2187,8 @@
   "name": "Denis Cheryshev",
   "birthYear": 1990,
   "nationality": "Spain",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 63
@@ -2191,12 +2200,13 @@
   "birthYear": 1951,
   "nationality": "Germany",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1974
   ],
-  "fame": 63
+  "fame": 63,
+  "foot": "left"
  },
  {
   "id": "rl_Q458101",
@@ -2280,8 +2290,8 @@
   "name": "Maxi Rodriguez",
   "birthYear": 1981,
   "nationality": "Argentina",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 62
@@ -2712,13 +2722,14 @@
   "name": "Robert Pires",
   "birthYear": 1973,
   "nationality": "France",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "LM",
   "ballonDor": 0,
   "worldCups": [
    1998
   ],
-  "fame": 59
+  "fame": 59,
+  "foot": "left"
  },
  {
   "id": "rl_Q13002",
@@ -2885,12 +2896,13 @@
   "birthYear": 1969,
   "nationality": "France",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1998
   ],
-  "fame": 59
+  "fame": 59,
+  "foot": "left"
  },
  {
   "id": "rl_Q47950",
@@ -2922,8 +2934,8 @@
   "name": "Ryan Babel",
   "birthYear": 1986,
   "nationality": "Netherlands",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 58
@@ -2935,10 +2947,11 @@
   "birthYear": 1983,
   "nationality": "Russia",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 58
+  "fame": 58,
+  "foot": "left"
  },
  {
   "id": "rl_Q185115",
@@ -3193,8 +3206,8 @@
   "name": "Salomon Kalou",
   "birthYear": 1985,
   "nationality": "Côte d’Ivoire",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 57
@@ -3244,10 +3257,11 @@
   "birthYear": 1980,
   "nationality": "Norway",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 57
+  "fame": 57,
+  "foot": "left"
  },
  {
   "id": "rl_Q191492",
@@ -3343,8 +3357,8 @@
   "name": "Daisuke Matsui",
   "birthYear": 1981,
   "nationality": "Japan",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 57
@@ -3368,10 +3382,11 @@
   "birthYear": 1986,
   "nationality": "Spain",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 57
+  "fame": 57,
+  "foot": "left"
  },
  {
   "id": "rl_Q350547",
@@ -3380,10 +3395,11 @@
   "birthYear": 1985,
   "nationality": "Brazil",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 57
+  "fame": 57,
+  "foot": "left"
  },
  {
   "id": "rl_Q516921",
@@ -3391,8 +3407,8 @@
   "name": "André Ayew",
   "birthYear": 1989,
   "nationality": "Ghana",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 57
@@ -3531,8 +3547,8 @@
   "name": "Gervinho",
   "birthYear": 1987,
   "nationality": "Côte d’Ivoire",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 56
@@ -3556,10 +3572,11 @@
   "birthYear": 1985,
   "nationality": "Serbia",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 56
+  "fame": 56,
+  "foot": "left"
  },
  {
   "id": "rl_Q217482",
@@ -3703,8 +3720,8 @@
   "name": "Pierre Littbarski",
   "birthYear": 1960,
   "nationality": "Germany",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1990
@@ -3743,8 +3760,8 @@
   "name": "Aaron Lennon",
   "birthYear": 1987,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 55
@@ -3767,8 +3784,8 @@
   "name": "Joe Cole",
   "birthYear": 1981,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 55
@@ -3794,12 +3811,13 @@
   "birthYear": 1978,
   "nationality": "Spain",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    2010
   ],
-  "fame": 55
+  "fame": 55,
+  "foot": "left"
  },
  {
   "id": "rl_Q188983",
@@ -3903,8 +3921,8 @@
   "name": "José Antonio Reyes",
   "birthYear": 1983,
   "nationality": "Spain",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 55
@@ -4004,10 +4022,11 @@
   "birthYear": 1990,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 55
+  "fame": 55,
+  "foot": "left"
  },
  {
   "id": "rl_Q107089",
@@ -4027,8 +4046,8 @@
   "name": "Manabu Saito",
   "birthYear": 1990,
   "nationality": "Japan",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 54
@@ -4237,8 +4256,8 @@
   "name": "Victor Moses",
   "birthYear": 1990,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 54
@@ -4311,8 +4330,8 @@
   "name": "Hamit Altıntop",
   "birthYear": 1982,
   "nationality": "Türkiye",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 54
@@ -4471,8 +4490,8 @@
   "name": "Jérémy Ménez",
   "birthYear": 1987,
   "nationality": "France",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 53
@@ -4484,10 +4503,11 @@
   "birthYear": 1985,
   "nationality": "France",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 53
+  "fame": 53,
+  "foot": "left"
  },
  {
   "id": "rl_Q202645",
@@ -4569,8 +4589,8 @@
   "name": "Ezequiel Lavezzi",
   "birthYear": 1985,
   "nationality": "Argentina",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 53
@@ -4608,8 +4628,8 @@
   "name": "Txiki Begiristain",
   "birthYear": 1964,
   "nationality": "Spain",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 53
@@ -4669,10 +4689,11 @@
   "birthYear": 1989,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 53
+  "fame": 53,
+  "foot": "left"
  },
  {
   "id": "rl_Q44340",
@@ -4840,8 +4861,8 @@
   "name": "Burak Yılmaz",
   "birthYear": 1985,
   "nationality": "Türkiye",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 52
@@ -4852,8 +4873,8 @@
   "name": "Aliaksandr Hleb",
   "birthYear": 1981,
   "nationality": "Belarus",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 52
@@ -4876,8 +4897,8 @@
   "name": "Mauro Camoranesi",
   "birthYear": 1976,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    2006
@@ -4962,13 +4983,14 @@
   "name": "Zinho",
   "birthYear": 1967,
   "nationality": "Brazil",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "LM",
   "ballonDor": 0,
   "worldCups": [
    1994
   ],
-  "fame": 52
+  "fame": 52,
+  "foot": "left"
  },
  {
   "id": "rl_Q210102",
@@ -4976,8 +4998,8 @@
   "name": "Jairzinho",
   "birthYear": 1944,
   "nationality": "Brazil",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1970
@@ -5075,7 +5097,7 @@
   "birthYear": 1984,
   "nationality": "Greece",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 52
@@ -5199,8 +5221,8 @@
   "name": "Koki Mizuno",
   "birthYear": 1985,
   "nationality": "Japan",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 52
@@ -5323,10 +5345,11 @@
   "birthYear": 1985,
   "nationality": "Germany",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 51
+  "fame": 51,
+  "foot": "left"
  },
  {
   "id": "rl_Q188564",
@@ -5347,7 +5370,7 @@
   "birthYear": 1981,
   "nationality": "Netherlands",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 51
@@ -5409,12 +5432,13 @@
   "birthYear": 1977,
   "nationality": "Italy",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    2006
   ],
-  "fame": 51
+  "fame": 51,
+  "foot": "left"
  },
  {
   "id": "rl_Q299391",
@@ -5498,8 +5522,8 @@
   "name": "José Callejón",
   "birthYear": 1987,
   "nationality": "Spain",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 51
@@ -5619,10 +5643,11 @@
   "birthYear": 1988,
   "nationality": "Germany",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 50
+  "fame": 50,
+  "foot": "left"
  },
  {
   "id": "rl_Q155604",
@@ -5654,8 +5679,8 @@
   "name": "Miloš Krasić",
   "birthYear": 1984,
   "nationality": "Serbia",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 50
@@ -5667,7 +5692,7 @@
   "birthYear": 1981,
   "nationality": "Argentina",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 50
@@ -5679,10 +5704,11 @@
   "birthYear": 1980,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 50
+  "fame": 50,
+  "foot": "left"
  },
  {
   "id": "rl_Q210083",
@@ -5877,8 +5903,8 @@
   "name": "Antonio Candreva",
   "birthYear": 1987,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 50
@@ -6171,8 +6197,8 @@
   "name": "Simone Pepe",
   "birthYear": 1983,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 49
@@ -6599,8 +6625,8 @@
   "name": "Shaun Wright-Phillips",
   "birthYear": 1981,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 48
@@ -6659,8 +6685,8 @@
   "name": "Dimitris Salpingidis",
   "birthYear": 1981,
   "nationality": "Greece",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 48
@@ -6683,8 +6709,8 @@
   "name": "Simão Sabrosa",
   "birthYear": 1979,
   "nationality": "Portugal",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 48
@@ -6827,8 +6853,8 @@
   "name": "Simone Perrotta",
   "birthYear": 1977,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    2006
@@ -7001,8 +7027,8 @@
   "name": "Jean Beausejour",
   "birthYear": 1984,
   "nationality": "Chile",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 48
@@ -7162,7 +7188,7 @@
   "birthYear": 1988,
   "nationality": "Denmark",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 47
@@ -7309,8 +7335,8 @@
   "name": "Aiden McGeady",
   "birthYear": 1986,
   "nationality": "Ireland",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 47
@@ -7455,8 +7481,8 @@
   "name": "elpisha",
   "birthYear": 1981,
   "nationality": "Spain",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 47
@@ -7468,10 +7494,11 @@
   "birthYear": 1981,
   "nationality": "Italy",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 47
+  "fame": 47,
+  "foot": "left"
  },
  {
   "id": "rl_Q295887",
@@ -7543,8 +7570,8 @@
   "name": "Carles Rexach",
   "birthYear": 1947,
   "nationality": "Spain",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 47
@@ -7627,8 +7654,8 @@
   "name": "Emerson Sheik",
   "birthYear": 1978,
   "nationality": "Brazil",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 47
@@ -7838,8 +7865,8 @@
   "name": "Gary Speed",
   "birthYear": 1969,
   "nationality": "Wales",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 46
@@ -7887,10 +7914,11 @@
   "birthYear": 1985,
   "nationality": "Nigeria",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 46
+  "fame": 46,
+  "foot": "left"
  },
  {
   "id": "rl_Q208619",
@@ -8134,12 +8162,13 @@
   "birthYear": 1973,
   "nationality": "France",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1998
   ],
-  "fame": 46
+  "fame": 46,
+  "foot": "left"
  },
  {
   "id": "rl_Q309778",
@@ -8148,7 +8177,7 @@
   "birthYear": 1976,
   "nationality": "Colombia",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 46
@@ -8159,8 +8188,8 @@
   "name": "Tostão",
   "birthYear": 1947,
   "nationality": "Brazil",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1970
@@ -8214,7 +8243,7 @@
   "birthYear": 1969,
   "nationality": "South Korea",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 46
@@ -8249,8 +8278,8 @@
   "name": "Kevin Mirallas",
   "birthYear": 1987,
   "nationality": "Belgium",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 46
@@ -8410,12 +8439,13 @@
   "birthYear": 1957,
   "nationality": "Italy",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1982
   ],
-  "fame": 46
+  "fame": 46,
+  "foot": "left"
  },
  {
   "id": "rl_Q733012",
@@ -8485,8 +8515,8 @@
   "name": "Zvjezdan Misimović",
   "birthYear": 1982,
   "nationality": "Germany",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 45
@@ -8557,8 +8587,8 @@
   "name": "Zoran Tošić",
   "birthYear": 1987,
   "nationality": "Serbia",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 45
@@ -8570,10 +8600,11 @@
   "birthYear": 1985,
   "nationality": "Uruguay",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 45
+  "fame": 45,
+  "foot": "left"
  },
  {
   "id": "rl_Q218680",
@@ -8653,8 +8684,8 @@
   "name": "Silvestre Varela",
   "birthYear": 1985,
   "nationality": "Portugal",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 45
@@ -8729,8 +8760,8 @@
   "name": "Marc Albrighton",
   "birthYear": 1989,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 45
@@ -8789,8 +8820,8 @@
   "name": "Sérgio Conceição",
   "birthYear": 1974,
   "nationality": "Portugal",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 45
@@ -8839,8 +8870,8 @@
   "name": "Alex Brosque",
   "birthYear": 1983,
   "nationality": "Australia",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 45
@@ -9051,8 +9082,8 @@
   "name": "Eljero Elia",
   "birthYear": 1987,
   "nationality": "Netherlands",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 44
@@ -9075,8 +9106,8 @@
   "name": "Tranquillo Barnetta",
   "birthYear": 1985,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 44
@@ -9099,8 +9130,8 @@
   "name": "Víctor Ibarbo",
   "birthYear": 1990,
   "nationality": "Colombia",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 44
@@ -9246,10 +9277,11 @@
   "birthYear": 1989,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 44
+  "fame": 44,
+  "foot": "left"
  },
  {
   "id": "rl_Q296583",
@@ -9499,8 +9531,8 @@
   "name": "Tim Borowski",
   "birthYear": 1980,
   "nationality": "Germany",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 44
@@ -9547,8 +9579,8 @@
   "name": "Hakan Yakın",
   "birthYear": 1977,
   "nationality": "Switzerland",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 43
@@ -9667,8 +9699,8 @@
   "name": "Dennis Rommedahl",
   "birthYear": 1978,
   "nationality": "Denmark",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 43
@@ -9680,7 +9712,7 @@
   "birthYear": 1988,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 43
@@ -9860,10 +9892,11 @@
   "birthYear": 1986,
   "nationality": "Spain",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 43
+  "fame": 43,
+  "foot": "left"
  },
  {
   "id": "rl_Q2736254",
@@ -9981,8 +10014,8 @@
   "name": "Victor Anichebe",
   "birthYear": 1988,
   "nationality": "Nigeria",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 43
@@ -10018,7 +10051,7 @@
   "birthYear": 1983,
   "nationality": "France",
   "line": "DEF",
-  "position": "RB",
+  "position": "CB",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 43
@@ -10237,10 +10270,11 @@
   "birthYear": 1987,
   "nationality": "Germany",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 42
+  "fame": 42,
+  "foot": "left"
  },
  {
   "id": "rl_Q155884",
@@ -10249,10 +10283,11 @@
   "birthYear": 1972,
   "nationality": "Germany",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 42
+  "fame": 42,
+  "foot": "left"
  },
  {
   "id": "rl_Q168530",
@@ -10383,10 +10418,11 @@
   "birthYear": 1976,
   "nationality": "Argentina",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 42
+  "fame": 42,
+  "foot": "left"
  },
  {
   "id": "rl_Q234885",
@@ -10454,8 +10490,8 @@
   "name": "Hal Robson-Kanu",
   "birthYear": 1989,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 42
@@ -10479,10 +10515,11 @@
   "birthYear": 1987,
   "nationality": "Russia",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 42
+  "fame": 42,
+  "foot": "left"
  },
  {
   "id": "rl_Q270776",
@@ -10538,8 +10575,8 @@
   "name": "Brett Emerton",
   "birthYear": 1979,
   "nationality": "Australia",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 42
@@ -10586,8 +10623,8 @@
   "name": "Manuel Fernandes",
   "birthYear": 1986,
   "nationality": "Portugal",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 42
@@ -10623,10 +10660,11 @@
   "birthYear": 1986,
   "nationality": "Netherlands",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 42
+  "fame": 42,
+  "foot": "left"
  },
  {
   "id": "rl_Q311641",
@@ -10634,8 +10672,8 @@
   "name": "Denílson de Oliveira",
   "birthYear": 1977,
   "nationality": "Brazil",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    2002
@@ -10770,8 +10808,8 @@
   "name": "Franco Causio",
   "birthYear": 1949,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1982
@@ -10785,10 +10823,11 @@
   "birthYear": 1986,
   "nationality": "Austria",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 42
+  "fame": 42,
+  "foot": "left"
  },
  {
   "id": "rl_Q360765",
@@ -10846,8 +10885,8 @@
   "name": "Alessio Cerci",
   "birthYear": 1987,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 42
@@ -10931,10 +10970,11 @@
   "birthYear": 1989,
   "nationality": "Wales",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 41
+  "fame": 41,
+  "foot": "left"
  },
  {
   "id": "rl_Q1392235",
@@ -11016,8 +11056,8 @@
   "name": "Jóhann Berg Guðmundsson",
   "birthYear": 1990,
   "nationality": "Iceland",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 41
@@ -11077,10 +11117,11 @@
   "birthYear": 1979,
   "nationality": "Brazil",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 41
+  "fame": 41,
+  "foot": "left"
  },
  {
   "id": "rl_Q217038",
@@ -11128,10 +11169,11 @@
   "birthYear": 1987,
   "nationality": "Japan",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 41
+  "fame": 41,
+  "foot": "left"
  },
  {
   "id": "rl_Q292394",
@@ -11151,8 +11193,8 @@
   "name": "Dmitri Torbinski",
   "birthYear": 1984,
   "nationality": "Russia",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 41
@@ -11311,8 +11353,8 @@
   "name": "José Sosa",
   "birthYear": 1985,
   "nationality": "Argentina",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 41
@@ -11383,8 +11425,8 @@
   "name": "Vieirinha",
   "birthYear": 1986,
   "nationality": "Portugal",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 41
@@ -11615,8 +11657,8 @@
   "name": "Mubarak Wakaso",
   "birthYear": 1990,
   "nationality": "Ghana",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 41
@@ -11736,10 +11778,11 @@
   "birthYear": 1990,
   "nationality": "Germany",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [],
-  "fame": 40
+  "fame": 40,
+  "foot": "left"
  },
  {
   "id": "rl_Q158814",
@@ -11831,8 +11874,8 @@
   "name": "Valter Birsa",
   "birthYear": 1986,
   "nationality": "Slovenia",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 40
@@ -11939,8 +11982,8 @@
   "name": "Claudio López",
   "birthYear": 1974,
   "nationality": "Argentina",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [],
   "fame": 40
@@ -12193,8 +12236,8 @@
   "name": "Bruno Conti",
   "birthYear": 1955,
   "nationality": "Italy",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1982
@@ -12481,8 +12524,8 @@
   "name": "Daniel Bertoni",
   "birthYear": 1955,
   "nationality": "Argentina",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1978
@@ -12678,12 +12721,13 @@
   "birthYear": 1964,
   "nationality": "Brazil",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1994
   ],
-  "fame": 37
+  "fame": 37,
+  "foot": "left"
  },
  {
   "id": "rl_Q463460",
@@ -12819,8 +12863,8 @@
   "name": "René Houseman",
   "birthYear": 1953,
   "nationality": "Argentina",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1978
@@ -13017,12 +13061,13 @@
   "birthYear": 1955,
   "nationality": "Argentina",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1978
   ],
-  "fame": 34
+  "fame": 34,
+  "foot": "left"
  },
  {
   "id": "rl_Q505919",
@@ -13142,8 +13187,8 @@
   "name": "Paulo Sérgio",
   "birthYear": 1969,
   "nationality": "Brazil",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1994
@@ -13241,12 +13286,13 @@
   "birthYear": 1934,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1966
   ],
-  "fame": 31
+  "fame": 31,
+  "foot": "left"
  },
  {
   "id": "rl_Q438483",
@@ -13394,8 +13440,8 @@
   "name": "Bernard Diomède",
   "birthYear": 1974,
   "nationality": "France",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1998
@@ -13437,12 +13483,13 @@
   "birthYear": 1973,
   "nationality": "Brazil",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    2002
   ],
-  "fame": 29
+  "fame": 29,
+  "foot": "left"
  },
  {
   "id": "rl_Q516743",
@@ -13478,8 +13525,8 @@
   "name": "Oscar Ortiz",
   "birthYear": 1953,
   "nationality": "Argentina",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1978
@@ -13675,8 +13722,8 @@
   "name": "Víctor Rodríguez Andrade",
   "birthYear": 1927,
   "nationality": "Uruguay",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1950
@@ -13886,12 +13933,13 @@
   "birthYear": 1938,
   "nationality": "England",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1966
   ],
-  "fame": 27
+  "fame": 27,
+  "foot": "left"
  },
  {
   "id": "rl_Q2321775",
@@ -14165,8 +14213,8 @@
   "name": "John Connelly",
   "birthYear": 1938,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1966
@@ -14236,12 +14284,13 @@
   "birthYear": 1951,
   "nationality": "Brazil",
   "line": "DEF",
-  "position": "RB",
+  "position": "LB",
   "ballonDor": 0,
   "worldCups": [
    1970
   ],
-  "fame": 24
+  "fame": 24,
+  "foot": "left"
  },
  {
   "id": "rl_Q2447197",
@@ -14585,8 +14634,8 @@
   "name": "Terry Paine",
   "birthYear": 1939,
   "nationality": "England",
-  "line": "DEF",
-  "position": "RB",
+  "line": "MID",
+  "position": "RM",
   "ballonDor": 0,
   "worldCups": [
    1966

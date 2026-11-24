@@ -181,8 +181,11 @@ function positionOf(p: Person): { line: Line; position: string } | null {
   if (/(forward|striker|winger|centre-forward)/.test(all)) return { line: "FWD", position: /winger/.test(all) ? "RW" : "ST" };
   if (/(attacking midfielder|playmaker)/.test(all)) return { line: "MID", position: "CAM" };
   if (/(defensive midfielder)/.test(all)) return { line: "MID", position: "CDM" };
-  if (/(full-back|full back|wing-back|wing half)/.test(all)) return { line: "DEF", position: "RB" };
-  if (/(defender|centre-back|sweeper|libero)/.test(all)) return { line: "DEF", position: "CB" };
+  // "wing half" is how Wikidata labels most wingers (Figo, Giggs, Bale): a wide midfielder, never a full-back.
+  if (/(centre-back|sweeper|libero)/.test(all)) return { line: "DEF", position: "CB" };
+  if (/(full-back|full back|wing-back)/.test(all)) return { line: "DEF", position: "RB" };
+  if (/wing half/.test(all)) return { line: "MID", position: "RM" };
+  if (/defender/.test(all)) return { line: "DEF", position: "CB" };
   if (/midfielder/.test(all)) return { line: "MID", position: "CM" };
   return null;
 }
@@ -200,6 +203,15 @@ for (const p of people.values()) {
     id: `rl_${p.qid}`, wikidata: p.qid, name: p.name, birthYear: p.birthYear, nationality: nationality(p),
     line: pos.line, position: pos.position, ballonDor: p.ballonDor, worldCups: [...p.worldCups].sort(), fame: p.sitelinks,
   });
+}
+// Curated fixes (Wikidata only says "full-back"): position, line and foot by item.
+const corrections = JSON.parse(readFileSync("data_process/curated/legendCorrections.json", "utf8")) as Record<string, { position?: string; line?: string; foot?: string }>;
+for (const e of out as any[]) {
+  const c = corrections[e.wikidata];
+  if (!c) continue;
+  if (c.position) e.position = c.position;
+  if (c.line) e.line = c.line;
+  if (c.foot) e.foot = c.foot;
 }
 out.sort((a: any, b: any) => b.fame - a.fame || a.id.localeCompare(b.id));
 writeFileSync(OUT, JSON.stringify(out, null, 1) + "\n");
