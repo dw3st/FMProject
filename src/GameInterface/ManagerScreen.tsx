@@ -13,6 +13,7 @@ import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
 import { ProfileHero } from "@/GameInterface/Components/ProfileHero";
 import { StatStrip } from "@/GameInterface/Components/StatStrip";
 import { TrophyShelf, trophyKindOf } from "@/GameInterface/Components/TrophyShelf";
+import { TrophyGallery } from "@/GameInterface/Components/TrophyGallery";
 import { formatDay } from "@/GameInterface/Dashboard/HomeCards";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { Icon } from "@/GameInterface/Icons";
@@ -254,6 +255,8 @@ export function ManagerScreen({ managerId }: { managerId: string }) {
             )}
           </section>
         </div>
+
+        <TrophyGallery titles={data.titles} leagues={leagues} homeLeague={data.leagueSlug ?? null} />
 
         {data.isPlayer && session && <SeasonReportsSection saveId={session.saveId} leagues={leagues} />}
 

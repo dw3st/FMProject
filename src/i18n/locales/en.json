@@ -4490,7 +4490,12 @@
     "wageChange": "{{pct}}% on the current",
     "renewalCap": "Renewal: up to +{{pct}}% on the current wage",
     "renewalCapBreakout": "Renewal: up to +{{pct}}% on the current wage, because {{why}}",
-    "breakout": { "prodigy": "he became a prodigy", "form": "he is in great form", "top25": "he is in the world top 25", "award": "he won an individual award" },
+    "breakout": {
+      "prodigy": "he became a prodigy",
+      "form": "he is in great form",
+      "top25": "he is in the world top 25",
+      "award": "he won an individual award"
+    },
     "freeWait_one": "No club for {{count}} day: {{pct}}",
     "freeWait_other": "No club for {{count}} days: {{pct}}",
     "freeVeteran": "Veteran without a club: {{pct}}",
@@ -9454,5 +9459,12 @@
     "buy": "Buy",
     "stockHint": "Make puts the order on the workshop. The ? shows what each one is made of and where it is used.",
     "openMaterial": "Where it is used: {{name}}"
+  },
+  "trophyGallery": {
+    "title": "Trophy gallery",
+    "country": "Country",
+    "withTitles": "With titles",
+    "others": "Other countries",
+    "summary": "Titles in this country: {{count}}"
   }
 }

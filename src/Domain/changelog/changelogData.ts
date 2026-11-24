@@ -31,6 +31,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.34",
+    date: "2026-11-24",
+    time: "13:23",
+    items: [
+      { tab: "manager", pt: "Galeria de troféus na página do técnico: todas as divisões, a copa e as continentais de cada país, com os títulos que ele ganhou e os que faltam apagados.", en: "Trophy gallery on the manager page: every division, the cup and the continental cups of each country, with the titles he won and the missing ones greyed out." },
+    ],
+    fixes: [
+      { tab: "match", pt: "Com a troca manual na lesão, o painel de substituições já abre com a vaga do lesionado.", en: "With manual injury subs, the substitutions panel now opens with the injured player's slot already shown." },
+    ],
+  },
+  {
     version: "12.33",
     date: "2026-11-24",
     time: "13:00",
