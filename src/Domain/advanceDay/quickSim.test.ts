@@ -272,7 +272,8 @@ describe("quickSimMatch", () => {
       return goals / 1000;
     };
     if (C.LEVEL_EXPONENT < 0) expect(avgGoals(3)).toBeGreaterThan(avgGoals(7));
-    else expect(avgGoals(7)).toBeGreaterThan(avgGoals(3));
+    else if (C.LEVEL_EXPONENT > 0) expect(avgGoals(7)).toBeGreaterThan(avgGoals(3));
+    else expect(Math.abs(avgGoals(7) - avgGoals(3))).toBeLessThan(0.6); // pace and strength still move it a little
   });
 
   test("passes seguem o nível do próprio time: meio-campo fraco passa bem menos", () => {

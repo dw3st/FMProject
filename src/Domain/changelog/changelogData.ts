@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.34.1",
+    date: "2026-11-24",
+    time: "13:55",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Menos gols e chutes nas divisões mais fracas: jogador que finaliza mal chuta menos, e os placares de 5x4 ficaram raros.", en: "Fewer goals and shots in the weaker divisions: poor finishers shoot less, and 5-4 scores are rare again." },
+    ],
+  },
+  {
     version: "12.34",
     date: "2026-11-24",
     time: "13:23",

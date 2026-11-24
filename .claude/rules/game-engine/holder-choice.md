@@ -100,3 +100,10 @@ mouth, value = the role-compressed FM xG).
 `CAT_MULT` (pass, kick, turn, hold, carry) [1, 1, 2, 1.14, 1] → [1, 1, 2.3, 1.4, 0.95]: holder mix carry 38 / pass 42 /
 turn 10 / hold 9 / kick 0.8 (FM 44 / 34 / 12 / 9 / 1). Knife-edged: carry 0.92 drops carries to 33% and dribbles to a
 third. `HolderMoves.test.ts` keeps the stage-8 multipliers (a shield beats the lay-off at 1.4).
+
+## Finishing on the shot value (12.34.1)
+
+The weak leagues shot twice as often as the strong ones (Série C 25 shots and 4.3 goals a match, Premier 12 and 2.3):
+the shot value read only the geometry. It is now × (shootAccuracy / `FINISH_REF` 0.55)^`FINISH_POW` 1, within 0.35..1.25
+(`ShotGateConfig.ts`, `finishingShotMult`). 16 matches each (AI formations): Série C 5.2 → 3.0 goals, 34 → 22 shots;
+Premier 3.3 → 2.9, 29 → 26. The quickSim's `LEVEL_EXPONENT` went −0.97 → 0 to follow. A full recalibration is pending.

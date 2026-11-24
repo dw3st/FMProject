@@ -507,6 +507,13 @@ export function shotLevelMult(role: string, level = 0): number {
   return base * FM_NUMBERS.SHOT_LEVEL_STEP ** level;
 }
 
+/** A poor finisher values a shot less (`SHOT_GATE.FINISH_*`). */
+function finishingShotMult(player: GamePlayer): number {
+  const acc = player.runtimeStats.withBall.shootAccuracy;
+  const m = Math.pow(Math.max(0.01, acc) / SHOT_GATE.FINISH_REF, SHOT_GATE.FINISH_POW);
+  return Math.min(SHOT_GATE.FINISH_MAX, Math.max(SHOT_GATE.FINISH_MIN, m));
+}
+
 function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamIntent, allPlayers: GamePlayer[]): ActionScore {
   const goalX = player.attackDir === 1 ? PITCH_LENGTH : 0;
   const dist  = Math.abs(goalX - player.x);
@@ -534,7 +541,7 @@ function evalShoot(player: GamePlayer, opponents: GamePlayer[], intent: TeamInte
   if (DECISION_FLAGS.LONG_SHOTS && DECISION_FLAGS.FM_XG) {
     const factor = shotGateFactor(player.x, player.y, player.attackDir);
     const cleanXg = factor === null ? 0 : shotXg(player, allPlayers.filter(p => p.id === player.id || (p.role === 'GK' && p.team !== player.team)), 'ground').xg;
-    score = factor === null ? 0 : (shotCandidateValue(cleanXg, SHOT_GATE.XG_REF, factor) + intentBonus) * shotLevelMult(player.role);
+    score = factor === null ? 0 : (shotCandidateValue(cleanXg, SHOT_GATE.XG_REF, factor) + intentBonus) * shotLevelMult(player.role) * finishingShotMult(player);
     gate = { factor, cleanXg, distM: distToGoalCentreM(player.x, player.y, player.attackDir) };
   } else if (DECISION_FLAGS.SHOT_LIMIT) {
   // Shot limit (stage 4b, `fm-numbers.md`): no shot beyond SHOT_MAX_YD of the goal mouth; the shooting level of the

@@ -116,7 +116,7 @@ export const QUICK_SIM_CONFIG = {
    * xG × (matchLevel / LEVEL_REF)^LEVEL_EXPONENT. The full engine scores more between strong
    * teams than between weak ones at the same strength ratio. 0 disables.
    */
-  LEVEL_EXPONENT: -0.97,
+  LEVEL_EXPONENT: 0, // 2026-11-24: -0.97 → 0 (the engine no longer scores more between weak sides: shot value × finishing)
   /**
    * Floor of the match level in the level term. With the negative exponent of the 90-minute refit a
    * near-empty XI (level ~0.5) would multiply the goals ~9×; real XIs sit at 2.3 or more.

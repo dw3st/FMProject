@@ -37,6 +37,15 @@ export const SHOT_GATE = {
    */
   /** Stage 21: 1 / 0.36 → 1.6 (the shot volume; lower values remove the long shots first: 1.3 → 16% outside the box). */
   KICK_MULT: 1.5, // R9 round: 1.6 → 1.5
+  /**
+   * The shooter's finishing scales the shot value: × (shootAccuracy / FINISH_REF)^FINISH_POW, within FINISH_MIN..MAX.
+   * 2026-11-24: weak leagues shot twice as often as strong ones (Série C 25 shots a match, Premier 12) and scored more
+   * (4.3 against 2.3): the value read only the geometry, so a poor finisher shot as eagerly as a good one.
+   */
+  FINISH_REF: 0.55,
+  FINISH_POW: 1,
+  FINISH_MIN: 0.35,
+  FINISH_MAX: 1.25,
   /** Share of the holder's decisions with the shot among his options (1 = every decision; a one-on-one always). */
   LOOK_CHANCE: 1,
   /** The chip (holder move) only over a keeper this far off his line (yd) — FM's keeper stays on it (R8 §2.2). */
