@@ -449,10 +449,20 @@
     "note": "12.26",
     "on": "2026-11-19"
   },
+  "180369a8": {
+    "status": "done",
+    "note": "12.42.1",
+    "on": "2026-11-25"
+  },
   "1982afbf": {
     "status": "done",
     "note": "triado antes de 16/11",
     "on": "2026-11-17"
+  },
+  "19b2ba9b": {
+    "status": "done",
+    "note": "12.42.1",
+    "on": "2026-11-25"
   },
   "19df4038": {
     "status": "done",
@@ -2169,6 +2179,11 @@
     "note": "12.38",
     "on": "2026-11-24"
   },
+  "978d03db": {
+    "status": "done",
+    "note": "12.42.1",
+    "on": "2026-11-25"
+  },
   "98a42d6a": {
     "status": "done",
     "note": "triado antes de 16/11",
@@ -3518,6 +3533,11 @@
     "status": "done",
     "note": "triado antes de 16/11",
     "on": "2026-11-17"
+  },
+  "fc0f1124": {
+    "status": "done",
+    "note": "12.42.1",
+    "on": "2026-11-25"
   },
   "fc7834b9": {
     "status": "done",
