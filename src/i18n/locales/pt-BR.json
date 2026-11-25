@@ -2758,7 +2758,8 @@
       "subject": {
         "offer": "Proposta: {{club}}",
         "hired": "Novo clube: {{club}}",
-        "application_refused": "{{club}} recusou sua candidatura"
+        "application_refused": "{{club}} recusou sua candidatura",
+        "founded": "Clube fundado: {{club}}"
       },
       "offer": "O {{club}} ({{league}}) quer você como técnico.",
       "hired": "Você é o novo técnico do {{club}} ({{league}}). A diretoria definiu a meta da temporada.",
@@ -3991,6 +3992,7 @@
       "transferIn": "Taxa de transferência recebida de {{club}}",
       "transferOut": "Taxa de transferência paga a {{club}}",
       "boardBonus": "Bônus da diretoria",
+      "presidentDeposit": "Aporte do presidente",
       "clubLeave": "Saldo deixado no {{club}}",
       "clubArrive": "Chegada ao {{club}}",
       "sellOnIn": "Cláusula de venda: {{player}} ({{club}})",
@@ -9944,6 +9946,101 @@
       "sameLevel": "O clube é do mesmo nível que o seu.",
       "wrongSide": "O nível do clube não serve para essa parceria.",
       "human": "Esse clube tem técnico humano."
+    }
+  },
+  "ownClub": {
+    "president": "Presidente",
+    "foundedByYou": "Fundado por você",
+    "card": {
+      "title": "Fundar seu clube",
+      "locked": "Desbloqueie todas as conquistas: {{done}} de {{total}}",
+      "unlocked": "Você tem todas as conquistas. Escolha um clube da última divisão e dê a ele um nome novo.",
+      "found": "Fundar seu clube",
+      "founded": "Você já fundou o seu clube.",
+      "foundedNamed": "Você fundou o {{club}}."
+    },
+    "wizard": {
+      "title": "Fundar seu clube",
+      "stepOf": "Passo {{n}} de {{total}}",
+      "steps": {
+        "country": "País",
+        "club": "Clube",
+        "identity": "Identidade",
+        "confirm": "Confirmação"
+      },
+      "countryHint": "O clube nasce na última divisão do país.",
+      "clubHint": "Escolha o clube que vai virar o seu. A vaga na tabela e os jogos ficam.",
+      "blocked": {
+        "humanClub": "Outro técnico",
+        "founded": "Este clube já foi fundado por outro técnico",
+        "continental": "Em competição continental"
+      },
+      "name": "Nome do clube",
+      "shortName": "Sigla (3 letras)",
+      "color1": "Cor principal",
+      "color2": "Segunda cor",
+      "preview": "Escudo",
+      "invalid": {
+        "name": "O nome precisa ter de {{min}} a {{max}} letras, sem espaço nas pontas.",
+        "shortName": "A sigla precisa ter 3 letras.",
+        "colors": "As duas cores precisam ser diferentes."
+      },
+      "replaces": "No lugar do {{club}} · {{country}}",
+      "confirm": {
+        "leave": "Você sai do clube atual, sem multa.",
+        "squad": "O elenco e a base do clube escolhido saem.",
+        "players": "Chegam {{count}} jogadores novos, mais fracos que os da divisão.",
+        "president": "Você é técnico e presidente: sem diretoria, sem demissão.",
+        "once": "Só dá para fundar um clube por carreira."
+      },
+      "cancel": "Cancelar",
+      "back": "Voltar",
+      "next": "Continuar",
+      "submit": "Fundar o clube",
+      "founding": "Fundando..."
+    },
+    "errors": {
+      "generic": "Não deu certo. Tente de novo.",
+      "locked": "Faltam conquistas para fundar o clube.",
+      "alreadyFounded": "Você já fundou um clube nesta carreira.",
+      "humanClub": "Esse clube tem outro técnico.",
+      "alreadyFoundedClub": "Outro técnico já fundou este clube.",
+      "continental": "Esse clube está numa competição continental.",
+      "notFound": "Esse clube não existe mais.",
+      "notLowest": "Esse clube não está na última divisão.",
+      "invalidIdentity": "Confira o nome, a sigla e as cores.",
+      "lobby": "A liga ainda não começou.",
+      "noClub": "Você está sem clube.",
+      "notPresident": "Só o presidente pode fazer isso.",
+      "invalidPrice": "Preço fora do limite.",
+      "invalidAmount": "Valor inválido.",
+      "noMoney": "Você não tem esse dinheiro.",
+      "invalidWage": "Salário fora do limite."
+    },
+    "ticket": {
+      "label": "Preço do ingresso",
+      "down": "Baixar o preço",
+      "up": "Subir o preço",
+      "attendance": "Público por jogo",
+      "gate": "Bilheteria por jogo",
+      "hint": "Ingresso mais caro rende mais por torcedor, mas vem menos gente."
+    },
+    "money": {
+      "title": "Dinheiro do presidente",
+      "wallet": "Sua carteira",
+      "deposit": "Aportar no clube",
+      "depositButton": "Aportar",
+      "depositHint": "Mínimo de {{min}}. O dinheiro sai da sua carteira e não volta.",
+      "deposited": "{{amount}} entraram no caixa do clube.",
+      "wage": "Seu salário por semana",
+      "wageButton": "Salvar",
+      "wageHint": "Hoje {{wage}}. Teto pela sua reputação: {{cap}}.",
+      "wageSaved": "Seu salário agora é {{wage}}."
+    },
+    "inbox": {
+      "subject": "Você fundou o {{club}}",
+      "body": "O {{club}} ({{league}}) é seu: você é o técnico e o presidente. O elenco novo já chegou.",
+      "open": "Ver o elenco do {{club}}"
     }
   }
 }

@@ -58,7 +58,7 @@ describe("renewal negotiation route", () => {
     expect(signed.data.status).toBe("renewed");
     const after = (await saveService.getSeatMeta(saveId, seatId))!;
     expect(after.managerContract!.wage).toBe(wage);
-    expect(after.managerContract!.until > until).toBe(true);
+    expect(after.managerContract!.until! > until!).toBe(true);
     expect(after.managerRenewal).toBeUndefined();
     expect((await post({ wage, seasons: 1 })).status).toBe(409);
   }, 60_000);

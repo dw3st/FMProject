@@ -191,7 +191,7 @@ async function facilitiesView(h: Human) {
     facilities: f,
     capacity: totalSeats(f),
     effectiveCapacity: effectiveCapacity(f),
-    priceMult: comfortPriceMult(f),
+    priceMult: comfortPriceMult(f) * (h.squad.ticketPriceMult ?? 1),
     /** Group levels 1..5 derived from the items (fractional: the mean of the item levels / 2). */
     levels,
     /** Implied level 1..5 of the club's tier (the academy and the physio's level count against it). */
@@ -210,6 +210,7 @@ async function facilitiesView(h: Human) {
       followers: h.squad.finances?.followers ?? 0,
       tier: await leagueTierOf(h.ref.leagueSlug),
       fans: h.meta.board?.fans ?? BOARD_FANS.START,
+      ...(h.squad.ticketPriceMult ? { priceMult: h.squad.ticketPriceMult } : {}),
     },
     season: state ? { start: state.start, end: state.end } : null,
     /** The ground as the live match draws it (tester report): its name, shape and each stand's depth by its seats. */

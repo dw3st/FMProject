@@ -37,7 +37,7 @@ export function slotRequestState(squad: Squad, role: StaffRole, date: string): S
  * and a balance of zero or more (the role gets one extra place, at most `MAX_EXTRA` over the tier limit); refused
  * otherwise, and the role waits `COOLDOWN_DAYS`. `cooldown` and `notFull` never touch the record.
  */
-export function decideSlotRequest(input: { squad: Squad; role: StaffRole; date: string; board: number | undefined }):
+export function decideSlotRequest(input: { squad: Squad; role: StaffRole; date: string; board: number | undefined; president?: boolean }):
   { approved: true; staff: StaffRecord; extra: number } | { approved: false; reason: SlotRefusal; staff?: StaffRecord } {
   const { squad, role, date } = input;
   const staff: StaffRecord = squad.staff ?? { members: [] };
@@ -47,8 +47,10 @@ export function decideSlotRequest(input: { squad: Squad; role: StaffRole; date: 
     approved: false as const, reason, staff: { ...staff, slotRefusedOn: { ...staff.slotRefusedOn, [role]: date } },
   });
   if (state.blocked === "max_reached") return refuse("max_reached");
-  if (input.board === undefined || input.board < STAFF.SLOT_REQUEST.MIN_BOARD) return refuse("board_low");
-  if ((squad.finances?.budget ?? 0) < 0) return refuse("negative_balance");
+  if (!input.president) {
+    if (input.board === undefined || input.board < STAFF.SLOT_REQUEST.MIN_BOARD) return refuse("board_low");
+    if ((squad.finances?.budget ?? 0) < 0) return refuse("negative_balance");
+  }
   const extra = state.extra + 1;
   return { approved: true, extra, staff: { ...staff, extraSlots: { ...staff.extraSlots, [role]: extra } } };
 }

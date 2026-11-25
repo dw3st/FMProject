@@ -19,6 +19,7 @@ import { openTotal } from "@/Domain/bets/bets";
 import { renewedContract, severanceOf } from "@/Domain/staff/staffContracts";
 import { POOL_PAGE, returnToPool, searchPool, takeFromPool, isStaffPoolSort, type StaffPoolQuery } from "@/Domain/staff/staffPool";
 import { STAFF } from "@/Domain/staff/staffConfig";
+import { isPresident } from "@/Domain/ownClub/ownClub";
 import { decideSlotRequest, slotRequestState } from "@/Domain/staff/slotRequest";
 import {
   COACH_AREAS, STAFF_ROLES, isCoachArea, isStaffRole, type CoachArea, type StaffMember, type StaffRecord, type StaffRole,
@@ -381,7 +382,7 @@ export const staffRoutes = {
     return withSaveLock(saveId, async () => {
       const h = await human(saveId, auth.seatId);
       if (h instanceof Response) return h;
-      const answer = decideSlotRequest({ squad: h.squad, role, date: h.date, board: h.meta.board?.board });
+      const answer = decideSlotRequest({ squad: h.squad, role, date: h.date, board: h.meta.board?.board, president: isPresident(h.squad, auth.seatId) });
       const next: Squad = answer.staff ? { ...h.squad, staff: answer.staff } : h.squad;
       if (answer.staff) await saveService.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       if (!answer.approved) {

@@ -1420,6 +1420,19 @@ function JobBody({
   const { t, i18n } = useTranslation();
   const { session, save, currentDate, refresh } = useGameSave();
   const league = competitionName(message.leagueSlug, leagues, i18n.language) || message.leagueName;
+  if (message.kind === "founded") {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-foreground m-0">{t("ownClub.inbox.body", { club: message.clubName, league })}</p>
+        <a
+          href={`/squad/${encodeURIComponent(message.leagueSlug)}/${encodeURIComponent(message.squadId)}`}
+          className="text-sm font-semibold text-primary no-underline hover:underline self-start"
+        >
+          {t("ownClub.inbox.open", { club: message.clubName })}
+        </a>
+      </div>
+    );
+  }
   if (message.kind === "hired" || message.kind === "application_refused") {
     return <p className="text-sm text-foreground m-0">{t(`inbox.job.${message.kind}`, { club: message.clubName, league })}</p>;
   }

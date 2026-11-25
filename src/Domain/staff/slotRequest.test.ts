@@ -38,4 +38,10 @@ describe("board slot request", () => {
     expect(slotRequestState(room, "medic", DATE)).toMatchObject({ canAsk: false, blocked: "notFull" });
     expect(decideSlotRequest({ squad: room, role: "medic", date: DATE, board: 90 })).toEqual({ approved: false, reason: "notFull" });
   });
+  test("the club's president needs no board and no balance", () => {
+    const squad = squadWith({ members: [medic("m1")] }, -5);
+    expect(decideSlotRequest({ squad, role: "medic", date: DATE, board: 10, president: true })).toMatchObject({ approved: true, extra: 1 });
+    const full = squadWith({ members: [medic("a"), medic("b"), medic("c")], extraSlots: { medic: 2 } }, -5);
+    expect(decideSlotRequest({ squad: full, role: "medic", date: DATE, board: 10, president: true })).toMatchObject({ approved: false, reason: "max_reached" });
+  });
 });

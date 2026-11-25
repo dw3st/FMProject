@@ -2,6 +2,7 @@ import type { SaveService, SeatMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
+import { isPresident } from "@/Domain/ownClub/ownClub";
 import { isDerby } from "@/Domain/boardFans/boardFans";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
@@ -134,7 +135,11 @@ export async function pressDay(input: PressDayInput): Promise<PressDayResult> {
 
   // 3. Rollover: the objective promise; a promise tied to last season's game has nothing left to resolve.
   if (input.rollover) {
-    const r = resolveObjectivePromise(state, board, input.rollover.objectiveMet);
+    // The president has no board objective: an objective promise is dropped, never judged.
+    const president = isPresident(await service.getSquadById(saveId, clubId), input.meta.seatId);
+    const r = president
+      ? { state: { ...state, promises: state.promises.filter((p) => p.kind !== "objective") }, board, outcomes: [] as PromiseOutcome[] }
+      : resolveObjectivePromise(state, board, input.rollover.objectiveMet);
     state = { ...r.state, promises: r.state.promises.filter((p) => p.kind === "objective" || !p.fixtureId) };
     board = r.board;
     promiseNews(r.outcomes);

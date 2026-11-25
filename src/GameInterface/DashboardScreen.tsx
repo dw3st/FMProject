@@ -380,6 +380,7 @@ export function DashboardScreen() {
         budget={balance}
         squadSize={players.length}
         squadHref={squadHref}
+        founded={!!session.seatId && squad?.foundedBy?.seatId === session.seatId}
       />}
 
       <div className="grid gap-6 lg:grid-cols-2">

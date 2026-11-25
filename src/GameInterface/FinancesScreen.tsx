@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { PresidentMoneyPanel } from "@/GameInterface/OwnClub/PresidentMoneyPanel";
 import { useTranslation } from "react-i18next";
 import { ScreenTitle } from "@/GameInterface/ui/ScreenTitle";
 import { ScreenContainer } from "@/GameInterface/ui/ScreenContainer";
@@ -241,6 +242,10 @@ export function FinancesScreen() {
               <p className="text-sm text-muted-foreground mt-0.5 m-0">{t("finances.warnings.negativeBudget")}</p>
             </div>
           </div>
+        )}
+
+        {tab === "summary" && (
+          <PresidentMoneyPanel saveId={session.saveId} onChanged={() => { void refresh({ background: true }); setLedgerVersion((v) => v + 1); }} />
         )}
 
         {tab === "summary" && (ledger ? (

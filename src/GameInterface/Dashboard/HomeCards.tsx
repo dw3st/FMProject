@@ -186,7 +186,10 @@ export function ClubCard({
   squadSize,
   squadHref,
   achievements = null,
+  founded = false,
 }: {
+  /** The manager founded this club and is its president (`own-club.md`): no board, a badge in its place. */
+  founded?: boolean;
   /** The manager's profile items and the achievements count (`achievements.md`); null while loading. */
   achievements?: ClubCardAchievements | null;
   club: MatchSide;
@@ -206,7 +209,7 @@ export function ClubCard({
   /** Pending job offers. */
   pendingOffers: number;
   /** The manager's contract (Etapa 25): until / weekly wage. */
-  contract?: { until: string; wage: number } | null;
+  contract?: { until?: string; wage: number } | null;
   board: number;
   fans: number;
   /** Change vs. 7 days ago (null without enough history). */
@@ -269,7 +272,9 @@ export function ClubCard({
             )}
             {contract && (
               <span className="text-sm text-muted-foreground tabular-nums truncate">
-                {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
+                {contract.until
+                  ? t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })
+                  : `${t("ownClub.president")} · ${formatWageShort(contract.wage)}`}
               </span>
             )}
             <nav aria-label={t("achievements.link")} className="flex flex-wrap gap-2 mt-1.5">
@@ -292,7 +297,14 @@ export function ClubCard({
         </div>
 
         <div className="flex flex-col justify-center gap-3 min-w-0 lg:self-stretch lg:border-l lg:border-border lg:pl-6">
-          <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} trend={boardTrend} />
+          {founded ? (
+            <span className="inline-flex items-center gap-2 self-start h-8 px-3 rounded-md border border-primary/60 bg-primary/10 font-display font-bold uppercase tracking-[0.08em] text-sm text-primary">
+              <Icon name="building" size={16} />
+              {t("ownClub.foundedByYou")}
+            </span>
+          ) : (
+            <ConfidenceBar label={t("dashboard.clubSidebar.board")} value={board} trend={boardTrend} />
+          )}
           <ConfidenceBar label={t("dashboard.clubSidebar.fans")} value={fans} trend={fansTrend} />
           {objective && (
             <p className="text-sm text-muted-foreground m-0 truncate" title={objectiveText(objective, t)}>

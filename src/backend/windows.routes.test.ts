@@ -136,7 +136,7 @@ describe("transfer windows, pre-contracts and the manager contract (routes)", ()
     const ok = await post(true);
     expect(ok.status).toBe(200);
     const after = (await saveService.getSeatMeta(saveId, meta.seatId))!;
-    expect(after.managerContract!.until > until).toBe(true);
+    expect(after.managerContract!.until! > until).toBe(true);
     expect(after.managerContract!.wage).toBe(body.contract.wage + 1000);
     expect(after.managerRenewal).toBeUndefined();
     expect((await post(true)).status).toBe(409);

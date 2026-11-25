@@ -5,6 +5,7 @@ import { recordMoney } from "@/backend/FinancialService";
 import { withSaveLock } from "@/backend/saveLock";
 import { SaveService } from "@/backend/SaveService";
 import { ledgerSeason } from "@/backend/staffRoutes";
+import { isPresident } from "@/Domain/ownClub/ownClub";
 import { applyBankLoan } from "@/Domain/boardFans/boardFans";
 import { bankLoanRefusal, newBankLoan, withBankLoanPayment } from "@/Domain/finance/bankLoan";
 
@@ -54,7 +55,8 @@ export const bankLoanRoutes = {
       const ref = await service.resolveSquadId(saveId, meta.clubId);
       const squad = ref ? await service.getSquad(saveId, ref.leagueSlug, ref.clubSlug) : null;
       if (!ref || !squad) return Response.json({ error: "noClub" }, { status: 409 });
-      const refusal = bankLoanRefusal(squad, meta.board?.board, body.amount, body.seasons);
+      const president = isPresident(squad, auth.seatId);
+      const refusal = bankLoanRefusal(squad, meta.board?.board, body.amount, body.seasons, president);
       if (refusal) return Response.json({ error: refusal }, { status: refusal === "loanActive" || refusal === "boardLow" ? 409 : 400 });
       const amount = body.amount as number;
       const date = meta.currentDate ?? "";
@@ -63,7 +65,7 @@ export const bankLoanRoutes = {
       await recordMoney(service, saveId, await ledgerSeason(service, saveId, ref.leagueSlug, date), ref, {
         date, kind: "loan_in", amount, label: "Bank loan",
       }, auth.seatId);
-      if (meta.board) await service.updateSeat(saveId, auth.seatId, { board: applyBankLoan(meta.board) });
+      if (meta.board && !president) await service.updateSeat(saveId, auth.seatId, { board: applyBankLoan(meta.board) });
       await buffer.flush();
       return Response.json({ loan: bankLoan });
     });
