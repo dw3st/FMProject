@@ -77,6 +77,10 @@ export interface DisplayPlayer {
   nationality: string;
   /** The player's own nationality only (no club-country fallback); "" when unknown. */
   ownNationality?: string;
+  /** A second nationality won by naturalization (`.claude/rules/game/naturalization.md`). */
+  secondNationality?: string;
+  /** Last day of a naturalization in progress. */
+  naturalizationUntil?: string;
   /**
    * Scout rows of players outside the user's own squad: the overall shown as a range when the
    * chief scout's uncertainty is large (`seenOverallRange`, `src/Domain/scouting/seen.ts`). Absent = exact.
@@ -199,6 +203,8 @@ export function toDisplayPlayer(
     valueMillions: domain.valueMillions,
     nationality: nat,
     ownNationality: (player.nationality && String(player.nationality).trim()) || "",
+    ...(player.secondNationality ? { secondNationality: player.secondNationality } : {}),
+    ...(player.naturalization ? { naturalizationUntil: player.naturalization.until } : {}),
     appearances: log?.appearances ?? 0,
     goals: log?.goals ?? 0,
     assists: log?.assists ?? 0,

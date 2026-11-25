@@ -26,6 +26,7 @@ import { seenAttributeRange } from "@/Domain/scouting/seen";
 import { FactCard, type IdentityFact } from "@/GameInterface/Components/FactCard";
 import { Flag } from "@/GameInterface/Components/Flag";
 import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { formatGameDate } from "@/GameInterface/formatDate";
 import { formatEuros, monthlyFromWeekly } from "@/Domain/money";
 import { formatBirthDate } from "@/GameInterface/playerIdentity";
 
@@ -193,10 +194,19 @@ export function PlayerCard({
               {nameBadge}
             </h2>
             <p className="text-sm text-muted-foreground mt-1 m-0">{player.club}</p>
+            {player.naturalizationUntil && (
+              <p className="text-sm text-muted-foreground mt-1 m-0">
+                {t("naturalization.inProgress", { date: formatGameDate(player.naturalizationUntil, i18n.language) })}
+              </p>
+            )}
             <div className="flex flex-wrap items-stretch justify-center sm:justify-start gap-2 mt-3">
               {player.ownNationality && (
-                <FactCard label={t("playerScreen.facts.nationality")} title={player.ownNationality}>
+                <FactCard
+                  label={t("playerScreen.facts.nationality")}
+                  title={player.secondNationality ? `${player.ownNationality} · ${player.secondNationality}` : player.ownNationality}
+                >
                   {nationalityFlagCode(player.ownNationality) && <Flag code={nationalityFlagCode(player.ownNationality)!} />}
+                  {player.secondNationality && nationalityFlagCode(player.secondNationality) && <Flag code={nationalityFlagCode(player.secondNationality)!} />}
                   <span className="truncate max-w-[160px]">{player.ownNationality}</span>
                 </FactCard>
               )}

@@ -41,7 +41,7 @@ import { TalkModal } from "@/GameInterface/Morale/TalkModal";
 import { navigate } from "@/GameInterface/router/navigation";
 import { TerminateButton } from "@/GameInterface/Contracts/TerminateButton";
 
-type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; renewDue: boolean; renewBlock: RenewBlock | null };
+type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; flagCode2?: string; renewDue: boolean; renewBlock: RenewBlock | null };
 /** Why the renew slot is dimmed on a row of the own squad (tester report: every row shows the same slots). */
 type RenewBlock = "loanedIn" | "tooOld" | "cooldown" | "notDue";
 
@@ -144,6 +144,7 @@ export function SquadRosterTable({
       clubSlug,
       morale: moraleOf(p),
       flagCode: nationalityFlagCode(p.nationality),
+      flagCode2: p.secondNationality ? nationalityFlagCode(p.secondNationality) : undefined,
       renewDue: showMorale && !!currentDate && contractRenewalDue(p, currentDate),
       renewBlock: !showMorale || !currentDate || contractRenewalDue(p, currentDate) ? null
         : p.loan ? "loanedIn"
@@ -286,6 +287,11 @@ export function SquadRosterTable({
               {player.flagCode && (
                 <span title={player.ownNationality} aria-label={player.ownNationality} role="img" className="mr-2 inline-flex align-middle">
                   <Flag code={player.flagCode} />
+                </span>
+              )}
+              {player.flagCode2 && (
+                <span title={player.secondNationality} aria-label={player.secondNationality} role="img" className="mr-2 inline-flex align-middle">
+                  <Flag code={player.flagCode2} />
                 </span>
               )}
               <a

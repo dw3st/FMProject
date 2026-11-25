@@ -4987,6 +4987,7 @@
   },
   "negotiation": {
     "loanRenewal": {
+      "perWeek": "{{amount}}/week",
       "offered": "Renewal offered",
       "closed": "This offer is closed.",
       "renewed": "Loan renewed.",
@@ -10056,6 +10057,24 @@
       "subject": "You founded {{club}}",
       "body": "{{club}} ({{league}}) is yours: you are the manager and the president. The new squad has arrived.",
       "open": "See the {{club}} squad"
+    }
+  },
+  "naturalization": {
+    "inProgress": "Naturalization in progress until {{date}}",
+    "inbox": {
+      "subject": {
+        "naturalization": "{{player}} wants {{country}} nationality",
+        "naturalized": "{{player}} has {{country}} nationality"
+      },
+      "ask": "{{player}} has asked for {{country}} nationality. With your support the process starts now and takes three to six months. He keeps his current nationality.",
+      "deadline": "Answer by {{date}}. No answer counts as support.",
+      "support": "Support",
+      "refuse": "Do not support",
+      "supported": "You backed him. The process has started.",
+      "refused": "You did not back him. He will not ask again this season.",
+      "closed": "This request is closed.",
+      "error": "Could not send the answer. Try again.",
+      "done": "{{player}} now also has {{country}} nationality. He counts as a home player and can be called up by {{country}} until he plays for one national team."
     }
   }
 }

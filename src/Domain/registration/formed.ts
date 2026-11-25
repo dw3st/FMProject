@@ -19,8 +19,21 @@ export interface FormedCtx {
 
 const startYear = (season: string) => parseInt(season.slice(0, 4), 10);
 
+/**
+ * The player's nations as the rules read them: his nationality and the second one won by naturalization
+ * (`.claude/rules/game/naturalization.md`). Empty when both are unknown.
+ */
+export function nationsOf(p: Pick<RosterPlayer, "nationality" | "secondNationality">): string[] {
+  const out: string[] = [];
+  for (const raw of [p.nationality, p.secondNationality]) {
+    const n = normalizeNation(raw);
+    if (n && !out.includes(n)) out.push(n);
+  }
+  return out;
+}
+
 /** Distinct seasons of `history` in which the player was ≤ FORMED_MAX_AGE at a club accepted by `atClub`. */
-function formativeSeasons(p: RosterPlayer, ctx: FormedCtx, atClub: (row: PlayerHistoryRow) => boolean): number {
+export function formativeSeasons(p: RosterPlayer, ctx: FormedCtx, atClub: (row: PlayerHistoryRow) => boolean): number {
   const seasons = new Set<string>();
   for (const r of p.history ?? []) {
     const y = startYear(r.season);
@@ -44,8 +57,8 @@ export function domesticNations(rule: RegistrationRule | undefined, country: str
 
 /** Trained in the country: domestic (or unknown) nation, or ≥ 3 seasons at clubs of the country up to 21. */
 export function nationTrained(p: RosterPlayer, country: string, ctx: FormedCtx, extra: string[]): boolean {
-  const n = normalizeNation(p.nationality);
-  if (!n || n === country || extra.includes(n)) return true;
+  const ns = nationsOf(p);
+  if (ns.length === 0 || ns.some((n) => n === country || extra.includes(n))) return true;
   return formativeSeasons(p, ctx, (r) => ctx.countryOfLeague(r.league) === country) >= FORMED_SEASONS;
 }
 
@@ -93,20 +106,27 @@ export function hasGreenCard(p: RosterPlayer, holder?: ForeignHolder): boolean {
 
 /** Foreign by nationality alone (and the nonEU exemptions), before any green card. */
 export function foreignByNation(p: RosterPlayer, rule: RegistrationRule, country: string): boolean {
-  const n = normalizeNation(p.nationality);
-  if (!n) return false;
+  const ns = nationsOf(p);
+  if (ns.length === 0) return false;
+  // Foreign only when every nation he holds is (a naturalized player is domestic by the second one).
+  return ns.every((n) => nationForeign(n, p.age, rule, country));
+}
+
+function nationForeign(n: string, age: number, rule: RegistrationRule, country: string): boolean {
   if (domesticNations(rule, country).includes(n)) return false;
   if (rule.foreign === "nonEU") {
     if (inGroup(n, "EU")) return false;
-    if ((rule.exempt ?? []).some((g) => inGroup(n, g) && (g !== "ibero" || p.age >= IBERO_PASSPORT_MIN_AGE))) return false;
+    if ((rule.exempt ?? []).some((g) => inGroup(n, g) && (g !== "ibero" || age >= IBERO_PASSPORT_MIN_AGE))) return false;
   }
   return true;
 }
 
 /** Why a player counts (or not) as foreign under a rule (`ForeignBasis`). Null: domestic or EU, nothing to explain. */
 export function foreignBasis(p: RosterPlayer, rule: RegistrationRule, country: string, holder?: ForeignHolder): ForeignBasis | null {
-  const n = normalizeNation(p.nationality);
-  if (!n || domesticNations(rule, country).includes(n)) return null;
+  const ns = nationsOf(p);
+  if (ns.length === 0 || ns.some((x) => domesticNations(rule, country).includes(x))) return null;
+  // The nation that explains him best: the second one when it already makes him domestic or exempt.
+  const n = ns.find((x) => !nationForeign(x, p.age, rule, country)) ?? ns[0]!;
   if (rule.foreign === "nonEU") {
     if (inGroup(n, "EU")) return null;
     for (const g of rule.exempt ?? []) {

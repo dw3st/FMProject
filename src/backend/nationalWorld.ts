@@ -11,6 +11,7 @@ import { addDays, daysBetween } from "@/Domain/dates";
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { overallAvg } from "@/Domain/playerRating";
 import { NATION_CONFED, normalizeNation } from "@/Domain/registration/nations";
+import { candidateNations } from "@/Domain/naturalization/naturalization";
 import { quickSimMatch, xiLevel } from "@/Domain/advanceDay/quickSim";
 import { slotRoles } from "@/Domain/advanceDay/matchSimulationLineups";
 import { formationForSimId } from "@/Domain/matchFormations";
@@ -26,7 +27,7 @@ import {
 } from "@/Domain/national/competitions";
 import { eloAfterMatch, initialPoints, rankTeams, type EloMatchKind } from "@/Domain/national/elo";
 import {
-  NATIONAL_SQUAD, asNationalPlayer, callableCandidates, fillerLevel, isGeneratedNationalId, lineOf, missingByLine,
+  NATIONAL_SQUAD, asNationalPlayer, callableCandidates, keepBestNation, fillerLevel, isGeneratedNationalId, lineOf, missingByLine,
   nationalFillers, nationalLineup, pickCallUp, squadLevel, type NationCandidate,
 } from "@/Domain/national/nationalSquad";
 import {
@@ -70,18 +71,20 @@ const MAIN_LINES: MainRole[] = ["GK", "Defender", "Midfielder", "Forward"];
 /** Squad players of every club by normalized nation (academy and free agents never). */
 export async function nationPool(index: SquadIndex, squadOf: (id: string) => Promise<Squad | null>): Promise<Map<string, NationCandidate[]>> {
   const out = new Map<string, NationCandidate[]>();
+  const dual = new Map<string, string[]>();
   for (const league of index.leagues()) {
     for (const t of index.inLeague(league)) {
       const squad = await squadOf(t.squadId);
       if (!squad) continue;
       for (const p of squad.players) {
-        const n = normalizeNation(p.nationality);
-        if (!n || !NATION_CONFED[n]) continue;
-        (out.get(n) ?? out.set(n, []).get(n)!).push({ player: p, squadId: squad.id });
+        // His nationality and a second one won by naturalization, until a cap ties him (`naturalization.md`).
+        const nations = candidateNations(p).filter((n) => !!NATION_CONFED[n]);
+        for (const n of nations) (out.get(n) ?? out.set(n, []).get(n)!).push({ player: p, squadId: squad.id });
+        if (nations.length > 1) dual.set(p.id, nations);
       }
     }
   }
-  return out;
+  return keepBestNation(out, dual);
 }
 
 /**

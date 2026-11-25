@@ -69,6 +69,7 @@ const KIND_TOPIC: Record<string, InboxTopic> = {
   "transfer:seat_offer": "actions",
   "season:negative_balance": "actions",
   "player:mentality": "development",
+  "player:naturalized": "development",
   "retirement:reborn": "actions",
   "national_coach:offer": "actions",
   "national_coach:callup_soon": "actions",

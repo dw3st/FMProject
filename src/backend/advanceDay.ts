@@ -143,7 +143,9 @@ import { liveBids } from "@/Domain/negotiation/bids";
 import { expireSeatOffers, nudgeSeats, type SeatNudges } from "@/backend/seatOfferWorld";
 import { dropNeverPlayed, freeAgentTick, idleVeterans, pruneFreeAgents, refillSquad, toFreeAgent, trimSquadToCap } from "@/Domain/contracts/freeAgents";
 import { defaultSeasonEnd } from "@/Domain/contracts/contracts";
-import { ensureNationalWorld, playNationalDay } from "@/backend/nationalWorld";
+import { ensureNationalWorld, nationPool, playNationalDay } from "@/backend/nationalWorld";
+import { clubCountryOf, expireAsks, naturalizationRollover, squadNaturalizationDay } from "@/backend/naturalizationWorld";
+import type { NationCandidate } from "@/Domain/national/nationalSquad";
 import { buildNationalMessage } from "@/Domain/inbox/nationalMessage";
 import { buildNationalCoachMessage } from "@/Domain/inbox/nationalCoachMessage";
 import { managerNation } from "@/Domain/national/nationalCoach";
@@ -170,7 +172,7 @@ import { countriesToRegenerate, buildCupArchive } from "@/Domain/cups/cupRollove
 import { playFriendlyDay, playSeatFriendlies } from "@/backend/friendlyWorld";
 import { pruneFriendlies, type SeatFriendly } from "@/Domain/friendlies/seatFriendly";
 import { isFriendlyDay } from "@/Domain/friendlies/friendlies";
-import { buildFriendlyMessage, buildMentalityMessage } from "@/Domain/inbox/inboxEvents";
+import { buildFriendlyMessage, buildMentalityMessage, buildNaturalizationMessage } from "@/Domain/inbox/inboxEvents";
 import { advanceMentoring } from "@/Domain/personality/mentoring";
 import { advanceCupStages, countryByLeague, createCountryCup, cupPrizeBase, playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
@@ -1238,6 +1240,7 @@ export async function advanceOneDay(
     // World levels (retirement odds) read every squad of the world: computed once per day, lazily,
     // not once per rolling unit. Units are disjoint, so a day-start-ish snapshot is fine.
     let worldLevelsMemo: ReturnType<typeof buildWorldLevels> | undefined;
+    let naturPoolMemo: Promise<Map<string, NationCandidate[]>> | null = null;
     // With the director in charge of contracts there is no 90-day warning (he decides them himself).
     for (const ds of daySeats) {
       if (!ds.clubId || directorHandlesContracts(ds.meta.responsibilities)) continue;
@@ -1873,7 +1876,27 @@ export async function advanceOneDay(
       const preContracted = new Set<string>();
       for (const ds of daySeats) for (const p of (await saveService.getMarket(saveId, ds.seatId))?.preContracts ?? []) preContracted.add(p.playerId);
       const allSquadsMarket: Squad[] = [];
-      const squadsToday = await saveService.getAllSquads(saveId);
+      // Naturalization asks the manager did not answer in time are supported (`naturalization.md`).
+      for (const ds of daySeats) {
+        const asks = ds.meta.naturalizationAsks;
+        if (!asks?.length || !ds.clubId) continue;
+        const left = await expireAsks({ service: saveService, saveId, clubId: ds.clubId, asks, date: currentDate });
+        if (left.length !== asks.length) {
+          ds.patch.naturalizationAsks = left;
+          ds.meta = { ...ds.meta, naturalizationAsks: left };
+        }
+      }
+      const naturCountry = countryByLeague(await getLeagueData());
+      const squadsRead = await saveService.getAllSquads(saveId);
+      const readById = new Map(squadsRead.map((q) => [q.id, q]));
+      const squadsToday = squadsRead.map((read) => {
+        const r = squadNaturalizationDay(read, currentDate, naturCountry.get(index.byId(read.id)?.leagueSlug ?? "") ?? "");
+        const ds = seatOf.get(read.id);
+        for (const p of r.done) {
+          if (ds) ds.deferred.naturalization.push({ kind: "naturalized", playerId: p.id, playerName: p.name, country: p.secondNationality! });
+        }
+        return r.squad;
+      });
       // Monday: the standing bars of every player (`.claude/rules/game/standing.md`), before the market reads values.
       const standingRanks = new Date(`${currentDate}T12:00:00Z`).getUTCDay() === 1 ? worldRanks(squadsToday) : null;
       // Monday: trial youngsters who made it (`youth.md` → "Peneira de jovens"), read off the same world snapshot.
@@ -1884,7 +1907,7 @@ export async function advanceOneDay(
         const revealed = trialTop ? squadTrialReveals(standing, trialTop, currentDate) : { squad: standing, events: [] };
         trialEvents.push(...revealed.events);
         const squad = revealed.squad;
-        if (squad !== read) await saveService.saveSquadById(saveId, squad);
+        if (squad !== readById.get(read.id)) await saveService.saveSquadById(saveId, squad);
         if (humanClubs.has(squad.id) || !earlyRenewalDue(squad.id, currentDate)) { allSquadsMarket.push(squad); continue; }
         const early = earlyRenewals(squad, currentDate, preContracted);
         if (early.renewed.length > 0) await saveService.saveSquadById(saveId, early.squad);
@@ -2919,6 +2942,34 @@ export async function advanceOneDay(
         }
       }
 
+      // 7c. Naturalization (`.claude/rules/game/naturalization.md`): foreign players of the country's clubs who meet
+      //     a path draw their interest once. AI clubs start the process; a human club is asked (30 days).
+      if (unitCountry && !options.marketFrozen) {
+        const nSquads: Squad[] = [];
+        for (const slug of unit.leagues) nSquads.push(...(await saveService.getSquadsInLeague(saveId, slug)));
+        const leagueCountry = countryByLeague(await getLeagueData());
+        const nYear = closedYear.get(unit.leagues[0]!)! + 1;
+        const natur = await naturalizationRollover({
+          squads: nSquads, country: unitCountry, date: currentDate, year: nYear, seatIdByClub,
+          ctx: {
+            seasonStartYear: nYear,
+            countryOfLeague: (slug) => leagueCountry.get(slug) ?? "",
+            countryOfClub: clubCountryOf(index, (slug) => leagueCountry.get(slug)),
+          },
+          pool: () => (naturPoolMemo ??= nationPool(index, (id) => saveService.getSquadById(saveId, id))),
+        });
+        for (const sq of natur.squads) await saveService.saveSquadById(saveId, sq);
+        for (const ds of daySeats) {
+          const asks = natur.asks.get(ds.seatId);
+          if (asks?.length) {
+            const kept = (ds.meta.naturalizationAsks ?? []).filter((a) => !asks.some((n) => n.playerId === a.playerId));
+            ds.patch.naturalizationAsks = [...kept, ...asks];
+            ds.meta = { ...ds.meta, naturalizationAsks: ds.patch.naturalizationAsks };
+          }
+          ds.deferred.naturalization.push(...(natur.news.get(ds.seatId) ?? []));
+        }
+      }
+
       // 8. Contracts ending with the season: the AI renews who fits (wage cap permitting) and
       //    releases the rest, the human club releases whoever it did not renew. Released players
       //    wait in freeAgents.json. Runs on the NEW membership with the new season's end dates.
@@ -3743,6 +3794,7 @@ export async function advanceOneDay(
       for (const msg of ds.deferred.injury) await emitInboxMessage(saveId, buildInjuryMessage(msg), saveService, ds.seatId);
       for (const msg of ds.deferred.friendly) await emitInboxMessage(saveId, buildFriendlyMessage(msg), saveService, ds.seatId);
       for (const n of ds.deferred.mentality) await emitInboxMessage(saveId, buildMentalityMessage(currentDate, n), saveService, ds.seatId);
+      for (const n of ds.deferred.naturalization) await emitInboxMessage(saveId, buildNaturalizationMessage(currentDate, n), saveService, ds.seatId);
       for (const msg of ds.deferred.contract) await emitInboxMessage(saveId, buildContractMessage(msg), saveService, ds.seatId);
       for (const msg of buildStaffContractMessages(currentDate, ds.staffNews)) await emitInboxMessage(saveId, msg, saveService, ds.seatId);
       if (ds.director.outcomes.length > 0) {

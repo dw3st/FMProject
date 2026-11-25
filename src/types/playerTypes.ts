@@ -171,6 +171,10 @@ export interface RosterPlayer {
   progress?: DevelopmentProgress;
   /** When set (e.g. from data pipeline), used for scout / UI. */
   nationality?: string | null;
+  /** Second nationality won by naturalization (`.claude/rules/game/naturalization.md`): the club's country. */
+  secondNationality?: string;
+  /** Naturalization in progress: the country and the day it ends. */
+  naturalization?: { country: string; since: string; until: string };
   /** Date of birth, YYYY-MM-DD (from the data pipeline). Absent = unknown. */
   birthDate?: string;
   /** Height in centimetres (from the data pipeline). Absent = unknown. */
@@ -538,6 +542,8 @@ export interface RetiredPlayer {
   id: string;
   name: string;
   nationality: string | null;
+  /** Second nationality won by naturalization. */
+  secondNationality?: string;
   positions: string[];
   /** His fixed natural position (`positions.md`), kept from the roster; absent = read from the attributes. */
   naturalPosition?: string;

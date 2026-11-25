@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.44",
+    date: "2026-11-25",
+    items: [
+      { tab: "squad", pt: "Estrangeiros que vivem há cinco temporadas no país do clube, ou que se formaram lá, podem pedir a nacionalidade. Você apoia ou não pela caixa de entrada; com apoio, o processo leva de três a seis meses.", en: "Foreign players who have lived five seasons in the club's country, or were formed there, can ask for its nationality. You back them or not from the inbox; with your support it takes three to six months." },
+      { tab: "squad", pt: "Naturalizado conta como jogador da casa na inscrição e nos limites de estrangeiros, mostra as duas bandeiras e pode ser convocado pelas duas seleções até jogar por uma delas.", en: "A naturalized player counts as a home player in registration and foreign limits, shows both flags and can be called up by both national teams until he plays for one of them." },
+    ],
+    fixes: [
+      { tab: "general", pt: "A mensagem de recorde do clube mostra o nome da liga.", en: "The club record message shows the league name." },
+      { tab: "market", pt: "A proposta de renovação de empréstimo mostra quanto do salário, em euros por semana, cada clube paga.", en: "The loan renewal offer shows the share of the wage in euros per week." },
+    ],
+  },
+  {
     version: "12.43",
     date: "2026-11-25",
     time: "14:08",

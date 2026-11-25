@@ -236,4 +236,6 @@ export interface LoanRenewalOffer {
   /** Share of the wage the borrower pays (0..1) and the loan fee the borrower pays, EUR. */
   wageShare: number;
   fee: number;
+  /** The player's full weekly contract wage when the offer was made (EUR), for the euro amount of the share. */
+  wage?: number;
 }

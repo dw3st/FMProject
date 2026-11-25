@@ -804,3 +804,8 @@ export function moraleAttention(squad: Squad, date: string, days = 7): { talks: 
 export function afterNationalCallUp(player: RosterPlayer): RosterPlayer {
   return withEventDelta(player, MORALE.NATIONAL_CALL_UP);
 }
+
+/** The manager's answer to a naturalization request (`.claude/rules/game/naturalization.md`). */
+export function afterNaturalizationAnswer(player: RosterPlayer, supported: boolean, support: number, refuse: number): RosterPlayer {
+  return withEventDelta(player, supported ? support : refuse);
+}

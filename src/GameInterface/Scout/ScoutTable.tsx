@@ -196,6 +196,11 @@ export function ScoutTable({
                     <Flag code={nationalityFlagCode(player.ownNationality)!} />
                   </span>
                 )}
+                {player.secondNationality && nationalityFlagCode(player.secondNationality) && (
+                  <span title={player.secondNationality} className="shrink-0 inline-flex">
+                    <Flag code={nationalityFlagCode(player.secondNationality)!} />
+                  </span>
+                )}
                 {player.leagueSlug && player.clubSlug ? (
                   <a
                     href={`/player/${encodeURIComponent(player.leagueSlug)}/${encodeURIComponent(player.clubSlug)}/${encodeURIComponent(player.id)}`}
