@@ -3991,6 +3991,7 @@
       "transferIn": "Taxa de transferência recebida de {{club}}",
       "transferOut": "Taxa de transferência paga a {{club}}",
       "boardBonus": "Bônus da diretoria",
+      "presidentDeposit": "Aporte do presidente",
       "clubLeave": "Saldo deixado no {{club}}",
       "clubArrive": "Chegada ao {{club}}",
       "sellOnIn": "Cláusula de venda: {{player}} ({{club}})",

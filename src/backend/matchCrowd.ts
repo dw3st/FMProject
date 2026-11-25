@@ -121,6 +121,7 @@ export async function matchCrowd(
     ...(fans !== undefined ? { fans } : {}),
     ...(state ? { fraction: seasonFraction(fixture.date, state.start, state.end) } : {}),
     date: fixture.date,
+    ...(mySquad.ticketPriceMult ? { priceMult: mySquad.ticketPriceMult } : {}),
     ...(importance.mult !== 1 ? { importance: importance.mult } : {}),
   });
   const works = standsUnderWorksOn(mySquad.facilities, fixture.date);

@@ -564,3 +564,14 @@ describe("turf works (spec 2026-10-16)", () => {
     expect(again.stadiumPitch.turf).toBe("synthetic");
   });
 });
+
+describe("ticket price multiplier", () => {
+  test("a dearer ticket cuts the crowd, absent keeps the old number", () => {
+    const f = initialFacilities(squad(), 1);
+    const input = { followers: 2_000_000, tier: 1 };
+    const base = demandOf(f, input);
+    expect(demandOf(f, { ...input, priceMult: 1 })).toBe(base);
+    expect(demandOf(f, { ...input, priceMult: 2 })).toBeLessThan(base);
+    expect(demandOf(f, { ...input, priceMult: 0.5 })).toBeGreaterThan(base);
+  });
+});

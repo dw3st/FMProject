@@ -3994,6 +3994,7 @@
       "transferIn": "Transfer fee from {{club}}",
       "transferOut": "Transfer fee paid to {{club}}",
       "boardBonus": "Board bonus",
+      "presidentDeposit": "President's deposit",
       "clubLeave": "Balance left at {{club}}",
       "clubArrive": "Arrival at {{club}}",
       "sellOnIn": "Sell-on clause: {{player}} ({{club}})",

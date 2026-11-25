@@ -61,7 +61,7 @@ export interface FacilitiesViewData {
   /** The turf works to each grass (null: the current one). */
   turfQuotes: Record<TurfType, ItemQuote | null>;
   committed: number;
-  demandInput: { followers: number; tier: number; fans: number };
+  demandInput: { followers: number; tier: number; fans: number; priceMult?: number };
   season: { start: string; end: string } | null;
   /** The ground as the live match draws it: name, shape, each stand's depth (null = all full). */
   stadium?: { name: string | null; shape: StadiumShape; depths: StandDepths | null };

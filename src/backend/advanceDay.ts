@@ -2319,6 +2319,7 @@ export async function advanceOneDay(
             followers: playerSquad.finances?.followers ?? 0,
             tier: await leagueTierOf(seatEntry.leagueSlug),
             ...(ds.board ? { fans: ds.board.fans } : {}),
+            ...(playerSquad.ticketPriceMult ? { priceMult: playerSquad.ticketPriceMult } : {}),
             ...(seatLeagueState ? { fraction: seasonFraction(currentDate, seatLeagueState.start, seatLeagueState.end) } : {}),
           });
           next = md.facilities;
@@ -2357,7 +2358,7 @@ export async function advanceOneDay(
         : [];
       if (playerSquad && (isWeeklyTick || ds.homeFixtures.length > 0 || facilityEntries.length > 0 || scoutingEntries.length > 0 || productivity.length > 0)) {
         const catalogForFinance = await getLeagueData();
-        const priceMult = playerSquad.facilities?.items ? comfortPriceMult(playerSquad.facilities) : 1;
+        const priceMult = (playerSquad.facilities?.items ? comfortPriceMult(playerSquad.facilities) : 1) * (playerSquad.ticketPriceMult ?? 1);
         const homeFixturesToday: PlayerHomeFixtureToday[] = ds.homeFixtures.map((f, i) => ({
           competition: f.competition, kind: f.kind, ...(f.neutral ? { neutral: true } : {}),
           label: competitionName(f.competition, catalogForFinance as unknown as LeagueData[], "en"),

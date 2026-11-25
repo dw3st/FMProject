@@ -1,4 +1,5 @@
 import { FACILITIES as F } from "@/Domain/facilities/facilityConfig";
+import { ticketDemandMult } from "@/Domain/ownClub/ownClub";
 import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import { stadiumFillRate } from "@/Domain/boardFans/boardFans";
 import { GATE, gateFromAttendance, type GateKind } from "@/Domain/finance/gate";
@@ -214,6 +215,8 @@ export interface DemandInput {
   date?: string;
   /** Big-match multiplier (derby, cup/continental knockout: matchImportance.ts); absent = 1. */
   importance?: number;
+  /** The president's ticket price multiplier of a founded club (`ticketDemandMult`); absent = 1. */
+  priceMult?: number;
 }
 
 /**
@@ -231,7 +234,7 @@ export function demandOf(f: ClubFacilities, input: DemandInput): number {
   const upkeep = effectAt(F.WEAR.SEATS_DEMAND_MIN, itemCondition(f, "seats"))
     * effectAt(F.WEAR.STRUCTURE_DEMAND_MIN, itemCondition(f, "stadiumStructure"));
   const importance = input.importance ?? 1;
-  return Math.max(0, a.capacity * fill * followers * tier * phase * upkeep * importance);
+  return Math.max(0, a.capacity * fill * followers * tier * phase * upkeep * importance * ticketDemandMult(input.priceMult ?? 1));
 }
 
 /** Attendance = min(seats available, demand) (unrounded; round only for display). */
