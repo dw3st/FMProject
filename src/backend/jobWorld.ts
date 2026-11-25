@@ -530,6 +530,8 @@ export async function takeOverClub(
  */
 export async function acceptJobOffer(
   service: SaveService, saveId: string, seatId: string, meta: SeatMeta, offer: JobOffer, nudges?: SeatNudges,
+  /** `announce: false`: no "hired" nor board-objective inbox messages (founding an own club sends its own). */
+  opts: { announce?: boolean } = {},
 ): Promise<SeatMeta> {
   const date = meta.currentDate!;
   const activeLeagues = meta.activeLeagues ?? [];
@@ -564,10 +566,12 @@ export async function acceptJobOffer(
   const leagueName = competitionName(taken.leagueSlug, catalog as unknown as LeagueData[], "en");
   const inbox = await service.getInbox(saveId, seatId);
   await service.writeInbox(saveId, inbox.filter((m) => !(m.category === "job" && m.kind === "offer")), seatId);
-  await service.appendInbox(saveId, buildJobMessage({
-    date, kind: "hired", squadId: offer.squadId, clubName: taken.clubName, leagueSlug: taken.leagueSlug, leagueName,
-  }), seatId);
-  if (taken.board.objective) {
+  if (opts.announce !== false) {
+    await service.appendInbox(saveId, buildJobMessage({
+      date, kind: "hired", squadId: offer.squadId, clubName: taken.clubName, leagueSlug: taken.leagueSlug, leagueName,
+    }), seatId);
+  }
+  if (taken.board.objective && opts.announce !== false) {
     await service.appendInbox(saveId, buildBoardMessage({ date, kind: "objective", objective: taken.board.objective, leagueName }), seatId);
   }
   // Inside the contract-warning window the 90-day notice was missed: send it now (only when the

@@ -615,7 +615,7 @@ export function buildPressInviteMessage(date: string, p: {
 /** Job news (`.claude/rules/game/jobs.md`): an offer, or the takeover of a new club. The screen translates it. */
 export function buildJobMessage(args:
   | { date: string; kind: "offer"; offer: JobOffer }
-  | { date: string; kind: "hired" | "application_refused"; squadId: string; clubName: string; leagueSlug: string; leagueName: string },
+  | { date: string; kind: "hired" | "application_refused" | "founded"; squadId: string; clubName: string; leagueSlug: string; leagueName: string },
 ): JobInboxMessage {
   const club = args.kind === "offer"
     ? { squadId: args.offer.squadId, clubName: args.offer.clubName, leagueSlug: args.offer.leagueSlug, leagueName: args.offer.leagueName }
@@ -628,6 +628,7 @@ export function buildJobMessage(args:
     category:  "job",
     subject:   args.kind === "offer" ? `Job offer from ${club.clubName}`
       : args.kind === "application_refused" ? `${club.clubName} turned down your application`
+      : args.kind === "founded" ? `You founded ${club.clubName}`
       : `You are the new manager of ${club.clubName}`,
     preview:   club.leagueName,
     kind:      args.kind,

@@ -348,6 +348,8 @@ export interface Squad {
   trialFame?: number;
   id: string;
   name: string;
+  /** Three-letter short name (curated data, or the founder's choice). */
+  shortName?: string;
   colors: [string, string];
   money: number;
   players: RosterPlayer[];

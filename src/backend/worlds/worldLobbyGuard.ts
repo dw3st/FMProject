@@ -6,6 +6,7 @@ type Handler = (req: Req) => Response | Promise<Response>;
 
 /** Game routes that write: refused (409 `lobby`) while the world is still in the lobby, even by a direct call. */
 export const LOBBY_GUARDED_PATHS = [
+  "/api/saves/:saveId/found-club",
   "/api/saves/:saveId/transfers",
   "/api/saves/:saveId/sell-list",
   "/api/saves/:saveId/sell-listed-players",
