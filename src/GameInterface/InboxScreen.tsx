@@ -25,6 +25,7 @@ import { ManagerRenewalCard } from "@/GameInterface/Components/ManagerRenewalCar
 import { JobOfferCard } from "@/GameInterface/Components/JobOfferCard";
 import { NationalCoachInboxBody, nationalCoachSubject } from "@/GameInterface/National/NationalCoachInboxBody";
 import i18next from "@/i18n/i18n";
+import { nationalityDisplayName } from "@/Domain/world/labels";
 import { BidCard } from "@/GameInterface/Negotiation/BidCard";
 import { LoanRenewalCard } from "@/GameInterface/Negotiation/LoanRenewalCard";
 import { SeatOfferCard } from "@/GameInterface/Negotiation/SeatOfferCard";
@@ -742,6 +743,10 @@ function leaguePrizeTexts(
   }
   if (message.category === "press") {
     return { subject: t("press.inbox.subject", { trigger: t(`press.trigger.${message.trigger}`) }), preview: message.opponent ?? "" };
+  }
+  if (message.category === "player" && (message.kind === "naturalization" || message.kind === "naturalized") && message.naturalization) {
+    const country = nationalityDisplayName(message.naturalization.country, i18nLang(), t as never);
+    return { subject: t(`naturalization.inbox.subject.${message.kind}`, { player: message.playerName, country }), preview: message.playerName };
   }
   if (message.category === "player") {
     const key = message.kind === "talk" ? "talk" : message.kind;

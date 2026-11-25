@@ -1,3 +1,4 @@
+import type { NaturalizationNews } from "@/backend/naturalizationWorld";
 import type { MentoringNews } from "@/Domain/personality/mentoring";
 import type { SaveService, SeatMeta, SaveMeta } from "@/backend/SaveService";
 import type { SquadIndex } from "@/backend/squadIndex";
@@ -66,6 +67,7 @@ export interface DaySeat {
     injury: Msg<typeof buildInjuryMessage>[];
     friendly: Msg<typeof buildFriendlyMessage>[];
     mentality: MentoringNews[];
+    naturalization: NaturalizationNews[];
     contract: Msg<typeof buildContractMessage>[];
     youth: Msg<typeof buildYouthMessage>[];
     facility: Msg<typeof buildFacilityMessage>[];
@@ -149,7 +151,7 @@ export function newDaySeat(args: {
     ledgerSeason: null,
     scouting: null,
     deferred: {
-      injury: [], friendly: [], mentality: [], contract: [], youth: [], facility: [], sponsor: [], retirement: [], clubRecords: [], awards: [],
+      injury: [], friendly: [], mentality: [], naturalization: [], contract: [], youth: [], facility: [], sponsor: [], retirement: [], clubRecords: [], awards: [],
       negotiation: [], continental: [], season: [], negativeBalance: null,
     },
     managerEarned: 0,

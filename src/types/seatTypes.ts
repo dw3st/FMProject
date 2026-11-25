@@ -135,6 +135,16 @@ export interface SeatState {
    * read it. Cleared on a change of club and on a sacking.
    */
   tacticLog?: import("@/types/studyTypes").TacticLogEntry[];
+  /** Naturalization requests of the club's players waiting for the manager's answer (`naturalization.md`). */
+  naturalizationAsks?: NaturalizationAsk[];
+}
+
+/** A player of the seat's club who asked for the country's nationality; unanswered by `expires` = supported. */
+export interface NaturalizationAsk {
+  playerId: string;
+  playerName: string;
+  country: string;
+  expires: string;
 }
 
 /** Every key of `SeatState` (the split of a merged patch, `splitSeatPatch`). */
@@ -144,7 +154,7 @@ export const SEAT_KEYS = [
   "matchMarking", "youthCallUps", "youthCallUpsSkipped", "youthTrials", "trialReveals", "foundedClub", "youthCoachPlanned", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerReactions", "managerStudies", "trustedStaff", "betNet", "betExact", "betLongshot", "casinoNet", "casinoBiggestWin", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
-  "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites", "tacticLog", "partnerships",
+  "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites", "tacticLog", "partnerships", "naturalizationAsks",
 ] as const satisfies readonly (keyof SeatState)[];
 
 type MissingSeatKeys = Exclude<keyof SeatState, (typeof SEAT_KEYS)[number]>;

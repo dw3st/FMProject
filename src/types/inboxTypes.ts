@@ -352,7 +352,7 @@ export interface ManagerNewsInboxMessage extends InboxMessageBase {
  */
 export interface PlayerInboxMessage extends InboxMessageBase {
   category: "player";
-  kind: "talk" | "promise_kept" | "promise_broken" | "transfer_request" | "mentality";
+  kind: "talk" | "promise_kept" | "promise_broken" | "transfer_request" | "mentality" | "naturalization" | "naturalized";
   playerId: string;
   playerName: string;
   /** talk: why he asked. */
@@ -364,6 +364,8 @@ export interface PlayerInboxMessage extends InboxMessageBase {
   clubName?: string;
   /** mentality: the trait, its band now and whether the work is over. */
   mentality?: { trait: "professionalism" | "temperament"; band: string; finished: boolean };
+  /** naturalization (asks for the club's country, answer until `expires`) / naturalized (got it). */
+  naturalization?: { country: string; expires?: string };
 }
 
 /**

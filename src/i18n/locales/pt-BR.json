@@ -10042,5 +10042,23 @@
       "body": "O {{club}} ({{league}}) é seu: você é o técnico e o presidente. O elenco novo já chegou.",
       "open": "Ver o elenco do {{club}}"
     }
+  },
+  "naturalization": {
+    "inProgress": "Naturalização em andamento até {{date}}",
+    "inbox": {
+      "subject": {
+        "naturalization": "{{player}} quer a nacionalidade: {{country}}",
+        "naturalized": "{{player}} ganhou a nacionalidade: {{country}}"
+      },
+      "ask": "{{player}} pediu a nacionalidade do país ({{country}}). Com o seu apoio o processo começa agora e leva de três a seis meses. Ele mantém a nacionalidade de hoje.",
+      "deadline": "Responda até {{date}}. Sem resposta, conta como apoio.",
+      "support": "Apoiar",
+      "refuse": "Não apoiar",
+      "supported": "Você apoiou. O processo começou.",
+      "refused": "Você não apoiou. Ele não pede de novo nesta temporada.",
+      "closed": "Este pedido já foi encerrado.",
+      "error": "Não deu para enviar a resposta. Tente de novo.",
+      "done": "{{player}} agora também tem a nacionalidade: {{country}}. Ele conta como jogador da casa e pode ser convocado por essa seleção até jogar por uma delas."
+    }
   }
 }

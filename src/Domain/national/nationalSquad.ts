@@ -226,3 +226,35 @@ export function coachSide(tactics: NationalTactics | undefined, players: RosterP
     },
   };
 }
+
+/**
+ * A player who can play for two nations (naturalization, `.claude/rules/game/naturalization.md`) is a candidate of the
+ * one where he ranks better: fewer players of his line above him (ties: the first nation of his list, his origin).
+ * `dual`: player id → his nations, in order. Mutates nothing; returns the pool with each dual player in one nation.
+ */
+export function keepBestNation(pool: Map<string, NationCandidate[]>, dual: Map<string, string[]>): Map<string, NationCandidate[]> {
+  if (dual.size === 0) return pool;
+  const rankIn = (nation: string, p: RosterPlayer): number => {
+    const line = lineOf(p);
+    const lv = levelOf(p);
+    let above = 0;
+    for (const c of pool.get(nation) ?? []) if (c.player.id !== p.id && lineOf(c.player) === line && levelOf(c.player) > lv) above++;
+    return above;
+  };
+  const drop = new Map<string, Set<string>>();
+  for (const [id, nations] of dual) {
+    const present = nations.filter((n) => (pool.get(n) ?? []).some((c) => c.player.id === id));
+    if (present.length < 2) continue;
+    const p = pool.get(present[0]!)!.find((c) => c.player.id === id)!.player;
+    let best = present[0]!;
+    let bestRank = rankIn(best, p);
+    for (const n of present.slice(1)) {
+      const r = rankIn(n, p);
+      if (r < bestRank) { best = n; bestRank = r; }
+    }
+    for (const n of present) if (n !== best) (drop.get(n) ?? drop.set(n, new Set()).get(n)!).add(id);
+  }
+  const out = new Map(pool);
+  for (const [n, ids] of drop) out.set(n, (pool.get(n) ?? []).filter((c) => !ids.has(c.player.id)));
+  return out;
+}

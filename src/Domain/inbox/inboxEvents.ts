@@ -554,6 +554,23 @@ export function buildMentalityMessage(date: string, n: { playerId: string; playe
   };
 }
 
+/** A player asks for the club country's nationality, or got it (`.claude/rules/game/naturalization.md`). */
+export function buildNaturalizationMessage(date: string, n: { kind: "naturalization" | "naturalized"; playerId: string; playerName: string; country: string; expires?: string }): PlayerInboxMessage {
+  return {
+    id: `${n.kind}-${n.playerId}-${n.kind === "naturalization" ? date.slice(0, 4) : date}`,
+    date,
+    createdAt: date,
+    read: false,
+    category: "player",
+    kind: n.kind,
+    subject: n.kind === "naturalization" ? `${n.playerName} wants to become a ${n.country} citizen` : `${n.playerName} is now a ${n.country} citizen`,
+    preview: n.playerName,
+    playerId: n.playerId,
+    playerName: n.playerName,
+    naturalization: { country: n.country, ...(n.expires ? { expires: n.expires } : {}) },
+  };
+}
+
 export function buildFriendlyMessage(input: {
   date: string;
   clubName: string;

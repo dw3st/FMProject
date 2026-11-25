@@ -6,6 +6,7 @@ import { Icon } from "@/GameInterface/Icons";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { TalkModal } from "@/GameInterface/Morale/TalkModal";
 import { useMorale } from "@/GameInterface/Morale/useMorale";
+import { NaturalizationBody } from "@/GameInterface/Morale/NaturalizationBody";
 import type { PlayerInboxMessage } from "@/types/inboxTypes";
 
 /**
@@ -13,6 +14,11 @@ import type { PlayerInboxMessage } from "@/types/inboxTypes";
  * answers while it is still open, or the promise / transfer-request news.
  */
 export function PlayerTalkBody({ message }: { message: PlayerInboxMessage }) {
+  if (message.kind === "naturalization" || message.kind === "naturalized") return <NaturalizationBody message={message} />;
+  return <TalkBody message={message} />;
+}
+
+function TalkBody({ message }: { message: PlayerInboxMessage }) {
   const { t } = useTranslation();
   const { session, refresh } = useGameSave();
   const saveId = session?.saveId;
