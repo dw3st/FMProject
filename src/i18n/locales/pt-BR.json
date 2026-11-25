@@ -9945,5 +9945,8 @@
       "wrongSide": "O nível do clube não serve para essa parceria.",
       "human": "Esse clube tem técnico humano."
     }
+  },
+  "ownClub": {
+    "president": "Presidente"
   }
 }

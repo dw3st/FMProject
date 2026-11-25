@@ -45,7 +45,8 @@ export interface ManagerContract {
   /** Weekly wage, EUR. */
   wage: number;
   /** Last day (the season end of the club's league). */
-  until: string;
+  /** Absent = no end (the president of a founded club). */
+  until?: string;
   signed: string;
 }
 
@@ -84,6 +85,7 @@ export function weeksLeft(date: string, until: string): number {
 
 /** What the sacked manager receives (only `managerEarnings`, D9). */
 export function severancePay(contract: Pick<ManagerContract, "wage" | "until">, date: string): number {
+  if (!contract.until) return 0;
   return Math.round(MANAGER_CONTRACT.SEVERANCE_SHARE * contract.wage * weeksLeft(date, contract.until));
 }
 
@@ -92,7 +94,7 @@ export function severancePay(contract: Pick<ManagerContract, "wage" | "until">, 
  * the contract's last month or after it ended.
  */
 export function compensationFee(contract: Pick<ManagerContract, "wage" | "until"> | undefined, date: string): number {
-  if (!contract) return 0;
+  if (!contract?.until) return 0;
   if (date >= addDays(contract.until, -MANAGER_CONTRACT.NO_COMPENSATION_DAYS)) return 0;
   return Math.round(MANAGER_CONTRACT.COMPENSATION_SHARE * contract.wage * weeksLeft(date, contract.until));
 }
@@ -119,6 +121,7 @@ export function renewalDecision(args: {
  * season end to `until`; 0 = the contract ends now (unchanged).
  */
 export function reanchorContract(contract: ManagerContract, oldSeasonEnd: string, newSeasonEnd: string): ManagerContract {
+  if (!contract.until) return contract;
   const left = Math.round(daysBetween(oldSeasonEnd, contract.until) / 365.25);
   if (left <= 0) return contract;
   const until = contractUntil(newSeasonEnd, left);
@@ -153,11 +156,13 @@ export function contractDay(args: {
   sackingEnabled?: boolean;
 }): { renewal?: ManagerRenewalOffer; notices: string[]; message?: { kind: ContractNoticeKind; contract?: { wage: number; seasons: number } } } {
   const { contract, date } = args;
+  const until = contract.until;
+  if (!until) return { ...(args.renewal ? { renewal: args.renewal } : {}), notices: args.notices };
   const decided = `decided:${contract.until}`;
   const warned = `warned:${contract.until}`;
   let notices = args.notices;
-  if (!notices.includes(decided) && renewalDue({ until: contract.until, seasonEnd: args.seasonEnd, played: args.played, totalRounds: args.totalRounds })) {
-    notices = [...notices.filter((n) => n.endsWith(contract.until)), decided];
+  if (!notices.includes(decided) && renewalDue({ until, seasonEnd: args.seasonEnd, played: args.played, totalRounds: args.totalRounds })) {
+    notices = [...notices.filter((n) => n.endsWith(until)), decided];
     const offer = renewalDecision({
       board: args.board, currentWage: contract.wage, reputationWage: args.reputationWage,
       ...(args.sackingEnabled !== undefined ? { sackingEnabled: args.sackingEnabled } : {}),
@@ -171,7 +176,7 @@ export function contractDay(args: {
     }
     return { notices, message: { kind: "contract_ending" } };
   }
-  const ending = contract.until <= args.seasonEnd && date >= addDays(args.seasonEnd, -MANAGER_CONTRACT.END_NOTICE_DAYS);
+  const ending = until <= args.seasonEnd && date >= addDays(args.seasonEnd, -MANAGER_CONTRACT.END_NOTICE_DAYS);
   if (ending && !notices.includes(warned)) {
     return { ...(args.renewal ? { renewal: args.renewal } : {}), notices: [...notices, warned], message: { kind: "contract_ending" } };
   }
@@ -180,6 +185,7 @@ export function contractDay(args: {
 
 /** The contract after accepting a renewal: `seasons` more seasons at the offered wage. */
 export function renewedContract(contract: ManagerContract, offer: Pick<ManagerRenewalOffer, "wage" | "seasons">, date: string): ManagerContract {
+  if (!contract.until) return { ...contract, wage: offer.wage, signed: date };
   return { ...contract, wage: offer.wage, until: addYearsIso(contract.until, offer.seasons), signed: date };
 }
 

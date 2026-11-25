@@ -2,6 +2,7 @@ import { SECRETS, TIERS, TRACKS } from "@/Domain/achievements/catalog";
 import { managerWeeklyWage } from "@/Domain/managers/managerContract";
 import { FOUNDED } from "@/Domain/ownClub/ownClubConfig";
 import type { AchievementsState } from "@/types/achievementTypes";
+import type { Squad } from "@/types/playerTypes";
 
 export const OWN_CLUB_KEYS: string[] = [
   ...Object.keys(TRACKS).flatMap((t) => TIERS.map((tier) => `${t}:${tier}`)),
@@ -66,10 +67,7 @@ export function ticketDemandMult(priceMult: number): number {
   return priceMult === 1 ? 1 : priceMult ** -FOUNDED.PRICE_ELASTICITY;
 }
 
-export function isPresident(
-  squad: { foundedBy?: { seatId: string; on: string } } | null | undefined,
-  seatId: string,
-): boolean {
+export function isPresident(squad: Pick<Squad, "foundedBy"> | null | undefined, seatId: string): boolean {
   return squad?.foundedBy?.seatId === seatId;
 }
 

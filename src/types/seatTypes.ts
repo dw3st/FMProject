@@ -76,6 +76,8 @@ export interface SeatState {
   youthTrials?: import("@/types/youthTrialTypes").YouthTrialsState;
   /** Youngsters found in his trials who made it (world-top ones apart). */
   trialReveals?: { count: number; top: number };
+  /** The club this seat founded and presides over (`.claude/rules/game/own-club.md`). */
+  foundedClub?: { squadId: string; on: string };
   youthCallUpsSkipped?: YouthCallUpsSkipped;
   /** Game date the youth coach already made his call-ups for, the day before (`staff.md` → "Treinador da base"). */
   youthCoachPlanned?: string;
@@ -139,7 +141,7 @@ export interface SeatState {
 export const SEAT_KEYS = [
   "clubId", "clubName", "clubColors", "leagueSlug", "leagueName", "manager", "formation", "tactical_style",
   "min_energy_to_train", "training_intensity", "style_focus", "followedLeagues", "restDays", "matchEve", "rotationOverride",
-  "matchMarking", "youthCallUps", "youthCallUpsSkipped", "youthTrials", "trialReveals", "youthCoachPlanned", "board", "press", "managerBan", "sackingEnabled",
+  "matchMarking", "youthCallUps", "youthCallUpsSkipped", "youthTrials", "trialReveals", "foundedClub", "youthCoachPlanned", "board", "press", "managerBan", "sackingEnabled",
   "unemployed", "jobOffers", "jobsMidSeason", "jobSeeking", "jobApplication", "jobRefused", "careerStart", "managerContract", "managerEarnings", "managerSpent", "managerAssets", "managerDecor", "managerReactions", "managerStudies", "trustedStaff", "betNet", "betExact", "betLongshot", "casinoNet", "casinoBiggestWin", "managerRenewal",
   "managerContractNotices", "inboxPrefs", "responsibilities", "directorDecisions",
   "readyUntil", "matchDecision", "standing", "lastSeason", "lastSeenAt", "inactiveWarnedAt", "retiredFavorites", "tacticLog", "partnerships",

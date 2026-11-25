@@ -206,7 +206,7 @@ export function ClubCard({
   /** Pending job offers. */
   pendingOffers: number;
   /** The manager's contract (Etapa 25): until / weekly wage. */
-  contract?: { until: string; wage: number } | null;
+  contract?: { until?: string; wage: number } | null;
   board: number;
   fans: number;
   /** Change vs. 7 days ago (null without enough history). */
@@ -269,7 +269,9 @@ export function ClubCard({
             )}
             {contract && (
               <span className="text-sm text-muted-foreground tabular-nums truncate">
-                {t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })}
+                {contract.until
+                  ? t("managerContract.cardLine", { year: contract.until.slice(0, 4), wage: formatWageShort(contract.wage) })
+                  : `${t("ownClub.president")} · ${formatWageShort(contract.wage)}`}
               </span>
             )}
             <nav aria-label={t("achievements.link")} className="flex flex-wrap gap-2 mt-1.5">

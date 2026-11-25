@@ -9960,5 +9960,8 @@
       "wrongSide": "The club's level does not fit this partnership.",
       "human": "That club has a human manager."
     }
+  },
+  "ownClub": {
+    "president": "President"
   }
 }

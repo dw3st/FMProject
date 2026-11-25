@@ -3325,7 +3325,7 @@ export async function advanceOneDay(
       let contract = ds.job.contract;
       // A renewal the board offered and he never answered is taken at the end (4.41: a manager with titles lost
       // his club by not clicking). Refusing it on the card is how he leaves.
-      if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract && contract.until <= currentDate && ds.job.renewal) {
+      if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract?.until && contract.until <= currentDate && ds.job.renewal) {
         const offer = ds.job.renewal;
         contract = renewedContract(contract, offer, currentDate);
         ds.job.renewal = undefined;
@@ -3334,7 +3334,7 @@ export async function advanceOneDay(
           contract: { wage: contract.wage, seasons: offer.seasons, until: contract.until },
         });
       }
-      if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract && contract.until <= currentDate) {
+      if (!ds.job.ended && ds.board && clubId && ds.rollover.seasonEnded && contract?.until && contract.until <= currentDate) {
         const leagueNow = index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug;
         ds.job.ended = {
           date: currentDate, reason: "contract", clubName: ds.meta.clubName,
