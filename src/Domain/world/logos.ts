@@ -7,8 +7,16 @@ export type LogoIndex = Record<string, string>;
  */
 export const LOGO_VERSION = 2;
 
+let foundedClubs: Set<string> = new Set();
+
+/** Clubs founded by a human: their old crest is gone, the UI draws the color crest. Replaces the set. */
+export function registerFoundedClubs(ids: Iterable<string>): void {
+  foundedClubs = new Set(ids);
+}
+
 /** Crest URL for a squad, or undefined when the club has no crest file (the UI then draws a shield). */
 export function logoUrlFromIndex(index: LogoIndex, squadId: string): string | undefined {
+  if (foundedClubs.has(squadId)) return undefined;
   const path = index[squadId];
   return path ? `/api/logos/${path}?v=${LOGO_VERSION}` : undefined;
 }

@@ -1,3 +1,4 @@
+import { registerFoundedClubs } from "@/Domain/world/logos";
 import { registerTeamNames } from "@/GameInterface/teamDisplayName";
 import { nationalityDisplayName } from "@/Domain/world/labels";
 import i18n from "@/i18n/i18n";
@@ -19,7 +20,7 @@ import type { Fixture, SeasonData } from "@/types/calendarTypes";
 import type { Squad } from "@/types/playerTypes";
 import type { InboxMessage } from "@/types/inboxTypes";
 
-export type GameSaveApiResponse = SeatMeta & { season?: SeasonData; role?: MemberRole };
+export type GameSaveApiResponse = SeatMeta & { season?: SeasonData; role?: MemberRole; foundedClubs?: string[] };
 
 export interface GameSaveContextValue {
   session: GameSession | null;
@@ -212,6 +213,7 @@ export function GameSaveProvider({ children }: { children: ReactNode }) {
       if (saveJson || squadJson) {
         saveSession(nextSession);
       }
+      registerFoundedClubs(saveJson?.foundedClubs ?? []);
       setSession(nextSession);
       setSave(saveJson);
       setSquad(squadJson);

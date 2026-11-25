@@ -184,7 +184,8 @@ export const saveRoutes = {
         }
       }
 
-      return Response.json({ ...publicWorldMeta(meta), role: auth.role, season });
+      const foundedClubs = (await saveService.getSquadIndex(id)).founded();
+      return Response.json({ ...publicWorldMeta(meta), role: auth.role, season, foundedClubs });
     }
 
     if (req.method === "PUT") {

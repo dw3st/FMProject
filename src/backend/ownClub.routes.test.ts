@@ -106,6 +106,8 @@ describe("own club: founding route", () => {
     expect(squad.youth ?? []).toEqual([]);
     expect(squadLevel(squad)).toBeLessThan(worst);
 
+    expect((await saveService.getSquadIndex(saveId)).founded()).toContain(target);
+
     const free = new Set((await saveService.getFreeAgents(saveId)).map((f) => f.player.id));
     expect(oldIds.every((id) => free.has(id))).toBe(true);
 

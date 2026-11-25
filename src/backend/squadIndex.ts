@@ -9,6 +9,8 @@ interface SquadIndexEntry {
   slug: string;
   name: string;
   colors: [string, string];
+  /** Founded by a human (own club): the old crest no longer fits. */
+  founded?: true;
 }
 
 /** A squadId found in more than one file: the entry the index kept and the ones it dropped. */
@@ -31,6 +33,8 @@ export interface SquadIndex {
   /** Like `resolve`, but returns the whole entry. */
   resolveEntry(leagueSlug: string, clubParam: string): SquadIndexEntry | null;
   leagues(): string[];
+  /** Ids of clubs founded by a human seat (new name and colors, no crest file). */
+  founded(): string[];
   /** squadIds stored in more than one file (lenient mode only; always empty in strict mode). */
   duplicates(): SquadIndexDuplicate[];
 }
@@ -98,6 +102,7 @@ export function buildSquadIndex(files: SquadFile[], opts: BuildSquadIndexOptions
       slug: s.slug ?? s.id,
       name: s.name,
       colors: s.colors,
+      ...(s.foundedBy ? { founded: true as const } : {}),
     };
     byId.set(e.squadId, e);
     let list = byLeague.get(e.leagueSlug);
@@ -129,6 +134,7 @@ export function buildSquadIndex(files: SquadFile[], opts: BuildSquadIndexOptions
     resolve: (league, param) => resolveEntry(league, param)?.stem ?? null,
     resolveEntry,
     leagues: () => [...byLeague.keys()].sort(),
+    founded: () => [...byId.values()].filter((e) => e.founded).map((e) => e.squadId),
     duplicates: () => duplicates,
   };
 }
