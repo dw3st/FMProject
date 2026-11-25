@@ -17,7 +17,7 @@ import {
 import { managerWallet } from "@/Domain/managers/assets";
 import { openTotal } from "@/Domain/bets/bets";
 import { renewedContract, severanceOf } from "@/Domain/staff/staffContracts";
-import { POOL_PAGE, returnToPool, searchPool, takeFromPool, isStaffPoolSort, type StaffPoolQuery } from "@/Domain/staff/staffPool";
+import { POOL_PAGE, returnToPool, searchPool, takeFromPool, topUpLocalScouts, isStaffPoolSort, type StaffPoolQuery } from "@/Domain/staff/staffPool";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { isPresident } from "@/Domain/ownClub/ownClub";
 import { decideSlotRequest, slotRequestState } from "@/Domain/staff/slotRequest";
@@ -237,9 +237,15 @@ export const staffRoutes = {
     return withSaveLock(saveId, async () => {
       const meta = await saveService.getMeta(saveId);
       if (!meta) return Response.json({ error: "save not found" }, { status: 404 });
-      const pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
+      let pool = await saveService.getStaffPool(saveId, meta.currentDate ?? "");
       // Unemployed: the pool stays visible (hiring does not), priced at a neutral factor.
       const h = await human(saveId, auth.seatId);
+      if (!(h instanceof Response)) {
+        const { getStaffNameBook, leagueCountryMap } = await import("@/backend/staffNameBook");
+        const country = (await leagueCountryMap()).get(h.ref.leagueSlug);
+        const topped = country ? topUpLocalScouts(pool, saveId, h.date, country, await getStaffNameBook()) : pool;
+        if (topped !== pool) { await saveService.writeStaffPool(saveId, topped); pool = topped; }
+      }
       const pay = h instanceof Response ? { clubFactor: 1, revenue: undefined } : staffPayOf(h.squad);
       return Response.json(searchPool(pool, q, pay.clubFactor, meta.currentDate ?? undefined, pay.revenue));
     });

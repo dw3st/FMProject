@@ -92,6 +92,31 @@ export function topUpCheapStaff(pool: StaffPool, saveId: string, date: string, b
 export const hasCheapStaff = (pool: StaffPool): boolean =>
   STAFF_ROLES.every((role) => pool.members.some((m) => m.role === role && isCheapStaff(m)));
 
+/**
+ * Keeps `POOL.LOCAL_SCOUTS` chief and field scouts of `country` (the human club's) in the pool: the weighted draw
+ * gives a country with few clubs almost none (tester report c34a5e33). Ids carry the date and the pool size, so a
+ * later top-up never redraws a hired one. The same object when nothing lacks.
+ */
+export function topUpLocalScouts(pool: StaffPool, saveId: string, date: string, country: string, book: StaffNameBook): StaffPool {
+  if (!book[country]) return pool;
+  const ids = new Set(pool.members.map((m) => m.id));
+  let members = pool.members;
+  for (const role of ["scout", "fieldScout"] as const) {
+    const want = STAFF.POOL.LOCAL_SCOUTS[role];
+    let have = members.filter((m) => m.role === role && m.nationality === country).length;
+    const rng = mulberry32(seedFrom(`staff-pool-local:${saveId}:${country}:${date}:${role}`));
+    for (let i = 0; have < want && i < 80; i++) {
+      const m = makeProfessional(`${saveId}:pool:local:${country}:${date}:${pool.members.length}:${role}:${i}`, role, sampleStars(rng), { book, home: country });
+      if (ids.has(m.id) || m.nationality !== country) continue;
+      ids.add(m.id);
+      if (members === pool.members) members = [...pool.members];
+      members.push({ ...m, since: date });
+      have++;
+    }
+  }
+  return members === pool.members ? pool : { ...pool, members };
+}
+
 /** `book`: nationalities and names from the world's players (`staffOrigin.ts`); absent = the built-in pools. */
 export function generatePool(saveId: string, season: string, date: string, book?: StaffNameBook): StaffPool {
   return { season, refreshedOn: date, members: fillRoles([], saveId, season, date, "", book) };

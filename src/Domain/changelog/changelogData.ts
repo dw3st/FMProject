@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.44.1",
+    date: "2026-11-25",
+    items: [],
+    fixes: [
+      { tab: "staff", pt: "A lista de profissionais livres sempre tem olheiros do país do seu clube.", en: "The free staff list always has scouts from your club's country." },
+      { tab: "squad", pt: "Na base, cada jogador mostra a bandeira e o nome abre a ficha com todos os atributos.", en: "In the academy, each player shows his flag and the name opens his profile with every attribute." },
+    ],
+  },
+  {
     version: "12.44",
     date: "2026-11-25",
     time: "15:04",

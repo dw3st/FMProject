@@ -80,7 +80,7 @@ export function PlayerScreen({
     }
     const isMyClub = sessionMatchesClubRoute(session, league, club, mySquad);
     if (isMyClub && mySquad) {
-      const found = mySquad.players.find((p) => p.id === playerId) ?? null;
+      const found = mySquad.players.find((p) => p.id === playerId) ?? mySquad.youth?.find((p) => p.id === playerId) ?? null;
       setPlayer(found);
       setSquadId(mySquad.id);
       setSquadName(mySquad.name);

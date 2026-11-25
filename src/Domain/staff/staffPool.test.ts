@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { cheapQuota, generatePool, hasCheapStaff, isCheapStaff, refreshPool, returnToPool, searchPool, takeFromPool, topUpCheapStaff, topUpMissingRoles } from "@/Domain/staff/staffPool";
+import { cheapQuota, generatePool, hasCheapStaff, isCheapStaff, refreshPool, returnToPool, searchPool, takeFromPool, topUpCheapStaff, topUpLocalScouts, topUpMissingRoles } from "@/Domain/staff/staffPool";
 import { STAFF_ROLES } from "@/Domain/staff/staffTypes";
 import { STAFF } from "@/Domain/staff/staffConfig";
 import { memberStars } from "@/Domain/staff/staff";
+import type { StaffNameBook } from "@/Domain/staff/staffOrigin";
+import countries from "@/Data/countries.json";
 
 describe("staff pool", () => {
   const pool = generatePool("save1", "2027", "2027-02-05");
@@ -112,5 +114,17 @@ describe("staff pool", () => {
     const topped = topUpCheapStaff(old, "save1", "2027-03-01");
     for (const role of STAFF_ROLES) expect(cheapOf(topped.members, role).length).toBe(cheapQuota(role));
     expect(new Set(topped.members.map((m) => m.id)).size).toBe(topped.members.length);
+  });
+
+  test("the pool keeps scouts of the human club's country (report c34a5e33)", () => {
+    const book: StaffNameBook = {};
+    for (const c of Object.keys(countries)) book[c] = { first: [`${c}F`], last: [`${c}L`], clubs: c === "England" ? 200 : 2 };
+    const pool = generatePool("save1", "2027", "2027-03-01", book);
+    const local = (p: typeof pool, role: string) => p.members.filter((m) => m.role === role && m.nationality === "Brazil").length;
+    const topped = topUpLocalScouts(pool, "save1", "2027-03-01", "Brazil", book);
+    expect(local(topped, "scout")).toBeGreaterThanOrEqual(STAFF.POOL.LOCAL_SCOUTS.scout);
+    expect(local(topped, "fieldScout")).toBeGreaterThanOrEqual(STAFF.POOL.LOCAL_SCOUTS.fieldScout);
+    expect(new Set(topped.members.map((m) => m.id)).size).toBe(topped.members.length);
+    expect(topUpLocalScouts(topped, "save1", "2027-03-01", "Brazil", book)).toBe(topped);
   });
 });

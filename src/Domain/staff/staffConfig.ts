@@ -110,5 +110,7 @@ export const STAFF = {
     STAR_BANDS: [[1, 2, 0.3], [2.5, 3, 0.4], [3.5, 4, 0.22], [4.5, 5, 0.08]],
     RETIRE_AGE: 68,
     REFRESH_SHARE: 1 / 3,
+    /** Scouts of the human club's own country the pool always keeps (tester report c34a5e33): chief, field. */
+    LOCAL_SCOUTS: { scout: 3, fieldScout: 6 },
   },
 } as const;

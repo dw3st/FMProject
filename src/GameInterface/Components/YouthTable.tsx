@@ -17,6 +17,10 @@ import { OptionChips } from "@/GameInterface/ui/OptionChips";
 import { Chip } from "@/GameInterface/ui/Chip";
 import { SectionTitle } from "@/GameInterface/ui/SectionTitle";
 import { TickBox } from "@/GameInterface/ui/TickBox";
+import { Flag } from "@/GameInterface/Components/Flag";
+import { nationalityFlagCode } from "@/Domain/world/nationalityFlag";
+import { playerHref } from "@/GameInterface/Scouting/scoutingApi";
+import { followLinkOnly } from "@/GameInterface/router/navigation";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { YouthCoachCard, type YouthCoachCardData } from "@/GameInterface/Squad/YouthCoachCard";
 import { YouthGoalCell, type YouthGoalView } from "@/GameInterface/Squad/YouthGoalCell";
@@ -226,7 +230,10 @@ export function YouthTable({ callUps, clubColors }: { callUps?: ReactNode; clubC
       sortValue: (r) => r.player.name,
       cell: (r) => (
         <span className="inline-flex items-center gap-1.5 font-semibold">
-          <span className={r.player.reborn ? LEGEND_NAME_CLASS : undefined}>{r.player.name}</span>
+          {(() => { const f = nationalityFlagCode(r.player.nationality); return f ? <Flag code={f} /> : null; })()}
+          {r.player.secondNationality && (() => { const f = nationalityFlagCode(r.player.secondNationality); return f ? <Flag code={f} /> : null; })()}
+          <a href={playerHref(r.player.id, session?.clubId ?? "", session?.leagueSlug)} onClick={followLinkOnly}
+            className={`hover:text-primary hover:underline ${r.player.reborn ? LEGEND_NAME_CLASS : "text-foreground"}`}>{r.player.name}</a>
           {r.player.reborn && <LegendLaurel />}
           {isCreatedPlayer(r.player.id) && <CreatedStar />}
           {r.player.reborn && <RebornBadge />}
