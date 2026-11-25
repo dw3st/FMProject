@@ -41,9 +41,9 @@ export function bankLoanQuote(amount: number, seasons: number): { total: number;
   return { total, weekly: Math.ceil(total / weeks), weeks, interest: total - amount };
 }
 
-export function bankLoanRefusal(squad: Squad, board: number | undefined, amount: unknown, seasons: unknown): BankLoanRefusal | null {
+export function bankLoanRefusal(squad: Squad, board: number | undefined, amount: unknown, seasons: unknown, president = false): BankLoanRefusal | null {
   if (squad.bankLoan) return "loanActive";
-  if (board !== undefined && board < BANK_LOAN.MIN_BOARD) return "boardLow";
+  if (!president && board !== undefined && board < BANK_LOAN.MIN_BOARD) return "boardLow";
   if (typeof amount !== "number" || !Number.isInteger(amount) || amount < BANK_LOAN.MIN_AMOUNT) return "invalidAmount";
   if (amount > bankLoanLimit(squad)) return "overLimit";
   if (!(BANK_LOAN.TERMS as readonly unknown[]).includes(seasons)) return "invalidSeasons";

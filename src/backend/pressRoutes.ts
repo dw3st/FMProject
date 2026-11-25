@@ -1,3 +1,4 @@
+import { isPresident } from "@/Domain/ownClub/ownClub";
 import { saveService, SaveService } from "@/backend/SaveService";
 import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
@@ -100,7 +101,9 @@ export const pressRoutes = {
         if (out.attack.banned) banned = PRESS.ATTACK.BAN_MATCHES;
       }
       await service.updateSeat(saveId, auth.seatId, {
-        press: out.state, board: out.board,
+        press: out.state,
+        // The president has no board: only the fans move.
+        board: isPresident(squad, auth.seatId) ? { ...out.board, board: meta.board.board } : out.board,
         ...(fine > 0 ? { managerSpent: (meta.managerSpent ?? 0) + fine } : {}),
         ...(banned > 0 ? { managerBan: { matches: (meta.managerBan?.matches ?? 0) + banned, since: today } } : {}),
       });

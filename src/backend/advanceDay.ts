@@ -83,6 +83,8 @@ import {
   stadiumFillRate,
 } from "@/Domain/boardFans/boardFans";
 import { boardAfterMatches, objectiveFromSquads } from "@/backend/boardWorld";
+import { isPresident } from "@/Domain/ownClub/ownClub";
+import { FOUNDED } from "@/Domain/ownClub/ownClubConfig";
 import { pressDay } from "@/backend/pressWorld";
 import { collectDayNews, newNewsCollector, readLeaders, writeDayNews } from "@/backend/newsWorld";
 import type { JobOffer } from "@/types/jobTypes";
@@ -2287,7 +2289,7 @@ export async function advanceOneDay(
         }
         // The workshop (craft): the board's monthly materials and the queue (`.claude/rules/game/facilities.md`).
         const withCraft = ensureCraft(playerSquad.facilities, playerSquad);
-        const cd = craftDay(withCraft.craft!, playerSquad, { saveId, date: currentDate, board: ds.board?.board ?? BOARD_FANS.START });
+        const cd = craftDay(withCraft.craft!, playerSquad, { saveId, date: currentDate, board: isPresident(playerSquad, ds.seatId) ? FOUNDED.ALLOWANCE_BOARD : ds.board?.board ?? BOARD_FANS.START });
         if (cd.allowance > 0) ds.deferred.facility.push({ date: currentDate, kind: "craft_allowance", cost: cd.allowance });
         if (Object.keys(cd.done).length > 0) ds.deferred.facility.push({ date: currentDate, kind: "craft_done", components: cd.done });
         const day = advanceFacilities({ ...withCraft, craft: cd.craft, items: worn.items }, currentDate);
@@ -2693,15 +2695,19 @@ export async function advanceOneDay(
             // The board judges the season: objective, league title, promotion/relegation; a happy
             // board pays a bonus, an angry one may sack the manager (sacking enabled only).
             if (ds.board) {
+              const president = isPresident(await saveService.getSquadById(saveId, ds.clubId ?? ""), ds.seatId);
               const row = tablePos >= 0 ? table[tablePos]! : null;
               const position = row && row.mp > 0 ? tablePos + 1 : null;
               ds.rollover.objectiveMet = position !== null && !!ds.board.objective && position <= ds.board.objective.target;
               ds.rollover.objectiveTarget = ds.board.objective?.target;
-              ds.board = evaluateSeason(ds.board, { position });
-              if (position === 1) ds.board = applyCompetitionEvent(ds.board, { kind: "title", title: `league:${slug}` });
-              if (ds.rollover.move?.kind === "promoted") ds.board = applyCompetitionEvent(ds.board, { kind: "promoted" });
-              if (ds.rollover.move?.kind === "relegated") ds.board = applyCompetitionEvent(ds.board, { kind: "relegated" });
-              const bonus = boardBonus(ds.board.board, wageRevenueBasisOf(next));
+              // The president has no board to judge the season: no evaluation, no competition events, no bonus.
+              if (!president) {
+                ds.board = evaluateSeason(ds.board, { position });
+                if (position === 1) ds.board = applyCompetitionEvent(ds.board, { kind: "title", title: `league:${slug}` });
+                if (ds.rollover.move?.kind === "promoted") ds.board = applyCompetitionEvent(ds.board, { kind: "promoted" });
+                if (ds.rollover.move?.kind === "relegated") ds.board = applyCompetitionEvent(ds.board, { kind: "relegated" });
+              }
+              const bonus = president ? 0 : boardBonus(ds.board.board, wageRevenueBasisOf(next));
               if (bonus > 0) {
                 ds.rollover.boardBonusEntry = {
                   date: currentDate, kind: "prize", amount: bonus, label: "Board bonus", ref: { stage: "board_bonus" },
@@ -2711,8 +2717,10 @@ export async function advanceOneDay(
               }
               // Only the sacking is decided here; warnings/praise come from the daily review below,
               // on the carried-over meters of the new season.
-              const review = reviewBoardStatus(ds.board, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
-              if (review.sacked) ds.sackedReason = review.sacked;
+              if (!president) {
+                const review = reviewBoardStatus(ds.board, { sackingEnabled: ds.meta.sackingEnabled !== false, date: currentDate });
+                if (review.sacked) ds.sackedReason = review.sacked;
+              }
             }
             // The seat's standings passage closes with the season (still the old objective). A passage of the NEW
             // season (opened today by an earlier try of this same day whose flush wrote the seat but not the meta)
@@ -3033,7 +3041,8 @@ export async function advanceOneDay(
           const newLeague = index.byId(ds.clubId)?.leagueSlug ?? ds.meta.leagueSlug;
           const state = updatedActiveLeagues[stateIdx(newLeague)];
           const catalogForBoard = await getLeagueData();
-          const objective = objectiveFromSquads({
+          // The president has no board, so no objective.
+          const objective = isPresident(await saveService.getSquadById(saveId, ds.clubId), ds.seatId) ? null : objectiveFromSquads({
             squads: await saveService.getSquadsInLeague(saveId, newLeague),
             playerSquadId: ds.clubId,
             leagueSlug: newLeague,
@@ -3274,7 +3283,8 @@ export async function advanceOneDay(
     for (const ds of daySeats) {
       let b = ds.board;
       if (!b) continue;
-      if (!ds.sackedReason) {
+      const presidentOfClub = !!ds.clubId && isPresident(await saveService.getSquadById(saveId, ds.clubId), ds.seatId);
+      if (!ds.sackedReason && !presidentOfClub) {
         // League matches the club still has: an ultimatum is sized to them and never outlives the season.
         let leagueMatchesLeft: number | undefined;
         if (ds.clubId && (b.ultimatum || b.board < BOARD_FANS.status.ULTIMATUM)) {
@@ -3483,7 +3493,7 @@ export async function advanceOneDay(
       }
       // ── The manager's contract (`.claude/rules/game/jobs.md` → "Contrato do técnico"): the board's
       // renewal at 85% of the last season, the warning a week before the end. Messages deferred.
-      if (!ended && ds.board && clubId && contract) {
+      if (!ended && ds.board && clubId && contract && !isPresident(await saveService.getSquadById(saveId, clubId), ds.seatId)) {
         const league = index.byId(clubId)?.leagueSlug ?? ds.meta.leagueSlug;
         const st = updatedActiveLeagues.find((l) => l.leagueSlug === league);
         // The country rolled: the contract follows the NEW league's season end (seasons left kept).
@@ -3658,7 +3668,9 @@ export async function advanceOneDay(
           : {}),
         matchContext: ds.press.matchContext,
       });
-      ds.board = pressOut.board;
+      // The president has no board: only the fans move.
+      ds.board = ds.clubId && isPresident(await saveService.getSquadById(saveId, ds.clubId), ds.seatId)
+        ? { ...pressOut.board, board: ds.board.board } : pressOut.board;
       ds.pressOut = { state: pressOut.press, ...(pressOut.invite ? { invite: pressOut.invite } : {}), news: pressOut.news };
     }
 

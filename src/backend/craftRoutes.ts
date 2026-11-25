@@ -6,6 +6,8 @@ import { BufferingSaveDAL } from "@/backend/dal/BufferingSaveDAL";
 import { FileSystemDAL } from "@/backend/dal/FileSystemDAL";
 import { ensureCraft } from "@/backend/craftWorld";
 import { withInitialFacilities } from "@/backend/facilityWorld";
+import { isPresident } from "@/Domain/ownClub/ownClub";
+import { FOUNDED } from "@/Domain/ownClub/ownClubConfig";
 import { allowanceShare } from "@/Domain/craft/allowance";
 import { COMPONENTS, CRAFT, MATERIALS } from "@/Domain/craft/craftConfig";
 import { recipeFor } from "@/Domain/craft/recipes";
@@ -32,6 +34,8 @@ interface Club {
   ref: { leagueSlug: string; clubSlug: string };
   date: string;
   board: number;
+  /** The board level the monthly allowance is read at (the president's fixed one in a founded club). */
+  allowanceBoard: number;
   leagueSlug: string;
 }
 
@@ -49,7 +53,8 @@ async function loadClub(saveId: string, seatId: string): Promise<Club | Response
   return {
     squad, ref: { leagueSlug: entry.leagueSlug, clubSlug: entry.stem },
     date: meta.currentDate ?? new Date().toISOString().slice(0, 10),
-    board: meta.board?.board ?? BOARD_FANS.START, leagueSlug: meta.leagueSlug,
+    board: meta.board?.board ?? BOARD_FANS.START,
+    allowanceBoard: isPresident(squad, seatId) ? FOUNDED.ALLOWANCE_BOARD : meta.board?.board ?? BOARD_FANS.START, leagueSlug: meta.leagueSlug,
   };
 }
 
@@ -81,7 +86,7 @@ function view(saveId: string, c: Club) {
       return { material: m, standard: unitPrice(week, "standard", c.board), good: unitPrice(week, "good", c.board), previous: unitPrice(prev, "standard", c.board) };
     }),
     discount: c.board >= CRAFT.DISCOUNT_BOARD,
-    allowance: Math.round(revenue * allowanceShare(c.board)),
+    allowance: Math.round(revenue * allowanceShare(c.allowanceBoard)),
     balance: c.squad.finances?.budget ?? 0,
     recipes: COMPONENTS.map((id) => ({ component: id, ...CRAFT.RECIPES[id], locked: CRAFT.RECIPES[id].minLevel > craft.workshop })),
     /** What recycling each item above level 1 would give back (the Recycle cards show it). */
