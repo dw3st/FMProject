@@ -4987,6 +4987,7 @@
   },
   "negotiation": {
     "loanRenewal": {
+      "perWeek": "{{amount}}/week",
       "offered": "Renewal offered",
       "closed": "This offer is closed.",
       "renewed": "Loan renewed.",

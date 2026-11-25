@@ -19,3 +19,8 @@ export function useLeagueCatalog(): LeagueData[] {
   }, []);
   return leagues;
 }
+
+/** The catalog fetched so far, for helpers outside React (empty until `useLeagueCatalog` loaded it once). */
+export function leagueCatalogNow(): LeagueData[] {
+  return cached ?? [];
+}

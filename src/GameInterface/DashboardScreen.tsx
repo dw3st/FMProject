@@ -26,6 +26,7 @@ import { teamDisplayNameFromLeagues } from "@/GameInterface/teamDisplayName";
 import { competitionName } from "@/Domain/world/labels";
 import { isCupSlug } from "@/Domain/cups/cupIds";
 import { isContinentalSlug } from "@/Domain/continental/competitions";
+import { useLeagueCatalog } from "@/GameInterface/World/useLeagueCatalog";
 import { InboxCategoryTile, InboxMessageBody, inboxIllustration, inboxPreview, inboxSubject } from "@/GameInterface/InboxScreen";
 import { trendOf } from "@/Domain/boardFans/boardFans";
 import { useTransferWindows } from "@/GameInterface/Transfers/transferWindow";
@@ -86,6 +87,7 @@ export function DashboardScreen() {
   const humanClubs = useHumanClubs(session?.saveId, !!session?.groupAdvance);
 
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
+  useLeagueCatalog(); // league names in the record previews (tester report 4fa76c9a)
   const [standings, setStandings] = useState<StandingRow[] | null>(null);
   const [ledger, setLedger] = useState<LedgerApiResponse | null>(null);
   const [stageMeta, setStageMeta] = useState<LeagueSeasonMeta | null>(null);

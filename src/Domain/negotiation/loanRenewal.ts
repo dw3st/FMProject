@@ -88,7 +88,7 @@ export function outboundRenewalWanted(args: {
 
 /** The offer record (`expires` = the day before the loan ends). */
 export function loanRenewalOffer(args: {
-  id: string; direction: "in" | "out"; player: Pick<RosterPlayer, "id" | "name">; club: Pick<Squad, "id" | "name">;
+  id: string; direction: "in" | "out"; player: Pick<RosterPlayer, "id" | "name" | "contract">; club: Pick<Squad, "id" | "name">;
   date: string; loanUntil: string; until: string; wageShare: number; fee: number;
 }): LoanRenewalOffer {
   const lastDay = addDays(args.loanUntil, -1);
@@ -96,6 +96,7 @@ export function loanRenewalOffer(args: {
     id: args.id, direction: args.direction, playerId: args.player.id, playerName: args.player.name,
     clubId: args.club.id, clubName: args.club.name, date: args.date,
     expires: lastDay < args.date ? args.date : lastDay, until: args.until, wageShare: args.wageShare, fee: args.fee,
+    ...(args.player.contract?.wage ? { wage: args.player.contract.wage } : {}),
   };
 }
 

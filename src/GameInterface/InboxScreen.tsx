@@ -15,6 +15,7 @@ import { ArtIcon, Icon, iconOf } from "@/GameInterface/Icons";
 import type { InboxCategory, InboxMessage } from "@/types/inboxTypes";
 import type { LeagueData } from "@/types/playerTypes";
 import { competitionName } from "@/Domain/world/labels";
+import { leagueCatalogNow, useLeagueCatalog } from "@/GameInterface/World/useLeagueCatalog";
 import { Button } from "@/GameInterface/ui/Button";
 import { SegmentedTabs } from "@/GameInterface/ui/SegmentedTabs";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
@@ -313,6 +314,7 @@ export function InboxScreen({ onClose, embedded = false }: { onClose?: () => voi
   );
   const [busy, setBusy] = useState(false);
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
+  useLeagueCatalog(); // league names in the record previews (tester report 4fa76c9a)
   // Preferences panel (which news topics reach the inbox) in place of the message list.
   const [showPrefs, setShowPrefs] = useState(false);
 
@@ -701,7 +703,7 @@ function leaguePrizeTexts(
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): { subject: string; preview: string } | null {
   if (message.category === "club_record") {
-    const x = clubRecordTexts(message.record, t, (slug) => slug);
+    const x = clubRecordTexts(message.record, t, (slug) => competitionName(slug, leagueCatalogNow(), i18nLang()) || slug);
     return { subject: t("clubHistory.inboxSubject", { record: x.label }), preview: `${x.value} · ${x.detail}` };
   }
   if (message.category === "facilities") {
