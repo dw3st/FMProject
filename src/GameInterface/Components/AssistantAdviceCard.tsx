@@ -42,8 +42,8 @@ export function AssistantAdviceCard({ tips, onApply, onAct, onDismiss }: {
           <p className="text-sm text-foreground m-0 tabular-nums">{text(tip)}</p>
           <div className="flex flex-wrap items-center gap-2">
             {planned(tip) && (
-              <button type="button" onClick={() => onApply(tip)}
-                className="h-8 px-2 rounded-md border border-primary bg-primary/15 text-sm font-semibold text-primary hover:bg-primary/25">
+              <button type="button" onClick={() => onApply(tip)} title={planned(tip)!}
+                className="h-8 px-2 max-w-full min-w-0 truncate whitespace-nowrap rounded-md border border-primary bg-primary/15 text-sm font-semibold text-primary hover:bg-primary/25">
                 {planned(tip)}
               </button>
             )}

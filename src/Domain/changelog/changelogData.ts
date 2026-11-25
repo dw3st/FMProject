@@ -31,6 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.42.1",
+    date: "2026-11-25",
+    time: "12:46",
+    items: [],
+    fixes: [
+      { tab: "scout", pt: "No olheiro, o nome do jogador não some mais quando ele tem várias etiquetas de disponibilidade.", en: "In the scout search, a player's name no longer disappears when he has several availability tags." },
+      { tab: "match", pt: "Na partida, a sugestão do auxiliar com um nome longo fica numa linha só.", en: "In the match, an assistant suggestion with a long name stays on one line." },
+      { tab: "manager", pt: "A mensagem de conquista desbloqueada diz o que foi conquistado, por exemplo quantos gols ou títulos.", en: "The achievement unlocked message says what was achieved, for example how many goals or titles." },
+      { tab: "match", pt: "No pênalti e na falta direta, a bola fica parada na marca enquanto o cobrador toma distância.", en: "On a penalty or a direct free kick, the ball stays on the spot while the taker steps back." },
+    ],
+  },
+  {
     version: "12.42",
     date: "2026-11-25",
     time: "10:33",

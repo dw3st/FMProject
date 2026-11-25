@@ -15,7 +15,7 @@ function player(id: number, slotIndex: number, role: string, aptitudes: Record<s
 }
 const xi = [
   player(1, 0, "GK", { GK: "natural" }),
-  player(2, 1, "LB", { LB: "natural", CB: "apt", ST: "unsuitable" }),
+  player(2, 1, "LB", { LB: "natural", CB: "training", ST: "unsuitable" }),
   player(3, 2, "ST", { ST: "natural", CB: "unsuitable" }),
 ];
 

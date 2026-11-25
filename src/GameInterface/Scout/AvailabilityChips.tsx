@@ -15,7 +15,7 @@ export function AvailabilityChips({ value, inline = false }: { value: PlayerAvai
   const keys = ORDER.filter((k) => value?.[k]);
   if (keys.length === 0) return null;
   return (
-    <span className={inline ? "flex shrink-0 gap-1" : "flex flex-wrap gap-1 mt-1"}>
+    <span className={inline ? "flex min-w-0 overflow-hidden gap-1" : "flex flex-wrap gap-1 mt-1"}>
       {keys.map((k) => (
         <span key={k} title={t(`scout.availability.${k}Hint`)} className={`rounded border px-1.5 py-0.5 text-sm font-semibold leading-none ${TONE[k]}`}>
           {t(`scout.availability.${k}`)}

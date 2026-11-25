@@ -5729,7 +5729,10 @@ export function PixiPitch({
         // toward where he runs, or toward the goal he attacks when he stands still.
         {
           const stB = stateRef.current;
-          const holder = heldId === null ? null : stB.players.find((p) => p.id === heldId);
+          // A penalty or a direct free kick waits on the spot: the ball never follows the taker's run-up (report 978d03db).
+          const spB = stB.setPiece;
+          const onSpot = !!spB && !replayRun && (spB.type === 'penalty' || (spB.type === 'free_kick' && spB.variant === 'direct' && !!spB.position));
+          const holder = heldId === null || onSpot ? null : stB.players.find((p) => p.id === heldId);
           const hg = holder ? playerGraphics.get(holder.id) : undefined;
           if (holder && hg) {
             const v = markerVel.get(holder.id);

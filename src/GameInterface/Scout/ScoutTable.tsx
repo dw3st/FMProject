@@ -199,7 +199,7 @@ export function ScoutTable({
                 {player.leagueSlug && player.clubSlug ? (
                   <a
                     href={`/player/${encodeURIComponent(player.leagueSlug)}/${encodeURIComponent(player.clubSlug)}/${encodeURIComponent(player.id)}`}
-                    className="text-foreground hover:text-primary hover:underline no-underline truncate"
+                    className="text-foreground hover:text-primary hover:underline no-underline truncate shrink-0 max-w-[11rem]"
                     {...hoverProps(player)}
                   >
                     {player.name}
@@ -209,12 +209,12 @@ export function ScoutTable({
                     type="button"
                     onClick={() => onView(player)}
                     {...hoverProps(player)}
-                    className="min-w-0 truncate text-left text-foreground hover:text-primary hover:underline bg-transparent border-0 p-0 cursor-pointer font-[inherit]"
+                    className="shrink-0 max-w-[11rem] truncate text-left text-foreground hover:text-primary hover:underline bg-transparent border-0 p-0 cursor-pointer font-[inherit]"
                   >
                     {player.name}
                   </button>
                 ) : (
-                  <span className="text-foreground truncate">{player.name}</span>
+                  <span className="text-foreground truncate shrink-0 max-w-[11rem]">{player.name}</span>
                 )}
                 {starIds.get(player.id) && <StarBadge kind={starIds.get(player.id)} />}
                 {player.squadId !== mySquadId && (
