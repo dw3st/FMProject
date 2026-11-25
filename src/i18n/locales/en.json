@@ -2761,7 +2761,8 @@
       "subject": {
         "offer": "Job offer: {{club}}",
         "hired": "New job: {{club}}",
-        "application_refused": "{{club}} turned down your application"
+        "application_refused": "{{club}} turned down your application",
+        "founded": "Club founded: {{club}}"
       },
       "offer": "{{club}} ({{league}}) wants you as their manager.",
       "hired": "You are the new manager of {{club}} ({{league}}). The board has set this season's objective.",
@@ -9963,6 +9964,96 @@
     }
   },
   "ownClub": {
-    "president": "President"
+    "president": "President",
+    "foundedByYou": "Founded by you",
+    "card": {
+      "title": "Found your own club",
+      "locked": "Unlock every achievement: {{done}} of {{total}}",
+      "unlocked": "You have every achievement. Pick a club in the bottom division and give it a new name.",
+      "found": "Found your own club",
+      "founded": "You have already founded your club.",
+      "foundedNamed": "You founded {{club}}."
+    },
+    "wizard": {
+      "title": "Found your own club",
+      "stepOf": "Step {{n}} of {{total}}",
+      "steps": {
+        "country": "Country",
+        "club": "Club",
+        "identity": "Identity",
+        "confirm": "Confirmation"
+      },
+      "countryHint": "The club starts in the country's bottom division.",
+      "clubHint": "Pick the club that becomes yours. Its place in the table and its fixtures stay.",
+      "blocked": {
+        "humanClub": "Another manager",
+        "continental": "In a continental competition"
+      },
+      "name": "Club name",
+      "shortName": "Short name (3 letters)",
+      "color1": "Main colour",
+      "color2": "Second colour",
+      "preview": "Crest",
+      "invalid": {
+        "name": "The name needs {{min}} to {{max}} characters, with no space at the ends.",
+        "shortName": "The short name needs 3 letters.",
+        "colors": "The two colours must be different."
+      },
+      "replaces": "Replacing {{club}} · {{country}}",
+      "confirm": {
+        "leave": "You leave your current club, with no fee.",
+        "squad": "The chosen club's squad and youth players leave.",
+        "players": "{{count}} new players arrive, weaker than the rest of the division.",
+        "president": "You are manager and president: no board, no sacking.",
+        "once": "You can found only one club per career."
+      },
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Continue",
+      "submit": "Found the club",
+      "founding": "Founding..."
+    },
+    "errors": {
+      "generic": "That did not work. Try again.",
+      "locked": "You still need some achievements to found the club.",
+      "alreadyFounded": "You have already founded a club in this career.",
+      "humanClub": "That club has another manager.",
+      "continental": "That club is in a continental competition.",
+      "notFound": "That club no longer exists.",
+      "notLowest": "That club is not in the bottom division.",
+      "invalidIdentity": "Check the name, short name and colours.",
+      "lobby": "The league has not started yet.",
+      "noClub": "You have no club.",
+      "notPresident": "Only the president can do that.",
+      "invalidPrice": "Price out of range.",
+      "invalidAmount": "Invalid amount.",
+      "noMoney": "You do not have that much money.",
+      "invalidWage": "Wage out of range."
+    },
+    "ticket": {
+      "label": "Ticket price",
+      "down": "Lower the price",
+      "up": "Raise the price",
+      "attendance": "Crowd per game",
+      "gate": "Gate per game",
+      "hint": "Dearer tickets earn more per fan, but fewer fans come."
+    },
+    "money": {
+      "title": "President's money",
+      "wallet": "Your wallet",
+      "deposit": "Put money into the club",
+      "depositButton": "Deposit",
+      "depositHint": "Minimum {{min}}. The money leaves your wallet for good.",
+      "deposited": "{{amount}} went into the club's balance.",
+      "wage": "Your weekly wage",
+      "wageButton": "Save",
+      "wageHint": "Now {{wage}}. Cap for your reputation: {{cap}}.",
+      "wageSaved": "Your wage is now {{wage}}."
+    },
+    "inbox": {
+      "subject": "You founded {{club}}",
+      "body": "{{club}} ({{league}}) is yours: you are the manager and the president. The new squad has arrived.",
+      "open": "See the {{club}} squad"
+    }
   }
 }

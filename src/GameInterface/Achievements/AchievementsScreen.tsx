@@ -27,6 +27,7 @@ import { CoursesTab } from "@/GameInterface/Achievements/CoursesTab";
 import { ReactionsTab } from "@/GameInterface/Achievements/ReactionsTab";
 import { BetsTab } from "@/GameInterface/Achievements/BetsTab";
 import { CasinoTab } from "@/GameInterface/Achievements/Casino/CasinoTab";
+import { FoundClubCard } from "@/GameInterface/OwnClub/FoundClubCard";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { SelectCombobox } from "@/GameInterface/Components/SelectCombobox";
 import { ManagerFaceImage } from "@/GameInterface/Components/PersonFace";
@@ -126,7 +127,12 @@ export function AchievementsScreen() {
         active={tab}
         onChange={setTab}
       />
-      {tab === "list" && <ListTab data={data} />}
+      {tab === "list" && (
+        <div className="flex flex-col gap-6">
+          <FoundClubCard saveId={saveId} />
+          <ListTab data={data} />
+        </div>
+      )}
       {tab === "profile" && (
         <div className="flex flex-col gap-8">
           <ProfileTab data={data} saveId={saveId} onChange={setData} />

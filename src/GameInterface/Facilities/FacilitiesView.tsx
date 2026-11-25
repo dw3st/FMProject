@@ -1,4 +1,5 @@
 import { paintedStands, stadiumMapGeom, type MapRect } from "@/GameInterface/Facilities/stadiumMapGeom";
+import { TicketPriceControl } from "@/GameInterface/OwnClub/TicketPriceControl";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/GameInterface/Icons";
@@ -137,6 +138,7 @@ export function FacilitiesView({
               <TurfSummary data={data} ground={squadId} onRepair={() => onJob({ kind: "item", mode: "repair", item: "stadiumPitch" }, true)}
                 onChange={() => onJob({ kind: "turf" }, true)} onMowing={(m) => void setMowing(m)} />
             </div>
+            <TicketPriceControl saveId={saveId} />
             <AttendanceChart games={seasonGames} leagues={leagues} nf={nf}
               sub={avgAttendance === null ? null : t("clubTabs.stadium.chartSub", { avg: nf(avgAttendance), pct: Math.round(avgOcc * 100) })} />
             {sponsors}
