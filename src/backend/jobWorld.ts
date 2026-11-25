@@ -345,7 +345,7 @@ export async function releaseHumanClub(
   // His trusted professionals go with the manager (10.7): they wait on the seat for his next club.
   const following = leavingTrusted(academy.squad.staff);
   if (following.length > 0) await service.updateSeat(saveId, seatId, { trustedStaff: following });
-  const { staff: _s, styleFamiliarity: _f, facilities: _fac, sponsors: _sp, managerAttributes: _a, youthTraining: _yt, youthGoals: _yg, playerTraining: _pt, bankLoan: _loan, ...rest } = stripClubMorale(academy.squad);
+  const { staff: _s, styleFamiliarity: _f, facilities: _fac, sponsors: _sp, managerAttributes: _a, youthTraining: _yt, youthGoals: _yg, playerTraining: _pt, bankLoan: _loan, ticketPriceMult: _tp, ...rest } = stripClubMorale(academy.squad);
   const tier = naturalFinancialTier(rest.finances);
   const grant = seasonalTransferBudgetFor(tier, popularityOf(rest));
   // D3: the compensation the manager's new club pays goes half into the AI budget (prize cap).
@@ -361,6 +361,8 @@ export async function releaseHumanClub(
   const ai: Squad = {
     ...rest, financialTier: tier, aiTransferBudget: aiBudgetWithPrize(grant, args.compensation ?? 0, grant),
     ...(registrations ? { registrations } : {}),
+    // The founder stays on record (crest, no second founding) but is no longer president.
+    ...(rest.foundedBy?.seatId === seatId && !rest.foundedBy.left ? { foundedBy: { ...rest.foundedBy, left: args.date } } : {}),
     ...(sponsorHistory.length > 0 ? { sponsorHistory } : {}),
   };
   await service.saveSquad(saveId, ref.leagueSlug, ref.clubSlug, ai);

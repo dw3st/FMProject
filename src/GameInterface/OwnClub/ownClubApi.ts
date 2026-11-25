@@ -1,6 +1,6 @@
 /** Routes of the manager's own club (`src/backend/ownClubRoutes.ts`, `src/backend/presidentRoutes.ts`). */
 
-export type FoundBlock = "humanClub" | "continental";
+export type FoundBlock = "humanClub" | "continental" | "founded";
 
 export interface FoundClubOptions {
   unlocked: boolean;

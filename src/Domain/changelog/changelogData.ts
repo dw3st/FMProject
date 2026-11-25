@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.43",
+    date: "2026-11-25",
+    time: "14:08",
+    items: [
+      { tab: "manager", pt: "Depois de todas as conquistas, funde seu próprio clube: escolha um time da última divisão de um país, dê nome, sigla e cores, e comece com um elenco novo e mais fraco que todos da divisão.", en: "After every achievement, found your own club: pick a bottom-division side in a country, give it a name, short name and colours, and start with a new squad weaker than everyone in the division." },
+      { tab: "manager", pt: "No clube que você fundou você é técnico e presidente: sem diretoria para cobrar ou demitir, preço do ingresso escolhido por você, aporte do seu dinheiro no clube e o seu próprio salário.", en: "At the club you founded you are manager and president: no board to judge or sack you, you set the ticket price, put your own money into the club and pick your own wage." },
+    ],
+  },
+  {
     version: "12.42.2",
     date: "2026-11-25",
     time: "13:05",

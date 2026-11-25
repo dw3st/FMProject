@@ -7,6 +7,7 @@ import { getStaffNameBook } from "@/backend/staffNameBook";
 import { CONTINENTAL_SLUGS } from "@/Domain/continental/competitions";
 import { contractEndFor, renewalContract } from "@/Domain/contracts/contracts";
 import { toFreeAgent } from "@/Domain/contracts/freeAgents";
+import { aiTransferBudgetOf } from "@/Domain/aiFinance/aiClubFinance";
 import { buildJobMessage } from "@/Domain/inbox/inboxEvents";
 import { FOUNDED } from "@/Domain/ownClub/ownClubConfig";
 import { foundedSquadPlan, ownClubUnlock, type ClubIdentity, type FoundedSlot } from "@/Domain/ownClub/ownClub";
@@ -22,7 +23,7 @@ import type { Pyramids } from "@/types/pyramidTypes";
 
 /** Founding the manager's own club (`.claude/rules/game/own-club.md`). E/S over the pure rules of `@/Domain/ownClub`. */
 
-export type FoundBlock = "humanClub" | "continental";
+export type FoundBlock = "humanClub" | "continental" | "founded";
 
 export interface FoundClubOption { id: string; name: string; blocked?: FoundBlock }
 export interface FoundCountryOption { country: string; leagues: { slug: string; clubs: FoundClubOption[] }[] }
@@ -67,12 +68,16 @@ export async function foundClubOptions(service: SaveService, saveId: string, met
   const index = await service.getSquadIndex(saveId);
   const humans = await otherHumanClubs(service, saveId, meta);
   const continental = await continentalClubs(service, saveId);
+  const founded = new Set<string>();
+  for (const { slugs } of lowestLeagues(await getPyramids())) {
+    for (const slug of slugs) for (const sq of await service.getSquadsInLeague(saveId, slug)) if (sq.foundedBy) founded.add(sq.id);
+  }
   const countries: FoundCountryOption[] = lowestLeagues(await getPyramids()).map(({ country, slugs }) => ({
     country,
     leagues: slugs.map((slug) => ({
       slug,
       clubs: index.inLeague(slug).map((t): FoundClubOption => {
-        const blocked: FoundBlock | undefined = humans.has(t.squadId) ? "humanClub" : continental.has(t.squadId) ? "continental" : undefined;
+        const blocked: FoundBlock | undefined = humans.has(t.squadId) ? "humanClub" : continental.has(t.squadId) ? "continental" : founded.has(t.squadId) ? "founded" : undefined;
         return { id: t.squadId, name: t.name, ...(blocked ? { blocked } : {}) };
       }),
     })),
@@ -94,6 +99,8 @@ export async function checkFounding(service: SaveService, saveId: string, meta: 
   if (!lowest) return { ok: false, status: 400, error: "notLowest" };
   if ((await otherHumanClubs(service, saveId, meta)).has(squadId)) return { ok: false, status: 409, error: "humanClub" };
   if ((await continentalClubs(service, saveId)).has(squadId)) return { ok: false, status: 409, error: "continental" };
+  const target = await service.getSquad(saveId, entry.leagueSlug, entry.stem);
+  if (target?.foundedBy) return { ok: false, status: 409, error: "alreadyFoundedClub" };
   return { ok: true, country: lowest.country, leagueSlug: entry.leagueSlug };
 }
 
@@ -112,10 +119,10 @@ const SPECIFICS: Record<FoundedSlot["line"], string[]> = {
 
 /** The 22 founded players (deterministic per save and club), with contracts of FOUNDED.CONTRACT_SEASONS seasons. */
 export function foundedPlayers(args: {
-  saveId: string; squad: Squad; worstLevel: number; nationality: string | null; date: string; seasonEnd: string;
+  saveId: string; seatId: string; squad: Squad; worstLevel: number; nationality: string | null; date: string; seasonEnd: string;
 }): RosterPlayer[] {
-  const { saveId, squad, worstLevel, nationality, date, seasonEnd } = args;
-  const seed = `founded:${saveId}:${squad.id}`;
+  const { saveId, seatId, squad, worstLevel, nationality, date, seasonEnd } = args;
+  const seed = `founded:${saveId}:${seatId}:${squad.id}`;
   const taken = new Set<string>();
   const byLine: Record<string, number> = {};
   const fresh: Squad = { ...squad, players: [], youth: [] };
@@ -125,7 +132,7 @@ export function foundedPlayers(args: {
     const list = SPECIFICS[slot.line];
     const specific = list[k % list.length] ?? list[Math.floor(unitFrom(`${seed}:pos:${slot.i}`) * list.length)]!;
     const player = makeAcademyPlayer({
-      id: `founded_${squad.id}_${slot.i}`, seed, i: slot.i, squad: fresh, specific, level: slot.level,
+      id: `founded_${seatId}_${squad.id}_${slot.i}`, seed, i: slot.i, squad: fresh, specific, level: slot.level,
       ageRange: [slot.age, slot.age], nationality, taken,
     });
     const p: RosterPlayer = {
@@ -181,7 +188,7 @@ export async function foundClub(
   }
   // 4. The founding squad.
   setAcademyNameBook(await getStaffNameBook().catch(() => null));
-  const players = foundedPlayers({ saveId, squad, worstLevel: worst, nationality: leagueNationality(country), date, seasonEnd });
+  const players = foundedPlayers({ saveId, seatId, squad, worstLevel: worst, nationality: leagueNationality(country), date, seasonEnd });
   const { registrations: _r, aiFormation: _f, ticketPriceMult: _t, ...rest } = squad;
   const founded: Squad = {
     ...rest,
@@ -209,7 +216,7 @@ export async function foundClub(
   const leagueName = competitionName(entry.leagueSlug, catalog as unknown as LeagueData[], "en");
   const offer: JobOffer = {
     id: `found_${squadId}_${date}`, squadId, clubName: identity.name, leagueSlug: entry.leagueSlug, leagueName,
-    window: "unemployed", date, expires: date, objective: null, budget: squad.aiTransferBudget ?? 0, expectedPosition: 1,
+    window: "unemployed", date, expires: date, objective: null, budget: aiTransferBudgetOf(squad), expectedPosition: 1,
     leagueSize: index.inLeague(entry.leagueSlug).length, prestige: 0, seasons: 1, ...(country ? { country } : {}),
   };
   const next = await acceptJobOffer(service, saveId, seatId, meta, offer, nudges, { announce: false });

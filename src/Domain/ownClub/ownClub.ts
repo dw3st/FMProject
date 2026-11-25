@@ -68,7 +68,8 @@ export function ticketDemandMult(priceMult: number): number {
 }
 
 export function isPresident(squad: Pick<Squad, "foundedBy"> | null | undefined, seatId: string): boolean {
-  return squad?.foundedBy?.seatId === seatId;
+  const f = squad?.foundedBy;
+  return !!f && f.seatId === seatId && !f.left;
 }
 
 export function managerWageCap(revenueBasis: number, reputation: number): number {

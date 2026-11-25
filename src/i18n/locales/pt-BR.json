@@ -9972,6 +9972,7 @@
       "clubHint": "Escolha o clube que vai virar o seu. A vaga na tabela e os jogos ficam.",
       "blocked": {
         "humanClub": "Outro técnico",
+        "founded": "Este clube já foi fundado por outro técnico",
         "continental": "Em competição continental"
       },
       "name": "Nome do clube",
@@ -10003,6 +10004,7 @@
       "locked": "Faltam conquistas para fundar o clube.",
       "alreadyFounded": "Você já fundou um clube nesta carreira.",
       "humanClub": "Esse clube tem outro técnico.",
+      "alreadyFoundedClub": "Outro técnico já fundou este clube.",
       "continental": "Esse clube está numa competição continental.",
       "notFound": "Esse clube não existe mais.",
       "notLowest": "Esse clube não está na última divisão.",

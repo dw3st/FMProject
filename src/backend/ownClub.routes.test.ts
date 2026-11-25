@@ -98,7 +98,7 @@ describe("own club: founding route", () => {
 
     const squad = (await saveService.getSquadById(saveId, target))!;
     expect(squad.players).toHaveLength(22);
-    expect(squad.players.map((p) => p.id).sort()).toEqual(Array.from({ length: 22 }, (_, i) => `founded_${target}_${i}`).sort());
+    expect(squad.players.map((p) => p.id).sort()).toEqual(Array.from({ length: 22 }, (_, i) => `founded_${seatId}_${target}_${i}`).sort());
     expect(squad.players.every((p) => p.contract && p.contract.wage > 0)).toBe(true);
     expect(squad.players.some((p) => oldIds.includes(p.id))).toBe(false);
     expect(squad.foundedBy?.seatId).toBe(seatId);
@@ -132,6 +132,11 @@ describe("own club: founding route", () => {
     const again = await call(saveId, "POST", token, { squadId: clubs[2]!.id, ...identity });
     expect(again.status).toBe(409);
     expect(await again.json()).toEqual({ error: "alreadyFounded" });
+
+    // The founded club shows as blocked for everybody else.
+    const viewAfter = await (await call(saveId, "GET", token)).json() as typeof v;
+    const blockedClub = viewAfter.countries.flatMap((c) => c.leagues).flatMap((l) => l.clubs).find((c) => c.id === target)!;
+    expect(blockedClub.blocked).toBe("founded");
   }, 300_000);
 
   test("clubs of a running continental competition are blocked", () => {

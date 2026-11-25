@@ -341,7 +341,7 @@ interface ClubCoach {
 
 export interface Squad {
   /** The human seat that founded this club (`.claude/rules/game/own-club.md`); stays when the club goes back to the AI. */
-  foundedBy?: { seatId: string; on: string };
+  foundedBy?: { seatId: string; on: string; left?: string };
   /** Ticket price multiplier set by the president (0.5–2.0); absent = 1. */
   ticketPriceMult?: number;
   /** Youth trial reveals of the club: more and better youngsters come to its trials. */

@@ -70,6 +70,7 @@ describe("misc rules", () => {
     expect(isPresident({ foundedBy: { seatId: "a", on: "2027-01-01" } }, "a")).toBe(true);
     expect(isPresident({ foundedBy: { seatId: "a", on: "2027-01-01" } }, "b")).toBe(false);
     expect(isPresident({}, "a")).toBe(false);
+    expect(isPresident({ foundedBy: { seatId: "a", on: "2027-01-01", left: "2027-06-01" } }, "a")).toBe(false);
   });
   test("managerWageCap", () => {
     expect(managerWageCap(10_000_000, 50)).toBeGreaterThan(0);

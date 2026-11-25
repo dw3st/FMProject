@@ -9987,6 +9987,7 @@
       "clubHint": "Pick the club that becomes yours. Its place in the table and its fixtures stay.",
       "blocked": {
         "humanClub": "Another manager",
+        "founded": "Another manager already founded this club",
         "continental": "In a continental competition"
       },
       "name": "Club name",
@@ -10018,6 +10019,7 @@
       "locked": "You still need some achievements to found the club.",
       "alreadyFounded": "You have already founded a club in this career.",
       "humanClub": "That club has another manager.",
+      "alreadyFoundedClub": "Another manager already founded this club.",
       "continental": "That club is in a continental competition.",
       "notFound": "That club no longer exists.",
       "notLowest": "That club is not in the bottom division.",
