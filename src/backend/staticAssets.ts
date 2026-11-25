@@ -269,6 +269,10 @@ export const GAME_ART_FILES: Record<string, string> = {
     ["seven", "bar", "bell", "lemon", "cherry", "ball", "boot", "whistle", "card", "glove", "trophy", "crest", "plane"]
       .map((s) => [`casino/sym-${s}-1.webp`, "image/webp"]),
   ),
+  // Games hall (12.42): track, table felt and the eight race cars, data_process/assets/casino/build_games_hall.py
+  "casino/race-track-1.webp": "image/webp",
+  "casino/table-felt-1.webp": "image/webp",
+  ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8].map((n) => [`casino/car-${n}-1.webp`, "image/webp"])),
   "taunts/reaction-applause.png": "image/png",
   "taunts/reaction-fireworks.png": "image/png",
   "taunts/reaction-popcorn.png": "image/png",

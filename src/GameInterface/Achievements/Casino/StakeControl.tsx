@@ -10,8 +10,8 @@ export function StakeControl({ value, max, disabled, onChange }: { value: number
   const { t } = useTranslation();
   const can = !disabled && max >= CASINO.MIN_STAKE;
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex items-center justify-between w-[200px] h-10 rounded border border-border px-1 font-bold tabular-nums">
+    <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between flex-1 min-w-0 max-w-[220px] h-10 rounded border border-border px-1 font-bold tabular-nums">
         <button type="button" aria-label={t("bets.less")} disabled={!can} onClick={() => onChange(stepStake(value, -1, max))} className="w-8 h-8 text-lg hover:text-primary disabled:opacity-40">−</button>
         <span>{formatFee(value)}</span>
         <button type="button" aria-label={t("bets.more")} disabled={!can} onClick={() => onChange(stepStake(value, 1, max))} className="w-8 h-8 text-lg hover:text-primary disabled:opacity-40">+</button>

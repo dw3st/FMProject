@@ -29,6 +29,8 @@ import { managerAssetRoutes } from "@/backend/managerAssetRoutes";
 import { seatFriendlyRoutes } from "@/backend/seatFriendlyRoutes";
 import { betRoutes } from "@/backend/betRoutes";
 import { casinoRoutes } from "@/backend/casinoRoutes";
+import { casinoGamesRoutes } from "@/backend/casinoGamesRoutes";
+import { casinoPokerRoutes } from "@/backend/casinoPokerRoutes";
 import { rebornRoutes } from "@/backend/rebornRoutes";
 import { managerRoutes } from "@/backend/managerRoutes";
 import { fanbaseRoutes } from "@/backend/fanbaseRoutes";
@@ -134,6 +136,8 @@ export const apiRoutes = withJsonErrors(withLobbyGuard({
   ...seatFriendlyRoutes,
   ...betRoutes,
   ...casinoRoutes,
+  ...casinoGamesRoutes,
+  ...casinoPokerRoutes,
   ...rebornRoutes,
   ...managerRoutes,
   ...fanbaseRoutes,

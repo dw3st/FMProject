@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.42",
+    date: "2026-11-25",
+    time: "10:33",
+    items: [
+      { tab: "manager", pt: "A aba Cassino virou Salão de jogos, com quatro jogos novos: corrida de carros (aposte no vencedor ou no pódio e veja as três voltas), blackjack, bingo de até quatro cartelas e pôquer Texas Hold'em contra três adversários do cassino.", en: "The Casino tab is now the Games hall, with four new games: a car race (back the winner or a podium place and watch the three laps), blackjack, bingo with up to four cards and Texas Hold'em poker against three house players." },
+    ],
+  },
+  {
     version: "12.41",
     date: "2026-11-24",
     items: [
@@ -7014,7 +7022,6 @@ export const CURRENT_VERSION = latest.version;
  */
 export const upcoming: ChangelogText[] = [
   { pt: "Estilo de jogo próprio para os clubes de cada país (a Bundesliga mais pressão e jogo direto)", en: "A playing style of their own for each country's clubs (the Bundesliga pressing more and playing more direct)" },
-  { pt: "Mais jogos no cassino do técnico", en: "More games in the manager's casino" },
   { pt: "Mais movimentos e detalhes nos bonecos da partida", en: "More moves and detail for the match figures" },
   { pt: "Correções e ajustes pedidos pelos testers", en: "Fixes and tweaks asked for by testers" },
 ];

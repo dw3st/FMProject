@@ -1,4 +1,7 @@
-import type { CasinoView, SlotMachine, SlotSpinView } from "@/types/casinoTypes";
+import type { BlackjackAction } from "@/Domain/casino/blackjack";
+import type { PokerAction } from "@/Domain/casino/poker";
+import type { RaceKind } from "@/Domain/casino/race";
+import type { BingoResultView, BlackjackView, CasinoView, RaceResultView, SlotMachine, SlotSpinView } from "@/types/casinoTypes";
 
 export type CasinoCall<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -31,3 +34,23 @@ export interface CashOutResult {
 }
 
 export const crashCashOut = (saveId: string, roundId: string) => call<CashOutResult>(`/api/saves/${saveId}/casino/crash/cashout`, { roundId });
+
+export const raceBet = (saveId: string, car: number, kind: RaceKind, stake: number) =>
+  call<{ result: RaceResultView; view: CasinoView }>(`/api/saves/${saveId}/casino/race/bet`, { car, kind, stake });
+
+export const bingoPlay = (saveId: string, cards: number, stake: number) =>
+  call<{ result: BingoResultView; view: CasinoView }>(`/api/saves/${saveId}/casino/bingo/play`, { cards, stake });
+
+export const blackjackDeal = (saveId: string, stake: number) =>
+  call<{ hand: BlackjackView; view: CasinoView }>(`/api/saves/${saveId}/casino/blackjack/deal`, { stake });
+
+export const blackjackAction = (saveId: string, action: BlackjackAction) =>
+  call<{ hand: BlackjackView; view: CasinoView }>(`/api/saves/${saveId}/casino/blackjack/action`, { action });
+
+export const pokerSit = (saveId: string, buyIn: number) => call<{ view: CasinoView }>(`/api/saves/${saveId}/casino/poker/sit`, { buyIn });
+
+export type PokerMove = PokerAction | { kind: "next" };
+
+export const pokerAction = (saveId: string, action: PokerMove) => call<{ view: CasinoView }>(`/api/saves/${saveId}/casino/poker/action`, { action });
+
+export const pokerLeave = (saveId: string) => call<{ view: CasinoView }>(`/api/saves/${saveId}/casino/poker/leave`, {});

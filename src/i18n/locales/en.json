@@ -6563,6 +6563,22 @@
       "crash": {
         "name": "Plane",
         "desc": "The multiplier climbs until the plane flies away. Cash out first."
+      },
+      "race": {
+        "name": "Race",
+        "desc": "Eight cars, three laps. Back the winner or a podium place."
+      },
+      "blackjack": {
+        "name": "Blackjack",
+        "desc": "Get close to 21 without going over. Blackjack pays 3 to 2."
+      },
+      "bingo": {
+        "name": "Bingo",
+        "desc": "Up to four cards, 30 balls. A full card pays 10,000 times."
+      },
+      "poker": {
+        "name": "Poker",
+        "desc": "Texas Hold'em against three house players."
       }
     },
     "limitsLine": "Stake from {{min}} to {{max}} (2% of the wallet). Daily loss cap: 10% of the wallet at the start of the day.",
@@ -6625,7 +6641,142 @@
       "invalidAuto": "The auto cash-out must be 1.01 or more.",
       "noRound": "That flight is over.",
       "noClub": "No club.",
-      "lobby": "The league has not started yet."
+      "lobby": "The league has not started yet.",
+      "invalidBet": "Invalid bet.",
+      "invalidAction": "Invalid move.",
+      "illegal": "That move is not allowed now.",
+      "invalidBuyIn": "Invalid buy-in.",
+      "noHand": "No hand in progress.",
+      "handOpen": "Finish the hand in progress.",
+      "notYourTurn": "It is not your turn yet.",
+      "seated": "You are already at the table."
+    },
+    "cards": {
+      "back": "Face-down card",
+      "card": "{{rank}} of {{suit}}",
+      "spades": "spades",
+      "hearts": "hearts",
+      "diamonds": "diamonds",
+      "clubs": "clubs"
+    },
+    "race": {
+      "running": "Race on…",
+      "card": "Race no. {{no}}",
+      "pos": "Pos",
+      "car": "Car",
+      "oddsWin": "Win",
+      "kind": "Bet type",
+      "win": "Winner",
+      "top3": "Podium",
+      "returns": "If {{name}} makes it, you get {{amount}}",
+      "go": "Bet and start",
+      "won": "You got {{amount}}.",
+      "lost": "Your car finished {{pos}}."
+    },
+    "blackjack": {
+      "dealer": "Dealer",
+      "total": "Total {{total}}",
+      "soft": "soft",
+      "doubled": "doubled",
+      "outcome": {
+        "win": "Won",
+        "blackjack": "Blackjack",
+        "push": "Push",
+        "lose": "Lost",
+        "bust": "Bust"
+      },
+      "idle": "Pick a stake and deal.",
+      "action": {
+        "hit": "Hit",
+        "stand": "Stand",
+        "double": "Double",
+        "split": "Split"
+      },
+      "deal": "Deal",
+      "stakeOn": "On the table: {{amount}}",
+      "won": "You won {{amount}}.",
+      "lost": "You lost {{amount}}.",
+      "push": "Push: your stake is back.",
+      "rules": "Six decks. The dealer stands on 17. Blackjack pays 3 to 2. Double on the first two cards only; split a pair once."
+    },
+    "bingo": {
+      "balls": "Balls: {{shown}} of {{total}}",
+      "prize": "{{pattern}}: {{amount}}",
+      "noPrize": "No prize",
+      "pattern": {
+        "line": "One line",
+        "twoLines": "Two lines",
+        "corners": "Four corners",
+        "x": "X",
+        "full": "Full card"
+      },
+      "idle": "Pick how many cards and the stake on each.",
+      "cards": "Cards",
+      "cost": "Total cost: {{amount}}",
+      "play": "Play",
+      "won": "You got {{amount}}.",
+      "lost": "No card won.",
+      "rules": "Numbers 1 to 75, {{drawn}} balls drawn. The centre is marked already. Each card pays its best prize only."
+    },
+    "poker": {
+      "button": "Button",
+      "winner": "Took the pot",
+      "ev": {
+        "blind": "Blind",
+        "fold": "Folded",
+        "check": "Checked",
+        "call": "Called",
+        "raise": "Raised",
+        "allin": "All-in",
+        "deal": "Cards",
+        "win": "Won"
+      },
+      "title": "Texas Hold'em",
+      "intro": "You against three house players, no limit. The buy-in leaves your wallet and whatever is left on the table comes back when you leave.",
+      "buyIn": "Buy-in",
+      "noRoom": "The minimum buy-in is {{amount}} and today's loss cap does not cover it.",
+      "sit": "Take a seat",
+      "you": "You",
+      "bot": "Player {{n}} · {{style}}",
+      "style": {
+        "cautious": "cautious",
+        "balanced": "balanced",
+        "aggressive": "aggressive"
+      },
+      "pot": "Pot {{amount}}",
+      "street": {
+        "preflop": "Pre-flop",
+        "flop": "Flop",
+        "turn": "Turn",
+        "river": "River",
+        "showdown": "Showdown",
+        "done": "Hand over"
+      },
+      "blinds": "Blinds {{small}} / {{big}} · hand {{hand}}",
+      "yourHand": "Your hand: {{hand}}",
+      "hand": {
+        "high": "high card",
+        "pair": "pair",
+        "twoPair": "two pair",
+        "trips": "three of a kind",
+        "straight": "straight",
+        "flush": "flush",
+        "fullHouse": "full house",
+        "quads": "four of a kind",
+        "straightFlush": "straight flush"
+      },
+      "fold": "Fold",
+      "check": "Check",
+      "call": "Call {{amount}}",
+      "raiseTo": "Raise to",
+      "raise": "Raise to {{amount}}",
+      "allin": "All-in ({{amount}})",
+      "handWon": "You won {{amount}} this hand.",
+      "handLost": "You lost {{amount}} this hand.",
+      "handEven": "You broke even this hand.",
+      "next": "Next hand",
+      "waiting": "The others are playing…",
+      "leave": "Leave the table ({{amount}})"
     }
   },
   "achievements": {
@@ -6683,7 +6834,7 @@
       "stadium": "Stadium",
       "reactions": "Reactions",
       "courses": "Courses",
-      "casino": "Casino"
+      "casino": "Games hall"
     },
     "loading": "Loading achievements…",
     "loadFailed": "Could not load the achievements.",

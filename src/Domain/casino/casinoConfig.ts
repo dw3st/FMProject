@@ -11,6 +11,12 @@ export const CASINO = {
   MAX_AUTO_SPINS: 10,
   /** Last results kept for the screen. */
   HISTORY: 30,
+  /** Poker table: the buy-in leaves the wallet at the sit and the stack comes back at the leave. */
+  POKER: {
+    MIN_BUY_IN: 10_000,
+    /** Buy-ins offered on the screen: these shares of the day's loss room, floored to MIN_BUY_IN steps. */
+    BUY_IN_SHARES: [0.25, 0.5, 1],
+  },
   CRASH: {
     /** Return to player: crash point = max(1, floor(100 × RTP / (1 − U)) / 100). */
     RTP: 0.95,

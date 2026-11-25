@@ -19,3 +19,24 @@ console.log(`spins ${n}`);
 console.log(`classic  exact ${classicRtp().toFixed(4)}  sampled ${(classic / n).toFixed(4)}`);
 console.log(`stadium  exact ${stadiumRtp().toFixed(4)}  sampled ${(stadium / n).toFixed(4)}  hit rate ${(hits / n).toFixed(3)}`);
 for (const [k, v] of Object.entries(crash)) console.log(`crash ${k}  ${v.toFixed(4)}`);
+
+// Games hall: race (16 race cards), bingo (one card), blackjack (basic strategy).
+{
+  const { raceCard, raceRtp } = await import("@/Domain/casino/race");
+  const { playBingo } = await import("@/Domain/casino/bingo");
+  const bj = await import("@/Domain/casino/blackjack");
+  let win = 0, top3 = 0;
+  for (let i = 0; i < 16; i++) { const r = raceRtp(raceCard("rtp", i)); win += r.win; top3 += r.top3; }
+  console.log(`race     win ${(win / 16).toFixed(4)}  top 3 ${(top3 / 16).toFixed(4)}`);
+  let bingo = 0;
+  for (let i = 0; i < n; i++) bingo += playBingo(1, rng).cards[0]!.multiplier;
+  console.log(`bingo    sampled ${(bingo / n).toFixed(4)}`);
+  let staked = 0, back = 0;
+  for (let i = 0; i < n; i++) {
+    let r = bj.dealRound("x", "d", 1000, rng);
+    if (!bj.settlesAtOnce(r)) while (!bj.playerDone(r)) r = bj.applyAction(r, bj.basicStrategy(r));
+    const s = bj.settle(r).settlement;
+    staked += 1000; back += s.payout - s.staked + 1000;
+  }
+  console.log(`blackjack basic strategy ${(back / staked).toFixed(4)}`);
+}

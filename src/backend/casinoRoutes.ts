@@ -7,6 +7,9 @@ import { CASINO } from "@/Domain/casino/casinoConfig";
 import { spinClassic } from "@/Domain/casino/classicSlot";
 import { cashOutAt, crashPoint, parseAutoCashOut, secondsTo, settleUnclaimed } from "@/Domain/casino/crash";
 import { spinStadium } from "@/Domain/casino/stadiumSlot";
+import { blackjackView } from "@/Domain/casino/blackjackView";
+import { publicTable } from "@/Domain/casino/poker";
+import { raceCard } from "@/Domain/casino/race";
 import type { CasinoError, CasinoState, CasinoView, SlotSpinView } from "@/types/casinoTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -14,12 +17,14 @@ type Req = Request & { params: Record<string, string> };
 const STATUS: Record<CasinoError, number> = {
   invalidStake: 400, invalidMachine: 400, invalidAuto: 400, stakeTooHigh: 400,
   dailyLossCap: 409, roundsCap: 409, noMoney: 409, roundOpen: 409, noRound: 409, noClub: 409,
+  invalidBet: 400, invalidAction: 400, invalidBuyIn: 400, noHand: 409, handOpen: 409, notYourTurn: 409, seated: 409,
 };
 
-const fail = (error: CasinoError) => Response.json({ error }, { status: STATUS[error] });
+export const fail = (error: CasinoError) => Response.json({ error }, { status: STATUS[error] });
 
 /** Server clock: a seam for tests. */
 let clock = () => Date.now();
+export const casinoNow = () => clock();
 export function setCasinoClock(fn: (() => number) | null): void {
   clock = fn ?? (() => Date.now());
 }
@@ -29,26 +34,31 @@ function newSalt(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function walletFor(service: SaveService, saveId: string, seatId: string, seat: SeatMeta): Promise<number> {
+export async function walletFor(service: SaveService, saveId: string, seatId: string, seat: SeatMeta): Promise<number> {
   return walletOf(seat, await service.getBets(saveId, seatId));
 }
 
 /** Adds a casino result to the seat (`casinoNet`, biggest single payout). */
-async function credit(service: SaveService, saveId: string, seatId: string, seat: SeatMeta, delta: number, win: number): Promise<SeatMeta> {
+export async function credit(service: SaveService, saveId: string, seatId: string, seat: SeatMeta, delta: number, win: number): Promise<SeatMeta> {
   const casinoNet = (seat.casinoNet ?? 0) + delta;
   const casinoBiggestWin = Math.max(seat.casinoBiggestWin ?? 0, win);
   await service.updateSeat(saveId, seatId, { casinoNet, casinoBiggestWin });
   return { ...seat, casinoNet, casinoBiggestWin };
 }
 
-interface Loaded { seat: SeatMeta; state: CasinoState; wallet: number }
+export interface Loaded { seat: SeatMeta; state: CasinoState; wallet: number }
 
 /** Seat and casino state on today's counters; an open crash round whose time is over is settled first. */
-async function load(service: SaveService, saveId: string, seatId: string): Promise<Loaded | null> {
+export async function load(service: SaveService, saveId: string, seatId: string): Promise<Loaded | null> {
   const seat0 = await service.getSeatMeta(saveId, seatId);
   if (!seat0) return null;
   let seat = seat0;
-  let state = (await service.getCasino(saveId, seatId)) ?? emptyCasino(newSalt());
+  let state = await service.getCasino(saveId, seatId);
+  if (!state) {
+    // The salt keeps the race card and every draw stable: the first state is written at once.
+    state = emptyCasino(newSalt());
+    await service.writeCasino(saveId, state, seatId);
+  }
   const open = state.open;
   if (open && clock() - open.startedAt >= secondsTo(open.crash) * 1000) {
     const out = settleUnclaimed(open.crash, open.auto);
@@ -61,7 +71,7 @@ async function load(service: SaveService, saveId: string, seatId: string): Promi
   return { seat, state: onDay(state, seat.currentDate ?? "", wallet), wallet };
 }
 
-function view(l: Loaded): CasinoView {
+export function view(l: Loaded): CasinoView {
   const open = l.state.open;
   return {
     wallet: l.wallet,
@@ -72,10 +82,13 @@ function view(l: Loaded): CasinoView {
     open: open ? { roundId: open.id, startedAt: open.startedAt, stake: open.stake, auto: open.auto } : null,
     now: clock(),
     growth: CASINO.CRASH.GROWTH,
+    race: raceCard(l.state.salt, l.state.raceNo ?? 0),
+    blackjack: l.state.blackjack ? blackjackView(l.state.blackjack, null) : null,
+    poker: l.state.poker ? publicTable(l.state.poker, true) : null,
   };
 }
 
-async function readBody(req: Request): Promise<Record<string, unknown> | null> {
+export async function readBody(req: Request): Promise<Record<string, unknown> | null> {
   return (await req.json().catch(() => null)) as Record<string, unknown> | null;
 }
 

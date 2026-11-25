@@ -4,6 +4,12 @@ import { casinoMoney as formatFee } from "@/GameInterface/Achievements/Casino/St
 import { ClassicSymbolArt, PlaneArt, StadiumSymbolArt } from "@/GameInterface/Achievements/Casino/CasinoSymbols";
 import { CrashGame } from "@/GameInterface/Achievements/Casino/CrashGame";
 import { SlotMachine } from "@/GameInterface/Achievements/Casino/SlotMachine";
+import { BingoGame } from "@/GameInterface/Achievements/Casino/BingoGame";
+import { BlackjackGame } from "@/GameInterface/Achievements/Casino/BlackjackGame";
+import { PokerGame } from "@/GameInterface/Achievements/Casino/PokerGame";
+import { PlayingCard } from "@/GameInterface/Achievements/Casino/PlayingCard";
+import { CAR_COLORS, RaceGame } from "@/GameInterface/Achievements/Casino/RaceGame";
+import { gameArtUrl, newVisualOn } from "@/Domain/art/paintedFaces";
 import { casinoView } from "@/GameInterface/Achievements/Casino/casinoApi";
 import { useGameSave } from "@/GameInterface/GameSaveProvider";
 import { TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
@@ -12,15 +18,37 @@ import type { CasinoGame, CasinoView } from "@/types/casinoTypes";
 
 const LABEL = "font-display font-bold uppercase tracking-[0.08em] text-[13px] text-muted-foreground m-0";
 const KPI = "font-display font-bold tabular-nums text-2xl m-0 mt-1";
-const GAMES: CasinoGame[] = ["classic", "stadium", "crash"];
+const GAMES: CasinoGame[] = ["classic", "stadium", "crash", "race", "blackjack", "bingo", "poker"];
 
 function GameArt({ game }: { game: CasinoGame }) {
-  if (game === "classic") return <span className="flex">{(["seven", "seven", "seven"] as const).map((s, i) => <ClassicSymbolArt key={i} symbol={s} className="w-9 h-9" />)}</span>;
-  if (game === "stadium") return <span className="flex">{(["ball", "crest", "trophy"] as const).map((s) => <StadiumSymbolArt key={s} symbol={s} className="w-9 h-9" />)}</span>;
-  return <PlaneArt className="w-[72px] h-9" />;
+  if (game === "classic") return <span className="flex">{(["seven", "seven", "seven"] as const).map((s, i) => <ClassicSymbolArt key={i} symbol={s} className="w-7 h-7 shrink-0" />)}</span>;
+  if (game === "stadium") return <span className="flex">{(["ball", "crest", "trophy"] as const).map((s) => <StadiumSymbolArt key={s} symbol={s} className="w-7 h-7 shrink-0" />)}</span>;
+  if (game === "crash") return <PlaneArt className="w-[72px] h-9" />;
+  if (game === "race") {
+    return newVisualOn()
+      ? <img src={gameArtUrl("casino/car-1-1.webp")} alt="" className="w-[72px] h-9 object-contain" />
+      : <span className="w-[72px] h-9 flex items-center gap-1">{CAR_COLORS.slice(0, 3).map((c) => <span key={c} className="w-5 h-5 rounded-full" style={{ backgroundColor: c }} />)}</span>;
+  }
+  if (game === "bingo") {
+    return <span className="w-[72px] h-9 flex items-center gap-1">{[7, 23, 48].map((n) => <span key={n} className="w-6 h-6 rounded-full bg-star-gold text-black flex items-center justify-center font-display font-bold text-sm tabular-nums">{n}</span>)}</span>;
+  }
+  // blackjack: ace and king of spades; poker: two aces
+  const cards = game === "blackjack" ? [12, 11] : [12, 25];
+  return <span className="flex gap-0.5">{cards.map((c) => <PlayingCard key={c} card={c} size="sm" />)}</span>;
 }
 
-/** The manager's casino (`.claude/rules/game/casino.md`): two slot machines and the crash game, with his own money. */
+function GameScreen({ game, saveId, view, onView }: { game: CasinoGame; saveId: string; view: CasinoView; onView: (v: CasinoView) => void }) {
+  switch (game) {
+    case "crash": return <CrashGame saveId={saveId} view={view} onView={onView} />;
+    case "race": return <RaceGame saveId={saveId} view={view} onView={onView} />;
+    case "blackjack": return <BlackjackGame saveId={saveId} view={view} onView={onView} />;
+    case "bingo": return <BingoGame saveId={saveId} view={view} onView={onView} />;
+    case "poker": return <PokerGame saveId={saveId} view={view} onView={onView} />;
+    default: return <SlotMachine key={game} saveId={saveId} machine={game} view={view} onView={onView} />;
+  }
+}
+
+/** The manager's casino (`.claude/rules/game/casino.md`): two slot machines, the crash game, the car race, blackjack, bingo and poker, with his own money. */
 export function CasinoTab() {
   const { t, i18n } = useTranslation();
   const { session } = useGameSave();
@@ -64,7 +92,7 @@ export function CasinoTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         {GAMES.map((g) => (
           <button
             key={g}
@@ -73,7 +101,7 @@ export function CasinoTab() {
             onClick={() => setGame(g)}
             className={`flex items-center gap-3 text-left rounded-md border bg-card p-3 cursor-pointer ${game === g ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50"}`}
           >
-            <GameArt game={g} />
+            <span className="w-[92px] h-14 shrink-0 flex items-center justify-center overflow-hidden"><GameArt game={g} /></span>
             <span className="min-w-0">
               <span className="block font-display font-black uppercase text-base leading-none">{t(`casino.games.${g}.name`)}</span>
               <span className="block text-sm text-muted-foreground mt-1">{t(`casino.games.${g}.desc`)}</span>
@@ -86,9 +114,7 @@ export function CasinoTab() {
         {t("casino.limitsLine", { min: formatFee(limits.minStake), max: limits.maxStake >= limits.minStake ? formatFee(limits.maxStake) : "—" })}
       </p>
 
-      {game === "crash"
-        ? <CrashGame saveId={saveId} view={view} onView={setView} />
-        : <SlotMachine key={game} saveId={saveId} machine={game} view={view} onView={setView} />}
+      <GameScreen game={game} saveId={saveId} view={view} onView={setView} />
 
       <section className="flex flex-col gap-2">
         <SectionTitle>{t("casino.recent")}</SectionTitle>

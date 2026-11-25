@@ -45,3 +45,16 @@ Pedido do usuário (report de tester: uma aba para o técnico gastar o dinheiro 
 ## Símbolos pintados (12.x)
 
 Report do usuário ("faz no comfy pra ficar pro"). Com o visual novo, os símbolos das duas máquinas e o avião são imagens pintadas (`casino/sym-<nome>-1.webp` em `src/example_data/assets`, `GAME_ART_FILES`; 256 px, o avião 512 px de largura): layout vetorial em PIL refinado no FLUX.2 klein img2img (`data_process/assets/casino/build_casino_symbols.py`, folha de conferência `contact_sheet.py`), recortado pelo fundo liso ligado à borda e pelo contorno do layout. O "vazio" da clássica continua o ponto em SVG; sem o visual novo, os SVGs de antes (`CasinoSymbols.tsx`). Imagem trocada = nome novo (`CASINO_ART_VERSION`, cache `immutable`).
+
+## Salão de jogos (12.42)
+
+Report de tester f7f6f7c8. A aba virou **Salão de jogos** (en "Games hall"; `casino.*` no i18n, URL `?tab=casino` igual) com quatro jogos novos, mesmos limites (aposta, perda do dia, rodadas) e o mesmo sorteio no servidor. Arte pintada no FLUX (`data_process/assets/casino/build_games_hall.py`): pista oval, mesa de feltro, os 8 carros (`casino/race-track-1`, `table-felt-1`, `car-<n>-1.webp`, `GAME_ART_FILES`); sem o visual novo, SVG.
+
+| Jogo | Regra | Retorno |
+|---|---|---|
+| Corrida (`race.ts`) | 8 carros com força sorteada por páreo, cotações de vencedor e pódio = probabilidade real × `RACE.RTP`; três voltas animadas (`raceTrack.ts`, 9 s; parada com movimento reduzido) | vencedor 91,7%, pódio 91,1% |
+| Blackjack (`blackjack.ts`) | 6 baralhos, banca para no 17, blackjack 3 para 2, dobrar nas duas primeiras cartas, separar um par uma vez; mão aberta em `CasinoState.blackjack` (409 `handOpen`) | 99,4% com a estratégia básica |
+| Bingo (`bingo.ts`) | 75 números, até 4 cartelas, 30 bolas; cada cartela paga o melhor padrão (linha 3,1×, duas linhas 15×, quatro cantos 11×, X 400×, cheia 10 000×) | 93,2% |
+| Pôquer (`poker.ts`, `pokerEval.ts`) | Texas Hold'em sem limite contra 3 bots (cauteloso, equilibrado, agressivo); a entrada (25/50/100% do que resta da perda do dia, mínimo €10 mil) sai da carteira ao sentar e a pilha volta ao sair; blinds fixos pela entrada (`bigBlindOf`), bot quebrado volta com a entrada cheia | jogo de habilidade (bots sem vantagem da casa) |
+
+Rotas (`casinoGamesRoutes.ts`, `casinoPokerRoutes.ts`; `requireSeat`, `withSaveLock`, guarda de lobby): `POST …/casino/race`, `…/blackjack/deal`, `…/blackjack/action`, `…/bingo`, `…/poker/sit`, `…/poker/action`, `…/poker/leave`. `bun scripts/casino-rtp.ts` mede todos. Testes: `bun test src/Domain/casino src/backend/casinoGames.routes.test.ts`.

@@ -6557,6 +6557,22 @@
       "crash": {
         "name": "Avião",
         "desc": "O multiplicador sobe até o avião sumir. Retire antes."
+      },
+      "race": {
+        "name": "Corrida",
+        "desc": "Oito carros, três voltas. Aposte no vencedor ou no pódio."
+      },
+      "blackjack": {
+        "name": "Blackjack",
+        "desc": "Chegue perto de 21 sem passar. Blackjack paga 3 para 2."
+      },
+      "bingo": {
+        "name": "Bingo",
+        "desc": "Até quatro cartelas, 30 bolas. Cartela cheia paga 10 mil vezes."
+      },
+      "poker": {
+        "name": "Pôquer",
+        "desc": "Texas Hold'em contra três adversários do cassino."
       }
     },
     "limitsLine": "Aposta de {{min}} a {{max}} (2% da carteira). Perda máxima no dia: 10% da carteira do início do dia.",
@@ -6619,7 +6635,142 @@
       "invalidAuto": "A retirada automática precisa ser 1,01 ou mais.",
       "noRound": "Esse voo já terminou.",
       "noClub": "Sem clube.",
-      "lobby": "A liga ainda não começou."
+      "lobby": "A liga ainda não começou.",
+      "invalidBet": "Aposta inválida.",
+      "invalidAction": "Jogada inválida.",
+      "illegal": "Essa jogada não vale agora.",
+      "invalidBuyIn": "Entrada inválida.",
+      "noHand": "Não há mão em andamento.",
+      "handOpen": "Termine a mão em andamento.",
+      "notYourTurn": "Ainda não é a sua vez.",
+      "seated": "Você já está sentado à mesa."
+    },
+    "cards": {
+      "back": "Carta virada",
+      "card": "{{rank}} de {{suit}}",
+      "spades": "espadas",
+      "hearts": "copas",
+      "diamonds": "ouros",
+      "clubs": "paus"
+    },
+    "race": {
+      "running": "Corrida em andamento…",
+      "card": "Páreo nº {{no}}",
+      "pos": "Pos",
+      "car": "Carro",
+      "oddsWin": "Vitória",
+      "kind": "Tipo de aposta",
+      "win": "Vencedor",
+      "top3": "Pódio",
+      "returns": "Se {{name}} cumprir, você recebe {{amount}}",
+      "go": "Apostar e largar",
+      "won": "Você recebeu {{amount}}.",
+      "lost": "Seu carro chegou em {{pos}}º."
+    },
+    "blackjack": {
+      "dealer": "Banca",
+      "total": "Total {{total}}",
+      "soft": "com ás",
+      "doubled": "dobrada",
+      "outcome": {
+        "win": "Ganhou",
+        "blackjack": "Blackjack",
+        "push": "Empate",
+        "lose": "Perdeu",
+        "bust": "Estourou"
+      },
+      "idle": "Escolha a aposta e distribua as cartas.",
+      "action": {
+        "hit": "Pedir",
+        "stand": "Parar",
+        "double": "Dobrar",
+        "split": "Separar"
+      },
+      "deal": "Distribuir",
+      "stakeOn": "Na mesa: {{amount}}",
+      "won": "Você ganhou {{amount}}.",
+      "lost": "Você perdeu {{amount}}.",
+      "push": "Empate: a aposta voltou.",
+      "rules": "Seis baralhos. A banca para no 17. Blackjack paga 3 para 2. Dobrar só nas duas primeiras cartas; separar um par uma vez."
+    },
+    "bingo": {
+      "balls": "Bolas: {{shown}} de {{total}}",
+      "prize": "{{pattern}}: {{amount}}",
+      "noPrize": "Sem prêmio",
+      "pattern": {
+        "line": "Uma linha",
+        "twoLines": "Duas linhas",
+        "corners": "Quatro cantos",
+        "x": "X",
+        "full": "Cartela cheia"
+      },
+      "idle": "Escolha quantas cartelas e o valor de cada uma.",
+      "cards": "Cartelas",
+      "cost": "Custo total: {{amount}}",
+      "play": "Jogar",
+      "won": "Você recebeu {{amount}}.",
+      "lost": "Nenhuma cartela premiada.",
+      "rules": "Números de 1 a 75, {{drawn}} bolas sorteadas. O centro já vem marcado. Cada cartela paga só o melhor prêmio."
+    },
+    "poker": {
+      "button": "Botão",
+      "winner": "Levou o pote",
+      "ev": {
+        "blind": "Blind",
+        "fold": "Desistiu",
+        "check": "Passou",
+        "call": "Pagou",
+        "raise": "Aumentou",
+        "allin": "All-in",
+        "deal": "Cartas",
+        "win": "Ganhou"
+      },
+      "title": "Texas Hold'em",
+      "intro": "Você contra três adversários do cassino, sem limite de aposta. A entrada sai da carteira e o que sobrar na mesa volta quando você sair.",
+      "buyIn": "Entrada",
+      "noRoom": "A entrada mínima é {{amount}} e o limite de perda de hoje não cobre.",
+      "sit": "Sentar à mesa",
+      "you": "Você",
+      "bot": "Adversário {{n}} · {{style}}",
+      "style": {
+        "cautious": "cauteloso",
+        "balanced": "equilibrado",
+        "aggressive": "agressivo"
+      },
+      "pot": "Pote {{amount}}",
+      "street": {
+        "preflop": "Pré-flop",
+        "flop": "Flop",
+        "turn": "Turn",
+        "river": "River",
+        "showdown": "Cartas na mesa",
+        "done": "Fim da mão"
+      },
+      "blinds": "Blinds {{small}} / {{big}} · mão {{hand}}",
+      "yourHand": "Sua mão: {{hand}}",
+      "hand": {
+        "high": "carta alta",
+        "pair": "par",
+        "twoPair": "dois pares",
+        "trips": "trinca",
+        "straight": "sequência",
+        "flush": "flush",
+        "fullHouse": "full house",
+        "quads": "quadra",
+        "straightFlush": "straight flush"
+      },
+      "fold": "Desistir",
+      "check": "Passar",
+      "call": "Pagar {{amount}}",
+      "raiseTo": "Aumentar para",
+      "raise": "Aumentar para {{amount}}",
+      "allin": "All-in ({{amount}})",
+      "handWon": "Você ganhou {{amount}} nesta mão.",
+      "handLost": "Você perdeu {{amount}} nesta mão.",
+      "handEven": "Você ficou no zero nesta mão.",
+      "next": "Próxima mão",
+      "waiting": "Os adversários estão jogando…",
+      "leave": "Sair da mesa ({{amount}})"
     }
   },
   "achievements": {
@@ -6677,7 +6828,7 @@
       "stadium": "Estádio",
       "reactions": "Reações",
       "courses": "Cursos",
-      "casino": "Cassino"
+      "casino": "Salão de jogos"
     },
     "loading": "Carregando conquistas…",
     "loadFailed": "Não foi possível carregar as conquistas.",
