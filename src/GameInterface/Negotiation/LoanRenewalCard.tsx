@@ -55,7 +55,9 @@ export function LoanRenewalCard({ saveId, offer, onAnswered }: {
         </div>
         <div>
           <div className={LABEL}>{t(o.direction === "in" ? "negotiation.overview.youPay" : "negotiation.overview.theyPay")}</div>
-          <div className="text-sm font-semibold">{Math.round(o.wageShare * 100)}%</div>
+          <div className="text-sm font-semibold">{Math.round(o.wageShare * 100)}%
+            {o.wage ? ` · ${t("negotiation.loanRenewal.perWeek", { amount: formatFee(Math.round(o.wage * o.wageShare)) })}` : ""}
+          </div>
         </div>
         {o.fee > 0 && (
           <div>
