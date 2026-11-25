@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { assistantAdvice } from "@/Domain/match/assistantAdvice";
 import type { GameState } from "@/GameEngine/types";
 
-const pl = (id: number, team: "A" | "B", role: string, energy = 90, name = `P${id}`) => ({ id, team, role, energy, name, slotIndex: id, x: 50, y: 37 });
+const stats = { withBall: { speed: 0.5, passingSkill: 0.5 }, withoutBall: { tackleChance: 0.5 } };
+const pl = (id: number, team: "A" | "B", role: string, energy = 90, name = `P${id}`) => ({ id, team, role, energy, name, slotIndex: id, x: 50, y: 37, baseStats: stats });
 const state = (over: Partial<Record<string, unknown>> = {}) => ({
   matchPhase: "secondHalf", score: { A: 0, B: 0 }, subsRemainingA: 3, subsRemainingB: 3,
   benchA: [pl(50, "A", "CM")], benchB: [], pendingSubsA: [], pendingSubsB: [], cards: [], manMarks: {},
@@ -10,6 +11,12 @@ const state = (over: Partial<Record<string, unknown>> = {}) => ({
   ...over,
 }) as unknown as GameState;
 const none = () => ({ shots: 0, goals: 0 });
+/** Two reserves, a tired CB and a booked LB. */
+const two = {
+  benchA: [pl(50, "A", "CM"), pl(51, "A", "LB"), pl(52, "A", "ST")],
+  players: [pl(1, "A", "GK", 40), pl(2, "A", "CB", 60, "Tired CB"), pl(3, "A", "ST", 80), pl(4, "A", "LB", 85), pl(11, "B", "ST"), pl(12, "B", "CM")],
+  cards: [{ team: "A", playerId: 4, card: "yellow" }],
+};
 
 describe("assistant advice", () => {
   test("nothing before kick-off or at half time", () => {
@@ -26,18 +33,29 @@ describe("assistant advice", () => {
     expect(assistantAdvice(state({ subsRemainingA: 0 }), "A", 65, "balanced", none).some((t) => t.kind === "tired")).toBe(false);
   });
   test("booked defender and the dangerous opponent to man-mark", () => {
-    const tips = assistantAdvice(state({ cards: [{ team: "A", playerId: 2, card: "yellow" }] }), "A", 70, "balanced",
+    const tips = assistantAdvice(state(two), "A", 70, "balanced",
       (id) => (id === 11 ? { shots: 2, goals: 1 } : { shots: 0, goals: 0 }));
     expect(tips.map((t) => t.kind)).toEqual(["tired", "booked", "mark"]);
     expect(tips[2]).toMatchObject({ playerId: 11 });
   });
   test("each tip carries what 'apply' does (report be8dd622)", () => {
-    const tips = assistantAdvice(state({ cards: [{ team: "A", playerId: 2, card: "yellow" }] }), "A", 70, "balanced",
+    const tips = assistantAdvice(state(two), "A", 70, "balanced",
       (id) => (id === 11 ? { shots: 2, goals: 1 } : { shots: 0, goals: 0 }));
-    expect(tips[0]).toMatchObject({ kind: "tired", sub: { inId: 50 } });
+    expect(tips[0]).toMatchObject({ kind: "tired", sub: { inId: 51 } });
+    expect(tips[1]).toMatchObject({ kind: "booked", playerId: 4 });
+    // Two tips never bring on the same reserve.
+    expect((tips[1] as { sub?: { inId: number } }).sub?.inId).not.toBe(51);
     expect(tips[2]).toMatchObject({ kind: "mark", marker: { name: "Tired CB" } });
-    const queued = assistantAdvice(state({ pendingSubsA: [{ outId: 3, inId: 50 }] }), "A", 70, "balanced", none);
-    expect(queued.find((t) => t.kind === "tired")).toMatchObject({ playerId: 2 });
-    expect((queued.find((t) => t.kind === "tired") as { sub?: unknown }).sub).toBeUndefined();
+  });
+  test("never more change tips than free changes (queued and injury vacancies count)", () => {
+    const kinds = (over: Record<string, unknown>) => assistantAdvice(state({ ...two, ...over }), "A", 70, "balanced", none)
+      .filter((t) => t.kind === "tired" || t.kind === "booked").length;
+    expect(kinds({})).toBe(2);
+    expect(kinds({ subsRemainingA: 1 })).toBe(1);
+    expect(kinds({ subsRemainingA: 2, pendingSubsA: [{ outId: 3, inId: 52 }] })).toBe(1);
+    expect(kinds({ subsRemainingA: 1, pendingSubsA: [{ outId: 3, inId: 52 }] })).toBe(0);
+    expect(kinds({ subsRemainingA: 2, injuryVacancies: { A: [{}] } })).toBe(1);
+    // A reserve already queued to come on is not offered again.
+    expect(kinds({ benchA: [pl(50, "A", "CM")], pendingSubsA: [{ outId: 3, inId: 50 }] })).toBe(0);
   });
 });

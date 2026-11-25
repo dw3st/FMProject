@@ -69,7 +69,10 @@ export function assistantAdvice(
   const queued = side === "A" ? state.pendingSubsA : state.pendingSubsB;
   const pending = new Set(queued.map((s) => s.outId));
   const queuedIn = new Set(queued.map((s) => s.inId));
-  const canSub = subsLeft > 0 && bench.length > 0;
+  // Free changes: the ones left minus those already queued and those an open injury vacancy will take.
+  const vacancies = state.injuryVacancies?.[side]?.length ?? 0;
+  let freeSubs = Math.max(0, subsLeft - queued.length - vacancies);
+  const canSub = () => freeSubs > 0 && bench.some((p) => !queuedIn.has(p.id));
   const my = state.score[side];
   const their = state.score[other];
   const agg = state.aggregate ?? { A: 0, B: 0 };
@@ -78,19 +81,24 @@ export function assistantAdvice(
   if (diff < 0 && minute >= ASSISTANT_ADVICE.CHASE_FROM_MINUTE && mentality !== "attacking") tips.push({ kind: "attack", id: "attack" });
   if (diff === 1 && minute >= ASSISTANT_ADVICE.PROTECT_FROM_MINUTE && mentality !== "defensive") tips.push({ kind: "protect", id: "protect" });
 
-  if (canSub && minute >= ASSISTANT_ADVICE.TIRED_FROM_MINUTE) {
+  if (canSub() && minute >= ASSISTANT_ADVICE.TIRED_FROM_MINUTE) {
     const tired = mine
       .filter((p) => p.role !== "GK" && !pending.has(p.id) && p.energy < ASSISTANT_ADVICE.TIRED_ENERGY)
       .sort((a, b) => a.energy - b.energy)[0];
-    if (tired) tips.push({ kind: "tired", id: `tired:${tired.id}`, playerId: tired.id, name: tired.name, energy: Math.round(tired.energy), sub: plannedSub(tired, bench, queuedIn) });
+    if (tired) {
+      const sub = plannedSub(tired, bench, queuedIn);
+      if (sub) queuedIn.add(sub.inId);
+      freeSubs -= 1;
+      tips.push({ kind: "tired", id: `tired:${tired.id}`, playerId: tired.id, name: tired.name, energy: Math.round(tired.energy), sub });
+    }
   }
 
-  if (canSub && minute >= ASSISTANT_ADVICE.BOOKED_FROM_MINUTE) {
+  if (canSub() && minute >= ASSISTANT_ADVICE.BOOKED_FROM_MINUTE) {
     const reds = new Set(state.cards.filter((c) => c.card === "red").map((c) => c.playerId));
     const booked = state.cards
       .filter((c) => c.team === side && c.card === "yellow" && !reds.has(c.playerId) && !pending.has(c.playerId))
       .map((c) => mine.find((p) => p.id === c.playerId))
-      .find((p) => p && DEFENSIVE_ROLES.has(p.role));
+      .find((p) => p && DEFENSIVE_ROLES.has(p.role) && !tips.some((t) => t.kind === "tired" && t.playerId === p.id));
     if (booked) tips.push({ kind: "booked", id: `booked:${booked.id}`, playerId: booked.id, name: booked.name, sub: plannedSub(booked, bench, queuedIn) });
   }
 

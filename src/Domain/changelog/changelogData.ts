@@ -31,6 +31,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.42.2",
+    date: "2026-11-25",
+    time: "13:05",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Na partida, o auxiliar não sugere mais trocas do que as que ainda restam, contando as que já estão na fila.", en: "In the match, the assistant no longer suggests more changes than you have left, counting the ones already queued." },
+    ],
+  },
+  {
     version: "12.42.1",
     date: "2026-11-25",
     time: "12:46",
