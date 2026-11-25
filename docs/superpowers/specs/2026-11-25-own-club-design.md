@@ -45,8 +45,8 @@ time, e é técnico e presidente ao mesmo tempo. Decisões do usuário em 2026-1
   (só no clube fundado, 400 `invalidPrice`). Seletor em Clube → Estádio com o público e a renda projetados.
 - **Carteira → clube:** `POST /api/saves/:id/club-deposit { amount }` (inteiro ≥ €1.000, até a carteira; 409 `noMoney`):
   `managerSpent += amount` e `recordMoney` no caixa (linha `club_change`, `ref.stage = "deposit"`, "Aporte do presidente";
-  conta como receita? não: fica fora dos totais de receita). Sem volta.
-- **Salário:** `PUT /api/saves/:id/manager-wage { wage }` de 0 ao teto `managerWeeklyWage(reputação)` da regra do contrato.
+  fora dos totais de receita e despesa da tela). Sem volta.
+- **Salário:** `PUT /api/saves/:id/manager-wage { wage }` de 0 ao teto `managerWeeklyWage(receita, reputação)` da regra do contrato.
   O contrato do técnico no clube fundado não tem fim (`until` ausente; não renova nem expira). Pago toda segunda pelo caixa.
 - **Sair:** pedido de demissão sem multa; o clube volta para a IA com o nome novo (`founded` fica); não há nova fundação.
 
