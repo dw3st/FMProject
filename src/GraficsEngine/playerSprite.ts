@@ -17,6 +17,10 @@ export const PLAYER_SPRITE = {
   ANCHOR: { x: 0.5, y: 0.55 },
   /** Gait (drawn yards per real second): idle below IDLE; walk → run above RUN_UP, run → walk below RUN_DOWN. */
   IDLE: 0.35,
+  /** Idle → walk only above this (a little above IDLE, so a player shuffling at the edge doesn't flicker). */
+  WALK_UP: 0.55,
+  /** A gait is kept at least this long (real seconds) before it changes: the drawn speed moves in sim steps. */
+  GAIT_HOLD_S: 0.3,
   RUN_UP: 3.1,
   RUN_DOWN: 2.2,
   /** Yards per cycle (8 frames, two steps): a run's grows with speed so the feet never slide. */
@@ -147,6 +151,8 @@ export interface SpriteMotion {
   phase: number;
   /** Running flat out (the longer stride); absent = no. */
   sprint?: boolean;
+  /** Real seconds since the gait last changed; absent = long enough. */
+  held?: number;
 }
 
 export function newMotion(x: number, y: number, angle = -Math.PI / 2): SpriteMotion {
@@ -182,7 +188,12 @@ export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: n
   const vx = m.vx + (dx / dt - m.vx) * k;
   const vy = m.vy + (dy / dt - m.vy) * k;
   const sp = Math.hypot(vx, vy);
-  const gait = sp < S.IDLE ? "idle" : m.gait === "run" ? (sp < S.RUN_DOWN ? "walk" : "run") : (sp > S.RUN_UP ? "run" : "walk");
+  const wanted = m.gait === "idle"
+    ? (sp > S.RUN_UP ? "run" : sp > S.WALK_UP ? "walk" : "idle")
+    : sp < S.IDLE ? "idle" : m.gait === "run" ? (sp < S.RUN_DOWN ? "walk" : "run") : (sp > S.RUN_UP ? "run" : "walk");
+  const heldFor = (m.held ?? S.GAIT_HOLD_S) + dt;
+  const gait = wanted !== m.gait && heldFor < S.GAIT_HOLD_S ? m.gait : wanted;
+  const held = gait === m.gait ? Math.min(heldFor, S.GAIT_HOLD_S) : 0;
   const rate = clamp(S.TURN_MAX - sp * S.TURN_SPEED, S.TURN_MIN, S.TURN_MAX);
   let angle = m.angle;
   const toLook = look ? { x: look.x - pos.x, y: look.y - pos.y } : null;
@@ -194,7 +205,7 @@ export function stepMotion(m: SpriteMotion, pos: { x: number; y: number }, dt: n
   const phase = gait === "idle" ? m.phase : (m.phase + (sp / cycle) * dt) % 1;
   // The engine's own sprint flag when it has one (`GamePlayer.sprint`); else the drawn speed with a little hysteresis.
   const sprint = gait === "run" && (engineSprint ?? (m.sprint ? sp > S.SPRINT_DOWN : sp > S.SPRINT_UP));
-  return { x: pos.x, y: pos.y, vx, vy, angle, gait, phase, ...(sprint ? { sprint } : {}) };
+  return { x: pos.x, y: pos.y, vx, vy, angle, gait, phase, held, ...(sprint ? { sprint } : {}) };
 }
 
 /** Adds an action; a new one replaces the player's running one. */

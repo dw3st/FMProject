@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.44.3",
+    date: "2026-11-26",
+    items: [],
+    fixes: [
+      { tab: "match", pt: "Os jogadores não tremem mais na corrida para o pênalti e nas faltas, nem ficam trocando entre parado, andando e correndo nos lances.", en: "Players no longer shake in the penalty and free-kick run-up, nor keep switching between standing, walking and running during play." },
+    ],
+  },
+  {
     version: "12.44.2",
     date: "2026-11-26",
     time: "00:10",

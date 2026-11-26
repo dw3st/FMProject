@@ -40,7 +40,7 @@ import { SpritePool } from "@/GraficsEngine/spritePool";
 import type { ShellSprite } from "@/GraficsEngine/stadiumAtmosphere";
 import { BALL_SPRITE, GOAL_SPRITE, ballSpriteFrame, nextBallRoll, nextSpinAngle } from "@/GraficsEngine/ballSpin";
 import { coneStrength, paintFloodCones } from "@/GraficsEngine/floodCones";
-import { penaltyRunUp } from "@/GraficsEngine/penaltyRunUp";
+import { drawnCountdown, penaltyRunUp } from "@/GraficsEngine/penaltyRunUp";
 import { FOUL_CONFIG } from "@/GameEngine/Configs/FoulConfig";
 import { drawnBall, drawnPlayerPositions, interpAlpha, nextRenderPair, samePositions, syncRenderPair, type DrawnBall, type Pos, type RenderPair } from "@/GraficsEngine/renderInterp";
 import { blendBall, blendPlayers, isSetPieceStart, startTransition, transitionActive, transitionProgress, transitionSeconds, type SetPieceTransition } from "@/GraficsEngine/setPieceTransition";
@@ -4604,6 +4604,8 @@ export function PixiPitch({
         // so alpha (and the drawing) stays frozen.
         let drawnPos: Map<number, Pos>;
         let drawnB: DrawnBall;
+        // Share of the sim step drawn so far (1 = the newest state): restart countdowns are drawn with it too.
+        let drawAlpha = 1;
         if (remote) {
           // Remote: the state follows the newest frame (officials, clicks, overlays read it); the drawing blends the
           // last two frames by real time.
@@ -4622,6 +4624,7 @@ export function PixiPitch({
           if (drawState !== renderPair.cur && !samePositions(drawState, renderPair.cur)) transition = null;
           renderPair = syncRenderPair(renderPair, drawState);
           const alpha = interpAlpha(simCarryRef.current, SIM_STEP);
+          drawAlpha = alpha;
           drawnPos = drawnPlayerPositions(renderPair.prev, drawState, alpha, TELEPORT_YDS, renderPair.pprev);
           drawnB = drawnBall(renderPair.prev, drawState, alpha, BALL_TELEPORT_YDS);
         }
@@ -4673,7 +4676,7 @@ export function PixiPitch({
           if (sp?.type === 'free_kick' && sp.variant === 'direct' && sp.position && !replayRun) {
             const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
             if (taker) {
-              const k = 1 - sp.countdown / restartFreeze(drawState, SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN);
+              const k = 1 - drawnCountdown(renderPair.prev.setPiece, sp, drawAlpha) / restartFreeze(drawState, SET_PIECE_CONFIG.DIRECT_FREE_KICK_COUNTDOWN);
               const off = penaltyRunUp(k);
               const next = new Map(drawnPos);
               next.set(taker.id, { x: sp.position.x - taker.attackDir * off.back, y: sp.position.y + taker.attackDir * off.side });
@@ -4697,7 +4700,7 @@ export function PixiPitch({
             const taker = stateRef.current.players.find((p) => p.id === sp.takerId);
             const spot = sp.position ?? (taker ? { x: taker.x, y: taker.y } : null);
             if (taker && spot) {
-              const k = 1 - sp.countdown / restartFreeze(drawState, FOUL_CONFIG.PENALTY_COUNTDOWN);
+              const k = 1 - drawnCountdown(renderPair.prev.setPiece, sp, drawAlpha) / restartFreeze(drawState, FOUL_CONFIG.PENALTY_COUNTDOWN);
               const off = penaltyRunUp(k);
               const next = new Map(drawnPos);
               next.set(taker.id, { x: spot.x - taker.attackDir * off.back, y: spot.y + taker.attackDir * off.side });

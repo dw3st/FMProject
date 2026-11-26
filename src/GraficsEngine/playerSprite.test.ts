@@ -8,6 +8,23 @@ const run = (speed: number, seconds: number, dt = 1 / 60) => {
 };
 
 describe("player sprite", () => {
+  test("gait holds for a moment: a speed wobbling around a threshold never flickers", () => {
+    let m = run(2.6, 1);
+    expect(m.gait).toBe("walk");
+    let flips = 0;
+    for (let i = 0; i < 120; i++) {
+      const sp = i % 12 < 6 ? PLAYER_SPRITE.RUN_UP + 0.4 : PLAYER_SPRITE.RUN_DOWN - 0.3;
+      const g = m.gait;
+      m = stepMotion(m, { x: m.x + sp / 60, y: 0 }, 1 / 60, null);
+      if (m.gait !== g) flips++;
+    }
+    expect(flips).toBeLessThanOrEqual(120 / 60 / PLAYER_SPRITE.GAIT_HOLD_S + 1);
+    // Standing still near the idle line: no idle/walk flicker.
+    let s = run(0, 1); flips = 0;
+    for (let i = 0; i < 120; i++) { const g = s.gait; s = stepMotion(s, { x: s.x + (i % 2 ? 0.5 : 0.2) / 60, y: 0 }, 1 / 60, null); if (s.gait !== g) flips++; }
+    expect(flips).toBe(0);
+  });
+
   test("gait by speed with hysteresis; a run turns toward where he goes", () => {
     expect(run(0, 1).gait).toBe("idle");
     expect(run(1.5, 1).gait).toBe("walk");
@@ -32,7 +49,7 @@ describe("player sprite", () => {
   test("poses: idle, keeper ready, run cycle frames, action chains in order", () => {
     expect(poseOf(newMotion(0, 0), null, 0, false).base).toBe("player-idle");
     expect(poseOf(newMotion(0, 0), null, 0, true)).toEqual({ atlas: "keeper", base: "keeper-ready" });
-    expect(poseOf(run(4, 0.3), null, 0, false).base).toMatch(/^player-run-0[1-8]$/);
+    expect(poseOf(run(4, 0.8), null, 0, false).base).toMatch(/^player-run-0[1-8]$/);
     const kick = addAction([], { playerId: 1, kind: "kick", side: 1 }, 10)[0]!;
     expect(poseOf(newMotion(0, 0), kick, 10.05, false).base).toBe("player-kick-wind");
     expect(poseOf(newMotion(0, 0), kick, 10.2, false).base).toBe("player-kick");

@@ -33,3 +33,17 @@ export function penaltyRunUp(k: number): { back: number; side: number } {
   const t = smooth((k - R.STUTTER) / (1 - R.STUTTER));
   return { back: R.STUTTER_YDS * (1 - t) + 0.3 * t, side: R.SIDE_YDS * 0.4 * (1 - t) };
 }
+
+/**
+ * The countdown as drawn: the engine drains it once per sim step, so read straight off the state the run-up moves in
+ * jumps every 0.2 s and the figure flickers between walking and standing. Blended between the previous step and the
+ * newest one by the same share as the drawn positions (`alpha`); a different restart before uses the newest one.
+ */
+export function drawnCountdown(
+  prev: { type: string; takerId?: number; countdown: number } | null | undefined,
+  cur: { type: string; takerId?: number; countdown: number },
+  alpha: number,
+): number {
+  if (!prev || prev.type !== cur.type || prev.takerId !== cur.takerId || prev.countdown < cur.countdown) return cur.countdown;
+  return prev.countdown + (cur.countdown - prev.countdown) * Math.max(0, Math.min(1, alpha));
+}
