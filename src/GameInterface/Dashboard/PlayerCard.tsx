@@ -72,13 +72,14 @@ function StatBar({
   const attr = useAttributeText()(statKey);
   return (
     <div className="relative flex items-center gap-2 group/stat">
-      <span
-        className={`font-black text-muted-foreground uppercase font-display tracking-[0.08em] shrink-0 cursor-default ${
-          wide ? "text-sm w-8" : "text-sm w-7"
-        }`}
-      >
-        {STAT_ABBR[statKey]}
-      </span>
+      {wide ? (
+        // The player screen shows the whole name (tester report c5067e34); the narrow dashboard card keeps the short one.
+        <span className="text-sm text-muted-foreground shrink-0 w-28 truncate cursor-default">{attr.name}</span>
+      ) : (
+        <span className="font-black text-muted-foreground uppercase font-display tracking-[0.08em] shrink-0 cursor-default text-sm w-7">
+          {STAT_ABBR[statKey]}
+        </span>
+      )}
       <div className={`flex-1 bg-muted/30 rounded-full overflow-hidden ${wide ? "h-2" : "h-1.5"}`}>
         <div
           className={`h-full rounded-full ${color}`}

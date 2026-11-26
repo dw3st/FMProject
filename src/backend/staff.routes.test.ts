@@ -160,6 +160,15 @@ describe("staff routes", () => {
     expect((replacedBody.members as { id: string; role: string }[]).filter((m) => m.role === "assistant").map((m) => m.id)).toEqual([newAssistant]);
     expect((await saveService.getStaffPool(saveId, meta.currentDate!)).members.some((m) => m.id === assistantNow.id)).toBe(true);
 
+    // Above a limit that fell later (two assistants, limit one): a swap still passes, a plain hire does not (86041a05).
+    const over = (await saveService.getSquadById(saveId, "33"))!;
+    const kept = over.staff!.members.find((m) => m.role === "assistant")!;
+    const extra = { ...kept, id: `${kept.id}-extra` };
+    await saveService.saveSquadById(saveId, { ...over, staff: { ...over.staff!, members: [...over.staff!.members, extra] } });
+    const swapIn = (await (await call("/pool?role=assistant", "GET", session.token)).json() as any).items[0].id as string;
+    expect((await call("/hire", "POST", session.token, { memberId: swapIn, years: 1 })).status).toBe(409);
+    expect((await call("/hire", "POST", session.token, { memberId: swapIn, years: 1, replaceId: extra.id })).status).toBe(200);
+
     // Firing by role leaves it vacant (2 stars = the old rating 3).
     const fitnessFired = await (await call("/fire", "POST", session.token, { role: "fitness" })).json() as any;
     expect((fitnessFired.members as { role: string }[]).some((m) => m.role === "fitness")).toBe(false);

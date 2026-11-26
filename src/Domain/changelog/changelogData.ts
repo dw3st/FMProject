@@ -31,6 +31,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.47.1",
+    date: "2026-11-26",
+    time: "18:50",
+    items: [],
+    fixes: [
+      { tab: "staff", pt: "Trocar um profissional (contratar e dispensar outro da mesma função) volta a funcionar quando o clube está acima do limite da função.", en: "Swapping a staff member (hiring one and dismissing another of the same role) works again when the club is above the role's limit." },
+      { tab: "squad", pt: "Na ficha do jogador, os atributos mostram o nome inteiro (Finalização, Força, Cabeceio) com a barra menor.", en: "On the player screen, attributes show their full name (Finishing, Strength, Heading) with a shorter bar." },
+    ],
+  },
+  {
     version: "12.47",
     date: "2026-11-26",
     time: "18:25",

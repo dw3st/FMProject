@@ -297,7 +297,8 @@ export const staffRoutes = {
           : undefined;
         staff = { members: staff.members.filter((m) => m.id !== out.id), ...(areaAssignments ? { areaAssignments } : {}) };
       }
-      if (staff.members.filter((m) => m.role === role).length >= roleLimit(h.squad, role)) {
+      // A swap never grows the role, so it passes even when the club is above a limit that fell later (86041a05).
+      if (!out && staff.members.filter((m) => m.role === role).length >= roleLimit(h.squad, role)) {
         return Response.json({ error: "roleFull" }, { status: 409 });
       }
       // Interest of the professional in the club (e6707450): a hesitant one asks the market wage + a premium, a
