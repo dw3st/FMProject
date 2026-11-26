@@ -8,7 +8,7 @@ import { requireSeat } from "@/backend/auth/middleware";
 import { withSaveLock } from "@/backend/saveLock";
 import { recordMoney } from "@/backend/FinancialService";
 import {
-  areaMultsOf, areaStars, headOf, memberStars, resolveAreaAssignments, roleLimit, signContract, squadStaffWages,
+  areaMultsOf, areaStars, headOf, impliedStars, memberStars, resolveAreaAssignments, roleLimit, signContract, squadStaffWages,
   staffEffectsOf, staffPayOf, starsIn, STAFF_AREAS_PER_COACH,
 } from "@/Domain/staff/staff";
 import {
@@ -30,6 +30,9 @@ import {
 } from "@/Domain/scouting/countryKnowledge";
 import countriesRaw from "@/Data/countries.json";
 import { daysBetween } from "@/Domain/dates";
+import { clubAttractionStars, interestWage, staffInterestOf } from "@/Domain/staff/staffInterest";
+import { leagueTierOf } from "@/backend/facilityWorld";
+import { reputationOf } from "@/backend/jobWorld";
 import type { Squad } from "@/types/playerTypes";
 
 type Req = Request & { params: Record<string, string> };
@@ -61,6 +64,12 @@ async function human(saveId: string, seatId: string, service: SaveService = save
     if (id) leading.add(id);
   }
   return { meta, squad, ref, date, seasonEnd, wallet, leading };
+}
+
+/** Stars of staff the club attracts (tier, division, the manager's reputation; e6707450). */
+async function attractionOf(service: SaveService, saveId: string, h: Human): Promise<number> {
+  const division = await leagueTierOf(h.ref.leagueSlug);
+  return clubAttractionStars(impliedStars(h.squad), division, await reputationOf(service, saveId, h.meta));
 }
 
 async function readJson(req: Request): Promise<Record<string, unknown> | null> {
@@ -180,6 +189,11 @@ function parsePoolQuery(params: URLSearchParams): StaffPoolQuery | null {
   const offset = num("offset");
   const limit = num("limit");
   if (minStars === null || maxWage === null || offset === null || limit === null) return null;
+  const interested = params.get("interested");
+  if (interested !== null && interested !== "") {
+    if (interested !== "1" && interested !== "0") return null;
+    if (interested === "1") q.interested = true;
+  }
   if (minStars !== undefined) {
     if (minStars < STAFF.MIN_STARS || minStars > STAFF.MAX_STARS) return null;
     q.minStars = minStars;
@@ -247,7 +261,8 @@ export const staffRoutes = {
         if (topped !== pool) { await saveService.writeStaffPool(saveId, topped); pool = topped; }
       }
       const pay = h instanceof Response ? { clubFactor: 1, revenue: undefined } : staffPayOf(h.squad);
-      return Response.json(searchPool(pool, q, pay.clubFactor, meta.currentDate ?? undefined, pay.revenue));
+      const attraction = h instanceof Response ? undefined : await attractionOf(saveService, saveId, h);
+      return Response.json({ ...searchPool(pool, q, pay.clubFactor, meta.currentDate ?? undefined, pay.revenue, attraction), ...(attraction !== undefined ? { attraction } : {}) });
     });
   },
 
@@ -285,7 +300,15 @@ export const staffRoutes = {
       if (staff.members.filter((m) => m.role === role).length >= roleLimit(h.squad, role)) {
         return Response.json({ error: "roleFull" }, { status: 409 });
       }
-      const signed = signContract(taken.member, { date: h.date, seasonEnd: h.seasonEnd, years, ...staffPayOf(h.squad) });
+      // Interest of the professional in the club (e6707450): a hesitant one asks the market wage + a premium, a
+      // refusing one will not come.
+      const view = staffInterestOf(memberStars(taken.member), await attractionOf(service, saveId, h));
+      if (view.interest === "refuses") return Response.json({ error: "notInterested" }, { status: 409 });
+      const pay = staffPayOf(h.squad);
+      const base = signContract(taken.member, { date: h.date, seasonEnd: h.seasonEnd, years, ...pay });
+      const signed = view.interest === "hesitant"
+        ? { ...base, contract: { ...base.contract!, wage: interestWage(role, memberStars(taken.member), pay.clubFactor, pay.revenue, view) } }
+        : base;
       let next: Squad = { ...h.squad, staff: { ...staff, members: [...staff.members, signed] } };
       await service.saveSquad(saveId, h.ref.leagueSlug, h.ref.clubSlug, next);
       let nextPool = taken.pool;

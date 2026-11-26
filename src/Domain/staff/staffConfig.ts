@@ -94,6 +94,16 @@ export const STAFF = {
    * more. Big clubs never reach it.
    */
   REVENUE_CAP: { SHARE: 0.05, ROLE_SUM: 1.03, MIN_STARS: 0.5, FLOOR: 150 },
+  /**
+   * Interest of a free professional in the human club (tester report e6707450): the club attracts up to
+   * `IMPLIED_STARS[tier]` − `DIVISION_STEP` per division below the first + up to `REP_BONUS` by the manager's
+   * reputation (`REP_FROM`..`REP_TO`). Stars over that by at most `OPEN_GAP`: interested; up to `REFUSE_GAP`: asks
+   * the market wage (no revenue ceiling) + `PREMIUM_MIN`..`PREMIUM_MAX`; above: will not come.
+   */
+  INTEREST: {
+    DIVISION_STEP: 0.5, REP_FROM: 40, REP_TO: 80, REP_BONUS: 0.5, MIN_ATTRACTION: 0.5,
+    OPEN_GAP: 0.5, REFUSE_GAP: 1.5, PREMIUM_MIN: 0.2, PREMIUM_MAX: 0.6,
+  },
   CHEAP: { MAX_STARS: 1, PER_ROLE: 3, COACH: 6, FACTOR_CAP: 0.5, HALF_STAR_SCORE: 1.25 },
   /**
    * Asking the board for one more place in a role at its limit (user request, 12.x): approved with the board

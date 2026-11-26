@@ -533,7 +533,8 @@
       "noMoney": "Sua carteira não cobre o curso.",
       "invalidRole": "Função desconhecida.",
       "cooldown": "A diretoria recusou há pouco. Espere para pedir de novo.",
-      "notFull": "A função ainda tem vaga livre."
+      "notFull": "A função ainda tem vaga livre.",
+      "notInterested": "Esse profissional não quer vir para o seu clube."
     },
     "expiring": {
       "card": "Contrato acaba em {{days}} dias",
@@ -618,7 +619,18 @@
     "replaceSeverance": "multa de {{fee}} para dispensar",
     "replaceHire": "Contratar e dispensar {{name}}",
     "noClub": "Sem clube você não pode contratar.",
-    "hired": "{{name}} entrou para a comissão."
+    "hired": "{{name}} entrou para a comissão.",
+    "onlyInterested": "Só interessados",
+    "colInterest": "Interesse",
+    "interest": {
+      "interested": "Interessado",
+      "hesitant": "Hesitante",
+      "hesitantPct": "Hesitante +{{pct}}%",
+      "refuses": "Não viria",
+      "interestedHint": "Vem pelo salário normal do clube.",
+      "hesitantHint": "Acima do nível do clube: pede {{pct}}% a mais que o salário de mercado.",
+      "refusesHint": "Bom demais para o nível do clube (divisão, receita e sua reputação): não viria."
+    }
   },
   "comingSoon": {
     "comingSoon": "Em Breve",

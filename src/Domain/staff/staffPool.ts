@@ -4,6 +4,7 @@ import { STAFF_ROLES, type StaffMember, type StaffRole } from "@/Domain/staff/st
 import { mulberry32, seedFrom } from "@/Domain/rng";
 import { isScoutRole, strongCountry } from "@/Domain/scouting/countryKnowledge";
 import type { StaffNameBook } from "@/Domain/staff/staffOrigin";
+import { interestWage, staffInterestOf, type StaffInterest } from "@/Domain/staff/staffInterest";
 
 /**
  * Free coaching-staff pool of a save (`saves/{id}/staffPool.json`, `.claude/rules/game/staff.md`).
@@ -187,27 +188,38 @@ export interface StaffPoolQuery {
   role?: StaffRole;
   minStars?: number;
   maxWage?: number;
+  /** Only the professionals interested in the club (needs the club's attraction). */
+  interested?: boolean;
   sort?: StaffPoolSort;
   /** Absent: `defaultPoolSortDir(sort)`. */
   dir?: StaffPoolSortDir;
   offset?: number;
   limit?: number;
 }
-export type StaffPoolItem = StaffMember & { stars: number; askingWage: number; strongCountry?: { country: string; k: number } };
+export type StaffPoolItem = StaffMember & {
+  stars: number; askingWage: number; strongCountry?: { country: string; k: number };
+  /** With the club's attraction (e6707450): how he sees the club and the premium a hesitant one asks. */
+  interest?: StaffInterest; premium?: number;
+};
 
 export const POOL_PAGE = { DEFAULT: 50, MAX: 100 } as const;
 
 /** Filter, sort and page the pool; the asking wage is what the user's club would pay (its wage factor). */
 /** With `date`, scouts also carry their strongest country (`strongCountry`). */
-export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number, date?: string, revenue?: number): { total: number; items: StaffPoolItem[] } {
+/** With `attraction` (`clubAttractionStars`), every item carries its interest and the wage it asks with it. */
+export function searchPool(pool: StaffPool, q: StaffPoolQuery, clubFactor: number, date?: string, revenue?: number, attraction?: number): { total: number; items: StaffPoolItem[] } {
   const items: StaffPoolItem[] = pool.members
     .map((m) => {
       const stars = memberStars(m);
+      const view = attraction === undefined ? null : staffInterestOf(stars, attraction);
       return {
-        ...m, stars, askingWage: staffWageFor(m.role, stars, clubFactor, revenue),
+        ...m, stars,
+        askingWage: view ? interestWage(m.role, stars, clubFactor, revenue, view) : staffWageFor(m.role, stars, clubFactor, revenue),
+        ...(view ? { interest: view.interest, premium: view.premium } : {}),
         ...(date && isScoutRole(m.role) ? { strongCountry: strongCountry(m, date) } : {}),
       };
     })
+    .filter((m) => (!q.interested || m.interest === undefined || m.interest === "interested"))
     .filter((m) => (!q.role || m.role === q.role)
       && (q.minStars === undefined || m.stars >= q.minStars)
       && (q.maxWage === undefined || m.askingWage <= q.maxWage));

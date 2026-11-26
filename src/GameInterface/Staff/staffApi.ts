@@ -48,6 +48,7 @@ export interface StaffData {
 export interface StaffPoolPage {
   total: number;
   items: StaffPoolItem[];
+  attraction?: number;
 }
 
 /**

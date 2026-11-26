@@ -533,7 +533,8 @@
       "noMoney": "Your wallet does not cover the course.",
       "invalidRole": "Unknown role.",
       "cooldown": "The board refused recently. Wait to ask again.",
-      "notFull": "The role still has a free place."
+      "notFull": "The role still has a free place.",
+      "notInterested": "This professional does not want to join your club."
     },
     "expiring": {
       "card": "Contract ends in {{days}} days",
@@ -618,7 +619,18 @@
     "replaceSeverance": "{{fee}} severance to dismiss",
     "replaceHire": "Hire and dismiss {{name}}",
     "noClub": "Without a club you cannot hire.",
-    "hired": "{{name}} joined the staff."
+    "hired": "{{name}} joined the staff.",
+    "onlyInterested": "Interested only",
+    "colInterest": "Interest",
+    "interest": {
+      "interested": "Interested",
+      "hesitant": "Hesitant",
+      "hesitantPct": "Hesitant +{{pct}}%",
+      "refuses": "Won't come",
+      "interestedHint": "Joins for the club's normal wage.",
+      "hesitantHint": "Above the club's level: asks {{pct}}% more than the market wage.",
+      "refusesHint": "Too good for the club's level (division, revenue and your reputation): won't come."
+    }
   },
   "comingSoon": {
     "comingSoon": "Coming Soon",

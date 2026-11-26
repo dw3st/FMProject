@@ -4,6 +4,7 @@ import { Button } from "@/GameInterface/ui/Button";
 import { Label } from "@/GameInterface/ui/Label";
 import { Notice } from "@/GameInterface/ui/Notice";
 import { OptionChips } from "@/GameInterface/ui/OptionChips";
+import { Chip } from "@/GameInterface/ui/Chip";
 import { TextField } from "@/GameInterface/ui/TextField";
 import { TABLE_CELL, TABLE_STYLE } from "@/GameInterface/ui/leagueTableStyle";
 import { formatWageFull } from "@/Domain/money";
@@ -18,6 +19,7 @@ import { StrongCountry } from "@/GameInterface/Scouting/StrongCountry";
 import { StaffFace } from "@/GameInterface/Components/PersonFace";
 import { staffCall, type StaffData, type StaffPoolPage } from "@/GameInterface/Staff/staffApi";
 import { HireStaffModal } from "@/GameInterface/Transfers/HireStaffModal";
+import { StaffInterestBadge } from "@/GameInterface/Transfers/StaffInterestBadge";
 
 type RoleKey = "all" | StaffRole;
 type MinStars = "any" | "2" | "3" | "4" | "4.5";
@@ -59,6 +61,7 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
   });
   const [minStars, setMinStars] = useState<MinStars>("any");
   const [maxWage, setMaxWage] = useState("");
+  const [onlyInterested, setOnlyInterested] = useState(false);
   // The search follows the wage field only after the user stops typing (~300 ms).
   const [maxWageQuery, setMaxWageQuery] = useState("");
   useEffect(() => {
@@ -82,10 +85,11 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
     const p = new URLSearchParams({ sort, dir, offset: String(offset), limit: String(PAGE) });
     if (role !== "all") p.set("role", role);
     if (minStars !== "any") p.set("minStars", minStars);
+    if (onlyInterested) p.set("interested", "1");
     const wage = Number(maxWageQuery.replace(/[^\d]/g, ""));
     if (maxWageQuery.trim() !== "" && Number.isFinite(wage)) p.set("maxWage", String(wage));
     return `/api/saves/${saveId}/staff/pool?${p}`;
-  }, [saveId, role, minStars, maxWageQuery, sort, dir]);
+  }, [saveId, role, minStars, onlyInterested, maxWageQuery, sort, dir]);
 
   const loadStaff = useCallback(async () => {
     const r = await staffCall<StaffData>(`/api/saves/${saveId}/staff`);
@@ -161,6 +165,7 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
             onChange={(e) => setMaxWage(e.target.value)}
             className="w-48"
           />
+          <Chip selected={onlyInterested} onClick={() => setOnlyInterested((v) => !v)}>{t("staffPool.onlyInterested")}</Chip>
         </div>
       </div>
 
@@ -183,6 +188,7 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
                   <SortHeader col="stars" label={t("staffPool.colStars")} align="left" sort={sort} dir={dir} onSort={onSort} />
                   <th className={`${TABLE_CELL.head} text-left`}>{t("staffPool.colStrong")}</th>
                   <SortHeader col="wage" label={t("staffPool.colWage")} align="center" sort={sort} dir={dir} onSort={onSort} />
+                  <th className={`${TABLE_CELL.head} text-left`}>{t("staffPool.colInterest")}</th>
                   <th className={TABLE_CELL.head} />
                 </tr>
               </thead>
@@ -204,6 +210,7 @@ export function StaffPoolTab({ saveId }: { saveId: string }) {
                       {m.strongCountry ? <StrongCountry country={m.strongCountry.country} k={m.strongCountry.k} /> : strongIn(m)}
                     </td>
                     <td className={`${TABLE_CELL.body} ${TABLE_STYLE.key}`}>{formatWageFull(m.askingWage)}</td>
+                    <td className={TABLE_CELL.body}>{m.interest ? <StaffInterestBadge interest={m.interest} premium={m.premium} /> : <span className="text-sm text-muted-foreground">—</span>}</td>
                     <td className={`${TABLE_CELL.body} text-right`}>
                       <Button variant="secondary" flush disabled={!staff} onClick={() => setHiring(m)}>{t("staffPool.hire")}</Button>
                     </td>

@@ -5,8 +5,7 @@ import { apiRoutes } from "@/backend/routes";
 import { devAutoLogin } from "@/backend/auth/AuthService";
 import { computeAdvanceDayMoney } from "@/Domain/advanceDay/financial";
 import { contractEndFor } from "@/Domain/contracts/contracts";
-import { wageFactorOf } from "@/Domain/finance/wages";
-import { memberStars, roleLimit, squadStaffWages, staffWageFor } from "@/Domain/staff/staff";
+import { roleLimit, squadStaffWages } from "@/Domain/staff/staff";
 import { COACH_AREAS } from "@/Domain/staff/staffTypes";
 
 /**
@@ -85,6 +84,13 @@ describe("staff routes", () => {
     expect((await call("/pool?sort=height", "GET", session.token)).status).toBe(400);
     expect((await call("/pool?sort=age&dir=up", "GET", session.token)).status).toBe(400);
 
+    // Interest (e6707450): the club's attraction comes with the list; the filter keeps only the interested.
+    const all = await (await call("/pool?limit=100", "GET", session.token)).json() as any;
+    expect(typeof all.attraction).toBe("number");
+    const onlyIn = await (await call("/pool?interested=1&limit=100", "GET", session.token)).json() as any;
+    expect(onlyIn.items.every((m: any) => m.interest === "interested")).toBe(true);
+    expect((await call("/pool?interested=yes", "GET", session.token)).status).toBe(400);
+
     // Coaches at the limit: hiring another is refused.
     const candidate = coaches.items[0];
     expect((await call("/hire", "POST", session.token, { memberId: candidate.id, years: 1 })).status).toBe(409);
@@ -122,7 +128,8 @@ describe("staff routes", () => {
     const freshMeta = (await saveService.getMeta(saveId))!;
     const seasonEnd = freshMeta.activeLeagues!.find((l) => l.leagueSlug === "premier_league")!.end;
     expect(hired.contract!.until).toBe(contractEndFor(freshMeta.currentDate!, seasonEnd, 2));
-    expect(hired.contract!.wage).toBe(staffWageFor("coach", memberStars(hired), wageFactorOf(club)));
+    expect(typeof candidate.interest).toBe("string");
+    expect(hired.contract!.wage).toBe(candidate.askingWage);
     expect((await saveService.getStaffPool(saveId, meta.currentDate!)).members.some((m) => m.id === candidate.id)).toBe(false);
 
     // Areas: a manual choice shows; a coach leads at most two areas; only coaches, only field areas.

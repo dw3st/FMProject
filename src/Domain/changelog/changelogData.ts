@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.45",
+    date: "2026-11-26",
+    time: "15:01",
+    items: [
+      { tab: "market", pt: "Profissionais da comissão olham o nível do clube: cada um na lista mostra se está interessado, hesitante (pede mais salário) ou se não viria. Divisão, receita e sua reputação contam. Filtro Só interessados.", en: "Staff look at the club's level: each one on the list shows if he is interested, hesitant (asks a higher wage) or won't come. Division, revenue and your reputation count. Interested only filter." },
+    ],
+  },
+  {
     version: "12.44.4",
     date: "2026-11-26",
     time: "01:47",

@@ -43,7 +43,7 @@ export function HireStaffModal({
   const full = !!limit && limit.used >= limit.max;
   const current = full && staff ? staff.members.filter((x) => x.role === m.role) : [];
   const out = current.find((x) => x.id === replaceId) ?? null;
-  const blocked = !staff ? t("staffPool.noClub") : full && !out ? t("staffPool.full") : null;
+  const blocked = !staff ? t("staffPool.noClub") : m.interest === "refuses" ? t("staffPool.interest.refusesHint") : full && !out ? t("staffPool.full") : null;
 
   async function hire() {
     setBusy(true);
@@ -71,6 +71,9 @@ export function HireStaffModal({
           />
         </div>
         <p className="text-sm tabular-nums m-0">{t("staffPool.frozenWage", { wage: formatWageFull(m.askingWage) })}</p>
+        {m.interest === "hesitant" && (
+          <p className="text-sm text-muted-foreground tabular-nums m-0">{t("staffPool.interest.hesitantHint", { pct: Math.round((m.premium ?? 0) * 100) })}</p>
+        )}
         {limit && (
           <p className="text-sm tabular-nums text-muted-foreground m-0">
             {t("staffPool.limit", { role: t(`staff.roles.${m.role}`), used: limit.used, max: limit.max })}
