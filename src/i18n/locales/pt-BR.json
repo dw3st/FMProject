@@ -9298,6 +9298,20 @@
       "continue": "Continuar"
     }
   },
+  "knowledge": {
+    "title": "Conhecimento",
+    "titleAccent": "tático",
+    "subtitle": "O que {{club}} sabe do seu time e o que seu analista sabe deles.",
+    "change": "Mudar a tática",
+    "theirs": "Eles esperam de você",
+    "yours": "Você espera deles",
+    "expected": "Sua tática salva é a que eles esperam",
+    "surprise": "Sua tática salva vai surpreender (leitura deles: {{read}}%)",
+    "notStudied": "Ainda não te estudaram: poucos jogos seus.",
+    "noGames": "Seu analista ainda não tem jogos deles para ler.",
+    "analystExact": "Analista de 5 estrelas: leitura exata",
+    "analystMayMiss": "Analista de {{stars}} estrelas: leitura com margem, pode errar a formação"
+  },
   "study": {
     "level": {
       "low": "baixa",

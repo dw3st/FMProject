@@ -38,6 +38,7 @@ import type { MatchSetupReferee } from "@/backend/refereeRoutes";
 import { Button } from "@/GameInterface/ui/Button";
 import { ManMarkingPanel, type MarkPair } from "@/GameInterface/Components/ManMarkingPanel";
 import { OpponentReportCard } from "@/GameInterface/Components/OpponentReportCard";
+import { TacticalKnowledgeCard } from "@/GameInterface/Components/TacticalKnowledgeCard";
 import { Player } from "@/Domain/Player";
 import { competitionName, nationalityDisplayName } from "@/Domain/world/labels";
 import { matchHeading } from "@/Domain/world/matchHeading";
@@ -642,6 +643,8 @@ interface MatchSetupData {
   weatherEffect?: import("@/Domain/matchday/matchWeatherEffect").WeatherOfMatch | null;
   /** The AI opponent's plan against this manager (`.claude/rules/game/study.md`); absent = none. */
   study?: import("@/types/studyTypes").MatchSetupStudy;
+  /** Tactical knowledge card (tester report 6dcd454e); absent against another seat or for a national team. */
+  knowledge?: import("@/types/studyTypes").MatchSetupKnowledge;
   /** Today's crowd — the same number the gate of the day charges (spec 2026-10-08-match-visual §7). */
   crowd?: { attendance: number; capacity: number; neutral: boolean; importance: number; known: boolean } | null;
   /** Referee of the match (`referees.md`); null = none appointed. */
@@ -1444,6 +1447,13 @@ export function MatchPreviewScreen() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tactical knowledge (report 6dcd454e) */}
+      {matchSetup?.knowledge && !matchSetup.seatOpponent && !national && (
+        <div className="w-full max-w-5xl min-[1600px]:max-w-6xl shrink-0">
+          <TacticalKnowledgeCard knowledge={matchSetup.knowledge} clubName={opponentName} />
         </div>
       )}
 

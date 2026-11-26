@@ -172,3 +172,12 @@ bun test src/Domain/study src/Domain/advanceDay/matchSimulationLineups.test.ts s
 ## Relatório do analista (12.35)
 
 Report de tester 955c069c. Na prévia de um jogo de clube, o cartão "Relatório do analista" (`Components/OpponentReportCard.tsx`) mostra do adversário: os 3 destaques da temporada (gols, assistências, nota; 3+ jogos), os 5 últimos jogos e a campanha com cada formação e contra cada formação (os 20 últimos jogos). Lógica pura em `src/Domain/scouting/opponentReport.ts` (`OPPONENT_REPORT`, com teste); a rota `GET /api/saves/:id/clubs/:squadId/opponent-report` (`opponentReportWorld.ts`, cache por save, clube e dia) lê os jogos da liga, da copa e das continentais e as formações de `MatchEvent.formations` (formação e estilo de cada lado, gravados no avanço do dia desde a 12.35 e mantidos na compactação dos logs). Jogos de antes não têm formação. Sem efeito de partida.
+
+## Conhecimento tático (12.46)
+
+Report de tester 6dcd454e (opção C do mock). Cartão na prévia de um jogo contra a IA (`Components/TacticalKnowledgeCard.tsx`), lógica pura em `src/Domain/study/tacticalKnowledge.ts` (`KNOWLEDGE`, com teste), vindo de `knowledge` no `match-setup` (`MatchSetupKnowledge`; nunca contra outro assento). Só mostra: o motor e a regra do estudo não mudam.
+
+- **Eles esperam de você** (`theyKnow`): o plano esperado (`expectedPlan`), a leitura (`studyRead`) e a leitura de agora = leitura × `gameScore` da tática salva contra o plano esperado; etiqueta "surpresa" quando a tática salva difere. Sem registro: "ainda não estudaram".
+- **Você espera deles** (`youKnow`): os últimos 5 planos do adversário (`opponentRecentPlans`, dos `MatchEvent.formations`), o quanto ele se repete; uma faixa pelo analista (meia-largura 25 / 15 / 0% em 1★ / 3★ / 5★, a janela desliza para dentro perto de 0 e 100% e sempre contém o valor real, centro sorteado por save, clube e data); analista abaixo de 5★ pode nomear a segunda formação mais usada (35 / 15 / 0%). Sem jogos registrados: aviso.
+- "Mudar a tática" leva à Formação; voltar refaz o `match-setup`.
+- i18n `knowledge.*`. Testes: `bun test src/Domain/study`.

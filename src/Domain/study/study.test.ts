@@ -115,7 +115,7 @@ describe("read", () => {
   });
 
   test("analyst: 1 star 1.15, 3 stars 1, 5 stars 0.8, vacant = 2 stars", () => {
-    expect(analystStudyMult(humanWith([analyst(1)]))).toBeCloseTo(1.15);
+    expect(analystStudyMult(humanWith([analyst(1.5)]))).toBeCloseTo(1.15); // score 1 is 0.5 stars since 12.19.2
     expect(analystStudyMult(humanWith([analyst(10.5)]))).toBeCloseTo(1);
     expect(analystStudyMult(humanWith([analyst(20)]))).toBeCloseTo(0.8);
     expect(analystStudyMult(humanWith([]))).toBeCloseTo(1.075);

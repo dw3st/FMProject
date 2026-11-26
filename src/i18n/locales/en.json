@@ -9313,6 +9313,20 @@
       "continue": "Continue"
     }
   },
+  "knowledge": {
+    "title": "Tactical",
+    "titleAccent": "knowledge",
+    "subtitle": "What {{club}} knows of your team and what your analyst knows of them.",
+    "change": "Change tactic",
+    "theirs": "They expect from you",
+    "yours": "You expect from them",
+    "expected": "Your saved tactic is the one they expect",
+    "surprise": "Your saved tactic will surprise them (their read: {{read}}%)",
+    "notStudied": "They have not studied you yet: too few of your games.",
+    "noGames": "Your analyst has no games of theirs to read yet.",
+    "analystExact": "5-star analyst: exact read",
+    "analystMayMiss": "{{stars}}-star analyst: read with a margin, may get the formation wrong"
+  },
   "study": {
     "level": {
       "low": "low",

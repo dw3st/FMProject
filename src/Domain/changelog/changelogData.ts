@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.46",
+    date: "2026-11-26",
+    time: "15:35",
+    items: [
+      { tab: "match", pt: "Conhecimento tático na prévia da partida: quanto o adversário leu do seu time e que plano ele espera, se a sua tática vai surpreender, e o que o seu analista leu deles (exato com 5 estrelas, uma faixa com menos, e um analista fraco pode errar a formação). Botão para mudar a tática.", en: "Tactical knowledge on the match preview: how much the opponent has read of your team and which plan they expect, whether your tactic will surprise them, and what your analyst read of them (exact with 5 stars, a range with fewer, and a weak analyst can get the formation wrong). Button to change the tactic." },
+    ],
+  },
+  {
     version: "12.45",
     date: "2026-11-26",
     time: "15:01",

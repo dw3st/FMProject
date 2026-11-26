@@ -54,3 +54,27 @@ export interface MatchSetupStudy {
   /** The manager's analyst is good enough (4 stars or more) to tell what the opponent will do. */
   analystHint: boolean;
 }
+
+/** Tactical knowledge card of the match preview (tester report 6dcd454e). Percentages 0..100. */
+export interface MatchSetupKnowledge {
+  /** What the AI opponent knows of the manager; null = it has no game of his to read yet. */
+  theirs: {
+    /** Its read of the manager's last games. */
+    read: number;
+    /** The read against the tactic saved now (lower when the saved tactic departs from what it expects). */
+    now: number;
+    expected: { formation: string; style: TacticalStyle };
+    /** The saved tactic is not the one it expects. */
+    surprise: boolean;
+  } | null;
+  /** What the manager's analyst knows of the opponent; null = no known game of the opponent. */
+  yours: {
+    low: number;
+    high: number;
+    /** The plan the analyst expects (a weak analyst can name the wrong formation). */
+    expected: { formation: string; style: TacticalStyle };
+    analystStars: number;
+    /** The analyst can be wrong about the formation (under 5 stars). */
+    mayMiss: boolean;
+  } | null;
+}

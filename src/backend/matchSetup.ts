@@ -24,7 +24,9 @@ import {
   studyPlanFor,
   type MatchRegistration,
 } from "@/Domain/advanceDay/matchSimulationLineups";
-import { matchSetupStudy } from "@/Domain/study/study";
+import { matchSetupStudy, tacticLogEntry } from "@/Domain/study/study";
+import { theyKnow, youKnow } from "@/Domain/study/tacticalKnowledge";
+import { opponentRecentPlans } from "@/backend/opponentReportWorld";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
@@ -320,6 +322,18 @@ export async function matchSetupFor(
     ? studyPlanFor(save.tacticLog, opponentSquad, oppFormation, oppLineup, mySquad, resolvedMyFormation, resolved.lineup)
     : null;
 
+  // Tactical knowledge card of the preview (tester report 6dcd454e): only against an AI club.
+  const knowledge = !legacy && matchFixture && opponentSquad && !seatOpponent
+    ? {
+      theirs: theyKnow(save.tacticLog, opponentSquad, mySquad, tacticLogEntry(myTactics, matchFixture.date, matchFixture.id)),
+      yours: youKnow(
+        await opponentRecentPlans(saveService, save.id, opponentSquad, matchDate ?? save.currentDate ?? ""),
+        mySquad,
+        `${save.id}:${opponentSquad.id}:${matchFixture.date}`,
+      ),
+    }
+    : null;
+
   // League table position of each side, next to the crests on the scoreboard (league matches only).
   const isLeagueMatch = !!matchFixture && (save.activeLeagues ?? []).some((l) => l.leagueSlug === matchFixture.competition);
   const positions = isLeagueMatch && matchFixture
@@ -360,6 +374,7 @@ export async function matchSetupFor(
     seatOpponent,
     ...(oppMorale !== undefined ? { oppMorale } : {}),
     ...(plan ? { study: matchSetupStudy(plan, mySquad) } : {}),
+    ...(knowledge ? { knowledge } : {}),
     h2h: seatOpponent && opts.live && !!opts.h2h,
   } };
 }
