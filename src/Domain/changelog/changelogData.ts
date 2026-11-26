@@ -33,6 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.44.2",
     date: "2026-11-26",
+    time: "00:10",
     items: [],
     fixes: [
       { tab: "squad", pt: "Um jogador emprestado ao seu clube pode ser devolvido pelo botão azul na ficha ou direto na lista do Elenco.", en: "A player on loan at your club can be sent back with the blue button on his profile or right from the Squad list." },
