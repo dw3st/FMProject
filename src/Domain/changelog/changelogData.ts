@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
   {
     version: "12.47",
     date: "2026-11-26",
-    time: "17:30",
+    time: "18:25",
     items: [
       { tab: "match", pt: "Os clubes do computador às vezes mudam o plano contra o seu time: outra formação ou outro estilo, mais nos clubes grandes. A leitura do seu analista deixa de acertar sempre.", en: "Computer clubs sometimes change their plan against your team: another formation or another style, more often at big clubs. Your analyst's read is no longer always right." },
     ],
