@@ -22,6 +22,7 @@ import rolesJson from '@/Data/roles.json';
 
 import { applyTeamInstructions, awardCorner, createMatchState, testPhysicalShot, testOutOfPlay, endCurrentPeriod, forceInjurySubstitution, maybeFoul, stopForInjury, setManMarksBySlot, withReferee } from '@/GameEngine/Domain/gameState';
 import { counterStyle, pickMarkTarget, pickMarkerSlot } from '@/Domain/study/study';
+import { aiPlanVariation } from '@/Domain/formation/aiPlanVariation';
 import playersJson from '@/Data/players.json';
 import formation433Json from '@/Data/formations/4-3-3.json';
 import formationDiamondJson from '@/Data/formations/4-1-2-1-2.json';
@@ -1455,6 +1456,23 @@ export const TEST_SCENARIOS: TestScenario[] = [
         ? setManMarksBySlot(base, 'B', [{ slot, targetRosterId: target.rosterId }])
         : base;
       return { ...marked, study: { B: { level: 'high', style: counterStyle('high_press') } } };
+    },
+  },
+
+  {
+    id:          'ai-varied-plan',
+    name:        '11v11 — AI varied plan',
+    description: 'Team B is an ELITE AI club that has not studied Team A (`study.md` → "A IA varia o plano"): the first fixture id whose draw changes the formation makes B play its second-best formation (4-1-2-1-2) instead of the season 4-3-3. The style variation is measured in /lab (Variant "Varied AI plan").',
+    createState() {
+      const f433 = formation433Json as Formation;
+      const diamond = formationDiamondJson as Formation;
+      const record = { id: '4-3-3', season: '2026', roster: 0, level: 5, second: '4-1-2-1-2' };
+      let varied = false;
+      for (let i = 0; i < 100 && !varied; i++) {
+        const v = aiPlanVariation({ fixtureId: `test-${i}`, aiSquadId: 'team_blue', tier: 'ELITE', record, matchdayFormation: '4-3-3', opponentLevel: 5 });
+        varied = v.kind === 'formation';
+      }
+      return createMatchState(freshRoster(teamRedPlayers), f433, freshRoster(teamBluePlayers), varied ? diamond : f433);
     },
   },
 

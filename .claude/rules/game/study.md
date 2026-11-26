@@ -181,3 +181,22 @@ Report de tester 6dcd454e (opção C do mock). Cartão na prévia de um jogo con
 - **Você espera deles** (`youKnow`): os últimos 5 planos do adversário (`opponentRecentPlans`, dos `MatchEvent.formations`), o quanto ele se repete; uma faixa pelo analista (meia-largura 25 / 15 / 0% em 1★ / 3★ / 5★, a janela desliza para dentro perto de 0 e 100% e sempre contém o valor real, centro sorteado por save, clube e data); analista abaixo de 5★ pode nomear a segunda formação mais usada (35 / 15 / 0%). Sem jogos registrados: aviso.
 - "Mudar a tática" leva à Formação; voltar refaz o `match-setup`.
 - i18n `knowledge.*`. Testes: `bun test src/Domain/study`.
+
+## A IA varia o plano (12.47)
+
+Report de tester 6dcd454e (a leitura do analista não podia ser sempre exata). Lógica pura em `src/Domain/formation/aiPlanVariation.ts` (`AI_VARIATION` em `aiFormationConfig.ts`, com teste), chamada por `aiPlanFor` (`matchSimulationLineups.ts`) na partida simulada e no `match-setup`, então as duas dão o mesmo plano.
+
+- Só clube da IA contra clube humano, e só quando a IA não estudou o técnico (o plano do estudo vence). IA × IA nunca varia.
+- Um sorteio por jogo e clube (`aiplan:<jogo>:<clube>`, sem sorteio do motor): troca para a segunda melhor formação do elenco da temporada (`AiFormationRecord.second`) ou para outro estilo; senão, o plano da temporada. Chance de cada troca pelo tier financeiro: ELITE e HIGH 25%, MEDIUM 15%, LOW 10%.
+- Estilo pelo nível da temporada contra o do humano: azarão (0,3 abaixo ou mais) contra-ataque; favorito (0,3 acima) posse ou pressão alta; perto, um dos quatro estilos que não são o equilibrado. Familiaridade da regra da IA no estilo jogado.
+- `MatchEvent.aiPlan { kind, formation, style }` no jogo; `match-setup` devolve `aiStyle`. O cartão de conhecimento tático lê as formações jogadas, então passa a errar às vezes.
+- Medição: `bun scripts/ai-plan-measure.ts [liga] [jogos] [--part i/n] [--out f]` e `--sum` (plano da temporada × plano variado, mesma semente; acerto do cartão). Números abaixo.
+
+| 300 jogos por liga (motor, semente por jogo) | Premier | Championship | As duas |
+|---|---|---|---|
+| Jogos com plano variado | 47% (ELITE 48%, HIGH 45%) | 27% (LOW 20%, MEDIUM 34%) | 37% |
+| V − D do humano, plano da temporada → variado | +3,0 → +0,7 | −9,3 → −6,0 | −3,2 → −2,7 (+0,5) |
+| Só nos jogos variados | 0,0 → −5,0 | −13,4 → −1,2 | +1,4 |
+| Cartão acerta formação e estilo | 48% | 71% | 61% (antes 100%) |
+
+A diferença fica no ruído (a meta era menos de 4 de V − D): o plano variado não deixa a IA mais forte nem mais fraca, só menos previsível.

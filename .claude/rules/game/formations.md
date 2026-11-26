@@ -333,3 +333,7 @@ espelho à parte) e divisão em tarefas.
   (`/matrix`) com clubes reais, mas os cenários com elencos sintéticos não dizem nada sobre a escolha.
 - O estilo da IA é sempre `balanced` hoje; `STYLE_FORMATIONS` só pesa quando um clube da IA tiver
   estilo próprio.
+
+## Segunda formação e plano variado (12.47)
+
+`AiFormationRecord.second`: a segunda melhor formação elegível do elenco na temporada (`""` sem nenhuma), guardada com a escolhida. Um registro sem o campo é escolhido de novo. Contra um clube humano que a IA não estudou, ela às vezes joga essa formação ou outro estilo: ver `.claude/rules/game/study.md` → "A IA varia o plano".

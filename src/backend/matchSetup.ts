@@ -22,13 +22,15 @@ import {
   registeredPool,
   resolveUserLineup,
   studyPlanFor,
+  aiPlanFor,
+  aiRecordFor,
   type MatchRegistration,
 } from "@/Domain/advanceDay/matchSimulationLineups";
 import { matchSetupStudy, tacticLogEntry } from "@/Domain/study/study";
 import { theyKnow, youKnow } from "@/Domain/study/tacticalKnowledge";
 import { opponentRecentPlans } from "@/backend/opponentReportWorld";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
-import { formationForTactics } from "@/Domain/matchFormations";
+import { formationForSimId, formationForTactics } from "@/Domain/matchFormations";
 import { CUSTOM_FORMATION_ID } from "@/Domain/formation/zones";
 import { playerCupSlug } from "@/backend/cupWorld";
 import { playerContinentalSlug } from "@/backend/continentalWorld";
@@ -207,7 +209,7 @@ export async function matchSetupFor(
   const resolvedMyFormation = (myFormation ?? defaultFormation) as Formation;
   const matchDate = matchFixture?.date ?? save.currentDate ?? undefined;
   // The AI opponent plays its own formation — the same choice the headless path makes.
-  const oppFormation = opponentSquad && matchDate
+  let oppFormation = opponentSquad && matchDate
     ? aiMatchFormation(opponentSquad, mySquad, matchDate).formation
     : null;
 
@@ -242,7 +244,7 @@ export async function matchSetupFor(
   const slotInstructions = sanitizeSlotInstructions(resolvedMyFormation, myTactics.slotInstructions);
   myTactics = { ...myTactics, slotInstructions: slotInstructions.length > 0 ? slotInstructions : undefined };
   const oppPool = opponentSquad ? registeredPool(opponentSquad, oppReg) : null;
-  const oppLineup = oppPool && oppFormation && matchDate
+  let oppLineup = oppPool && oppFormation && matchDate
     ? autoLineupForFormationWithFitness(oppPool, oppFormation, matchDate)
     : [];
   const registered = myReg || oppReg
@@ -321,6 +323,14 @@ export async function matchSetupFor(
   const plan = !legacy && matchFixture && opponentSquad && !seatOpponent && oppFormation
     ? studyPlanFor(save.tacticLog, opponentSquad, oppFormation, oppLineup, mySquad, resolvedMyFormation, resolved.lineup)
     : null;
+  // Without a study plan the AI sometimes varies its own (12.47, `aiPlanFor`): the same draw the day advance makes.
+  const aiPlan = !plan && !legacy && matchFixture && opponentSquad && !seatOpponent && oppFormation && matchDate
+    ? aiPlanFor(matchFixture, opponentSquad, mySquad, matchDate, aiRecordFor(opponentSquad, matchDate), oppFormation.id)
+    : null;
+  if (aiPlan?.kind === "formation" && oppPool && matchDate) {
+    oppFormation = formationForSimId(aiPlan.formation);
+    oppLineup = autoLineupForFormationWithFitness(oppPool, oppFormation, matchDate);
+  }
 
   // Tactical knowledge card of the preview (tester report 6dcd454e): only against an AI club.
   const knowledge = !legacy && matchFixture && opponentSquad && !seatOpponent
@@ -374,6 +384,8 @@ export async function matchSetupFor(
     seatOpponent,
     ...(oppMorale !== undefined ? { oppMorale } : {}),
     ...(plan ? { study: matchSetupStudy(plan, mySquad) } : {}),
+    // Style of a varied AI plan for the live match (absent: the season plan or the study plan's).
+    ...(aiPlan && aiPlan.kind === "style" ? { aiStyle: aiPlan.style } : {}),
     ...(knowledge ? { knowledge } : {}),
     h2h: seatOpponent && opts.live && !!opts.h2h,
   } };

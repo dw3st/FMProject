@@ -85,9 +85,12 @@ export function chooseAiFormation(
   const best = scores.reduce<AiFormationScore | null>((b, s) => (!b || s.score > b.score ? s : b), null);
   if (!best) {
     const fb = aiFormationScores(squad, season, style).find((s) => s.id === AI_FORMATION.FALLBACK)!;
-    return { id: AI_FORMATION.FALLBACK, season, roster, level: fb.fit };
+    return { id: AI_FORMATION.FALLBACK, season, roster, level: fb.fit, second: "" };
   }
-  const record: AiFormationRecord = { id: best.id, season, roster, level: best.fit };
+  const second = scores
+    .filter((s) => s.id !== best.id)
+    .reduce<AiFormationScore | null>((b, s) => (!b || s.score > b.score ? s : b), null);
+  const record: AiFormationRecord = { id: best.id, season, roster, level: best.fit, second: second?.id ?? "" };
   if (!AI_FORMATION.DEFENSIVE.includes(best.id)) {
     const def = scores
       .filter((s) => AI_FORMATION.DEFENSIVE.includes(s.id) && s.score >= best.score - AI_FORMATION.UNDERDOG_MARGIN)
@@ -104,7 +107,9 @@ export function aiFormationRecord(
   style: TacticalStyle = DEFAULT_TACTICAL_STYLE,
 ): AiFormationRecord {
   const r = squad.aiFormation;
-  if (r && r.season === season && r.roster === rosterSignature(squad.players) && FORMATION_IDS.includes(r.id)) return r;
+  if (r && r.season === season && r.roster === rosterSignature(squad.players) && FORMATION_IDS.includes(r.id) && r.second !== undefined) {
+    return r;
+  }
   return chooseAiFormation(squad, season, style);
 }
 

@@ -475,6 +475,8 @@ export interface AiFormationRecord {
   level: number;
   /** Defensive shape played against a much stronger opponent; absent = keep `id`. */
   defensive?: string;
+  /** Second-best eligible formation ("" = none), the AI's change of shape against a human club (12.47). */
+  second?: string;
 }
 
 export interface LeagueTeam {

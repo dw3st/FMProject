@@ -45,3 +45,25 @@ export const AI_FORMATION = {
   /** The defensive shape is kept only when its score is within this of the season pick. */
   UNDERDOG_MARGIN: 0.06,
 } as const;
+
+/**
+ * An AI club's game plan against a human manager varies match by match (tester report 6dcd454e, approved
+ * 2026-11-26): the season plan, the second-best formation, or another style by strength. Only against a human club
+ * the AI did not study (`.claude/rules/game/study.md`); AI × AI never varies. Drawn once per fixture.
+ */
+export const AI_VARIATION = {
+  /** Chance of each variation by financial tier (the rest plays the season plan). */
+  CHANCE: {
+    LOW: { formation: 0.1, style: 0.1 },
+    MEDIUM: { formation: 0.15, style: 0.15 },
+    HIGH: { formation: 0.25, style: 0.25 },
+    ELITE: { formation: 0.25, style: 0.25 },
+  },
+  /** Slot-value gap (season record level) under which the two sides are "close" for the style draw. */
+  CLOSE_GAP: 0.3,
+  /** Styles of the favourite (drawn among them) and of a close match. */
+  FAVOURITE_STYLES: ["possession", "high_press"] as TacticalStyle[],
+  CLOSE_STYLES: ["possession", "high_press", "counter_attack", "direct_play"] as TacticalStyle[],
+  /** Style of the underdog. */
+  UNDERDOG_STYLE: "counter_attack" as TacticalStyle,
+};

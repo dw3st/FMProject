@@ -617,6 +617,8 @@ export function MatchScreen() {
           oppMorale?: number;
           /** The AI opponent's plan against this manager (`.claude/rules/game/study.md`). */
           study?: import("@/types/studyTypes").MatchSetupStudy;
+          /** Style of a varied AI plan (12.47): absent = the season plan or the study plan. */
+          aiStyle?: import("@/types/tacticsTypes").TacticalStyle;
           /** League table position of each club (league matches only), next to the crests. */
           tablePositions?: Record<string, number>;
         };
@@ -697,7 +699,7 @@ export function MatchScreen() {
           familiarity: squadFamiliarityLevels(data.mySquad, tactics.tactical_style),
         };
         // An AI club that studied the manager plays its plan's style, at its own familiarity rule.
-        const aiStyle = data.study?.style ?? DEFAULT_TACTICAL_STYLE;
+        const aiStyle = data.study?.style ?? data.aiStyle ?? DEFAULT_TACTICAL_STYLE;
         const teamB: TeamTacticsSnapshot = snap?.tactics.B ?? {
           style: aiStyle,
           mentality: DEFAULT_MENTALITY,

@@ -1,5 +1,5 @@
 import type { Fixture } from "@/types/calendarTypes";
-import type { MatchMarking, TacticsSave } from "@/types/tacticsTypes";
+import type { MatchMarking, TacticalStyle, TacticsSave } from "@/types/tacticsTypes";
 import { sanitizeSlotInstructions } from "@/Domain/tactics/slotInstructions";
 import { DEFAULT_TACTICAL_STYLE } from "@/types/tacticsTypes";
 import type { AiFormationRecord, Squad } from "@/types/playerTypes";
@@ -22,6 +22,8 @@ import type { RegistrationRule } from "@/types/registrationTypes";
 import { limitForeignPool, matchdayPool } from "@/Domain/registration/rules";
 import { isUnavailable } from "@/Domain/discipline/discipline";
 import { aiStudyPlan } from "@/Domain/study/study";
+import { aiPlanVariation, type AiPlanVariation } from "@/Domain/formation/aiPlanVariation";
+import { financialTierOf } from "@/Domain/aiFinance/aiClubFinance";
 import type { MatchStudy, StudyPlan, TacticLogEntry } from "@/types/studyTypes";
 
 /**
@@ -228,6 +230,8 @@ export function computeMatchSimulationLineups(
   pools: { home?: Set<string>; away?: Set<string> };
   /** The AI side's game plan against the human club (day log). Absent: no plan. */
   study?: MatchStudy;
+  /** The AI side's varied plan (12.47) when it did not study the manager and changed shape or style. */
+  aiPlan?: { side: "home" | "away" } & AiPlanVariation;
 } {
   const homePool = registeredPool(homeSquad, registration?.home);
   const awayPool = registeredPool(awaySquad, registration?.away);
@@ -278,18 +282,17 @@ export function computeMatchSimulationLineups(
 
   if (fixture.home === playerSquadId) {
     const user = resolveUserLineup(homeSquad, userFormation, t.lineup ?? [], date, rot, registration?.home);
-    const ai = aiMatchFormation(awaySquad, homeSquad, date);
-    const aiLineup = autoLineupForFormationWithFitness(awayPool, ai.formation, date);
-    const plan = studyPlanFor(tacticLog, awaySquad, ai.formation, aiLineup, homeSquad, userFormation, user.lineup);
+    const ai = aiAgainstHuman(fixture, awaySquad, awayPool, homeSquad, date, tacticLog, userFormation, user.lineup);
     return {
       homeFormation: userFormation,
       homeLineup: user.lineup,
       awayFormation: ai.formation,
-      awayLineup: aiLineup,
+      awayLineup: ai.lineup,
       userInjuredReplaced: user.injuredReplaced,
       userRotationApplied: user.rotationApplied,
-      tactics: { A: userTactics, B: plan ? studiedAiTactics(plan) : aiTactics },
-      ...(plan ? { study: matchStudyOf(plan, "away") } : {}),
+      tactics: { A: userTactics, B: ai.tactics },
+      ...(ai.plan ? { study: matchStudyOf(ai.plan, "away") } : {}),
+      ...(ai.variation ? { aiPlan: { side: "away" as const, ...ai.variation } } : {}),
       aiFormations: { away: ai.record },
       pools: {
         ...(user.pool ? { home: user.pool } : {}),
@@ -299,23 +302,86 @@ export function computeMatchSimulationLineups(
   }
 
   const user = resolveUserLineup(awaySquad, userFormation, t.lineup ?? [], date, rot, registration?.away);
-  const ai = aiMatchFormation(homeSquad, awaySquad, date);
-  const aiLineup = autoLineupForFormationWithFitness(homePool, ai.formation, date);
-  const plan = studyPlanFor(tacticLog, homeSquad, ai.formation, aiLineup, awaySquad, userFormation, user.lineup);
+  const ai = aiAgainstHuman(fixture, homeSquad, homePool, awaySquad, date, tacticLog, userFormation, user.lineup);
   return {
     homeFormation: ai.formation,
-    homeLineup: aiLineup,
+    homeLineup: ai.lineup,
     awayFormation: userFormation,
     awayLineup: user.lineup,
     userInjuredReplaced: user.injuredReplaced,
     userRotationApplied: user.rotationApplied,
-    tactics: { A: plan ? studiedAiTactics(plan) : aiTactics, B: userTactics },
-    ...(plan ? { study: matchStudyOf(plan, "home") } : {}),
+    tactics: { A: ai.tactics, B: userTactics },
+    ...(ai.plan ? { study: matchStudyOf(ai.plan, "home") } : {}),
+    ...(ai.variation ? { aiPlan: { side: "home" as const, ...ai.variation } } : {}),
     aiFormations: { home: ai.record },
     pools: {
       ...(registration?.home ? { home: idsOf(homePool) } : {}),
       ...(user.pool ? { away: user.pool } : {}),
     },
+  };
+}
+
+/** The AI's tactics without a plan: the default style, or the varied one, at the AI's own familiarity rule. */
+export function aiStyleTactics(style: TacticalStyle = DEFAULT_TACTICAL_STYLE): TeamTactics {
+  return { style, familiarity: aiFamiliarity(style), ai: true };
+}
+
+/**
+ * How an AI club varies its plan against a human club it did not study (12.47, `aiPlanVariation`): one function for
+ * the simulated match and the live one (`match-setup`). `matchdayFormation` = the season plan's formation id.
+ */
+export function aiPlanFor(
+  fixture: Fixture,
+  aiSquad: Squad,
+  humanSquad: Squad,
+  date: string,
+  record: AiFormationRecord,
+  matchdayFormation: string,
+): AiPlanVariation {
+  return aiPlanVariation({
+    fixtureId: fixture.id,
+    aiSquadId: aiSquad.id,
+    tier: financialTierOf(aiSquad),
+    record,
+    matchdayFormation,
+    opponentLevel: aiRecordFor(humanSquad, date).level,
+  });
+}
+
+/** The AI side against the human club: the study plan when it read him, else its own plan, sometimes varied. */
+function aiAgainstHuman(
+  fixture: Fixture,
+  aiSquad: Squad,
+  aiPool: Squad,
+  humanSquad: Squad,
+  date: string,
+  tacticLog: readonly TacticLogEntry[] | undefined,
+  humanFormation: Formation,
+  humanLineup: string[],
+): {
+  formation: Formation;
+  lineup: string[];
+  record: AiFormationRecord;
+  tactics: TeamTactics;
+  plan: StudyPlan | null;
+  variation: AiPlanVariation | null;
+} {
+  const ai = aiMatchFormation(aiSquad, humanSquad, date);
+  const lineup = autoLineupForFormationWithFitness(aiPool, ai.formation, date);
+  const plan = studyPlanFor(tacticLog, aiSquad, ai.formation, lineup, humanSquad, humanFormation, humanLineup);
+  if (plan) return { formation: ai.formation, lineup, record: ai.record, tactics: studiedAiTactics(plan), plan, variation: null };
+  const variation = aiPlanFor(fixture, aiSquad, humanSquad, date, ai.record, ai.formation.id);
+  if (variation.kind === "season") {
+    return { formation: ai.formation, lineup, record: ai.record, tactics: aiStyleTactics(), plan: null, variation: null };
+  }
+  const formation = variation.kind === "formation" ? formationForSimId(variation.formation) : ai.formation;
+  return {
+    formation,
+    lineup: variation.kind === "formation" ? autoLineupForFormationWithFitness(aiPool, formation, date) : lineup,
+    record: ai.record,
+    tactics: aiStyleTactics(variation.style),
+    plan: null,
+    variation,
   };
 }
 

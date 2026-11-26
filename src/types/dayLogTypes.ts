@@ -183,6 +183,8 @@ export interface MatchEvent {
   var?: MatchVarStats;
   /** The AI side came with a game plan against the human manager it studied (`.claude/rules/game/study.md`). */
   study?: import("@/types/studyTypes").MatchStudy;
+  /** The AI side changed its plan against the human club without studying him (12.47). Absent: its season plan. */
+  aiPlan?: { side: "home" | "away"; kind: "formation" | "style" | "season"; formation: string; style: import("@/types/tacticsTypes").TacticalStyle };
 }
 
 /** Referee errors and VAR checks of one match (both teams). `overturned` ≤ `errors` (every overturn fixes an error). */

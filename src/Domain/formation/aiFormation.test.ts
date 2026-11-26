@@ -115,7 +115,7 @@ describe("chooseAiFormation", () => {
 describe("aiFormationRecord", () => {
   test("keeps the stored record for the same season and roster, re-chooses otherwise", () => {
     const s = squad(flat(8, 5), flat(8, 5), flat(5, 5));
-    const stored = { id: "4-4-2", season: "2026", roster: rosterSignature(s.players), level: 5 };
+    const stored = { id: "4-4-2", season: "2026", roster: rosterSignature(s.players), level: 5, second: "" };
     const withRec: Squad = { ...s, aiFormation: stored };
     expect(aiFormationRecord(withRec, "2026")).toBe(stored);
     expect(aiFormationRecord(withRec, "2027").season).toBe("2027");

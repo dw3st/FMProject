@@ -77,8 +77,8 @@ describe("custom formation in the match pipeline", () => {
     };
     const r = computeMatchSimulationLineups(fixture, home, away, home.id, tactics);
     expect(r.homeFormation.id).toBe("custom");
-    // The AI side plays its own season formation.
-    expect(r.awayFormation.id).toBe(aiMatchFormation(away, home, fixture.date).formation.id);
+    // The AI side plays its own season formation, or its varied plan (12.47).
+    expect(r.awayFormation.id).toBe(r.aiPlan?.formation ?? aiMatchFormation(away, home, fixture.date).formation.id);
     expect(r.aiFormations.home).toBeUndefined();
     expect(r.aiFormations.away?.id).toBeDefined();
     expect(r.homeLineup).toHaveLength(11);
