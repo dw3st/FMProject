@@ -31,8 +31,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.44.2",
+    date: "2026-11-26",
+    items: [],
+    fixes: [
+      { tab: "squad", pt: "Um jogador emprestado ao seu clube pode ser devolvido pelo botão azul na ficha ou direto na lista do Elenco.", en: "A player on loan at your club can be sent back with the blue button on his profile or right from the Squad list." },
+      { tab: "squad", pt: "A coluna Moral do Elenco mostra só a carinha; o nome aparece ao passar o mouse.", en: "The Squad's Morale column shows only the face; the name shows on hover." },
+    ],
+  },
+  {
     version: "12.44.1",
     date: "2026-11-25",
+    time: "23:31",
     items: [],
     fixes: [
       { tab: "staff", pt: "A lista de profissionais livres sempre tem olheiros do país do seu clube.", en: "The free staff list always has scouts from your club's country." },

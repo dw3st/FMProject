@@ -16,16 +16,23 @@ const BAND_ICON: Record<MoraleBand, IconName> = {
  * Morale of a human-club player (`.claude/rules/game/morale.md`): face icon + band text.
  * `showValue` adds the number (player screen).
  */
-export function MoraleBadge({ morale, showValue = false, className = "" }: { morale: number; showValue?: boolean; className?: string }) {
+export function MoraleBadge({ morale, showValue = false, iconOnly = false, className = "" }: {
+  morale: number;
+  showValue?: boolean;
+  /** Only the face, the band in the tooltip (squad table, user request 12.44.2). */
+  iconOnly?: boolean;
+  className?: string;
+}) {
   const { t } = useTranslation();
   const band = moraleBand(morale);
   return (
     <span
-      title={t("morale.title", { value: Math.round(morale) })}
+      title={iconOnly ? `${t(`morale.band.${band}`)} · ${t("morale.title", { value: Math.round(morale) })}` : t("morale.title", { value: Math.round(morale) })}
+      aria-label={iconOnly ? t(`morale.band.${band}`) : undefined}
       className={`inline-flex items-center gap-1.5 text-sm font-semibold whitespace-nowrap ${MORALE_TONE[band]} ${className}`}
     >
-      <Icon name={BAND_ICON[band]} size={16} className="shrink-0" />
-      {t(`morale.band.${band}`)}
+      <Icon name={BAND_ICON[band]} size={iconOnly ? 18 : 16} className="shrink-0" />
+      {!iconOnly && t(`morale.band.${band}`)}
       {showValue && <span className="tabular-nums text-muted-foreground font-medium">{Math.round(morale)}</span>}
     </span>
   );

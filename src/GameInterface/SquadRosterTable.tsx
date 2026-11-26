@@ -40,6 +40,7 @@ import { useStarPlayers } from "@/GameInterface/useStarPlayers";
 import { TalkModal } from "@/GameInterface/Morale/TalkModal";
 import { navigate } from "@/GameInterface/router/navigation";
 import { TerminateButton } from "@/GameInterface/Contracts/TerminateButton";
+import { ReturnLoanButton } from "@/GameInterface/Negotiation/ReturnLoanButton";
 
 type RosterRow = DisplayPlayer & { morale: number; flagCode?: string; flagCode2?: string; renewDue: boolean; renewBlock: RenewBlock | null };
 /** Why the renew slot is dimmed on a row of the own squad (tester report: every row shows the same slots). */
@@ -121,7 +122,7 @@ export function SquadRosterTable({
     col("goals", "3rem", "center"),
     col("assists", "3rem", "center"),
     col("rating", "4rem", "center"),
-    ...(showMorale ? [{ key: "morale", label: t("morale.column"), title: t("dashboard.squadRosterTable.titles.morale"), width: "8.5rem", align: "left" as const }] : []),
+    ...(showMorale ? [{ key: "morale", label: t("morale.column"), title: t("dashboard.squadRosterTable.titles.morale"), width: "4.5rem", align: "center" as const }] : []),
   ];
   // Own squad: Talk (or Answer, with an open request) beside Renew, icon buttons so the table fits without a
   // sideways scroll (tester report, 4.47.10); the label is in `title` and `aria-label`.
@@ -324,8 +325,8 @@ export function SquadRosterTable({
               <RatingBadge value={player.avgRating} />
             </div>
             {showMorale && (
-              <div className="px-3 py-2.5">
-                <MoraleBadge morale={player.morale} />
+              <div className="px-3 py-2.5 flex justify-center">
+                <MoraleBadge morale={player.morale} iconOnly />
               </div>
             )}
             <div className="px-3 py-2.5 flex justify-center">
@@ -378,7 +379,13 @@ export function SquadRosterTable({
                 </button>
               )}
               {/* Release a player without leaving the squad (report 12.18) */}
-              {showMorale && (!session || player.loan) && (
+              {showMorale && !session && player.loan && (
+                <UnavailableAction icon="close" reason={t("dashboard.squadRosterTable.unavailable.loanedIn")} />
+              )}
+              {showMorale && session && player.loan && (
+                <ReturnLoanButton compact saveId={session.saveId} playerId={player.id} playerName={player.name} fromClubName={player.loan.fromClubName} onReturned={() => void refresh({ background: true })} />
+              )}
+              {showMorale && !session && !player.loan && (
                 <UnavailableAction icon="close" reason={t("dashboard.squadRosterTable.unavailable.loanedIn")} />
               )}
               {showMorale && session && !player.loan && (

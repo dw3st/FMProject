@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/GameInterface/Components/ConfirmDialog";
+import { ReturnLoanButton } from "@/GameInterface/Negotiation/ReturnLoanButton";
 import { formatEuros } from "@/Domain/money";
 import { formatGameDate } from "@/GameInterface/formatDate";
 import type { RosterPlayer } from "@/types/playerTypes";
@@ -17,29 +16,8 @@ export function LoanedInCard({ player, canPreContract, saveId, onReturned }: {
   onReturned?: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const [asking, setAsking] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const loan = player.loan;
   if (!loan) return null;
-
-  const sendBack = async () => {
-    if (!saveId) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/saves/${encodeURIComponent(saveId)}/loans/${encodeURIComponent(player.id)}/return`, { method: "POST" });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setAsking(false);
-      if (!res.ok) {
-        const known = ["windowClosed", "seatLoan", "notLoanedIn", "lobby"];
-        setError(t(`loanedIn.returnErrors.${known.includes(body.error ?? "") ? body.error : "generic"}`));
-        return;
-      }
-      onReturned?.();
-    } finally {
-      setBusy(false);
-    }
-  };
   const day = (d: string) => formatGameDate(d, i18n.language);
   const wage = player.contract?.wage ?? 0;
   return (
@@ -57,27 +35,8 @@ export function LoanedInCard({ player, canPreContract, saveId, onReturned }: {
         {canPreContract ? t("loanedIn.optionsPre", { club: loan.fromClubName }) : t("loanedIn.options", { club: loan.fromClubName })}
       </p>
       {saveId && onReturned && (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => { setError(null); setAsking(true); }}
-            disabled={busy}
-            className="flex items-center px-4 h-10 rounded border border-border bg-transparent text-sm font-semibold text-foreground cursor-pointer hover:border-primary disabled:opacity-50"
-          >
-            {t("loanedIn.returnButton", { club: loan.fromClubName })}
-          </button>
-          {error && <span role="alert" className="text-sm text-destructive">{error}</span>}
-        </div>
+        <ReturnLoanButton saveId={saveId} playerId={player.id} playerName={player.name} fromClubName={loan.fromClubName} onReturned={onReturned} />
       )}
-      <ConfirmDialog
-        open={asking}
-        title={t("loanedIn.returnTitle", { name: player.name })}
-        body={t("loanedIn.returnBody", { name: player.name, club: loan.fromClubName })}
-        confirmLabel={t("loanedIn.returnConfirm")}
-        onConfirm={() => void sendBack()}
-        onClose={() => setAsking(false)}
-        busy={busy}
-      />
     </section>
   );
 }
