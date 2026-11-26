@@ -31,6 +31,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "12.44.4",
+    date: "2026-11-26",
+    items: [],
+    fixes: [
+      { tab: "squad", pt: "Uma lenda trazida de volta mantém a posição natural que tinha (um lateral não vira mais zagueiro).", en: "A legend brought back keeps the natural position he had (a full-back no longer turns into a centre-back)." },
+    ],
+  },
+  {
     version: "12.44.3",
     date: "2026-11-26",
     time: "01:26",

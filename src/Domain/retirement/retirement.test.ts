@@ -150,6 +150,12 @@ describe("generateReborn", () => {
     for (const v of Object.values(p.stats)) expect(Math.abs(v * 10 - Math.round(v * 10))).toBeLessThan(1e-9);
   });
 
+  test("keeps the original's fixed natural position (a reborn left-back stays a left-back)", () => {
+    const lb = { ...retired, id: "lb", positions: ["Defender"], naturalPosition: "LB" };
+    expect(generateReborn({ retired: lb, squad: sq, year: 2027, nextSeasonEnd: "2028-05-31" }).naturalPosition).toBe("LB");
+    expect(generateReborn({ retired, squad: sq, year: 2027, nextSeasonEnd: "2028-05-31" }).naturalPosition).toBeUndefined();
+  });
+
   test("DP multiplier only while young", () => {
     const p = generateReborn({ retired, squad: sq, year: 2027, nextSeasonEnd: "2028-05-31" });
     expect(rebornDpMult(p)).toBe(1.3);
